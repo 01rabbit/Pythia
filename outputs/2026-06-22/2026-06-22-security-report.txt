@@ -1,0 +1,150 @@
+========================================
+セキュリティインテリジェンス日報 — CVE・脆弱性・ゼロデイ版
+調査日時: 2026-06-22 09:20 JST
+調査期間: 2026-06-21 09:20 〜 2026-06-22 09:20 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に新規ゼロデイ特報対象CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編基準（軸1高・軸2高）を満たす新規CVEなし）
+週末（土日）の調査期間にあたり新規KEV追加・ゼロデイ確認は確認されなかった。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT 2026-06-18 報道（186046）「Cisco ISEにRCE脆弱性 — 端末の接続に影響するおそれも」
+
+------------------------------------------------------------
+・CVE-2026-20181 + CVE-2026-20190 / Cisco Identity Services Engine (ISE / ISE-PIC) — 二段階攻撃チェーン
+対象: Cisco ISE 3.3（Patch 11未適用）/ ISE 3.4（Patch 6未適用）/ ISE 3.5（TAC経由ホットパッチ未適用）
+CVSS: CVE-2026-20181: 9.1 (Critical, 認証済みRCE) / CVE-2026-20190: 7.1 (High, 未認証情報漏洩)
+状態: パッチ提供済み（ISE 3.3 p11 / 3.4 p6）/ PoC未確認 / 悪用未確認
+------------------------------------------------------------
+
+【24時間以内の変化】
+[Cisco セキュリティアドバイザリ 2026-06-17] CVE-2026-20181（認証済みRCE）およびCVE-2026-20190（未認証XXE情報漏洩）を同時公開。ISE 3.5向けホットパッチはTAC経由のみで、完全なリリースは2026年8月予定と明記。
+[Security NEXT 2026-06-18] 「Cisco ISEにRCE脆弱性 — 端末の接続に影響するおそれも」として国内報道。ネットワークアクセス制御（NAC）製品への影響を強調し、端末認証停止のリスクに言及。
+[TechJack Solutions / Qualys ThreatPROTECT 2026-06-18〜20] CVE-2026-20190（未認証情報漏洩）で取得した管理者認証情報をCVE-2026-20181の起点とする「実質的な未認証RCEチェーン」として技術分析を公開。
+
+【概要】
+Cisco ISEはネットワークアクセス制御（NAC）の中核製品であり、ほぼすべての大規模企業・官公庁ネットワークでWi-Fi・有線・VPNアクセスの認証・ポリシー適用に使用されている。今回開示された2脆弱性は単独では影響範囲が異なるが、連鎖利用で深刻度が大きく跳ね上がる。CVE-2026-20190は未認証攻撃者がXML外部エンティティ（XXE）処理の欠陥を悪用してISEシステム上のファイルを読み取れる情報漏洩脆弱性で、管理者認証情報やTLSプライベートキーを取得できる。その認証情報を使いCVE-2026-20181（認証済みRCE・CVSS 9.1）を起動することで、OSコマンドをroot権限で実行できる。ISEが侵害された場合、接続端末の認証が全停止するサービス妨害に加え、企業ネットワーク全体のアクセスポリシーが攻撃者の制御下に置かれる。3.5向けのフルパッチが8月まで提供されない点が特に問題で、TAC経由のホットパッチ入手に気づいていない組織が多数存在すると予想される。
+
+攻撃の流れ（推定チェーン）:
+1. 攻撃者がインターネット経由でISE管理インターフェースへアクセスし、CVE-2026-20190のXXEを悪用して/opt/CSCOisisのファイルシステムを探索、管理者認証情報またはサービスアカウントのハッシュを読み取る
+2. 取得した認証情報でISEにログインし、CVE-2026-20181の細工されたHTTPリクエストを送信して任意のOSコマンドをroot権限で実行する
+3. ISEを踏み台に内部ネットワークのアクセスポリシーを改ざん、または全端末認証を停止してランサムウェア展開・ラテラルムーブメントを実施する
+
+【IoC】
+IoC: 確認されず（悪用未確認段階）
+
+【監視ポイント】
+・[Cisco ISE 管理ログ / SIEM] ISEへの未認証アクセス試行・XXE探索パターンの監視
+Splunk SPL: index=cisco_ise sourcetype=cisco:ise:syslog (MessageCode=34001 OR MessageCode=34002 OR MessageCode=34003) | stats count by src_ip, UserName | where count > 5 | sort -count
+→ 認証に使われていないIPからの繰り返し探索リクエストは CVE-2026-20190 悪用試行の可能性がある
+
+・[Cisco ISE 管理ログ / SIEM] 管理者権限での異常なコマンド実行・設定変更を監視
+Splunk SPL: index=cisco_ise sourcetype=cisco:ise:syslog (MessageCode=52000 OR MessageCode=52001 OR "CLI command" OR "config change") | table _time, NetworkDeviceName, UserName, FailureReason, Step | sort -_time
+→ 通常の運用時間帯外や既知の管理者以外によるISE設定変更は即時精査する
+
+【参照】
+https://www.security-next.com/186046
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-ise-rce-4fverepv
+https://threatprotect.qualys.com/2026/06/18/cisco-identity-services-engine-rce-and-information-disclosure-vulnerabilities-cve-2026-20181-cve-2026-20190/
+https://www.securityweek.com/critical-command-execution-vulnerability-patched-in-cisco-ise/
+https://techjacksolutions.com/scc-intel/cisco-ise-carries-a-two-vector-risk-unauthenticated-credential-exposure-feeds-authenticated-rce-no-full-patch-until-august/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-20181 / CVE-2026-20190 — 24時間窓内に注意喚起発行確認されず（JPCERT最終更新2026-06-10）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-28318 / SolarWinds Serv-U（未認証DoS — サービスクラッシュ）
+CVSS: 7.5 (High) ※DoSのみ・低優先度フラグ付き
+状態: KEV登録済み（2026-06-05）/ FCEB期限2026-06-19到来済み / 実悪用確認（サービスクラッシュ）
+対象: Serv-U 15.5.4 Hotfix 1 未満の全バージョン
+Shodan露出台数: 約12,000台（うちShadowserver把握分は約3,100台）
+
+【24時間以内の変化】
+[CISA KEV 2026-06-05] CVE-2026-28318をKEVカタログへ追加。FCEB機関向けFCEB期限が2026-06-19に設定され、本調査窓内（6/21）に期限超過が確定。
+[The Hacker News 2026-06-19〜20] 「CISA Adds Actively Exploited SolarWinds Serv-U DoS Flaw to KEV Catalog」として報道。期限到来を受け注目度が上昇。
+[BleepingComputer] 「CISA: Hackers now exploit SolarWinds Serv-U flaw to crash servers」として、攻撃者が細工されたHTTP POSTリクエストでServ-Uサービスを強制クラッシュさせる手法を報告。
+
+CVE-2026-28318はSolarWinds Serv-UのHTTPハンドラーにおいて、Content-Encoding: deflateヘッダーを付けた細工されたPOSTリクエストを送信するだけで未認証攻撃者がServ-Uサービスを強制クラッシュ・再起動させることができるリソース消費脆弱性（CWE-400）。認証は一切不要であり、ファイル転送サーバが繰り返しクラッシュすることで業務継続性が阻害される。ランサムウェアグループがバックアップやファイル共有インフラを優先的に破壊する戦術の一部として悪用するシナリオが現実的。国内でSolarWinds Serv-Uをファイル転送・MFTソリューションとして使用している組織は即時パッチ適用が必要。対処: Serv-U 15.5.4 Hotfix 1 以降へアップデート。
+IoC: 確認されず（特定のC2・ドメインなし）
+
+監視: [ファイアウォール / Webプロキシログ / SIEM] Serv-Uサービスへの大量POSTリクエストおよびサービス再起動イベントを監視する
+Splunk SPL: index=network sourcetype=firewall dest_port=443 OR dest_port=22 dest_ip=<SerV-U IP> http_method=POST | stats count by src_ip | where count > 20 | sort -count
+→ Content-Encoding: deflate ヘッダーを含む大量POSTリクエストはDoS試行の指標。送信元IPをブロックしServ-Uサービスの状態を確認する
+
+参照: https://thehackernews.com/2026/06/cisa-adds-actively-exploited-solarwinds.html
+参照: https://www.bleepingcomputer.com/news/security/cisa-hackers-now-exploit-solarwinds-serv-u-flaw-to-crash-servers/
+参照: https://threat-modeling.com/solarwinds-serv-u-dos-cve-2026-28318-kev/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編基準（軸P高・軸Q高）を満たす新規APT活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・FortiBleedキャンペーン 規模更新 / 不明（Russian-speakingグループ帰属推定） — 採用契機: T（確認済みIOCの大量公開・数値更新）。帰属信頼度: 低（CISA・Arctic Wolf・BitSightが言及するもの公式帰属なし）。既報（2026-06-19）からの新規変化: 攻撃者が保持する有効認証情報の規模が73,932台から86,644台へ更新。SecurityWeekが2026-06-20〜21に「FortiBleed: 86,000 Fortinet Device Credentials Compromised」として新規詳細レポートを公開し、標的国の構成（汎用管理者アカウント35%・Fortinet組み込みシステムアカウント28.3%・組織固有アカウント36.7%）を分析した。CISA勧告（2026-06-18）でTerminate all active sessions・パスワードリセット・PBKDF2アルゴリズム変更・MFA強制・管理アクセス制限という5点の具体的対策を要求している。少なくとも4組織が完全侵害を受けたことが確認された。攻撃はフルオートメーションで動作しており、過去のFortiGate情報漏洩から収集した既知パスワードリストを使い総当たりしている。推奨アクション: 全FortiGate/SSL VPNのアクティブセッションを即時終了し管理者・VPNパスワードを強制リセットする。管理インターフェースへのインターネット直接露出を遮断する。フィッシング耐性MFAを有効化する。
+参照: https://www.securityweek.com/fortibleed-86000-fortinet-device-credentials-compromised/
+参照: https://www.cisa.gov/news-events/alerts/2026/06/18/cisa-urges-hardening-fortinet-devices-after-reports-credential-exposure
+参照: https://arcticwolf.com/resources/blog/active-fortibleed-campaign-impacting-fortinet-devices-across-194-countries/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Cisco ISE CVE-2026-20190 → CVE-2026-20181 チェーン悪用による企業NAC侵害
+確度: 中
+根拠: CVE-2026-20190（未認証XXE情報漏洩）とCVE-2026-20181（認証済みRCE・CVSS 9.1）の連鎖攻撃チェーンがTechJack Solutions等の複数技術分析で確立・公開された（2026-06-18〜20）。ISE 3.5向けフルパッチが2026年8月まで未提供であり、TAC経由ホットパッチに気づいていない組織が多数存在することで攻撃対象サーフェスが残存する。Cisco ISEはネットワークアクセス制御の中枢であるため攻撃者にとって高価値標的。推定 — 技術的なチェーン分析が公開されたことで72時間以内にPoC実証コードが登場する可能性があるが、攻撃には管理者認証情報取得の前段階（CVE-2026-20190の先行悪用）が必要なため、実際の悪用急拡大は「確度: 高」の3要件（KEV + PoC + 実悪用確認）を満たさない段階では控えめに予測する。
+的中判定: CERTアドバイザリまたはセキュリティベンダーが「CVE-2026-20181または-20190を悪用した具体的インシデント・新規PoC・ISEを標的とした新規IOC」を72時間以内に公開した場合。
+
+[前日予報の継続監視]
+・予報1（2026-06-21）Splunk CVE-2026-20253 悪用拡大: FCEB期限（2026-06-21）到来後も新規具体的インシデント・IOCの公開は本調査窓内に確認されず。72時間窓（〜2026-06-23まで）で引き続き監視。
+・予報2（2026-06-21）GentleKiller 新バリアント出現: 72時間窓内（〜2026-06-24まで）に確認されず。引き続き監視。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-20253 (Splunk Enterprise) → 既報2026-06-21。FCEB期限超過後の24時間窓内に新規変化（新IOC・新インシデント報告）確認されず。継続監視中。
+・CVE-2026-42530 / CVE-2026-42055 (NGINX) → 既報2026-06-21。悪用未確認・KEV未登録・PoC未確認。24時間窓内に新規変化なし。
+・CVE-2026-20190単独 (Cisco ISE 情報漏洩) → 参考AのCVE-2026-20181との連鎖チェーンとして統合掲載。
+・CVE-2025-48595 (Android Framework ゼロデイ) → CISA KEV追加2026-06-02・24時間窓外・変化なし。
+・Palo Alto GlobalProtect CVE-2026-0257 → CISA KEV登録2026-06-01・FCEB期限超過済み・24時間窓内の新規変化なし。
+
+[APT]
+・FortiBleed-2026-CredentialCampaign → 既報2026-06-19。スケール更新（73,932→86,644台）を確認、APT注目動向で更新報告済み。
+・Gentlemen/GentleKiller → 既報2026-06-21。24時間窓内に新バリアント報告なし。継続監視中。
+・Icarus/Klue Salesforce OAuth → 既報2026-06-21。24時間窓内の新規変化なし。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A1件（CVE2件チェーン統合） / 参考B1件 / 除外5件
+APT — 本編0件 / 注目動向1件（FortiBleed更新） / 除外3件
+
+========================================

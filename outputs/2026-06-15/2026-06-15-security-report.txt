@@ -1,0 +1,138 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-06-15 16:13 JST
+調査期間: 2026-06-14 16:13 〜 2026-06-15 16:13 JST
+========================================
+
+【本編】真に必要な脆弱性
+----------------------------------------
+1. CVE-2026-50751 / Check Point Remote Access VPN・Mobile Access・Spark Firewall
+優先度: 必須
+CVSS: 9.3 (Critical)
+状態: KEV登録済み・実悪用確認・ゼロデイ・Qilinランサムウェア関与確認
+
+24時間以内の変化:
+  [BleepingComputer 2026-06-14] Check Point、VPNゼロデイ攻撃をQilinランサムウェアグループと正式に関連付け
+  [Help Net Security 2026-06-14] 週次セキュリティまとめで本脆弱性を筆頭トピックとして継続掲載
+  [CISA] KEV登録 2026-06-08済み（連邦機関パッチ期限: 2026-06-11 経過）
+
+概要:
+  非推奨のIKEv1鍵交換プロトコルを使用したリモートアクセス・モバイルアクセス構成において、証明書検証ロジックの欠陥により未認証攻撃者がVPNセッションを不正確立できる。悪用は少なくとも2026-05-07から観測されており、6月上旬に試行が急増。Qilinランサムウェアアフィリエイトが本脆弱性を初期侵入経路として使用し、内部ネットワーク侵害→データ窃取→暗号化のチェーンを確認。JPCERT/CCは国内で本製品が広く利用されていることを確認しており、緊急対応が必要。
+
+IoC:
+  確認されず（Check Point公式アドバイザリおよびJPCERT注意喚起にも具体的IoCの記載なし）
+
+監視ポイント:
+  ・[VPN/Firewall ログ] IKEv1ネゴシエーション試行の急増、特に証明書なし接続試行
+  ・[SIEM] Check Point Gateaway / Quantum Sparkへの認証成功ログと、その後の異常な内部通信
+  ・[EDR] ランサムウェアグループの典型的な横断移動ツール（Cobalt Strike, AnyDesk）の実行
+
+参照:
+  https://www.jpcert.or.jp/at/2026/at260016.html （JPCERT/CC 注意喚起 2026-06-10）
+  https://www.ipa.go.jp/security/security-alert/2026/alert20260610.html （IPA 重要なセキュリティ情報 2026-06-10）
+  https://www.bleepingcomputer.com/news/security/check-point-links-vpn-zero-day-attacks-to-qilin-ransomware-gang/
+  https://www.rapid7.com/blog/post/etr-critical-check-point-vpn-zero-day-exploited-in-the-wild-cve-2026-50751/
+  https://www.cisa.gov/news-events/alerts/2026/06/02/cisa-adds-two-known-exploited-vulnerabilities-catalog
+
+----------------------------------------
+2. CVE-2026-10520 / Ivanti Sentry（旧MobileIron Sentry）セキュリティゲートウェイ
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み・実悪用確認・PoC公開（watchTowr 2026-06-10）・バックドア設置確認
+
+24時間以内の変化:
+  [CISA BOD 26-04 2026-06-14] 連邦機関向けパッチ適用期限が本日到来（3日間緊急指令の期限）
+  [SecurityWeek 2026-06-14] ShadowserverによるIvanti Sentry悪用試行がハニーポット到達を確認
+  [SecurityAffairs] 脆弱なインスタンス19件中少なくとも2件でバックドア設置が確認済み
+
+概要:
+  /mics/api/v2/sentry/mics-config/handleMessage エンドポイントが認証なしのPOSTリクエストを受け付け、ユーザ入力をJavaリフレクション経由でOS命令実行に直接渡す。攻撃者はroot権限で任意コマンドを実行可能。watchTowrがPoC公開後、Shadowserverが公開PoC基づく悪用試行の大量観測を報告。侵害済みゲートウェイにはバックドアが設置されており、パッチ適用後も継続監視が必要。Ivanti製品は日本企業・官公庁での採用例があり、広く使われるモバイルゲートウェイとして波及リスクが高い。
+
+IoC:
+  確認されず（Shadowserver観測情報にIP特定なし、watchTowr PoC URL: https://hellorecon.com/blog/cve-2026-10520）
+
+監視ポイント:
+  ・[Ivanti Sentry ログ] /mics/api/v2/sentry/mics-config/handleMessage への未認証POSTリクエスト
+  ・[ネットワーク] Sentry装置からの外部向け異常通信（C2チェックイン）
+  ・[システム] Sentry装置上での新規プロセス生成・スクリプト実行（バックドア確認）
+  ・侵害確認後は単純パッチ適用では不十分。フォレンジック調査を推奨
+
+参照:
+  https://www.bleepingcomputer.com/news/security/cisa-gives-feds-3-days-to-patch-ivanti-flaw-exploited-in-attacks/
+  https://www.rapid7.com/blog/post/etr-cve-2026-10520-cve-2026-10523-multiple-critical-vulnerabilities-affecting-ivanti-sentry/
+  https://www.helpnetsecurity.com/2026/06/10/ivanti-sentry-cve-2026-10520-cve-2026-10523/
+  https://www.securityweek.com/ivanti-sentry-exploitation-attempts-hitting-honeypots/
+  https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+
+【参考情報A】国内で影響・被害が確認されているもの
+----------------------------------------
+昇格理由: JPCERT/CC 注意喚起 at260017（2026-06-10）掲載、Exchange Server国内広範普及
+
+・CVE-2026-42897 / Microsoft Exchange Server (2016/2019/SE) OWA スプーフィング
+  CVSS: 8.1 (High)
+  状態: June 2026 Patch Tuesday（2026-06-09）修正済み・悪用確認・旧バージョンはESU要件あり
+
+  概要: Outlook Web Access（OWA）でクロスサイトスクリプティングに起因するスプーフィング脆弱性。未認証攻撃者が細工したメールを送信し、被害者がOWAで開いた際に攻撃者制御のJavaScriptをログインユーザのブラウザコンテキストで実行させる。Exchange Online（Microsoft 365クラウド版）は影響なし。Exchange Server 2016はCU23 + ESUプログラム加入が必要。2026-05-14時点で悪用が確認されており、JPCERT/CCも注意喚起対象に含めている。
+
+  JPCERT/CC・IPA 状況:
+    注意喚起あり: JPCERT/CC「Microsoftの2026年6月のセキュリティ更新プログラムについて」 https://www.jpcert.or.jp/english/at/2026/at260017.html
+    IPA: IPA「Microsoft製品の脆弱性対策について(2026年6月)」 https://www.ipa.go.jp/security/security-alert/2026/0610-ms.html
+
+  参照:
+    https://support.microsoft.com/en-us/topic/description-of-the-security-update-for-microsoft-exchange-server-subscription-edition-rtm-june-09-2026-kb5094139-d9713301-1e65-40f9-a14a-2c7b8ae711d1
+    https://thehackernews.com/2026/05/on-prem-microsoft-exchange-server-cve.html
+
+
+【参考情報B】海外で先行・国内波及に注意
+----------------------------------------
+[1] CVE-2026-35273 / Oracle PeopleSoft PeopleTools 8.61/8.62 未認証RCE
+  ShinyHunters（UNC6240）が2026-05-27〜06-09にゼロデイとして悪用、世界100組織以上（大学・病院・政府機関）を侵害。うち68%が高等教育機関。Oracleは2026-06-10に帯外パッチを緊急公開。CVSS 9.8の未認証RCE（HTTP経由・操作不要）。Environment Management Hub（PSEMHUB）コンポーネントへのSSRFベースのガジェットチェーン攻撃。国内波及経路: Oracle PeopleSoftは日本の国公立大学・私立大学・大手製造業の人事・財務基幹系に採用例あり。CISA KEV追加は未確認だが近日中に予想。
+  参照:
+    https://thehackernews.com/2026/06/shinyhunters-exploits-oracle-peoplesoft.html
+    https://www.rapid7.com/blog/post/etr-active-exploitation-of-oracle-peoplesoft-zero-day-cve-2026-35273/
+    https://www.helpnetsecurity.com/2026/06/11/oracle-peoplesoft-under-attack-cve-2026-35273/
+
+[2] RoguePlanet / Microsoft Defender リアルタイムスキャンエンジン ゼロデイ（CVE未採番）
+  2026-06-10にNightmare Eclipse名義の研究者がPoCを公開。完全パッチ済みのWindows 10/11でSYSTEMレベルのシェルアクセスを可能にするリアルタイムスキャンエンジンのレースコンディション。同研究者はMicrosoftのPatch Tuesday公開直後に毎月新ゼロデイを投下するパターンを継続中（3ヶ月連続）。Microsoftは問題を認識済みだが2026-07-14のPatch Tuesdayまたは帯外更新での対応を予告。現時点で未パッチ。国内波及経路: Windows 10/11は国内企業・官公庁に広く普及。攻撃チェーンに組み込まれるリスクあり。
+  参照:
+    https://www.bleepingcomputer.com/news/microsoft/microsoft-defender-rogueplanet-zero-day-grants-system-privileges/
+    https://thehackernews.com/2026/06/microsoft-defender-rogueplanet-zero-day.html
+    https://www.securityweek.com/new-windows-zero-day-exploit-rogueplanet-released/
+
+[3] CVE-2026-44963 / Veeam Backup & Replication 12.3.2.4465以前 RCE
+  ドメイン参加済みバックアップサーバ上でドメインユーザ権限を持つ攻撃者がリモートコード実行可能。CVSS 9.4。Sina Kheirkhah（watchTowr）が2026-06-09に公開。修正版: 12.3.2.4854（バージョン13.x系は非影響）。バックアップサーバはランサムウェアグループの最優先標的であり、侵害されると全データ復旧不能となるリスクが高い。国内波及経路: Veeamは国内中堅・大手企業で広く使われるバックアップ製品。
+  参照:
+    https://www.bleepingcomputer.com/news/security/new-veeam-vulnerability-exposes-backup-servers-to-rce-attacks/
+    https://thehackernews.com/2026/06/veeam-backup-replication-rce-flaw-lets.html
+
+
+【攻撃予報（48〜72時間）】
+----------------------------------------
+[予報1] Ivanti Sentry CVE-2026-10520 ランサムウェアグループによる自動化攻撃波
+  根拠: watchTowr PoC公開（2026-06-10）から既に5日経過。Shadowserverがハニーポット到達を確認。ランサムウェアグループの典型的なPoC→武器化サイクル（3〜7日）の末期。CISA BOD 26-04期限（2026-06-14）到来で未パッチ企業が攻撃者にとって「連邦機関よりパッチが遅い」ターゲットに。
+  確度: 高
+  ※未パッチのIvanti Sentry装置は即時インターネット接続遮断またはパッチ適用を推奨
+
+[予報2] Oracle PeopleSoft CVE-2026-35273 CISA KEV追加・二次キャンペーン
+  根拠: ShinyHunters（UNC6240）による初期キャンペーンが100+組織侵害で表面化。Oracleが2026-06-10帯外パッチを発行したが未適用組織が残存。MandiantがGoogle Threat Intelligenceと連携して追加被害組織へ通知中。同種の過去パターン（Log4Shell, Exchange ProxyShell）では二次便乗グループが2〜4日以内に参入。
+  確度: 高
+  ※推定 — CISAが72時間以内にCVE-2026-35273をKEV追加する可能性が高い
+
+[予報3] Check Point VPN CVE-2026-50751 Qilin以外のグループへの拡散
+  根拠: Check PointはQilinとの関連をmedium confidenceで示しているが、ゼロデイ詳細が複数レポートで公開済み。KEV登録・JPCERT+IPA注意喚起発行から約5日経過し、情報が攻撃者コミュニティに浸透。別グループによる模倣攻撃の可能性。
+  確度: 中
+  ※推定 — 主要ランサムウェアグループ（Black Basta, LockBit後継等）が本脆弱性を初期侵入経路として採用するリスク
+
+
+【除外サマリー】
+----------------------------------------
+・CVE-2026-20182 (Cisco Catalyst SD-WAN Controller, CVSS 10.0): CISA KEV登録2026-06-09、PoC情報は24時間窓外。本日窓内に新規変化確認されず。継続監視対象。
+・CVE-2025-48595 (Android Framework Integer Overflow): CISA KEV登録2026-06-02、24時間窓外。
+・CVE-2026-45247 (Mirasvit Full Page Cache Warmer, Magento拡張): ニッチ製品、KEV登録2026-06-03、国内影響限定的。
+・CVE-2026-7473 (Arista EOS): CISA KEV登録2026-06-09、24時間窓外。特定環境向け製品。
+・CVE-2026-11645 (Google Chromium V8): CISA KEV登録2026-06-09、24時間窓外。ブラウザパッチは自動更新で対応済みが多数。
+・CVE-2026-3300 (Everest Forms Pro WordPress): 低優先度フラグ（WordPressプラグイン特定版のみ）、CVSS未確認。
+
+本日の集計: 本編2件 / 参考A1件 / 参考B3件 / 除外6件
+========================================

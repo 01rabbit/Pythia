@@ -1,0 +1,75 @@
+# forecaster/ — サイバー戦術予報士システム
+
+既存の security-intel-routine に統合された予報精度向上サブシステム。
+
+## 設計思想
+
+1. 構造化が先、量は後 — 収集量ではなく正規化スキーマと検証ループが精度を決める
+2. 予報と実績の突き合わせを必ず回す — 検証なき予報は精度向上しない
+3. Git が記憶装置 — 全観測・予報・検証はコミット履歴として蓄積される
+
+## ディレクトリ構成
+
+```
+forecaster/
+  schema/
+    observation.schema.json     # 正規化スキーマ定義
+  knowledge/
+    attack-groups.json          # ATT&CK Groups プロファイル（参照用）
+    technique-chains.json       # Tactic 遷移確率
+  observations/
+    YYYY/MM/YYYY-MM-DD.json     # 正規化済み観測データ（日次蓄積）
+  baseline/
+    technique-freq.json         # TTP 出現頻度の平常分布
+    group-activity.json         # グループ活性度の平常分布
+  forecasts/
+    daily/YYYY-MM-DD.md         # 日次予報
+    weekly/YYYY-Www.md          # 週次サマリー
+  verification/
+    YYYY-MM.json                # 予報 ID × 実績の突合記録
+  prompts/
+    01-normalize.md             # ステージ01: 正規化指示
+    02-baseline.md              # ステージ02: ベースライン更新指示
+    03-forecast.md              # ステージ03: 予報生成指示
+    04-verify.md                # ステージ04: 検証指示
+```
+
+## 4ステージパイプライン
+
+```
+[既存 collect] → [01 正規化] → [02 ベースライン更新] → [03 予報生成] → [04 検証]
+                      ↑                                                       │
+                      └─────────── verified_outcome 還流 ────────────────────┘
+```
+
+| ステージ | 実行タイミング | 出力 |
+|----------|--------------|------|
+| 01 正規化 | 日次（Step 3 完了後） | observations/YYYY/MM/YYYY-MM-DD.json |
+| 02 ベースライン更新 | 日次（01 完了後） | baseline/*.json |
+| 03 予報生成 | 日次（02 完了後） | forecasts/daily/YYYY-MM-DD.md |
+| 04 検証 | 週2回（火・木 12:00 JST） | verification/YYYY-MM.json |
+
+## Phase ロードマップ
+
+- **Phase 0（Week 1）**: ディレクトリ・スキーマ確定 ✓ 完了（2026-06-26）
+- **Phase 1（Week 2-8）**: Lazarus Group に絞り手動レビュー付きで正規化を2週間検証 → 検証ループ稼働 ← **現在ここ**
+- **Phase 2（Week 8-16）**: 業界別脅威動向セクション追加
+- **Phase 3（Week 16-24）**: D3FEND 防御連携・推奨防御アクション自動付与
+- **Phase 4（Week 24+）**: データ匿名化・精度統計の外部発表
+
+## Phase 1 完了条件
+
+的中率の高さは問わない。以下が満たされていること:
+
+- 収集情報の 80% 以上に TTP 付与（正規化カバレッジ）
+- 90日分の平常分布が算出済み（ベースライン確立）
+- 週次で的中率が記録されている（検証ループ稼働）
+
+## 運用ルール（全ステージ共通）
+
+1. ハルシネーション厳禁 — ATT&CK Technique の紐付けは確証ある場合のみ
+2. 事実と推測の分離 — 予報文では観測（事実）と予測（推測）を区別し「（推測）」を明記
+3. actor 帰属は慎重に — 情報源が明示する場合のみ。TTP類似だけで断定しない
+4. verified_outcome を勝手に埋めない — 検証ステージ（04）のみが書き込む
+5. プロファイル補正は自動適用しない — 必ず人間レビューを挟む
+6. 全変更はコミットする — 観測・予報・検証は Git 履歴として残す

@@ -1,0 +1,374 @@
+========================================
+セキュリティインテリジェンス日報 — CVE・脆弱性・ゼロデイ版
+調査日時: 2026-06-23 17:00 JST
+調査期間: 2026-06-22 17:00 〜 2026-06-23 17:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（調査期間内にパッチ未提供・PoC公開・実悪用確認の3条件を全て満たす新規CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-11645 / Google Chrome・Chromium（V8 JavaScriptエンジン 境界外読み書き）
+対象: Google Chrome 149.0.7827.102 未満（Windows / macOS / Linux）、Edge・Opera等Chromiumベースブラウザ全般
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.8 (High)
+状態: KEV登録済み（2026-06-09）/ 実悪用確認 / FCEB期限 2026-06-23 到来
+
+【24時間以内の変化】
+[CISA KEV 2026-06-09 / FCEB期限 2026-06-23 到来] 本日FCEB機関向け強制適用期限が到来し、全省庁での対応が義務化された。FCEB機関以外の企業・個人端末では未更新環境が多数残存する状況が続いている。
+[Help Net Security / SOCRadar / Broadcom 複数ソース 2026-06-09〜23] 実悪用継続が確認されており、FCEB期限到来後も非政府組織・企業環境を対象とした攻撃が継続すると評価される。
+
+【概要】
+Chrome・ChromiumのJavaScript/WebAssemblyエンジンV8に境界外読み書き（CWE-119）の脆弱性が存在する。リモートの攻撃者が細工したHTMLページを標的ユーザーに閲覧させるだけでChromiumサンドボックス内で任意コードを実行できる。Googleは実悪用を公式に認めており、CISAがKEV追加と同時にFCEB機関へ緊急適用を命令した。単体ではサンドボックス内に留まるが、別の特権昇格exploitと連鎖させることでOS全体の掌握が可能。FCEB期限到来後も非政府組織の未更新端末が攻撃対象として残存するため、継続的な対応が必要。Chrome Enterprise環境で強制更新ポリシーが未設定の組織では従業員端末のバージョン管理が不十分なケースが多い。
+
+攻撃の流れ:
+1. フィッシングメール・マルバタイジング・Water Hole攻撃等で標的ユーザーを細工したHTMLページへ誘導する
+2. V8のout-of-bounds read/writeを起点にサンドボックス内でシェルコードを実行する
+3. 別の特権昇格exploitと連鎖してOSコマンドをユーザー/SYSTEM権限で実行し、認証情報・セッショントークンを窃取する
+
+【IoC】
+IoC: 確認されず（攻撃インフラの具体的なIP/ドメイン/ハッシュは未公開）
+
+【監視ポイント】
+・[エンドポイント / EDR / Chrome Enterprise管理コンソール] 組織内デバイスのChromeバージョンを棚卸しし、149.0.7827.102未満のホストを特定する
+Splunk SPL: index=endpoint (sourcetype=crowdstrike:events OR sourcetype=sentinelone:events) ProcessName="chrome.exe" | stats values(FileVersion) as ver, count by host | mvexpand ver | where ver < "149.0.7827.102" | table host, ver | sort host
+→ バージョン149.0.7827.102未満のホストは即時強制更新対象。Chrome Enterpriseの強制更新ポリシー（Force Install policy）の設定状況も合わせて確認する
+
+【参照】
+https://thehackernews.com/2026/06/chrome-v8-zero-day-cve-2026-11645.html
+https://www.helpnetsecurity.com/2026/06/09/google-chrome-zero-day-cve-2026-11645/
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT 2026-06-23 報道 — Zyxel GS1900シリーズ OSコマンドインジェクション / Autodesk Fusion Stored XSS → コード実行
+
+------------------------------------------------------------
+・CVE-2026-7273 / Zyxel GS1900シリーズ スイッチ（LAN-based 未認証 OSコマンドインジェクション）
+対象: GS1900-8 2.90(AAHH.1)C0以前 / GS1900-8HP 2.90(AAHI.1)C0以前 / GS1900-10HP 2.90(AAZI.1)C0以前 他GS1900シリーズ全モデル
+CVSS: 8.8 (High)
+状態: パッチ提供済み / 実悪用未確認 / PoC未確認
+------------------------------------------------------------
+
+【24時間以内の変化】
+[Security NEXT 2026-06-23] 「Zyxel GS1900シリーズにコマンドインジェクション — LAN経由で未認証OSコマンド実行の恐れ」として国内メディアが報道。
+[Zyxel セキュリティアドバイザリ 2026-06-16] GS1900シリーズのスタックベースバッファオーバーフロー（CVE-2026-7273）アドバイザリを公開し修正版ファームウェアを提供。
+
+【概要】
+Zyxel GS1900シリーズ管理対象スイッチのCGIプログラムにスタックベースのバッファオーバーフロー脆弱性が存在し、同一LAN上の未認証攻撃者が細工したHTTPリクエストをWebインターフェースに送信することでOSコマンドを実行できる。Zyxelのスマートスイッチは国内SMB・中堅企業のオフィスLAN・工場フロア・小規模データセンターで広く使用されており、LANセグメントに侵入した攻撃者が管理スイッチを掌握してACL・VLANポリシーを改ざんするシナリオが現実的。ランサムウェアグループのラテラルムーブメント踏み台としても悪用され得る。対処: 修正済みファームウェア（GS1900-8: 2.90(AAHH.2)C0 / GS1900-8HP: 2.90(AAHI.2)C0 / GS1900-10HP: 2.90(AAZI.2)C0）への即時アップデート。管理インターフェースへのアクセスを管理VLAN・特定の管理端末IPに制限する。
+
+攻撃の流れ:
+1. 攻撃者がフィッシング・Wi-Fi不正接続・既侵害端末を起点に対象LANセグメントへ侵入する
+2. GS1900スイッチの管理WebインターフェースへCGIの脆弱性を突いた細工HTTPリクエストを送信しスタックバッファオーバーフローを起動する
+3. OSコマンドをroot権限で実行してスイッチのACL・VLANポリシーを改ざんし、以降のラテラルムーブメントを容易にする
+
+【IoC】
+IoC: 確認されず（実悪用未確認段階）
+
+【監視ポイント】
+・[ネットワーク管理ログ / スイッチsyslog / SIEM] GS1900スイッチへの管理インターフェースアクセスの監視とファームウェアバージョン棚卸し
+Splunk SPL: index=network (sourcetype=zyxel:syslog OR sourcetype=syslog) (host IN (<GS1900デバイスリスト>)) (action="login" OR action="config_change" OR "command") | stats count by src_ip, user | where count > 3 | sort -count
+→ 既知管理者IP以外からのアクセスや、通常業務時間外の設定変更イベントはインシデント調査対象とする
+
+【参照】
+https://www.security-next.com/
+https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-stack-based-buffer-overflow-vulnerability-in-gs1900-series-switches-06-16-2026
+
+------------------------------------------------------------
+
+・CVE-2026-0533 / CVE-2026-0534 / CVE-2026-0535 / Autodesk Fusion（Stored XSS → ローカルコード実行）
+対象: Autodesk Fusion 最新パッチ未適用の全バージョン（Windows / macOS）
+CVSS: 未公開（Stored XSS → プロセスコンテキストでのコード実行・ユーザー操作要）
+状態: パッチ提供済み（最新版で修正）/ 実悪用未確認 / PoC未確認
+------------------------------------------------------------
+
+【24時間以内の変化】
+[Security NEXT 2026-06-23] 「Autodesk Fusionに複数の脆弱性 — 悪意あるファイル閲覧でコード実行の恐れ」として国内報道。CAD/3D設計ソフトへのリスクとして注意喚起。
+[Autodesk セキュリティアドバイザリ adsk-sa-2026-0005] 3件のStored XSS（デザイン名・部品属性・コンポーネント説明）を同時公開。
+
+【概要】
+Autodesk Fusionのデザインデータ（名称・部品属性・コンポーネント説明）に悪意あるHTMLペイロードを埋め込んだ細工ファイルを標的に共有し、被害者がUI操作（削除確認ダイアログ等のクリック）を行った際に、ローカルファイルの読み取りおよびプロセスのコンテキストで任意コードが実行される3件のStored XSSが同時開示された。ユーザー操作が必須のため単体での悪用難易度は中程度だが、製造業・自動車・航空宇宙・建設設計等でAutodesk Fusionを使用する国内大手企業（Toyota・Honda・三菱電機等の設計部門・サプライチェーン協力会社）への影響が懸念される。細工されたFusionプロジェクトファイルをメール・Teams・OneDriveで共有するスピアフィッシングシナリオが現実的。対処: Autodesk Fusionを最新バージョンへ即時アップデート（Windows/Mac用ダウンロードリンクで入手可）。
+
+攻撃の流れ:
+1. 攻撃者が悪意あるHTMLペイロードをデザイン名・属性・コンポーネント説明に埋め込んだ細工FusionファイルをメールやOneDrive共有で標的設計者に送付する
+2. 被害者がFusionでファイルを開き、削除確認ダイアログ等の該当UI要素をクリックする
+3. Stored XSSペイロードが実行され、ローカルファイルの読み取りまたはプロセスコンテキストでの任意コード実行が発生する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[エンドポイント / EDR] Autodesk Fusionプロセス配下からの不審な子プロセス起動を監視する
+Splunk SPL: index=endpoint (sourcetype=crowdstrike:events OR sourcetype=sentinelone:events) ParentImage="*Fusion360.exe*" (Image="*cmd.exe*" OR Image="*powershell.exe*" OR Image="*wscript.exe*" OR Image="*mshta.exe*") | table _time, host, user, Image, CommandLine | sort -_time
+→ Fusion360プロセス配下からのcmd/PowerShell/wscript起動は悪意あるペイロード実行の指標。外部IPへのネットワーク接続が伴う場合は即時フォレンジックを実施する
+
+【参照】
+https://www.security-next.com/
+https://www.autodesk.com/trust/security-advisories/adsk-sa-2026-0005
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-7273 / CVE-2026-0533〜0535 — 24時間窓内（2026-06-22 17:00〜2026-06-23 17:00）に新規注意喚起の発行確認されず（Security NEXTが2026-06-23に報道、Zyxelアドバイザリ自体は2026-06-16発行）
+
+------------------------------------------------------------
+
+[国内重大インシデント注記]
+KDDI メールシステム不正アクセス（Security NEXT 2026-06-23 報道）: KDDIが提供する6ISP事業者向けメールシステムへの不正アクセスが確認され、最大1,422万件のメールアドレスとパスワードが漏洩した可能性がある。KDDIは2026-06-17に検知・修復済みと発表したが、漏洩データの二次利用（クレデンシャルスタッフィング・BEC・スパム）リスクが継続する。詳細はAPT活動 — 注目動向を参照。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-8461 / FFmpeg（PixelSmash — MagicYUVデコーダ ヒープ境界外書き込み）
+CVSS: 8.8 (High)
+状態: PoC公開済み（JFrogがJellyfin・Nextcloudで完全RCEを実証）/ 実悪用未確認 / KEV未登録
+対象: FFmpeg 8.1.2未満 + Jellyfin / Nextcloud / Kodi / Emby / PhotoPrism / OBS Studio / GNOMEサムネイル生成 等多数
+
+【24時間以内の変化】
+[JFrog Blog 2026-06-22] 「PixelSmash: Critical FFmpeg Vulnerability Turns Media Files into Weapons」として詳細技術分析を公開。50KB AVI/MKVファイル1本のアップロードのみでJellyfin 10.11.9とNextcloudに対してRCEを達成した実証コードを公開。バースト検出閾値超過（BleepingComputer / SecurityWeek / JFrog / SC Media / CyberInsider / QPulse 6ソース以上）。
+
+FFmpegのMagicYUVビデオデコーダに存在するヒープバッファオーバーフロー。クロマプレーン高さの計算不一致により攻撃者制御の640バイトがヒープ境界外に書き込まれる。細工した50KB AVI/MKV/MOVファイルを自動メタデータスキャン（Jellyfin）またはビデオプレビュー処理（Nextcloud）に処理させるだけでAVBuffer.freeを乗っ取りsystem()呼び出しを経由してRCEを実現した。ASLR無効環境では単体でRCE成立。ASLR有効環境ではFFmpegのFlashSVデコーダ情報漏洩脆弱性とのチェーンが必要だが技術分析が公開済み。家庭用NAS（QNAP・Synology）・Plex・Emby・JellyfinをSOHO・中小企業で運用している場合、悪意あるメディアファイルが配置されるだけで侵害される。国内でNextcloudを企業ファイル共有として使用している組織は即時対処が必要。対処: FFmpeg 8.1.2以降へアップデート。Jellyfin・Nextcloud・PhotoPrismは最新パッケージでFFmpegバンドル版が更新済みのため各アプリの最新版へ更新する。
+IoC: 確認されず（実悪用未確認段階）
+
+監視: [エンドポイント / EDR] ffmpeg/ffprobeプロセス配下から通常のメディア処理に無関係なプロセスが起動しないか監視する
+Splunk SPL: index=endpoint (sourcetype=crowdstrike:events OR sourcetype=sentinelone:events) EventCode=1 (ParentImage="*ffmpeg*" OR ParentImage="*ffprobe*" OR ParentImage="*jellyfin*") Image IN ("*bash*","*sh*","*cmd.exe*","*powershell.exe*") | table _time, host, ParentImage, Image, CommandLine | sort -_time
+→ ffmpeg/ffprobe/Jellyfinプロセス配下からbash/sh/cmdが起動した場合は即時調査対象。外部接続が伴う場合はホストを隔離する
+
+参照: https://jfrog.com/blog/pixelsmash-critical-ffmpeg-vulnerability-turns-media-files-into-weapons/
+参照: https://www.bleepingcomputer.com/news/security/ffmpeg-fixes-pixelsmash-flaw-in-widely-used-video-decoder/
+参照: https://www.securityweek.com/ffmpeg-pixelsmash-flaw-allows-rce-on-video-players-media-servers-nas-appliances/
+
+------------------------------------------------------------
+
+・CVE-2026-47729 / Squid Proxy（Squidbleed — FTPゲートウェイ ヒープ読み取り越境）
+CVSS: 未公開 ※低優先度フラグ / 信頼クライアント前提
+状態: 技術分析公開 / パッチ未提供（7.7でリリース予定）/ 実悪用未確認
+対象: 全バージョンのSquid Proxy（デフォルト設定・FTP有効環境）
+
+【24時間以内の変化】
+[Calif.io / The Hacker News / SecurityWeek / Security Affairs 2026-06-22] Calif.ioがSquidbleedを発見し「Heartbleedが記憶をリークしたように、SquidbleedはHTTP Authorizationヘッダー・Cookie・セッショントークンを含む生ヒープ内容をリークする」として詳細技術分析を公開。1997年に遡るFTPパース処理の変更に起因する29年物のバグ。
+
+Squid ProxyのFTPゲートウェイが攻撃者制御のFTPサーバーへのディレクトリリスティングを処理する際、ヒープメモリを境界外に読み取り、同一プロキシを共有する他ユーザーのHTTP Authorizationヘッダー・Cookie・セッショントークンを含む生のヒープ内容が漏洩する。攻撃者は「プロキシへのアクセス権を既に持つ信頼クライアント」でなければならず、学校・企業・公共Wi-Fi等の共有プロキシ環境が最も影響を受けやすい。HTTPSトラフィックは非透過（SSLバンプなし）では影響を受けないが、TLS終端型のSSLインスペクション構成では平文部分が露出する。パッチは7.7リリース予定でまだ提供されていない。暫定緩和策: Squidの設定でFTPアクセスを無効化する（ほとんどのネットワークでFTPは不要）。国内でSquidをフォワードプロキシとして使用しているエンタープライズ・教育機関は設定確認が必要。
+IoC: 確認されず
+
+監視: [Squidアクセスログ / SIEM] FTPプロトコルを使用した接続リクエストを監視し、不審なFTPサーバーへのアウトバウンド接続を特定する
+Splunk SPL: index=proxy sourcetype=squid:access proto=ftp | stats count by dest_host, src_ip | where count > 1 | sort -count
+→ 業務上FTPアクセスが不要な環境でFTPリクエストが発生している場合は即時調査・FTP無効化を検討する
+
+参照: https://thehackernews.com/2026/06/29-year-old-squid-proxy-bug-squidbleed.html
+参照: https://blog.calif.io/p/squidbleed-cve-2026-47729
+参照: https://www.securityweek.com/decades-old-squid-proxy-flaw-squidbleed-can-expose-user-data/
+
+------------------------------------------------------------
+
+・CVE-2026-10735 / CVE-2026-49777 / ShapedPlugin WordPress Proプラグイン（サプライチェーン攻撃 — バックドア埋め込み）
+CVSS: CVE-2026-49777: 10.0 (Critical) / CVE-2026-10735: 9.8 (Critical)
+状態: アクティブな侵害確認 / パッチバージョン（セキュリティ審査中）/ 悪用済みC2 IP確認
+対象: Product Slider Pro for WooCommerce 3.5.4未満 / Real Testimonials Pro 3.2.5 / Smart Post Show Pro 4.0.2未満（有料版のみ / account.shapedplugin.com配布）
+
+【24時間以内の変化】
+[The Hacker News / BleepingComputer / SecurityAffairs / Wordfence 複数ソース 2026-06-22] ShapedPlugin社のビルド・配布パイプラインが侵害されProプラグインにバックドアが埋め込まれたと複数ソースが一斉報道。2026-05-21に侵害実施、2026-06-10に最初の顧客報告。バースト検出閾値超過（6ソース以上）。Wordfenceが技術分析とC2 IP（194.76.217[.]28:2871）を公開。
+
+ShapedPlugin社のEDD（Easy Digital Downloads）配布インフラが侵害され、3つのWordPress有料プラグインに悪意あるバックドアが挿入された。ペイロードはWordPress管理者ページごとにC2（194.76.217[.]28:2871）から追加スクリプトを取得し実行する。機能: WordPressプラグインリストからの非表示（インシデント対応妨害）・認証済みRESTバックドア・Tiny File Manager / Adminerによるファイル/DBへの直接GUIアクセス・TOTP（2FA）シード窃取・Webシェルインストール・WooCommerceオーダーデータ窃取。有料版のみが対象で無料版（WordPress.org配布）は影響なし。国内でWooCommerceベースのECサイトにShapedPlugin Proプラグインを使用しているサイトオーナーは即時対応が必要。対処: 侵害バージョンを削除後、全管理者パスワード・2FA秘密鍵・WooCommerce設定・APIキー・SMTPクレデンシャルを全件リセット。administrator権限を持つ不審アカウントを全件監査する。
+
+攻撃の流れ:
+1. 攻撃者がShapedPlugin社のビルドパイプライン（EDD配布インフラ）を侵害し、3つのProプラグインにバックドアを挿入した正規アップデートを2026-05-21に配布する
+2. WordPressサイトオーナーが公式更新チャンネルから侵害済みプラグインをアップデートインストールする
+3. バックドアローダーが管理者ページ閲覧のたびにC2（194.76.217.28:2871）へ接続しペイロードを取得・実行する
+4. TOTP 2FAシードの窃取・管理者パスワードのキャプチャ・WooCommerceデータ窃取・完全なWebshellアクセスを確立する
+
+【IoC】
+IP: 194.76.217[.]28:2871（C2サーバー）
+
+監視: [Webサーバーアクセスログ / WAF / EDR] 194.76.217.28への接続および不審なREST APIエンドポイントアクセスを監視する
+Splunk SPL: index=web (sourcetype=access_combined OR sourcetype=proxy) (dest_ip="194.76.217.28" OR uri_path="*/install-persistent.php*" OR uri_path="*/shapedplugin/v1/*") | table _time, src_ip, dest_ip, uri_path, status | sort -_time
+→ 194.76.217.28へのアウトバウンド接続またはinstall-persistent.phpへのアクセスは侵害の高確度IOC。即時フォレンジックとパスワード全件リセットを実施する
+
+参照: https://thehackernews.com/2026/06/shapedplugin-wordpress-pro-plugins.html
+参照: https://www.bleepingcomputer.com/news/security/shapedplugin-update-flow-hacked-to-infect-wordpress-sites/
+参照: https://securityaffairs.com/194059/hacking/shapedplugin-supply-chain-attack-backdoors-pro-plugin-updates.html
+
+------------------------------------------------------------
+
+・CVE-2026-20245 / Cisco Catalyst SD-WAN Manager（認証済みroot権限昇格）
+CVSS: 7.8 (High)
+状態: KEV登録済み（2026-06-09）/ 実悪用確認（限定事例）/ FCEB期限 2026-06-23 到来
+本日FCEB期限到来。認証済みnetadmin権限から細工ファイルを投入してroot権限コマンドを実行できる。CVE-2026-20182等との連鎖で実質未認証RCEへの昇格懸念あり。対処: Cisco SD-WAN Manager最新版（2026-06-10以降の修正バージョン）へアップデート。
+IoC: 確認されず
+監視: [Cisco SD-WAN syslog] CLIコマンド実行・設定変更の異常を監視
+Splunk SPL: index=cisco_sdwan sourcetype=cisco:sdwan:syslog (privilege=root OR "privilege escalation" OR "config push") | stats count by src_ip, user | where count > 2 | sort -count
+→ netadmin以外からの不審CLI実行や時間外の設定変更はインシデント調査対象
+参照: https://www.helpnetsecurity.com/2026/06/05/cisco-sd-wan-cve-2026-20245-0-day-exploited/
+
+------------------------------------------------------------
+
+・CVE-2026-7473 / Arista Extensible Operating System（EOS）（トンネルパケット転送不備）
+CVSS: 6.9 (Medium) ※低優先度フラグ
+状態: KEV登録済み（2026-06-09）/ 実悪用確認 / FCEB期限 2026-06-23 到来
+金融機関・大規模データセンターで採用されるArista EOSのパケット転送不備。ネットワーク隔離破壊により到達不能セグメントへのアクセスが可能になる。対処: Aristaが提供する修正EOSバージョンへのアップグレード。
+IoC: 確認されず
+監視: [Arista syslog / NetFlow] 禁止セグメント間の異常通信を監視
+Splunk SPL: index=network (sourcetype=arista:eos OR sourcetype=netflow) dest_ip IN (<DMZセグメント>) src_ip IN (<外部/非管理セグメント>) | stats count by src_ip, dest_ip, dest_port | where count > 5 | sort -count
+→ ACL禁止のセグメント間通信が検知された場合はルーティング・ACL設定を即時確認
+参照: https://thehackernews.com/2026/06/cisa-adds-cisco-chrome-and-arista-flaws.html
+
+------------------------------------------------------------
+
+・CVE-2026-4020 / WordPress Gravity SMTPプラグイン（未認証情報漏洩・API鍵窃取）
+CVSS: 5.3 (Medium) ※低優先度フラグ / KEV未登録
+状態: 実悪用確認（17M超攻撃試行）/ パッチ提供済み（Gravity SMTP v2.1.5）
+Gravity SMTPのREST APIエンドポイントのpermission_callbackが無条件trueを返すため、未認証攻撃者が単一HTTPリクエストで365KBの設定データ（Amazon SES・Gmail・Mailjet APIキー・OAuthトークン含む）を取得できる。自動スキャンによる攻撃継続中。対処: Gravity SMTP v2.1.5以降へ即時更新し全APIキー・OAuthトークンを再発行する。
+IoC: 確認されず
+監視: [Webサーバーアクセスログ / WAF] /wp-json/gravitysmtp/v1/tests/mock-data へのアクセスを監視
+Splunk SPL: index=web sourcetype=access_combined uri="/wp-json/gravitysmtp/v1/tests/mock-data" | stats count by src_ip | where count > 1 | sort -count
+→ 外部IPからの本エンドポイントへのアクセスは全て不審。v2.1.5へ即時更新しAPIキーローテーションを実施する
+参照: https://thehackernews.com/2026/06/hackers-exploit-gravity-smtp-wordpress.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Sapphire Sleet（別名: BlueNoroff / CryptoCore / APT38 / 国家帰属: 北朝鮮（DPRK）/ 帰属信頼度: 高）
+活動タイプ: 新規キャンペーン / サプライチェーン攻撃 / 新規TTP
+------------------------------------------------------------
+
+採用契機: P（新規キャンペーン初報）, R（新規マルウェア・TTP）, S（postinstallフック悪用・Defender除外追加）
+標的: AI開発者・DevOps・CI/CDパイプライン / グローバル（ソフトウェア開発エコシステム）
+マルウェア: easy-day-js（dayjs typosquat）, PowerShellバックドア（第2段階）, scdev永続化サービス
+
+【24時間以内の変化】
+[Microsoft MSTIC 2026-06-17] 「Mastra npm サプライチェーン侵害」の詳細技術分析を公開し高信頼帰属を確認。
+[BleepingComputer / SecurityWeek / Infosecurity Magazine / TechTimes 複数ソース 2026-06-21〜22] 一斉報道。バースト検出閾値超過（6ソース以上）。MicrosoftによるC2インフラのテイクダウン進行中。
+
+【概要】
+Sapphire Sleet（北朝鮮DPRK）が2026年6月17日、AIフレームワークMastraのnpmエコシステムを標的にサプライチェーン攻撃を実施した。npmメンテナーを偽LinkedInアカウントでソーシャルエンジニアリングしパブリッシュ権限を取得、144パッケージにPostinstallフック経由のPowerShellバックドアを挿入した。scdevサービスをSYSTEM権限で永続化しDefender除外設定を追加することで検知を回避する。Sapphire Sleetは2026年4月のAxios npm攻撃からわずか2ヶ月で次のAIフレームワークを攻撃しており、AI・開発者エコシステムへの系統的な侵害が継続している。
+
+攻撃の流れ（判明分）:
+1. 偽LinkedInアカウントでMastra npmメンテナーをソーシャルエンジニアリングし機密URLクリックによりパブリッシュ認証情報を取得する
+2. 取得した権限で144パッケージに悪意あるeasy-day-jsを含む新バージョンを88分間の全自動処理で公開する
+3. 被害者がnpm install / npm updateを実行するとpostinstallフックが起動しC2からPowerShellバックドアをダウンロード・実行する
+4. Defender除外設定を追加しscdevサービスをSYSTEM権限で永続化、C2への常時接続を確立する
+5. 開発者端末・CI/CDパイプライン内の認証情報・APIシークレット・ソースコードを窃取する
+
+【新規TTP】
+・[T1195.001 Supply Chain Compromise] postinstallフック経由でnpmメンテナーの正規パッケージに悪意あるペイロードを挿入するサプライチェーン攻撃
+・[T1543.003 Create or Modify System Process] scdevサービスをSYSTEM権限でsvchost.exe配下に登録し永続化
+・[T1562.001 Impair Defenses] Microsoft Defenderの除外設定を追加しEDR検知を回避
+
+【IoC】
+Hash: easy-day-jsモジュールの具体的ハッシュ（Microsoft非公開・テイクダウン処理中）
+C2: 具体的なIP・ドメインは未公開
+
+【推奨アクション】
+・npm依存パッケージの全件監査とeasy-day-js（dayjsの紛らわしいtyposquatパッケージ）のインストール有無を確認する
+・2026-06-17前後にnpm install/updateを実行したCI/CDパイプライン・開発者マシンのプロセス履歴とネットワーク接続ログをフォレンジックする
+・scdevサービスの存在有無を全Windows端末で確認する
+Splunk SPL: index=endpoint (sourcetype=crowdstrike:events OR sourcetype=windows:sysmon) EventCode=1 ParentImage="*node.exe*" Image IN ("*cmd.exe*","*powershell.exe*") | table _time, host, user, CommandLine, ParentCommandLine | sort -_time
+→ node.exeのpostinstallフック配下からのcmd/PowerShell起動は悪意あるペイロード実行の高確度シグナル。外部接続が同時観測された場合は即時ホストを隔離する
+Splunk SPL: index=endpoint sourcetype=windows:services ServiceName="scdev" | table _time, host, ServiceName, ServicePath, StartType | sort -_time
+→ scdevサービスが検出されたホストはSapphire Sleet侵害の高確度IOCとして即時フォレンジックを実施する
+
+【参照】
+https://www.microsoft.com/en-us/security/blog/2026/06/17/postinstall-payload-inside-mastra-npm-supply-chain-compromise/
+https://www.bleepingcomputer.com/news/security/microsoft-links-mastra-ai-supply-chain-attack-to-north-korean-hackers/
+https://www.securityweek.com/north-korean-hackers-blamed-for-mastra-npm-supply-chain-attack/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・REF8372（OXLOADER + CastleStealer） — Russian-speaking財務動機グループ（帰属信頼度: 中）— 採用契機: P（新規キャンペーン初報）, R（新規マルウェアファミリー技術分析公開）。Elastic Security Labsが2026-06-22に「OXLOADER: new loader evading detection to drop infostealer」として詳細分析を公開。悪意あるGoogle Adsを使い偽Node.jsインストーラーを配布し（node-js[.]prentiva99[.]info）、Storj経由でバッチスクリプトをダウンロードさせる。OXLOADERはDLLサイドローディング・IAT（Import Address Table）カモフラージュ・複数難読化レイヤーで検知を回避しCastleStealerインフォスティーラーを展開する。CIS地域を除外する設定からRussian-speakingの財務動機グループを中確度で推定。Google Adキャンペーンは2026-05-14に削除済みだが既感染端末からのCastleStealer活動は継続する可能性がある。Node.jsをGoogle広告経由でダウンロードした開発者端末のプロセス履歴・ネットワーク接続を確認する。推奨アクション: ソフトウェアダウンロードは公式サイト（nodejs.org）直接からのみ許可するポリシーを徹底。DLLサイドローディングパターン（正規アプリと同ディレクトリへの不審DLL配置）をEDRで監視する。
+参照: https://www.elastic.co/security-labs/oxloader-malware-loader-infostealer
+参照: https://thehackernews.com/2026/06/new-oxloader-loader-uses-malicious.html
+
+・WhatsApp VBScriptキャンペーン — Chinese-speaking（帰属信頼度: 低）— 採用契機: P（新規多国間キャンペーン・アクティブ継続中）。Kaspersky Securelist 2026-06-22公開。WhatsApp Desktop/Web経由で偽業務文書（.VBSファイル）を配布し、多段階感染チェーン経由でManageEngine Endpoint CentralのRMMツールをインストールしてリモートアクセスを永続化する。Malaysia 80%（感染最多）・Brazil・India・Mexico・Singapore・UK・Spain・Taiwan・Australia・Vietnam等に及ぶ現在もアクティブなキャンペーン。UAC無効化レジストリ改変・ZIP経由ManageEngineダウンロードを使用。ValleyRAT / Gh0st RATのC2インフラ（202.61.160[.]201）との重複からChinese-speakingオペレーターを低確度で推定。台湾（6位）・Singapore（5位）など日本と同じアジア太平洋地域が影響を受けており、国内でWhatsAppを業務に使用する製造業・グローバル企業は注意が必要。推奨アクション: WhatsApp経由の.VBS・.VBEファイル実行を全組織でブロック。ManageEngine Endpoint CentralのRMMエージェントが未承認デバイスにインストールされていないか棚卸しを実施する。
+参照: https://securelist.com/whatsapp-vbs-rmm-campaign/120290/
+参照: https://thehackernews.com/2026/06/whatsapp-vbscript-campaign-uses-fake.html
+
+・KDDI メールシステム不正アクセス — 帰属未確定（国内重大インシデント）— 採用契機: V（重要インフラへの侵害確認）。帰属信頼度: 不明（調査中）。Security NEXT / Xinhua 2026-06-23報道。KDDIが提供する6ISP事業者向けメールシステムへの不正アクセスで最大1,422万件のメールアドレス+パスワードが漏洩した可能性がある。KDDIは2026-06-17に検知・修復済みと発表したが、漏洩から発表まで6日間のラグがあり、その期間に漏洩データが既に流通している可能性がある。クレデンシャルスタッフィング（漏洩パスワードを他サービスへ流用する攻撃）・BEC（ビジネスメール詐欺）・スパムキャンペーンへの転用が最も現実的な次の攻撃ベクター。国内企業でKDDI・au one netのISPメールアドレスを業務連絡・代表窓口・銀行口座連携に使用している場合は漏洩リスクが高い。推奨アクション: KDDIサービス利用組織は対象メールアドレスのパスワードを即時変更する。Microsoft Entra / Okta等の認証基盤で当該メールドメインからのログイン試行が急増していないか確認する。
+参照: https://english.news.cn/20260623/92a381492f464ece9e9e605f9be1a5a1/c.html
+
+・Andariel（別名: Onyx Sleet / 北朝鮮DPRK / Lazarusサブグループ / 帰属信頼度: 高）— 採用契機: P（活動情報の包括的開示）, R（新規マルウェアTTP技術分析公開）。AhnLab ASEC 2026-06-23公開「Full Disclosure of Andariel, A Subgroup of Lazarus Threat Group」。TigerRAT・StarshellRAT・JelusRAT・GopherRAT（Go製）を使用した欧州公共機関・韓国ERPサプライチェーンを標的としたキャンペーンが継続中。Go製バックドアを侵害ごとに新規作成するパターンと韓国製資産管理ツール（MeshAgent等）の脆弱性悪用による横展開が確認された。今回の詳細技術開示により二次攻撃者による模倣リスクが増加。推奨アクション: Go製不審プロセスの実行監視・韓国製資産管理ソフトウェア接続元IPの精査・MeshAgent利用組織はAhnLab公開IOCとの照合を実施する。
+参照: https://asec.ahnlab.com/en/tag/andariel-en/
+
+・AryStinger（帰属未確定 / 偵察プロキシボットネット）— 採用契機: P（新規ボットネット発見・初報）, R（新規マルウェア技術分析公開）。帰属信頼度: 不明。BleepingComputer / The Hacker News / Malwarebytes / TechRadar 複数ソース 2026-06-22〜23一斉報道。D-Link DIR-850L / DIR-818LW（EoL）・QNAP NAS 4,300台超をC2制御下に置くプロキシ型ボットネット。感染分布は韓国48.5%・中国31.8%・スウェーデン6.4%・Malaysia3.5%・Singapore2.5%と東アジア集中。DNS改ざん機能あり。APT初期偵察インフラとしての悪用が疑われる。EoL機器のため公式パッチなし。推奨アクション: EoL D-Link/QNAP機器の棚卸しとDNS設定・外部C2接続の有無を確認し即時リプレースまたはネットワーク隔離を検討する。
+参照: https://www.bleepingcomputer.com/news/security/arystinger-botnet-infected-thousands-of-d-link-routers-worldwide/
+
+・Prinz Eugen（新規ランサムウェアグループ / 帰属未確定）— 採用契機: P（新規ランサムウェア初観測）, R（技術分析公開）。帰属信頼度: 不明（独立型グループ）。BleepingComputer / Threat-Modeling.com 2026-06-23初報。Go製エンクリプター・ChaCha20-Poly1305暗号化・最近変更されたファイルを優先して暗号化する独自戦術。ランサムノートを置かず個別恐喝スタイル（Cl0p / BlackCat的手口）。RMMツール（合法的リモート管理ソフト）とLiving-off-the-Landを組み合わせた侵害でEDR回避能力が高い。現時点で少なくとも5組織（Standard Bank等）への被害が確認されている。推奨アクション: RMMソフトウェアの使用状況を精査し承認リストを維持する。honeypotディレクトリへの大量暗号化アクセスをEDRのFile Integrity Monitoring（FIM）で検知する。
+参照: https://www.bleepingcomputer.com/news/security/new-prinz-eugen-ransomware-prioritizes-recent-files-for-encryption/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: FFmpeg PixelSmash（CVE-2026-8461）未パッチのJellyfin・Nextcloudインスタンスへの侵害に備えた即時パッチ適用が必要
+Tier: T3（新規PoC公開後の悪用急拡大予報）
+確度: 中
+根拠:
+  Evidence: [JFrog Blog 2026-06-22] JFrogが50KB AVI/MKVファイル1本でJellyfin 10.11.9・Nextcloud両方に対してRCEを実証済み。BleepingComputer・SecurityWeek・SC Media・CyberInsider等6ソース以上が一斉報道。
+  過去パターン: Jellyfin / Nextcloud / Plex等の広く普及したメディアサーバーへのPoC公開後、48〜72時間以内に自動スキャンとexploit試行が観測された事例が複数ある。攻撃のトリガーはファイルアップロードのみで認証不要（Nextcloud共有リンク経由でも実行可能）。
+  脅威情報: PoC難易度が低い（50KB AVI/MKVのアップロードのみ・ユーザー操作不要・サーバー側で自動実行）。ASLR無効Linux環境では単体でRCE成立。
+推定部分: JFrogの実証環境はASLR無効設定。実環境での大規模悪用にはASLR回避またはチェーン攻撃が必要な場合があり確度を中に留める。
+先回り監視: ffmpeg/ffprobeプロセス配下からbash/sh/cmd.exeが起動するEDRアラート。外部からのAVI/MKV/MOVファイルアップロードの急増。JellyfinまたはNextcloudサーバーからの非ストリーミングポートへの不審な外部接続。
+的中判定: CERTアドバイザリまたはセキュリティベンダーが「CVE-2026-8461を悪用したJellyfin/Nextcloud/Emby/Kodiへの実際の侵害事例または新規IOC」を72時間以内に公開した場合。
+
+・予報2: KDDI漏洩クレデンシャルを利用した国内組織へのクレデンシャルスタッフィング・BEC攻撃への対応優先が必要
+Tier: T1（既に確認された漏洩事案からの派生攻撃の継続・拡大予報）
+確度: 中
+根拠:
+  Evidence: [Security NEXT / Xinhua 2026-06-23] KDDI最大1,422万件のメールアドレス+パスワード漏洩を本日公開発表。検知は2026-06-17であり、発表前の6日間にデータが既に流通している可能性がある。
+  過去パターン: 国内大規模漏洩（2023年LINE、2024年NTTデータ等）では発表から数日以内にクレデンシャルスタッフィング被害報告が複数組織から報告されるパターンが確認されている。KDDIのISPメールアドレスは国内SMB・中堅企業が業務メール・ECサービス・銀行口座連携に使用しており、パスワード使い回しが多い層への影響が大きい。
+  脅威情報: 14.22百万件の認証情報セットはダークウェブ上でのクレデンシャルスタッフィングツールへの入力として直接活用可能。
+先回り監視: KDDIサービスを使用している組織のMicrosoft Entra / Okta / 社内メールサーバーへの通常と異なる送信元IPからの認証試行急増。BECの典型的指標（請求書変更・送金依頼の偽装メール・外部転送ルール設定）。ダークウェブモニタリングツールでのKDDIドメイン関連情報の検索。
+的中判定: 国内メディア（Security NEXT / ScanNetSecurity）またはJPCERT/CC・警察庁がKDDI漏洩データを悪用したクレデンシャルスタッフィング・BECの国内被害事例を72時間以内に公開した場合。
+
+[継続監視中の予報]
+・予報1（2026-06-23 午前）Chrome CVE-2026-11645 標的型キャンペーン: 24時間窓内に新規APT帰属キャンペーン・IOC公開は確認されず。72時間窓（〜2026-06-26 09:30 JST）で継続監視。
+・予報1（2026-06-22）Cisco ISE CVE-2026-20190/20181チェーン悪用: PoC・新規インシデント・IOC公開は確認されず。72時間窓（〜2026-06-25 JST）で継続監視。
+
+[注意点（予報未満）]
+・Sapphire Sleet 次のAIフレームワーク標的: 2026年4月Axios→2026年6月Mastraと2ヶ月間隔で攻撃を繰り返しており、次のOSS/AIフレームワークへの攻撃が近日中に出現する可能性がある。npm install時のpostinstallスクリプト内容の定期監査を継続する。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・AutoJack（Microsoft AutoGen Studio 0.4.3.dev1/dev2）→ 公式PyPIリリースに未含・開発版ビルドのみ影響・実悪用未確認・24時間窓内の新規変化なし → 除外
+・macOS ClickFix Terminal/Script Editor infostealerキャンペーン → 継続中のキャンペーンだが24時間窓内の独自新規変化なし（2026年4〜5月から継続）→ 除外
+・CVE-2026-44815（Windows DHCP Client RCE, CVSS 9.8）→ June 2026 Patch Tuesday（2026-06-09）、24時間窓外・24時間内に新規変化なし → 除外
+・CVE-2026-47291（HTTP.sys RCE, CVSS 9.8）→ June 2026 Patch Tuesday（2026-06-09）、24時間窓外・24時間内に新規変化なし → 除外
+・CVE-2026-20181 / CVE-2026-20190（Cisco ISE）→ 既報2026-06-22。24時間窓内に新規PoC・IOC・インシデント報告なし。継続監視中 → 除外
+・CVE-2026-42530 / CVE-2026-42055（NGINX）→ 既報2026-06-21。実悪用未確認・KEV未登録・24時間窓内の新規変化なし → 除外
+・Node.js 12件の脆弱性（Security NEXT 2026-06-22）→ CVSS未確認・KEV未登録・詳細変化なし・低優先度 → 除外
+・WooCommerce Legacy RCE（Security NEXT 2026-06-22）→ 旧バージョン限定・現行バージョン未対象・KEV未登録 → 除外
+
+[APT]
+・FortiBleed-2026-CredentialCampaign → 既報2026-06-22（注目動向）。24時間窓内に新規IOC・規模更新の確認されず → 除外
+・Silver Fox APT Taiwan → Intel 471の7月度サマリーからの参照であり24時間窓内の独立した新規報告なし → 除外
+・Black Basta後継（CACTUS/BlackSuit）→ 24時間窓内の独立した新規詳細報告なし → 除外
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編1件 / 参考A2件 / 参考B6件 / 除外8件
+APT — 本編1件 / 注目動向6件 / 除外3件
+
+========================================

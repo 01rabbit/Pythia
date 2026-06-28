@@ -1,0 +1,257 @@
+========================================
+セキュリティインテリジェンス日報 — CVE・脆弱性・ゼロデイ版
+調査日時: 2026-06-21 22:42 JST
+調査期間: 2026-06-20 22:42 〜 2026-06-21 22:42 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に新規ゼロデイ特報対象CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-20253 / Splunk Enterprise（PostgreSQLサイドカーサービス 未認証RCE）
+対象: Splunk Enterprise 10.2.0〜10.2.3、10.0.0〜10.0.6
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[Security NEXT 2026-06-19] 「6月公表のSplunk Enterprise脆弱性、悪用を確認」として国内報道。SplunkおよびCISAが注意を呼びかけ。
+[CISA KEV 2026-06-18] CVE-2026-20253をKEVカタログへ追加。FCEB機関への対応期限が本日（2026-06-21）到来。
+[Help Net Security / SecurityWeek 2026-06-19] PoC公開から実悪用確認まで6日という異例の短期間での武器化を報告。
+
+【概要】
+Splunk Enterprise内のPostgreSQLサイドカーサービスのエンドポイントが認証チェックを一切実施していないため、ネットワーク到達可能な未認証攻撃者が任意のファイル作成・切り詰め操作を行える。攻撃者はPostgreSQLのlo_export関数を悪用してBLOBをファイルとしてサーバのファイルシステムへ書き出し、SplunkのWARファイルディレクトリへWebシェルを配置することでRCEに昇格できる。Splunk PSIRTは2026-06-18付けのアドバイザリ更新で「限定的だが実悪用を確認」と明記。Splunkはセキュリティデータを一元管理するSIEM製品であり、侵害された場合はストアされた全ログ・認証情報・接続先情報へのアクセスならびに監視インフラ全体の無効化につながる高影響インシデントとなる。
+
+攻撃の流れ:
+1. 攻撃者がネットワーク経由でSplunk Enterprise上のPostgreSQLサイドカーサービスエンドポイントに認証なしでアクセスする
+2. lo_export関数を呼び出し、攻撃者制御のBLOBをSplunkのデプロイ可能ディレクトリ（例: $SPLUNK_HOME/etc/apps/）にWebシェルとして書き出す
+3. Webシェル経由で任意コードを実行し、Splunkサービスアカウント権限でホスト全体を掌握・ラテラルムーブメントへ展開する
+
+【IoC】
+IoC: 公開された具体的なC2 IP・ドメイン・ハッシュは確認されず（限定的悪用段階）
+
+【監視ポイント】
+・[Splunk _internal / SplunkdログSIEM] PostgreSQLサイドカーサービスへの不審なエンドポイントアクセスおよびファイル作成操作を監視する
+Splunk SPL: index=_internal source=*splunkd.log (pg_sidecar OR postgresql OR lo_export) (create OR truncate OR write) | table _time, host, component, log_level, message | sort -_time
+→ サービスアカウント以外のソースIPや通常とは異なる時間帯のアクセスが検知された場合は即時隔離を検討する
+
+・[Splunk _audit / _introspection] Splunk内部でのアプリ追加・WAR展開イベントを監視する
+Splunk SPL: index=_audit action=app_install OR action=app_upload | table _time, host, user, info, _raw | sort -_time
+→ 管理者以外のユーザーや自動化パイプライン外のアプリ追加イベントはマルウェア配置の可能性がある
+
+・[ネットワークフローログ] PostgreSQLサービスポート（デフォルト8191）への外部IPからの接続を監視する
+Splunk SPL: index=network sourcetype=firewall dest_port=8191 | stats count by src_ip, dest_ip | where count > 5 | sort -count
+→ SplunkクラスターピアやIDX以外のIPからポート8191へのアクセスは即時精査対象とする
+
+【参照】
+https://www.security-next.com/186126
+https://advisory.splunk.com/advisories/SVD-2026-0603
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+https://www.helpnetsecurity.com/2026/06/19/splunk-vulnerability-cve-2026-20253-exploited/
+https://www.securityweek.com/splunk-enterprise-vulnerability-exploited-in-attacks-days-after-disclosure/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT 2026-06-18 報道（186092）「nginxに複数のクリティカル脆弱性 – 修正版が公開」
+
+------------------------------------------------------------
+・CVE-2026-42530 / NGINX Open Source（HTTP/3 Use-After-Free RCE）
+CVSSv3.1: 8.1（High）/ CVSSv4.0: 9.2（Critical）
+状態: パッチ提供済み（2026-06-17）/ PoC未確認 / 悪用未確認
+------------------------------------------------------------
+
+【24時間以内の変化】
+[F5 / nginx.org 2026-06-17] 緊急アドバイザリおよびnginx 1.31.2リリース。CVSSSv4スコア9.2として公開。
+[Security NEXT 2026-06-18] 「nginxに複数のクリティカル脆弱性 – 修正版が公開」として国内報道。有償・OSSともに影響と明記。
+[The Hacker News / BleepingComputer 2026-06-18] 複数英語メディアが即日報道。バースト検出閾値（3件以上）到達確認。
+
+【概要】
+NGINX Open SourceのHTTP/3モジュール（ngx_http_v3_module）に Use-After-Free の脆弱性が存在する。攻撃者は細工したHTTP/3 QUICセッションを送信してQPACKエンコーダストリームを強制的に再オープンさせることでメモリ破壊を引き起こし、ASLRが無効またはバイパス可能な環境ではNGINXワーカープロセス権限でのRCEが可能となる。HTTP/3を有効化している環境のみ影響を受ける。現時点で実悪用は確認されていないが、CVSS 9.2の評価と緊急パッチリリースを受けて攻撃者による分析・PoC開発が進行中とみられる。対処: NGINX Open Source 1.31.2以降、NGINX Plus R34 p1以降へアップデート。暫定緩和策としてlistenディレクティブからquicを削除してHTTP/3を無効化する。
+
+【IoC】
+IoC: 確認されず（悪用未確認段階）
+
+【監視ポイント】
+・[Webサーバアクセスログ / SIEM] HTTP/3(QUIC)セッション確立の異常パターンおよびワーカープロセスクラッシュを監視する
+Splunk SPL: index=nginx sourcetype=nginx:access http_version="HTTP/3" status>=500 | stats count by clientip, status | where count > 10 | sort -count
+→ 同一IPからHTTP/3経由で大量の5xxエラーが発生している場合は悪用試行の可能性があるため送信元をブロックして調査する
+
+・[システムログ] nginx子プロセスの異常終了イベントを監視する
+Splunk SPL: index=syslog sourcetype=syslog message="nginx: *worker process*exited*" | table _time, host, message | sort -_time
+→ 短期間に複数のworker crashが発生している場合は脆弱性悪用試行の指標として精査する
+
+【参照】
+https://www.security-next.com/186092
+https://my.f5.com/manage/s/article/K000161616
+https://nginx.org/en/security_advisories.html
+https://thehackernews.com/2026/06/f5-patches-two-critical-nginx-open.html
+
+------------------------------------------------------------
+・CVE-2026-42055 / NGINX（proxy/grpcモジュール ヒープバッファオーバーフロー）
+CVSSv3.1: 8.1（High）/ CVSSv4.0: 9.2（Critical）
+状態: パッチ提供済み（2026-06-17）/ PoC未確認 / 悪用未確認
+------------------------------------------------------------
+
+【24時間以内の変化】
+[F5 / Security NEXT 2026-06-17〜18] CVE-2026-42530と同一の緊急アドバイザリで公開。NGINX 1.13.10〜1.31.1ならびにNGINX Plus R30〜R34が影響対象。
+
+【概要】
+NGINXのproxyおよびgrpcモジュールに存在するヒープベースのバッファオーバーフロー。HTTP/2プロキシまたはgRPCプロキシとして動作する特定構成において、未認証の攻撃者が過大なヘッダーを送信することでワーカープロセスをクラッシュさせ、ASLRが無効な環境ではRCEの可能性がある。CVE-2026-42530より影響バージョン範囲が広くNGINX 1.13.10以降の幅広いバージョンが対象となるため、HTTP/2プロキシ・gRPCプロキシ構成の確認が必要。対処: NGINX 1.30.3または1.31.2以降へアップデート。暫定緩和策はHTTP/2プロキシおよびgRPCプロキシの無効化。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Webサーバアクセスログ / SIEM] HTTP/2プロキシ・gRPCリクエストにおける過大ヘッダー送信の兆候を監視する
+Splunk SPL: index=nginx sourcetype=nginx:access http_version="HTTP/2.0" status=400 | stats count by clientip | where count > 20 | sort -count
+→ 特定IPからの大量の400エラーはヘッダーサイズ探索の可能性があるため送信元を精査する
+
+【参照】
+https://www.security-next.com/186092
+https://my.f5.com/manage/s/article/K000161616
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-20253（Splunk）— 24時間窓内に注意喚起発行確認されず（最終更新2026-06-10）
+未発行: CVE-2026-42530/42055（NGINX）— 24時間窓内に注意喚起発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE未採番 / usbliter8 — Apple A12/A13チップ搭載デバイス SecureROM BootChain Exploit
+CVSS: 未採点（物理アクセス必須・ハードウェアレベル欠陥）
+該当機種: iPhone XS/XS Max/XR/11/11 Pro/11 Pro Max、iPad第8世代、Apple Watch S4/S5搭載モデル
+Paradigm Shift公開日: 2026-06-18 / PoC: 公開済み（usbliter8）
+
+【24時間以内の変化】
+[The Hacker News / 9to5Mac / The Register 2026-06-18〜19] Paradigm Shiftがwordpress技術文書とPoC（usbliter8）を同時公開。複数メディアが即日報道しバースト閾値（3件以上）を超過。checkm8（A5〜A11対象）に続くBootROM系エクスプロイトの新世代として注目。
+
+A12/A13チップのUSBコントローラーにハードウェアレベルの欠陥が存在し、DFU（Device Firmware Update）モード経由でUSB DMAバッファオーバーフローを誘発することで SecureROMの署名検証をバイパスし任意コードを実行できる。SecureROMは製造後にアップデート不可能なファームウェア領域であるため、ソフトウェアパッチによる根本修正は不可能（A14以降のデバイスへの移行のみが恒久対策）。物理アクセスが前提条件であり一般的なネットワーク攻撃ベクターには該当しないが、標的型攻撃（政府機関・VIP端末の押収・国境通過時のフォレンジック解析等）での悪用シナリオが現実的。国内では行政・防衛・重要インフラ関係者が古いiPhoneを業務利用している場合に波及リスクがある。
+IoC: 確認されず（物理アクセス前提のため通常の遠隔IoCなし）
+
+監視: 管理対象iOSデバイスのデバイスモデル確認（A12/A13搭載機器を特定しA14以降への移行計画を立案）
+Splunk SPL: index=mdm sourcetype=jamf:computers (model="iPhone11*" OR model="iPhone12*" OR model="iPad8*") | stats count by model, serial | table serial, model
+→ 対象機器が組織内に存在する場合は機密情報を扱うアプリの利用制限と管理ポリシー強化を優先的に検討する
+
+参照: https://thehackernews.com/2026/06/unpatchable-usbliter8-exploit-breaks.html
+参照: https://appleinsider.com/articles/26/06/18/a12-a13-apple-devices-face-an-unpatchable-securerom-vulnerability
+参照: https://9to5mac.com/2026/06/18/new-unpatchable-exploit-targets-apple-devices-with-a12-and-a13-chips/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Gentlemen（RaaS）— GentleKiller BYOVD EDRキラーフレームワーク大規模展開
+活動タイプ: 新規マルウェアファミリー詳細技術分析公開 / RaaS運営実態暴露
+国家帰属: 帰属未確定（東欧系または旧 Qilin アフィリエイト起源と推定） / 帰属信頼度: 低
+------------------------------------------------------------
+
+採用契機: P（新規キャンペーン全容初報）、R（GentleKillerフレームワーク新規マルウェア発見）、S（BYOVD多バリアント・即時PoC武器化の新規TTP）
+標的: 金融・製造・医療・ゲーム・行政・教育（横断的、特定セクターなし）
+地域: 東南アジア・南米・西欧を中心に70カ国以上（US一極集中なし）
+マルウェア: GentleKiller（8バリアント）、HexKiller、ThrottleBlood、HavocKiller、GentleNote（ランサムウェア本体）
+
+【24時間以内の変化】
+[ESET WeLiveSecurity 2026-06-18] 「Killing me gently: Inside Gentlemen's EDR killer framework」として詳細技術分析を公開。ESET独自追跡による内部データリーク（2026-05）の分析結果を含む。
+[BleepingComputer 2026-06-19] 「Gentlemen ransomware uses multiple EDR killers to disable defenses」として追加報道。バースト閾値（3件以上）到達。
+[The Hacker News / SecurityAffairs 2026-06-19] 複数メディアが独立して確認。478被害組織・70カ国以上という規模を各誌が報告。
+
+【概要】
+Gentlemenは2025年後半に活動を開始した RaaS（Ransomware-as-a-Service）グループで、元 Qilin アフィリエイトの hastalamuerte が設立したとされる。同グループの最大の特徴は、独自開発した EDR キラーフレームワーク「GentleKiller」にある。GentleKiller は BYOVD（Bring Your Own Vulnerable Driver）技術を使い、Kaspersky アンチウイルス・Valorant（ゲームクライアント）・Javelin・WatchDog 等の正規ソフトウェアに偽装した 8 つの異なるバリアントを持ち、それぞれ異なる脆弱なカーネルドライバを悪用して 48 ベンダーの 400 以上のセキュリティプロセス（CrowdStrike Falcon・SentinelOne・ESET・Microsoft Defender・Kaspersky・Palo Alto Cortex等）を停止させる。新規 BYOVD PoC が公開されると数日以内に武器化するという異常な開発速度を持ち、ESET 内部調査で累計 478 被害組織・70 カ国以上への影響が確認されている。アフィリエイト参加時に GentleKiller 一式＋HexKiller・ThrottleBlood・HavocKiller の外部製 EDR キラー3点セットが標準提供される「EDR キラー込みの RaaS」として台頭している。
+
+攻撃の流れ（判明分）:
+1. フィッシングメール・露出したRDP/VPN・初期アクセスブローカー経由で企業ネットワークに侵入し、管理者権限を取得する
+2. GentleKillerバリアントを正規ソフトウェアに偽装してデプロイし、脆弱なカーネルドライバをロードしてEDR/AV製品の全プロセスをカーネルレベルで強制終了する（BYOVD）
+3. GentleNoteランサムウェアを展開してファイルを暗号化し、二重恐喝（身代金要求＋データリーク脅迫）を実行する
+
+【新規TTP】
+・[T1562.001 / Impair Defenses: Disable or Modify Tools] BYOVD による EDR カーネルレベル強制停止 — 8種類の脆弱ドライバを切り替えて特定のドライバをブロックされても別バリアントで継続
+・[T1036 / Masquerading] GentleKiller 各バリアントが Kaspersky・Valorant・Javelin・WatchDog等の正規ソフトウェアの証明書・ファイル名を偽装
+・[T1543.003 / Create or Modify System Process: Windows Service] 脆弱ドライバをWindowsサービスとして登録して永続的なカーネルアクセスを確立
+
+【IoC】
+Hash: ESET malware-ioc リポジトリに GentleKiller バリアントのハッシュ（MD5/SHA1/SHA256）が公開済み
+参照: https://github.com/eset/malware-ioc
+IoC: 具体的なC2 IP・ドメインは本報告時点で公開未確認
+
+【推奨アクション】
+・BYOVD 対策としてWindowsのドライバブロックリスト（Microsoft脆弱ドライバブロックリスト）を最新状態に維持し、カーネルモードドライバのコード署名ポリシーを強化する
+・Windows Event ID 7045（新規サービスインストール）をリアルタイム監視し、Kaspersky・Valorant・WatchDog・Javelin 等の名称を持つ不審サービスを即時調査する
+Splunk SPL: index=windows EventCode=7045 | eval suspicious=if(match(ServiceFileName,"(?i)(nal\.sys|dbutil_2_3\.sys|procexp152\.sys|WinRing0x64\.sys|mhyprot2\.sys|nal_w10\.sys|rtkio64\.sys)"),1,0) | where suspicious=1 | table _time, host, ServiceName, ServiceFileName
+→ 既知の脆弱ドライバファイル名に一致するサービスが登録された場合はインシデント宣言のトリガーとして扱う
+Splunk SPL: index=windows EventCode=7045 | where match(ServiceName,"(?i)(kaspersky|valorant|javelin|watchdog|gentl)") | table _time, host, ServiceName, ServiceFileName, AccountName
+→ 偽装名称のサービス登録は GentleKiller バリアントの特徴であり、ホストを即時ネットワーク隔離する
+
+【参照】
+https://www.welivesecurity.com/en/eset-research/killing-me-gently-inside-gentlemens-edr-killer-framework/
+https://www.bleepingcomputer.com/news/security/gentlemen-ransomware-uses-multiple-edr-killers-to-disable-defenses/
+https://thehackernews.com/2026/06/the-gentlemen-raas-uses-gentlekiller.html
+https://securityaffairs.com/193941/uncategorized/inside-gentlekiller-the-edr-killer-powering-the-gentlemen.html
+
+------------------------------------------------------------
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Icarus（恐喝グループ） / Klue OAuth侵害によるSalesforce CRMデータ窃取キャンペーン — 採用契機: P（新規キャンペーン初報）、S（OAuthトークン悪用による SaaS サプライチェーン新規TTP）。帰属信頼度: 中（Icarus 自身がダークウェブで犯行声明）。Icarus は2026年4月から活動が確認されている恐喝グループで、2026-06-12にKlue（競合インテリジェンスプラットフォーム）の旧来のレガシー認証情報を侵害してKlueとSalesforceを接続するOAuthトークン一式を取得した。このトークンを用いてHuntress・Recorded Future・Tanium・Jamf・Sprout Social・Gong・Insururityを含む複数の著名セキュリティ・テック企業のSalesforce CRMインスタンスからアカウント情報・商談詳細・価格情報・連絡先を大量に窃取し、2026-06-16に各社へ恐喝メールを送信した。攻撃者はPython-urllib/3.12・3.14のユーザーエージェントを使用し、Salesforce REST API（/services/data/v59.0/sobjects および /services/data/v59.0/query）を経由してオブジェクトカタログを体系的に列挙・抽出した。推奨アクション: Klue連携のOAuthトークン・クライアントシークレット・リフレッシュトークンを即時失効・再発行する。Salesforce監査ログ（SetupAuditTrail）でIcarus帰属IPからの異常なAPI呼び出しを確認する。「top secret email」や「Session」プラットフォームへの誘導を含む恐喝メールについては報告・証拠保全を行う。
+参照: https://www.bleepingcomputer.com/news/security/klue-oauth-breach-linked-to-icarus-salesforce-data-theft-attacks/
+参照: https://www.helpnetsecurity.com/2026/06/19/klue-salesforce-data-breach-huntress/
+参照: https://www.huntress.com/blog/klue-breach-investigation
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Splunk CVE-2026-20253 を悪用したSIEM侵害・ラテラルムーブメント
+確度: 高
+根拠: 3要件確認済み — KEV登録（2026-06-18） + PoC公開（2026-06-12、WebシェルRCE手順が公開済み） + 実悪用確認（Splunk PSIRT「限定的だが実悪用確認」・複数のセキュリティメディアが48時間前後での武器化を報告）。FCEB機関対応期限（2026-06-21）到来で攻撃者の注目が最高潮に達しており、企業内SIEMサーバ（Splunk）の侵害はランサムウェアグループ・APT双方にとって高価値ターゲットである。CVE-2022-37434（zlib/Splunk）など過去のSplunk系脆弱性では実悪用確認後48時間以内に悪用インフラが追加展開された事例が複数ある。
+的中判定: CERTアドバイザリまたはセキュリティベンダーが「CVE-2026-20253を悪用した具体的インシデント事例または新規IOC」を48時間以内に公開した場合を的中とする。
+
+・予報2: GentleKiller BYOVD 新バリアント出現（シグネチャ回避目的）
+確度: 中
+根拠: ESET技術分析（2026-06-18）の公開により既存8バリアントのハッシュ値がセキュリティ製品のシグネチャDBに即日登録された。Gentlemenは過去に新BYOVD PoCが公開されてから数日以内に当該ドライバを武器化してきた実績があり（ESET報告に記録）、今回は逆方向（自グループ分析の公開を受けてのシグネチャ回避更新）でも同様のサイクルが働く可能性が高い。推定 — 新バリアントはMicrosoftの脆弱ドライバブロックリスト（WDAC）に未登録のドライバを採用するため、ハッシュベース検知では捕捉できない可能性がある。行動ベース検知（カーネルレベルのプロセス終了シーケンス監視）への切り替えを優先する。
+的中判定: ESETまたは他のEDRベンダーが「GentleKillerの新バリアントまたは既存シグネチャで検知されないBYOVDドライバの新規採用」を報告した場合を的中とする。
+
+[NGINX CVE-2026-42530/42055 について]
+前回の予報候補から除外した。理由: 実悪用未確認・KEV未登録であり、改善後の「確度: 高」条件（3要件必須）を満たさない。ASLR有効環境ではRCEよりDoSが先行する可能性が高く、48-72時間での悪用急加速の根拠が不十分。引き続き参考A掲載事象として監視を継続する。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2025-48595（Android Framework 権限昇格ゼロデイ）→ CISA KEV追加2026-06-02・FCEB期限2026-06-05・24時間窓外の情報のみ・変化なし
+・CVE-2026-45585（YellowKey / Windows BitLocker バイパス）→ 2026-06-10 Patch Tuesdayパッチ提供済み・PoC公開は期限前・24時間窓内の新規変化なし
+・CVE-2026-34926（TrendAI Apex One ディレクトリトラバーサル）→ CISA KEV期限2026-06-04超過・パッチ適用周知済み・24時間窓内変化なし
+
+[APT]
+・Twill Typhoon（別名: Earth Preta / MustangPanda / Bronze President）→ Darktrace技術レポート公開日が2026-05-15と24時間窓外。キャンペーン自体は2025-09〜2026-04で終息傾向。24時間窓内の新規変化確認されず。
+・Silver Fox APT（Taiwan Gh0stCringe/HoldingHands RATキャンペーン）→ 報告ソースが2025年6月付き・24時間窓外・新規変化なし
+・FortiBleed キャンペーン → 既報2026-06-19。CISA勧告（2026-06-18）後の新たな進展は24時間窓内に確認されず。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編1件 / 参考A2件 / 参考B1件 / 除外3件
+APT — 本編1件 / 注目動向1件 / 除外3件
+
+========================================

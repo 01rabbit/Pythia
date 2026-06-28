@@ -1,0 +1,157 @@
+========================================
+セキュリティインテリジェンス日報 — CVE・脆弱性・ゼロデイ版
+調査日時: 2026-06-25 17:00 JST
+調査期間: 2026-06-24 17:00 〜 2026-06-25 17:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT / 日本経済新聞 2026-06-25 国内グループ関連企業ランサムウェア被害報道
+
+・（インシデント報告・CVE未割当） / ニデック Chaun Choung Technology Corporation（台湾子会社）ランサムウェア被害
+CVSS: 未割当 状態: 実被害確認（ランサムウェア攻撃）
+
+【24時間以内の変化】
+[Security NEXT / 日本経済新聞 2026-06-25] ニデック株式会社が台湾子会社 Chaun Choung Technology Corporation（CCC）への2026-06-22付けランサムウェア攻撃を公表。2026-06-24に侵害を把握し同日公表。データ漏洩・身代金要求の有無は2026-06-25時点で確認されていない。
+
+【概要】
+ニデック株式会社（東証プライム上場）の台湾子会社である Chaun Choung Technology Corporation が2026年6月22日にランサムウェア攻撃を受けた。攻撃グループ・ランサムウェアの種類・初期侵入経路はいずれも2026-06-25時点で非公開。ニデック本社および他グループ会社への影響は確認されていない。台湾の製造業サプライチェーンを標的とするランサムウェアグループは2026年上半期に活動増加傾向にあり、親会社経由の情報窃取・サプライチェーン侵害リスクに継続的に注意が必要。対処: 自社サプライチェーン内にNidecグループとの接続がある場合はVPN・EDIなど接続経路の侵害有無を確認すること。
+
+【IoC】
+IoC: 確認されず（攻撃者・使用マルウェアの詳細は未公開）
+
+【監視ポイント】
+・[Windows Security EventLog / Splunk] サプライチェーン接続経路を経由した横展開・異常認証・ファイル暗号化前兆を監視する
+Splunk SPL: index=wineventlog (EventCode=4624 OR EventCode=4625) Logon_Type=3 | stats count by src_ip, dest_host, Account_Name | where count > 30 | sort -count
+→ 短時間での大量ラテラルムーブメント認証は即時調査対象。外部ベンダーIPからの認証も警戒する
+
+【参照】
+https://www.security-next.com/170xxx
+https://www.nidec.com/ja/news/release/2026/0625/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: インシデント報告（CVE未割当） — 24時間窓内にJPCERT/CC・IPA注意喚起は確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-44963 / Veeam Backup & Replication 12.3.2.4465以前（バージョン12系）
+CVSS: 9.4 (Critical)
+ドメインユーザー権限を持つ攻撃者がリモートからコード実行できる脆弱性。2026-06-10にPoCがGitHubで公開済みで、BleepingComputer・The Hacker Newsが2026-06-24〜25に詳細を報道した。KEV未登録・実悪用未確認だが、PoC公開から15日が経過しており武器化リスクは継続上昇している。Veeamは過去（CVE-2024-40711）にPoC公開後72時間以内にランサムウェアグループが悪用した実績があり、バックアップ環境の最終防衛線として常に高優先標的となる。本日の調査でKongTuke経由の6ランサムウェアグループ（Qilin/Interlock/Rhysida/Akira/8Base/Black Basta）が現在活動中であることが確認されており、侵害後の横展開先として即座に悪用されるリスクがある。国内でもバックアップ目的でのVeeam利用は中規模以上の組織で広く普及している。対処: バージョン12.3.2.4854以上へのアップグレードを速やかに実施すること（パッチ提供済み）。
+IoC: 確認されず
+
+監視: [Veeamサービスログ / Windows Security EventLog / Splunk] ドメインユーザーによる異常なVeeamプロセス起動・管理ポートへの不審接続を監視する
+Splunk SPL: index=wineventlog (EventCode=4688 OR EventCode=4624) (New_Process_Name="*Veeam*" OR New_Process_Name="*veeam*") Logon_Type=3 | stats count by Account_Name, src_ip, ComputerName, New_Process_Name | where count > 3
+→ 業務外時間帯にドメインユーザーがVeeamプロセスを外部起動している場合はバックアップ侵害の前兆として即時確認
+
+参照: https://www.bleepingcomputer.com/news/security/veeam-backup-replication-cve-2026-44963-poc/
+参照: https://thehackernews.com/2026/06/veeam-backup-replication-critical-rce.html
+
+----
+
+・事前予告（CVE未割当） / Cisco Catalyst Center および Cisco Secure Endpoint Connectors
+CVSS: 未公開（2026-07-01 米国時間 / 2026-07-02 JST公開予定）
+Ciscoが2026-06-25に Catalyst Center および Secure Endpoint Connectors に関するセキュリティアドバイザリを2026-07-01（米国時間）に公開予定と事前告知した。詳細・CVE・スコアはアドバイザリ公開まで非開示。過去のCisco Catalyst CenterはCVSS 9.0超の認証バイパス・コマンドインジェクション等が発見された実績があり、アドバイザリ公開後は速やかに影響確認とパッチ計画が必要。国内では Cisco Catalyst Center を用いた大規模ネットワーク管理・Cisco Secure Endpoint（旧AMP for Endpoints）を導入する組織が多く、アドバイザリ内容によっては優先対応が求められる。対処: 2026-07-01のアドバイザリ公開直後に内容を確認し、CVSSスコアと影響製品バージョンを検証して24時間以内にパッチ適用計画を立案すること。
+IoC: 確認されず
+
+監視: [Cisco Catalyst Center アクセスログ / Splunk] アドバイザリ公開前の段階では認証失敗・権限昇格の異常増加を先行監視する
+Splunk SPL: index=cisco_dnac OR (index=network sourcetype="cisco:ios") (event_type=auth_failure OR event_type=privilege_escalation OR message="*unauthorized*") | stats count by src_ip, user, event_type | sort -count
+→ アドバイザリ公開後は判明したCVE詳細に応じてSPLを更新すること
+
+参照: https://tools.cisco.com/security/center/publicationListing.x
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・KongTuke（初期アクセスブローカー / 帰属未確定） / Misticバックドアによるランサムウェアアクセス販売キャンペーン（2026年4月〜継続中）。採用契機: 新規マルウェアファミリー発見・詳細技術分析公開 + 複数独立ソース確認。帰属信頼度: 低（帰属未確定）。Symantec/Carbon Black 2026-06-24初報、BleepingComputer 2026-06-25報道。KongTukeはClickFix偽UI（偽CAPTCHA・偽ブラウザ更新プロンプト等）でユーザーにPowerShellコマンドを実行させる手口で初期侵入し、Windows DefenderコンポーネントMpExtMs.exeへのDLLサイドローディングでMisticバックドアをファイルレスで常駐化させる。MisticはC2通信と内部偵察機能を持ち、KongTukeはQilin・Interlock・Rhysida・Akira・8Base・Black Bastaの6ランサムウェアグループにアクセスを販売している。保険・教育・IT・専門サービスセクターが主要標的で2026年4月以降継続的に活動中。IoC: Windows DefenderコンポーネントMpExtMs.dllの不審なプロセスからのロード、外部Telegram Bot API（api.telegram.org）への不審な接続。推奨アクション: ClickFix配信手法への対策としてブラウザ設定でクリップボードAPIアクセスを制限する・MpExtMs.dllのプロセス親子関係をEDRでモニタリングする・Qilin/Interlock/Rhysida/Akira/8Base/Black Bastaの既知IOCを脅威インテルフィードに登録する。Splunk SPL: index=wineventlog (EventCode=7045 OR EventCode=4688) (Image="*MpExtMs*" OR ImageLoaded="*MpExtMs*") | stats count by ComputerName, Image, ImageLoaded | sort -count → 通常MpExtMs.dllはWindows Defenderサービスプロセス配下のみにロードされるため他プロセスからのロードは即時調査対象。
+参照: https://symantec-enterprise-blogs.security.com/blogs/threat-intelligence/kongtuke-mistic-backdoor-ransomware-iabroker
+参照: https://www.bleepingcomputer.com/news/security/kongtuke-mistic-initial-access-broker-6-ransomware-groups/
+
+・macOS.Gaslight（DPRK/BONZAI関連 / 帰属信頼度: 高） / Rust製macOSバックドア・AIプロンプトインジェクション回避・Telegram C2（2026年）。採用契機: 新規マルウェアファミリー発見・詳細技術分析公開 + 既知グループ（BONZAI/DPRK）の新規TTP・初観測テクニック報告。帰属信頼度: 高（SentinelOne DPRK/BONZAI高信頼度帰属）。SentinelOne 2026-06-23初報、BleepingComputer / The Hacker News 2026-06-24〜25報道。macOS.GaslightはRust言語で記述されたmacOS専用バックドアで、DPRKグループBONZAIが使用する。最大の特徴は38種類の偽システムメッセージをmacOSの正規通知に偽装することで、AIベースのセキュリティ分析ツールによるコード解析・マルウェア検出を回避するプロンプトインジェクション機能を搭載している点（新規TTP）。C2通信にはTelegram Bot APIを使用し、Chrome・Brave・Firefox・SafariのパスワードデータベースおよびmacOSキーチェーンから認証情報を窃取する。DPRKによる開発者・暗号資産保有者を標的とするキャンペーンと整合する。IoC: api.telegram.org Bot APIへのmacOS非Telegramプロセスからの外部接続、未署名Rustコンパイルバイナリ（com.apple.*名称に偽装）。推奨アクション: macOS ApplicationFirewallでapi.telegram.orgへのTelegram公式アプリ以外からの接続をブロックする・macOSシステム通知を模倣するプロセスをEDRで検出ルール化する・AIベースのサンドボックス解析に偽装テキスト除去プリプロセッシングを追加する。Splunk SPL: index=macos_logs (process_name="*gaslight*" OR (NOT process_name="Telegram" AND message="*api.telegram.org*")) | stats count by host, process_name, message | sort -count → Telegram公式アプリ以外がapi.telegram.orgにアクセスしている場合はmacOS.Gaslight感染または類似バックドアの可能性として即時調査対象。
+参照: https://www.sentinelone.com/labs/macos-gaslight-dprk-bonzai-rust-backdoor-prompt-injection/
+参照: https://www.bleepingcomputer.com/news/security/macos-gaslight-dprk-bonzai-telegram-c2-ai-evasion/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: KongTuke/Mistic侵害痕跡の即時探索とClickFix配信への対策強化を実施すべき
+Tier: 1（進行中のキャンペーン継続 — Symantec/Carbon Black 2026-06-24およびBleepingComputer 2026-06-25で現在進行中の侵害と6グループへのアクセス販売が確認済み）
+確度: 中（KEV未登録・PoC未公開。T1型だが外部可視の的中確認には公開セキュリティ報道が必要。確度:高の要件〔KEV+PoC+実悪用の3条件〕を満たさないため中に留める）
+根拠:
+  Evidence: [Symantec/Carbon Black 2026-06-24] KongTukeによるMisticバックドアの実際の侵害と6グループへのアクセス販売を確認。[BleepingComputer 2026-06-25] 保険・教育・IT・専門サービスへの継続攻撃を報道。
+  過去パターン: ClickFix配信手法は2025年以降BleepingComputerが継続追跡するIAB手法として複数ランサムウェアグループへの初期侵入に用いられている。DLLサイドローディング+Telegram C2の組み合わせは初報後24〜48時間で被害拡大報告が続くパターンがある。Qilin・Black Basta・Rhysidaはいずれも国内組織への攻撃実績を持つ。
+  脅威情報: 6グループ全てが国内活動実績を持ち、KongTukeの標的プロファイル（保険・IT・専門サービス）は国内組織と高く重複する。
+推定部分: 国内組織への直接侵害報告は2026-06-25時点で確認されていないが、6グループ全てが国内活動実績を持つため侵害済み環境が存在する可能性は排除できない。ただし、Symantecレポートに日本への言及が明示されるまでは推定段階に留まる。
+先回り監視: MpExtMs.dllの親プロセス異常（Windows Defender以外からのロード）・外部Telegram Bot API（api.telegram.org）への非Telegramプロセスからの接続・ClickFix偽UIを経由したPowerShell実行（EventCode=4104 ScriptBlockText）
+的中判定: Security NEXT・JPCERT/CCまたはセキュリティベンダーがKongTuke/Misticに起因する国内インシデントを48時間以内に報告した場合、またはSymantec追加レポートが日本を標的リストに明記した場合
+
+----
+
+・予報2: Veeam CVE-2026-44963未パッチ環境へのパッチ適用を48時間以内に完了すべき（ランサムウェア横展開阻止のため）
+Tier: 2（確認済みTTP — PoC公開済みのVeeam RCEをランサムウェアグループが侵害後横展開に使用するパターンに基づく合理的推定）
+確度: 中（KEV未登録・実悪用未確認。PoC公開から15日経過 + 本日の調査で6ランサムウェアグループの現在活動が確認されたことが根拠補強）
+根拠:
+  Evidence: [BleepingComputer 2026-06-24 / The Hacker News 2026-06-25] CVE-2026-44963（CVSS 9.4）のPoC（GitHub 2026-06-10公開）の詳細技術解析を報道。
+  過去パターン: CVE-2024-40711（Veeam）はPoC公開後72時間以内にEstateランサムウェアグループが悪用。CVE-2023-27532（Veeam）もパッチ提供後即時悪用確認。VeeamはGlobalData調査においてランサムウェア攻撃最終段階で最も頻繁に標的になるバックアップソフトウェア第1位。
+  脅威情報: 本日の調査でQilin・Interlock・Rhysida・Akira・8Base・Black Bastaの6グループが現在アクティブに活動中であることをKongTuke/Mistic報告で確認。侵害後の横展開先としてVeeamは常に高優先標的。
+推定部分: CVE-2026-44963はドメインユーザー認証が必要（未認証ではない）ため初期侵入後の横展開フェーズでの悪用が中心になる。PoC公開から15日が経過しており熟練攻撃者による武器化は完了している可能性が高い。ただしVeeamの管理ポートは通常インターネット非公開であり、内部ネットワーク侵入後でなければ悪用は困難という留保がある。
+先回り監視: Veeamサービスアカウント（VeeamBackup等）による業務時間外の認証・プロセス起動（EventCode=4688/4624）・Veeam管理ポート（9392/9401/9410）への不審な内部IPからの接続
+的中判定: CERTアドバイザリまたはセキュリティベンダーがCVE-2026-44963を悪用したランサムウェアもしくはバックアップ削除インシデントを72時間以内に公開した場合
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-20230 (Cisco UCM / Unified CM SME) → 既報 2026-06-24
+・CVE-2026-34908 (Ubiquiti UniFi OS Server) → 既報 2026-06-24
+・CVE-2026-34909 (Ubiquiti UniFi OS Server) → 既報 2026-06-24
+・CVE-2026-34910 (Ubiquiti UniFi OS Server) → 既報 2026-06-24
+・CVE-2025-67038 (Lantronix EDS5000) → 既報 2026-06-24
+・CVE-2026-45585 (Microsoft Windows BitLocker) → 既報 2026-06-24
+・CVE-2026-5027 (Langflow) → 既報 2026-06-18
+・CVE-2026-41089 (Windows Server Netlogon) → 既報 2026-06-24
+・CVE-2026-49975 (Apache HTTP Server mod_http2) → 既報 2026-06-24
+・CVE-2026-8732 (WP Maps Pro WordPress プラグイン) → 既報 2026-06-24
+・CVE-2026-11374 (ManageEngine ADSelfService Plus 他) → 既報 2026-06-24
+
+[APT]
+・Nightmare Eclipse (NightmareEclipse-2026-WindowsZeroDayDisclosure) → 既報 2026-06-24
+・KDDI メールシステム侵害 (KDDI-2026-EmailSystemBreach) → 既報 2026-06-23 / クレデンシャルスタッフィングリスク継続監視中
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A1件 / 参考B2件 / 除外11件
+APT — 本編0件 / 注目動向2件 / 除外2件
+
+========================================

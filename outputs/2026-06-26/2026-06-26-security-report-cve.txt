@@ -1,0 +1,170 @@
+========================================
+セキュリティインテリジェンス日報（Section 3: 製品別CVE）
+調査日時: 2026-06-26 07:30 JST
+調査期間: 2026-06-25 07:00 〜 2026-06-26 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT 2026-06-25 報道（記事番号186374）
+
+------------------------------------------------------------
+1. CVE-2026-13028 / CVE-2026-13032 / CVE-2026-13033 / CVE-2026-13038 / Google Chrome 149.0.7827.196未満（Windows/Mac/Linux）
+対象: Chrome 149.0.7827.196未満を実行する全プラットフォーム（Windows/Mac/Linux）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 未公表（Google: Critical ×4 / High ×14 — 合計18件修正）
+状態: パッチ提供済み（149.0.7827.196/197）
+
+【24時間以内の変化】
+[Security NEXT 2026-06-25] Chrome 149.0.7827.196/197がリリースされ、Critical 4件・High 14件の計18件が修正された。国内メディアで初報告。
+
+【概要】
+GoogleがChrome 149.0.7827.196/197をリリースし18件の脆弱性を修正した。Critical 4件の内訳: CVE-2026-13028（WebGL Use-After-Free・外部研究者報告・6月7日受理）、CVE-2026-13032（WebGL Use-After-Free・Google内部発見・6月13日）、CVE-2026-13033（Blink InterestGroups境界外読み取り）、CVE-2026-13038（Autofill関連・詳細未公表）。WebGL UAF 2件（CVE-2026-13028/13032）はChromeサンドボックス脱出の起点となりうる構造的に重篤な脆弱性であり、チェーン悪用リスクがある。Autofill（CVE-2026-13038）はパスワード・クレジットカード情報を扱うコンポーネントであり悪用時の影響範囲が広い。現時点でPoC公開・実悪用は未確認。ChromeベースのEdgeも別途バージョン確認が必要。
+注意点: WebGL UAFのPoC難易度は高く即時大規模悪用のリスクは低いが、国家系APT（DPRK/Lazarus等）が内部PoCを開発するリスクは排除できない。KEV追加・PoC公開の兆候を引き続き監視すること。
+
+攻撃の流れ（WebGL UAF: CVE-2026-13028/13032）:
+1. 攻撃者がWebGLを使用する悪意あるWebページを用意し、ユーザーにアクセスさせる
+2. WebGL処理中にUse-After-Free条件を発生させ、Chromeレンダラプロセス内で任意コード実行
+3. サンドボックス脱出コードと組み合わせることでOSレベルのコード実行・マルウェア投下が可能
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[エンドポイント管理 / レジストリ] Chrome未更新バージョン（149.0.7827.196未満）の検出
+Splunk SPL: index=endpoint sourcetype=WinRegistry REGISTRY_PATH="*\Google\Chrome\BLBeacon\version*" | eval version=REGISTRY_VALUE_DATA | stats count by ComputerName, version | where NOT match(version, "^149\.0\.7827\.([1-9][9][6-9]|[2-9][0-9]{2}|1000)")
+→ 149.0.7827.196未満の端末を優先更新対象として抽出し、エンドポイント管理ツール（Intune/SCCM等）の自動更新ポリシーを確認する。Edge（Chromiumベース）は別途バージョン管理が必要。
+・Autofill（CVE-2026-13038）は認証情報窃取チェーンへの悪用可能性があるため、Chrome更新完了後にブラウザ保存クレデンシャルの棚卸し・パスワードマネージャーへの移行を推奨
+
+【参照】
+https://www.security-next.com/186374
+https://cybersecuritynews.com/chrome-149-security-update/
+https://www.malwarebytes.com/blog/news/2026/06/update-chrome-to-patch-critical-browser-security-flaws
+https://gbhackers.com/google-chrome-update-patches-18-security-flaws/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-13028/13032/13033/13038 — 24時間窓内に発行確認されず
+
+昇格理由: Security NEXT 2026-06-25 報道（記事番号186427）
+
+------------------------------------------------------------
+2. CVE-2026-13281 / CVE-2026-13282 / CVE-2026-13283 / Google Chrome 149.0.7827.200/201未満（Windows/Mac/Linux）
+対象: Chrome 149.0.7827.200未満（Linux）/ 149.0.7827.201未満（Windows/Mac）を実行する全プラットフォーム
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 未公表（Google: High ×3 — CVE-2026-13281 Mojo整数オーバーフロー / CVE-2026-13282 Payments UAF / CVE-2026-13283 AdFilter UAF）
+状態: パッチ提供済み（149.0.7827.200/149.0.7827.201）
+
+【24時間以内の変化】
+[Security NEXT 2026-06-25] Chrome Critical 4件修正（149.0.7827.196/197）から2日後に追加パッチ（149.0.7827.200/201）がリリースされ、High 3件が修正された（記事番号186427）。
+
+【概要】
+GoogleがChrome 149.0.7827.200（Linux）/ 149.0.7827.201（Windows/Mac）をリリースし、High 3件を追加修正した。内訳: CVE-2026-13281（IPC基盤「Mojo」の整数オーバーフロー・CWE-190・レンダラ侵害後のサンドボックス脱出起点）、CVE-2026-13282（Payments決済コンポーネントのUse-After-Free・CWE-416・Googleが2026-05-28に発見・決済情報窃取リスク）、CVE-2026-13283（AdFilterコンポーネントのUse-After-Free・CWE-416・Googleが2026-06-11に発見）。前回パッチ（149.0.7827.196/197）適用済み端末でも本パッチが未適用の場合があるため、改めて最新バージョン確認が必要。CVE-2026-13281（Mojo整数オーバーフロー）はWebGL UAF（CVE-2026-13028/13032）との連鎖悪用でサンドボックス脱出に悪用される可能性がある。
+
+攻撃の流れ（CVE-2026-13281 Mojo整数オーバーフロー）:
+1. 別脆弱性またはソーシャルエンジニアリングによりChromeレンダラプロセスを侵害
+2. Mojoの整数オーバーフローを利用してプロセス間通信を悪用しサンドボックス脱出を試行
+3. OSレベルでの任意コード実行・マルウェア投下
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[エンドポイント管理 / レジストリ] Chrome未更新バージョン（149.0.7827.200/201未満）の検出
+Splunk SPL: index=endpoint sourcetype=WinRegistry REGISTRY_PATH="*\Google\Chrome\BLBeacon\version*" | eval version=REGISTRY_VALUE_DATA | stats count by ComputerName, version | where NOT match(version, "^149\.0\.7827\.(20[0-9]|[3-9][0-9]{2}|1000)")
+→ 149.0.7827.196/197更新済み端末でも149.0.7827.200/201未満の場合は本パッチ未適用。自動更新が有効な環境では数日内に適用されるが、管理対象端末は強制更新を適用すること。
+
+【参照】
+https://www.security-next.com/186427
+https://chromereleases.googleblog.com/2026/06/stable-channel-update-for-desktop_0153744567.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-13281/13282/13283 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-12569 / PTC Windchill PDMlink / FlexPLM
+対象: Windchill PDMlink/FlexPLM 11.0 M030以前・11.1 M020以前・12.0 M020以前・12.1 M010以前・13.0 M010以前
+------------------------------------------------------------
+
+優先度: 緊急（実悪用確認・FCEB期限2026-06-28）
+CVSS: 9.8 (Critical) / CVSS v4: 9.3
+状態: パッチ提供済み・KEV登録済み（2026-06-25）・Webシェル展開による実悪用継続中
+FCEB対応期限: 2026-06-28
+
+【24時間以内の変化】
+[CISA KEV 2026-06-25] CVE-2026-12569をKEVカタログに追加。FCEB機関向け対応期限2026-06-28を設定。
+[The Hacker News 2026-06-25] PTC Windchill/FlexPLM RCE脆弱性の実悪用を詳報。JSP Webシェル（/Windchill/login/[0-9a-f]{16}.jsp）展開が継続中。PTC「heightened threat activity継続中」と確認。
+[SecurityWeek 2026-06-25] PTC Windchill脆弱性の初の実悪用確認を報道。製造業・工学系PLMプラットフォームへの初のKEV登録。
+
+【概要】
+PTC Windchill PDMlink（製品ライフサイクル管理）およびFlexPLM（アパレル・フットウェア・消費財向けPLM）における信頼されないデータのデシリアライゼーション（CWE-502）によるリモートコード実行脆弱性。未認証の遠隔攻撃者が細工したリクエストを送信するだけでサーバー上で任意コードを実行可能。2026年6月25日にCISAがKEV登録し、実悪用として攻撃者がJSP Webシェル（/Windchill/login/[0-9a-f]{16}.jspパターン）をデプロイしコマンド実行・データ窃取を継続中。PTC製品のKEV登録は初めて。製造・エンジニアリング・小売分野で広く利用されるPLMプラットフォームのため、産業スパイ・サプライチェーン侵害リスクが高い。BSI（ドイツ連邦情報セキュリティ庁）も緊急警告を発行。
+
+攻撃の流れ:
+1. 攻撃者がWindchill/FlexPLMのHTTP/HTTPSエンドポイントに細工した悪意あるリクエストを送信（認証不要）
+2. デシリアライゼーション処理中に任意コードが実行され、サーバー上でJSP Webシェルをデプロイ
+3. WebシェルによりBAUトラフィックに紛れた永続的なリモートコマンド実行・設計データ・CADファイル・製造仕様の窃取が可能
+
+【IoC】
+IP: 5.180.41.35
+Hash: 確認されず
+ファイル名: [0-9a-f]{16}.jsp（/Windchill/login/配下のWebシェル）/ flst.txt（/tmpに作成されるファイル一覧）
+
+【監視ポイント】
+・[WebサーバーアクセスログまたはWAF] Windchill loginパスへの不審なJSPリクエスト
+Splunk SPL: index=web sourcetype=access_combined uri_path="/Windchill/login/*.jsp" http_method=POST | stats count by src_ip, uri_path | sort - count
+→ /Windchill/login/ディレクトリへの静的アセット以外のJSPリクエストは異常。16進数16桁のファイル名.jspへのPOSTはWebシェル確定。
+Splunk SPL: index=web sourcetype=access_combined src_ip="5.180.41.35" | stats count by uri_path, http_method | sort - count
+→ 既知C2 IP（5.180.41.35）からのアクセスを即時調査・ブロックすること
+
+【参照】
+https://thehackernews.com/2026/06/cisa-adds-exploited-ptc-windchill-rce.html
+https://www.securityweek.com/first-ever-exploitation-of-ptc-windchill-vulnerability-discovered-in-the-wild/
+https://www.cisa.gov/news-events/alerts/2026/06/25/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://www.ptc.com/en/about/trust-center/advisory-center/active-advisories/windchill-flexplm-rce-vulnerability
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-12569 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-11645 (Google Chrome V8) → 既報（2026-06-23）・窓内に変化なし
+・CVE-2026-44963 (Veeam Backup & Replication) → 既報（2026-06-25）・窓内に変化なし
+・CVE-2026-34908 / 34909 / 34910 (Ubiquiti UniFi OS Server) → 既報（2026-06-24）・FCEB期限2026-06-26到来だが新規変化なし
+・CVE-2025-67038 (Lantronix EDS5000) → 既報（2026-06-24）・窓内に変化なし
+・CVE-2026-43284 / CVE-2026-43500 (Linux Kernel Dirty Frag LPE) → 調査窓外（2026-05-08開示）
+・CVE-2026-45185 (Exim Dead.Letter RCE) → 調査窓外（2026-05-13 BleepingComputer報道）
+・CVE-2026-20230 (Cisco Unified CM) → 既報（2026-06-24）・KEVに2026-06-25付けで再登録されたが内容変化なし
+
+本日の集計（CVE）:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A7件 / 参考B1件 / 除外10件
+
+========================================

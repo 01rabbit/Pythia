@@ -1,0 +1,120 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-06-18 08:00 JST
+調査期間: 2026-06-17 08:00 〜 2026-06-18 08:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-5027 / Langflow AIアプリ開発プラットフォーム
+対象: Langflow 1.8.x以前 (langflow-base 0.8.3 以前の全バージョン)
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 8.8 (High)
+状態: 実悪用確認 / VulnCheck KEV登録 / PoC公開
+
+【24時間以内の変化】
+[CSO Online 2026-06-17] "Langflow RCE under active attack months after a patch was shipped" — パッチリリースから2か月超経過後も組織的な悪用が継続・拡大していることを新たに報道。
+[Security NEXT 2026-06-17] LangflowのRCE脆弱性として国内セキュリティメディアが報道し、パッチ未適用環境への早急な対処を呼びかけ。
+
+【概要】
+Langflowの POST /api/v2/files エンドポイントがmultipart form dataの filenameパラメータを適切にサニタイズしないため、../を含む細工ファイル名によりサーバファイルシステム上の任意の場所にファイルを書き込めるパストラバーサル脆弱性。Langflowはデフォルトで認証なし自動ログインを有効化しているため、単一リクエストでセッショントークンを取得して無認証で悪用可能。Censysが特定した約7,000のインターネット公開Langflowインスタンスを対象に、攻撃者はCronジョブ注入・設定ファイル上書きを通じてRCE・ラテラルムーブメント・データ窃取へ誘導する試験的ファイル書き込みを継続観測中。修正済みバージョン: Langflow 1.10.0（2026-06-10リリース）または最低でも1.9.0へ更新が急務。
+
+攻撃の流れ:
+1. 攻撃者は公開APIエンドポイントに../を含む細工ファイル名でPOSTリクエストを送信（認証不要）
+2. サーバ上の任意パス（/etc/cron.d/ 等）へ悪意あるファイルを書き込み
+3. Cronジョブ・Webシェル経由でOS権限でのコード実行、環境全体の侵害へ
+
+【IoC】
+IoC: 公開された具体的IoC確認されず（VulnCheck Canaryセンサーで試験的書き込みを観測のみ）
+
+【監視ポイント】
+・[Webサーバログ] POST /api/v2/files へのリクエストにおいてfilenameパラメータに「../」を含むもの
+・[ファイルシステム] /etc/cron.d/ 等 管理外ディレクトリへの新規ファイル作成
+・[EDR] Langflowプロセスからの子プロセス起動（シェル実行）
+
+【参照】
+https://thehackernews.com/2026/06/unpatched-langflow-flaw-cve-2026-5027.html
+https://orca.security/resources/blog/cve-2026-5027-langflow-path-traversal-rce/
+https://www.csoonline.com/article/4185063/langflow-rce-under-active-attack-months-after-a-patch-was-shipped.html
+https://www.securityweek.com/hackers-exploit-langflow-vulnerability-for-remote-code-execution/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-5027 — 24時間窓内にJPCERT/CC・IPA発行確認されず
+未発行: CVE-2026-50656 — 24時間窓内にJPCERT/CC・IPA発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-50656 / Microsoft Defender (Windows 10/11 全バージョン・完全パッチ適用環境含む)
+CVSS: 7.8 (High) 状態: ゼロデイ（パッチ未提供）/ PoC公開
+6月Patch Tuesdayで修正済みとされたRoguePlanet (CVE-2026-47281, CVSS 9.6) に対し、研究者Nightmare Eclipse (aka Chaotic Eclipse) が2026-06-17に別経路のPoC「CVE-2026-50656」を公開。MicrosoftはDefenderのMalware Protection Engineに存在するTOCTOU競合状態（Time-of-Check to Time-of-Use Race Condition）によりSYSTEM権限のコマンドプロンプトを起動できることを確認し、パッチ開発中と発表。完全修正パッチの提供時期は未定。6月Patch Tuesday適用済み環境でも依然ゼロデイリスクが残存する点に注意が必要。リアルタイム保護の有効・無効を問わず動作するが、競合状態のため再現性は環境依存（一部環境で100%、他では低い）。対処: Microsoftの追加パッチ提供まで特権昇格の検知強化と不審な子プロセス監視を継続。CVE-2026-47281との関係: 同一のRoguePlanet系脆弱性群であり、前報で本編採用したCVE-2026-47281の修正バイパスである点を留意。
+IoC: 確認されず
+参照: https://www.helpnetsecurity.com/2026/06/17/rogueplanet-zero-day-cve-2026-50656/
+https://thehackernews.com/2026/06/microsoft-confirms-rogueplanet-defender.html
+https://www.bleepingcomputer.com/news/microsoft/microsoft-defender-rogueplanet-zero-day-grants-system-privileges/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Screening Serpens (別名: UNC1549 / 国家帰属: イラン IRGC関連 / 帰属信頼度: 高)
+Unit 42がイラン関連APT Screening Serpensによる2026年2月〜4月のスパイキャンペーンを詳細分析したレポートを公開。6種の新規RATバリアントを2ファミリー（MiniUpdate・MiniJunk V2）に分類し、それぞれAzureをC2として悪用するコマンド制御インフラを確認。標的は米国・イスラエル・UAE等の航空・防衛・テクノロジー分野の組織で、2026-02-28開始の中東紛争（Operation Epic Fury）と連動した高オペレーションテンポを維持。攻撃手法はフェイク採用ポータル・偽就職サイト・マルウェア入りZIPファイルを使ったスピアフィッシングに加え、.NETアプリ初期化フェーズでセキュリティ機構を無効化するAppDomainManagerハイジャックを新規採用。採用契機: P（新規キャンペーン追跡報告）・R（新規マルウェアファミリー MiniUpdate / MiniJunk V2）・S（AppDomainManagerハイジャック新規TTP）。帰属信頼度: 高。
+推奨アクション: 偽採用ポータルURLのフィルタリング強化、.NETアプリによる子プロセス生成の監視（T1574.014 AppDomainManager Hijacking）、MiniUpdate/MiniJunk V2のYARAルール適用（Unit 42/Check Point公開）、AzureテナントへのC2通信の異常検知。
+参照: https://unit42.paloaltonetworks.com/tracking-iran-apt-screening-serpens/
+https://cybermagazine.com/news/unit-42-shows-how-iranian-hackers-hide-behind-job-postings
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Langflow CVE-2026-5027 — 試験的書き込みから破壊フェーズへの移行
+確度: 高
+根拠: VulnCheck Canaryセンサーは現在「テストファイル書き込み」フェーズの攻撃を多数観測しており、これはパストラバーサル攻撃の典型的な初期偵察ステップ。CVE-2026-5027の初期悪用確認（2026-06-08）から10日超が経過しており、過去の類似OSSツール悪用では偵察フェーズから7〜14日後に実際のペイロード展開が確認されている。パッチ未適用の約7,000インスタンスを対象に、今後48〜72時間でCronジョブ型シェル配置・ランサムウェア初期アクセスブローカーによる活動が増加する可能性が高い。
+
+・予報2: CVE-2026-50656 RoguePlanet新PoC — 既存マルウェアチェーンへの組み込み
+確度: 中
+根拠: CVE-2026-47281（RoguePlanet, CVSS 9.6）は6月Patch Tuesdayで修正済みと案内されたが、CVE-2026-50656のPoC公開（2026-06-17）により修正が不完全であることが判明。PoC公開後48時間以内での武器化統合は過去事例（CVE-2024-21412等）で繰り返し観測されており、SYSTEM権限昇格を必要とするランサムウェア・RAT展開チェーンへの組み込みを警戒。推定 — 競合状態のためPoC安定性が環境依存であり、大規模自動化への障壁となる可能性がある。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-0257 (Palo Alto PAN-OS GlobalProtect, CVSS 7.8) → 24h窓外（CISA KEV 2026-05-29、Unit42 Threat Brief 2026-06-09時点で報道済み）
+・CVE-2026-3300 (WordPress Everest Forms Pro, CVSS 9.8) → 24h窓外（悪用開始 2026-04-13、29,300件超のブロック済み試行あり）
+・CVE-2026-11645 (Google Chrome V8 out-of-bounds, CVSS 8.8) → 24h窓外（CISA KEV追加 2026-06-09）
+・CVE-2025-48595 (Android Framework 特権昇格, CVSS 8.4) → 24h窓外（CISA KEV 2026-06-02、FCEB期限 2026-06-05）
+
+[APT]
+・Nimbus Manticore / Fast-and-Furious キャンペーン → 24h窓外（Check Point一次報告 2026-05-22、Nextron YARArules公開 2026-06-01）
+
+本日の集計:
+CVE — 本編1件 / 参考A0件 / 参考B1件 / 除外4件
+APT — 本編0件 / 注目動向1件 / 除外1件
+
+========================================

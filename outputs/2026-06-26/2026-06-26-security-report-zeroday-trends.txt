@@ -1,0 +1,121 @@
+========================================
+セキュリティインテリジェンス日報（Section 2: ゼロデイ・セキュリティトレンド）
+調査日時: 2026-06-26 07:30 JST
+調査期間: 2026-06-25 07:00 〜 2026-06-26 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Turla（Venomous Bear / Snake / IRON HUNTER / JOVIAL SERPENT / Waterbug / Krypton）
+帰属: ロシア連邦（FSB Center 16）/ 信頼度: 高
+キャンペーンID: Turla-2026-STOCKSTAY-EspionageCampaign
+------------------------------------------------------------
+
+活動タイプ: 新規マルウェア / 継続中キャンペーン / TTP更新
+モチベーション: 国家支援スパイ活動
+標的: ウクライナ（政府・軍事組織）・イタリア・オランダ・ポーランド・ドイツ（外交機関）
+
+【24時間以内の変化】
+[Google GTIG 2026-06-26] Turlaの新規.NETバックドア「STOCKSTAY」の包括的技術分析を公開。4コンポーネント構成・WebSocket C2・KAZUARとのコード重複・ウクライナ政府軍事組織および欧州外交機関を標的とした継続的スパイ活動を詳報。開発開始は2022年12月に遡る。
+
+【概要】
+ロシア国家支援APT「Turla」（FSB Center 16帰属）が新規.NETバックドア「STOCKSTAY」を使用したスパイキャンペーンをGoogle GTIGが詳報。STOCKSTAYはWindows Formsフレームワーク製の4コンポーネント型バックドア（STOCKBROKER/STOCKMARKET/STOCKTRADER）で、WSS（WebSocket Secure）経由のC2通信（RSA 4096ビット暗号化）を使用。コンポーネントはWM_COPYDATAメッセージで相互通信する。学術・外交テーマのルアーを使ったフィッシングメール（悪意あるRDPファイル・HTA・RARアーカイブ）で配布。C2インフラはRender/Glitchなどのサードパーティホスティングサービスを悪用して検出を回避。KAZUARバックドアとのコード重複（K1MORPHERオブファスケーション・Squirrel3 RNG）が確認されており、共通の開発チームが推定される。開発活動は2022年12月から継続しており、2025年11月にはウクライナを標的にCVE-2025-8088（WinRAR）も悪用。
+
+攻撃の流れ:
+1. 外交・学術テーマの誘導フィッシングメールで悪意あるRDPファイル・HTA・RARアーカイブを送付
+2. STOCKSTAY.STOCKMARKETがオーケストレーターとして設定管理・STOCKSTAY.STOCKBROKERがWebSocketトンネルを確立しRSA 4096ビット暗号化C2通信を開始
+3. STOCKSTAY.STOCKTRADERにより画面キャプチャ・ファイル収集・レジストリ操作・プロセス実行・システム情報取得を実施しスパイ活動を継続
+
+【IoC】
+ドメイン（C2）:
+  wool-basalt-clock.glitch.me
+  weatherdataai.theworkpc.com
+  canal1zac1a.onrender.com
+  driverx86-adobe.onrender.com
+  google-ai-labs-it.onrender.com
+ハッシュ（SHA-256）:
+  b064a3efb04ed77e6c57955089ce639e193d166c8ea2216c98c3e9b701ea2cff
+  da8a96bc74e265f945f1cc6992c6dc0f9ea36ed1991f7b8d312db79d9bf78c40
+  6da0b4c1a5d0d3fb6e6a2990a82ba51db1f68a3bba818baa46526a29731e2342
+  a40bf9c75d1bfa6d66f1179f2321de6589f80d3089d992797a9cb0e84f6196ce
+ファイル名: StockMarket.exe / MSViewer.exe / Copia.msi / MicrosoftUpdateOneDrive.exe
+
+【監視ポイント】
+・[DNSログ / プロキシログ] Turla STOCKSTAYのC2ドメインへのDNS解決・アクセス検出
+Splunk SPL: index=dns (query="*.onrender.com" OR query="*.glitch.me" OR query="weatherdataai.theworkpc.com") | stats count by src_ip, query | sort - count
+→ onrender.com・glitch.meへのWSS（WebSocket over HTTPS）接続は開発者以外では稀。POST /wsエンドポイントへの接続を伴う場合は高リスク。
+Splunk SPL: index=endpoint EventCode=4688 (Image="*StockMarket*" OR CommandLine="*websocket-sharp*") | stats count by ComputerName, Image
+→ 既知ファイル名（StockMarket.exe等）の実行を検出。メールゲートウェイで.rdpファイル添付ブロックを推奨。
+
+MITRE ATT&CK:
+  T1204.002 (User Execution: Malicious File) — RDPファイル・HTA・RARアーカイブ
+  T1547.001 (Registry Run Keys) — レジストリRunキーによる永続化
+  T1071.001 (Web Protocols) — WebSocket SecureによるC2通信
+  T1573.002 (Asymmetric Cryptography) — RSA 4096ビット暗号化
+  T1113 (Screen Capture) — STOCKTRADERによるスクリーンショット取得
+  T1059.001 (PowerShell) — RunコマンドによるPowerShell実行
+
+【参照】
+https://cloud.google.com/blog/topics/threat-intelligence/stockstay-turla-intelligence-gathering
+https://thehackernews.com/2026/06/google-details-turlas-new-stockstay.html
+
+------------------------------------------------------------
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Chrome WebGL UAF（CVE-2026-13028/13032）を国家系APTがブラウザ攻撃チェーンに組み込む前に更新完了体制を確立する
+Tier: 2
+確度: 中
+根拠:
+  Evidence: Security NEXT 2026-06-25（記事186374）: Chrome 149.0.7827.196リリースとともにCVE-2026-13028/13032（WebGL UAF・Google Criticalラベル・サンドボックス脱出の起点となりうる構造）が公表された。
+  過去パターン: Chrome Critical UAF（CVE-2026-11645・CVSS 8.8）は2026年4月27日発見→6月9日KEV登録・実悪用確認という経路で報告された。DPRK/BONZAI（macOS.Gaslight）は直近でChrome/Brave/Firefox/Safariを標的にしており、Chrome新規CriticalはDPRK・Chinese APT系の潜在的な攻撃面となる。
+  脅威情報: 2026年6月25日のAPTセクションで既報のmacOS.GaslightはDPRK/BONZAI帰属であり、ブラウザ認証情報を主ターゲットにしていることが確認済み。WebGL UAF武器化は他のDPRK研究者または国家系APTによって並行して試みられる可能性がある。
+推定部分: 推定 — 現時点でPoC・実悪用ゼロ。WebGL UAF + サンドボックス脱出のPoC難易度は高く、即座の大規模悪用は低確率。ただし国家系APT研究者の内部PoC開発は排除できない。武器化のタイムラインは過去事例から2〜4週間スパンを想定。
+先回り監視: NVD/GitHubにCVE-2026-13028またはCVE-2026-13032のPoC URLが追加される。Google ChromeへのCritical帯外の緊急パッチが発行される。CISAのKEV追加通知メール（CVE-2026-13028/13032）を受信する。
+的中判定: BleepingComputer・SecurityWeek・The Hacker News・CISAのいずれかがCVE-2026-13028またはCVE-2026-13032のPoC公開または実悪用を報告した場合
+
+・予報2: Cisco 2026年7月1日公開予定アドバイザリ（Catalyst Center Endpoint Connector）の即日評価体制を整備する
+Tier: 2
+確度: 中
+根拠:
+  Evidence: Cisco PSIRT 2026-06-25（事前告知 cisco-sa-notice-vwL7b0S7）: 2026年7月1日にCisco Catalyst Center Secure Endpoint Connectors（Linux/Mac/Windows）向けセキュリティアドバイザリを公開することを事前告知した。CVEの詳細はエンバーゴ中。
+  過去パターン: 2026年上半期にCisco PSIRTが事前告知を発行した後に公開されたアドバイザリにはHigh以上SIRが含まれることが多い（Cisco UCM CVE-2026-20230: Critical SIR・実悪用確認、Cisco ISE CVE-2026-20181/20190: CVSS 9.1等）。Catalyst Centerはネットワーク全体を制御する管理プラットフォームであり、侵害時の横展開リスクが甚大。
+  脅威情報: Cisco ネットワーク管理製品を標的とするChinese-nexus APT（Velvet Ant等）が2026年Q2に観測されており、新規Cisco Critical CVEは早期に武器化リスクがある。
+推定部分: 推定 — 公開されるCVEの具体的なSIRとCVSSは未公表。Cisco PSIRTが事前告知を発行するケースはHigh以上SIRを含む傾向があるが、Medium以下のみの可能性も排除できない。
+先回り監視: 2026年7月1日のCisco Security Center（sec.cloudapps.cisco.com）にCatalyst Center Endpoint Connector向け新規アドバイザリが掲載されたことを確認する。CVSSスコア・SIRレーティングを即日評価し、Critical/High の場合はパッチ適用スケジュールを即日策定する。
+的中判定: 2026年7月1日にCisco PSIRTがCatalyst Center Secure Endpoint Connector向けHigh以上（CVSS 7.0以上またはSIR High）のアドバイザリを公開し、BleepingComputerまたはThe Hacker Newsが報道した場合
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（APT）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・KongTuke / KongTuke-2026-Mistic-IAB → 既報（2026-06-25）・窓内に変化なし
+・不明（DPRK/BONZAI）/ Gaslight-2026-macOSBONZAI → 既報（2026-06-25）・窓内に変化なし
+
+本日の集計（APT）:
+APT — 本編1件 / 注目動向0件 / 除外2件
+
+========================================

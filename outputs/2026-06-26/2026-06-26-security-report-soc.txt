@@ -1,0 +1,103 @@
+========================================
+セキュリティインテリジェンス日報（GMOイエラエSOC推奨情報版）
+調査日時: 2026-06-26 05:30 JST
+調査期間: 2026-06-25 05:00 〜 2026-06-26 05:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【GMOイエラエSOC推奨情報】
+監視対象23製品以外でCVE・ゼロデイ・AI攻撃の3観点に関連し注目すべき情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Cisco Catalyst Center Endpoint Connector 7月1日公開予定アドバイザリへの事前準備
+観点: CVE関連
+採用契機: γ（SIEM/ネットワーク管理基盤の変更）・δ（海外で事前告知・国内波及近い）
+------------------------------------------------------------
+
+優先度: 高
+対象: Cisco Catalyst Center Secure Endpoint Connector (Linux/Mac/Windows)
+
+【24時間以内の変化】
+[Cisco PSIRT 2026-06-25] cisco-sa-notice-vwL7b0S7 として2026年7月1日にCatalyst Center Secure Endpoint Connectors向けセキュリティアドバイザリを公開することを事前告知した。CVEの詳細・CVSSはエンバーゴ中。
+
+【概要】
+Cisco PSIRTが2026年6月25日に事前告知（cisco-sa-notice-vwL7b0S7）を発行し、2026年7月1日にCisco Catalyst Center Secure Endpoint Connectors（Linux/Mac/Windows版）向けセキュリティアドバイザリを公開予定と告知した。CVEの詳細・CVSSはエンバーゴ中のため不明。Catalyst CenterはCiscoネットワーク全体のオーケストレーションプラットフォームであり、脆弱性の深刻度次第では侵害後の横展開リスクが甚大となる。2026年上半期にCisco製品でCritical SIRが多数報告されており（UCM CVE-2026-20230・ISE CVE-2026-20181等）、Cisco PSIRTの事前告知はHigh以上SIRを含む傾向がある。Chinese-nexus APT（Velvet Ant等）がCisco管理製品を標的にしていることも2026年Q2に観測済み。
+
+【推奨アクション】
+・2026年7月1日にCisco Security Center（sec.cloudapps.cisco.com/security/center/publicationListing.x）を確認しCVSS・SIRを即日評価する担当者を事前に指定しておく
+・Catalyst Centerのバージョンを事前確認し、パッチ適用手順・影響調査の段取りを準備しておく
+・アドバイザリがHigh（CVSS 7.0以上）以上の場合は当日中にパッチ適用スケジュールを決定し、Criticalの場合は緊急パッチ適用プロセスを起動する
+・[ネットワーク管理ログ] Catalyst CenterおよびCisco機器の管理通信異常検出
+Splunk SPL: index=network sourcetype=cisco:ios OR sourcetype=cisco:catalyst_center | where match(message, "(?i)(unauthorized|privilege|admin|error|auth|fail)") | stats count by host, user, message | sort - count
+→ 7月1日以降はアドバイザリのIoCが公開され次第SPLルールを追加すること
+
+【参照】
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityNotice/cisco-sa-notice-vwL7b0S7
+
+------------------------------------------------------------
+2. Ubiquiti UniFi OS Server FCEB対応期限（本日）到来 — 非FCEB組織でのパッチ適用確認
+観点: CVE関連
+採用契機: β（国内企業が広く利用するネットワーク機器）・γ（FCEB期限到来によるSOC確認タイミング）
+------------------------------------------------------------
+
+優先度: 中
+対象: Ubiquiti UniFi OS Server 5.0.6以前
+
+【24時間以内の変化】
+[CISA KEV 2026-06-26] CVE-2026-34908/34909/34910（CVSS 10.0 × 3件）のFCEB機関向け対応期限が本日2026-06-26に到来した。
+
+【概要】
+CVE-2026-34908/34909/34910（Ubiquiti UniFi OS Server 5.0.6以前・CVSS 10.0 × 3件）のCISA KEV登録済みFCEB対応期限が本日到来した。本CVEは2026-06-24の既報として製品別CVEセクションでは「変化なし」として除外しているが、FCEB期限到来は非FCEB組織においてもパッチ適用状況の緊急確認タイミングである。UniFiはエンタープライズ・中規模事業者のWi-Fi/ネットワーク管理に広く利用されており、未パッチ環境は認証バイパス・パストラバーサル・コマンドインジェクションのチェーンにより無認証でroot権限のリモートコード実行が可能。
+
+【推奨アクション】
+・UniFi OS Server 5.0.7以降へのアップデート完了を本日中に確認する
+・アップデートが未完了の場合は管理インタフェースをVPN・内部ネットワーク限定に即時制限し、インターネット直接アクセスを遮断する
+・UniFi管理コンソールへの不審ログイン・設定変更がなかったか過去1週間分のアクセスログをレビューする
+・[ネットワークログ] UniFi OS ServerへのWAN側からのアクセス・管理API操作の異常検出
+Splunk SPL: index=network (sourcetype=ubiquiti* OR dest_port=443) dest=<UniFi管理IP> | stats count by src_ip, uri_path | where count > 10 | sort - count
+→ 管理IPへのWAN側からの接続が継続している場合は即時ブロック。ログに新規管理者追加・設定変更が確認された場合は侵害を疑い調査すること
+
+【参照】
+https://community.ui.com/releases/UniFi-OS-Server-5-0-7/e6f40cf0-7d13-4a11-b7db-8b8d61a8f94c
+https://www.security-next.com/186359
+
+------------------------------------------------------------
+3. Microsoft Edge（Chromiumベース）Chrome Critical CVEパッチ同期タイミングの確認
+観点: CVE関連
+採用契機: β（国内エンタープライズで広く標準採用）・γ（SIEM/EDR管理対象ブラウザのバージョン確認）
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft Edge (Chromiumベース) — 監視対象製品リスト #17
+
+【24時間以内の変化】
+[Security NEXT 2026-06-25] Google Chrome 149.0.7827.196でCritical 4件（CVE-2026-13028/13032/13033/13038）が修正された。ChromiumベースのMicrosoft Edge（監視対象製品）にも同等の脆弱性が存在し、Microsoftのパッチ公開タイミング確認が必要。
+
+【概要】
+Section 3（製品別CVE）に掲載したGoogle Chrome Critical 4件（CVE-2026-13028/13032/13033/13038）はChromiumエンジンの脆弱性であり、監視対象製品リスト17番のMicrosoft Edgeにも同等の影響が及ぶ。MicrosoftはGoogle Chromeのパッチ公開から通常数日〜1週間以内にEdgeへのChromiumアップデートを配信するが、社内端末管理下では自動更新が遅延することがある。EdgeはMicrosoft 365・SharePoint・Intuneとの統合により日本のエンタープライズ環境で広く標準採用されており、Chrome更新だけでなくEdge更新完了の確認も必要。
+
+【推奨アクション】
+・Microsoft EdgeのStable Channel最新バージョンを確認し、Chromium 149.0.7827.196相当以降への更新状況を把握する（確認方法: edge://version/）
+・Intune/SCCMで管理されたEdgeの自動更新ポリシーが有効になっていることを確認し、未更新端末リストを抽出する
+・MicrosoftのEdgeセキュリティリリースノートで当該CVE修正版の公開を確認次第、強制更新を適用する
+・[エンドポイント管理] Microsoft Edgeのバージョン未更新端末検出
+Splunk SPL: index=endpoint sourcetype=WinRegistry REGISTRY_PATH="*\Microsoft\Edge\BLBeacon\version*" | eval version=REGISTRY_VALUE_DATA | stats count by ComputerName, version | sort - count
+→ MicrosoftがChromium 149.0.7827.196相当のEdgeパッチを公開したタイミングでフィルタ条件を更新すること
+
+【参照】
+https://learn.microsoft.com/en-us/deployedge/microsoft-edge-relnotes-security
+https://www.security-next.com/186374
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（SOC推奨情報）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（α〜η条件を満たすも他セクションと重複する情報は各セクションで処理済み）
+
+本日の集計（SOC推奨情報）:
+SOC推奨情報 — 高1件 / 中2件 / 低0件 / 除外0件
+
+========================================

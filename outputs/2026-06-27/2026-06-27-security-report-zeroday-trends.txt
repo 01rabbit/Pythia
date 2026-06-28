@@ -1,0 +1,112 @@
+========================================
+セキュリティインテリジェンス日報 — Section 2: ゼロデイ・セキュリティトレンド
+調査日時: 2026-06-27 07:30 JST
+調査期間: 2026-06-26 07:00 〜 2026-06-27 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Turla（別名: Snake / Venomous Bear / Waterbug / IRON HUNTER / UNC4210 / 国家帰属: RU / 帰属信頼度: 高）
+活動タイプ: 新規マルウェア発見 / 活動中キャンペーン
+------------------------------------------------------------
+
+採用契機: Q, R, S（Google GTIG単一ベンダー高信頼帰属・新規マルウェアファミリー詳細技術分析・複数地域政府機関標的）
+標的: 政府・防衛機関 / ウクライナ・イタリア・ドイツ・ポーランド・オランダ（東欧・西欧）
+マルウェア: STOCKSTAY（.NETバックドア・WebSocket C2）/ Kazuar（関連既存ツール）
+
+【24時間以内の変化】
+[Google Threat Intelligence Group (GTIG) 2026-06-26] GTIGがTurlaの新型.NETバックドアSTOCKSTAYの詳細技術分析を公開。KazuarとのコードDNAレベルの重複を確認。2022年12月から開発・ウクライナ軍/政府機関に実展開済み。
+
+【概要】
+ロシア国家帰属APTグループTurlaが使用する新型.NETバックドア「STOCKSTAY」の詳細分析がGoogle GTIGによって公開された。STOCKSTAYはWindowsFormsフレームワークを使用し、websocket-sharpライブラリ経由のWebSocket C2通信を実装。KazuarとのコードDNA上の重複が確認されており、Turlaの既存ツールセットの延長として位置づけられる。学術・外交テーマの標的型フィッシングメール（RAR添付・CVE-2025-8088悪用）を通じてウクライナ政府・軍事組織・欧州外交機関を標的にしており、初期アクセスとポスト侵害の双方で使用される。2025年11月までウクライナへのフィッシング活動継続を観測。
+
+攻撃の流れ（判明分）:
+1. 学術・外交テーマの標的型フィッシングメールでRARアーカイブを配布（CVE-2025-8088 WinRAR悪用）
+2. STOCKSTAYバックドアを埋め込み・実行し、WebSocket経由でC2と暗号化通信を確立
+3. ウクライナ政府・軍事ネットワーク内での長期スパイ活動・情報収集。Kazuar等の既存ツールと連携して多段階侵害を継続。
+
+【新規TTP】
+・[T1566.001] Spearphishing Attachment — 学術・外交テーマのRAR添付メールでSTOCKSTAYを配布
+・[T1071.004] Application Layer Protocol: WebSocket — websocket-sharpライブラリを使用したWebSocket経由の暗号化C2通信
+・[T1203] Exploitation for Client Execution — CVE-2025-8088 WinRAR脆弱性悪用によるRAR展開時の任意コード実行
+
+【IoC】
+IoC: 確認されず（GTIGレポートでIOC非公開）
+
+【推奨アクション】
+・外交・学術関連のRAR/ZIP添付メールの厳格な検査強化。WinRARを最新版にアップデート（CVE-2025-8088修正済み版）。EDRによるWebSocketベースのC2通信の監視強化。特にウクライナ・欧州外交機関との接触がある政府・研究機関・防衛関連組織は要注意。
+Splunk SPL: index=wineventlog EventCode=4688 ParentProcessName="*winrar*" OR ParentProcessName="*7zip*" | stats count by ComputerName, CommandLine | where isnotnull(CommandLine)
+→ WinRAR/7-zip展開後のプロセス生成を追跡し、STOCKSTAYペイロードの起動を検知。
+Splunk SPL: index=proxy (uri_path="*ws://*" OR uri_path="*wss://*") NOT (dest="*.microsoft.com" OR dest="*.google.com" OR dest="*.slack.com") | stats count by src_ip, dest | sort -count
+→ 非標準ポート（8443/9443/4433等）でのWebSocket接続や業務上説明できない外部宛WebSocket C2の監視を強化。
+
+【参照】
+https://cloud.google.com/blog/topics/threat-intelligence/stockstay-turla-intelligence-gathering
+https://thehackernews.com/2026/06/google-details-turlas-new-stockstay.html
+https://therecord.media/russia-turla-espionage-ukraine-stockstay-malware
+https://www.scworld.com/brief/turla-group-deploys-new-stockstay-backdoor-against-ukraine-and-italy
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（Russian-speaking IAB / 帰属信頼度: 中）/ FortiBleed-2026-CredentialCampaign（規模更新: 430,000台超 / 110M超認証情報）
+採用契機: S（規模大・帰属中）。FortiGate機器を標的としたクレデンシャル収集キャンペーンの最終規模が430,000台超・110M超の認証情報と確認（当初73,932台→86,644台→430,000台超へ大幅更新）。FortiOS内蔵の診断コマンドを悪用したGoベースのFortiGateSniifferで24のネットワークプロトコルを同時監視し110M超の認証情報を収集。ランサムウェアオペレーター・国家系グループへのアクセス販売継続中。CISA 2026-06-18勧告後もキャンペーン継続。帰属信頼度: 中。
+推奨アクション: 全VPN・管理セッション終了。全パスワードリセット（特に管理者・VPNユーザー）。MFA強制。FortiOS 7.4/7.6/8.0以降に更新。異常ログイン・設定変更のログ確認。侵害兆候がある機器の交換検討。
+Splunk SPL: index=fortinet sourcetype=fgt_event subtype=vpn action=tunnel-up | stats count by user, srcip | where count > 5
+→ FortiGate診断モードでのsniffer有効化ログ（diagnose sniffer packet）に注意。通常運用では発生しない。MFA未設定のVPNユーザーは最優先でパスワードリセット対象。
+参照: https://thehackernews.com/2026/06/fortibleed-targeted-fortigate-firewalls.html
+参照: https://www.cryptika.com/fortibleed-attack-hit-430000-fortigate-firewalls-stealing-110m-credentials/
+参照: https://www.cisa.gov/news-events/alerts/2026/06/18/cisa-urges-hardening-fortinet-devices-after-reports-credential-exposure
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: CVE-2026-12569未パッチのWindchill/FlexPLM環境における即時IOC確認とWebシェル調査が必要
+Tier: 1
+確度: 高
+根拠:
+  Evidence: [CISA 2026-06-25] KEV追加とFCEB期限2026-06-28を確認。[PTC 2026-06-25] 「攻撃の高まりが継続している」とJSP Webシェル展開を公式確認。[BleepingComputer/THN/SecurityWeek 2026-06-25] 複数媒体が即時パッチ適用を訴える報道（バースト検出閾値超過: 6ソース以上）。
+  過去パターン: PLMソフトウェアへのWebシェル展開は長期にわたる永続化・知的財産窃取キャンペーンの起点となる事例が多い（2023年Ivanti・2024年ConnectWise等の類似パターン）。KEV追加後24〜72時間以内の悪用拡大は繰り返し観測されている。
+  脅威情報: PTC自身がJSP Webシェル展開の継続を確認。FCEB期限2026-06-28は本レポート後24時間以内。攻撃者はすでに製造業向けPLMシステムをターゲットとした持続的なインフラを構築済みと推定される。
+先回り監視: 製造業・自動車・防衛関連のEDRで /Windchill/ または /FlexPLM/ パスへのPOSTリクエストと予期せぬJSPファイル作成イベントが検出された場合。SIEMでWindchillサーバからの内部ネットワークへの通常外のTCP接続増加。
+的中判定: Security NEXTまたはセキュリティベンダーがCVE-2026-12569を悪用したWebシェル経由の新規インシデント事例（製造業・PLMシステム対象）を48時間以内に報告した場合
+
+・予報2: Turla STOCKSTAY標的の政府機関・外交機関向け WinRAR 経由フィッシングへの備えと WebSocket C2 検知強化
+Tier: 2
+確度: 中
+根拠:
+  Evidence: [Google GTIG 2026-06-26] STOCKSTAYの詳細分析公開。ウクライナ・欧州政府組織への活動継続を確認。WinRAR CVE-2025-8088悪用のRAR配布を2025年11月まで観測。
+  過去パターン: Turlaは新マルウェア詳細が公開された後も攻撃を継続する傾向。学術・外交テーマのフィッシングは日本の官公庁・研究機関にも定期的に到達した事例がある。
+  脅威情報: STOCKSTAYはKazuar後継として既にウクライナ政府ネットワークへの実展開済み。WebSocket C2はHTTPフィルタリングを回避しやすく検知が困難。
+推定部分: 推定 — ウクライナ・欧州への集中展開は確認済みだが、日本政府機関・大学への波及は未確認。Turlaの過去パターンから波及リスクを推定しているが直接証拠はない。
+先回り監視: 外部からのRAR/ZIP添付メール内のSTOCKSTAYペイロードのEDR検知。WinRAR展開後のWebSocket接続試行（非標準ポート8443/9443/4433）。.NETランタイム生成プロセスからのWebSocket接続のEDRアラート。
+的中判定: JPCERT/CCまたはセキュリティベンダーがSTOCKSTAYまたはKazuarの亜種を使用したTurlaによる日本・アジア太平洋地域の政府機関への攻撃を48〜72時間以内に報告した場合
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（APT）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・Nightmare Eclipse / NightmareEclipse-2026-WindowsZeroDayDisclosure → 2026-06-24に注目動向採用済み。24時間窓内に新規CVE開示・PoC公開の変化なし。
+・KongTuke / KongTuke-2026-Mistic-IAB → 2026-06-25に注目動向採用済み。24時間窓内に変化なし。
+
+本日の集計:
+APT — 本編1件 / 注目動向1件 / 除外2件
+
+========================================

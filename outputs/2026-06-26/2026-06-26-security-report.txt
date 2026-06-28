@@ -1,0 +1,403 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-06-26 07:30 JST
+調査期間: 2026-06-25 07:00 〜 2026-06-26 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT 2026-06-25 報道（記事番号186374）
+
+------------------------------------------------------------
+1. CVE-2026-13028 / CVE-2026-13032 / CVE-2026-13033 / CVE-2026-13038 / Google Chrome 149.0.7827.196未満（Windows/Mac/Linux）
+対象: Chrome 149.0.7827.196未満を実行する全プラットフォーム（Windows/Mac/Linux）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 未公表（Google: Critical ×4 / High ×14 — 合計18件修正）
+状態: パッチ提供済み（149.0.7827.196/197）
+
+【24時間以内の変化】
+[Security NEXT 2026-06-25] Chrome 149.0.7827.196/197がリリースされ、Critical 4件・High 14件の計18件が修正された。国内メディアで初報告。
+
+【概要】
+GoogleがChrome 149.0.7827.196/197をリリースし18件の脆弱性を修正した。Critical 4件の内訳: CVE-2026-13028（WebGL Use-After-Free・外部研究者報告・6月7日受理）、CVE-2026-13032（WebGL Use-After-Free・Google内部発見・6月13日）、CVE-2026-13033（Blink InterestGroups境界外読み取り）、CVE-2026-13038（Autofill関連・詳細未公表）。WebGL UAF 2件（CVE-2026-13028/13032）はChromeサンドボックス脱出の起点となりうる構造的に重篤な脆弱性であり、チェーン悪用リスクがある。Autofill（CVE-2026-13038）はパスワード・クレジットカード情報を扱うコンポーネントであり悪用時の影響範囲が広い。現時点でPoC公開・実悪用は未確認。ChromeベースのEdgeも別途バージョン確認が必要。
+注意点: WebGL UAFのPoC難易度は高く即時大規模悪用のリスクは低いが、国家系APT（DPRK/Lazarus等）が内部PoCを開発するリスクは排除できない。KEV追加・PoC公開の兆候を引き続き監視すること。
+
+攻撃の流れ（WebGL UAF: CVE-2026-13028/13032）:
+1. 攻撃者がWebGLを使用する悪意あるWebページを用意し、ユーザーにアクセスさせる
+2. WebGL処理中にUse-After-Free条件を発生させ、Chromeレンダラプロセス内で任意コード実行
+3. サンドボックス脱出コードと組み合わせることでOSレベルのコード実行・マルウェア投下が可能
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[エンドポイント管理 / レジストリ] Chrome未更新バージョン（149.0.7827.196未満）の検出
+Splunk SPL: index=endpoint sourcetype=WinRegistry REGISTRY_PATH="*\Google\Chrome\BLBeacon\version*" | eval version=REGISTRY_VALUE_DATA | stats count by ComputerName, version | where NOT match(version, "^149\.0\.7827\.([1-9][9][6-9]|[2-9][0-9]{2}|1000)")
+→ 149.0.7827.196未満の端末を優先更新対象として抽出し、エンドポイント管理ツール（Intune/SCCM等）の自動更新ポリシーを確認する。Edge（Chromiumベース）は別途バージョン管理が必要。
+・Autofill（CVE-2026-13038）は認証情報窃取チェーンへの悪用可能性があるため、Chrome更新完了後にブラウザ保存クレデンシャルの棚卸し・パスワードマネージャーへの移行を推奨
+
+【参照】
+https://www.security-next.com/186374
+https://cybersecuritynews.com/chrome-149-security-update/
+https://www.malwarebytes.com/blog/news/2026/06/update-chrome-to-patch-critical-browser-security-flaws
+https://gbhackers.com/google-chrome-update-patches-18-security-flaws/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-13028/13032/13033/13038 — 24時間窓内に発行確認されず
+
+昇格理由: Security NEXT 2026-06-25 報道（記事番号186427）
+
+------------------------------------------------------------
+2. CVE-2026-13281 / CVE-2026-13282 / CVE-2026-13283 / Google Chrome 149.0.7827.200/201未満（Windows/Mac/Linux）
+対象: Chrome 149.0.7827.200未満（Linux）/ 149.0.7827.201未満（Windows/Mac）を実行する全プラットフォーム
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 未公表（Google: High ×3 — CVE-2026-13281 Mojo整数オーバーフロー / CVE-2026-13282 Payments UAF / CVE-2026-13283 AdFilter UAF）
+状態: パッチ提供済み（149.0.7827.200/149.0.7827.201）
+
+【24時間以内の変化】
+[Security NEXT 2026-06-25] Chrome Critical 4件修正（149.0.7827.196/197）から2日後に追加パッチ（149.0.7827.200/201）がリリースされ、High 3件が修正された（記事番号186427）。
+
+【概要】
+GoogleがChrome 149.0.7827.200（Linux）/ 149.0.7827.201（Windows/Mac）をリリースし、High 3件を追加修正した。内訳: CVE-2026-13281（IPC基盤「Mojo」の整数オーバーフロー・CWE-190・レンダラ侵害後のサンドボックス脱出起点）、CVE-2026-13282（Payments決済コンポーネントのUse-After-Free・CWE-416・Googleが2026-05-28に発見・決済情報窃取リスク）、CVE-2026-13283（AdFilterコンポーネントのUse-After-Free・CWE-416・Googleが2026-06-11に発見）。前回パッチ（149.0.7827.196/197）適用済み端末でも本パッチが未適用の場合があるため、改めて最新バージョン確認が必要。CVE-2026-13281（Mojo整数オーバーフロー）はWebGL UAF（CVE-2026-13028/13032）との連鎖悪用でサンドボックス脱出に悪用される可能性がある。
+
+攻撃の流れ（CVE-2026-13281 Mojo整数オーバーフロー）:
+1. 別脆弱性またはソーシャルエンジニアリングによりChromeレンダラプロセスを侵害
+2. Mojoの整数オーバーフローを利用してプロセス間通信を悪用しサンドボックス脱出を試行
+3. OSレベルでの任意コード実行・マルウェア投下
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[エンドポイント管理 / レジストリ] Chrome未更新バージョン（149.0.7827.200/201未満）の検出
+Splunk SPL: index=endpoint sourcetype=WinRegistry REGISTRY_PATH="*\Google\Chrome\BLBeacon\version*" | eval version=REGISTRY_VALUE_DATA | stats count by ComputerName, version | where NOT match(version, "^149\.0\.7827\.(20[0-9]|[3-9][0-9]{2}|1000)")
+→ 149.0.7827.196/197更新済み端末でも149.0.7827.200/201未満の場合は本パッチ未適用。自動更新が有効な環境では数日内に適用されるが、管理対象端末は強制更新を適用すること。
+
+【参照】
+https://www.security-next.com/186427
+https://chromereleases.googleblog.com/2026/06/stable-channel-update-for-desktop_0153744567.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-13281/13282/13283 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-12569 / PTC Windchill PDMlink / FlexPLM
+対象: Windchill PDMlink/FlexPLM 11.0 M030以前・11.1 M020以前・12.0 M020以前・12.1 M010以前・13.0 M010以前
+------------------------------------------------------------
+
+優先度: 緊急（実悪用確認・FCEB期限2026-06-28）
+CVSS: 9.8 (Critical) / CVSS v4: 9.3
+状態: パッチ提供済み・KEV登録済み（2026-06-25）・Webシェル展開による実悪用継続中
+FCEB対応期限: 2026-06-28
+
+【24時間以内の変化】
+[CISA KEV 2026-06-25] CVE-2026-12569をKEVカタログに追加。FCEB機関向け対応期限2026-06-28を設定。
+[The Hacker News 2026-06-25] PTC Windchill/FlexPLM RCE脆弱性の実悪用を詳報。JSP Webシェル（/Windchill/login/[0-9a-f]{16}.jsp）展開が継続中。PTC「heightened threat activity継続中」と確認。
+[SecurityWeek 2026-06-25] PTC Windchill脆弱性の初の実悪用確認を報道。製造業・工学系PLMプラットフォームへの初のKEV登録。
+
+【概要】
+PTC Windchill PDMlink（製品ライフサイクル管理）およびFlexPLM（アパレル・フットウェア・消費財向けPLM）における信頼されないデータのデシリアライゼーション（CWE-502）によるリモートコード実行脆弱性。未認証の遠隔攻撃者が細工したリクエストを送信するだけでサーバー上で任意コードを実行可能。2026年6月25日にCISAがKEV登録し、実悪用として攻撃者がJSP Webシェル（/Windchill/login/[0-9a-f]{16}.jspパターン）をデプロイしコマンド実行・データ窃取を継続中。PTC製品のKEV登録は初めて。製造・エンジニアリング・小売分野で広く利用されるPLMプラットフォームのため、産業スパイ・サプライチェーン侵害リスクが高い。BSI（ドイツ連邦情報セキュリティ庁）も緊急警告を発行。
+
+攻撃の流れ:
+1. 攻撃者がWindchill/FlexPLMのHTTP/HTTPSエンドポイントに細工した悪意あるリクエストを送信（認証不要）
+2. デシリアライゼーション処理中に任意コードが実行され、サーバー上でJSP Webシェルをデプロイ
+3. WebシェルによりBAUトラフィックに紛れた永続的なリモートコマンド実行・設計データ・CADファイル・製造仕様の窃取が可能
+
+【IoC】
+IP: 5.180.41.35
+Hash: 確認されず
+ファイル名: [0-9a-f]{16}.jsp（/Windchill/login/配下のWebシェル）/ flst.txt（/tmpに作成されるファイル一覧）
+
+【監視ポイント】
+・[WebサーバーアクセスログまたはWAF] Windchill loginパスへの不審なJSPリクエスト
+Splunk SPL: index=web sourcetype=access_combined uri_path="/Windchill/login/*.jsp" http_method=POST | stats count by src_ip, uri_path | sort - count
+→ /Windchill/login/ディレクトリへの静的アセット以外のJSPリクエストは異常。16進数16桁のファイル名.jspへのPOSTはWebシェル確定。
+Splunk SPL: index=web sourcetype=access_combined src_ip="5.180.41.35" | stats count by uri_path, http_method | sort - count
+→ 既知C2 IP（5.180.41.35）からのアクセスを即時調査・ブロックすること
+
+【参照】
+https://thehackernews.com/2026/06/cisa-adds-exploited-ptc-windchill-rce.html
+https://www.securityweek.com/first-ever-exploitation-of-ptc-windchill-vulnerability-discovered-in-the-wild/
+https://www.cisa.gov/news-events/alerts/2026/06/25/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://www.ptc.com/en/about/trust-center/advisory-center/active-advisories/windchill-flexplm-rce-vulnerability
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-12569 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Turla（Venomous Bear / Snake / IRON HUNTER / JOVIAL SERPENT / Waterbug / Krypton）
+帰属: ロシア連邦（FSB Center 16）/ 信頼度: 高
+キャンペーンID: Turla-2026-STOCKSTAY-EspionageCampaign
+------------------------------------------------------------
+
+活動タイプ: 新規マルウェア / 継続中キャンペーン / TTP更新
+モチベーション: 国家支援スパイ活動
+標的: ウクライナ（政府・軍事組織）・イタリア・オランダ・ポーランド・ドイツ（外交機関）
+
+【24時間以内の変化】
+[Google GTIG 2026-06-26] Turlaの新規.NETバックドア「STOCKSTAY」の包括的技術分析を公開。4コンポーネント構成・WebSocket C2・KAZUARとのコード重複・ウクライナ政府軍事組織および欧州外交機関を標的とした継続的スパイ活動を詳報。開発開始は2022年12月に遡る。
+
+【概要】
+ロシア国家支援APT「Turla」（FSB Center 16帰属）が新規.NETバックドア「STOCKSTAY」を使用したスパイキャンペーンをGoogle GTIGが詳報。STOCKSTAYはWindows Formsフレームワーク製の4コンポーネント型バックドア（STOCKBROKER/STOCKMARKET/STOCKTRADER）で、WSS（WebSocket Secure）経由のC2通信（RSA 4096ビット暗号化）を使用。コンポーネントはWM_COPYDATAメッセージで相互通信する。学術・外交テーマのルアーを使ったフィッシングメール（悪意あるRDPファイル・HTA・RARアーカイブ）で配布。C2インフラはRender/Glitchなどのサードパーティホスティングサービスを悪用して検出を回避。KAZUARバックドアとのコード重複（K1MORPHERオブファスケーション・Squirrel3 RNG）が確認されており、共通の開発チームが推定される。開発活動は2022年12月から継続しており、2025年11月にはウクライナを標的にCVE-2025-8088（WinRAR）も悪用。
+
+攻撃の流れ:
+1. 外交・学術テーマの誘導フィッシングメールで悪意あるRDPファイル・HTA・RARアーカイブを送付
+2. STOCKSTAY.STOCKMARKETがオーケストレーターとして設定管理・STOCKSTAY.STOCKBROKERがWebSocketトンネルを確立しRSA 4096ビット暗号化C2通信を開始
+3. STOCKSTAY.STOCKTRADERにより画面キャプチャ・ファイル収集・レジストリ操作・プロセス実行・システム情報取得を実施しスパイ活動を継続
+
+【IoC】
+ドメイン（C2）:
+  wool-basalt-clock.glitch.me
+  weatherdataai.theworkpc.com
+  canal1zac1a.onrender.com
+  driverx86-adobe.onrender.com
+  google-ai-labs-it.onrender.com
+ハッシュ（SHA-256）:
+  b064a3efb04ed77e6c57955089ce639e193d166c8ea2216c98c3e9b701ea2cff
+  da8a96bc74e265f945f1cc6992c6dc0f9ea36ed1991f7b8d312db79d9bf78c40
+  6da0b4c1a5d0d3fb6e6a2990a82ba51db1f68a3bba818baa46526a29731e2342
+  a40bf9c75d1bfa6d66f1179f2321de6589f80d3089d992797a9cb0e84f6196ce
+ファイル名: StockMarket.exe / MSViewer.exe / Copia.msi / MicrosoftUpdateOneDrive.exe
+
+【監視ポイント】
+・[DNSログ / プロキシログ] Turla STOCKSTAYのC2ドメインへのDNS解決・アクセス検出
+Splunk SPL: index=dns (query="*.onrender.com" OR query="*.glitch.me" OR query="weatherdataai.theworkpc.com") | stats count by src_ip, query | sort - count
+→ onrender.com・glitch.meへのWSS（WebSocket over HTTPS）接続は開発者以外では稀。POST /wsエンドポイントへの接続を伴う場合は高リスク。
+Splunk SPL: index=endpoint EventCode=4688 (Image="*StockMarket*" OR CommandLine="*websocket-sharp*") | stats count by ComputerName, Image
+→ 既知ファイル名（StockMarket.exe等）の実行を検出。メールゲートウェイで.rdpファイル添付ブロックを推奨。
+
+MITRE ATT&CK:
+  T1204.002 (User Execution: Malicious File) — RDPファイル・HTA・RARアーカイブ
+  T1547.001 (Registry Run Keys) — レジストリRunキーによる永続化
+  T1071.001 (Web Protocols) — WebSocket SecureによるC2通信
+  T1573.002 (Asymmetric Cryptography) — RSA 4096ビット暗号化
+  T1113 (Screen Capture) — STOCKTRADERによるスクリーンショット取得
+  T1059.001 (PowerShell) — RunコマンドによるPowerShell実行
+
+【参照】
+https://cloud.google.com/blog/topics/threat-intelligence/stockstay-turla-intelligence-gathering
+https://thehackernews.com/2026/06/google-details-turlas-new-stockstay.html
+
+------------------------------------------------------------
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Chrome WebGL UAF（CVE-2026-13028/13032）を国家系APTがブラウザ攻撃チェーンに組み込む前に更新完了体制を確立する
+Tier: 2
+確度: 中
+根拠:
+  Evidence: Security NEXT 2026-06-25（記事186374）: Chrome 149.0.7827.196リリースとともにCVE-2026-13028/13032（WebGL UAF・Google Criticalラベル・サンドボックス脱出の起点となりうる構造）が公表された。
+  過去パターン: Chrome Critical UAF（CVE-2026-11645・CVSS 8.8）は2026年4月27日発見→6月9日KEV登録・実悪用確認という経路で報告された。DPRK/BONZAI（macOS.Gaslight）は直近でChrome/Brave/Firefox/Safariを標的にしており、Chrome新規CriticalはDPRK・Chinese APT系の潜在的な攻撃面となる。
+  脅威情報: 2026年6月25日のAPTセクションで既報のmacOS.GaslightはDPRK/BONZAI帰属であり、ブラウザ認証情報を主ターゲットにしていることが確認済み。WebGL UAF武器化は他のDPRK研究者または国家系APTによって並行して試みられる可能性がある。
+推定部分: 推定 — 現時点でPoC・実悪用ゼロ。WebGL UAF + サンドボックス脱出のPoC難易度は高く、即座の大規模悪用は低確率。ただし国家系APT研究者の内部PoC開発は排除できない。武器化のタイムラインは過去事例から2〜4週間スパンを想定。
+先回り監視: NVD/GitHubにCVE-2026-13028またはCVE-2026-13032のPoC URLが追加される。Google ChromeへのCritical帯外の緊急パッチが発行される。CISAのKEV追加通知メール（CVE-2026-13028/13032）を受信する。
+的中判定: BleepingComputer・SecurityWeek・The Hacker News・CISAのいずれかがCVE-2026-13028またはCVE-2026-13032のPoC公開または実悪用を報告した場合
+
+・予報2: Cisco 2026年7月1日公開予定アドバイザリ（Catalyst Center Endpoint Connector）の即日評価体制を整備する
+Tier: 2
+確度: 中
+根拠:
+  Evidence: Cisco PSIRT 2026-06-25（事前告知 cisco-sa-notice-vwL7b0S7）: 2026年7月1日にCisco Catalyst Center Secure Endpoint Connectors（Linux/Mac/Windows）向けセキュリティアドバイザリを公開することを事前告知した。CVEの詳細はエンバーゴ中。
+  過去パターン: 2026年上半期にCisco PSIRTが事前告知を発行した後に公開されたアドバイザリにはHigh以上SIRが含まれることが多い（Cisco UCM CVE-2026-20230: Critical SIR・実悪用確認、Cisco ISE CVE-2026-20181/20190: CVSS 9.1等）。Catalyst Centerはネットワーク全体を制御する管理プラットフォームであり、侵害時の横展開リスクが甚大。
+  脅威情報: Cisco ネットワーク管理製品を標的とするChinese-nexus APT（Velvet Ant等）が2026年Q2に観測されており、新規Cisco Critical CVEは早期に武器化リスクがある。
+推定部分: 推定 — 公開されるCVEの具体的なSIRとCVSSは未公表。Cisco PSIRTが事前告知を発行するケースはHigh以上SIRを含む傾向があるが、Medium以下のみの可能性も排除できない。
+先回り監視: 2026年7月1日のCisco Security Center（sec.cloudapps.cisco.com）にCatalyst Center Endpoint Connector向け新規アドバイザリが掲載されたことを確認する。CVSSスコア・SIRレーティングを即日評価し、Critical/High の場合はパッチ適用スケジュールを即日策定する。
+的中判定: 2026年7月1日にCisco PSIRTがCatalyst Center Secure Endpoint Connector向けHigh以上（CVSS 7.0以上またはSIR High）のアドバイザリを公開し、BleepingComputerまたはThe Hacker Newsが報道した場合
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-06-25 〜 2026-06-26
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 週次トレンドサマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の調査窓内でAI攻撃カテゴリに該当する新規インシデントは確認されなかった。macOS.Gaslight（DPRK/BONZAI）が38種の偽システムメッセージによるAIプロンプトインジェクション回避技術を実装していることは昨日のAPTセクションで既報のため、AI攻撃欄への重複掲載は行わなかった。バースト検出閾値（48時間以内3件以上の独立ソース）を超えた新規AIセキュリティトピックは本調査窓内で確認されず。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B0件 / 除外2件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）1件（除外）/ C（インフラ）0件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【GMOイエラエSOC推奨情報】
+監視対象23製品以外でCVE・ゼロデイ・AI攻撃の3観点に関連し注目すべき情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Cisco Catalyst Center Endpoint Connector 7月1日公開予定アドバイザリへの事前準備
+観点: CVE関連
+採用契機: γ（SIEM/ネットワーク管理基盤の変更）・δ（海外で事前告知・国内波及近い）
+------------------------------------------------------------
+
+優先度: 高
+対象: Cisco Catalyst Center Secure Endpoint Connector (Linux/Mac/Windows)
+
+【24時間以内の変化】
+[Cisco PSIRT 2026-06-25] cisco-sa-notice-vwL7b0S7 として2026年7月1日にCatalyst Center Secure Endpoint Connectors向けセキュリティアドバイザリを公開することを事前告知した。CVEの詳細・CVSSはエンバーゴ中。
+
+【概要】
+Cisco PSIRTが2026年6月25日に事前告知（cisco-sa-notice-vwL7b0S7）を発行し、2026年7月1日にCisco Catalyst Center Secure Endpoint Connectors（Linux/Mac/Windows版）向けセキュリティアドバイザリを公開予定と告知した。CVEの詳細・CVSSはエンバーゴ中のため不明。Catalyst CenterはCiscoネットワーク全体のオーケストレーションプラットフォームであり、脆弱性の深刻度次第では侵害後の横展開リスクが甚大。2026年上半期Cisco Critical SIR多数（UCM CVE-2026-20230・ISE CVE-2026-20181等）。PSIRTの事前告知はHigh以上SIRを含む傾向あり。Chinese-nexus APT（Velvet Ant等）がCisco管理製品を標的にしていることも2026年Q2に観測済み。
+
+【推奨アクション】
+・2026年7月1日にCisco Security Centerを確認しCVSS・SIRを即日評価する担当者を事前指定しておく
+・Catalyst Centerのバージョンを事前確認し、パッチ適用手順・影響調査の段取りを準備しておく
+・アドバイザリがHigh以上の場合は当日中にパッチスケジュールを決定し、Criticalの場合は緊急パッチプロセスを起動する
+・[ネットワーク管理ログ] Catalyst Center管理通信の異常検出
+Splunk SPL: index=network sourcetype=cisco:ios OR sourcetype=cisco:catalyst_center | where match(message, "(?i)(unauthorized|privilege|admin|error|auth|fail)") | stats count by host, user, message | sort - count
+→ 7月1日以降はアドバイザリのIoC公開次第SPLルールを追加すること
+
+【参照】
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityNotice/cisco-sa-notice-vwL7b0S7
+
+------------------------------------------------------------
+2. Ubiquiti UniFi OS Server FCEB対応期限（本日）到来 — 非FCEB組織でのパッチ適用確認
+観点: CVE関連
+採用契機: β（国内企業が広く利用するネットワーク機器）・γ（FCEB期限到来によるSOC確認タイミング）
+------------------------------------------------------------
+
+優先度: 中
+対象: Ubiquiti UniFi OS Server 5.0.6以前
+
+【24時間以内の変化】
+[CISA KEV 2026-06-26] CVE-2026-34908/34909/34910（CVSS 10.0 × 3件）のFCEB機関向け対応期限が本日2026-06-26に到来した。
+
+【概要】
+CVE-2026-34908/34909/34910（CVSS 10.0 × 3件）のFCEB対応期限が本日到来した。製品別CVEセクションでは既報・変化なしとして除外しているが、FCEB期限到来は非FCEB組織においてもパッチ適用状況の緊急確認タイミングである。UniFiはエンタープライズ・中規模事業者のWi-Fi/ネットワーク管理に広く利用されており、未パッチ環境は認証バイパス・パストラバーサル・コマンドインジェクションチェーンによる無認証root RCEが可能。
+
+【推奨アクション】
+・UniFi OS Server 5.0.7以降へのアップデート完了を本日中に確認する
+・未完了の場合は管理インタフェースをVPN・内部ネットワーク限定に即時制限する
+・UniFi管理コンソールへの不審ログイン・設定変更がなかったか過去1週間分のアクセスログをレビューする
+・[ネットワークログ] UniFi管理API操作の異常検出
+Splunk SPL: index=network (sourcetype=ubiquiti* OR dest_port=443) dest=<UniFi管理IP> | stats count by src_ip, uri_path | where count > 10 | sort - count
+→ WAN側からの管理IP接続が継続している場合は即時ブロック。新規管理者追加・設定変更が確認された場合は侵害を疑うこと
+
+【参照】
+https://community.ui.com/releases/UniFi-OS-Server-5-0-7/e6f40cf0-7d13-4a11-b7db-8b8d61a8f94c
+https://www.security-next.com/186359
+
+------------------------------------------------------------
+3. Microsoft Edge（Chromiumベース）Chrome Critical CVEパッチ同期タイミングの確認
+観点: CVE関連
+採用契機: β（国内エンタープライズで広く標準採用）・γ（SIEM/EDR管理対象ブラウザのバージョン確認）
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft Edge (Chromiumベース) — 監視対象製品リスト #17
+
+【24時間以内の変化】
+[Security NEXT 2026-06-25] Google Chrome 149.0.7827.196でCritical 4件が修正。ChromiumベースのMicrosoft Edge（監視対象製品）にも同等の脆弱性が存在し、Microsoftのパッチ公開タイミング確認が必要。
+
+【概要】
+Section 3（製品別CVE）に掲載したGoogle Chrome Critical 4件（CVE-2026-13028/13032/13033/13038）はChromiumエンジンの脆弱性であり、監視対象製品リスト17番のMicrosoft Edgeにも同等の影響が及ぶ。MicrosoftはGoogle Chromeのパッチ公開から通常数日〜1週間以内にEdgeへのChromiumアップデートを配信するが、社内端末管理下では自動更新が遅延することがある。EdgeはMicrosoft 365・SharePoint・Intuneとの統合により日本のエンタープライズ環境で広く標準採用。
+
+【推奨アクション】
+・Microsoft EdgeのStable Channel最新バージョンを確認し、Chromium 149.0.7827.196相当以降への更新状況を把握する（edge://version/ で確認）
+・Intune/SCCMで管理されたEdgeの自動更新ポリシーが有効か確認し、未更新端末リストを抽出する
+・MicrosoftのEdgeセキュリティリリースノートで当該CVE修正版の公開を確認次第、強制更新を適用する
+・[エンドポイント管理] Microsoft Edgeバージョン未更新端末検出
+Splunk SPL: index=endpoint sourcetype=WinRegistry REGISTRY_PATH="*\Microsoft\Edge\BLBeacon\version*" | eval version=REGISTRY_VALUE_DATA | stats count by ComputerName, version | sort - count
+→ MicrosoftがChromium 149.0.7827.196相当のEdgeパッチを公開したタイミングでフィルタ条件を更新すること
+
+【参照】
+https://learn.microsoft.com/en-us/deployedge/microsoft-edge-relnotes-security
+https://www.security-next.com/186374
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-11645 (Google Chrome V8) → 既報（2026-06-23）・窓内に変化なし
+・CVE-2026-44963 (Veeam Backup & Replication) → 既報（2026-06-25）・窓内に変化なし
+・CVE-2026-34908 / 34909 / 34910 (Ubiquiti UniFi OS Server) → 既報（2026-06-24）・FCEB期限2026-06-26到来だが新規変化なし（SOC推奨情報セクションへ）
+・CVE-2025-67038 (Lantronix EDS5000) → 既報（2026-06-24）・窓内に変化なし
+・CVE-2026-43284 / CVE-2026-43500 (Linux Kernel Dirty Frag LPE) → 調査窓外（2026-05-08開示）
+・CVE-2026-45185 (Exim Dead.Letter RCE) → 調査窓外（2026-05-13 BleepingComputer報道）
+・CVE-2026-20230 (Cisco Unified CM) → 既報（2026-06-24）・KEVに2026-06-25付けで再登録されたが内容変化なし
+
+[APT]
+・KongTuke / KongTuke-2026-Mistic-IAB → 既報（2026-06-25）・窓内に変化なし
+・不明（DPRK/BONZAI）/ Gaslight-2026-macOSBONZAI → 既報（2026-06-25）・窓内に変化なし
+
+[AI攻撃]
+・macOS.Gaslight AIプロンプトインジェクション回避（B3相当） → APTセクションで既報（2026-06-25）・AI攻撃欄への重複掲載なし
+・Agentjacking（SentryMCP経由） → 既報（2026-06-19）・窓内に変化なし
+
+[SOC推奨情報]
+該当なし（α〜η条件を満たすも他セクションと重複する情報は各セクションで処理済み）
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A7件 / 参考B1件 / 除外10件
+APT — 本編1件 / 注目動向0件 / 除外2件
+AI攻撃 — 本編0件 / 参考A0件 / 参考B0件 / 除外2件
+SOC推奨情報 — 高1件 / 中2件 / 低0件 / 除外0件
+
+========================================

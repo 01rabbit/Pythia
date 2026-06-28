@@ -1,0 +1,157 @@
+========================================
+セキュリティインテリジェンス日報 — Section 3: 製品別CVE
+調査日時: 2026-06-27 07:30 JST
+調査期間: 2026-06-26 07:00 〜 2026-06-27 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-12569 / PTC Windchill PDMlink / FlexPLM
+対象: Windchill PDMlink / FlexPLM 11.0 M030未満の全バージョン
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.3 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC未公開
+FCEB対応期限: 2026-06-28
+
+【24時間以内の変化】
+[CISA 2026-06-25] CISA KEVカタログに追加（FCEB期限2026-06-28）。PTCは「引き続きJSP Webシェル展開を確認している」と公式に発表。
+[BleepingComputer / The Hacker News / SecurityWeek 2026-06-25] CISA KEV追加を受け複数媒体が即時パッチ適用を報道。Webシェル攻撃が継続中。バースト検出閾値超過（6ソース以上）。
+
+【概要】
+PTCのエンタープライズPLM/PDMソフトウェアであるWindchill PDMlinkおよびFlexPLMにおける未認証RCE脆弱性。デシリアライゼーション経由の不適切な入力検証（CWE-502）に起因し、認証なしでネットワーク経由の任意コード実行が可能。攻撃者はJSP Webシェルを展開して永続的なリモートコマンド実行とデータ窃取を確立している。製造業・自動車・航空宇宙等のサプライチェーンで広く使われるPLMシステムが標的。PTC自身が2026-06-25に攻撃継続を公式確認し、CISA FCEB期限は2026-06-28（明日）。
+
+攻撃の流れ:
+1. 攻撃者がネットワーク経由でWindchill/FlexPLMへ悪意あるHTTPリクエストを送信（認証不要）
+2. デシリアライゼーション脆弱性を悪用し、サーバ上にJSP Webシェルを展開
+3. WebシェルでリモートコマンドをHTTP経由で実行し、内部ネットワークへの横展開・機密設計データ・製品仕様の窃取を実施
+
+【IoC】
+Filename: *.jsp (Webシェル: Windchill/FlexPLMデプロイディレクトリ配下)
+IP/Hash: 確認されず
+
+【監視ポイント】
+・[Webアクセスログ / Splunk] WindchillサーバへのPOSTリクエストで不審なJSPファイルへのアクセスパターンを検知する
+Splunk SPL: index=web sourcetype=access_combined uri_path="*.jsp" method=POST status=200 | stats count by src_ip, uri_path | where count > 5
+→ Windchill/FlexPLMデプロイディレクトリ配下に新規JSPファイルが作成された場合は即座に隔離。既知のWebシェルパターン（cmd=/exec=等のパラメータ）の有無を確認。
+Splunk SPL: index=web sourcetype=access_combined (uri_path="/Windchill*" OR uri_path="/FlexPLM*") | rex field=uri_path "(?<jsp_file>[^/]+\.jsp)" | where isnotnull(jsp_file) | stats count by src_ip, jsp_file, uri_path | sort -count
+→ 既存業務ではアクセスされないJSPパスへのアクセスが検出された場合は即時確認対応。
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/06/25/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://nvd.nist.gov/vuln/detail/CVE-2026-12569
+https://thehackernews.com/2026/06/cisa-adds-exploited-ptc-windchill-rce.html
+https://www.bleepingcomputer.com/news/security/cisa-sets-urgent-deadline-to-fix-cisco-flaw-exploited-in-attacks/
+https://www.ptc.com/en/about/trust-center/advisory-center/active-advisories/windchill-flexplm-rce-vulnerability
+
+------------------------------------------------------------
+2. CVE-2026-20230 / Cisco Unified Communications Manager / Unified CM SME
+対象: 14.x（14SU6未満）/ 15.x（15SU5未満）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.6 (High)
+状態: KEV登録済み / 実悪用確認 / PoC公開済み
+FCEB対応期限: 2026-06-28
+
+【24時間以内の変化】
+[CISA 2026-06-25] CISA KEVカタログに追加（FCEB期限2026-06-28）。既報（2026-06-24）だがKEV未登録→KEV登録に変化。
+[TechTimes 2026-06-24] パッチ適用後もWebシェルが残存することが新たに確認。/platform-services/axis2-web/ 配下のJSPファイルはパッチ・サーバ再起動後も生存し、攻撃者は継続的なアクセスが可能。
+
+【概要】
+Cisco Unified CM（コールマネージャ）のHTTPリクエスト検証における不備（SSRF/不適切な入力検証）に起因する重大な脆弱性。2026-06-22〜24にTor経由でのWebシェル展開が確認されており、2026-06-25にCISA KEVへ追加された（2026-06-24既報からステータス変化）。特に重要な点として、パッチを適用してもWebシェルが残存するため、既に侵害された環境ではパッチだけでは不十分。Webシェルはサーバ再起動後も /platform-services/axis2-web/ 配下に生存し、rootレベルへの権限昇格の足掛かりとなる。FCEB期限は2026-06-28（明日）。
+
+攻撃の流れ:
+1. 攻撃者がWebDialer SSRFエクスプロイトチェーンを通じてCisco CUCM 14.x/15.xへアクセス（認証不要）
+2. 3段階JSPコマンドシェルを /platform-services/axis2-web/ 配下に展開
+3. Tor経由でWebシェルにアクセスし、rootレベルへの権限昇格・永続的なバックドアとして悪用。パッチ後も残存するため侵害確認が必須。
+
+【IoC】
+Filename: *.jsp (in /platform-services/axis2-web/)
+IP/Hash: 確認されず
+
+【監視ポイント】
+・[Webアクセスログ / Splunk] Cisco CUCMサーバの /platform-services/axis2-web/ 配下のJSPアクセスとTorノードからの接続を監視。既パッチ適用済み環境でもWebシェル残存チェックが必須。
+Splunk SPL: index=web sourcetype=access_combined uri_path="/platform-services/axis2-web/*.jsp" | stats count by src_ip, uri_path, method, status
+→ /platform-services/axis2-web/配下の予期せぬJSPファイルの有無をファイルシステム上でも確認。パッチ済みでも必ず確認を。
+Splunk SPL: index=proxy sourcetype=squid | lookup tor_exit_nodes ip as src_ip OUTPUT is_tor | where is_tor=true AND (uri_path="*/axis2-web/*" OR uri_path="*/UnifiedCM/*")
+→ Tor IPリストとの照合でWebシェルへの外部アクセスを検知。
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/06/25/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/
+https://www.techtimes.com/articles/319023/20260624/cisco-unified-cm-cve-2026-20230-webshell-drops-confirmed-patch-alone-wont-evict-attackers.htm
+https://horizon3.ai/attack-research/vulnerabilities/cve-2026-20230/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: 24時間窓内（2026-06-26 07:00〜2026-06-27 07:00 JST）に新規注意喚起の発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-46331 / Linux kernel (net/sched/act_pedit)
+対象: v5.18〜v7.1-rc6（v7.1-rc7でパッチ済み）/ RHEL 8/9/10・Debian 13 等ディストリビューション別パッチ対応中
+CVSS: 未採番（High相当）
+Linuxカーネルのトラフィック制御サブシステム（act_pedit）のCopy-On-Write計算ミスによるローカル特権昇格脆弱性（ニックネーム: pedit COW）。非特権ユーザーがsetuid-root /bin/suのキャッシュを汚染してrootシェルを取得可能。作者検証済みPoC「packet_edit_meme」がGitHubで公開済み。RHEL 8/9/10およびDebian 13での悪用確認。Kubernetesコンテナ環境でのエスケープにも応用可能。対処: Linux v7.1-rc7以降またはディストリビューション別パッチ（Red Hat RHSB-2026-008）に更新。
+IoC: Hash: 確認されず / Filename: packet_edit_meme
+
+監視: [Linuxシステムログ / Splunk] 非rootユーザーによるunshare(CLONE_NEWUSER)の多発はLPE試行の可能性
+Splunk SPL: index=linux_audit type=SYSCALL syscall=unshare OR syscall=clone | stats count by uid, auid, comm, exe | where uid != 0 AND count > 3
+→ Kubernetesクラスタは特権コンテナ設定を確認。カーネルを最新パッチ版に更新することで根本対処。
+
+参照: https://cybersecuritynews.com/linux-pedit-cow-exploit/
+参照: https://access.redhat.com/security/vulnerabilities/RHSB-2026-008
+参照: https://tuxcare.com/blog/pedit-cow-cve/
+
+・Synology MailPlus Server (CVE-2026-13136 / CVE-2026-13135 / CVE-2025-15660)
+対象: MailPlus Server 4.0.1-31663未満（DiskStation Manager 7.3/7.2.2/7.2.1上）
+CVSS: Critical相当（CVSSスコア未確定）
+SynologyのNAS向けプライベートメールサーバMailPlus Serverに3件の深刻な脆弱性。CVE-2026-13136（不正認証チェック: リモート任意ファイルR/W・DoS）、CVE-2026-13135（通信チャネル不適切制限: 内部サービスへのアクセス）、CVE-2025-15660（弱い擬似乱数生成: 任意ファイルアクセス・DoS）。PoC未公開・実悪用未確認だが国内中小企業でのNAS利用率を考慮し要注意。対処: MailPlus Server 4.0.1-31663以降に更新。
+IoC: 確認されず
+
+監視: [Synology DSMシステムログ / Splunk] 不審なMailPlus Server APIコールと認証失敗の多発を監視
+Splunk SPL: index=synology sourcetype=synology:mailplus uri_path="/webapi/mailplus*" status>=400 | stats count by src_ip, uri_path, status | where count > 10
+→ MailPlus Serverへの繰り返し失敗するAPIリクエストや認証なしでのファイルアクセス試行に注意。
+
+参照: https://www.helpnetsecurity.com/2026/06/26/synology-mailplus-server-vulnerabilities/
+参照: https://www.synology.com/en-us/security/advisory
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-24858 (Fortinet FortiCloud SSO / FortiGate) → 2026-06-19に本編採用済み。FortiBleedキャンペーン規模更新はAPTセクションで対応。CVE自体のステータス変化なし。
+・CVE-2026-13028 (Google Chrome WebGL) → 2026-06-26に参考A採用済み。24時間窓内に新たな変化なし。
+・CVE-2026-13032 (Google Chrome WebGL) → 2026-06-26に参考A採用済み。変化なし。
+・CVE-2026-13033 (Google Chrome Blink) → 2026-06-26に参考A採用済み。変化なし。
+・CVE-2026-13038 (Google Chrome Autofill) → 2026-06-26に参考A採用済み。変化なし。
+・CVE-2025-67038 (Lantronix EDS5000) → 2026-06-24に本編採用済み。FCEB期限2026-06-26到来済み。変化なし。
+・CVE-2026-34908 / CVE-2026-34909 / CVE-2026-34910 (Ubiquiti UniFi OS Server) → 2026-06-24に本編採用済み。FCEB期限2026-06-26到来済み。変化なし。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編2件 / 参考A0件 / 参考B2件 / 除外7件
+
+========================================

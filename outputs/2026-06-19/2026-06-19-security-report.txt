@@ -1,0 +1,187 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-06-19 09:03 JST
+調査期間: 2026-06-18 09:03 〜 2026-06-19 09:03 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-24858 / Fortinet FortiCloud SSO (FortiBleed大規模クレデンシャル流出キャンペーン)
+対象: FortiCloud SSO連携を利用するすべてのFortiGateファイアウォール
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: 実悪用確認・クレデンシャルデータセット公開・継続中キャンペーン
+
+【24時間以内の変化】
+[Help Net Security / BleepingComputer / Arctic Wolf / SecurityAffairs / CyberInsider 他 2026-06-18] 「FortiBleed」と命名されたデータセットが公開され、73,932台のFortiGateファイアウォールの有効な管理者認証情報が流出していることが確認された。Chevron・Samsung・FedEx・Toyota・Siemens・PwCなど194カ国の主要組織が対象に含まれる。24時間窓内に6ソース以上が独立報道しバースト検出閾値を大幅に超過。単発報道ではない継続中の重大トレンドとして本編採用。
+
+【概要】
+CVE-2026-24858はFortiCloud SSOのSAML認証バイパス（CVSS 9.8）で、2026年1月27日にFortinetが公開した。脅威アクターはこの脆弱性と既存の認証情報ブルートフォース（FortiGate 320,777台を対象に11億6000万回の試行）・ハッシュクラック・過去の流出クレデンシャルを組み合わせ、73,932台分の有効な管理者認証情報を収集・検証した。Russian-speakingマルチオペレータグループが主導し、June 18に認証情報データセットをダークウェブで公開・販売開始した。FortiGateは国内でも金融・製造・行政等で最も普及するファイアウォール製品の一つであり、国内組織も広く対象に含まれる可能性が高い。
+
+攻撃の流れ:
+1. CVE-2026-24858 SAMLバイパスおよびブルートフォースで管理者認証情報を収集・検証
+2. 有効な認証情報でVPN・Web管理インターフェースに認証不要でアクセス
+3. ネットワーク侵入・ラテラルムーブメント・ランサムウェア展開・データ窃取
+
+【IoC】
+IP: 公開されたデータセット内に複数含まれるが非公開（SOCRadar FortiBleed Exposure Checkerで確認推奨）
+Hash: 確認されず
+CVE: CVE-2026-24858 (FortiCloud SSO SAML authentication bypass)
+
+【監視ポイント】
+・[FortiGate管理ログ / Splunk] 過去24時間以内に初めて出現したSource IPからのVPNトンネル確立を検出する。
+Splunk SPL: index=network sourcetype=fortigate* subtype=vpn action="tunnel-up" | stats earliest(_time) as first_seen count as sessions by srcip, user | where first_seen>relative_time(now(),"-1d@d") | eval first_seen=strftime(first_seen,"%Y-%m-%d %H:%M") | sort -sessions
+→ 既存ユーザーが見知らぬIPからログインしている場合は即時確認。
+
+・[FortiGate管理ログ / Splunk] 業務時間外（夜間・休日）の管理コンソールログインを検出する。
+Splunk SPL: index=network sourcetype=fortigate* subtype=admin action=login | eval hr=tonumber(strftime(_time,"%H")), dow=strftime(_time,"%A") | where hr<8 OR hr>20 OR dow="Saturday" OR dow="Sunday" | table _time, srcip, user, status
+→ 深夜帯に管理者ログインが集中している場合はFortiBleed由来のアクセスを疑う。
+
+・[SIEM / Splunk] 短時間での連続的な設定変更（管理者追加・ポリシー変更・ルート追加）をバースト検出する。
+Splunk SPL: index=network sourcetype=fortigate* (subtype=config OR logdesc="*attribute configured*") | bucket _time span=1h | stats count as changes by user, _time | where changes>10 | sort -changes
+→ 1時間に10件超の設定変更は攻撃者が永続化を試みているサインと判断する。
+
+・[EDR/NDR] FortiGate内部NICを起点とした内部横展開（PsExec・WMI・SMBスキャン等）のシグネチャアラートを監視する。
+
+【参照】
+https://www.helpnetsecurity.com/2026/06/18/fortinet-fortibleed-data-leak/
+https://www.bleepingcomputer.com/news/security/fortibleed-leak-exposes-fortinet-vpn-credentials-for-73-000-devices/
+https://arcticwolf.com/resources/blog/active-fortibleed-campaign-impacting-fortinet-devices-across-194-countries/
+https://socradar.io/blog/socradar-free-fortibleed-exposure-checker/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: 2026-06-18〜06-19の窓内にJPCERT/CC注意喚起・IPA重要情報の新規発行は確認されず（直近発行は2026-06-10）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-48907 / Widget Factory Joomla Content Editor (JCE)
+CVSS: 10.0 (Critical) 状態: KEV登録済み・実悪用確認・BOD 26-04期限 2026-06-19（本日）到来
+CVE-2026-48907はJoomla CMS向けエディタプラグインJCEの未認証アクセス制御不備で、攻撃者が不正なエディタプロファイルを作成してPHPウェブシェルをアップロード・実行できる。JCE 1.0.0〜2.9.99.4が対象、パッチは2.9.99.5（2026-06-03リリース）。CISAはJune 16にKEVへ追加し、連邦機関にJune 19までのパッチ適用を義務付けた。Joomlaは国内CMS市場でも一定のシェアを持つため、未パッチのJoomlaサイトへのウェブシェル設置試行が継続する見込み。対処: JCEを2.9.99.5以上へアップデート。
+IoC: 確認されず（ウェブシェルhash等は未公開）
+
+監視: Splunk/WAFでJCEエンドポイントへのPOSTと成功レスポンスを検出する。
+Splunk SPL: index=web sourcetype=access_combined method=POST uri_path="*/plugins/editors/jce*" status=200 | stats count by clientip, uri_path | sort -count
+→ status=200のPOSTが複数回続く外部IPは攻撃者によるプロファイル作成試行と判断する。
+
+Webシェル設置後の疑いパターン（PHPファイルへのコマンド引数アクセス）:
+Splunk SPL: index=web sourcetype=access_combined uri_path="*.php" (uri_query="*cmd=*" OR uri_query="*exec=*" OR uri_query="*system=*" OR uri_query="*passwd*") | table _time, clientip, uri_path, uri_query, status
+
+参照: https://thehackernews.com/2026/06/cisa-warns-of-actively-exploited-joomla.html
+参照: https://www.bleepingcomputer.com/news/security/cisa-orders-feds-to-patch-max-severity-joomla-plugin-flaw-by-friday/
+参照: https://www.cisa.gov/news-events/alerts/2026/06/16/cisa-adds-one-known-exploited-vulnerability-catalog
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. UNC6508（別名: 未命名 / 国家帰属: 中国（PRC）/ 帰属信頼度: 中）
+活動タイプ: 新規キャンペーン開示・マルウェア発見・IOC公開
+------------------------------------------------------------
+
+採用契機: P（新規キャンペーン初報）/ R（新規マルウェアINFINITERED発見）/ V（医療・防衛研究機関への侵害確認）/ T（YARA・IOC公開）
+標的: 医療研究・学術・軍事研究 / 米国・カナダ
+マルウェア: INFINITERED（モジュール型バックドア）・help.php（ウェブシェル）
+
+【24時間以内の変化】
+[Google Mandiant / Bleeping Computer 2026-06-15〜18] Googleが24時間窓内に詳細な技術分析・IOC・YARAルールを公開。複数の英語系メディアが二次報道し、脅威情報が国際的に広まった。
+
+【概要】
+UNC6508は2023年9月から2025年11月にかけて北米の医療・学術・軍事研究機関が運用するREDCap（臨床研究データ管理プラットフォーム）サーバを起点に侵入し、少なくとも1年以上無検知で活動した。初期侵入後3カ月以内にINFINITEREDをデプロイし、REDCapの正規ファイルをトロイ化してアップグレード後も永続化した。その後Google Workspaceのコンテンツコンプライアンス機能（ドメインレベルメールルール）を悪用し、研究・防衛関連の受信メールを攻撃者管理のGmailアドレスへBCCするルール「Patroit」（意図的誤字と推測）を設定。AI研究・サイバー攻撃プログラム・国防・医療研究に関する機密メールを長期間にわたって収集した。Google Threat Intelligence Groupが2026年6月15日に初報公開しインフラを無力化済みだが、組織内のREDCapサーバへのINFINITERED残存リスクが続く。
+
+攻撃の流れ（判明分）:
+1. 公開REDCapサーバの旧バージョン脆弱性を悪用して初期侵入・help.php ウェブシェルを設置
+2. 3カ月以内にINFINITEREDをデプロイ（正規REDCapファイルをトロイ化・アップグレード耐性あり）
+3. Google Workspaceのドメインレベルメールルール「Patroit」を設定し、研究・防衛関連メールを攻撃者Gmailへ自動転送
+
+【新規TTP】
+・[T1566.001 相当 / REDCap経由] REDCapの正規システムファイルをトロイ化するINFINITEREDドロッパー — アップグレード時も永続化
+・[T1114.003 / Email Collection: Email Forwarding Rule] Google Workspaceのコンテンツコンプライアンスルールをメール外部転送に悪用 — 通常のメールルールよりIT管理者が気付きにくい管理コンソール奥深くの機能
+
+【IoC】
+Domain: 確認されず（Googleがインフラを無力化済み）
+Hash: INFINITEREDハッシュはGoogleが提供するYARAルールで検出可能
+Webshell: help.php（REDCapアプリケーション内に設置）
+Google Workspace rule name: "Patroit"（類似ルールが組織内に存在しないか確認）
+
+【推奨アクション】
+・REDCap管理者: GoogleのYARAルールでサーバをスキャンし、help.phpの有無を確認する。
+
+・Google Workspace管理者: ドメインレベルのコンテンツコンプライアンスルールを全数確認し、不審な外部転送先（特にGmail）を即時削除する。管理コンソールで確認する場所はアプリ→Google Workspace→Gmail→コンプライアンス→コンテンツコンプライアンス。
+
+・[Splunk / REDCapウェブログ] help.phpへの外部アクセスとPHPコマンド実行を検出する。REDCap正規パスに help.php は存在しないため1件でもヒットすれば要調査。
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/help.php" | stats count by clientip, method, status, bytes | sort -count
+
+・[Splunk / G Suite Add-on] Google Workspaceの管理監査ログで外部Gmailへの転送ルール作成を検出する。
+Splunk SPL: index=gsuite sourcetype=google:gws:admin (name=CREATE_RULE OR name=UPDATE_RULE) | spath path=events{}.parameters{} | search parameters.value="*gmail.com*" | table _time, actor.email, parameters.name, parameters.value
+→ ルール名に "Patroit"（このキャンペーン固有の誤字）が含まれる場合は即時対応。
+
+・[Splunk / OS syslog] REDCapサーバ上でのPHPプロセスによるコマンド実行を検出する（PHP-FPM環境向け）。
+Splunk SPL: index=os sourcetype=syslog (process=php OR process=php-fpm) (message="*help.php*" OR message="*exec(*" OR message="*system(*") | table _time, host, user, message
+
+・インシデントが疑われる場合はGoogleのINFINITEREDインシデント対応チームへ連絡（レポート記載の連絡先参照）。
+
+【参照】
+https://cloud.google.com/blog/topics/threat-intelligence/prc-targets-us-medical-research
+https://www.bleepingcomputer.com/news/security/chinese-hackers-breach-redcap-servers-steal-medical-research/
+https://www.helpnetsecurity.com/2026/06/15/chinese-hackers-redcap-medical-research-institutions-breach/
+https://thehackernews.com/2026/06/chinese-hackers-abused-google-workspace.html
+
+------------------------------------------------------------
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・FortiBleed脅威アクター（Russian-speakingマルチオペレータグループ / 帰属信頼度: 低）/ 大規模FortiGateクレデンシャル窃取キャンペーン。採用契機: T（IOC大量公開）・H（侵害報告）。2026-06-18、自動化ツールを用いてFortiGate 320,777台に11億6000万回のログイン試行を実施し73,932台分の有効な管理者認証情報を収集・検証したデータセットを公開・販売開始した。CVE-2026-24858（FortiCloud SAML認証バイパス）・ハッシュクラック・過去の流出クレデンシャルを組み合わせた手口で、対象は194カ国に及ぶ。帰属はロシア語話者グループと推定されるが政府による公式帰属は未確認。推奨アクション: FortiGateの管理ポートをインターネット側から遮断し、SOCRadar FortiBleed Exposure Checkerで自組織の露出を確認。CVE-2026-24858へのパッチ適用（該当バージョンの修正版へアップデート）を即時実施。
+参照: https://arcticwolf.com/resources/blog/active-fortibleed-campaign-impacting-fortinet-devices-across-194-countries/
+参照: https://securityaffairs.com/193817/hacking/fortibleed-exposes-admin-passwords-for-75000-fortinet-firewalls.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: FortiBleed認証情報を悪用した国内外組織への初期侵入試行の急増
+確度: 高
+根拠: 2026-06-18に公開された73,932台分の有効なFortiGate認証情報が既にダークウェブで流通している。過去の大規模クレデンシャル公開（2023年のFortiGate設定ファイル流出など）では公開後24〜48時間以内に侵入試行が急増したパターンが繰り返されている。現時点でSOCRadar等が無料の露出確認ツールを提供しているが、多くの組織が自組織の露出を認識する前に攻撃者が先行して侵入試行を開始する可能性が高い。
+
+・予報2: CVE-2026-48907 (Joomla JCE) を利用したウェブシェル設置・バックドア活動の継続
+確度: 中
+根拠: CISA BOD 26-04期限（June 19）到来後も未パッチのJoomlaサイトは多数存在する。同脆弱性はPoC・詳細な攻撃手順が複数公開済みで技術的敷居が低く、ウェブシェル設置→バックドア持続化→ランサムウェア/データ窃取というチェーンへの発展が想定される。推定 — 日本国内でのJCE利用サイト数は限定的だが、放置されたCMS系サイトや受託管理サイトが標的になる可能性がある。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-20266 (Splunk AI Toolkit 5.7.4未満) → CVSS 9.1だが悪用に管理者権限が必要・KEV未登録・PoC未公開・国内報道なし。軸1=4・軸2=1で閾値未達。パッチ適用は推奨するが日報本文には不採用。
+・CVE-2026-55706 (OpenBSD sppp PAP認証バイパス) → CVSS 5.8・ニッチ製品・実悪用報告なし・国内影響極小。低優先度フラグ・軸2シグナルなし。
+
+[APT]
+・なし
+
+本日の集計:
+CVE — 本編1件 / 参考A0件 / 参考B1件 / 除外2件
+APT — 本編1件 / 注目動向1件 / 除外0件
+
+========================================

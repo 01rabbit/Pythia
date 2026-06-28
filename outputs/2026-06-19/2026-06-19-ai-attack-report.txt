@@ -1,0 +1,172 @@
+========================================
+AI攻撃インテリジェンス週報（サンプル）
+調査日時: 2026-06-19 09:00 JST
+調査期間: 2026-06-12 00:00 〜 2026-06-19 09:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Agentjacking — SentryMCP経由でAIコーディングエージェントを乗っ取る攻撃
+カテゴリ: C3（MCPサーバ悪用）+ A4（Agentic AI悪用） / 攻撃者種別: 不明（研究者実証・実攻撃準備段階）
+------------------------------------------------------------
+
+採用契機: P（新規研究発表・実証）/ S（AIプラットフォーム脆弱性）/ Q（2,388組織への実際の露出確認）
+MITRE ATLAS: AML.T0051（LLM Prompt Injection）/ AML.T0010（Craft Adversarial Data）
+OWASP: LLM01（Prompt Injection）/ AG02（Improper Agent Trust）
+対象: AIコーディングエージェント（Claude Code・Cursor・GitHub Copilot等）を利用する開発者・組織
+被害規模: 2,388組織でインジェクション可能な状態を確認・制御実験で85%の成功率
+
+【期間内の変化】
+[The Hacker News / CyberSecurityNews / Tenet Security 2026-06-中旬] Tenet SecurityがAgentjacking攻撃クラスを公開。Sentry（エラートラッキングプラットフォーム）のMCPサーバを経由してAIコーディングエージェントに任意コードを実行させる手法を実証。2,388組織のSentryプロジェクトDSNを特定し100組織超で制御実験を実施、85%の成功率を記録。Sentryはルートコーズ修正を拒否しフィルタリングで対応。
+
+【概要】
+SentryのMCPサーバはエラーイベントの内容をAIエージェントへ「信頼できるシステム出力」として返す。攻撃者はSentry DSN（エラーレポートエンドポイント）へ細工したエラーイベントを送信することで、AIエージェントが診断・解決手順として認識し攻撃者制御のコードを実行するよう誘導できる。エラーイベントは認証なしで任意のペイロードを受け付けるため、Sentryプロジェクトのパブリック/セミパブリックなDSNを持つ組織全体が対象になる。成功した場合、環境変数（APIキー・AWSキー等）・Gitクレデンシャル・プライベートリポジトリURL・開発者の個人情報が窃取される。これはSentry固有のバグではなく「外部の影響下にあるデータをエージェントへ信頼できる入力として返すMCP統合」全般が持つ構造的リスクである。
+
+攻撃の流れ:
+1. 攻撃者がターゲット組織のSentry DSNを公開コード・Gitリポジトリ・JS難読化解除等から取得する
+2. 細工した「解決手順指示」を含む偽エラーイベントをSentry DSNへ送信する
+3. 開発者がAIコーディングエージェントにデバッグを依頼すると、エージェントがSentryMCP経由でエラー情報を取得し攻撃者の指示をシステム出力として信頼・実行する
+4. 環境変数・Gitトークン等が攻撃者へ送信され、リポジトリ・クラウド環境への侵入が続く
+
+【ATLAS TTPs】
+・[AML.T0051] LLM Prompt Injection — MCPサーバ経由で外部入力をエージェントへの命令として注入
+・[AML.T0010] Craft Adversarial Data — SentryエラーイベントペイロードへのHidden Instruction埋め込み
+・[AML.T0044] Full ML Model Access — エージェントのツール実行権限を悪用したシステムコマンド実行
+
+【IoC / 検知シグナル】
+Domain: 確認されず（攻撃者制御インフラは非公開）
+検知シグナル: 予期しないSentryエラーイベントに「実行してください」「次のコマンドを実行」等の日本語・英語の命令文が含まれる場合が要確認。エージェントによるcurl・wget・環境変数の外部送信コマンド実行。
+
+【監視・対策ポイント】
+・[開発ホスト / Splunk / EDR] AIエージェントプロセスによる環境変数アクセス・外部通信を検出する
+Splunk SPL: index=endpoint sourcetype=syslog (process="claude" OR process="cursor" OR process="copilot") (message="*curl*" OR message="*wget*" OR message="*env*" OR message="*export*") | table _time, host, user, message
+→ AIエージェントプロセスが直接ネットワーク通信を起動している場合は即時確認。
+
+・[Splunk / ネットワークログ] AIコーディングエージェントの実行環境から予期しない外部エンドポイントへの通信を検出する
+Splunk SPL: index=network sourcetype=proxy (src_category="developer_workstation") dest!="*.anthropic.com" dest!="*.openai.com" dest!="*.cursor.sh" dest!="*.github.com" | stats count by src, dest, uri_path | sort -count
+→ 既知のAIサービス以外の外部ホストへの通信は要検証。
+
+・対策: Sentry DSNをパブリックリポジトリに含めない。MCPサーバをAIエージェントに接続する際は外部入力をそのまま信頼できる出力として返さないよう設計を見直す。エージェントへのツール実行権限は最小権限に制限し、シェルコマンド実行・外部通信を伴うツールは都度確認（非YOLOモード）を維持する。
+
+【参照】
+https://thehackernews.com/2026/06/agentjacking-attack-tricks-ai-coding.html
+https://cybersecuritynews.com/agentjacking-attack-hijacks-ai-coding-agent/
+https://www.decryptiondigest.com/blog/agentjacking-sentry-mcp-ai-coding-agent-attack
+https://saptanglabs.com/preempting-agentjacking-validating-mcp-trust-boundaries-in-ai-workflows/
+
+------------------------------------------------------------
+2. LiteLLM PyPI供給チェーン侵害（TeamPCP） — AIゲートウェイ経由でバックドア配布
+カテゴリ: C6（PyPI・npmバックドア埋め込み）/ 攻撃者種別: 犯罪組織（TeamPCP）
+------------------------------------------------------------
+
+採用契機: W（サプライチェーン汚染確認）/ Q（47,000件ダウンロード・実被害）/ P（詳細な攻撃チェーン分析公開）
+MITRE ATLAS: AML.T0020（Poison Training Data / Supply Chain）/ AML.T0010（Craft Adversarial Data）
+OWASP: LLM03（Supply Chain Vulnerabilities）/ AG08（Supply Chain Compromise）
+対象: LiteLLM使用組織（CrewAI・DSPy・Microsoft GraphRAG・多数のAIエージェントフレームワーク依存）
+被害規模: litellm v1.82.7〜v1.82.8 の47,000件DL（3時間）・月間9,500万DLのパッケージが感染源
+
+【期間内の変化】
+[Help Net Security / Snyk / Datadog Security Labs / Trend Micro 2026-06-11〜06-12] 3月に発生したLiteLLM PyPI侵害の完全な攻撃チェーン分析が6月のOWASP Agentic AI Security Report（v2.01）で取り上げられ、AIサプライチェーン攻撃の代表的ケーススタディとして改めて広く報道された。攻撃の起点はTrivyのCI/CDパイプラインへのプルリクエスト攻撃（2026-02-27）であり、hackerbot-clawという自律的攻撃ボットがGitHub Action脆弱性を悪用してPAT（Personal Access Token）を窃取。そのトークンでTrivyの75/76タグを改ざんし、LiteLLMのCI/CDがこれを参照することでPyPI公開権限を乗っ取りバックドア版パッケージ配布に成功した。
+
+【概要】
+本インシデントはAIサプライチェーン攻撃の典型かつ最も規模の大きい事例の一つ。LiteLLMはOpenAI・Anthropic・Azure等100以上のLLMプロバイダを束ねるゲートウェイライブラリで、CrewAI・DSPy・Microsoft GraphRAGなど主要AIエージェントフレームワークの依存関係に含まれる。侵害されたバージョン（v1.82.7/1.82.8）はインポート時または起動時にステージ1ペイロードを実行し、クレデンシャルを収集・Kubernetesクラスタ内へのラテラルムーブメントを試み・永続化のためsystemdバックドアをインストールする。LiteLLM自体は攻撃に気づかず被害者でもある。Snyktが検出しPyPIから削除されるまで約3時間。既にダウンロードした組織は依存関係の棚卸しと認証情報の即時ローテーションが必要。
+
+攻撃の流れ:
+1. Trivy OSSのGitHub Actionを狙ったプルリクエスト攻撃（pull_request_target脆弱性悪用）でaqua-bot PATを窃取
+2. TeamPCPがPATを使いTrivyの75/76タグを改ざん済みのビルドアクションに置換する
+3. LiteLLMのCI/CDが改ざんされたTrivyアクションを実行→PyPI公開権限を奪われバックドア入りv1.82.7/1.82.8を配布
+4. ダウンロードした組織の環境でAPIキー・クラウドクレデンシャルが外部へ送信・永続バックドアが設置される
+
+【ATLAS TTPs】
+・[AML.T0020] ML Supply Chain Compromise — 依存するセキュリティスキャナのCI/CD侵害を起点にMLライブラリへバックドア埋め込み
+・[AML.T0010] Craft Adversarial Data — .pthファイル（site-packages）を利用したPython起動時自動実行のステルス技法
+
+【IoC / 検知シグナル】
+Package: litellm v1.82.7 および v1.82.8（削除済み。当該バージョンが残存している場合は要対応）
+File: litellm_init.pth（site-packages直下への不審な.pthファイル）
+Hash: Snyk/Datadog Security Labs公開の侵害バージョンハッシュを参照
+C2: 確認されず（公開情報では外部ホスト名非公開）
+
+【監視・対策ポイント】
+・[Splunk / パッケージ管理ログ] litellm v1.82.7〜v1.82.8のインストール履歴を確認する
+Splunk SPL: index=endpoint sourcetype=pip_audit (package="litellm" version="1.82.7") OR (package="litellm" version="1.82.8") | table _time, host, user, package, version
+→ 当該バージョンがある場合はv1.83.0以上へ即時アップグレードし認証情報をローテーションする。
+
+・[Splunk / EDR] site-packagesへの.pthファイル作成・Pythonインタープリタ起動時の不審な通信を検出する
+Splunk SPL: index=endpoint sourcetype=syslog (message="*.pth" message="site-packages") OR (process="python*" dest_port!=443 dest!="*.openai.com" dest!="*.anthropic.com") | table _time, host, user, message
+→ Pythonプロセスが既知のLLMプロバイダ以外の外部ホストへ通信している場合は感染の可能性を疑う。
+
+・対策: litellm v1.82.7/1.82.8使用組織は即時v1.83.0以上へアップグレード。環境変数・APIキー・クラウドクレデンシャルの全ローテーション。GitHub Actionsで外部アクションを参照する場合はコミットSHAピン留め（バージョンタグではなくSHAで固定）する。AIフレームワークの依存関係を定期的にSnyk/pip-auditでスキャンする。
+
+【参照】
+https://snyk.io/blog/poisoned-security-scanner-backdooring-litellm/
+https://securitylabs.datadoghq.com/articles/litellm-compromised-pypi-teampcp-supply-chain-campaign/
+https://www.trendmicro.com/en_us/research/26/c/inside-litellm-supply-chain-compromise.html
+https://www.helpnetsecurity.com/2026/06/11/owasp-prompt-injection-ai-security-failures/
+
+------------------------------------------------------------
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-7482 / Ollama "Bleeding Llama" — 未認証メモリリードでシステムプロンプト・APIキーを窃取
+カテゴリ: C1（AIプラットフォームCVE） 採用契機: R（CVE登録）/ S（AIプラットフォーム脆弱性）
+MITRE ATLAS: AML.T0046（Exfiltration via API）/ AML.T0043（Craft Adversarial Data）
+OWASP: LLM07（System Prompt Leakage）
+対象: Ollama v0.17.0以前を使用する組織・個人（推定30万台がインターネット側に露出）
+被害規模: 露出サーバ数 約300,000台（CVSS 9.1 Critical）/ 修正版v0.17.1は2026-02-25リリース済みだが多数が未適用
+概要: GGUFファイルのテンソルオフセット宣言とファイル実サイズの不一致を利用したヒープ外読み取りにより、わずか3回のAPIコールで対象サーバのプロセスメモリ全体を無認証で抽出できる。漏洩するデータにはユーザーのプロンプト・システムプロンプト・環境変数（APIキー・クラウドクレデンシャル）が含まれる。パッチはv0.17.1のリリースノートにセキュリティ記載なし・CVEが2ヶ月間アサインされなかったため、パッチ管理ツールの検知から外れた組織が多数残存している可能性が高い。国内でもOllamaはローカルLLM実行環境として広く利用されており、ファイアウォールのインターネット側開放確認が急務。
+対策: Ollama v0.17.1以上へ即時アップグレード。OllamaのAPIポート（デフォルト11434）をインターネット側に公開しない。runZeroやShodanで自組織のOllama露出を確認する。
+
+監視: [Splunk / ネットワークログ] インターネット側からOllamaポートへのアクセスを検出する
+Splunk SPL: index=network dest_port=11434 src!="10.0.0.0/8" src!="172.16.0.0/12" src!="192.168.0.0/16" | stats count by src, dest, dest_port | sort -count
+→ 外部IPからのアクセスが1件でもある場合は即時対応（Ollamaはデフォルトで認証なし）。
+
+参照: https://securityboulevard.com/2026/05/bleeding-llama-cve-2026-7482-critical-unauthenticated-memory-leak-in-ollama/
+参照: https://www.securityweek.com/critical-bug-could-expose-300000-ollama-deployments-to-information-theft/
+参照: https://www.runzero.com/blog/ollama/
+
+
+・OWASP State of Agentic AI Security 2026（v2.01） — エージェントAIのセキュリティ失敗事例を包括的に定量化
+カテゴリ: B1（プロンプトインジェクション）/ C3（MCPサーバ悪用）全般 採用契機: U（業界調査・統計レポート）/ T（OWASPによるガイダンス）
+MITRE ATLAS: 全タクティクスにまたがる包括的フレームワーク
+OWASP: LLM01〜LLM10 / AG01〜AG10 全項目
+対象: AIエージェントを本番環境に展開する全組織
+概要: OWASPが2026年6月11日に公開した本レポートは前年版（プレーン脅威リスト）から大幅に進化し、実CVE・ベンダーアドバイザリ・実際の侵害報告がほぼ全カテゴリに紐付いた内容になった。追跡中の53エージェントプロジェクトのうち28がコーディングエージェント。プロンプトインジェクション（LLM01）は依然として筆頭リスク。特にPyPI・npm上のAIライブラリへのサプライチェーン攻撃（LiteLLM・Trivy連鎖）が新たなケーススタディとして掲載された。Agentjacking（Sentry MCP経由）もアーキテクチャ上の系統的問題として取り上げられている。AIの安全性（Safety）とセキュリティ（Security）を分離して運用することはもはや不可能と結論づけている。
+対策: OWASPレポート（v2.01）を参照し自組織のエージェントAIアーキテクチャを各リスク項目に照らして評価する。特にMCP統合・外部ツール呼び出し・RAGシステムの信頼境界を見直す。
+
+参照: https://www.helpnetsecurity.com/2026/06/11/owasp-prompt-injection-ai-security-failures/
+参照: https://swarmsignal.net/ai-agent-security-2026/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・AI生成フィッシング: 集団標的型からAI個別最適化型への移行（Zscalerレポート 2026-06-12）
+カテゴリ: A1（AI生成フィッシング・スピアフィッシング） 採用契機: U（業界調査）
+MITRE ATLAS: AML.T0049（Exploit Public-Facing AI System）/ AML.T0011 関連
+OWASP: AG04（Tool and Resource Manipulation）
+国内影響: 日本語はAIによる自然な文章生成が可能な言語の一つであり、従来の「日本語が不自然な詐欺メール」は通用しなくなりつつある。Zscalarレポートによると大量ばら撒き型フィッシングは減少し、AI生成によるパーソナライズド標的型への移行が2026年に加速している。国内企業・行政機関のビジネスメールを模倣した高品質フィッシングが増加している。
+対策: 送信ドメイン認証（DMARC・DKIM・SPF）の完全適用。メールゲートウェイでのAI生成コンテンツ検知スコアリング導入。社員教育でのDeepFake・AI生成メール識別訓練。
+
+参照: https://www.helpnetsecurity.com/2026/06/12/zscaler-report-phishing-activity-trends/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 週次トレンドサマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+今週は「AIエージェントとその統合基盤を標的にした攻撃」が主要テーマとなった。AgentjackingはAIコーディングエージェントのMCP統合という新たなアタックサーフェスを初めて大規模に実証し、2,388組織・85%の成功率という数値は組織がいかに無防備にエージェントへ外部データを信頼させているかを示す。LiteLLMサプライチェーン侵害は3月の発生だが詳細分析が揃い、AIライブラリの依存チェーン全体がリスク面として再評価された週でもある。これらは個別の脆弱性ではなく「エージェントAIが外部入力を過信する」という設計上の根本問題を共有しており、今後も同類の攻撃が続く構造的な問題と認識すべきである。並行して、deepfake識別不能率の上昇（85%が識別不能と回答）とAI最適化フィッシングの増加は、人間のリテラシーに依存した防御が機能しなくなりつつあることを示している。
+
+本期間の集計:
+AI攻撃 — 本編2件 / 参考A1件 / 参考B2件 / 除外0件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）0件 / C（インフラ）4件（重複含む）
+
+========================================

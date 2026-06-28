@@ -1,0 +1,144 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CyberThreatObservation",
+  "description": "サイバー脅威観測データの正規化スキーマ。1情報 = 1オブジェクト。",
+  "type": "object",
+  "required": [
+    "observation_id",
+    "observed_date",
+    "ingested_date",
+    "source",
+    "techniques",
+    "target",
+    "confidence",
+    "summary",
+    "verified_outcome"
+  ],
+  "properties": {
+    "observation_id": {
+      "type": "string",
+      "description": "観測ID。形式: obs-YYYY-MMDD-NNN（例: obs-2026-0626-001）",
+      "pattern": "^obs-\\d{4}-\\d{4}-\\d{3}$"
+    },
+    "observed_date": {
+      "type": "string",
+      "format": "date",
+      "description": "情報源が報告した日付（YYYY-MM-DD）"
+    },
+    "ingested_date": {
+      "type": "string",
+      "format": "date",
+      "description": "本システムへ取り込んだ日付（YYYY-MM-DD）"
+    },
+    "source": {
+      "type": "object",
+      "required": ["name", "url", "type"],
+      "properties": {
+        "name": { "type": "string", "description": "情報源名（例: BleepingComputer, JPCERT/CC）" },
+        "url": { "type": "string", "format": "uri", "description": "出典URL" },
+        "type": {
+          "type": "string",
+          "enum": ["vendor_report", "osint", "advisory", "news"],
+          "description": "情報源種別"
+        }
+      }
+    },
+    "actor_group": {
+      "type": ["string", "null"],
+      "description": "攻撃者グループ名。情報源が明示する場合のみ記入。推測で埋めない。"
+    },
+    "actor_aliases": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "グループの別名リスト"
+    },
+    "techniques": {
+      "type": "array",
+      "description": "MITRE ATT&CK Technique のリスト。確証がない場合は空配列とする。",
+      "items": {
+        "type": "object",
+        "required": ["technique_id", "tactic", "evidence"],
+        "properties": {
+          "technique_id": {
+            "type": "string",
+            "pattern": "^T\\d{4}$",
+            "description": "ATT&CK Technique ID（例: T1566）"
+          },
+          "sub_technique_id": {
+            "type": ["string", "null"],
+            "pattern": "^T\\d{4}\\.\\d{3}$",
+            "description": "サブテクニックID（例: T1566.001）。なければ null。"
+          },
+          "tactic": {
+            "type": "string",
+            "enum": [
+              "reconnaissance",
+              "resource-development",
+              "initial-access",
+              "execution",
+              "persistence",
+              "privilege-escalation",
+              "defense-evasion",
+              "credential-access",
+              "discovery",
+              "lateral-movement",
+              "collection",
+              "command-and-control",
+              "exfiltration",
+              "impact"
+            ],
+            "description": "MITRE ATT&CK タクティック"
+          },
+          "evidence": {
+            "type": "string",
+            "description": "このTechnique IDを付与した根拠（情報源の記述を1文で要約）"
+          }
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "required": ["sectors", "geos"],
+      "properties": {
+        "sectors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "標的セクター（例: finance, healthcare, government, energy, manufacturing）"
+        },
+        "geos": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "標的地域（ISO 3166-1 alpha-2コード。例: JP, US, EU）"
+        }
+      }
+    },
+    "cve": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^CVE-\\d{4}-\\d{4,}$" },
+      "description": "関連CVE番号リスト"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"],
+      "description": "情報源の確度。予報の重み付けに使用する。"
+    },
+    "summary": {
+      "type": "string",
+      "description": "1〜2文の要約。事実のみ記述し、推測を混入しない。"
+    },
+    "verified_outcome": {
+      "type": ["string", "null"],
+      "enum": ["hit", "miss", "partial", null],
+      "description": "予報との突合結果。初期は必ず null。verification ステージのみが書き込む。"
+    },
+    "related_forecast_id": {
+      "type": ["string", "null"],
+      "description": "この観測が検証対象とする予報ID。verification ステージが設定する。"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "任意タグ（例: zero-day, ransomware, supply-chain）"
+    }
+  }
+}

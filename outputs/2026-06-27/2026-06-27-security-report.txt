@@ -1,0 +1,433 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-06-27 07:30 JST
+調査期間: 2026-06-26 07:00 〜 2026-06-27 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】Section 1
+調査期間: 2026-06-26 〜 2026-06-27
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. LLMjacking進化: 盗用AIコンピュートを自律型攻撃エンジンとして悪用（VAPTアジェンティックフレームワーク）
+カテゴリ: A（AIを武器化）/ サブカテゴリ: A4（AI活用型攻撃ツール悪用）/ 攻撃者種別: 犯罪組織
+------------------------------------------------------------
+
+採用契機: P（実害確認）, Q（バースト閾値到達: 5ソース）, X（露出インフラ大規模）
+MITRE ATLAS: AML.T0040（LLMjacking）/ AML.T0043（Agentic AI Misuse）
+OWASP: LLM09（Overreliance）/ AG01（Excessive Agency）/ AG02（Agentic AI Security Risks）
+対象: ITセクター全般 / グローバル / Ollamaサーバ公開環境
+被害規模: プライベートラボ標的を4セッション合計約15時間にわたり自律攻撃。世界175,000台以上の認証なし露出Ollamaサーバが潜在的インフラとして存在。
+
+【24時間以内（または期間内）の変化】
+[Cloud Security Alliance (CSA) / Sysdig 2026-06-26] CSAがSysdigの調査に基づくリサーチノート「LLMjacking Evolved: Stolen AI Compute as Offensive Infrastructure」を公開。露出OllamaサーバをVAPT自律攻撃フレームワークの推論エンジンとして使用した実例を詳報。
+
+【概要】
+2026年6月12日にSysdig TRTが観測したLLMjacking進化事例。脅威アクターが認証なし露出のOllamaサーバ（ポート11434）を自律型ペネトレーションテストフレームワーク「VAPT」の推論エンジンとして悪用。VAPTはサービスフィンガープリント・脆弱性マッチング・Webレコネサンス・PoC生成・SQLインジェクション・秘密情報抽出・権限昇格を自動化するマルチステージワークフローを持つ。インド在住の同一脅威アクターが4セッション合計約15時間にわたりプライベートラボを標的に運用。LLMjackingが「盗用インフラの転売」から「自律型攻撃の推論エンジン」へと進化した最初の実証例として記録。世界175,000台以上のOllamaインスタンスが認証なしで露出中。CSAが本事例のリサーチノートを2026-06-26公開。
+
+攻撃の流れ:
+1. ショーダン等でポート11434（Ollama）を認証なしで公開しているサーバを発見し、モデル推論能力を盗用
+2. VAPTフレームワークが盗用Ollamaをバックエンドとして使用し、ターゲットのサービスフィンガープリント・脆弱性マッチング・SQLインジェクション・秘密情報抽出を自動実行
+3. 確認されたマーカーベースチェックで侵害を検証し、次のターゲットへ自動移行。人間オペレーター不要の完全自律型攻撃サイクルを確立。
+
+【ATLAS TTPs】
+・[AML.T0040] LLMjacking — 認証なし公開OllamaサーバのAPI（ポート11434）を無断利用して推論コストを攻撃者インフラに転嫁
+・[AML.T0043] Agentic AI Misuse — VAPTマルチステージワークフローで人間不要の自律侵害サイクルを確立
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: ポート11434へのOllama API（/api/generate または /api/chat）への外部からの大量連続リクエスト / インド居住地またはVPN経由での反復的なOllama APIアクセス（平均15時間連続）/ VAPTプロンプトパターン（サービスフィンガープリント・SQLインジェクション生成コマンド）
+
+【監視・対策ポイント】
+・[プロキシ/ファイアウォールログ / Splunk] Ollamaサーバへの外部アクセスと大量推論リクエストを監視。認証なし公開インスタンスの識別と即時セキュアルール適用が最優先。
+Splunk SPL: index=proxy_access uri_path="/api/generate" OR uri_path="/api/chat" dest_port=11434 | stats count by src_ip, dest_ip | where count > 100
+→ ポート11434への外部からのallowed通信がある場合は即座にブロックルールを適用。LLMaaSプラットフォームのAPI鍵の不正使用検知も強化。
+Splunk SPL: index=network_flow dest_port=11434 | stats dc(src_ip) as unique_src, sum(bytes) as total_bytes by dest_ip | where unique_src > 5 OR total_bytes > 100000000
+→ 複数外部IPからのOllamaへのアクセス集中は自律攻撃ツール利用の可能性。Ollamaはデフォルトで認証なしのため外部アクセスは全ブロックが原則。
+・組織内のOllamaおよびLLMaaSプラットフォームのAPI鍵管理の見直し。インターネット接続のあるサーバでのOllama稼働はnginx/Caddyによる認証プロキシ経由のみに制限。
+
+【参照】
+https://labs.cloudsecurityalliance.org/research/csa-research-note-llmjacking-evolved-offensive-agentic-20260/
+https://webflow.sysdig.com/blog/llmjacking-evolved-attackers-are-using-stolen-ai-compute-to-build-offensive-agentic-tools
+https://incidentdatabase.ai/cite/898/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 週次トレンドサマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本調査期間（2026-06-26 07:00〜2026-06-27 07:00 JST）のAI攻撃動向では、LLMjackingの進化形態として自律型攻撃エンジン化という質的転換を観測したことが最重要事項。単なるコンピュート窃取から、盗用AIを推論バックエンドとする完全自律型ペネトレーションフレームワーク（VAPT）への進化は、AIが攻撃の「思考エンジン」となる新たな脅威モデルを示す。Temporal Burst Filtering: バースト検出閾値を超過（5ソース: CSA・Sysdig・AI Incident DB・BleepingComputer・THN）。世界175,000台超の認証なし公開Ollamaサーバは即座に攻撃インフラへ転用可能な状態であり、組織は外部からのポート11434アクセスのブロックを最優先で実施する必要がある。
+
+本日の集計:
+AI攻撃 — 本編1件 / 参考A0件 / 参考B0件 / 除外1件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）0件 / C（インフラ）0件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ・セキュリティトレンド】Section 2
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Turla（別名: Snake / Venomous Bear / Waterbug / IRON HUNTER / UNC4210 / 国家帰属: RU / 帰属信頼度: 高）
+活動タイプ: 新規マルウェア発見 / 活動中キャンペーン
+------------------------------------------------------------
+
+採用契機: Q, R, S（Google GTIG単一ベンダー高信頼帰属・新規マルウェアファミリー詳細技術分析・複数地域政府機関標的）
+標的: 政府・防衛機関 / ウクライナ・イタリア・ドイツ・ポーランド・オランダ（東欧・西欧）
+マルウェア: STOCKSTAY（.NETバックドア・WebSocket C2）/ Kazuar（関連既存ツール）
+
+【24時間以内の変化】
+[Google Threat Intelligence Group (GTIG) 2026-06-26] GTIGがTurlaの新型.NETバックドアSTOCKSTAYの詳細技術分析を公開。KazuarとのコードDNAレベルの重複を確認。2022年12月から開発・ウクライナ軍/政府機関に実展開済み。
+
+【概要】
+ロシア国家帰属APTグループTurlaが使用する新型.NETバックドア「STOCKSTAY」の詳細分析がGoogle GTIGによって公開された。STOCKSTAYはWindowsFormsフレームワークを使用し、websocket-sharpライブラリ経由のWebSocket C2通信を実装。KazuarとのコードDNA上の重複が確認されており、Turlaの既存ツールセットの延長として位置づけられる。学術・外交テーマの標的型フィッシングメール（RAR添付・CVE-2025-8088悪用）を通じてウクライナ政府・軍事組織・欧州外交機関を標的にしており、初期アクセスとポスト侵害の双方で使用される。2025年11月までウクライナへのフィッシング活動継続を観測。
+
+攻撃の流れ（判明分）:
+1. 学術・外交テーマの標的型フィッシングメールでRARアーカイブを配布（CVE-2025-8088 WinRAR悪用）
+2. STOCKSTAYバックドアを埋め込み・実行し、WebSocket経由でC2と暗号化通信を確立
+3. ウクライナ政府・軍事ネットワーク内での長期スパイ活動・情報収集。Kazuar等の既存ツールと連携して多段階侵害を継続。
+
+【新規TTP】
+・[T1566.001] Spearphishing Attachment — 学術・外交テーマのRAR添付メールでSTOCKSTAYを配布
+・[T1071.004] Application Layer Protocol: WebSocket — websocket-sharpライブラリを使用したWebSocket経由の暗号化C2通信
+・[T1203] Exploitation for Client Execution — CVE-2025-8088 WinRAR脆弱性悪用によるRAR展開時の任意コード実行
+
+【IoC】
+IoC: 確認されず（GTIGレポートでIOC非公開）
+
+【推奨アクション】
+・外交・学術関連のRAR/ZIP添付メールの厳格な検査強化。WinRARを最新版にアップデート（CVE-2025-8088修正済み版）。EDRによるWebSocketベースのC2通信の監視強化。特にウクライナ・欧州外交機関との接触がある政府・研究機関・防衛関連組織は要注意。
+Splunk SPL: index=wineventlog EventCode=4688 ParentProcessName="*winrar*" OR ParentProcessName="*7zip*" | stats count by ComputerName, CommandLine | where isnotnull(CommandLine)
+→ WinRAR/7-zip展開後のプロセス生成を追跡し、STOCKSTAYペイロードの起動を検知。
+Splunk SPL: index=proxy (uri_path="*ws://*" OR uri_path="*wss://*") NOT (dest="*.microsoft.com" OR dest="*.google.com" OR dest="*.slack.com") | stats count by src_ip, dest | sort -count
+→ 非標準ポート（8443/9443/4433等）でのWebSocket接続や業務上説明できない外部宛WebSocket C2の監視を強化。
+
+【参照】
+https://cloud.google.com/blog/topics/threat-intelligence/stockstay-turla-intelligence-gathering
+https://thehackernews.com/2026/06/google-details-turlas-new-stockstay.html
+https://therecord.media/russia-turla-espionage-ukraine-stockstay-malware
+https://www.scworld.com/brief/turla-group-deploys-new-stockstay-backdoor-against-ukraine-and-italy
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（Russian-speaking IAB / 帰属信頼度: 中）/ FortiBleed-2026-CredentialCampaign（規模更新: 430,000台超 / 110M超認証情報）
+採用契機: S（規模大・帰属中）。FortiGate機器を標的としたクレデンシャル収集キャンペーンの最終規模が430,000台超・110M超の認証情報と確認（当初73,932台→86,644台→430,000台超へ大幅更新）。FortiOS内蔵の診断コマンドを悪用したGoベースのFortiGateSniifferで24のネットワークプロトコルを同時監視し110M超の認証情報を収集。ランサムウェアオペレーター・国家系グループへのアクセス販売継続中。CISA 2026-06-18勧告後もキャンペーン継続。帰属信頼度: 中。
+推奨アクション: 全VPN・管理セッション終了。全パスワードリセット（特に管理者・VPNユーザー）。MFA強制。FortiOS 7.4/7.6/8.0以降に更新。異常ログイン・設定変更のログ確認。侵害兆候がある機器の交換検討。
+Splunk SPL: index=fortinet sourcetype=fgt_event subtype=vpn action=tunnel-up | stats count by user, srcip | where count > 5
+→ FortiGate診断モードでのsniffer有効化ログ（diagnose sniffer packet）に注意。通常運用では発生しない。MFA未設定のVPNユーザーは最優先でパスワードリセット対象。
+参照: https://thehackernews.com/2026/06/fortibleed-targeted-fortigate-firewalls.html
+参照: https://www.cryptika.com/fortibleed-attack-hit-430000-fortigate-firewalls-stealing-110m-credentials/
+参照: https://www.cisa.gov/news-events/alerts/2026/06/18/cisa-urges-hardening-fortinet-devices-after-reports-credential-exposure
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: CVE-2026-12569未パッチのWindchill/FlexPLM環境における即時IOC確認とWebシェル調査が必要
+Tier: 1
+確度: 高
+根拠:
+  Evidence: [CISA 2026-06-25] KEV追加とFCEB期限2026-06-28を確認。[PTC 2026-06-25] 「攻撃の高まりが継続している」とJSP Webシェル展開を公式確認。[BleepingComputer/THN/SecurityWeek 2026-06-25] 複数媒体が即時パッチ適用を訴える報道（バースト検出閾値超過: 6ソース以上）。
+  過去パターン: PLMソフトウェアへのWebシェル展開は長期にわたる永続化・知的財産窃取キャンペーンの起点となる事例が多い（2023年Ivanti・2024年ConnectWise等の類似パターン）。KEV追加後24〜72時間以内の悪用拡大は繰り返し観測されている。
+  脅威情報: PTC自身がJSP Webシェル展開の継続を確認。FCEB期限2026-06-28は本レポート後24時間以内。攻撃者はすでに製造業向けPLMシステムをターゲットとした持続的なインフラを構築済みと推定される。
+先回り監視: 製造業・自動車・防衛関連のEDRで /Windchill/ または /FlexPLM/ パスへのPOSTリクエストと予期せぬJSPファイル作成イベントが検出された場合。SIEMでWindchillサーバからの内部ネットワークへの通常外のTCP接続増加。
+的中判定: Security NEXTまたはセキュリティベンダーがCVE-2026-12569を悪用したWebシェル経由の新規インシデント事例（製造業・PLMシステム対象）を48時間以内に報告した場合
+
+・予報2: Turla STOCKSTAY標的の政府機関・外交機関向け WinRAR 経由フィッシングへの備えと WebSocket C2 検知強化
+Tier: 2
+確度: 中
+根拠:
+  Evidence: [Google GTIG 2026-06-26] STOCKSTAYの詳細分析公開。ウクライナ・欧州政府組織への活動継続を確認。WinRAR CVE-2025-8088悪用のRAR配布を2025年11月まで観測。
+  過去パターン: Turlaは新マルウェア詳細が公開された後も攻撃を継続する傾向。学術・外交テーマのフィッシングは日本の官公庁・研究機関にも定期的に到達した事例がある。
+  脅威情報: STOCKSTAYはKazuar後継として既にウクライナ政府ネットワークへの実展開済み。WebSocket C2はHTTPフィルタリングを回避しやすく検知が困難。
+推定部分: 推定 — ウクライナ・欧州への集中展開は確認済みだが、日本政府機関・大学への波及は未確認。Turlaの過去パターンから波及リスクを推定しているが直接証拠はない。
+先回り監視: 外部からのRAR/ZIP添付メール内のSTOCKSTAYペイロードのEDR検知。WinRAR展開後のWebSocket接続試行（非標準ポート8443/9443/4433）。.NETランタイム生成プロセスからのWebSocket接続のEDRアラート。
+的中判定: JPCERT/CCまたはセキュリティベンダーがSTOCKSTAYまたはKazuarの亜種を使用したTurlaによる日本・アジア太平洋地域の政府機関への攻撃を48〜72時間以内に報告した場合
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【製品別CVE】Section 3
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-12569 / PTC Windchill PDMlink / FlexPLM
+対象: Windchill PDMlink / FlexPLM 11.0 M030未満の全バージョン
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.3 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC未公開
+FCEB対応期限: 2026-06-28
+
+【24時間以内の変化】
+[CISA 2026-06-25] CISA KEVカタログに追加（FCEB期限2026-06-28）。PTCは「引き続きJSP Webシェル展開を確認している」と公式に発表。
+[BleepingComputer / The Hacker News / SecurityWeek 2026-06-25] CISA KEV追加を受け複数媒体が即時パッチ適用を報道。Webシェル攻撃が継続中。バースト検出閾値超過（6ソース以上）。
+
+【概要】
+PTCのエンタープライズPLM/PDMソフトウェアであるWindchill PDMlinkおよびFlexPLMにおける未認証RCE脆弱性。デシリアライゼーション経由の不適切な入力検証（CWE-502）に起因し、認証なしでネットワーク経由の任意コード実行が可能。攻撃者はJSP Webシェルを展開して永続的なリモートコマンド実行とデータ窃取を確立している。製造業・自動車・航空宇宙等のサプライチェーンで広く使われるPLMシステムが標的。PTC自身が2026-06-25に攻撃継続を公式確認し、CISA FCEB期限は2026-06-28（明日）。
+
+攻撃の流れ:
+1. 攻撃者がネットワーク経由でWindchill/FlexPLMへ悪意あるHTTPリクエストを送信（認証不要）
+2. デシリアライゼーション脆弱性を悪用し、サーバ上にJSP Webシェルを展開
+3. WebシェルでリモートコマンドをHTTP経由で実行し、内部ネットワークへの横展開・機密設計データ・製品仕様の窃取を実施
+
+【IoC】
+Filename: *.jsp (Webシェル: Windchill/FlexPLMデプロイディレクトリ配下)
+IP/Hash: 確認されず
+
+【監視ポイント】
+・[Webアクセスログ / Splunk] WindchillサーバへのPOSTリクエストで不審なJSPファイルへのアクセスパターンを検知する
+Splunk SPL: index=web sourcetype=access_combined uri_path="*.jsp" method=POST status=200 | stats count by src_ip, uri_path | where count > 5
+→ Windchill/FlexPLMデプロイディレクトリ配下に新規JSPファイルが作成された場合は即座に隔離。既知のWebシェルパターン（cmd=/exec=等のパラメータ）の有無を確認。
+Splunk SPL: index=web sourcetype=access_combined (uri_path="/Windchill*" OR uri_path="/FlexPLM*") | rex field=uri_path "(?<jsp_file>[^/]+\.jsp)" | where isnotnull(jsp_file) | stats count by src_ip, jsp_file, uri_path | sort -count
+→ 既存業務ではアクセスされないJSPパスへのアクセスが検出された場合は即時確認対応。
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/06/25/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://nvd.nist.gov/vuln/detail/CVE-2026-12569
+https://thehackernews.com/2026/06/cisa-adds-exploited-ptc-windchill-rce.html
+https://www.bleepingcomputer.com/news/security/cisa-sets-urgent-deadline-to-fix-cisco-flaw-exploited-in-attacks/
+https://www.ptc.com/en/about/trust-center/advisory-center/active-advisories/windchill-flexplm-rce-vulnerability
+
+------------------------------------------------------------
+2. CVE-2026-20230 / Cisco Unified Communications Manager / Unified CM SME
+対象: 14.x（14SU6未満）/ 15.x（15SU5未満）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.6 (High)
+状態: KEV登録済み / 実悪用確認 / PoC公開済み
+FCEB対応期限: 2026-06-28
+
+【24時間以内の変化】
+[CISA 2026-06-25] CISA KEVカタログに追加（FCEB期限2026-06-28）。既報（2026-06-24）だがKEV未登録→KEV登録に変化。
+[TechTimes 2026-06-24] パッチ適用後もWebシェルが残存することが新たに確認。/platform-services/axis2-web/ 配下のJSPファイルはパッチ・サーバ再起動後も生存し、攻撃者は継続的なアクセスが可能。
+
+【概要】
+Cisco Unified CM（コールマネージャ）のHTTPリクエスト検証における不備（SSRF/不適切な入力検証）に起因する重大な脆弱性。2026-06-22〜24にTor経由でのWebシェル展開が確認されており、2026-06-25にCISA KEVへ追加された（2026-06-24既報からステータス変化）。特に重要な点として、パッチを適用してもWebシェルが残存するため、既に侵害された環境ではパッチだけでは不十分。Webシェルはサーバ再起動後も /platform-services/axis2-web/ 配下に生存し、rootレベルへの権限昇格の足掛かりとなる。FCEB期限は2026-06-28（明日）。
+
+攻撃の流れ:
+1. 攻撃者がWebDialer SSRFエクスプロイトチェーンを通じてCisco CUCM 14.x/15.xへアクセス（認証不要）
+2. 3段階JSPコマンドシェルを /platform-services/axis2-web/ 配下に展開
+3. Tor経由でWebシェルにアクセスし、rootレベルへの権限昇格・永続的なバックドアとして悪用。パッチ後も残存するため侵害確認が必須。
+
+【IoC】
+Filename: *.jsp (in /platform-services/axis2-web/)
+IP/Hash: 確認されず
+
+【監視ポイント】
+・[Webアクセスログ / Splunk] Cisco CUCMサーバの /platform-services/axis2-web/ 配下のJSPアクセスとTorノードからの接続を監視。既パッチ適用済み環境でもWebシェル残存チェックが必須。
+Splunk SPL: index=web sourcetype=access_combined uri_path="/platform-services/axis2-web/*.jsp" | stats count by src_ip, uri_path, method, status
+→ /platform-services/axis2-web/配下の予期せぬJSPファイルの有無をファイルシステム上でも確認。パッチ済みでも必ず確認を。
+Splunk SPL: index=proxy sourcetype=squid | lookup tor_exit_nodes ip as src_ip OUTPUT is_tor | where is_tor=true AND (uri_path="*/axis2-web/*" OR uri_path="*/UnifiedCM/*")
+→ Tor IPリストとの照合でWebシェルへの外部アクセスを検知。
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/06/25/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://www.bleepingcomputer.com/news/security/cisco-unified-cm-sme-flaw-cve-2026-20230-now-exploited-in-attacks/
+https://www.techtimes.com/articles/319023/20260624/cisco-unified-cm-cve-2026-20230-webshell-drops-confirmed-patch-alone-wont-evict-attackers.htm
+https://horizon3.ai/attack-research/vulnerabilities/cve-2026-20230/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: 24時間窓内（2026-06-26 07:00〜2026-06-27 07:00 JST）に新規注意喚起の発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-46331 / Linux kernel (net/sched/act_pedit)
+対象: v5.18〜v7.1-rc6（v7.1-rc7でパッチ済み）/ RHEL 8/9/10・Debian 13 等ディストリビューション別パッチ対応中
+CVSS: 未採番（High相当）
+Linuxカーネルのトラフィック制御サブシステム（act_pedit）のCopy-On-Write計算ミスによるローカル特権昇格脆弱性（ニックネーム: pedit COW）。非特権ユーザーがsetuid-root /bin/suのキャッシュを汚染してrootシェルを取得可能。作者検証済みPoC「packet_edit_meme」がGitHubで公開済み。RHEL 8/9/10およびDebian 13での悪用確認。Kubernetesコンテナ環境でのエスケープにも応用可能。対処: Linux v7.1-rc7以降またはディストリビューション別パッチ（Red Hat RHSB-2026-008）に更新。
+IoC: Hash: 確認されず / Filename: packet_edit_meme
+
+監視: [Linuxシステムログ / Splunk] 非rootユーザーによるunshare(CLONE_NEWUSER)の多発はLPE試行の可能性
+Splunk SPL: index=linux_audit type=SYSCALL syscall=unshare OR syscall=clone | stats count by uid, auid, comm, exe | where uid != 0 AND count > 3
+→ Kubernetesクラスタは特権コンテナ設定を確認。カーネルを最新パッチ版に更新することで根本対処。
+
+参照: https://cybersecuritynews.com/linux-pedit-cow-exploit/
+参照: https://access.redhat.com/security/vulnerabilities/RHSB-2026-008
+参照: https://tuxcare.com/blog/pedit-cow-cve/
+
+・Synology MailPlus Server (CVE-2026-13136 / CVE-2026-13135 / CVE-2025-15660)
+対象: MailPlus Server 4.0.1-31663未満（DiskStation Manager 7.3/7.2.2/7.2.1上）
+CVSS: Critical相当（CVSSスコア未確定）
+SynologyのNAS向けプライベートメールサーバMailPlus Serverに3件の深刻な脆弱性。CVE-2026-13136（不正認証チェック: リモート任意ファイルR/W・DoS）、CVE-2026-13135（通信チャネル不適切制限: 内部サービスへのアクセス）、CVE-2025-15660（弱い擬似乱数生成: 任意ファイルアクセス・DoS）。PoC未公開・実悪用未確認だが国内中小企業でのNAS利用率を考慮し要注意。対処: MailPlus Server 4.0.1-31663以降に更新。
+IoC: 確認されず
+
+監視: [Synology DSMシステムログ / Splunk] 不審なMailPlus Server APIコールと認証失敗の多発を監視
+Splunk SPL: index=synology sourcetype=synology:mailplus uri_path="/webapi/mailplus*" status>=400 | stats count by src_ip, uri_path, status | where count > 10
+→ MailPlus Serverへの繰り返し失敗するAPIリクエストや認証なしでのファイルアクセス試行に注意。
+
+参照: https://www.helpnetsecurity.com/2026/06/26/synology-mailplus-server-vulnerabilities/
+参照: https://www.synology.com/en-us/security/advisory
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【GMOイエラエSOC推奨情報】Section 4
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. FCEB期限2026-06-28到来: PTC Windchill/FlexPLM と Cisco CUCM の即時パッチ・WebシェルIOC確認
+観点: CVE関連
+採用契機: β（国内企業が広く利用するサービスへの影響確認）, γ（SOC運用に直接関係するWebシェル残存確認）
+------------------------------------------------------------
+
+優先度: 高
+対象: PTC Windchill PDMlink/FlexPLM / Cisco Unified Communications Manager
+
+【24時間以内の変化】
+[CISA 2026-06-25] CVE-2026-12569（PTC Windchill）とCVE-2026-20230（Cisco CUCM）のFCEB対応期限が2026-06-28に到来。双方でJSP Webシェル展開が確認済み。
+
+【概要】
+CISA Binding Operational Directive 26-04に基づき、CVE-2026-12569（PTC Windchill/FlexPLM）およびCVE-2026-20230（Cisco CUCM/SME）のFCEB対応期限が本日翌日2026-06-28に到来する。双方の製品で実際にJSP Webシェルが展開されており、パッチ適用だけでなくWebシェル残存確認とIOCハンティングが必要。特にCisco CUCMはパッチ適用後もWebシェルが残存するため、ファイルシステムの直接確認が必須。
+
+【推奨アクション】
+・PTC Windchillを11.0 M030以降にアップデート。未パッチ環境では外部からのアクセスを即ブロック。
+・Cisco CUCMを14SU6/15SU5にアップデート後、/platform-services/axis2-web/配下の不審JSPファイルの有無を確認・削除。
+・双方の製品サーバのWebアクセスログを過去30日分レビューし、POSTリクエストによる不審なJSPファイルアクセスを検索。
+・侵害が確認された場合は即座に隔離し、製品ベンダーのインシデントレスポンス手順に従う。
+Splunk SPL: index=web (sourcetype=access_combined OR sourcetype=iis) (uri_path="*/Windchill*" OR uri_path="*/FlexPLM*" OR uri_path="*/axis2-web*") method=POST status=200 | stats count by src_ip, uri_path | sort -count
+→ POSTメソッドで200レスポンスの不審なJSPパスが見つかった場合は即座に隔離してベンダーに連絡。
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/06/25/cisa-adds-two-known-exploited-vulnerabilities-catalog
+
+------------------------------------------------------------
+2. Turla STOCKSTAY: 政府・外交・研究機関向け WebSocket C2 監視強化と WinRAR 更新確認
+観点: ゼロデイ関連
+採用契機: δ（海外で話題だが国内への波及が近いとみられるインシデント手法）, ε（攻撃者側のTTP変化: WebSocket C2新規テクニック）
+------------------------------------------------------------
+
+優先度: 中
+対象: WinRAR / メールゲートウェイ / EDR
+
+【24時間以内の変化】
+[Google GTIG 2026-06-26] TurlaのSTOCKSTAY新型バックドアの詳細分析公開。WinRAR CVE-2025-8088経由のRAR配布・WebSocket C2の新規TTPs確認。
+
+【概要】
+Google GTIGによるTurla STOCKSTAY分析公開を受け、WebSocket経由のC2通信という新規TTPs（MITRE T1071.004）の検知態勢構築が必要。学術・外交テーマのフィッシングメールが起点であり、日本の外交機関・研究機関・防衛産業にも波及リスクがある。WinRAR（CVE-2025-8088）の未更新が初期感染ベクタとなる。
+
+【推奨アクション】
+・組織内のWinRARをCVE-2025-8088修正版に更新確認。
+・メールゲートウェイで外部からのRAR/ZIP添付ファイルのサンドボックス検査を強化。
+・ファイアウォール・プロキシログで非標準ポート（8443/9443/4433等）でのWebSocket接続を検索。
+・EDRで.NETランタイムから発生するWebSocket接続試行のアラートルールを確認・追加。
+Splunk SPL: index=proxy (uri_path="*ws://*" OR uri_path="*wss://*") NOT (dest="*.microsoft.com" OR dest="*.google.com" OR dest="*.slack.com") | stats count by src_ip, dest | sort -count
+→ 非標準WebSocketの接続先を業務上説明できないIPと突合し、STOCKSTAYのC2パターンと一致するかを確認。
+
+【参照】
+https://cloud.google.com/blog/topics/threat-intelligence/stockstay-turla-intelligence-gathering
+
+------------------------------------------------------------
+3. LLMjacking進化: 組織内Ollamaサーバの外部露出確認と認証設定の見直し
+観点: AI攻撃関連
+採用契機: γ（SOC運用に直接関係する設定確認: Ollamaポート外部露出）, δ（海外で話題・国内波及が近い）
+------------------------------------------------------------
+
+優先度: 中
+対象: Ollama / AIモデルサービス（LLMaaSプラットフォーム含む）
+
+【24時間以内の変化】
+[CSA / Sysdig 2026-06-26] CSAリサーチノートで露出OllamaをVAPT自律攻撃ツールに悪用した実例公開。世界175,000台超が認証なし公開中。
+
+【概要】
+LLMjackingが単なる計算資源の窃用から「自律型攻撃の推論エンジン」としての悪用へと進化した事例が報告された。Ollamaはデフォルトで認証を持たず、ポート11434が外部公開されている場合は攻撃者の自律型攻撃ツールの基盤として利用される。組織内のOllamaおよびLLMaaSプラットフォームのAPI鍵管理の見直しを推奨。
+
+【推奨アクション】
+・ShodanまたはNmapでポート11434（Ollama）の組織外部からの到達可能性を確認・即ブロック。
+・Ollama/LLMaaSプラットフォームのAPIアクセスログを確認し、不審なリクエストパターン（大量連続推論）を検索。
+・AWS Bedrock / Azure OpenAI / Anthropic APIの鍵ローテーションと使用量アラートの設定を確認。
+・インターネット接続のあるサーバでのOllama稼働はnginx/Caddyによる認証プロキシ経由のみに制限。
+Splunk SPL: index=firewall dest_port=11434 action=allowed | stats count by src_ip, dest_ip | where count > 10
+→ ポート11434への外部からのallowed通信がある場合は即座にブロックルールを適用。
+
+【参照】
+https://labs.cloudsecurityalliance.org/research/csa-research-note-llmjacking-evolved-offensive-agentic-20260/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-24858 (Fortinet FortiCloud SSO / FortiGate) → 2026-06-19に本編採用済み。FortiBleedキャンペーン規模更新はAPTセクションで対応。CVE自体のステータス変化なし。
+・CVE-2026-13028 (Google Chrome WebGL) → 2026-06-26に参考A採用済み。24時間窓内に新たな変化なし。
+・CVE-2026-13032 (Google Chrome WebGL) → 2026-06-26に参考A採用済み。変化なし。
+・CVE-2026-13033 (Google Chrome Blink) → 2026-06-26に参考A採用済み。変化なし。
+・CVE-2026-13038 (Google Chrome Autofill) → 2026-06-26に参考A採用済み。変化なし。
+・CVE-2025-67038 (Lantronix EDS5000) → 2026-06-24に本編採用済み。FCEB期限2026-06-26到来済み。変化なし。
+・CVE-2026-34908 / CVE-2026-34909 / CVE-2026-34910 (Ubiquiti UniFi OS Server) → 2026-06-24に本編採用済み。FCEB期限2026-06-26到来済み。変化なし。
+
+[APT]
+・Nightmare Eclipse / NightmareEclipse-2026-WindowsZeroDayDisclosure → 2026-06-24に注目動向採用済み。24時間窓内に新規CVE開示・PoC公開の変化なし。
+・KongTuke / KongTuke-2026-Mistic-IAB → 2026-06-25に注目動向採用済み。24時間窓内に変化なし。
+
+[AI攻撃]
+・LLMjacking Black Market Scale (CSA先行リサーチ) → 今回のVAPT agentic evolved事例（AI-2026-06-27-001）に統合。別エントリ不要。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編2件 / 参考A0件 / 参考B2件 / 除外7件
+APT — 本編1件 / 注目動向1件 / 除外2件
+AI攻撃 — 本編1件 / 参考A0件 / 参考B0件 / 除外1件
+SOC推奨情報 — 高1件 / 中2件 / 低0件 / 除外0件
+
+========================================

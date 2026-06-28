@@ -1,0 +1,319 @@
+========================================
+  セキュリティインテリジェンス日報
+  調査日時: 2026-06-17 09:03 JST
+  調査期間: 2026-06-16 09:03 〜 2026-06-17 09:03 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  該当なし
+
+  本日の24時間窓内に「軸1 高（8点以上）× 軸2 高（4点以上）」を
+  同時に満たすCVEは確認されなかった。
+  国内シグナルが確認されたものは参考Aへ、国際先行観測は参考Bに掲載。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  昇格理由: Security NEXT 2026-06-16 報道 / CISA KEV 2026-06-15〜16 追加
+
+
+  ・ CVE-2026-54420 / LiteSpeed cPanel Plugin（2.4.8 未満）
+    CVSS: 8.5（High）
+    状態: KEV登録済み・実悪用確認・パッチあり
+
+    【24時間以内の変化】
+
+      [Security NEXT 2026-06-16]
+        「LiteSpeed cPanel Plugin」に権限昇格の脆弱性 - すでに悪用も として国内報道。
+
+      [CISA KEV 2026-06-15〜16]
+        KEV カタログに追加。FCEB 機関の修正期限: 2026-06-18（48時間以内）。
+
+    【概要】
+
+      cPanel 上で動作する LiteSpeed Web Server プラグインの
+      シンボリックリンク処理不備に起因する権限昇格の脆弱性。
+      FTP 資格情報または Web シェルアクセスを持つ攻撃者が
+      CloudLinux / CageFS のユーザー分離を回避し、root 権限を取得できる。
+      共有ホスティングサービス上での多テナント侵害につながるリスクがある。
+      悪用は少なくとも 2026年5月から観測されており、KEV 登録後にさらに攻撃が加速する可能性がある。
+
+      攻撃の流れ:
+        1. FTP 認証情報の侵害または Web シェルの設置（初期アクセス）
+        2. 細工したシンボリックリンクを作成し、cPanel プラグインの内部 API を悪用
+        3. CageFS の権限境界を突破して root に昇格
+
+    【IoC】
+
+      IoC: 確認されず（侵害指標の公開なし）
+
+    【監視ポイント】
+
+      ・ [cPanel / LiteSpeed ログ]  root 権限での予期しないファイル操作・
+        ユーザー切り替えイベントを確認する
+      ・ [ホスティング管理ログ]  FTP アクセス後に root レベルの操作が
+        実行された痕跡を探す
+
+    【参照】
+
+      https://thehackernews.com/2026/06/cisa-flags-litespeed-cpanel-plugin-flaw.html
+      https://securityaffairs.com/193684/security/u-s-cisa-adds-cisco-catalyst-and-litespeed-cpanel-plugin-flaws-to-its-known-exploited-vulnerabilities-catalog.html
+      https://www.security-next.com/185914
+      https://www.cisa.gov/news-events/alerts/2026/06/15/cisa-adds-two-known-exploited-vulnerabilities-catalog
+
+
+  ・ CVE-2026-20262 / Cisco Catalyst SD-WAN Manager（複数バージョン）
+    CVSS: 6.5（Medium）
+    状態: KEV登録済み・実悪用確認（限定的）・パッチあり
+
+    【24時間以内の変化】
+
+      [Security NEXT 2026-06-16]
+        「Cisco Catalyst SD-WAN Manager」に脆弱性 - 侵害有無の確認を として国内報道。
+
+      [Cisco / CISA 2026-06-15〜16]
+        Cisco がセキュリティアドバイザリを公開。CISA が KEV に追加。
+        修正期限: 2026-06-29。Cisco は IOC を共有して管理者に調査を要請。
+
+    【概要】
+
+      SD-WAN Manager の Web UI でファイルアップロード時のパス検証が
+      不十分であることを利用する脆弱性。
+      認証済みの攻撃者が細工した HTTP リクエストを送信し、
+      任意のファイルを作成・上書きすることで最終的に root へ昇格できる。
+      Cisco の内部テストで発見され、その後限定的な悪用が確認された。
+      SD-WAN 管理コンソールがインターネットに露出している場合は優先対処が必要。
+
+      攻撃の流れ:
+        1. 有効な認証情報（書き込み権限以上）でログイン
+        2. 細工した HTTP リクエストでパス外のファイルを上書き
+        3. index.jsp または .war ファイルを設置して root 権限でコード実行
+
+    【IoC】
+
+      ログ監視対象（Cisco 推奨）:
+        ・ vmanage-server ログ内の index.jsp / .war アップロード試行
+        ・ vmanage-appserver および serviceproxy-access ログの異常
+
+    【監視ポイント】
+
+      ・ [SD-WAN Manager 管理ログ]  未知の .jsp / .war ファイルのアップロード、
+        予期しない root 実行コンテキストを確認する
+      ・ [ネットワーク境界]  管理 UI（デフォルトポート 443 / 8443）への
+        インターネット直接露出を確認し、アクセス制限を徹底する
+
+    【参照】
+
+      https://www.bleepingcomputer.com/news/security/cisco-fixes-sd-wan-vmanage-flaw-exploited-in-zero-day-attacks/
+      https://www.helpnetsecurity.com/2026/06/16/cisco-sd-wan-cve-2026-20262-exploited/
+      https://securityaffairs.com/193684/security/u-s-cisa-adds-cisco-catalyst-and-litespeed-cpanel-plugin-flaws-to-its-known-exploited-vulnerabilities-catalog.html
+      https://www.security-next.com/185920
+
+
+  JPCERT/CC・IPA 発行状況（24h 窓内）:
+
+    発行あり  : JPCERT/CC JVN — Canon EOS ネットワーク設定ツールの脆弱性（2026-06-16）
+                ※ Canon製品固有。今回採用CVEとは直接関係なし
+    未発行    : CVE-2026-54420 / CVE-2026-20262 — JPCERT/CC・IPA からの
+                24時間窓内の直接注意喚起発行は確認されず（Security NEXT 報道は確認）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ・ CVE-2026-39808 / CVE-2026-39813 / Fortinet FortiSandbox（4.4.x / 5.0.x）
+    CVSS: 未公表（Critical 相当と推測）
+
+    6月16日、複数のセキュリティ研究者が FortiSandbox への実攻撃を同時観測。
+    CVE-2026-39808 は未認証 OS コマンドインジェクション（RCE as root）、
+    CVE-2026-39813 はパストラバーサルによる認証バイパス。
+    PoC は 2026年4月から公開済みのため悪用難度が低い。
+    Fortinet は 4月に修正版（FortiSandbox 4.4.9 / 5.0.6）をリリース済みだが、
+    未適用環境で攻撃が拡大している。
+    国内の MDR・SOC サービスや仮想環境分析基盤として利用されている場合は
+    速やかに修正版へアップグレードすること。
+
+    参照: https://www.bleepingcomputer.com/news/security/critical-fortinet-fortisandbox-flaws-now-exploited-in-attacks/
+          https://www.helpnetsecurity.com/2026/06/16/fortisandbox-vulnerabilities-cve-2026-39813-cve-2026-39808-cve-2026-25089/
+          https://thehackernews.com/2026/06/attackers-exploit-three-fortinet.html
+
+
+  ・ CVE-2026-53435 / Jenkins（2.567 以前 / LTS 2.555.2 以前）
+    CVSS: 9.0（Critical）
+
+    2026-06-10 にアドバイザリ公開。2026-06-15 にはハニーポットが実攻撃を検知。
+    デシリアライゼーション欠陥により低権限ユーザーが config.xml を悪用して
+    Script Console 経由で任意コードを実行できる。
+    CI/CD パイプラインへの侵害、サプライチェーン攻撃の踏み台になるリスクが高い。
+    国内の開発環境・クラウドネイティブ基盤でも Jenkins は広く使われており、
+    修正版（Jenkins 2.568 / LTS 2.555.3）の適用が急務。
+    対処: Jenkins 2.568 または LTS 2.555.3 以降にアップデート
+
+    IoC:
+      IP  : 194.247.182.44 (AS57043 HOSTKEY B.V., Netherlands)
+
+    参照: https://cyberpress.org/jenkins-rce-vulnerability/
+          https://gbhackers.com/jenkins-rce-flaw-exploited/
+          https://www.jenkins.io/security/advisory/2026-06-10/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  該当なし
+
+  本日の24時間窓内に「軸P 高（8点以上）× 軸Q 高（4点以上）」を
+  同時に満たすAPT活動は確認されなかった。
+  注目動向に準拠するものは以下のセクションに掲載。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ・ Velvet Ant（中国帰属、信頼度: 中）/ Operation Highland
+    採用契機: R（新規マルウェア: PAMモジュール・OpenSSH改ざん）、S（新規TTP）、V（重要組織侵害）
+    帰属信頼度: 中（Sygnia 単一ベンダーレポート、中国nexusとの状況証拠）
+
+    Sygnia が 2026年6月15日前後に「Operation Highland」として公表。
+    2016年から2026年まで約10年間、大規模組織の「エアギャップ」内部ネットワークに
+    気づかれずに潜伏していたことが判明した。
+    攻撃者は PAM モジュール 9 種類と OpenSSH バイナリを改ざんし、
+    認証スタック自体をバックドア化することで全ログインの可視化を維持。
+    過去に Sygnia が 2024年に公表した F5 BIG-IP 悪用キャンペーン（3年間潜伏）
+    とも同一グループと推定される。
+
+    主要 TTP:
+      ・ [T1556.003]  PAM モジュール改ざん — 認証時の資格情報傍受
+      ・ [T1554]  クライアント製品への感染 — トロイの木馬 OpenSSH バイナリ
+      ・ [T0869 相当]  内部 C2 — レガシーファイルサーバを C2 として流用
+      ・ [T1078.004]  複数フットホールドの確保 — レガシー・未監視機器を重点的に感染
+
+    推奨アクション:
+      ・ PAM モジュール（/lib/security/*.so, /etc/pam.d/* 等）のハッシュを
+        既知のクリーン版と比較検証する
+      ・ OpenSSH バイナリの改ざん検知（AIDE / Tripwire 等）を実施する
+      ・ レガシー・EOL サーバをネットワークセグメントから隔離し、
+        モニタリング対象に加える
+      ・ エアギャップ環境の端末でも EDR / FIM 導入を検討する
+
+    参照: https://www.sygnia.co/blog/operation-highland-velvet-ant/
+          https://www.helpnetsecurity.com/2026/06/15/velvet-ant-backdoored-authentication-persistence/
+          https://www.darkreading.com/cyberattacks-data-breaches/china-velvet-ant-apt-multiyear-espionage
+
+
+  ・ 不明（帰属未確定）/ "Atomic Arch" — AUR サプライチェーン攻撃
+    採用契機: P（新規キャンペーン）、R（新規マルウェア: eBPF ルートキット + インフォスティーラー）
+    帰属信頼度: 低（帰属未確定）
+
+    2026年6月11〜12日に発覚した Arch Linux AUR（ユーザーリポジトリ）への
+    大規模サプライチェーン攻撃。確認されたパッケージ数は最終的に 1,500 件超。
+    攻撃者はメンテナ不在の孤立パッケージを正規手続きで取得し、
+    PKGBUILD スクリプトを改ざん。npm パッケージ atomic-lockfile / js-digest 経由で
+    eBPF ルートキットとインフォスティーラーを配布した。
+    公式 Arch Linux リポジトリへの感染は確認されていないが、
+    yay / paru 等の AUR ヘルパーを使用する Linux エンジニア・開発者環境が対象。
+    日本国内でも Arch Linux ベースの開発環境や WSL 環境で
+    AUR を使用している場合はパッケージ更新ログの確認が必要。
+
+    検知ツール:
+      GitHub: https://github.com/lenucksi/aur-malware-check
+
+    推奨アクション:
+      ・ AUR ヘルパーのインストール / アップグレードログを過去 2 週間分確認する
+      ・ atomic-lockfile / js-digest パッケージの存在を確認し、検出時は隔離する
+      ・ eBPF プログラムのロード一覧（bpftool prog list 等）に不審なエントリがないか確認する
+      ・ SSH 秘密鍵・アクセストークンを確認し、侵害疑いがあれば無効化・ローテーションする
+
+    参照: https://www.securityweek.com/atomic-arch-supply-chain-attack-hits-1500-aur-packages/
+          https://latesthackingnews.com/2026/06/13/aur-supply-chain-attack-arch-packages-backdoored/
+          https://www.stepsecurity.io/blog/400-aur-packages-hijacked-atomic-arch-campaign/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ・ 予報 1: Fortinet FortiSandbox への攻撃拡大
+    確度: 高
+
+    根拠:
+      PoC が 2026年4月から公開されており、6月16日に実悪用が多数同時観測された。
+      KEV 未登録のため FCEB 強制修正の圧力がなく、未パッチ環境が
+      引き続き攻撃対象となりやすい。
+      過去のパターンで PoC 公開後 60〜90 日での攻撃加速が確認されており、
+      現在がその時期にあたる。
+      MDR / SOC 向けサンドボックス製品という標的の性質上、
+      侵害された場合のセキュリティ可視性への影響が特に深刻。
+
+
+  ・ 予報 2: LiteSpeed cPanel KEV 追加に伴う攻撃急加速（共有ホスティング標的）
+    確度: 高
+
+    根拠:
+      CISA KEV 登録後は攻撃者が「パッチ未適用環境の残存期間」に集中的に活動する
+      過去パターンが繰り返し確認されている。
+      修正期限が 2026-06-18（FCEB 向け）と極めて短く、
+      商用ホスティング事業者にとって緊急対応が必要な水準。
+      root 権限取得後はランサムウェア展開・暗号通貨マイナー設置・
+      他テナントへの横展開が想定される。
+
+
+  ・ 予報 3: Cisco SD-WAN Manager CVE-2026-20262 の悪用拡大
+    確度: 中
+
+    根拠:
+      Cisco が「限定的な悪用を確認」と発表した後は、攻撃者の模倣が続く傾向がある。
+      CVSS 6.5 と比較的低いスコアにもかかわらず KEV に登録されたことは、
+      現実の攻撃影響が重大であることを示唆する。
+      推定 — SD-WAN 管理コンソールがインターネット露出している組織では、
+      72 時間以内にスキャン・認証試行が増加する可能性がある。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [CVE]
+  ・ CVE-2026-47281  (Microsoft Defender / RoguePlanet)
+      → 既報（2026-06-16 登録済み）かつ24時間窓内に新規変化なし
+
+  ・ CVE-2026-35273  (Oracle PeopleSoft Enterprise PeopleTools)
+      → 既報（2026-06-16 登録済み）かつ24時間窓内に新規変化なし
+
+  ・ CVE-2026-50751  (Check Point VPN)
+      → 既報（2026-06-15 登録済み）かつ24時間窓内に新規変化なし
+
+  ・ CVE-2026-10520  (Ivanti Sentry)
+      → 既報（2026-06-15 登録済み）かつ24時間窓内に新規変化なし
+
+  ・ CVE-2026-42897  (Microsoft Exchange Server)
+      → 既報（2026-06-15 登録済み）かつ24時間窓内に新規変化なし
+
+  ・ CVE-2026-11645  (Google Chrome V8)
+      → KEV 登録は 2026-06-09 済み、24時間窓内に新規変化なし、本日は除外
+
+  ・ CVE-2026-44815  (Windows DHCP Client RCE, CVSS 9.8)
+      → Patch Tuesday（2026-06-10）修正済み、24時間窓内に新規の悪用観測なし
+
+  ・ CVE-2026-47291  (Windows HTTP.sys RCE, CVSS 9.8)
+      → Patch Tuesday（2026-06-10）修正済み、24時間窓内に新規の悪用観測なし
+
+  [APT]
+  ・ Screening Serpens（イラン帰属）/ 2026年スパイキャンペーン
+      → 活動期間は 2026年2月〜4月、Unit 42 レポートは本調査期間外（5月〜6月初旬公開）
+         24時間窓内の新規変化確認されず
+
+  本日の集計:
+    CVE  — 本編0件 / 参考A2件 / 参考B2件 / 除外8件
+    APT  — 本編0件 / 注目動向2件 / 除外1件
+
+========================================

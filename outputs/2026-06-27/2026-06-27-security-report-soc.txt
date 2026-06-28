@@ -1,0 +1,93 @@
+========================================
+セキュリティインテリジェンス日報 — Section 4: GMOイエラエSOC推奨情報
+調査日時: 2026-06-27 07:30 JST
+調査期間: 2026-06-26 07:00 〜 2026-06-27 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【GMOイエラエSOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. FCEB期限2026-06-28到来: PTC Windchill/FlexPLM と Cisco CUCM の即時パッチ・WebシェルIOC確認
+観点: CVE関連
+採用契機: β（国内企業が広く利用するサービスへの影響確認）, γ（SOC運用に直接関係するWebシェル残存確認）
+------------------------------------------------------------
+
+優先度: 高
+対象: PTC Windchill PDMlink/FlexPLM / Cisco Unified Communications Manager
+
+【24時間以内の変化】
+[CISA 2026-06-25] CVE-2026-12569（PTC Windchill）とCVE-2026-20230（Cisco CUCM）のFCEB対応期限が2026-06-28に到来。双方でJSP Webシェル展開が確認済み。
+
+【概要】
+CISA Binding Operational Directive 26-04に基づき、CVE-2026-12569（PTC Windchill/FlexPLM）およびCVE-2026-20230（Cisco CUCM/SME）のFCEB対応期限が本日翌日2026-06-28に到来する。双方の製品で実際にJSP Webシェルが展開されており、パッチ適用だけでなくWebシェル残存確認とIOCハンティングが必要。特にCisco CUCMはパッチ適用後もWebシェルが残存するため、ファイルシステムの直接確認が必須。
+
+【推奨アクション】
+・PTC Windchillを11.0 M030以降にアップデート。未パッチ環境では外部からのアクセスを即ブロック。
+・Cisco CUCMを14SU6/15SU5にアップデート後、/platform-services/axis2-web/配下の不審JSPファイルの有無を確認・削除。
+・双方の製品サーバのWebアクセスログを過去30日分レビューし、POSTリクエストによる不審なJSPファイルアクセスを検索。
+・侵害が確認された場合は即座に隔離し、製品ベンダーのインシデントレスポンス手順に従う。
+Splunk SPL: index=web (sourcetype=access_combined OR sourcetype=iis) (uri_path="*/Windchill*" OR uri_path="*/FlexPLM*" OR uri_path="*/axis2-web*") method=POST status=200 | stats count by src_ip, uri_path | sort -count
+→ POSTメソッドで200レスポンスの不審なJSPパスが見つかった場合は即座に隔離してベンダーに連絡。
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/06/25/cisa-adds-two-known-exploited-vulnerabilities-catalog
+
+------------------------------------------------------------
+2. Turla STOCKSTAY: 政府・外交・研究機関向け WebSocket C2 監視強化と WinRAR 更新確認
+観点: ゼロデイ関連
+採用契機: δ（海外で話題だが国内への波及が近いとみられるインシデント手法）, ε（攻撃者側のTTP変化: WebSocket C2新規テクニック）
+------------------------------------------------------------
+
+優先度: 中
+対象: WinRAR / メールゲートウェイ / EDR
+
+【24時間以内の変化】
+[Google GTIG 2026-06-26] TurlaのSTOCKSTAY新型バックドアの詳細分析公開。WinRAR CVE-2025-8088経由のRAR配布・WebSocket C2の新規TTPs確認。
+
+【概要】
+Google GTIGによるTurla STOCKSTAY分析公開を受け、WebSocket経由のC2通信という新規TTPs（MITRE T1071.004）の検知態勢構築が必要。学術・外交テーマのフィッシングメールが起点であり、日本の外交機関・研究機関・防衛産業にも波及リスクがある。WinRAR（CVE-2025-8088）の未更新が初期感染ベクタとなる。
+
+【推奨アクション】
+・組織内のWinRARをCVE-2025-8088修正版に更新確認。
+・メールゲートウェイで外部からのRAR/ZIP添付ファイルのサンドボックス検査を強化。
+・ファイアウォール・プロキシログで非標準ポート（8443/9443/4433等）でのWebSocket接続を検索。
+・EDRで.NETランタイムから発生するWebSocket接続試行のアラートルールを確認・追加。
+Splunk SPL: index=proxy (uri_path="*ws://*" OR uri_path="*wss://*") NOT (dest="*.microsoft.com" OR dest="*.google.com" OR dest="*.slack.com") | stats count by src_ip, dest | sort -count
+→ 非標準WebSocketの接続先を業務上説明できないIPと突合し、STOCKSTAYのC2パターンと一致するかを確認。
+
+【参照】
+https://cloud.google.com/blog/topics/threat-intelligence/stockstay-turla-intelligence-gathering
+
+------------------------------------------------------------
+3. LLMjacking進化: 組織内Ollamaサーバの外部露出確認と認証設定の見直し
+観点: AI攻撃関連
+採用契機: γ（SOC運用に直接関係する設定確認: Ollamaポート外部露出）, δ（海外で話題・国内波及が近い）
+------------------------------------------------------------
+
+優先度: 中
+対象: Ollama / AIモデルサービス（LLMaaSプラットフォーム含む）
+
+【24時間以内の変化】
+[CSA / Sysdig 2026-06-26] CSAリサーチノートで露出OllamaをVAPT自律攻撃ツールに悪用した実例公開。世界175,000台超が認証なし公開中。
+
+【概要】
+LLMjackingが単なる計算資源の窃用から「自律型攻撃の推論エンジン」としての悪用へと進化した事例が報告された。Ollamaはデフォルトで認証を持たず、ポート11434が外部公開されている場合は攻撃者の自律型攻撃ツールの基盤として利用される。組織内のOllamaおよびLLMaaSプラットフォームのAPI鍵管理の見直しを推奨。
+
+【推奨アクション】
+・ShodanまたはNmapでポート11434（Ollama）の組織外部からの到達可能性を確認・即ブロック。
+・Ollama/LLMaaSプラットフォームのAPIアクセスログを確認し、不審なリクエストパターン（大量連続推論）を検索。
+・AWS Bedrock / Azure OpenAI / Anthropic APIの鍵ローテーションと使用量アラートの設定を確認。
+・インターネット接続のあるサーバでのOllama稼働はnginx/Caddyによる認証プロキシ経由のみに制限。
+Splunk SPL: index=firewall dest_port=11434 action=allowed | stats count by src_ip, dest_ip | where count > 10
+→ ポート11434への外部からのallowed通信がある場合は即座にブロックルールを適用。
+
+【参照】
+https://labs.cloudsecurityalliance.org/research/csa-research-note-llmjacking-evolved-offensive-agentic-20260/
+
+本日の集計:
+SOC推奨情報 — 高1件 / 中2件 / 低0件 / 除外0件
+
+========================================
