@@ -1,0 +1,64 @@
+{
+  "_comment": "インシデント種別ごとの『発生→外部可視化』タイムライン中央値（過去事例ベース）。Issue #2 対応。M2 検証窓ルーティング（fast_72h / slow_7d）の割当根拠データとして 03-forecast.md / pipeline-forecast-verification.md が参照する。自動適用禁止・人間レビュー後に更新すること。",
+  "_schema_version": "1.0",
+  "_last_updated": "2026-06-28",
+  "_related": {
+    "issue": "#2",
+    "rules": "pipeline-forecast-verification.md 「観測可能性ゲート（M1）」「検証窓の主題依存ルーティング（M2）」",
+    "lessons": ["教訓1", "教訓11", "教訓12", "教訓13"]
+  },
+
+  "_usage": "予報の主題がここに該当する場合、外部報道を72h的中条件にせず、観測出口クラス(E1〜E4)に紐付けるか forecast_class=slow_7d(7日窓)へ割り当てる。median_days_to_external_report が3を超える主題は fast_72h で発行しない。",
+
+  "timelines": {
+    "credential_leak_to_attack_report": {
+      "median_days_to_external_report": 14,
+      "p25_days": 7,
+      "p75_days": 30,
+      "recommended_forecast_class": "slow_7d",
+      "recommended_outcome_channel": "E3_or_early_warning_signals",
+      "evidence_base": [
+        "7pay漏洩（2019）: 発表から被害報告まで約14日",
+        "LINE漏洩（2023）: 発表から報道まで約10日",
+        "KDDI漏洩（2026-06）: 発表6/24・72時間窓内（〜6/27）に被害報告なし（→14日以上の可能性）"
+      ],
+      "forecast_note": "72時間窓での外部報道を的中条件にすることは不適切（教訓11・12）。先回り監視（SOC内部での認証失敗急増・BEC前兆の実検知）を的中代替条件として記述し、外部報道を的にする場合は slow_7d とする。"
+    },
+
+    "domestic_incident_media_report": {
+      "median_days_to_external_report": 10,
+      "p25_days": 5,
+      "p75_days": 21,
+      "recommended_forecast_class": "slow_7d",
+      "evidence_base": [
+        "KongTuke/Mistic（2026-06）: 6グループ国内活動実績ありも48h窓内に国内報道なし",
+        "国内被害は報道・JPCERT勧告・企業公式発表まで数日〜数週間のタイムラグが典型"
+      ],
+      "forecast_note": "『国内被害事例の報道』を72h的中条件にしてはならない（M1ゲートで発行却下対象）。観測出口クラス E1〜E4 に置換するか slow_7d へ。"
+    },
+
+    "apt_geographic_spillover": {
+      "median_days_to_external_report": 21,
+      "p25_days": 7,
+      "p75_days": 60,
+      "recommended_forecast_class": "slow_7d",
+      "evidence_base": [
+        "Turla STOCKSTAY（2026-06）: ウクライナ・欧州集中。日本・APAC波及は72h窓で未確認"
+      ],
+      "forecast_note": "地理的波及（欧州→日本等）の外部可視化は遅い。72h予報の的にせず slow_7d または先回り監視へ。"
+    },
+
+    "cve_exploit_to_cert_advisory": {
+      "median_hours_to_kev_or_advisory": 48,
+      "recommended_forecast_class": "fast_72h",
+      "recommended_outcome_channel": "E1_E2_E3",
+      "note": "KEV追加は悪用確認の後追いであり、KEV追加『後』の新規急加速予報は価値が低い（教訓1）。一方で『KEV初回追加・新規IOC公開・CERT初回勧告』自体は72h窓で観測可能な一次イベントであり fast_72h の的中条件に適する。"
+    },
+
+    "poc_publication_to_in_the_wild": {
+      "median_days_to_external_report": "難易度依存（poc-exploitation-criteria.json 参照）",
+      "recommended_forecast_class": "fast_72h_only_if_low_difficulty",
+      "note": "PoC難易度が低い（無認証・単一ステップ・ASLR回避不要）場合のみ72h武器化が外部可視化されうる。難易度が中〜高なら slow_7d か注意点1行（教訓2・10）。"
+    }
+  }
+}

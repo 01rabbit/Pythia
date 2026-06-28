@@ -19,7 +19,9 @@
 3. `forecaster/baseline/group-activity.json`
 4. `forecaster/knowledge/attack-groups.json`
 5. `forecaster/knowledge/technique-chains.json`
-6. 当日レポート JSON の CVE エントリの `epss`（EPSS スコア/パーセンタイル）・`status.kev_registered`（M3 確度アンカー用）
+6. `forecaster/knowledge/poc-exploitation-criteria.json`（T3採用のPoC難易度足切り）
+7. `forecaster/knowledge/incident-visibility-timelines.json`（M2 検証窓割当の根拠）
+8. 当日レポート JSON の CVE エントリの `epss`（EPSS スコア/パーセンタイル）・`status.kev_registered`（M3 確度アンカー用）
 
 ---
 
@@ -75,7 +77,11 @@ baseline が未確立（stddev = 0 or null）の Technique は「ベースライ
 
 **M3 EPSS+SSVC 確度アンカー**: 確度=高は「KEV登録 AND EPSS percentile≥0.95 AND SSVC=Act/Attend」を満たす場合のみ。SSVC `Automatable=no`（ASLR回避・認証・多段要）は確度=高から自動降格。EPSSは確度裏取りのみに使い72h的中条件に流用しない。
 
-**M2 検証窓**: 外部報道依存の主題（漏洩→国内被害等）は `forecast_class: slow_7d`（7日窓）へ割り当て。72h的中率の分母に混入させない。
+**M2 検証窓**: 外部報道依存の主題（漏洩→国内被害等）は `forecast_class: slow_7d`（7日窓）へ割り当て。72h的中率の分母に混入させない。割当判断は `incident-visibility-timelines.json` の median_days_to_external_report に従う（3日超は fast_72h で発行しない）。
+
+**T3足切り**: T3予報候補は `poc-exploitation-criteria.json` の required を全て満たし disqualifying を満たさない場合のみ採用。1つでも欠ければ本編・参考Aの注意点1行へ格下げ（教訓10）。
+
+**low-visibility遷移**: `technique-chains.json` の `low_visibility_chains`（漏洩→BEC・BYOVD回避更新）に該当する主題は外部報道を的中条件にせず slow_7d または先回り監視へ。
 
 **M4 KEVスナップショット**: 各予報に発行時点のKEV状態（dateAdded / ランサムフラグ / 参照セット）を `kev_snapshot` として記録し、検証時に再登録（変化なし）を非的中判別できるようにする。
 
