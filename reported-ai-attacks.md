@@ -18,3 +18,4 @@ CVE-2026-7482（Ollama Bleeding Llama） | C1 | 2026-06-19 | CVSS 9.1・300,000�
 OWASP State of Agentic AI Security 2026 v2.01 | B1・C3全般 | 2026-06-19 | OWASP包括的レポート・実CVE紐付き・参考B採用
 AI生成フィッシング集団→個別最適化移行（Zscaler 2026-06-12） | A1 | 2026-06-19 | Zscalerレポート・日本語AI生成フィッシング増加・参考A採用
 LLMjacking Evolved: VAPTアジェンティックフレームワーク / Ollama自律攻撃エンジン悪用 | A4 | 2026-06-27 | CSA/Sysdig 2026-06-26・露出Ollamaを自律型ペネトレーションフレームワーク(VAPT)の推論エンジンとして悪用・175,000台超認証なし露出・4セッション15時間実運用確認・バースト閾値超過5ソース・本編採用
+macOS.Gaslight AIプロンプトインジェクション回避（DPRK BONZAI） | B1 | 2026-06-28 | THN/TechTimes 2026-06-27詳報・38個の偽システムメッセージでLLMベースAIマルウェア解析ツールを誤誘導・北朝鮮DPRK/BONZAI帰属・バーストカウント5件（threshold_met）・参考B採用

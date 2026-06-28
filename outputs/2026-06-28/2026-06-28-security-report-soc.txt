@@ -1,0 +1,83 @@
+========================================
+セキュリティインテリジェンス日報 — Section 4: SOC推奨情報
+調査日時: 2026-06-28 07:00 JST
+調査期間: 2026-06-27 07:00 〜 2026-06-28 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Cisco製品7月1日予告パッチへの事前対応準備
+観点: ゼロデイ関連
+採用契機: γ
+------------------------------------------------------------
+
+優先度: 高
+対象: Cisco IOS XE / NX-OS / ASA / FTD
+
+【24時間以内の変化】
+[Cisco Security Advisory 2026-06-27] Ciscoが2026年7月1日リリース予定の重要セキュリティパッチを事前通知。対象製品とリリーススケジュールを公開
+
+【概要】
+Ciscoが2026年7月1日リリース予定の重要セキュリティアップデートを事前通知した。対象はCisco IOS XE、NX-OS、ASA、FTDを含む主要ネットワーク・セキュリティ製品群。具体的なCVE番号はリリース前のため未公開だが、事前通知の慣行から少なくとも1件以上のCritical/High級脆弱性が含まれると予測される。SOCとして7月1日のリリースと同時に適用判断ができるよう、変更管理手続きの事前確認と緊急パッチ適用体制の準備が推奨される。
+
+【推奨アクション】
+・Ciscoのセキュリティアドバイザリページを7月1日 JST 00:00以降に即時確認
+・対象Cisco製品の現行バージョンリストを今週中に整備
+・変更管理チームに7月1日の緊急パッチ適用ウィンドウを事前予約
+・重要度に応じた72時間以内のパッチ適用基準を事前確認
+Splunk SPL: index=network_devices vendor=cisco | stats latest(version) as current_version by host | outputlookup cisco_version_inventory.csv
+→ バージョンインベントリを事前整備することで7月1日リリース後の影響範囲即時判定が可能
+
+【参照】
+https://sec.cloudapps.cisco.com/security/center/publicationListing.x
+
+------------------------------------------------------------
+2. デバイスコードフィッシング急増（H1 2026比1380%増）: Tycoon2FA等18キットの検知強化
+観点: ゼロデイ関連
+採用契機: ε・δ・β
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft 365 / Azure AD / OAuth 2.0
+
+【24時間以内の変化】
+[Help Net Security / Infosecurity Magazine 2026-06-27] H1 2026のデバイスコードフィッシングが前年比1380%増。Tycoon2FA・EvilTokens・Kali365・Ghost Hub・Cyb3rの5グループ主導で18キットが確認された
+
+【概要】
+デバイスコード認証フロー（OAuth 2.0 Device Authorization Grant）を悪用したMFA回避フィッシングが2026年上半期に急増し、前年比1380%増が報告された。Tycoon2FA・EvilTokens・Kali365・Ghost Hub・Cyb3rの5グループが主導し、18種類のフィッシングキットが確認されている。攻撃者はデバイスコード要求をトリガーし、生成されたuser_codeを標的に入力させることでアクセストークンを窃取。MFAを有効にしていても迂回可能なため、Conditional Access PolicyによるDevice Code Flowの制限が有効な対策となる。
+
+【推奨アクション】
+・Azure AD Conditional Access PolicyでDevice Code Flowを制限（user_code認証を社内IPまたはCompliant Device限定に設定）
+・SIEM/SentinelでのDevice Code認証イベント（sign-in-logs: deviceCode）の監視アラート設定
+・セキュリティ意識向上トレーニングへのデバイスコードフィッシング事例の追加
+・不審なuser_codeの入力を求めるメッセージへの対応手順のインシデントレスポンスプレイブック更新
+Splunk SPL: index=azure_ad sourcetype=azure:aad:signin authenticationProtocol=deviceCode | stats count by UserPrincipalName, IPAddress, ResultType | where ResultType=0 | sort -count
+→ deviceCode認証の成功（ResultType=0）を通常業務外の時間帯・IPから検出した場合はトークン窃取の可能性。Tycoon2FA等のキットは短時間に集中して試行するため突発的なcount増加も要注意
+
+【参照】
+https://helpnetsecurity.com/2026/06/27/device-code-phishing-surge-2026/
+https://www.infosecurity-magazine.com/news/device-code-phishing-1380-percent-2026/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報 — 低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+本日の集計:
+SOC推奨情報 — 高1件 / 中1件 / 低0件 / 除外0件（処理総数2件）
+観点内訳: CVE関連0件 / ゼロデイ関連2件 / AI攻撃関連0件
+
+========================================
