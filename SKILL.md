@@ -110,20 +110,29 @@ Section 4: SOC推奨情報
 
 > この Step が Pythia の中核である。Step 3 の出力 JSON が確定してから実行する。
 > 既存 collect ロジックには一切手を加えない。
+> ★この4ステージは2026-06-28に初稼働（observations非空化・ベースライン暫定算出済み）。以後は日次で自動更新する。
 
 1. **正規化（01-normalize.md）**:
    `forecaster/prompts/01-normalize.md` を読み、当日レポート JSON から observation データを生成する。
    出力先: `forecaster/observations/YYYY/MM/YYYY-MM-DD.json`
+   現在のモード: **`source_explicit_all`**（phase1-config.json）。情報源が明示する全観測（CVE/APT/AI）に
+   techniques/actor_group を付与（R3/R4 の evidence-based 原則を厳守・推測付与禁止）。
 
 2. **ベースライン更新（02-baseline.md）**:
-   `forecaster/prompts/02-baseline.md` を読み、observations 全履歴からベースライン統計を更新する。
-   ベースライン期間が14日未満の場合はその旨をチャットに報告するが、処理は継続する。
+   `forecaster/prompts/02-baseline.md` を読み、observations 全履歴から technique-freq / group-activity を更新する。
+   `_baseline_period_days` を記録し有効性フラグ（<14: 警告 / 14-30: 注意 / 30-90: 有効 / ≥90: 安定）を報告する。
+   14日未満（暫定値）でも処理は継続するが、定量スコアは予報の根拠に使わない（下記3参照）。
 
 3. **予報生成（03-forecast.md）**:
    `forecaster/prompts/03-forecast.md` を読み、定量的根拠に基づいた予報を生成する。
    出力先: `forecaster/forecasts/daily/YYYY-MM-DD.md`
-   ※ベースライン期間が14日未満の場合は定量スコアを根拠として使用せず、
-     `pipeline-forecast-verification.md` のルールのみで予報を作成する。
+   ★予報は M1〜M4 ルール（pipeline-forecast-verification.md）に準拠すること:
+   - M1 観測可能性ゲート: 的中条件を観測出口クラス E1〜E4（KEV初回追加/新規IOC/CERT勧告/PoC公開）に限定
+   - M3 EPSS+SSVC 確度アンカー: 確度=高は KEV AND EPSS%ile≥0.95 AND SSVC=Act/Attend（Step 1 で取得した EPSS を使用）
+   - M2 検証窓: 外部報道依存の主題は `forecast_class: slow_7d`（7日窓）へ分離
+   - M4 KEVスナップショット: 発行時KEV状態を記録（検証時の再登録判別用）
+   ※ベースライン期間が14日未満の場合は定量逸脱スコアを根拠として使用せず、
+     `pipeline-forecast-verification.md` のルール（M1〜M4 含む）のみで予報を作成する。
 
 コミット対象に以下を追加する（Step 4 と合わせてコミット）:
 - `forecaster/observations/YYYY/MM/YYYY-MM-DD.json`

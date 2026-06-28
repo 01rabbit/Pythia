@@ -19,6 +19,7 @@
 3. `forecaster/baseline/group-activity.json`
 4. `forecaster/knowledge/attack-groups.json`
 5. `forecaster/knowledge/technique-chains.json`
+6. 当日レポート JSON の CVE エントリの `epss`（EPSS スコア/パーセンタイル）・`status.kev_registered`（M3 確度アンカー用）
 
 ---
 
@@ -63,12 +64,20 @@ baseline が未確立（stddev = 0 or null）の Technique は「ベースライ
 
 ### Step D: 予報の絞り込みと Tier 判定
 
-`pipeline-forecast-verification.md` のルールに完全準拠する。
+`pipeline-forecast-verification.md` のルール（M1〜M4 含む）に完全準拠する。
 
 - 最大2件
 - T1 > T2 > T3 の優先順
 - T3 は原則「確度: 中」
 - ベースライン逸脱の定量証拠があれば T2 への昇格根拠として使用可能
+
+**M1 観測可能性ゲート（発行前必須）**: 各予報の的中条件を観測出口クラス E1〜E4（KEV初回追加 / 新規IOC公開 / CERT初回勧告 / PoC公開）の一次・二値イベントに紐付ける。「国内被害報道」「KEV再登録」「悪用拡大（曖昧）」を的にする予報は発行せず注意点1行へ格下げ。
+
+**M3 EPSS+SSVC 確度アンカー**: 確度=高は「KEV登録 AND EPSS percentile≥0.95 AND SSVC=Act/Attend」を満たす場合のみ。SSVC `Automatable=no`（ASLR回避・認証・多段要）は確度=高から自動降格。EPSSは確度裏取りのみに使い72h的中条件に流用しない。
+
+**M2 検証窓**: 外部報道依存の主題（漏洩→国内被害等）は `forecast_class: slow_7d`（7日窓）へ割り当て。72h的中率の分母に混入させない。
+
+**M4 KEVスナップショット**: 各予報に発行時点のKEV状態（dateAdded / ランサムフラグ / 参照セット）を `kev_snapshot` として記録し、検証時に再登録（変化なし）を非的中判別できるようにする。
 
 ---
 
@@ -99,12 +108,16 @@ Technique 逸脱上位:
 
 ・予報1: [タイトル]
 Tier: X
-確度: 高/中
+確度: 高/中（M3: 確度=高はEPSS%ile≥0.95 AND KEV AND SSVC=Act/Attend。Automatable=noは自動降格）
+観測出口クラス: E1/E2/E3/E4（M1）
+検証窓: fast_72h / slow_7d（M2・slow_7dは割当根拠1行）
 Evidence: [具体的なソース名と日付]
 過去パターン: [類似事象の実績]
+確度アンカー: [EPSS percentile / KEV状態 / SSVC決定 / Automatable / EPSS算出日]（M3）
 推定部分: [推論箇所の明示]（推測）
 先回り監視: [最初に現れるシグナル]
-的中判定: [客観的に確認できる条件]
+的中判定: [観測出口クラスE1〜E4の一次・二値イベントのみ。「国内被害報道」禁止（M1・原則B）]
+KEVスナップショット: [dateAdded / ランサムフラグ / 参照セット]（M4・E1予報時）
 
 ## 推奨アクション
 [予測に対応する防御行動]

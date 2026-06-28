@@ -30,13 +30,14 @@
 
 ---
 
-## Phase 1 絞り込み設定（phase1-config.json 参照）
+## 技術付与スコープ設定（phase1-config.json `normalization` 参照）
 
-現在 Phase 1 のため、`focus_group: "Lazarus Group"` が有効である。
+現在のモード: **`source_explicit_all`**（2026-06-28 にユーザー判断で `focus_group_only` から拡大）
 
-- **Lazarus Group に関連する観測**: techniques・actor_group を詳細に付与する（通常ルール適用）
-- **他グループの観測**: `techniques: []`・`confidence: "low"`・`actor_group: null` とし、summary のみ記録する
-- この絞り込みは Phase 1 完了（`phase1-config.json` の `graduation_criteria` 達成）まで継続する
+- **全観測（CVE / APT / AI）に対し、情報源が明示する場合のみ** techniques・actor_group を付与する（通常ルール R3・R4 を全観測に適用）。
+- `focus_group: "Lazarus Group"` は引き続き日次の重点【人間レビュー】対象（Technique 付与の正誤チェック先）だが、技術付与の対象を Lazarus に限定しない。
+- ★R3・R4 の evidence-based 原則は厳守する。情報源が技術・帰属を明示していない場合は `techniques: []` / `actor_group: null` とし、推測による付与は引き続き禁止。
+- ATT&CK 以外の体系（ATLAS 等）の技術は `techniques`（ATT&CK 専用）に入れない。該当する ATT&CK 技術が情報源から導ける場合のみ付与する（例: 盗用コンピュート悪用 → T1496 Resource Hijacking）。
 
 ---
 
@@ -90,8 +91,8 @@ CVE・APT活動・AI攻撃のそれぞれを独立した observation オブジ�
 
 ## 品質チェック（出力前に確認）
 
-- [ ] `techniques` に ATT&CK 以外の ID が含まれていないか
+- [ ] `techniques` に ATT&CK 以外の ID（ATLAS 等）が含まれていないか
+- [ ] 各 technique に情報源由来の `evidence`（1文）が付いているか（推測付与でないか）
 - [ ] `actor_group` に情報源が明示していないグループ名が入っていないか
 - [ ] `verified_outcome` がすべて `null` になっているか
-- [ ] `confidence: "low"` のエントリで `techniques` が空配列になっているか
 - [ ] `observation_id` が重複していないか
