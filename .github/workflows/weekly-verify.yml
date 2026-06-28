@@ -1,0 +1,49 @@
+name: Weekly Verification Reminder
+
+on:
+  schedule:
+    # 火曜・木曜 11:55 JST = 02:55 UTC — Routinesの検証実行 (12:00 JST) 5分前にIssueで通知
+    - cron: '55 2 * * 2,4'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  remind-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Get current date (JST)
+        id: date
+        run: echo "date=$(TZ=Asia/Tokyo date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Check if verification already ran today
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = '${{ steps.date.outputs.date }}';
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'verification',
+              state: 'open',
+              since: date + 'T00:00:00Z'
+            });
+            return issues.data.length === 0;
+
+      - name: Create verification tracking issue
+        if: steps.check.outputs.result == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = '${{ steps.date.outputs.date }}';
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Verify] 予報精度検証 ${date}`,
+              body: `## 予報精度検証タスク\n\n本日（${date}）の検証をRoutinesで実行してください。\n\n**確認事項:**\n- [ ] \`forecaster/prompts/04-verify.md\` の手順を実行\n- [ ] \`forecaster/verification/YYYY-MM.json\` を更新\n- [ ] knowledge補正提案があれば別Issueとして起票\n- [ ] コミット完了\n\n_このIssueはGitHub Actionsにより自動作成されました_`,
+              labels: ['verification']
+            });
