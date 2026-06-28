@@ -69,3 +69,4 @@ CVE-2026-12569 | PTC Windchill PDMlink / FlexPLM 11.0 M030未満 | 2026-06-27 | 
 CVE-2026-20230 | Cisco Unified Communications Manager / Unified CM SME 14.x/15.x | 2026-06-27 | CVSS 8.6・KEV登録（2026-06-25、既報2026-06-24からKEV未登録→登録のステータス変化）・FCEB期限2026-06-28・パッチ後Webシェル残存確認（/platform-services/axis2-web/）・本編再採用
 CVE-2026-46331 | Linux kernel net/sched/act_pedit（v5.18〜v7.1-rc6） | 2026-06-27 | High相当・PoC公開（packet_edit_meme）・RHEL 8/9/10・Debian 13での特権昇格確認・pedit COW・Kubernetes環境エスケープリスク・参考B採用
 CVE-2026-13136 / CVE-2026-13135 / CVE-2025-15660 | Synology MailPlus Server 4.0.1-31663未満 | 2026-06-27 | Critical相当・不正認証チェック（任意ファイルR/W・DoS）・通信チャネル不適切制限（内部サービスアクセス）・弱PRNG（任意ファイルアクセス・DoS）の3件・Synology SA-26:11・Help Net Security 2026-06-26報道・参考B採用
+CVE-2026-43503 | Linux kernel (net/sched DirtyClone) < 7.1-rc5 | 2026-06-28 | CVSS 8.8・CWE-362競合状態LPE・JFrog PoC公開2026-06-25・THN/BleepingComputer 2026-06-27報道・Kubernetes環境コンテナエスケープリスク・参考B採用
