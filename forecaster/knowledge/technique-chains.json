@@ -114,5 +114,39 @@
     "warning_sigma": 2.0
   },
 
-  "notes": "遷移確率は初期推定値。90日分の observations が蓄積されたのちベースライン更新（ステージ02）で実観測ベースに上書きする。"
+  "low_visibility_chains": {
+    "_comment": "外部可視化されにくい（72h窓で的中判定が困難な）遷移チェーン。Issue #3 対応。これらの遷移を主題とする予報は外部報道を的中条件にせず、incident-visibility-timelines.json に従い slow_7d または先回り監視へ割り当てる（M1・M2）。",
+    "chains": [
+      {
+        "id": "chain-credential-leak-to-bec",
+        "from_technique": "T1589.002",
+        "to_technique": "T1110.004",
+        "next_technique": "T1534",
+        "transition_window_hours": 72,
+        "external_visibility_rate_in_window": "very_low",
+        "recommended_forecast_class": "slow_7d",
+        "evidence_basis": "KDDI漏洩（2026-06）: 72h内に国内被害報道なし（検証2026-06.json #5 partial / #7 miss）",
+        "forecast_note": "72h窓での外部報道を的中条件にしてはならない（教訓11・12）。SOC内部監視（認証失敗急増・BEC前兆）を先回り監視に記述。"
+      },
+      {
+        "id": "chain-byovd-evasion-update",
+        "from_technique": "T1068",
+        "event_trigger": "security_vendor_analysis_published",
+        "to_event": "new_variant_detected",
+        "transition_window_hours": 72,
+        "transition_rate_in_window": "medium_unverified",
+        "recommended_forecast_class": "slow_7d",
+        "evidence_basis": "GentleKiller（2026-06-21）: 72h内に新バリアント確認なし（検証2026-06.json #2 miss）",
+        "forecast_note": "ベンダー分析公開後の即日バリアント出現は過信（教訓2）。T3予報には poc-exploitation-criteria.json の難易度足切りを適用。"
+      }
+    ]
+  },
+
+  "_observed_preview": {
+    "_comment": "85観測（2週分・暫定）から試算した実観測遷移のプレビュー。詳細・限界は forecaster/verification/transition-matrix-preview-2026-06-28.md 参照。確定較正ではない。",
+    "strongest_observed_transition": "initial-access→persistence（観測10件・確率≈0.50 / 種0.60）",
+    "calibration_status": "13日分・統計的に不十分。90日蓄積後に from別 n>=10 の遷移のみ Issue/PR で較正提案する。"
+  },
+
+  "notes": "遷移確率は初期推定値。90日分の observations が蓄積されたのちベースライン更新（ステージ02）で実観測ベースに上書きする。較正は technique-chains.json への直接上書きではなく Issue/PR で差分提案し人間レビューを経ること（行動原則5）。"
 }

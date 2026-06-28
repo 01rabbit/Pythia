@@ -129,8 +129,9 @@ Section 4: SOC推奨情報
    ★予報は M1〜M4 ルール（pipeline-forecast-verification.md）に準拠すること:
    - M1 観測可能性ゲート: 的中条件を観測出口クラス E1〜E4（KEV初回追加/新規IOC/CERT勧告/PoC公開）に限定
    - M3 EPSS+SSVC 確度アンカー: 確度=高は KEV AND EPSS%ile≥0.95 AND SSVC=Act/Attend（Step 1 で取得した EPSS を使用）
-   - M2 検証窓: 外部報道依存の主題は `forecast_class: slow_7d`（7日窓）へ分離
+   - M2 検証窓: 外部報道依存の主題は `forecast_class: slow_7d`（7日窓）へ分離（`incident-visibility-timelines.json` 参照）
    - M4 KEVスナップショット: 発行時KEV状態を記録（検証時の再登録判別用）
+   - T3足切り: T3予報候補は `poc-exploitation-criteria.json` の難易度基準（無認証・単一ステップ・ASLR回避不要）を全て満たす場合のみ採用
    ※ベースライン期間が14日未満の場合は定量逸脱スコアを根拠として使用せず、
      `pipeline-forecast-verification.md` のルール（M1〜M4 含む）のみで予報を作成する。
 
