@@ -41,6 +41,11 @@ Step 1 のCVE調査は以下の2トラックで行う（製品リストによる
 4. ベンダーアドバイザリ（Fortinet / Palo Alto / Ivanti / Microsoft / Cisco / Oracle 等）
 5. BleepingComputer / The Hacker News / SecurityWeek
 6. PoC情報: GitHub / Exploit-DB / Packet Storm / watchTowr / ProjectDiscovery
+7. EPSS（Exploit Prediction Scoring System・FIRST.org）: https://api.first.org/data/v1/epss?cve=CVE-XXXX-XXXXX
+   - 各CVEの「今後30日以内に実悪用が観測される確率」スコア（0〜1）とパーセンタイル（全CVE中の相対順位）を返す較正済みモデル。
+   - ★注意: EPSSは【30日窓・グローバル指標】であり、PYTHIAの予報窓（72時間）・国内スコープとは時間軸・地理軸が異なる。
+     用途は【確度（高/中）の裏取りアンカー】に限定し、予報の的中判定条件（72h）には絶対に流用しない（M3・pipeline-forecast-verification.md 参照）。
+   - スコアは日次更新されるため、予報発行時に取得した `model_date`（EPSS算出日）を記録し再現性を確保する。
 
 ## 採用条件 A〜H（期間内に1つ以上確認できること）
 | 記号 | 条件 |
@@ -69,6 +74,7 @@ Step 1 のCVE調査は以下の2トラックで行う（製品リストによる
 - 期間内の変化: いつ・どのソースで・何が変化したか
 - actively_exploited: true / false
 - PoC公開: true / false / 未確認（true の場合URL必須）
+- EPSS: score（0〜1）/ percentile（0〜1）/ model_date（EPSS算出日 YYYY-MM-DD）。取得不能な場合は null。
 - 優先度タグ: 必須 / 高 / 中 / 低優先度
 - 関連URL（全件保持）
 - 監視SPL候補: 対象製品が出力するログソース名（例: sourcetype=fortigate*, access_combined 等）と検知すべきフィールド・値のヒント（例: subtype=vpn action=tunnel-up, uri_path=*/plugins/editors/jce* 等）。Step 3でSplunk SPLクエリ生成に使用する。

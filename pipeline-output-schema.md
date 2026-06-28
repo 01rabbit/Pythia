@@ -86,6 +86,11 @@ outputs/YYYY-MM-DD/
   "cvss_v4": null,
   "cvss_severity": "Critical",
   "cwe_ids": ["CWE-89"],
+  "epss": {
+    "score": 0.86,
+    "percentile": 0.97,
+    "model_date": "2026-06-26"
+  },
   "status": {
     "kev_registered": true,
     "poc_published": true,
@@ -162,6 +167,9 @@ outputs/YYYY-MM-DD/
 | cvss_v4 | number \| null | CVSS v4.0 スコア（0.0〜10.0） |
 | cvss_severity | string \| null | "Critical" / "High" / "Medium" / "Low" |
 | cwe_ids | array[string] | ["CWE-89"] — 該当CWE ID。不明の場合は空配列 |
+| epss.score | number \| null | EPSSスコア（0〜1・今後30日の実悪用観測確率）。取得不能はnull |
+| epss.percentile | number \| null | EPSSパーセンタイル（0〜1・全CVE中の相対順位）。確度=高の定量ゲートD（M3）に使用 |
+| epss.model_date | string \| null | EPSS算出日 YYYY-MM-DD（再現性確保用） |
 | status.kev_registered | boolean | CISAのKEV登録済みか |
 | status.poc_published | boolean | PoCが公開済みか |
 | status.actively_exploited | boolean | 実悪用が確認されているか |
@@ -315,14 +323,32 @@ outputs/YYYY-MM-DD/
   "confidence": "medium",
   "confidence_numeric": 0.5,
   "framing": "defensive_action",
+  "outcome_channel": "E1",
+  "window_hours": 72,
+  "forecast_class": "fast_72h",
+  "forecast_class_rationale": "KEV初回追加は72h窓で外部可視化されるため fast_72h に割当",
   "root": {
     "evidence": "確認済みEvidenceの記述",
     "past_patterns": "類似事象での過去観測",
     "threat_intel": "現在の脅威インテル"
   },
+  "anchor": {
+    "epss_score": 0.86,
+    "epss_percentile": 0.97,
+    "epss_model_date": "2026-06-26",
+    "kev_registered": true,
+    "ssvc_decision": "Act",
+    "ssvc_automatable": "yes"
+  },
+  "kev_snapshot": {
+    "date_added": "2026-06-25",
+    "ransomware_flag": "Known",
+    "reference_set": ["https://www.cisa.gov/..."]
+  },
   "estimated_part": "推定部分の記述（なければnull）",
   "early_warning_signals": "先回り監視シグナルの記述",
-  "hit_criteria": "的中判定条件（測定可能な条件）",
+  "hit_criteria": "的中判定条件（観測出口クラスE1〜E4の一次・二値イベント）",
+  "deadline_date": "2026-06-30",
   "related_cves": [],
   "related_apt_campaigns": ["KongTuke-2026-Mistic-IAB"]
 }
@@ -336,12 +362,23 @@ outputs/YYYY-MM-DD/
 | confidence | string | "high" / "medium" / "low" |
 | confidence_numeric | number | high=0.8 / medium=0.5 / low=0.3（AI分析での定量化用） |
 | framing | string | "defensive_action" / "attacker_behavior" |
-| root.evidence | string | 今日のEvidenceの記述 |
-| root.past_patterns | string | 過去パターン |
-| root.threat_intel | string | 現在の脅威インテル |
+| outcome_channel | string | **M1**: 的中条件の観測出口クラス "E1"（KEV初回追加）/"E2"（新規IOC公開）/"E3"（CERT初回勧告）/"E4"（PoC公開）。"E5"（スキャン増）は予約値で的中主条件には未使用 |
+| window_hours | integer | **M2**: 検証窓（72 または 168以上） |
+| forecast_class | string | **M2**: "fast_72h"（KEV初回追加・IOC公開・PoC公開・進行中攻撃）/ "slow_7d"（外部報道依存の主題） |
+| forecast_class_rationale | string | **M2ガード3**: forecast_class 割当根拠（発行時に1行・検証時のトラック移動禁止） |
+| anchor.epss_score | number \| null | **M3**: EPSSスコア（0〜1）。取得不能はnull |
+| anchor.epss_percentile | number \| null | **M3**: EPSSパーセンタイル（0〜1）。確度=高は≥0.95 AND KEV |
+| anchor.epss_model_date | string \| null | **M3**: EPSS算出日 YYYY-MM-DD（再現性確保） |
+| anchor.kev_registered | boolean | **M3**: 発行時点のKEV登録状態 |
+| anchor.ssvc_decision | string | **M3**: SSVC決定 "Act"/"Attend"/"Track"/"Track*"。確度=高はAct/Attend |
+| anchor.ssvc_automatable | string | **M3**: SSVC Automatable "yes"/"no"。"no"（ASLR回避・認証・多段要）は確度=高から自動降格 |
+| kev_snapshot.date_added | string \| null | **M4**: 発行時KEVの dateAdded。検証時に再登録（変化なし）を非的中判別する |
+| kev_snapshot.ransomware_flag | string \| null | **M4**: "Known"/"Unknown"。Unknown→Known変化は的中構成要素 |
+| kev_snapshot.reference_set | array[string] | **M4**: 発行時KEV参照URLセット。新規参照追加の検出に使う |
 | estimated_part | string \| null | 推定部分（根拠十分なT1純粋継続予報はnull） |
 | early_warning_signals | string | 先回り監視シグナル |
-| hit_criteria | string | 的中判定条件 |
+| hit_criteria | string | 的中判定条件（outcome_channel の一次イベントに紐付ける） |
+| deadline_date | string \| null | **M2ガード2**: slow_7d予報の確定期限日（発行+7日）。期限超過の未確定は自動「外れ」 |
 | related_cves | array[string] | 関連するCVE ID |
 | related_apt_campaigns | array[string] | 関連するcampaign_id |
 
@@ -596,6 +633,9 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 - `confidence_numeric` はテキストには出力しない（JSON専用フィールド）
 - `axis1_score` / `axis2_score` / `axis_p_score` / `axis_q_score` はテキストには出力しない（JSON専用フィールド）
 - `report_section` フィールドはテキストには出力しない（JSON専用フィールド）
+- 予報の `outcome_channel` / `forecast_class` / `window_hours` はテキストに出力する（【攻撃予報】の「観測出口クラス:」「検証窓:」行。pipeline-3-weighting.md テンプレート参照）
+- 予報の `anchor` / `kev_snapshot` / `forecast_class_rationale` / `deadline_date` はテキストには出力しない（JSON専用・検証ステージが使用）
+- CVEの `epss.score` / `epss.percentile` / `epss.model_date` はテキストには出力しない（JSON専用・確度アンカー算出用）
 - `references` 配列は URL のみ行頭から出力する（title/language/sourceはテキスト非出力）
 
 ---
