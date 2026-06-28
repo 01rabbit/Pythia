@@ -28,7 +28,7 @@ pipeline-forecast-verification.md の手順に厳密に従って検証を行い�
   verification/YYYY-MM-DD-verification.md  （YYYYMMDDは実行日）
 
 ファイル内容は pipeline-forecast-verification.md のフォーマットに従う。
-ただし出力形式はSlack用プレーンテキストではなくMarkdownで記述する（PR上での可読性優先）。
+ただし出力形式はプレーンテキストではなくMarkdownで記述する（PR上での可読性優先）。
 
 ### Step 5: ブランチ作成 → コミット → PR発行
 1. ブランチ名: verify/YYYY-MM-DD

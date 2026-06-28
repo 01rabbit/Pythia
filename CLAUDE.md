@@ -21,7 +21,7 @@ reported-apts.md                         ← 既報APT活動リスト（実行�
 reported-ai-attacks.md                   ← 既報AI攻撃リスト（実行後に自動追記）
 outputs/YYYY-MM-DD/                      ← 日次レポートディレクトリ（実行後に自動生成・コミット）
   YYYY-MM-DD-security-report.json                   ← 構造化JSON・Section 1〜4 全データ（AI分析・機械処理用）★基本形式
-  YYYY-MM-DD-security-report.txt                    ← 全セクション完全版 Section 1〜4（Slack共有向け）
+  YYYY-MM-DD-security-report.txt                    ← 全セクション完全版 Section 1〜4
   YYYY-MM-DD-security-report-cve.txt                ← Section 3: 製品別CVE（ゼロデイ特報・本編・参考A・参考B）
   YYYY-MM-DD-security-report-zeroday-trends.txt     ← Section 2: ゼロデイ・トレンド（ゼロデイ特報・APT活動・注目CVE・攻撃予報）
   YYYY-MM-DD-security-report-ai.txt                 ← Section 1: AI攻撃動向（本編・参考B・参考A・週次サマリー）
@@ -48,7 +48,7 @@ Claude Code Routines が毎日 07:00 JST に `.skills/daily-security-intel/SKILL
 ## 出力フォーマット
 
 - 基本形式: `security-report.json`（pipeline-output-schema.md のスキーマ準拠・Section 1〜4 全データ収録）
-- 変換形式（5種・JSONから変換・Slack貼り付け前提・Markdown不使用）:
+- 変換形式（5種・JSONから変換・プレーンテキスト・Markdown不使用）:
   - `security-report.txt`: 全セクション完全版（Section 1〜4）
   - `security-report-cve.txt`: Section 3 製品別CVE（ゼロデイ特報・本編・参考A・参考B）
   - `security-report-zeroday-trends.txt`: Section 2 ゼロデイ・トレンド（ゼロデイ特報・APT・注目CVE・攻撃予報）

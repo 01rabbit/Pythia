@@ -88,7 +88,7 @@ description: 毎日定時に実行するセキュリティインテリジェン�
 
 ## 出力形式の原則
 - YYYY-MM-DD-security-report.json: pipeline-output-schema.md のスキーマに従った構造化JSON（AI分析・機械処理用）
-- 以下5種のテキストファイルはJSONから変換（Slack貼り付け前提・Markdownコードブロック・見出し記号・テーブル記法を使わない）:
+- 以下5種のテキストファイルはJSONから変換（プレーンテキスト・Markdownコードブロック・見出し記号・テーブル記法を使わない）:
   - YYYY-MM-DD-security-report.txt: 全セクション完全版（Section 1〜4）
   - YYYY-MM-DD-security-report-cve.txt: Section 3 製品別CVE（ゼロデイ特報・本編・参考A・参考B・除外CVE）
   - YYYY-MM-DD-security-report-zeroday-trends.txt: Section 2 ゼロデイ・トレンド（ゼロデイ特報・APT・攻撃予報・除外APT）

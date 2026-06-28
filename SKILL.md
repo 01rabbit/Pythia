@@ -131,7 +131,7 @@ Section 4: SOC推奨情報
   4. `YYYY-MM-DD-security-report-zeroday-trends.txt` — Section 2: ゼロデイ・トレンド
   5. `YYYY-MM-DD-security-report-ai.txt` — Section 1: AI攻撃動向
   6. `YYYY-MM-DD-security-report-soc.txt` — Section 4: SOC推奨情報
-- 保存完了後、`security-report.txt`（全セクション完全版）の全文をチャットに表示する（Slackへのコピー&ペースト用）
+- 保存完了後、`security-report.txt`（全セクション完全版）の全文をチャットに表示する
 
 ## 出力先
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report.json`（基本形式・全セクション）
@@ -146,5 +146,5 @@ Section 4: SOC推奨情報
 
 ## 出力形式の原則
 - Markdownコードブロック・見出し記号・テーブル記法を使わない
-- Slack貼り付けを前提としたプレーンテキスト
+- プレーンテキスト
 - 詳細は pipeline-3-weighting.md の「出力形式」セクションを参照

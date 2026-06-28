@@ -1,20 +1,47 @@
 # 日次セキュリティインテリジェンス自動収集パイプライン
 
 SOCチーム向け。Claude Code Routines によりクラウド上で毎日自動実行される。
-CVE・APT活動・AI攻撃動向・SOC推奨情報を収集・重みづけし、Slack貼り付け用レポートと構造化JSONを生成する。
+CVE・APT活動・AI攻撃動向・SOC推奨情報を収集・重みづけし、プレーンテキストレポートと構造化JSONを生成する。
 
 ---
 
 ## 自動実行の仕組み
 
+### Claude Code Routines（現行）
+
 ```
 Claude Code Routines（クラウド）
   └─ 毎日 07:00 JST に自動起動
-       └─ .skills/daily-security-intel/SKILL.md を読み込みパイプライン実行
-            └─ 結果を outputs/YYYY-MM-DD/ に保存 → main へ直接コミット
+       └─ SKILL.md を読み込みパイプライン実行（Step 0〜4 + forecaster Step 3.5）
+            └─ 結果を outputs/YYYY-MM-DD/ + forecaster/ に保存 → main へ直接コミット
 ```
 
 手動実行する場合は Routines 画面の「Run」をクリックする。
+
+### GitHub Actions（並行運用・移行先）
+
+```
+.github/workflows/daily-pipeline.yml
+  └─ 毎日 07:00 JST (22:00 UTC) にトリガー
+       ├─ RSS フィード収集 (security-intel-collector/watcher.py)
+       └─ Claude Code CLI でパイプライン実行（SKILL.md 準拠）
+
+.github/workflows/weekly-verify.yml
+  └─ 火曜・木曜 12:00 JST (03:00 UTC) にトリガー
+       └─ 予報精度検証（forecaster/prompts/04-verify.md）
+```
+
+#### GitHub Actions の役割分担
+
+GitHub ActionsはLLMを使わない純粋な自動化のみを担当する。
+LLM処理（分析・予報・コミット）はすべてClaude Code Routinesが行う。
+
+| ワークフロー | タイミング | 役割 |
+|---|---|---|
+| `daily-pipeline.yml` | 06:00 JST（Routines実行1時間前） | RSSフィード収集のみ（Python） |
+| `weekly-verify.yml` | 火・木 11:55 JST | 検証タスクのIssue作成（リマインド） |
+
+外部APIキー不要。`GITHUB_TOKEN`（自動付与）のみで動作する。
 
 ---
 
@@ -42,7 +69,7 @@ reported-ai-attacks.md              ← 既報AI攻撃リスト（重複除外�
 
 outputs/YYYY-MM-DD/                 ← 日次レポート（実行後に自動生成）
   YYYY-MM-DD-security-report.json                  ← 全セクション構造化JSON（AI分析・機械処理用）
-  YYYY-MM-DD-security-report.txt                   ← 全セクション完全版（Slack共有用）
+  YYYY-MM-DD-security-report.txt                   ← 全セクション完全版
   YYYY-MM-DD-security-report-cve.txt               ← Section 3: 製品別CVE
   YYYY-MM-DD-security-report-zeroday-trends.txt    ← Section 2: ゼロデイ・トレンド
   YYYY-MM-DD-security-report-ai.txt                ← Section 1: AI攻撃動向
@@ -88,13 +115,13 @@ Step 4  ファイル更新・コミット
 | ファイル | 内容 | 主な用途 |
 |---|---|---|
 | security-report.json | Section 1〜4 全データ（構造化） | AI分析・機械処理 |
-| security-report.txt | Section 1〜4 完全版 | Slack共有（全量） |
-| security-report-cve.txt | Section 3: ゼロデイ特報・本編CVE・参考A・参考B | Slack共有（CVE担当） |
-| security-report-zeroday-trends.txt | Section 2: ゼロデイ特報・APT活動・攻撃予報 | Slack共有（トレンド担当） |
-| security-report-ai.txt | Section 1: AI攻撃動向・週次サマリー | Slack共有（AI担当） |
-| security-report-soc.txt | Section 4: SOC推奨情報（高/中/低優先度） | Slack共有（SOC担当） |
+| security-report.txt | Section 1〜4 完全版 | 日次レビュー・共有 |
+| security-report-cve.txt | Section 3: ゼロデイ特報・本編CVE・参考A・参考B | CVE担当 |
+| security-report-zeroday-trends.txt | Section 2: ゼロデイ特報・APT活動・攻撃予報 | トレンド担当 |
+| security-report-ai.txt | Section 1: AI攻撃動向・週次サマリー | AI担当 |
+| security-report-soc.txt | Section 4: SOC推奨情報（高/中/低優先度） | SOC担当 |
 
-テキストファイルはすべて Slack 貼り付け前提のプレーンテキスト（Markdown記法なし）。
+テキストファイルはすべてプレーンテキスト（Markdown記法なし）。
 
 ---
 
@@ -124,4 +151,27 @@ Step 4  ファイル更新・コミット
 | 重みづけ基準の調整 | `pipeline-3-weighting.md` |
 | 出力テンプレートの変更 | `pipeline-3-weighting.md` / `pipeline-ai-2.md` / `pipeline-soc-recommend.md` |
 | JSONスキーマの変更 | `pipeline-output-schema.md` |
-| パイプライン実行手順の変更 | `.skills/daily-security-intel/SKILL.md` |
+| パイプライン実行手順の変更 | `SKILL.md` |
+| PYTHIAのスコープ・フェーズ設定 | `config.yml` |
+| 正規化ルール | `forecaster/prompts/01-normalize.md` |
+| 予報ロジック | `forecaster/prompts/03-forecast.md` |
+| 検証ルール | `forecaster/prompts/04-verify.md` |
+
+---
+
+## PYTHIA 戦術予報士サブシステム
+
+```
+forecaster/
+  phase1-config.json          ← Phase 1 設定（フォーカスグループ: Lazarus Group）
+  schema/observation.schema.json  ← ATT&CK 正規化スキーマ
+  knowledge/                  ← 空で起動。検証ループで育てる
+  observations/YYYY/MM/       ← 日次正規化済み観測データ
+  baseline/                   ← TTP出現頻度・グループ活性度の平常統計
+  forecasts/daily/            ← 日次サイバー脅威予報
+  verification/               ← 予報 × 実績の突合記録（月次JSON）
+  prompts/                    ← 4ステージパイプラインのプロンプト
+```
+
+予報精度は「予報 → 実績突合 → knowledge補正 → 再予報」の検証ループで改善する。
+`knowledge/` への自動書き換えは禁止。人間レビューを経てマージする（GitHub Issue経由）。
