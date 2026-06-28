@@ -35,7 +35,7 @@ Section 3: 製品別CVE
   → 製品ごとにCVEを収集・優先度評価
   → 本編 / 参考A（国内）/ 参考B（国際先行）/ 除外サマリー
 
-Section 4: GMOイエラエSOC推奨情報
+Section 4: SOC推奨情報
   → pipeline-soc-recommend.md で収集・分類
   → 監視対象23製品以外で CVE・ゼロデイ・AI攻撃の3観点に関連して注目すべき情報
   → 優先度タグ（高 / 中 / 低）で分類
@@ -92,7 +92,7 @@ Section 4: GMOイエラエSOC推奨情報
     [Section 1] AI攻撃動向-本編 / 参考B / 参考A / 週次サマリー / 除外
     [Section 2] ゼロデイ特報 / APT活動-本編 / APT活動-注目動向 / 注目CVE（リスト外） / 攻撃予報 / 除外
     [Section 3] 製品別CVE-本編 / 参考A（国内）/ 参考B（国際先行）/ 除外サマリー
-    [Section 4] GMOイエラエSOC推奨情報（高優先度 → 中 → 低）
+    [Section 4] SOC推奨情報（高優先度 → 中 → 低）
 
 ### Step 3.5: 予報士システム — 正規化・ベースライン更新・予報生成（forecaster 統合）
 
@@ -130,7 +130,7 @@ Section 4: GMOイエラエSOC推奨情報
   3. `YYYY-MM-DD-security-report-cve.txt` — Section 3: 製品別CVE
   4. `YYYY-MM-DD-security-report-zeroday-trends.txt` — Section 2: ゼロデイ・トレンド
   5. `YYYY-MM-DD-security-report-ai.txt` — Section 1: AI攻撃動向
-  6. `YYYY-MM-DD-security-report-soc.txt` — Section 4: GMOイエラエSOC推奨情報
+  6. `YYYY-MM-DD-security-report-soc.txt` — Section 4: SOC推奨情報
 - 保存完了後、`security-report.txt`（全セクション完全版）の全文をチャットに表示する（Slackへのコピー&ペースト用）
 
 ## 出力先

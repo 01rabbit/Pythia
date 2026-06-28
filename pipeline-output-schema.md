@@ -13,7 +13,7 @@ outputs/YYYY-MM-DD/
   YYYY-MM-DD-security-report-cve.txt             ← Section 3: 製品別CVE（ゼロデイ特報・本編・参考A・参考B・除外CVE）
   YYYY-MM-DD-security-report-zeroday-trends.txt  ← Section 2: ゼロデイ・トレンド（ゼロデイ特報・APT活動・注目CVE・攻撃予報）
   YYYY-MM-DD-security-report-ai.txt              ← Section 1: AI攻撃動向（本編・参考B・参考A・週次サマリー・除外）
-  YYYY-MM-DD-security-report-soc.txt             ← Section 4: GMOイエラエSOC推奨情報（高/中/低優先度・除外・集計）
+  YYYY-MM-DD-security-report-soc.txt             ← Section 4: SOC推奨情報（高/中/低優先度・除外・集計）
 ```
 
 計6ファイル（JSON 1 + テキスト 5）。全ファイルを outputs/YYYY-MM-DD/ に保存する。
@@ -572,7 +572,7 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 | ai_attacks_main | 【AI攻撃—本編】セクション |
 | ai_attacks_reference_b | 【AI攻撃—参考B】セクション |
 | ai_attacks_reference_a | 【AI攻撃—参考A】セクション |
-| soc_recommendations | 【GMOイエラエSOC推奨情報】セクション（security-report-soc.txt / security-report.txt） |
+| soc_recommendations | 【SOC推奨情報】セクション（security-report-soc.txt / security-report.txt） |
 | exclusions | 【除外サマリー】セクション |
 | statistics | 本日の集計行 |
 

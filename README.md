@@ -1,6 +1,6 @@
 # 日次セキュリティインテリジェンス自動収集パイプライン
 
-GMOイエラエ SOCチーム向け。Claude Code Routines によりクラウド上で毎日自動実行される。
+SOCチーム向け。Claude Code Routines によりクラウド上で毎日自動実行される。
 CVE・APT活動・AI攻撃動向・SOC推奨情報を収集・重みづけし、Slack貼り付け用レポートと構造化JSONを生成する。
 
 ---
@@ -46,7 +46,7 @@ outputs/YYYY-MM-DD/                 ← 日次レポート（実行後に自動�
   YYYY-MM-DD-security-report-cve.txt               ← Section 3: 製品別CVE
   YYYY-MM-DD-security-report-zeroday-trends.txt    ← Section 2: ゼロデイ・トレンド
   YYYY-MM-DD-security-report-ai.txt                ← Section 1: AI攻撃動向
-  YYYY-MM-DD-security-report-soc.txt               ← Section 4: GMOイエラエSOC推奨情報
+  YYYY-MM-DD-security-report-soc.txt               ← Section 4: SOC推奨情報
 
 verification/YYYY-MM-DD-verification.md  ← 攻撃予報 精度検証結果（PRで管理）
 ```

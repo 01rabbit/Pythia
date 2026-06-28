@@ -10,7 +10,7 @@
 3. YYYY-MM-DD-security-report-cve.txt（Section 3: 製品別CVE）
 4. YYYY-MM-DD-security-report-zeroday-trends.txt（Section 2: ゼロデイ・セキュリティトレンド）
 5. YYYY-MM-DD-security-report-ai.txt（Section 1: AI攻撃動向）
-6. YYYY-MM-DD-security-report-soc.txt（Section 4: GMOイエラエSOC推奨情報）
+6. YYYY-MM-DD-security-report-soc.txt（Section 4: SOC推奨情報）
 
 ---
 

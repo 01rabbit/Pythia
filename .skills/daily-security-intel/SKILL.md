@@ -66,7 +66,7 @@ description: 毎日定時に実行するセキュリティインテリジェン�
    - security-report-cve.txt: Section 3（製品別CVE）— ゼロデイ特報・本編CVE・参考A・参考B・除外CVE・集計CVE
    - security-report-zeroday-trends.txt: Section 2（ゼロデイ・トレンド）— ゼロデイ特報・APT活動・攻撃予報・除外APT・集計APT
    - security-report-ai.txt: Section 1（AI攻撃動向）— 本編・参考B・参考A・週次サマリー・除外AI攻撃・集計AI攻撃
-   - security-report-soc.txt: Section 4（GMOイエラエSOC推奨情報）— 高/中/低優先度・除外・集計
+   - security-report-soc.txt: Section 4（SOC推奨情報）— 高/中/低優先度・除外・集計
 
 ### Step 4: ファイル更新・保存・コミット
 - 本日報告したCVE IDを reported-cves.md に追記（日付付き）
@@ -81,7 +81,7 @@ description: 毎日定時に実行するセキュリティインテリジェン�
   - YYYY-MM-DD-security-report-cve.txt（Section 3: 製品別CVE）
   - YYYY-MM-DD-security-report-zeroday-trends.txt（Section 2: ゼロデイ・セキュリティトレンド）
   - YYYY-MM-DD-security-report-ai.txt（Section 1: AI攻撃動向）
-  - YYYY-MM-DD-security-report-soc.txt（Section 4: GMOイエラエSOC推奨情報）
+  - YYYY-MM-DD-security-report-soc.txt（Section 4: SOC推奨情報）
 - 変更されたファイル（reported-cves.md, reported-apts.md, reported-ai-attacks.md, outputs/YYYY-MM-DD/以下）を
   git add → git commit → git push でブランチにコミットする
   コミットメッセージ例: "daily report: YYYY-MM-DD"
@@ -93,5 +93,5 @@ description: 毎日定時に実行するセキュリティインテリジェン�
   - YYYY-MM-DD-security-report-cve.txt: Section 3 製品別CVE（ゼロデイ特報・本編・参考A・参考B・除外CVE）
   - YYYY-MM-DD-security-report-zeroday-trends.txt: Section 2 ゼロデイ・トレンド（ゼロデイ特報・APT・攻撃予報・除外APT）
   - YYYY-MM-DD-security-report-ai.txt: Section 1 AI攻撃動向（本編・参考B・参考A・週次サマリー・除外AI攻撃）
-  - YYYY-MM-DD-security-report-soc.txt: Section 4 GMOイエラエSOC推奨情報（高/中/低優先度・除外）
+  - YYYY-MM-DD-security-report-soc.txt: Section 4 SOC推奨情報（高/中/低優先度・除外）
 - 詳細は pipeline-3-weighting.md の「出力形式」セクションを参照

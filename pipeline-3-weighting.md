@@ -22,7 +22,7 @@ Step 3 の出力は必ず以下の順序で行う:
    - security-report-cve.txt: Section 3（製品別CVE）— ゼロデイ特報・本編CVE・参考A・参考B・除外CVE・集計CVE
    - security-report-zeroday-trends.txt: Section 2（ゼロデイ・トレンド）— ゼロデイ特報・APT活動本編・APT活動注目動向・注目CVE（リスト外）・攻撃予報・除外APT・集計APT
    - security-report-ai.txt: Section 1（AI攻撃動向）— 本編・参考B・参考A・週次サマリー・除外AI攻撃・集計AI攻撃
-   - security-report-soc.txt: Section 4（GMOイエラエSOC推奨情報）— 高優先度・中優先度・低優先度・除外・集計
+   - security-report-soc.txt: Section 4（SOC推奨情報）— 高優先度・中優先度・低優先度・除外・集計
 3. 計6ファイル（JSON 1 + テキスト 5）を outputs/YYYY-MM-DD/ ディレクトリに保存する。
 
 テキスト変換時の主なマッピングルール（詳細は pipeline-output-schema.md の「JSONからテキストへの変換ルール」参照）:
@@ -299,7 +299,7 @@ Tier: 1 / 2 / 3（pipeline-forecast-verification.md のTier定義を参照）
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【GMOイエラエSOC推奨情報】
+【SOC推奨情報】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ※ このセクションのルール・採用条件・テンプレートは pipeline-soc-recommend.md を参照。

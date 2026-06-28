@@ -1,6 +1,6 @@
 # security-intel-cowork
 
-GMOイエラエ SOCチーム向け日次セキュリティインテリジェンス自動収集・レポート生成リポジトリ。
+SOCチーム向け日次セキュリティインテリジェンス自動収集・レポート生成リポジトリ。
 
 ## リポジトリ構造
 
@@ -25,7 +25,7 @@ outputs/YYYY-MM-DD/                      ← 日次レポートディレクト�
   YYYY-MM-DD-security-report-cve.txt                ← Section 3: 製品別CVE（ゼロデイ特報・本編・参考A・参考B）
   YYYY-MM-DD-security-report-zeroday-trends.txt     ← Section 2: ゼロデイ・トレンド（ゼロデイ特報・APT活動・注目CVE・攻撃予報）
   YYYY-MM-DD-security-report-ai.txt                 ← Section 1: AI攻撃動向（本編・参考B・参考A・週次サマリー）
-  YYYY-MM-DD-security-report-soc.txt                ← Section 4: GMOイエラエSOC推奨情報（高/中/低優先度）
+  YYYY-MM-DD-security-report-soc.txt                ← Section 4: SOC推奨情報（高/中/低優先度）
 ```
 
 ## 実行方法
@@ -53,6 +53,6 @@ Claude Code Routines が毎日 07:00 JST に `.skills/daily-security-intel/SKILL
   - `security-report-cve.txt`: Section 3 製品別CVE（ゼロデイ特報・本編・参考A・参考B）
   - `security-report-zeroday-trends.txt`: Section 2 ゼロデイ・トレンド（ゼロデイ特報・APT・注目CVE・攻撃予報）
   - `security-report-ai.txt`: Section 1 AI攻撃動向（本編・参考B・参考A・週次サマリー）
-  - `security-report-soc.txt`: Section 4 GMOイエラエSOC推奨情報（高/中/低優先度）
+  - `security-report-soc.txt`: Section 4 SOC推奨情報（高/中/低優先度）
 - デフォルトモード: モード3（CVE・ゼロデイ・APT・AI攻撃 フル版）
 - 詳細は `pipeline-3-weighting.md` および `pipeline-output-schema.md` 参照
