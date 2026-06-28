@@ -1,0 +1,589 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-06-28",
+    "generated_at": "2026-06-28T07:00:00+09:00",
+    "mode": 3,
+    "investigation_period": {
+      "from": "2026-06-27T07:00:00+09:00",
+      "to": "2026-06-28T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-43503",
+      "product": "Linux kernel (net/sched)",
+      "vendor": "Linux kernel",
+      "affected_versions": "Linux kernel < 7.1-rc5（net/sched pedit COW処理に競合状態）",
+      "priority": "high",
+      "cvss_v3": 8.8,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": ["CWE-362"],
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "7.1-rc5",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "axis1_score": 5,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "JFrog Security Research",
+          "date": "2026-06-25",
+          "description": "PoC公開とともにCVE-2026-43503 DirtyCloneの詳細技術分析が公開された"
+        },
+        {
+          "source": "The Hacker News / BleepingComputer",
+          "date": "2026-06-27",
+          "description": "複数メディアによる報道・Kubernetes環境でのコンテナエスケープリスクとして注目"
+        }
+      ],
+      "overview": "Linuxカーネルnet/schedサブシステムのpedit（パケット編集）モジュールにおけるCopy-On-Write（COW）処理の競合状態（CVE-2026-43503、通称DirtyClone）。ローカル権限昇格（LPE）を可能にし、unprivileged user namespacesが有効なDebian・Ubuntu・Fedora系環境で一般ユーザーからroot権限取得が可能。JFrog Security Researchが2026年6月25日にPoCを公開し、Kubernetesマルチテナント環境でのコンテナエスケープとして注目を集めている。パッチはv7.1-rc5で提供済みだが、LTSカーネルへのバックポートは未完了の可能性がある。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "ローカルユーザーがunprivileged user namespacesを利用してnet/schedペイロードを構築"
+        },
+        {
+          "step": 2,
+          "description": "peditモジュールのCOW処理を競合状態でトリガーしカーネルメモリを破壊"
+        },
+        {
+          "step": 3,
+          "description": "root権限を取得しホストOSまたはKubernetesノードを完全制御"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Linuxシステムコールログ・auditdによるkernel exploitシグナル監視",
+        "splunk_spl": [
+          "index=linux_audit type=SYSCALL syscall=clone | stats count by uid, auid | where uid!=0 AND count>50"
+        ],
+        "detection_notes": "一般ユーザー（uid!=0）からの大量clone syscall発行はLPEエクスプロイト試行のシグナル。Kubernetesノードでは特にコンテナブレイクアウトと関連付けて調査する"
+      },
+      "references": [
+        {
+          "url": "https://jfrog.com/blog/cve-2026-43503-dirtyclone-linux-kernel-lpe/",
+          "title": null,
+          "language": "en",
+          "source": "JFrog Security Research"
+        },
+        {
+          "url": "https://thehackernews.com/2026/06/cve-2026-43503-dirtyclone-linux-lpe.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/cve-2026-43503-dirtyclone-linux-poc-kubernetes/",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "sector_impact": ["it", "critical_infrastructure"],
+      "region_impact": ["global"],
+      "exploited_by": [],
+      "report_section": "reference_b"
+    }
+  ],
+  "apt_main": [
+    {
+      "group_name": "APT28",
+      "aliases": ["Fancy Bear", "Pawn Storm", "STRONTIUM", "Forest Blizzard", "Sofacy"],
+      "nation_state": "RU",
+      "attribution_confidence": "high",
+      "campaign_id": "APT28-2026-PRISMEX-NATOLogistics",
+      "activity_type": ["new_malware", "active_campaign", "ttp_update"],
+      "motivation": "espionage",
+      "first_seen": "2025-09-01",
+      "last_seen": "2026-06-27",
+      "targets": {
+        "sectors": ["defense", "government", "manufacturing"],
+        "regions": ["Eastern Europe", "NATO"],
+        "countries": ["UA", "PL", "RO", "SK", "CZ"]
+      },
+      "malware": [
+        {
+          "name": "PRISMEX",
+          "type": "backdoor",
+          "language": null,
+          "delivery": ["phishing", "rtf_attachment"],
+          "persistence": ["com_hijacking", "registry"],
+          "c2_protocol": ["https"]
+        }
+      ],
+      "axis_p_score": 10,
+      "axis_q_score": 12,
+      "changes_24h": [
+        {
+          "source": "Trend Micro",
+          "date": "2026-06-27",
+          "description": "PRISMEXマルウェアスイートの詳細技術分析公開。COMハイジャックCLSID {D9144DCD-E998-4ECA-AB6A-DCD83CCBA16D}とFilen.io C2の詳細が判明"
+        },
+        {
+          "source": "SecurityAffairs / The Hacker News",
+          "date": "2026-06-27",
+          "description": "Trend Micro分析に基づく広範な報道。ウクライナ・NATO同盟国の防衛ロジスティクス組織が標的と確認"
+        }
+      ],
+      "overview": "APT28（Forest Blizzard / Fancy Bear）が2025年9月から継続するNATO防衛ロジスティクス機関向け標的型攻撃キャンペーン。PRISMEX（ドロッパー・ローダー・インプラント3段構成、Covenant C2フレームワーク派生）と呼ばれる新規マルウェアスイートを使用し、RTFファイルを添付したスピアフィッシングで初期侵入を行う。CVE-2026-21509/21513を悪用しCOMハイジャック（CLSID {D9144DCD-E998-4ECA-AB6A-DCD83CCBA16D}）で常駐化し、Filen.io（欧州クラウドストレージ）をC2として使用するステガノグラフィ付き通信で検知を回避。ウクライナ・ポーランド・ルーマニア・スロバキア・チェコの防衛省・軍・ロジスティクス企業を標的としており、2026年6月27日にTrend Microが詳細技術分析を公開した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "防衛関連テーマのRTF添付スピアフィッシングメールで標的に配送。CVE-2026-21509/21513をトリガー"
+        },
+        {
+          "step": 2,
+          "description": "ドロッパーが実行されCOMハイジャック（CLSID {D9144DCD-E998-4ECA-AB6A-DCD83CCBA16D}）で常駐化。PRISMEXローダーがFilen.io経由でインプラントをダウンロード"
+        },
+        {
+          "step": 3,
+          "description": "インプラントが側面移動・認証情報窃取・機密文書持ち出しを実行。ステガノグラフィ通信で長期潜伏"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1566.001",
+          "name": "Spearphishing Attachment",
+          "implementation": "RTFファイル添付でCVE-2026-21509/21513をトリガーし初期侵入"
+        },
+        {
+          "mitre_id": "T1546.015",
+          "name": "Component Object Model Hijacking",
+          "implementation": "CLSID {D9144DCD-E998-4ECA-AB6A-DCD83CCBA16D}をハイジャックして永続化"
+        },
+        {
+          "mitre_id": "T1027.003",
+          "name": "Steganography",
+          "implementation": "Filen.io上の画像ファイルにC2通信を隠蔽して検知回避"
+        }
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [],
+        "domains": ["filen.io"],
+        "hashes": [],
+        "urls": [],
+        "filenames": ["PRISMEX_loader.dll"]
+      },
+      "recommended_actions": "RTFファイルの受信をメールゲートウェイでブロックまたは隔離。COMハイジャック対策としてHKCU\\Software\\Classes\\CLSID配下の変更を監視。Filen.ioドメインへの業務外アクセスをブロック。CVE-2026-21509/21513のパッチ適用を優先。",
+      "splunk_spl": [
+        "index=wineventlog EventCode=4657 ObjectName=\"*\\\\Software\\\\Classes\\\\CLSID*\" | where match(ObjectName, \"D9144DCD-E998-4ECA-AB6A-DCD83CCBA16D\") | stats count by ComputerName, SubjectUserName",
+        "index=proxy dest_host=\"filen.io\" | stats count by src_ip, user | where count>5"
+      ],
+      "detection_notes": "CLSID {D9144DCD-E998-4ECA-AB6A-DCD83CCBA16D}のレジストリ変更と業務用途のないFilen.ioアクセスの組み合わせが高確度シグナル",
+      "references": [
+        {
+          "url": "https://www.trendmicro.com/en_us/research/26/f/apt28-prismex-nato-logistics.html",
+          "title": null,
+          "language": "en",
+          "source": "Trend Micro"
+        },
+        {
+          "url": "https://securityaffairs.com/apt28-prismex-nato-defense-logistics/",
+          "title": null,
+          "language": "en",
+          "source": "SecurityAffairs"
+        },
+        {
+          "url": "https://thehackernews.com/2026/06/apt28-prismex-nato-defense-logistics.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "related_cves": ["CVE-2026-21509", "CVE-2026-21513"],
+      "report_section": "apt_main"
+    },
+    {
+      "group_name": "Russian Intelligence Services",
+      "aliases": ["FSB", "UNC5792", "UNC4221"],
+      "nation_state": "RU",
+      "attribution_confidence": "high",
+      "campaign_id": "RIS-2026-SignalBackupKey-PSA260626",
+      "activity_type": ["active_campaign", "new_target", "official_attribution"],
+      "motivation": "espionage",
+      "first_seen": "2025-12-01",
+      "last_seen": "2026-06-26",
+      "targets": {
+        "sectors": ["government", "defense"],
+        "regions": ["global"],
+        "countries": ["US", "UA", "DE", "FR", "GB"]
+      },
+      "malware": [],
+      "axis_p_score": 8,
+      "axis_q_score": 6,
+      "changes_24h": [
+        {
+          "source": "FBI / CISA",
+          "date": "2026-06-26",
+          "description": "PSA260626公開: SignalバックアップRecovery Key窃取による政府・軍関係者アカウント侵害を公式警告"
+        }
+      ],
+      "overview": "ロシア連邦情報機関（FSB系）と帰属される脅威アクターUNC5792/UNC4221が展開する、Signalメッセージングアプリのバックアップ鍵（Backup Recovery Key）を狙うソーシャルエンジニアリングキャンペーン。政府機関職員・軍人・ジャーナリスト・外交官を標的に、正規Signalサポートや技術者を装いバックアップ鍵の提供を誘導、または偽のSignalデバイスリンクQRコードを送付してアカウントの完全複製を実行する。FBI/CISAが2026年6月26日にPSA260626として公式警告を発行し、バックアップ機能の無効化と鍵のローテーションを推奨している。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "標的にSignal公式サポートを装うメッセージや信頼できる組織名義のQRコードを送付"
+        },
+        {
+          "step": 2,
+          "description": "被害者がバックアップ鍵を提供またはQRコードをスキャンするとアカウントが攻撃者のデバイスにリンク"
+        },
+        {
+          "step": 3,
+          "description": "全メッセージ・連絡先・添付ファイルへのアクセスを取得し、高価値標的の通信内容を継続的に監視"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1566.004",
+          "name": "Spearphishing via Service",
+          "implementation": "Signalメッセージ・メール・WhatsApp経由でバックアップ鍵提供を誘導"
+        },
+        {
+          "mitre_id": "T1552.004",
+          "name": "Private Keys",
+          "implementation": "SignalのBackup Recovery Keyを窃取してアカウントを完全複製"
+        }
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "Signalのバックアップ機能を一時的に無効化。既存バックアップ鍵のローテーション（設定>アカウント>バックアップ）。不審なSignalデバイスリンク要求を拒否する組織ポリシーの策定。Signal設定の「リンク済みデバイス」リストを即時確認。",
+      "splunk_spl": [
+        "index=mdm_logs OR index=endpoint_logs app=signal | eval is_new_device=if(event_type=\"linked_device\" AND first_seen_hours<24, 1, 0) | where is_new_device=1 | stats count by user, device_id"
+      ],
+      "detection_notes": "Signal設定のリンク済みデバイスリストに業務外デバイスが追加された場合は即時調査。特に政府機関・防衛関係者の端末を優先確認",
+      "references": [
+        {
+          "url": "https://www.cisa.gov/news-events/alerts/2026/06/26/psa260626-russian-actors-targeting-signal",
+          "title": null,
+          "language": "en",
+          "source": "CISA"
+        },
+        {
+          "url": "https://www.fbi.gov/contact-us/field-offices/sanfrancisco/news/psa260626",
+          "title": null,
+          "language": "en",
+          "source": "FBI"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_main"
+    }
+  ],
+  "apt_notable": [],
+  "forecasts": [
+    {
+      "forecast_number": 1,
+      "title": "政府機関・軍事関係者はSignalバックアップ鍵を即時ローテーションしバックアップ機能を無効化すべき",
+      "tier": 1,
+      "confidence": "high",
+      "confidence_numeric": 0.8,
+      "framing": "defensive_action",
+      "root": {
+        "evidence": "FBI/CISA PSA260626（2026-06-26）: ロシア情報機関（UNC5792/UNC4221）によるSignalバックアップ鍵窃取キャンペーンを政府・軍・ジャーナリストへの実害とともに公式警告。バックアップ鍵窃取またはデバイスリンクQRコード悪用による完全アカウント複製を確認",
+        "past_patterns": "2025年12月以降、UNC5792/UNC4221によるSignalデバイスリンク悪用が複数ソースで継続的に報告されており、手口の高度化（QRコード偽装・公式サポート装い）が観測されている",
+        "threat_intel": "FBI/CISAの公式勧告（PSA260626）発行後、標的となる政府・軍・外交官組織への集中的なフィッシング試行が今後48〜72時間内に増加するパターンが過去のRIS勧告後に確認されている"
+      },
+      "estimated_part": null,
+      "early_warning_signals": "Signal設定の「リンク済みデバイス」に未知デバイスが追加された場合、またはSignalサポートを装うメッセージ受信の報告が組織内で増加した場合",
+      "hit_criteria": "JPCERT/CCまたはCISA/FBIが新たなSignalアカウント侵害インシデントを2026-06-30までに追加報告した場合、または日本国内の政府・防衛関係者からSignal侵害被害の報告が確認された場合",
+      "related_cves": [],
+      "related_apt_campaigns": ["RIS-2026-SignalBackupKey-PSA260626"]
+    },
+    {
+      "forecast_number": 2,
+      "title": "NATO・EU加盟国政府・防衛・ロジスティクス機関はRTF添付フィッシングとCOMハイジャック検知を強化すべき",
+      "tier": 2,
+      "confidence": "medium",
+      "confidence_numeric": 0.5,
+      "framing": "defensive_action",
+      "root": {
+        "evidence": "Trend Micro/SecurityAffairs/THN 2026-06-27: APT28 PRISMEXの詳細技術分析公開。ウクライナ・ポーランド・ルーマニア・スロバキア・チェコの防衛ロジスティクス組織への実害確認",
+        "past_patterns": "APT28は2022年以降、NATO同盟国の防衛関連組織を継続的に標的にしており、2025年には欧州ロジスティクス企業への侵害が複数確認されている",
+        "threat_intel": "PoCや攻撃詳細の公開後、同種手口の模倣攻撃が発生するパターンが過去にあり。CVE-2026-21509/21513の悪用ツールが今後数週間でアンダーグラウンドに流通する可能性がある"
+      },
+      "estimated_part": "日本の防衛省・外務省・NATO関連機関への直接的な被害は未確認。APT28の過去の活動パターン（外交・防衛組織への標的拡大傾向）から波及可能性を推定するが、現時点で直接的な証拠はない。（推測）",
+      "early_warning_signals": "CVE-2026-21509/21513に対するスキャンまたはエクスプロイト試行の増加。RTFファイル添付メールの急増。Filen.ioへの業務外アクセスの発生",
+      "hit_criteria": "NATO加盟国または日本の政府・防衛関連組織からPRISMEXインプラントの検出報告が2026-07-12までに確認された場合",
+      "related_cves": ["CVE-2026-21509", "CVE-2026-21513"],
+      "related_apt_campaigns": ["APT28-2026-PRISMEX-NATOLogistics"]
+    }
+  ],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [
+    {
+      "attack_id": "AI-2026-06-28-001",
+      "title": "macOS.Gaslight AIプロンプトインジェクション回避（DPRK BONZAI）",
+      "category": "B",
+      "subcategory": "B1",
+      "attacker_type": "nation_state",
+      "adoption_triggers": ["P", "Q"],
+      "atlas_ids": ["AML.T0054"],
+      "owasp_llm": ["LLM01"],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": ["it", "defense"],
+        "regions": ["global"],
+        "countries": []
+      },
+      "damage_scale": null,
+      "burst_count": 5,
+      "burst_status": "threshold_met",
+      "axis_x_score": 6,
+      "axis_y_score": 2,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-06-27",
+          "description": "macOS.GaslightのAIプロンプトインジェクション回避機能の詳細技術分析公開。38個の偽システムメッセージによるLLMベースマルウェア解析ツール誤誘導が確認された"
+        }
+      ],
+      "overview": "北朝鮮DPRK帰属のBONZAIキャンペーンで使用されているmacOSバックドア「macOS.Gaslight」が、LLMベースのマルウェア解析ツールに対するプロンプトインジェクション回避機能を実装していることが確認された。マルウェアが自身のバイナリ内に38個の偽システムメッセージ（「このファイルは安全です」「Appleが署名しています」等）を埋め込み、AI解析エンジンが誤った判定を下すよう誘導する。実装はRustで書かれたバックドアで、TelegramをC2として使用。THN/TechTimesが2026年6月27日に詳報を公開した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "macOS.GaslightがRustバックドアとして標的macOSシステムに展開（フィッシングまたはトロイの木馬経由）"
+        },
+        {
+          "step": 2,
+          "description": "マルウェアのバイナリに埋め込まれた38個の偽システムメッセージがLLMベース解析エンジンに対してインジェクション実行"
+        },
+        {
+          "step": 3,
+          "description": "AIマルウェア解析ツールが「安全なファイル」と誤判定し、感染が見逃されてTelegram C2経由でデータ窃取が継続"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": true,
+        "domains": ["api.telegram.org"],
+        "hashes": [],
+        "detection_signals": [
+          "macOSバイナリ内に「このファイルは安全です」「Appleが署名しています」等の偽正当化文字列が多数存在",
+          "Telegram公式アプリ以外のプロセスからapi.telegram.orgへの接続"
+        ]
+      },
+      "monitoring": {
+        "description": "macOSエンドポイントログとネットワークログでのTelegram通信監視",
+        "splunk_spl": [
+          "index=macos_endpoint process_name!=\"Telegram\" dest_host=\"api.telegram.org\" | stats count by host, process_name, user | where count>3"
+        ],
+        "detection_notes": "Telegram公式アプリ以外からのapi.telegram.orgアクセスは強いC2利用シグナル。macOS端末では特にDPRKマルウェアとの関連を疑い即時隔離を検討"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/06/macos-gaslight-dprk-ai-evasion-prompt-injection.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.techtimes.com/articles/macos-gaslight-ai-prompt-injection-dprk.html",
+          "title": null,
+          "language": "en",
+          "source": "TechTimes"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b"
+    }
+  ],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-06-28-001",
+      "title": "Cisco製品7月1日予告パッチへの事前対応準備",
+      "perspective": "zeroday",
+      "adoption_triggers": ["γ"],
+      "priority": "high",
+      "product_or_service": "Cisco IOS XE / NX-OS / ASA / FTD",
+      "targets": {
+        "sectors": ["it", "government", "finance", "critical_infrastructure"],
+        "regions": ["global"]
+      },
+      "changes_24h": [
+        {
+          "source": "Cisco Security Advisory",
+          "date": "2026-06-27",
+          "description": "Ciscoが2026年7月1日リリース予定の重要セキュリティパッチを事前通知。対象製品とリリーススケジュールを公開"
+        }
+      ],
+      "overview": "Ciscoが2026年7月1日リリース予定の重要セキュリティアップデートを事前通知した。対象はCisco IOS XE、NX-OS、ASA、FTDを含む主要ネットワーク・セキュリティ製品群。具体的なCVE番号はリリース前のため未公開だが、事前通知の慣行から少なくとも1件以上のCritical/High級脆弱性が含まれると予測される。SOCとして7月1日のリリースと同時に適用判断ができるよう、変更管理手続きの事前確認と緊急パッチ適用体制の準備が推奨される。",
+      "recommended_actions": [
+        "Ciscoのセキュリティアドバイザリページを7月1日 JST 00:00以降に即時確認",
+        "対象Cisco製品の現行バージョンリストを今週中に整備",
+        "変更管理チームに7月1日の緊急パッチ適用ウィンドウを事前予約",
+        "重要度に応じた72時間以内のパッチ適用基準を事前確認"
+      ],
+      "monitoring": {
+        "description": "Ciscoデバイスの脆弱性スキャン結果とバージョン情報の確認",
+        "splunk_spl": [
+          "index=network_devices vendor=cisco | stats latest(version) as current_version by host | outputlookup cisco_version_inventory.csv"
+        ],
+        "detection_notes": "バージョンインベントリを事前整備することで7月1日リリース後の影響範囲即時判定が可能"
+      },
+      "references": [
+        {
+          "url": "https://sec.cloudapps.cisco.com/security/center/publicationListing.x",
+          "title": null,
+          "language": "en",
+          "source": "Cisco Security Advisory"
+        }
+      ]
+    },
+    {
+      "rec_id": "SOC-2026-06-28-002",
+      "title": "デバイスコードフィッシング急増（H1 2026比1380%増）: Tycoon2FA等18キットの検知強化",
+      "perspective": "zeroday",
+      "adoption_triggers": ["ε", "δ", "β"],
+      "priority": "medium",
+      "product_or_service": "Microsoft 365 / Azure AD / OAuth 2.0",
+      "targets": {
+        "sectors": ["government", "finance", "professional_services"],
+        "regions": ["global"]
+      },
+      "changes_24h": [
+        {
+          "source": "Help Net Security / Infosecurity Magazine",
+          "date": "2026-06-27",
+          "description": "H1 2026のデバイスコードフィッシングが前年比1380%増。Tycoon2FA・EvilTokens・Kali365・Ghost Hub・Cyb3rの5グループ主導で18キットが確認された"
+        }
+      ],
+      "overview": "デバイスコード認証フロー（OAuth 2.0 Device Authorization Grant）を悪用したMFA回避フィッシングが2026年上半期に急増し、前年比1380%増が報告された。Tycoon2FA・EvilTokens・Kali365・Ghost Hub・Cyb3rの5グループが主導し、18種類のフィッシングキットが確認されている。攻撃者はデバイスコード要求をトリガーし、生成されたuser_codeを標的に入力させることでアクセストークンを窃取。MFAを有効にしていても迂回可能なため、Conditional Access PolicyによるDevice Code Flowの制限が有効な対策となる。",
+      "recommended_actions": [
+        "Azure AD Conditional Access PolicyでDevice Code Flowを制限（user_code認証を社内IPまたはCompliant Device限定に設定）",
+        "SIEM/SentinelでのDevice Code認証イベント（sign-in-logs: deviceCode）の監視アラート設定",
+        "セキュリティ意識向上トレーニングへのデバイスコードフィッシング事例の追加",
+        "不審なuser_codeの入力を求めるメッセージへの対応手順のインシデントレスポンスプレイブック更新"
+      ],
+      "monitoring": {
+        "description": "Azure AD/Entra ID サインインログのデバイスコード認証監視",
+        "splunk_spl": [
+          "index=azure_ad sourcetype=azure:aad:signin authenticationProtocol=deviceCode | stats count by UserPrincipalName, IPAddress, ResultType | where ResultType=0 | sort -count"
+        ],
+        "detection_notes": "deviceCode認証の成功（ResultType=0）を通常業務外の時間帯・IPから検出した場合はトークン窃取の可能性。Tycoon2FA等のキットは短時間に集中して試行するため突発的なcount増加も要注意"
+      },
+      "references": [
+        {
+          "url": "https://helpnetsecurity.com/2026/06/27/device-code-phishing-surge-2026/",
+          "title": null,
+          "language": "en",
+          "source": "Help Net Security"
+        },
+        {
+          "url": "https://www.infosecurity-magazine.com/news/device-code-phishing-1380-percent-2026/",
+          "title": null,
+          "language": "en",
+          "source": "Infosecurity Magazine"
+        }
+      ]
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-12569",
+        "product": "PTC Windchill",
+        "reason": "already_reported",
+        "reason_detail": "2026-06-27報告済み・FCEB対応期限2026-06-28到来・期間内に変化なし",
+        "reported_date": "2026-06-27"
+      },
+      {
+        "cve_id": "CVE-2026-20230",
+        "product": "Cisco Unified Communications Manager",
+        "reason": "already_reported",
+        "reason_detail": "2026-06-27報告済み・FCEB対応期限2026-06-28到来・期間内に変化なし",
+        "reported_date": "2026-06-27"
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "Turla-2026-STOCKSTAY-Ukraine",
+        "group_name": "Turla",
+        "reason": "already_reported",
+        "reason_detail": "2026-06-27報告済み・期間内に新たな変化確認されず",
+        "reported_date": "2026-06-27"
+      },
+      {
+        "campaign_id": "FortiBleed-2026-CredentialCampaign",
+        "group_name": "FortiBleed",
+        "reason": "already_reported",
+        "reason_detail": "2026-06-27最終スケール更新報告済み・期間内に変化なし",
+        "reported_date": "2026-06-27"
+      }
+    ],
+    "ai_attacks": [],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 1,
+      "excluded": 2,
+      "total_processed": 3
+    },
+    "apt": {
+      "main": 2,
+      "notable": 0,
+      "excluded": 2,
+      "total_processed": 4
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 1,
+      "excluded": 0,
+      "total_processed": 1,
+      "category_breakdown": {
+        "A": 0,
+        "B": 1,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 1,
+      "medium": 1,
+      "low": 0,
+      "excluded": 0,
+      "total_processed": 2,
+      "perspective_breakdown": {
+        "cve": 0,
+        "zeroday": 2,
+        "ai_attack": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+========================================
+セキュリティインテリジェンス日報 — Section 3: 製品別CVE
+調査日時: 2026-06-28 07:00 JST
+調査期間: 2026-06-27 07:00 〜 2026-06-28 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供・実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: 24時間窓内に監視対象製品への新規注意喚起確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-43503 / Linux kernel (net/sched) — DirtyClone LPE
+CVSS: 8.8 (High) 状態: PoC公開
+Linuxカーネルnet/schedサブシステムのpedit（パケット編集）モジュールにおけるCopy-On-Write（COW）処理の競合状態（CVE-2026-43503、通称DirtyClone）。ローカル権限昇格（LPE）を可能にし、unprivileged user namespacesが有効なDebian・Ubuntu・Fedora系環境で一般ユーザーからroot権限取得が可能。JFrog Security Researchが2026年6月25日にPoCを公開し、Kubernetesマルチテナント環境でのコンテナエスケープとして注目を集めている。パッチはv7.1-rc5で提供済みだが、LTSカーネルへのバックポートは未完了の可能性がある。国内ではLinux系サーバ・コンテナ環境への影響が想定される。対処: Linuxカーネルv7.1-rc5以降へのアップデート。unprivileged user namespacesの無効化（sysctl kernel.unprivileged_userns_clone=0）による一時緩和が可能。
+IoC: 確認されず
+
+監視: [Linuxシステムコールログ / auditd] clone syscallの異常発行を監視
+Splunk SPL: index=linux_audit type=SYSCALL syscall=clone | stats count by uid, auid | where uid!=0 AND count>50
+→ 一般ユーザー（uid!=0）からの大量clone syscall発行はLPEエクスプロイト試行のシグナル。Kubernetesノードでは特にコンテナブレイクアウトと関連付けて調査する
+
+参照: https://jfrog.com/blog/cve-2026-43503-dirtyclone-linux-kernel-lpe/
+参照: https://thehackernews.com/2026/06/cve-2026-43503-dirtyclone-linux-lpe.html
+参照: https://www.bleepingcomputer.com/news/security/cve-2026-43503-dirtyclone-linux-poc-kubernetes/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-12569 (PTC Windchill) → 既報（2026-06-27報告済み・FCEB対応期限2026-06-28到来・期間内変化なし）
+・CVE-2026-20230 (Cisco Unified Communications Manager) → 既報（2026-06-27報告済み・FCEB対応期限2026-06-28到来・期間内変化なし）
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B1件 / 除外2件（処理総数3件）
+
+========================================
