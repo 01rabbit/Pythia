@@ -153,7 +153,7 @@ GitHub Actions は外部 API キー不要の補助タスクのみを担当する
 ```
 config.yml                          ← Pythia の個性を定義（スコープ・優先事項・フェーズ）
 CLAUDE.md                           ← Claude Code への最上位指示書（Pythia の人格・行動原則）
-SKILL.md                            ← 日次パイプラインの正本（.skills/daily-security-intel/SKILL.md にミラー）
+SKILL.md                            ← 日次パイプラインの実体（Routines にファイルパス指定で登録）
 
 forecaster/                         ← ★Pythia の中核：予報エンジン★
   README.md                         ← Pythia の育て方・Phaseロードマップ

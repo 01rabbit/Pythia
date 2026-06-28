@@ -27,8 +27,7 @@ Pythia の中核（予報エンジン）の構造と育て方は `forecaster/REA
 
 ```
 config.yml                               ← Pythia の個性定義（スコープ・優先事項・フェーズ）
-SKILL.md                                 ← ★日次パイプラインの正本（schedule: daily で Routines 登録・予報 Step 3.5 含む）
-.skills/daily-security-intel/SKILL.md   ← 上記のミラー（内容は SKILL.md と常に同一に保つ）
+SKILL.md                                 ← ★日次パイプラインの実体（Routines にファイルパス指定で登録・予報 Step 3.5 含む）
 .skills/forecast-verification/SKILL.md  ← 週次予報精度検証スキル（火・木 12:00 JST）
 
 # ★Pythia の中核：予報エンジン★
@@ -67,12 +66,9 @@ outputs/YYYY-MM-DD/                      ← 日次収集レポート（予報�
 
 ## 実行方法
 
-Claude Code Routines が毎日 07:00 JST に `SKILL.md`（正本）のパイプラインを自動実行する。
+Claude Code Routines が毎日 07:00 JST に `SKILL.md` のパイプラインを自動実行する
+（ルーチンにはルート `SKILL.md` をファイルパス指定で登録する）。
 手動実行も可能（Routine 画面から "Run" をクリック）。
-
-> **SKILL.md の編集ルール**: パイプライン手順を変更する場合は `SKILL.md`（正本）を編集し、
-> 必ず `.skills/daily-security-intel/SKILL.md` へ同一内容をコピーして同期させること。
-> 2ファイルの内容が乖離すると、どちらが実行されるかで挙動が変わり予報生成が抜け落ちる事故につながる。
 
 ## コミットルール
 
