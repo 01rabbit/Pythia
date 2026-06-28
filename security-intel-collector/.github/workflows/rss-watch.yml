@@ -1,0 +1,69 @@
+# NOTE: This workflow assumes the security-intel-collector directory is the
+# repository ROOT. It must live at <repo-root>/.github/workflows/rss-watch.yml.
+# All paths (watcher.py, requirements.txt, data/raw, ...) are relative to root.
+name: rss-watch
+
+on:
+  schedule:
+    # Every 3 hours at minute 0 (staggered before cve-watch at minute 30).
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+    inputs:
+      force_notify:
+        description: "Force Slack notification regardless of new items"
+        type: boolean
+        required: false
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  rss-watch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run RSS watcher
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL_RSS }}
+          FORCE_NOTIFY: ${{ github.event.inputs.force_notify }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: python watcher.py
+
+      - name: Validate generated JSON
+        run: |
+          if [ -f data/raw/news-latest.json ]; then
+            jq empty data/raw/news-latest.json
+          fi
+          if [ -f data/raw/cves-latest.json ]; then
+            jq empty data/raw/cves-latest.json
+          fi
+
+      - name: Upload raw JSON artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rss-raw-json
+          path: data/raw/*.json
+          if-no-files-found: warn
+
+      - name: Commit and push state and raw json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add seen.json rss_meta.json data/raw 2>/dev/null || true
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "rss-watch: update state and raw json"
+            git push
+          fi
