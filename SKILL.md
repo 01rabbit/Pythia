@@ -68,6 +68,7 @@ Section 4: SOC推奨情報
 - Mandiant / MSTIC / CrowdStrike / Unit 42 / CISA合同勧告等を横断検索
 - 期間内に P〜W の変化が確認できる活動のみ収集（→ Section 2 へ）
 - `reported-apts.md` と照合し、既報かつ変化なしは除外
+- Europol / FBI IC3 などの法執行・摘発チェックは日次では行わない（週次検証へ移管）
 - 除外基準はフラグ付け（足切りしない）
 
 ### Step 1c: AI攻撃調査（pipeline-ai-1.md に従う）※Step 1 / 1b と並行実行
