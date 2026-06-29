@@ -14,3 +14,4 @@
 | AI生成フィッシング集団→個別最適化移行（Zscaler 2026-06-12） | A1 | 2026-06-19 | 継続監視 | 2026-06-19 | YES | Zscalerレポート・日本語AI生成フィッシング増加・参考A採用 |
 | LLMjacking Evolved: VAPTアジェンティックフレームワーク / Ollama自律攻撃エンジン悪用 | A4 | 2026-06-27 | 継続監視 | 2026-06-27 | YES | CSA/Sysdig 2026-06-26・露出Ollamaを自律型ペネトレーションフレームワーク(VAPT)の推論エンジンとして悪用・175,000台超認証なし露出・4セッション15時間実運用確認・バースト閾値超過5ソース・本編採用 |
 | macOS.Gaslight AIプロンプトインジェクション回避（DPRK BONZAI） | B1 | 2026-06-28 | 継続監視 | 2026-06-28 | YES | THN/TechTimes 2026-06-27詳報・38個の偽システムメッセージでLLMベースAIマルウェア解析ツールを誤誘導・北朝鮮DPRK/BONZAI帰属・バーストカウント5件（threshold_met）・参考B採用 |
+| Djinn Stealer: CVE-2026-48558経由AI開発者認証情報・MCPコンフィグ窃取 | C3 | 2026-06-29 | 継続監視 | 2026-06-29 | YES | BleepingComputer/Horizon3.ai/HelpNetSecurity 2026-06-29・CVE-2026-48558（SimpleHelp CVSS 10.0 OIDC認証バイパス）経由・Claude/Gemini/Codex/Cline/OpenCode/Kilo等AI開発者設定・MCPコンフィグ・SSH/クラウド/Docker/Terraform認証情報窃取・バーストカウント3件（threshold_met）・本編採用（AI-2026-06-29-001） |

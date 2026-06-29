@@ -1,0 +1,109 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-06-29 07:00 JST
+調査期間: 2026-06-28 07:00 〜 2026-06-29 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. SimpleHelp CVE-2026-48558: OIDC 認証バイパス緊急パッチ適用と侵害確認
+観点: ゼロデイ関連
+採用契機: β（国内企業・組織が広く利用するサービスへの影響）・γ（SOC 運用に直接関係）・η（リモートサポートソフトウェアの脆弱性）
+------------------------------------------------------------
+
+優先度: 高
+対象: SimpleHelp Remote Support Software（v5.5.15 以下・OIDC 有効構成）
+
+【24時間以内の変化】
+[BleepingComputer / Horizon3.ai 2026-06-29] CVE-2026-48558 実悪用確認・Djinn Stealer 展開・v5.5.16 パッチリリース。14,000 台超露出中。
+
+【概要】
+SimpleHelp の OIDC 認証バイパス脆弱性（CVE-2026-48558・CVSS 10.0）が実悪用され、Djinn Stealer が展開されている。MSP・IT サービス事業者が SimpleHelp を使用している場合、顧客環境の AI 開発者認証情報・クラウド認証情報が広範に侵害される可能性がある。今日中の対応が必須。
+
+【推奨アクション】
+・SimpleHelp を v5.5.16 以上へ即時アップグレードする（最優先）
+・アップグレードが即時困難な場合は OIDC 認証を一時的に無効化し、通常の認証方式に切り替える
+・SimpleHelp 管理コンソールで全テクニシャンアカウントを監査し、OIDC 経由で作成された不明アカウントを削除する
+・SimpleHelp に接続した全エンドポイントで AI ツール設定ファイル・SSH キー・クラウド認証情報の侵害確認を実施する（~/.claude/config.json・~/.aws/credentials・~/.ssh/id_* 等）
+・侵害が疑われる AI API キー・クラウド認証情報・SSH キーを即時ローテーションする
+・[SimpleHelp 管理ログ / EDR ログ] OIDC 経由の不審ログインを監視する
+Splunk SPL: index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip, _time | where count > 3
+→ 短時間での OIDC 認証試行増加または未知ユーザーでの OIDC ログイン成功は即時対応を開始する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/simplehelp-cve-2026-48558-oidc-bypass-djinn-stealer/
+
+------------------------------------------------------------
+2. Oracle EBS CVE-2026-46817: 実悪用確認による C2 ブロックと CSPU 適用確認
+観点: CVE関連
+採用契機: β（国内企業が広く利用する Oracle EBS への影響）・δ（海外で話題・国内波及近い）
+------------------------------------------------------------
+
+優先度: 高
+対象: Oracle E-Business Suite (EBS) 12.2.3〜12.2.15
+
+【24時間以内の変化】
+[BleepingComputer / CybersecurityNews 2026-06-28] CVE-2026-46817 実悪用開始を確認。C2 IP 45.84.137.125 を特定。Oracle EBS 12.2.3〜12.2.15 が対象。
+
+【概要】
+Oracle EBS（Oracle Payments / File Transmission モジュール）の CVE-2026-46817（CVSS 9.8）が 2026 年 6 月 27〜28 日から実悪用されている。2026 年 5 月の CSPU で修正済みだが未適用の組織が標的となっている。C2 IP 45.84.137.125 が確認されており、財務データ・支払い情報の窃取が主要目的とみられる。Oracle EBS を外部に公開している組織は今日中に C2 ブロックとパッチ適用状況の確認が必要。
+
+【推奨アクション】
+・ファイアウォールで C2 IP アドレス 45.84.137.125 をブロックする（インバウンド・アウトバウンド両方）
+・2026 年 5 月 CSPU（Critical Patch Update Supplement）の適用状況を確認し、未適用の場合は即時適用する
+・Oracle EBS Web サーバーのアクセスログで /OA_HTML/ibytransmit エンドポイントへの POST リクエストを 6 月 27 日以降に遡り確認する
+・Oracle EBS をインターネットに直接公開している場合は WAF またはリバースプロキシで /OA_HTML/ibytransmit への外部アクセスを制限する
+・[Oracle EBS Web サーバーログ / ネットワークフロー] 悪用エンドポイントへのアクセスと C2 通信を監視する
+Splunk SPL: index=network_logs (dest_ip="45.84.137.125" OR src_ip="45.84.137.125") | stats count by src_ip, dest_ip, dest_port | sort -count
+→ C2 IP との通信を検知した場合はただちにインシデント対応を開始し、Oracle EBS サーバーの forensic 取得を実施する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/oracle-ebs-cve-2026-46817-active-exploitation/
+
+------------------------------------------------------------
+3. Cisco UCM CVE-2026-20230: FCEB 期限（2026-06-28）経過確認とウェブシェル点検
+観点: CVE関連
+採用契機: γ（SOC 運用に直接関係する FCEB 期限管理・ウェブシェル確認）
+------------------------------------------------------------
+
+優先度: 中
+対象: Cisco Unified Communications Manager (UCM)
+
+【24時間以内の変化】
+[CISA KEV 2026-06-28] Cisco UCM CVE-2026-20230 の FCEB 機関向け対応期限（2026-06-28）が昨日経過した。
+
+【概要】
+Cisco Unified Communications Manager（UCM）の CVE-2026-20230 に対する CISA FCEB 期限（連邦民間行政府機関の対応期限）が 2026-06-28 に経過した。FCEB 機関は昨日時点でパッチ適用が完了している必要があるが、残存する未パッチ環境でウェブシェルの設置等の持続的侵害が発生している可能性がある。/platform-services/axis2-web/ パスへの不審なアクセス確認が推奨される。
+
+【推奨アクション】
+・Cisco UCM のパッチ適用状況を確認し、FCEB 期限（2026-06-28）までに適用できなかった場合は即時適用する
+・/platform-services/axis2-web/ パスへのアクセスログ（6 月 15 日以降）を調査し、不審なウェブシェルアクセスを確認する
+・Cisco UCM の管理コンソールで未知のアカウント・サービスの作成が行われていないか確認する
+・[Cisco UCM Web アクセスログ] axis2-web パスへのアクセスを確認する
+Splunk SPL: index=cisco_ucm_logs request_path="*/axis2-web/*" NOT user IN ("admin","ccmadmin") | stats count by src_ip, request_path, user | sort -count
+→ axis2-web パスへの管理者以外からのアクセスはウェブシェルの設置・利用を示す可能性がある
+
+【参照】
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（SOC推奨情報）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（除外エントリなし）
+
+本日の集計（Section 4）:
+SOC推奨情報 — 高 2 件 / 中 1 件 / 低 0 件 / 除外 0 件 / 計処理 3 件
+観点内訳: CVE関連 2 件 / ゼロデイ関連 1 件 / AI攻撃関連 0 件
+
+========================================

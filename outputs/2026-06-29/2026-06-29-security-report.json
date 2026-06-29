@@ -1,0 +1,624 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-06-29",
+    "generated_at": "2026-06-29T07:00:00+09:00",
+    "mode": 3,
+    "investigation_period": {
+      "from": "2026-06-28T07:00:00+09:00",
+      "to": "2026-06-29T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [
+    {
+      "cve_id": "CVE-2026-48558",
+      "product": "SimpleHelp Remote Support Software",
+      "vendor": "SimpleHelp Ltd.",
+      "affected_versions": "v5.5.15 以下（OIDC認証を有効化した構成）",
+      "priority": "critical",
+      "cvss_v3": 10.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": ["CWE-287"],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "v5.5.16",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "axis1_score": 18,
+      "axis2_score": 6,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-06-29",
+          "description": "CVE-2026-48558悪用によるDjinn Stealerの展開が確認された。AI開発者認証情報・MCPコンフィグファイル・クラウドAPI認証情報を標的とするステルス型インフォスティーラー。"
+        },
+        {
+          "source": "Horizon3.ai",
+          "date": "2026-06-29",
+          "description": "OIDC認証バイパスのPoCを公開。CVSSv3 10.0の最高スコアが確定。"
+        },
+        {
+          "source": "HelpNetSecurity",
+          "date": "2026-06-29",
+          "description": "SimpleHelpがv5.5.16パッチをリリース。14,000台以上のSimpleHelpサーバーが露出状態にあることを報告。"
+        }
+      ],
+      "overview": "SimpleHelp リモートサポートソフトウェア v5.5.15 以下に CVSSv3 10.0 の認証バイパス脆弱性が発見され、2026-06-29 に実悪用が確認された。OIDC 認証が有効な環境において攻撃者は任意のテクニシャンアカウントとして認証なしでログイン可能（CWE-287）。攻撃者はこの脆弱性を悪用して Djinn Stealer を展開し、Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタント設定ファイル・MCP コンフィグ・SSH キー・クラウドプロバイダー認証情報・Docker シークレット・Terraform 設定を窃取する。Windows・macOS・Linux のクロスプラットフォームに対応。14,000 台以上の SimpleHelp サーバーがインターネット上に露出しており、MSP・IT サービス事業者の顧客環境が広範に危険にさらされている。",
+      "attack_flow": [
+        { "step": 1, "description": "OIDC 設定を持つ SimpleHelp v5.5.15 以下の /api/authenticate エンドポイントへ細工したリクエストを送信し、認証バイパスにより任意のテクニシャンアカウントでセッションを確立する" },
+        { "step": 2, "description": "取得したテクニシャン権限を使用してターゲットエンドポイントに Djinn Stealer を展開し、AI 開発ツール設定ファイル（~/.claude/config.json・Cline/OpenCode/Kilo 設定）・SSH 秘密鍵・クラウド API キー（AWS/GCP/Azure）・MCP サーバー設定・Docker シークレット・Terraform 認証情報を収集する" },
+        { "step": 3, "description": "窃取した認証情報を C2 サーバーへ外部送信し、AI API キーを悪用して被害者の AI サービス費用を不正に消費（LLMjacking）、または取得したクラウド認証情報でインフラへの横展開を実施する" }
+      ],
+      "temp_mitigation": [
+        "SimpleHelp を v5.5.16 以上へ即時アップグレードする",
+        "アップグレードが即時困難な場合は OIDC 認証機能を一時的に無効化する",
+        "SimpleHelp 管理コンソールで全テクニシャンアカウントを監査し、未知の OIDC 経由セッション・不審なアカウントを削除する",
+        "エンドポイント上の AI ツール設定ファイル（.claude/config.json・cline/settings.json・.ssh/id_* 等）・クラウド認証情報ファイル（~/.aws/credentials・~/.config/gcloud/等）を確認し侵害の痕跡を調査する",
+        "ネットワーク監視で SimpleHelp ポート（TCP 443/80）から外部への大量データ送信がないか確認する"
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": ["djinn_stealer"]
+      },
+      "monitoring": {
+        "description": "SimpleHelp 管理ログ・エンドポイント EDR ログ・ネットワークフローログを監視対象とし、OIDC 認証バイパスと Djinn Stealer のファイル収集活動を検知する",
+        "splunk_spl": [
+          "index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip | where count > 5",
+          "index=endpoint_logs (file_path=\"*/.claude/config*\" OR file_path=\"*/.ssh/id_*\" OR file_path=\"*/.aws/credentials*\") action=read | stats count by host, user, file_path | where count > 10"
+        ],
+        "detection_notes": "短時間に複数の OIDC ログインを試みる同一 IP・異なる account を検知した場合、CVE-2026-48558 の悪用試行と判断する。AI 設定ファイルへの大量アクセスは Djinn Stealer のスキャン活動を示す。"
+      },
+      "references": [
+        { "url": "https://www.bleepingcomputer.com/news/security/simplehelp-cve-2026-48558-oidc-bypass-djinn-stealer/", "title": null, "language": "en", "source": "BleepingComputer" },
+        { "url": "https://www.horizon3.ai/attack-research/cve-2026-48558-simplehelp-oidc/", "title": null, "language": "en", "source": "Horizon3.ai" },
+        { "url": "https://helpnetsecurity.com/2026/06/29/simplehelp-v5516-patches-cve-2026-48558/", "title": null, "language": "en", "source": "HelpNetSecurity" }
+      ],
+      "sector_impact": ["it", "professional_services", "manufacturing", "finance"],
+      "region_impact": ["global"],
+      "exploited_by": [],
+      "report_section": "zero_day_special"
+    }
+  ],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-46817",
+      "product": "Oracle E-Business Suite (EBS) - Payments / File Transmission",
+      "vendor": "Oracle",
+      "affected_versions": "Oracle EBS 12.2.3 〜 12.2.15",
+      "priority": "critical",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "2026年5月 Critical Patch Update Supplement (CSPU) 適用済みバージョン",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "axis1_score": 12,
+      "axis2_score": 6,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-06-28",
+          "description": "CVE-2026-46817 の実悪用が 6 月 27〜28 日に確認された。C2 IP アドレス 45.84.137.125 が特定された。"
+        },
+        {
+          "source": "CybersecurityNews",
+          "date": "2026-06-28",
+          "description": "Oracle EBS Payments / File Transmission モジュールの CVSSv3 9.8 脆弱性の詳細分析と悪用確認を報告。"
+        }
+      ],
+      "overview": "Oracle E-Business Suite（EBS）12.2.3〜12.2.15 の Oracle Payments / File Transmission モジュールに CVSSv3 9.8 の重大な脆弱性 CVE-2026-46817 が発見され、2026 年 6 月 27〜28 日に実悪用が確認された。パッチは 2026 年 5 月の CSPU で提供済みだが、未適用の組織が標的となっている。C2 IP アドレスとして 45.84.137.125 が確認されており、攻撃者は Oracle EBS の /OA_HTML/ibytransmit エンドポイントを経由してファイルの読み書きまたは遠隔コード実行を実行する。PoC の公開は確認されておらず、CISA KEV 未登録だが悪用を確認した複数ソースが対応を推奨している。財務会計・ERP 系の企業インフラが主要な標的。",
+      "attack_flow": [
+        { "step": 1, "description": "インターネット公開された Oracle EBS 12.2.x サーバーの /OA_HTML/ibytransmit エンドポイントへ認証なしで悪意ある POST リクエストを送信する（CVE-2026-46817）" },
+        { "step": 2, "description": "File Transmission モジュールの入力検証不備を悪用し、サーバー上の機密ファイルの読み取り・上書き、またはリモートコード実行を実施する" },
+        { "step": 3, "description": "C2 サーバー（45.84.137.125）との接続を確立し、財務データ・支払い情報・内部設定ファイルを窃取する" }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": true,
+        "ips": ["45.84.137.125"],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Oracle EBS Web アクセスログを監視し、/OA_HTML/ibytransmit への異常な POST リクエストと C2 IP への通信を検知する",
+        "splunk_spl": [
+          "index=oracle_ebs_logs request_path=\"/OA_HTML/ibytransmit\" method=POST | stats count by src_ip, user_agent | where count > 3",
+          "index=network_logs dest_ip=\"45.84.137.125\" | stats count by src_ip, dest_port | sort -count"
+        ],
+        "detection_notes": "外部 IP から /OA_HTML/ibytransmit への POST は正常運用では稀。C2 IP 45.84.137.125 への通信は即時インシデント対応を開始する。"
+      },
+      "references": [
+        { "url": "https://www.bleepingcomputer.com/news/security/oracle-ebs-cve-2026-46817-active-exploitation/", "title": null, "language": "en", "source": "BleepingComputer" },
+        { "url": "https://cybersecuritynews.com/oracle-ebs-cve-2026-46817/", "title": null, "language": "en", "source": "CybersecurityNews" }
+      ],
+      "sector_impact": ["finance", "government", "manufacturing", "professional_services"],
+      "region_impact": ["global"],
+      "exploited_by": [],
+      "report_section": "reference_b"
+    }
+  ],
+  "apt_main": [
+    {
+      "group_name": "StrikeShark",
+      "aliases": ["SharkLoader"],
+      "nation_state": "CN",
+      "attribution_confidence": "low",
+      "campaign_id": "StrikeShark-2026-SharkLoaderDiplomacy",
+      "activity_type": ["new_malware", "active_campaign"],
+      "motivation": "espionage",
+      "first_seen": "2026-06-24",
+      "last_seen": "2026-06-26",
+      "targets": {
+        "sectors": ["government", "professional_services", "it"],
+        "regions": ["Southeast Asia", "East Asia", "Middle East", "South America", "Southeast Europe", "South Asia"],
+        "countries": ["ID", "TW", "HK", "LB", "SY", "CO", "MK", "NP", "RS"]
+      },
+      "malware": [
+        {
+          "name": "SharkLoader",
+          "type": "dropper",
+          "language": null,
+          "delivery": ["dll_sideloading"],
+          "persistence": ["service", "registry"],
+          "c2_protocol": ["https"]
+        },
+        {
+          "name": "Cobalt Strike Beacon",
+          "type": "backdoor",
+          "language": null,
+          "delivery": ["shellcode"],
+          "persistence": ["service"],
+          "c2_protocol": ["https"]
+        }
+      ],
+      "axis_p_score": 8,
+      "axis_q_score": 7,
+      "changes_24h": [
+        {
+          "source": "Kaspersky GReAT",
+          "date": "2026-06-24",
+          "description": "初報: SharkLoader カスタムドロッパーを使用した新規中国語話者系 APT キャンペーンを詳細技術分析とともに公開"
+        },
+        {
+          "source": "The Hacker News",
+          "date": "2026-06-26",
+          "description": "Kaspersky レポートを引用し、インドネシア・台湾・香港等の外交・政府機関への広範なキャンペーン展開を報道"
+        }
+      ],
+      "overview": "Kaspersky GReAT が 2026-06-24 に公開した分析によると、中国語話者系 APT（帰属信頼度: 低）が新規カスタムドロッパー SharkLoader と Cobalt Strike Beacon を組み合わせた諜報活動キャンペーンを展開している。初期侵入には CVE-2021-26855（Exchange Server SSRF）・CVE-2023-32315（Openfire 認証バイパス）・CVE-2024-36401（GeoServer RCE）を悪用。SystemSettings.dll を DLL サイドローディングにより実行し、SharkLoader が Cobalt Strike Beacon をメモリ上で展開する。ポスト侵害では LSASS ダンプ・NTDS 抽出による認証情報窃取、FScan を用いた内部ネットワークスキャン、Searchall・Pillager による機密ファイル探索を実施。標的はインドネシア外交機関・台湾政府機関・香港/レバノン/シリア/コロンビア/北マケドニア/ネパール/セルビアのソフトウェア開発会社に及ぶ。",
+      "attack_flow": [
+        { "step": 1, "description": "インターネット公開されたサーバー（Exchange・Openfire・GeoServer）に CVE-2021-26855/CVE-2023-32315/CVE-2024-36401 を悪用して初期アクセスを確立する" },
+        { "step": 2, "description": "SystemSettings.exe をおとりとして起動し、同ディレクトリに配置した悪意ある SystemSettings.dll を DLL サイドローディングで実行。SharkLoader が Cobalt Strike Beacon をメモリ内に展開し永続化する" },
+        { "step": 3, "description": "LSASS ダンプ・NTDS 抽出で認証情報を大量取得し、FScan/Searchall/Pillager で内部偵察を実施。機密文書・外交通信・知的財産を C2 へ外部送信する" }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "CVE-2021-26855 (Exchange Server SSRF)・CVE-2023-32315 (Openfire 認証バイパス)・CVE-2024-36401 (GeoServer RCE) を初期侵入に使用（Kaspersky GReAT 明示）"
+        },
+        {
+          "mitre_id": "T1574.002",
+          "name": "DLL Side-Loading",
+          "implementation": "SystemSettings.exe + 悪意ある SystemSettings.dll による DLL サイドローディングで SharkLoader を実行（Kaspersky GReAT 明示）"
+        },
+        {
+          "mitre_id": "T1003.001",
+          "name": "LSASS Memory",
+          "implementation": "LSASS プロセスメモリをダンプして平文パスワード・NTLM ハッシュを取得（Kaspersky GReAT 明示）"
+        },
+        {
+          "mitre_id": "T1003.003",
+          "name": "NTDS",
+          "implementation": "ドメインコントローラーの NTDS.dit を抽出して Active Directory 全認証情報を取得（Kaspersky GReAT 明示）"
+        },
+        {
+          "mitre_id": "T1219",
+          "name": "Remote Access Tools",
+          "implementation": "Cobalt Strike Beacon を C2 フレームワークとして使用（Kaspersky GReAT 明示）"
+        },
+        {
+          "mitre_id": "T1083",
+          "name": "File and Directory Discovery",
+          "implementation": "FScan（内部ネットワークスキャン）・Searchall（ファイル検索）・Pillager（データ収集ツール）を展開（Kaspersky GReAT 明示）"
+        }
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": ["SystemSettings.dll", "SharkLoader"]
+      },
+      "recommended_actions": "Exchange Server・Openfire・GeoServer の CVE-2021-26855/CVE-2023-32315/CVE-2024-36401 のパッチ適用状況を確認する。SystemSettings.exe のサイドロードを検知するために EDR でのプロセス起動とロードされた DLL の署名を監視する。外交・政府機関ネットワークでの LSASS アクセスと NTDS 抽出の監視を強化する。",
+      "splunk_spl": [
+        "index=endpoint_logs process_name=\"SystemSettings.exe\" | join host [search index=endpoint_logs event_type=dll_load image_path=\"*SystemSettings.dll*\" NOT image_company=\"Microsoft*\"] | stats count by host, user, image_path",
+        "index=endpoint_logs process_name=\"lsass.exe\" event_type=process_access access_rights=0x1fffff | stats count by src_process, host | where count > 1"
+      ],
+      "detection_notes": "Microsoft 署名なしの SystemSettings.dll ロードは即時調査対象。LSASS への完全アクセス権限（0x1FFFFF）はダンプツールの典型的挙動。FScan・Pillager のファイル名ベースの検知も有効。",
+      "references": [
+        { "url": "https://securelist.com/strikeshark-sharkloader-apt-campaign/", "title": null, "language": "en", "source": "Kaspersky GReAT" },
+        { "url": "https://thehackernews.com/2026/06/strikeshark-apt-sharkloader-cobalt-strike.html", "title": null, "language": "en", "source": "The Hacker News" },
+        { "url": "https://helpnetsecurity.com/2026/06/26/strikeshark-apt-diplomatic-targets/", "title": null, "language": "en", "source": "Help Net Security" }
+      ],
+      "related_cves": ["CVE-2021-26855", "CVE-2023-32315", "CVE-2024-36401"],
+      "report_section": "apt_main"
+    }
+  ],
+  "apt_notable": [],
+  "forecasts": [
+    {
+      "forecast_number": 1,
+      "title": "SimpleHelp CVE-2026-48558 の CISA KEV 初回追加に備えた未パッチ環境の緊急確認",
+      "tier": 1,
+      "confidence": "medium",
+      "confidence_numeric": 0.5,
+      "framing": "defensive_action",
+      "outcome_channel": "E1",
+      "window_hours": 72,
+      "forecast_class": "fast_72h",
+      "forecast_class_rationale": "CVSS 10.0 の実悪用確認済み CVE に対する CISA KEV 初回追加は過去の類似事例（CVE-2024-40711 等）で 24〜72 時間以内に実施されており fast_72h に割当",
+      "root": {
+        "evidence": "BleepingComputer/Horizon3.ai/HelpNetSecurity 2026-06-29: CVE-2026-48558（CVSS 10.0・SimpleHelp OIDC 認証バイパス）の実悪用が Djinn Stealer 展開とともに確認された。14,000 台以上が露出中。v5.5.16 パッチリリース済み。",
+        "past_patterns": "CVSS 9.5 以上かつ実悪用確認済みの CVE は典型的に CISA が 24〜72 時間以内に KEV に追加している。2024 年の Veeam Backup CVE-2024-40711（CVSS 9.8）は悪用確認から 2 日後に KEV 追加。",
+        "threat_intel": "14,000 台超の露出 SimpleHelp サーバーが Djinn Stealer の標的となっており、AI 開発者コミュニティへの影響が拡大中。MSP 経由での大規模二次被害リスクが高い。"
+      },
+      "anchor": {
+        "epss_score": null,
+        "epss_percentile": null,
+        "epss_model_date": null,
+        "kev_registered": false,
+        "ssvc_decision": "Act",
+        "ssvc_automatable": "yes"
+      },
+      "kev_snapshot": {
+        "date_added": null,
+        "ransomware_flag": null,
+        "reference_set": []
+      },
+      "estimated_part": "EPSS パーセンタイルは取得不能（新規 CVE）のため定量ゲート D（KEV AND EPSS%ile≥0.95 AND SSVC=Act）が完全充足できず確度: 中を適用。KEV 未登録だが SSVC=Act かつ Automatable=yes の実悪用確認済みケースとして T1 予報。（推測: EPSS は 0.95 パーセンタイル以上と推定されるが確認不能）",
+      "early_warning_signals": "CISA Known Exploited Vulnerabilities カタログ（cisa.gov/known-exploited-vulnerabilities-catalog）の更新確認で CVE-2026-48558 の dateAdded フィールドの出現を監視する",
+      "hit_criteria": "CISA が CVE-2026-48558 を Known Exploited Vulnerabilities カタログに初回追加した場合（dateAdded が 2026-06-29 以降の日付と一致）。CISA 以外の機関の KEV 相当リストへの追加・既存 KEV エントリの更新は的中とみなさない。",
+      "deadline_date": "2026-07-02",
+      "related_cves": ["CVE-2026-48558"],
+      "related_apt_campaigns": []
+    },
+    {
+      "forecast_number": 2,
+      "title": "Oracle EBS CVE-2026-46817 悪用キャンペーンの追加 IOC 公開への備え",
+      "tier": 2,
+      "confidence": "medium",
+      "confidence_numeric": 0.5,
+      "framing": "defensive_action",
+      "outcome_channel": "E2",
+      "window_hours": 72,
+      "forecast_class": "fast_72h",
+      "forecast_class_rationale": "実悪用確認済み CVE に対する競合ベンダーの独立 IOC 公開は過去パターンで初報後 24〜72 時間以内が典型。BleepingComputer 初報（2026-06-28）からカウント開始。",
+      "root": {
+        "evidence": "BleepingComputer/CybersecurityNews 2026-06-28: CVE-2026-46817（CVSS 9.8・Oracle EBS Payments/File Transmission）実悪用確認。C2 IP 45.84.137.125 が特定されたが公開 IOC は 1 件のみ。",
+        "past_patterns": "Oracle EBS の重大脆弱性が実悪用確認された際、Mandiant・Trend Micro・CrowdStrike・CISA が 24〜72 時間以内に追加 IOC・インジケーターを公開する傾向がある。",
+        "threat_intel": "現在確認されている C2 IP（45.84.137.125）以外の攻撃インフラが存在する可能性が高い。Oracle EBS は財務・ERP システムであり標的の多様性からマルチ C2 運用が推定される。"
+      },
+      "anchor": {
+        "epss_score": null,
+        "epss_percentile": null,
+        "epss_model_date": null,
+        "kev_registered": false,
+        "ssvc_decision": "Act",
+        "ssvc_automatable": "yes"
+      },
+      "kev_snapshot": {
+        "date_added": null,
+        "ransomware_flag": null,
+        "reference_set": []
+      },
+      "estimated_part": "追加 IOC 公開は過去パターンから高確度で推測されるが、今回は単一の初期レポートのみのため確実性に留保がある。（推測: 72 時間以内にセキュリティベンダーが独立した IOC 拡張レポートを公開する可能性が中程度）",
+      "early_warning_signals": "Mandiant・CrowdStrike・Trend Micro・CISA のセキュリティアドバイザリ・ブログで CVE-2026-46817 または Oracle EBS File Transmission に関する新規投稿を監視する",
+      "hit_criteria": "セキュリティベンダー（Mandiant・CrowdStrike・Trend Micro・CISA・NSA のいずれか）が CVE-2026-46817 の悪用に関連する新規 IOC（45.84.137.125 以外の C2 IP アドレス・ファイルハッシュ・URL）を 2026-07-02 07:00 JST までに初回公開した場合。45.84.137.125 を再掲するのみの記事は的中とみなさない。",
+      "deadline_date": "2026-07-02",
+      "related_cves": ["CVE-2026-46817"],
+      "related_apt_campaigns": []
+    }
+  ],
+  "ai_attacks_main": [
+    {
+      "attack_id": "AI-2026-06-29-001",
+      "title": "Djinn Stealer: CVE-2026-48558 悪用による AI 開発者認証情報・MCP コンフィグ窃取",
+      "category": "C",
+      "subcategory": "C3",
+      "attacker_type": "criminal_org",
+      "adoption_triggers": ["Q", "R"],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": ["it", "professional_services"],
+        "regions": ["global"],
+        "countries": []
+      },
+      "damage_scale": "14,000 台以上の SimpleHelp サーバーが潜在的露出対象。AI 開発者認証情報の窃取被害組織数は不明（調査継続中）",
+      "burst_count": 3,
+      "burst_status": "threshold_met",
+      "axis_x_score": 12,
+      "axis_y_score": 8,
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-06-29",
+          "description": "CVE-2026-48558 悪用で展開される Djinn Stealer が Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタントの設定ファイルと MCP サーバー設定を標的とすることが初報"
+        }
+      ],
+      "overview": "Djinn Stealer は CVE-2026-48558（SimpleHelp OIDC 認証バイパス・CVSS 10.0）を悪用してエンドポイントに展開される新規のクロスプラットフォーム型インフォスティーラーで、AI 開発者の認証情報と MCP（Model Context Protocol）コンフィグファイルを主要標的とする。Windows・macOS・Linux に対応し、Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタントの設定ファイル（API キーを含む）・MCP サーバー設定・SSH 秘密鍵・AWS/GCP/Azure のクラウドプロバイダー認証情報・Docker シークレット・Terraform 設定ファイルを収集する。窃取された AI API キーは LLMjacking（被害者コストでの不正 API 利用）または AI システムへの不正アクセスに転用される可能性がある。MSP・IT サービス事業者の SimpleHelp 展開環境を経由することで、顧客組織の AI 開発環境が広範に侵害される。",
+      "attack_flow": [
+        { "step": 1, "description": "攻撃者は CVE-2026-48558 を悪用して SimpleHelp サーバーに認証なしでテクニシャン権限でログインする" },
+        { "step": 2, "description": "テクニシャン権限で接続中のエンドポイントに Djinn Stealer を展開し、AI ツール設定ファイル（~/.claude/config.json・Cline/OpenCode 設定・MCP コンフィグ）・SSH キー・クラウド認証情報を網羅的に収集する" },
+        { "step": 3, "description": "収集した認証情報を C2 へ送信し、窃取した AI API キーを LLMjacking または標的組織の AI システムへの継続的不正アクセスに悪用する" }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "AI ツール設定ディレクトリ（~/.claude/・~/.config/claude/等）への異常な読み取りアクセス（複数ファイルを短時間に一括スキャン）",
+          "SSH キーディレクトリ（~/.ssh/）の秘密鍵ファイルへのアクセス（プロセスが ssh-agent 以外の場合）",
+          "クラウド認証情報ファイル（~/.aws/credentials・~/.config/gcloud/）へのアクセスが通常のアプリケーション以外のプロセスから発生"
+        ]
+      },
+      "monitoring": {
+        "description": "EDR/ファイル整合性監視（FIM）・エンドポイントログを使用し AI 設定ファイルへの異常アクセスと SimpleHelp ログを相関分析する",
+        "splunk_spl": [
+          "index=endpoint_logs (file_path=\"*/.claude/*\" OR file_path=\"*/.ssh/id_*\" OR file_path=\"*/.aws/credentials*\" OR file_path=\"*/mcp*.json\") NOT process_name IN (\"claude\",\"ssh-agent\",\"aws\") | stats count by host, process_name, user, file_path | where count > 5"
+        ],
+        "detection_notes": "AI ツール設定・SSH キー・クラウド認証情報への正規プロセス以外からの一括アクセスは Djinn Stealer 活動の指標。SimpleHelp ログと照合して侵入経路を確認する。"
+      },
+      "references": [
+        { "url": "https://www.bleepingcomputer.com/news/security/djinn-stealer-targets-ai-developer-credentials-mcp-configs/", "title": null, "language": "en", "source": "BleepingComputer" },
+        { "url": "https://www.horizon3.ai/attack-research/cve-2026-48558-simplehelp-oidc/", "title": null, "language": "en", "source": "Horizon3.ai" },
+        { "url": "https://helpnetsecurity.com/2026/06/29/simplehelp-v5516-patches-cve-2026-48558/", "title": null, "language": "en", "source": "HelpNetSecurity" }
+      ],
+      "report_section": "ai_attacks_main"
+    }
+  ],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-06-29-001",
+      "title": "SimpleHelp CVE-2026-48558: OIDC 認証バイパス緊急パッチ適用と侵害確認",
+      "perspective": "zeroday",
+      "adoption_triggers": ["β", "γ", "η"],
+      "priority": "high",
+      "product_or_service": "SimpleHelp Remote Support Software",
+      "targets": {
+        "sectors": ["it", "professional_services"],
+        "regions": ["global"]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer / Horizon3.ai",
+          "date": "2026-06-29",
+          "description": "CVE-2026-48558 実悪用確認・Djinn Stealer 展開・v5.5.16 パッチリリース。14,000 台超露出中。"
+        }
+      ],
+      "overview": "SimpleHelp の OIDC 認証バイパス脆弱性（CVE-2026-48558・CVSS 10.0）が実悪用され、Djinn Stealer が展開されている。MSP・IT サービス事業者が SimpleHelp を使用している場合、顧客環境の AI 開発者認証情報・クラウド認証情報が広範に侵害される可能性がある。今日中の対応が必須。",
+      "recommended_actions": [
+        "SimpleHelp を v5.5.16 以上へ即時アップグレードする（最優先）",
+        "アップグレードが即時困難な場合は OIDC 認証を一時的に無効化し、通常の認証方式に切り替える",
+        "SimpleHelp 管理コンソールで全テクニシャンアカウントを監査し、OIDC 経由で作成された不明アカウントを削除する",
+        "SimpleHelp に接続した全エンドポイントで AI ツール設定ファイル・SSH キー・クラウド認証情報の侵害確認を実施する（~/.claude/config.json・~/.aws/credentials・~/.ssh/id_* 等）",
+        "侵害が疑われる AI API キー・クラウド認証情報・SSH キーを即時ローテーションする"
+      ],
+      "monitoring": {
+        "description": "SimpleHelp 管理ログ・EDR ログを組み合わせ OIDC 経由の不審ログインと AI 設定ファイルアクセスを監視",
+        "splunk_spl": [
+          "index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip, _time | where count > 3"
+        ],
+        "detection_notes": "短時間での OIDC 認証試行増加または未知ユーザーでの OIDC ログイン成功は即時対応を開始する"
+      },
+      "references": [
+        { "url": "https://www.bleepingcomputer.com/news/security/simplehelp-cve-2026-48558-oidc-bypass-djinn-stealer/", "title": null, "language": "en", "source": "BleepingComputer" }
+      ]
+    },
+    {
+      "rec_id": "SOC-2026-06-29-002",
+      "title": "Oracle EBS CVE-2026-46817: 実悪用確認による C2 ブロックと CSPU 適用確認",
+      "perspective": "cve",
+      "adoption_triggers": ["β", "δ"],
+      "priority": "high",
+      "product_or_service": "Oracle E-Business Suite (EBS) 12.2.x",
+      "targets": {
+        "sectors": ["finance", "government", "manufacturing"],
+        "regions": ["global"]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer / CybersecurityNews",
+          "date": "2026-06-28",
+          "description": "CVE-2026-46817 実悪用開始を確認。C2 IP 45.84.137.125 を特定。Oracle EBS 12.2.3〜12.2.15 が対象。"
+        }
+      ],
+      "overview": "Oracle EBS（Oracle Payments / File Transmission モジュール）の CVE-2026-46817（CVSS 9.8）が 2026 年 6 月 27〜28 日から実悪用されている。2026 年 5 月の CSPU（Critical Patch Update Supplement）で修正済みだが未適用の組織が標的となっている。C2 IP 45.84.137.125 が確認されており、財務データ・支払い情報の窃取が主要目的とみられる。Oracle EBS を外部に公開している組織は今日中に C2 ブロックとパッチ適用状況の確認が必要。",
+      "recommended_actions": [
+        "ファイアウォールで C2 IP アドレス 45.84.137.125 をブロックする（インバウンド・アウトバウンド両方）",
+        "2026 年 5 月 CSPU（Critical Patch Update Supplement）の適用状況を確認し、未適用の場合は即時適用する",
+        "Oracle EBS Web サーバーのアクセスログで /OA_HTML/ibytransmit エンドポイントへの POST リクエストを 6 月 27 日以降に遡り確認する",
+        "Oracle EBS をインターネットに直接公開している場合は WAF またはリバースプロキシで /OA_HTML/ibytransmit への外部アクセスを制限する"
+      ],
+      "monitoring": {
+        "description": "Oracle EBS Web サーバーログ・ネットワークフローログで悪用エンドポイントへのアクセスと C2 通信を監視",
+        "splunk_spl": [
+          "index=network_logs (dest_ip=\"45.84.137.125\" OR src_ip=\"45.84.137.125\") | stats count by src_ip, dest_ip, dest_port | sort -count"
+        ],
+        "detection_notes": "C2 IP との通信を検知した場合はただちにインシデント対応を開始し、Oracle EBS サーバーの forensic 取得を実施する"
+      },
+      "references": [
+        { "url": "https://www.bleepingcomputer.com/news/security/oracle-ebs-cve-2026-46817-active-exploitation/", "title": null, "language": "en", "source": "BleepingComputer" }
+      ]
+    },
+    {
+      "rec_id": "SOC-2026-06-29-003",
+      "title": "Cisco UCM CVE-2026-20230: FCEB 期限（2026-06-28）経過確認とウェブシェル点検",
+      "perspective": "cve",
+      "adoption_triggers": ["γ"],
+      "priority": "medium",
+      "product_or_service": "Cisco Unified Communications Manager (UCM)",
+      "targets": {
+        "sectors": ["government", "critical_infrastructure"],
+        "regions": ["US"]
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV",
+          "date": "2026-06-28",
+          "description": "Cisco UCM CVE-2026-20230 の FCEB 機関向け対応期限（2026-06-28）が昨日経過した。"
+        }
+      ],
+      "overview": "Cisco Unified Communications Manager（UCM）の CVE-2026-20230 に対する CISA FCEB 期限（連邦民間行政府機関の対応期限）が 2026-06-28 に経過した。FCEB 機関は昨日時点でパッチ適用が完了している必要があるが、残存する未パッチ環境でウェブシェルの設置等の持続的侵害が発生している可能性がある。/platform-services/axis2-web/ パスへの不審なアクセス確認が推奨される。",
+      "recommended_actions": [
+        "Cisco UCM のパッチ適用状況を確認し、FCEB 期限（2026-06-28）までに適用できなかった場合は即時適用する",
+        "/platform-services/axis2-web/ パスへのアクセスログ（6 月 15 日以降）を調査し、不審なウェブシェルアクセスを確認する",
+        "Cisco UCM の管理コンソールで未知のアカウント・サービスの作成が行われていないか確認する"
+      ],
+      "monitoring": {
+        "description": "Cisco UCM の Web アクセスログで axis2-web パスへのアクセスを確認",
+        "splunk_spl": [
+          "index=cisco_ucm_logs request_path=\"*/axis2-web/*\" NOT user IN (\"admin\",\"ccmadmin\") | stats count by src_ip, request_path, user | sort -count"
+        ],
+        "detection_notes": "axis2-web パスへの管理者以外からのアクセスはウェブシェルの設置・利用を示す可能性がある"
+      },
+      "references": [
+        { "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog", "title": null, "language": "en", "source": "CISA KEV" }
+      ]
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-20230",
+        "product": "Cisco Unified Communications Manager (UCM)",
+        "reason": "already_reported",
+        "reason_detail": "2026-06-25 既報。FCEB 期限経過（2026-06-28）は Section 4 SOC 推奨情報で対応",
+        "reported_date": "2026-06-25"
+      },
+      {
+        "cve_id": "CVE-2026-44815",
+        "product": "Windows DHCP Server",
+        "reason": "no_change",
+        "reason_detail": "2026 年 6 月 Patch Tuesday 既報。24 時間窓内に新たな悪用・PoC 公開の変化なし",
+        "reported_date": "2026-06-18"
+      },
+      {
+        "cve_id": "CVE-2025-32711",
+        "product": "Microsoft Teams (EchoLeak)",
+        "reason": "no_change",
+        "reason_detail": "2025 年 6 月開示・2026 年 5 月パッチ提供済み。24 時間窓内に新たな変化なし",
+        "reported_date": "2026-06-18"
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "KDDI-2026-EmailSystemBreach",
+        "group_name": "不明（帰属未確定）",
+        "reason": "already_reported",
+        "reason_detail": "2026-06-23 既報。24 時間窓内に新たな変化なし",
+        "reported_date": "2026-06-23"
+      },
+      {
+        "campaign_id": "OperationEndgame-2026-AmaStealC",
+        "group_name": "不明",
+        "reason": "out_of_window",
+        "reason_detail": "Operation Endgame は 2026-06-15〜19 の実施・2026-06-24 公表。24 時間窓外の旧情報",
+        "reported_date": null
+      }
+    ],
+    "ai_attacks": [],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 1,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 1,
+      "excluded": 3,
+      "total_processed": 5
+    },
+    "apt": {
+      "main": 1,
+      "notable": 0,
+      "excluded": 2,
+      "total_processed": 3
+    },
+    "ai_attacks": {
+      "main": 1,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 0,
+      "total_processed": 1,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 1
+      }
+    },
+    "soc_recommendations": {
+      "high": 2,
+      "medium": 1,
+      "low": 0,
+      "excluded": 0,
+      "total_processed": 3,
+      "perspective_breakdown": {
+        "cve": 2,
+        "zeroday": 1,
+        "ai_attack": 0
+      }
+    }
+  }
+}
