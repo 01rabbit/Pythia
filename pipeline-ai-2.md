@@ -173,6 +173,8 @@ AI攻撃パイプラインは CVE/APT と同じ日次24時間窓で実行する�
 - Temporal Burst Filtering（pipeline-ai-1.md のノイズフィルタ参照）を適用する
 
 ### 既報管理ファイル
-reported-ai-attacks.md に以下フォーマットで追記する:
+reported-ai-attacks.md は追記専用ではなく状態更新で管理する。
 
-インシデント名 / CVE等 | カテゴリ | 報告日(YYYY-MM-DD) | 採用理由
+- キー: `インシデント名 / CVE等`
+- 更新項目: `最終状態` / `最終更新日` / `継続監視` / `備考`
+- 新規インシデントのみ新しい行を追加する
