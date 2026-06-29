@@ -86,6 +86,29 @@ baseline が未確立（stddev = 0 or null）の Technique は「ベースライ
 
 この推定は「（推測）」として必ず明記すること。
 
+### Step C': 認証情報・トークン連鎖予報
+
+当日 observations に以下のいずれかが観測された場合は、認証情報・トークンの二次利用を
+48〜72時間の予報候補として別枠評価してよい。
+
+- `T1555`（Credentials from Password Stores）を含む observation
+- `T1528`（Steal Application Access Token）を含む observation
+- `T1539`（Steal Web Session Cookie）を含む observation
+- 大規模認証情報漏えい・フィッシングキャンペーン検出の observation
+
+連鎖予報テンプレート:
+
+- Evidence: `流出 / 窃取イベントの observation_id`
+- 予報内容: `窃取された認証情報・トークンが48〜72時間以内に再利用される可能性がある`
+- 的中判定条件: `クレデンシャルスタッフィング攻撃増加・横展開・別組織での不正ログイン観測`
+- 確度上限: `中`
+- 注記: `（推測）認証情報の二次利用は過去事例に基づく経験則。パスワード変更後もセッショントークンが残存する場合あり。` を必ず付与
+- 関連Technique: `T1078`（Valid Accounts）、`T1550`（Use Alternate Authentication Material）を参考として記録してよい
+  ただし推測であり、根拠あるTechnique紐付けとしては記録しない
+
+法執行・摘発に関する observation がある場合も、流出資産の継続利用予報は維持してよい。
+C2摘発 observation には「摘発はリスク低下であって終息ではない」と注記する。
+
 ### Step D: 予報の絞り込みと Tier 判定
 
 `pipeline-forecast-verification.md` のルール（M1〜M4 含む）に完全準拠する。
