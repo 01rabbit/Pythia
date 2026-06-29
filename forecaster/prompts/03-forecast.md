@@ -27,6 +27,28 @@
 
 ## 判定ロジック（4ステップ）
 
+### Step A': KEV登録 + 実確認イベント起点
+
+当日 observations に `exploitation_stage: "kev_listed"` または
+`exploitation_stage: "active_exploitation"` を含む CVE があり、かつ以下のいずれか1つが
+同日 observations または当日ニュースソースで実確認されている場合のみ予報候補とする。
+
+- 対象製品の新規スキャン増加・悪用試行がCERT/SIEMレポートで確認されている
+- 新規C2インフラ・IOC（IP / ドメイン / ハッシュ）が公開されている
+- PoC公開後48時間以内の攻撃加速報告が確認されている
+
+`KEV` 単体の場合は予報を生成しない。observation の `tags` に `kev_watch` を追記し、
+翌日以降の観測を待つ。
+
+ベースライン期間が14日未満でも、上記の実確認条件を満たす場合は予報候補として扱う。
+
+KEV起点予報テンプレート:
+
+- Evidence: `CISA KEV登録日: YYYY-MM-DD + 実確認の内容と出典`
+- 的中判定条件: `対象製品への新規スキャン・侵害試行・悪用PoC公開のいずれか（72h以内）`
+- 確度上限: `中`
+- 注記: `（推測）KEV登録後の攻撃加速は過去パターン。個別環境での発生は確認されていない。` を必ず付与
+
 ### Step A: Technique 逸脱スコアの算出
 
 当日 observations の各 Technique 出現件数をカウントし、baseline と比較する。
@@ -69,7 +91,8 @@ baseline が未確立（stddev = 0 or null）の Technique は「ベースライ
 `pipeline-forecast-verification.md` のルール（M1〜M4 含む）に完全準拠する。
 
 - 最大2件
-- T1 > T2 > T3 の優先順
+- T1 > T2（σ≥1.0）> T2（KEV+実確認）> T3 の優先順
+- 同Tier内ではKEV起点を優先
 - T3 は原則「確度: 中」
 - ベースライン逸脱の定量証拠があれば T2 への昇格根拠として使用可能
 
