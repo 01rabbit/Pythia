@@ -161,6 +161,9 @@ KEVスナップショット: [dateAdded / ランサムフラグ / 参照セッ�
 
 - 事実（observations）と推測（次段階予測）を絶対に混在させない。
 - `attack-groups.json` に登録されていないグループの次段階予測は行わない。
+- 地政学シグナル単体での予報生成は禁止する。
+  `geopolitical_signal` を含む observation に加え、同日の独立した技術的観測
+  （IOC公開 / 新規TTP報告 / CERT勧告のいずれか）が揃った場合のみ予報候補とする。
 - ベースライン期間が14日未満の場合、定量逸脱スコアを予報の根拠として使わない。
   その場合は既存パイプライン（pipeline-forecast-verification.md）のルールのみで予報を作成する。
 - `pipeline-forecast-verification.md` の「確度: 高」適用条件・絞り込みルール・的中判定条件の記載義務を必ず遵守する。

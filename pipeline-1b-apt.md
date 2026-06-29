@@ -80,6 +80,41 @@
 
 ---
 
+## 地政学先行指標（Phase 1: NK→Lazarus 先行検証）
+
+### 採用条件
+以下のいずれかが本文に含まれる記事のみ採用する。含まない純軍事ニュースは除外する。
+
+1. 具体的なマルウェア名・C2インフラ・APT技術手法の言及
+2. 暗号資産ウォレット・制裁対象機関の識別子
+3. サイバー部隊名（Lazarus Group / APT38 / Kimsuky 等）
+
+### Phase 1 優先: 北朝鮮→Lazarus連鎖シグナル
+
+- 北朝鮮ITワーカー詐欺・採用詐欺の新規キャンペーン報道
+- 暗号資産窃取（Lazarus / APT38）の新規IOC・キャンペーン報道
+- UN Panel of Experts 報告書の暗号資産窃取セクション
+
+### 収集ソース（地政学）
+
+- Recorded Future Nation-State Reports
+- UN Panel of Experts レポート
+- The Record (`therecord.media`) の北朝鮮・制裁関連記事
+
+### 予報連動ルール
+
+`geopolitical_signal` 単体では予報を生成しない。
+`geopolitical_signal` を含む observation と、同日の独立した技術的観測
+（IOC公開 / CERT勧告 / 新規TTP報告）の両方が揃った場合のみ予報候補とする。
+
+### observation への記録
+
+- `north_korea_nexus`: Phase 1 で最優先
+- `russia_nexus` / `china_nexus` / `iran_nexus`: Phase 2 以降で拡張
+- `geopolitical_unattributed`: 連鎖はあるが国家帰属が明示されていない
+
+---
+
 ## 並び順（次ステップへの引き渡し順）
 
 1. 政府機関による公式帰属・合同勧告（Q）
