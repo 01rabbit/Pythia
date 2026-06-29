@@ -77,6 +77,37 @@ CVE・APT活動・AI攻撃のそれぞれを独立した observation オブジ�
 - CVEの場合: 「[製品名] の [脆弱性種別] 脆弱性 [CVE番号] が実悪用確認された。CVSS [スコア]。」
 - APTの場合: 「[グループ名] が [標的セクター/地域] を対象に [手口の概要] を行ったことが確認された。」
 
+### R8: exploitation_stage の付与ルール
+CVE observation には `exploitation_stage` を必ず付与する。優先順は
+`active_exploitation > kev_listed > poc_public > limited_exploitation > none > unknown`。
+複数に該当する場合は最上位のみ採用する。
+
+| 値 | 付与条件 |
+|----|---------|
+| active_exploitation | 複数の信頼できるソースで実悪用確認。KEV登録済みでも独立確認があればこれを優先 |
+| kev_listed | CISA KEV登録済みで、独立した実悪用確認が取れていない |
+| poc_public | PoC・exploitコードが公開済みで、実悪用は未確認 |
+| limited_exploitation | 特定組織・地域限定の悪用報告 |
+| none | 上記に該当しない理論的脆弱性のみ |
+| unknown | 判断不能。情報源が不明確でハルシネーション回避が必要 |
+
+APT活動・AI攻撃 observation では `exploitation_stage` を省略してよい。
+
+### R9: geopolitical_signal の付与ルール
+APT活動 observation で地政学シグナルを記録する場合のみ `geopolitical_signal` を付与する。
+
+- `north_korea_nexus`: 北朝鮮ITワーカー詐欺、暗号資産窃取、Lazarus系部隊への連鎖が本文で確認できる
+- `russia_nexus` / `china_nexus` / `iran_nexus`: 情報源が当該国家系の連鎖を具体的に示す
+- `geopolitical_unattributed`: 連鎖はあるが国家帰属は明示されていない
+- 根拠が弱い純軍事ニュースや政治ニュースのみでは付与しない
+
+### R10: iocs の defang ルール
+IoC を `iocs` に記録する場合:
+
+- ドメイン・URLは defang 形式（`[.]` など）を推奨する
+- defang形式に変換した場合は `defanged: true` を設定する
+- 単純ブロック非推奨・VPN/プロキシ終端の可能性などがある場合は `note` に理由を記録する
+
 ---
 
 ## 実行手順
@@ -95,4 +126,6 @@ CVE・APT活動・AI攻撃のそれぞれを独立した observation オブジ�
 - [ ] 各 technique に情報源由来の `evidence`（1文）が付いているか（推測付与でないか）
 - [ ] `actor_group` に情報源が明示していないグループ名が入っていないか
 - [ ] `verified_outcome` がすべて `null` になっているか
+- [ ] `confidence: "low"` のエントリで `techniques` が空配列になっているか
+- [ ] CVE observation に `exploitation_stage` が付与されているか
 - [ ] `observation_id` が重複していないか

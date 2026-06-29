@@ -68,6 +68,7 @@ Section 4: SOC推奨情報
 - Mandiant / MSTIC / CrowdStrike / Unit 42 / CISA合同勧告等を横断検索
 - 期間内に P〜W の変化が確認できる活動のみ収集（→ Section 2 へ）
 - `reported-apts.md` と照合し、既報かつ変化なしは除外
+- Europol / FBI IC3 などの法執行・摘発チェックは日次では行わない（週次検証へ移管）
 - 除外基準はフラグ付け（足切りしない）
 
 ### Step 1c: AI攻撃調査（pipeline-ai-1.md に従う）※Step 1 / 1b と並行実行
@@ -142,11 +143,12 @@ Section 4: SOC推奨情報
 - `forecaster/forecasts/daily/YYYY-MM-DD.md`
 
 ### Step 4: ファイル更新・保存・コミット
-- 本日報告したCVE IDを `reported-cves.md` に追記（日付付き）
-- 本日報告したAPT活動を `reported-apts.md` に追記（日付付き）
-  フォーマット: グループ名 | 活動ID/キャンペーン名 | YYYY-MM-DD | 採用理由
-- 本日報告したAI攻撃を `reported-ai-attacks.md` に追記（日付付き）
-  フォーマット: インシデント名/CVE等 | カテゴリ | YYYY-MM-DD | 採用理由
+- 本日報告したCVE IDは `reported-cves.md` の該当行を更新する
+  フォーマット: `CVE-ID` をキーに `exploitation_stage` / `最終更新日` / `継続監視` / `備考` を更新し、新規のみ追加
+- 本日報告したAPT活動は `reported-apts.md` の該当行を更新する
+  フォーマット: `活動ID / キャンペーン名` をキーに `最終状態` / `最終更新日` / `継続監視` / `備考` を更新し、新規のみ追加
+- 本日報告したAI攻撃は `reported-ai-attacks.md` の該当行を更新する
+  フォーマット: `インシデント名 / CVE等` をキーに `最終状態` / `最終更新日` / `継続監視` / `備考` を更新し、新規のみ追加
 - 出力先ディレクトリ `outputs/YYYY-MM-DD/` を作成し、以下6ファイルを保存する:
   1. `YYYY-MM-DD-security-report.json` — Section 1〜4 全データ（必須・基本形式）
   2. `YYYY-MM-DD-security-report.txt` — 全セクション完全版（Section 1〜4）

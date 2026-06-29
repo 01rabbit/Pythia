@@ -34,6 +34,10 @@
 | Elastic Security Labs | elastic.co/security-labs |
 | SentinelLabs | sentinelone.com/labs/ |
 
+注記:
+- Europol / FBI IC3 の法執行・摘発情報は日次収集対象に含めない
+- 法執行チェックは週次検証ステージ（火・木）へ移し、継続影響の確認に使用する
+
 ---
 
 ## 採用条件 P〜W（期間内に1つ以上確認できること）
@@ -74,9 +78,45 @@
 - 使用マルウェア・ツール（判明分のみ）
 - 新規TTP（MITRE ATT&CK ID付き、判明分のみ）
 - 確認済みIOC（IP / ドメイン / ハッシュ、判明分のみ）
+- `law_enforcement_action`: 法執行・摘発イベントが週次検証で確認された場合のみ `true`
 - 優先度タグ: 必須 / 高 / 中 / 低優先度
 - 関連URL（全件保持）
 - 監視SPL候補: 攻撃に関連するログソース名（例: sourcetype=google:gws:admin, access_combined, syslog 等）と検知すべきフィールド・値のヒント（例: name=CREATE_RULE, uri_path=*/help.php 等）。Step 3でSplunk SPLクエリ生成に使用する。
+
+---
+
+## 地政学先行指標（Phase 1: NK→Lazarus 先行検証）
+
+### 採用条件
+以下のいずれかが本文に含まれる記事のみ採用する。含まない純軍事ニュースは除外する。
+
+1. 具体的なマルウェア名・C2インフラ・APT技術手法の言及
+2. 暗号資産ウォレット・制裁対象機関の識別子
+3. サイバー部隊名（Lazarus Group / APT38 / Kimsuky 等）
+
+### Phase 1 優先: 北朝鮮→Lazarus連鎖シグナル
+
+- 北朝鮮ITワーカー詐欺・採用詐欺の新規キャンペーン報道
+- 暗号資産窃取（Lazarus / APT38）の新規IOC・キャンペーン報道
+- UN Panel of Experts 報告書の暗号資産窃取セクション
+
+### 収集ソース（地政学）
+
+- Recorded Future Nation-State Reports
+- UN Panel of Experts レポート
+- The Record (`therecord.media`) の北朝鮮・制裁関連記事
+
+### 予報連動ルール
+
+`geopolitical_signal` 単体では予報を生成しない。
+`geopolitical_signal` を含む observation と、同日の独立した技術的観測
+（IOC公開 / CERT勧告 / 新規TTP報告）の両方が揃った場合のみ予報候補とする。
+
+### observation への記録
+
+- `north_korea_nexus`: Phase 1 で最優先
+- `russia_nexus` / `china_nexus` / `iran_nexus`: Phase 2 以降で拡張
+- `geopolitical_unattributed`: 連鎖はあるが国家帰属が明示されていない
 
 ---
 

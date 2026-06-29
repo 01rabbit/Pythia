@@ -33,6 +33,7 @@ pipeline-1-cve.md のトラック B から渡されたCVE（`section_route: tren
 | BleepingComputer | bleepingcomputer.com |
 | The Hacker News | thehackernews.com |
 | SecurityWeek | securityweek.com |
+| The Record (Recorded Future) | therecord.media |
 | Mandiant Blog | cloud.google.com/blog/topics/threat-intelligence |
 | Rapid7 Blog | rapid7.com/blog |
 | CISA Alerts | cisa.gov/news-events/alerts |

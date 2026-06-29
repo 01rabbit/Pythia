@@ -27,6 +27,28 @@
 
 ## 判定ロジック（4ステップ）
 
+### Step A': KEV登録 + 実確認イベント起点
+
+当日 observations に `exploitation_stage: "kev_listed"` または
+`exploitation_stage: "active_exploitation"` を含む CVE があり、かつ以下のいずれか1つが
+同日 observations または当日ニュースソースで実確認されている場合のみ予報候補とする。
+
+- 対象製品の新規スキャン増加・悪用試行がCERT/SIEMレポートで確認されている
+- 新規C2インフラ・IOC（IP / ドメイン / ハッシュ）が公開されている
+- PoC公開後48時間以内の攻撃加速報告が確認されている
+
+`KEV` 単体の場合は予報を生成しない。observation の `tags` に `kev_watch` を追記し、
+翌日以降の観測を待つ。
+
+ベースライン期間が14日未満でも、上記の実確認条件を満たす場合は予報候補として扱う。
+
+KEV起点予報テンプレート:
+
+- Evidence: `CISA KEV登録日: YYYY-MM-DD + 実確認の内容と出典`
+- 的中判定条件: `対象製品への新規スキャン・侵害試行・悪用PoC公開のいずれか（72h以内）`
+- 確度上限: `中`
+- 注記: `（推測）KEV登録後の攻撃加速は過去パターン。個別環境での発生は確認されていない。` を必ず付与
+
 ### Step A: Technique 逸脱スコアの算出
 
 当日 observations の各 Technique 出現件数をカウントし、baseline と比較する。
@@ -64,12 +86,36 @@ baseline が未確立（stddev = 0 or null）の Technique は「ベースライ
 
 この推定は「（推測）」として必ず明記すること。
 
+### Step C': 認証情報・トークン連鎖予報
+
+当日 observations に以下のいずれかが観測された場合は、認証情報・トークンの二次利用を
+48〜72時間の予報候補として別枠評価してよい。
+
+- `T1555`（Credentials from Password Stores）を含む observation
+- `T1528`（Steal Application Access Token）を含む observation
+- `T1539`（Steal Web Session Cookie）を含む observation
+- 大規模認証情報漏えい・フィッシングキャンペーン検出の observation
+
+連鎖予報テンプレート:
+
+- Evidence: `流出 / 窃取イベントの observation_id`
+- 予報内容: `窃取された認証情報・トークンが48〜72時間以内に再利用される可能性がある`
+- 的中判定条件: `クレデンシャルスタッフィング攻撃増加・横展開・別組織での不正ログイン観測`
+- 確度上限: `中`
+- 注記: `（推測）認証情報の二次利用は過去事例に基づく経験則。パスワード変更後もセッショントークンが残存する場合あり。` を必ず付与
+- 関連Technique: `T1078`（Valid Accounts）、`T1550`（Use Alternate Authentication Material）を参考として記録してよい
+  ただし推測であり、根拠あるTechnique紐付けとしては記録しない
+
+法執行・摘発に関する observation がある場合も、流出資産の継続利用予報は維持してよい。
+C2摘発 observation には「摘発はリスク低下であって終息ではない」と注記する。
+
 ### Step D: 予報の絞り込みと Tier 判定
 
 `pipeline-forecast-verification.md` のルール（M1〜M4 含む）に完全準拠する。
 
 - 最大2件
-- T1 > T2 > T3 の優先順
+- T1 > T2（σ≥1.0）> T2（KEV+実確認）> T3 の優先順
+- 同Tier内ではKEV起点を優先
 - T3 は原則「確度: 中」
 - ベースライン逸脱の定量証拠があれば T2 への昇格根拠として使用可能
 
@@ -138,6 +184,9 @@ KEVスナップショット: [dateAdded / ランサムフラグ / 参照セッ�
 
 - 事実（observations）と推測（次段階予測）を絶対に混在させない。
 - `attack-groups.json` に登録されていないグループの次段階予測は行わない。
+- 地政学シグナル単体での予報生成は禁止する。
+  `geopolitical_signal` を含む observation に加え、同日の独立した技術的観測
+  （IOC公開 / 新規TTP報告 / CERT勧告のいずれか）が揃った場合のみ予報候補とする。
 - ベースライン期間が14日未満の場合、定量逸脱スコアを予報の根拠として使わない。
   その場合は既存パイプライン（pipeline-forecast-verification.md）のルールのみで予報を作成する。
 - `pipeline-forecast-verification.md` の「確度: 高」適用条件・絞り込みルール・的中判定条件の記載義務を必ず遵守する。
