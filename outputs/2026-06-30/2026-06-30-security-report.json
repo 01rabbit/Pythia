@@ -1,0 +1,884 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-06-30",
+    "generated_at": "2026-06-30T07:00:00+09:00",
+    "mode": 3,
+    "investigation_period": {
+      "from": "2026-06-29T07:00:00+09:00",
+      "to": "2026-06-30T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [
+    {
+      "cve_id": "CVE-2026-46817",
+      "product": "Oracle E-Business Suite (EBS) - Payments / File Transmission",
+      "vendor": "Oracle",
+      "affected_versions": "12.2.3〜12.2.15（2026年5月CSPU未適用環境）",
+      "priority": "critical",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": ["CWE-269"],
+      "epss": {
+        "score": 0.00677,
+        "percentile": 0.47625,
+        "model_date": "2026-06-30"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "2026年5月CSPU（Critical Patch Update Supplement）",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "axis1_score": 8,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "SecurityWeek",
+          "date": "2026-06-30",
+          "description": "Defused Cyberのハニーポットで2026-06-27に最初の実悪用観測を確認したと報告。PoC公開前の実悪用として詳報"
+        },
+        {
+          "source": "SecurityAffairs",
+          "date": "2026-06-30",
+          "description": "Oracle EBS Payments/File Transmissionモジュールへの未認証ファイル読み取り試行が継続していることを報告"
+        }
+      ],
+      "overview": "Oracle E-Business Suite（Oracle Payments / File Transmissionコンポーネント）のCVE-2026-46817（CVSS 9.8）はPoC公開前の段階から実悪用が観測されている権限管理不備・認証バイパスの脆弱性で、未認証の攻撃者がHTTPネットワークアクセスのみでOracle Paymentsインスタンスを乗っ取り可能。Defused Cyberのハニーポットは2026年6月27日に単一の発信元から6件の未認証ファイル読み取り試行を観測しており、これはOracleが2026年5月のCritical Patch Update Supplementでパッチを提供してから約6週間後、かつ公開PoCが存在しない時点での実悪用であることが特徴。財務・ERPシステムを狙う標的型の性格が強い。",
+      "attack_flow": [
+        { "step": 1, "description": "攻撃者がOracle EBS Payments/File Transmissionの公開エンドポイントへ未認証のHTTPリクエストを送信する" },
+        { "step": 2, "description": "権限管理不備を悪用してOracle Paymentsインスタンスの制御を奪取し、ファイル読み取り・書き込みを行う" },
+        { "step": 3, "description": "財務・決済データへアクセスし、C2インフラ（45.84.137.125等）へ情報を持ち出す" }
+      ],
+      "temp_mitigation": [
+        "2026年5月CSPU（Critical Patch Update Supplement）を即時適用する",
+        "Oracle EBS Payments / File Transmissionモジュールをインターネットから直接到達不能にする（VPN・IP制限の追加）",
+        "/OA_HTML/ibytransmit 等の関連エンドポイントへのアクセスログを6月27日以降に遡って確認する"
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": ["45.84.137.125"],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Oracle EBS Webサーバーログ・ネットワークフローでの異常アクセス監視",
+        "splunk_spl": [
+          "index=oracle_ebs_logs request_path=\"/OA_HTML/ibytransmit\" method=POST | stats count by src_ip, user_agent | where count > 3",
+          "index=network_logs (dest_ip=\"45.84.137.125\" OR src_ip=\"45.84.137.125\") | stats count by src_ip, dest_ip, dest_port"
+        ],
+        "detection_notes": "未認証ユーザーエージェントからのibytransmitへの連続POSTリクエストは実悪用の強いシグナル。45.84.137.125との通信は即時インシデント対応へ。"
+      },
+      "references": [
+        { "url": "https://www.securityweek.com/exploitation-of-recent-oracle-e-business-suite-vulnerability-begins/", "title": "Exploitation of Recent Oracle E-Business Suite Vulnerability Begins", "language": "en", "source": "SecurityWeek" },
+        { "url": "https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html", "title": "Attackers actively exploit the Oracle E-Business Suite flaw CVE-2026-46817", "language": "en", "source": "SecurityAffairs" },
+        { "url": "https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/", "title": "Oracle E-Business Suite Payments flaw under attack", "language": "en", "source": "Help Net Security" }
+      ],
+      "sector_impact": ["finance", "manufacturing", "government"],
+      "region_impact": ["global", "JP"],
+      "exploited_by": [],
+      "report_section": "zero_day_special"
+    }
+  ],
+  "main_cve": [
+    {
+      "cve_id": "CVE-2026-48558",
+      "product": "SimpleHelp Remote Support Software",
+      "vendor": "SimpleHelp",
+      "affected_versions": "v5.5.15以下（OIDC認証を有効化した構成）",
+      "priority": "critical",
+      "cvss_v3": 10.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": ["CWE-287"],
+      "epss": {
+        "score": 0.01219,
+        "percentile": 0.64882,
+        "model_date": "2026-06-30"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "v5.5.16 / 6.0 RC2",
+        "eta": null
+      },
+      "fceb_deadline": "2026-07-02",
+      "axis1_score": 13,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "CISA",
+          "date": "2026-06-29",
+          "description": "CVE-2026-48558をCISA Known Exploited Vulnerabilities（KEV）カタログに初回追加。BOD 26-04に基づきFCEB機関に3日以内（2026-07-02まで）のパッチ適用を指示（既報2026-06-29時点ではKEV未登録だった状態からの変化）"
+        },
+        {
+          "source": "SecurityWeek",
+          "date": "2026-06-30",
+          "description": "TaskWeaver（Node.jsローダー）の展開を新たに確認。Djinn Stealerに加えて二段階目のマルウェアが投下されていることが判明"
+        }
+      ],
+      "overview": "SimpleHelpのOIDC認証バイパス脆弱性CVE-2026-48558（CVSS 10.0）は2026-06-29にCISA KEVへ初回登録され、BOD 26-04に基づきFCEB機関へ2026-07-02までの対応が義務付けられた。実悪用では当初確認されたDjinn Stealerに加え、Node.jsベースのローダーTaskWeaverが展開されていることが新たに判明し、攻撃チェーンが多段化していることが分かった。",
+      "attack_flow": [
+        { "step": 1, "description": "OIDC設定を持つSimpleHelp v5.5.15以下の認証エンドポイントへ偽造トークンを送信し認証バイパスでテクニシャンセッションを確立する" },
+        { "step": 2, "description": "テクニシャン権限でTaskWeaver（Node.jsローダー）を配信し、Djinn Stealerを展開する" },
+        { "step": 3, "description": "AI開発者認証情報・SSHキー・クラウド認証情報を収集しC2へ送信する" }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": ["djinn_stealer", "TaskWeaver"]
+      },
+      "monitoring": {
+        "description": "SimpleHelp認証ログ・エンドポイントでのAIツール設定/認証情報アクセス監視",
+        "splunk_spl": [
+          "index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip | where count > 3",
+          "index=endpoint_logs (file_path=\"*/.claude/*\" OR file_path=\"*/.ssh/id_*\" OR file_path=\"*/.aws/credentials*\") NOT process_name IN (\"claude\",\"ssh-agent\",\"aws\") | stats count by host, process_name, file_path"
+        ],
+        "detection_notes": "OIDC経由の不明ユーザーログイン成功は即時対応。AIツール設定・SSHキーへの正規プロセス以外の一括アクセスはDjinn Stealer/TaskWeaver活動の指標。"
+      },
+      "references": [
+        { "url": "https://thehackernews.com/2026/06/attackers-exploit-simplehelp-cve-2026.html", "title": "Attackers Exploit SimpleHelp CVE-2026-48558 to Deploy TaskWeaver and Djinn Stealer", "language": "en", "source": "The Hacker News" },
+        { "url": "https://www.securityweek.com/critical-simplehelp-vulnerability-exploited-for-malware-delivery/", "title": "Critical SimpleHelp Vulnerability Exploited for Malware Delivery", "language": "en", "source": "SecurityWeek" },
+        { "url": "https://www.helpnetsecurity.com/2026/06/30/simplehelp-vulnerability-exploited-cve-2026-48558/", "title": "SimpleHelp vulnerability exploited to deliver mighty Djinn Stealer", "language": "en", "source": "Help Net Security" }
+      ],
+      "sector_impact": ["it", "professional_services"],
+      "region_impact": ["global"],
+      "exploited_by": [],
+      "report_section": "main_cve"
+    }
+  ],
+  "reference_a": [
+    {
+      "cve_id": "CVE-2026-8037",
+      "product": "Progress Kemp LoadMaster / ECS Connection Manager / Object Scale Connection Manager / MOVEit WAF",
+      "vendor": "Progress Software",
+      "affected_versions": "2026年6月4日のアドバイザリ以前のバージョン（未パッチ）",
+      "priority": "high",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": ["CWE-78", "CWE-787"],
+      "epss": {
+        "score": 0.01869,
+        "percentile": 0.7671,
+        "model_date": "2026-06-30"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "2026-06-04リリースの修正版",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "axis1_score": 8,
+      "axis2_score": 0,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "watchTowr Labs",
+          "date": "2026-06-29",
+          "description": "escape_quotes()関数のヒープ未初期化バグからpre-auth RCEへ至る詳細なエクスプロイトチェーンの技術解説を公開"
+        },
+        {
+          "source": "The Hacker News",
+          "date": "2026-06-30",
+          "description": "watchTowrの解析を受けて広範な報道。未認証root権限コマンド実行が可能であることを確認"
+        }
+      ],
+      "overview": "Progress Kemp LoadMaster等（ECS Connection Manager / Object Scale Connection Manager / MOVEit WAF含む）のCVE-2026-8037（CVSS 9.8）はescape_quotes()関数のヒープバッファ未初期化・null終端欠落に起因するOSコマンドインジェクションで、未認証の攻撃者がAPIへの細工リクエストでroot権限のコマンドを実行できる。Progressは6月4日にパッチを公開済みで6月29日時点で実悪用報告はないが、watchTowr Labsが詳細なエクスプロイトチェーンを公開したことで悪用リスクが高まっている。",
+      "attack_flow": [
+        { "step": 1, "description": "APIへ細工した入力を送信しescape_quotes()のヒープ未初期化・null終端欠落を誘発する" },
+        { "step": 2, "description": "sprintf/systemチェーンで隣接ヒープメモリを読み込ませコマンドインジェクションへ発展させる" },
+        { "step": 3, "description": "root権限で任意コマンドを実行しアプライアンス全体を制御する" }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Kemp LoadMaster管理APIへの異常リクエスト監視",
+        "splunk_spl": [
+          "index=kemp_loadmaster_logs uri_path=\"*api*\" | stats count by src_ip, uri_path, http_method | where count > 10"
+        ],
+        "detection_notes": "管理API宛ての異常に長いパラメータ・特殊文字を含むリクエストは悪用試行の可能性。"
+      },
+      "references": [
+        { "url": "https://thehackernews.com/2026/06/progress-kemp-loadmaster-flaw-could-let.html", "title": "Progress Kemp LoadMaster Flaw Could Let Attackers Run Root Commands Pre-Auth", "language": "en", "source": "The Hacker News" },
+        { "url": "https://labs.watchtowr.com/enterprise-tech-in-shell-out-progress-kemp-loadmaster-uninitialized-heap-to-pre-auth-rce-cve-2026-8037/", "title": "Enterprise Tech In, Shell Out", "language": "en", "source": "watchTowr Labs" }
+      ],
+      "sector_impact": ["it", "telecom"],
+      "region_impact": ["global"],
+      "exploited_by": [],
+      "report_section": "reference_a"
+    }
+  ],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-33825",
+      "product": "Microsoft Defender Antimalware Platform (BlueHammer)",
+      "vendor": "Microsoft",
+      "affected_versions": "Windows 10/11全バージョン（2026年4月パッチ以前）",
+      "priority": "high",
+      "cvss_v3": 7.8,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": ["CWE-367"],
+      "epss": {
+        "score": 0.06749,
+        "percentile": 0.93153,
+        "model_date": "2026-06-30"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "2026年4月Patch Tuesday修正済み",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "axis1_score": 7,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-06-30",
+          "description": "CISAがKEVカタログのCVE-2026-33825エントリにランサムウェアキャンペーン悪用フラグを新たに追加（既報のKEV登録自体は2026年4月22日・今回は実悪用属性の変化）"
+        }
+      ],
+      "overview": "Microsoft DefenderのTOCTOU競合状態によるローカル特権昇格脆弱性CVE-2026-33825（BlueHammer）は2026年4月にゼロデイとして公開・KEV登録済みだが、CISAは2026-06-30付でKEVカタログのランサムウェアキャンペーン悪用フラグをUnknownからKnownへ更新した。パッチは2026年4月提供済みのため未パッチ環境のみが対象。",
+      "attack_flow": [
+        { "step": 1, "description": "低権限アカウントからDefenderの脅威検疫処理をトリガーする" },
+        { "step": 2, "description": "TOCTOU競合状態を利用してファイルパス検証前後でファイルを差し替える" },
+        { "step": 3, "description": "SYSTEM権限のファイル書き込みを奪取しランサムウェア展開等に悪用する" }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Defender関連プロセスによる予期しないファイル書き込み監視",
+        "splunk_spl": [
+          "index=wineventlog EventCode=4663 process_name=\"MsMpEng.exe\" | stats count by ComputerName, ObjectName"
+        ],
+        "detection_notes": "MsMpEng.exe以外のプロセスによるDefender隔離フォルダへの書き込みは異常の可能性。"
+      },
+      "references": [
+        { "url": "https://www.bleepingcomputer.com/news/security/cisa-windows-bluehammer-flaw-now-exploited-by-ransomware-gangs/", "title": "CISA: Windows BlueHammer flaw now exploited by ransomware gangs", "language": "en", "source": "BleepingComputer" },
+        { "url": "https://www.securityweek.com/bluehammer-vulnerability-exploited-in-ransomware-attacks/", "title": "BlueHammer Vulnerability Exploited in Ransomware Attacks", "language": "en", "source": "SecurityWeek" }
+      ],
+      "sector_impact": ["it", "other"],
+      "region_impact": ["global"],
+      "exploited_by": [],
+      "report_section": "reference_b"
+    }
+  ],
+  "apt_main": [
+    {
+      "group_name": "Mustang Panda",
+      "aliases": ["TA416", "RedDelta", "Bronze President", "Earth Preta"],
+      "nation_state": "CN",
+      "attribution_confidence": "high",
+      "campaign_id": "MustangPanda-2026-ZohoWorkDriveIndia",
+      "activity_type": ["new_malware", "active_campaign", "new_target"],
+      "motivation": "espionage",
+      "first_seen": "2026-06-12",
+      "last_seen": "2026-06-29",
+      "targets": {
+        "sectors": ["government", "energy"],
+        "regions": ["South Asia"],
+        "countries": ["IN"]
+      },
+      "malware": [
+        { "name": "SHARDLOADER", "type": "loader", "language": null, "delivery": ["phishing"], "persistence": [], "c2_protocol": [] },
+        { "name": "MINIRECON", "type": "rat", "language": null, "delivery": [], "persistence": [], "c2_protocol": [] },
+        { "name": "ZOHOMURK", "type": "backdoor", "language": null, "delivery": [], "persistence": [], "c2_protocol": ["https"] }
+      ],
+      "axis_p_score": 6,
+      "axis_q_score": 3,
+      "changes_24h": [
+        {
+          "source": "Acronis TRU",
+          "date": "2026-06-29",
+          "description": "インド政府機関の水力発電セクターおよび台湾とのMOU関連機関を標的とした2件の並行キャンペーンを初報。Zoho WorkDriveをC2として悪用する新マルウェアZOHOMURKを特定"
+        }
+      ],
+      "overview": "Acronis Threat Research Unitが2026-06-29に公開した分析によると、中国国家系APTグループMustang Panda（高信頼度帰属）がインド政府機関の水力発電セクターおよび台湾との協力覚書（MOU）関連機関を標的に2件の並行キャンペーンを展開している。新規ツールキットSHARDLOADER・MINIRECON・ZOHOMURKを使用し、ZOHOMURKはハードコードされたZoho OAuth認証情報を用いて攻撃者管理下のZoho WorkDriveアカウントをデッドドロップ（命令受信箱・窃取データ送信箱）として悪用する。2026年6月12日〜22日にアクティブなビーコニングが確認され、インド政府機関の上級職員端末を含む侵害がAcronisにより確認された。CERT-Inと連携して通報・対処を実施中。",
+      "attack_flow": [
+        { "step": 1, "description": "標的のインド政府機関・水力発電セクター職員へスピアフィッシングでSHARDLOADERを配送する" },
+        { "step": 2, "description": "MINIRECONで内部偵察を実施し、ZOHOMURKを展開してZoho WorkDriveアカウントをC2チャネルとして確立する" },
+        { "step": 3, "description": "Zoho WorkDriveの受信箱フォルダから命令を取得し、窃取データを送信箱フォルダへアップロードして情報窃取を継続する" }
+      ],
+      "ttps": [
+        { "mitre_id": "T1102", "name": "Web Service", "implementation": "Zoho WorkDriveを命令受信・データ送信のデッドドロップとして悪用（Acronis TRU明示）" },
+        { "mitre_id": "T1566", "name": "Phishing", "implementation": "SHARDLOADER配送のための標的型フィッシング（Acronis TRU明示）" }
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": ["SHARDLOADER", "MINIRECON", "ZOHOMURK"]
+      },
+      "recommended_actions": "Zoho WorkDriveを業務利用するインド国内・関連組織は不審なOAuthアプリ登録・未承認アカウント作成を監査する。台湾関連MOU機関は標的型フィッシングへの警戒を強化する。CERT-Inのアドバイザリを参照し侵害指標の照合を行う。",
+      "splunk_spl": [
+        "index=proxy_logs dest_domain=\"*workdrive.zoho.com*\" | stats count by src_ip, user, dest_domain | where count > 20"
+      ],
+      "detection_notes": "通常業務で使用されないZoho WorkDriveアカウントとの定期的な通信パターンは新規C2チャネルの可能性。",
+      "references": [
+        { "url": "https://www.acronis.com/en/tru/posts/mustang-panda-targets-indias-government-and-energy-sectors/", "title": "Mustang Panda targets India's government and energy sectors with ZOHOMURK and MINIRECON", "language": "en", "source": "Acronis TRU" },
+        { "url": "https://gbhackers.com/mustang-panda-targets-indias-government/", "title": "Mustang Panda Targets India's Government and Energy Sectors", "language": "en", "source": "GBHackers" }
+      ],
+      "related_cves": [],
+      "report_section": "apt_main"
+    },
+    {
+      "group_name": "Gamaredon",
+      "aliases": ["Primitive Bear", "Shuckworm", "Armageddon", "UAC-0010"],
+      "nation_state": "RU",
+      "attribution_confidence": "high",
+      "campaign_id": "Gamaredon-2026-GammaEcosystem-CloudC2",
+      "activity_type": ["new_malware", "active_campaign", "ttp_update"],
+      "motivation": "espionage",
+      "first_seen": "2026-01-01",
+      "last_seen": "2026-06-29",
+      "targets": {
+        "sectors": ["government", "defense"],
+        "regions": [],
+        "countries": ["UA"]
+      },
+      "malware": [
+        { "name": "GammaPhish", "type": "other", "language": "VBScript", "delivery": ["phishing"], "persistence": [], "c2_protocol": [] },
+        { "name": "GammaLoad", "type": "loader", "language": null, "delivery": [], "persistence": [], "c2_protocol": ["cloud_storage"] },
+        { "name": "GammaWorm", "type": "other", "language": "VBScript", "delivery": ["removable_media"], "persistence": [], "c2_protocol": [] },
+        { "name": "GammaSteel", "type": "infostealer", "language": null, "delivery": [], "persistence": [], "c2_protocol": [] }
+      ],
+      "axis_p_score": 5,
+      "axis_q_score": 3,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-06-29",
+          "description": "ロシア国家系APTグループGamaredonがマルウェアツールセットを「Gamma」エコシステムへ再編し、クラウドサービス悪用によるC2チャネル拡張を行ったことを初報"
+        }
+      ],
+      "overview": "Gamaredon（ロシア国家系、高信頼度帰属）はマルウェアアーセナルを「Gamma」エコシステム（フィッシング用GammaPhish・ステージング用GammaLoad・自己増殖用GammaWorm・データ窃取用GammaSteel）へ再編し、ウクライナの政府・軍事機関を標的に35件の新規スピアフィッシングキャンペーンを展開した。新規VBScriptワームはWindowsのネイティブ機能内に隠蔽され、正規クラウドストレージサービスを秘匿C2チャネルとして悪用することで検知回避能力を高めている。",
+      "attack_flow": [
+        { "step": 1, "description": "GammaPhishによる標的型スピアフィッシングでウクライナ政府・軍事機関職員へ初期アクセスする" },
+        { "step": 2, "description": "GammaLoadがクラウドストレージサービスをC2チャネルとして悪用し追加ペイロードをステージングする" },
+        { "step": 3, "description": "GammaWormで内部ネットワークへ自己増殖し、GammaSteelでデータを窃取する" }
+      ],
+      "ttps": [
+        { "mitre_id": "T1102", "name": "Web Service", "implementation": "正規クラウドストレージサービスをC2チャネルとして悪用（The Hacker News報道に基づく）" },
+        { "mitre_id": "T1566", "name": "Phishing", "implementation": "35件の新規スピアフィッシングキャンペーン（The Hacker News報道に基づく）" }
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "ウクライナ関連組織・支援機関はクラウドストレージサービスへの異常な定期通信を監視する。リムーバブルメディア経由の自己増殖型VBScriptワームに対するUSB制御ポリシーを強化する。",
+      "splunk_spl": [
+        "index=endpoint_logs process_name IN (\"wscript.exe\",\"cscript.exe\") parent_process_name=\"explorer.exe\" | stats count by host, CommandLine"
+      ],
+      "detection_notes": "explorer.exeを親プロセスとするwscript/cscript実行はリムーバブルメディア経由ワームの典型パターン。",
+      "references": [
+        { "url": "https://thehackernews.com/2026/06/gamaredon-expands-ukraine-attacks-with.html", "title": "Gamaredon Expands Ukraine Attacks with New Malware and Cloud Service Abuse", "language": "en", "source": "The Hacker News" }
+      ],
+      "related_cves": [],
+      "report_section": "apt_main"
+    }
+  ],
+  "apt_notable": [],
+  "forecasts": [
+    {
+      "forecast_number": 1,
+      "title": "Oracle EBS CVE-2026-46817 の CISA KEV 初回追加に備えた未パッチ環境の緊急確認",
+      "tier": 1,
+      "confidence": "medium",
+      "confidence_numeric": 0.5,
+      "framing": "defensive_action",
+      "outcome_channel": "E1",
+      "window_hours": 72,
+      "forecast_class": "fast_72h",
+      "forecast_class_rationale": "CVSS 9.8・実悪用確認済みCVEのKEV初回追加はcve_exploit_to_cert_advisory（incident-visibility-timelines.json）に該当し中央値48時間以内に外部観測されるためfast_72hに割当",
+      "root": {
+        "evidence": "SecurityWeek/SecurityAffairs/Help Net Security 2026-06-30: CVE-2026-46817（Oracle EBS Payments/File Transmission・CVSS 9.8）がPoC公開前から実悪用されていることを確認。Defused Cyberのハニーポットで2026-06-27に最初の未認証ファイル読み取り試行6件を観測。",
+        "past_patterns": "CVSS 9.5以上・実悪用確認済みかつ広く使われるエンタープライズソフトウェアのCVEは、CISAが24〜72時間以内にKEVへ追加する傾向がある。直近ではCVE-2026-48558（SimpleHelp・CVSS 10.0）が実悪用確認の翌日にKEV初回追加された先例がある（2026-06-29）。",
+        "threat_intel": "Oracle EBSは財務・ERPシステムとして広く利用されており、PoC非公開の段階で標的型の実悪用が先行している点で攻撃者の関心の高さを示す。"
+      },
+      "anchor": {
+        "epss_score": 0.00677,
+        "epss_percentile": 0.47625,
+        "epss_model_date": "2026-06-30",
+        "kev_registered": false,
+        "ssvc_decision": "Attend",
+        "ssvc_automatable": "yes"
+      },
+      "kev_snapshot": {
+        "date_added": null,
+        "ransomware_flag": null,
+        "reference_set": []
+      },
+      "estimated_part": "EPSSパーセンタイルが0.476（中位）にとどまっているため定量ゲートD（KEV AND EPSS%ile≥0.95）を充足せず確度は中にとどめる。（推測）EPSSスコアは新規CVEかつ標的型の限定的悪用のため過小評価されている可能性があるが、確証はない。",
+      "early_warning_signals": "CISA Known Exploited Vulnerabilities カタログ（cisa.gov/known-exploited-vulnerabilities-catalog）の更新確認、およびMandiant/CrowdStrike等によるCVE-2026-46817関連の新規ブログ投稿を監視する",
+      "hit_criteria": "CISAがCVE-2026-46817をKnown Exploited Vulnerabilitiesカタログに初回追加した場合（dateAddedが2026-06-30以降の日付と一致）。CISA以外の機関の相当リストへの追加は的中とみなさない。",
+      "deadline_date": null,
+      "related_cves": ["CVE-2026-46817"],
+      "related_apt_campaigns": []
+    },
+    {
+      "forecast_number": 2,
+      "title": "Aflac Japan 個人情報漏えい（438万人規模）に便乗したフィッシング・なりすまし攻撃への備え",
+      "tier": 1,
+      "confidence": "medium",
+      "confidence_numeric": 0.5,
+      "framing": "defensive_action",
+      "outcome_channel": "E3",
+      "window_hours": 168,
+      "forecast_class": "slow_7d",
+      "forecast_class_rationale": "国内大規模個人情報漏えいに便乗したフィッシングキャンペーンの外部報道はcredential_leak_to_attack_report（incident-visibility-timelines.json）の中央値14日に該当し72h窓では外部可視化されない蓋然性が高いためslow_7dへ割当（M2・教訓11準拠）",
+      "root": {
+        "evidence": "Security NEXT/日本経済新聞/SecurityWeek 2026-06-30: アフラック生命保険が契約者専用サイト「アフラックよりそうネット」等への不正アクセスにより約438万人の個人情報（氏名・住所・電話番号・証券番号、うち約23万人は保険料振替口座情報も含む）が流出したと発表。初回不正アクセスは6月15日、検知・遮断は6月25日。マイナンバー・クレジットカード情報は含まれない。",
+        "past_patterns": "大規模個人情報漏えい発表後は氏名・住所等の漏えい情報を悪用したなりすましフィッシング・サポート詐欺キャンペーンが数日〜数週間のタイムラグで観測される傾向がある（KDDI漏洩2026-06-23の事例では72時間窓内に外部報道される被害確認はなかった）。",
+        "threat_intel": "生命保険契約者は高齢層を含み標的として狙われやすく、保険料振替口座情報が含まれる約23万人は特に金融詐欺のリスクが高い。"
+      },
+      "anchor": {
+        "epss_score": null,
+        "epss_percentile": null,
+        "epss_model_date": null,
+        "kev_registered": false,
+        "ssvc_decision": "Track",
+        "ssvc_automatable": "no"
+      },
+      "kev_snapshot": {
+        "date_added": null,
+        "ransomware_flag": null,
+        "reference_set": []
+      },
+      "estimated_part": "（推測）漏洩情報を悪用したフィッシング・なりすまし詐欺キャンペーンが発生する可能性は高いと推定されるが、72時間以内に外部報道されるかは不確実なためslow_7d（7日）窓に割り当てた。先回り監視（自組織のアフラック契約者宛フィッシング報告増加等）を実用的な早期検知手段とする。",
+      "early_warning_signals": "Security NEXT・警察庁サイバー警察局・フィッシング対策協議会のアフラックを騙るフィッシング報告、自組織の従業員・顧客からのアフラック関連不審メール報告件数の増加",
+      "hit_criteria": "JPCERT/CC・IPA・警察庁・フィッシング対策協議会のいずれかがアフラックを騙るフィッシングキャンペーンまたは当該漏洩情報を悪用した二次被害事例を2026-07-07 07:00 JSTまでに公式発表した場合。単なる漏洩規模の更新報道のみでは的中とみなさない。",
+      "deadline_date": "2026-07-07",
+      "related_cves": [],
+      "related_apt_campaigns": []
+    }
+  ],
+  "ai_attacks_main": [
+    {
+      "attack_id": "AI-2026-06-30-001",
+      "title": "GuardFall: オープンソースAIコーディングエージェントを標的とした数十年来のシェルインジェクション手法の実証",
+      "category": "B",
+      "subcategory": "B1",
+      "attacker_type": "researcher",
+      "adoption_triggers": ["P", "S"],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": ["AG01"],
+      "targets": {
+        "sectors": ["it"],
+        "regions": ["global"],
+        "countries": []
+      },
+      "damage_scale": "11種のオープンソースAIコーディング・コンピュータ操作エージェントのうち10種で実証成功（Continueのみ防御に成功）",
+      "burst_count": 3,
+      "burst_status": "threshold_met",
+      "axis_x_score": 6,
+      "axis_y_score": 5,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-06-30",
+          "description": "Adversa AIの研究としてGuardFallを初報。bashのコマンド書き換え処理を悪用しエージェントのブロックリスト型安全機構を回避できることを実証"
+        },
+        {
+          "source": "SecurityWeek",
+          "date": "2026-06-30",
+          "description": "「Decades-Old Bash Tricks Expose AI Coding Agents to Supply Chain Attacks」として技術詳細を報道"
+        }
+      ],
+      "overview": "Adversa AIが公開した研究GuardFallは、オープンソースのAIコーディング・コンピュータ操作エージェント11種のうち10種（Continueを除く）に対して、bashがコマンドをプレーンテキストの安全チェック後に書き換える挙動を悪用したシェルインジェクションが成功することを実証した。汚染されたリポジトリ・READMEやMakefileに隠蔽した指示により、フルアカウント権限で動作するエージェントにSSHキー・クラウド認証情報の窃取やファイル削除等のコマンドを気づかれずに実行させることが可能。",
+      "attack_flow": [
+        { "step": 1, "description": "攻撃者が悪意あるリポジトリ・READMEまたはMakefileに隠蔽コマンドを仕込む" },
+        { "step": 2, "description": "エンジニアがAIコーディングエージェントでこれを読み込ませると、エージェントのブロックリスト型チェックがプレーンテキスト評価のみであるためbashの書き換え後コマンドが見逃される" },
+        { "step": 3, "description": "エージェントがフルアカウント権限で隠蔽コマンドを実行し、SSHキー・クラウド認証情報を窃取または開発環境を破壊する" }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": ["AIコーディングエージェント経由での予期しないシェルコマンド実行", "リポジトリ内README/Makefileからのコマンド抽出パターン"]
+      },
+      "monitoring": {
+        "description": "AIコーディングエージェントのシェル実行ログ監視",
+        "splunk_spl": [
+          "index=dev_endpoint_logs process_name IN (\"bash\",\"sh\") parent_process_name=\"*agent*\" | stats count by host, user, CommandLine"
+        ],
+        "detection_notes": "AIエージェントプロセスを親に持つbash/shの実行で、SSHキー・クラウド認証情報ファイルへのアクセスを伴う場合は即時調査対象。"
+      },
+      "references": [
+        { "url": "https://thehackernews.com/2026/06/guardfall-exposes-open-source-ai-coding.html", "title": "GuardFall Exposes Open-Source AI Coding Agents to Decades-Old Shell Injection Risks", "language": "en", "source": "The Hacker News" },
+        { "url": "https://www.securityweek.com/decades-old-bash-tricks-expose-ai-coding-agents-to-supply-chain-attacks/", "title": "Decades-Old Bash Tricks Expose AI Coding Agents to Supply Chain Attacks", "language": "en", "source": "SecurityWeek" }
+      ],
+      "report_section": "ai_attacks_main"
+    },
+    {
+      "attack_id": "AI-2026-06-30-002",
+      "title": "Microsoft: MCPツール説明文の汚染（Tool Poisoning）によるAIエージェント機密データ漏洩警告",
+      "category": "B",
+      "subcategory": "B1",
+      "attacker_type": "unknown",
+      "adoption_triggers": ["P", "T"],
+      "atlas_ids": [],
+      "owasp_llm": ["LLM01"],
+      "owasp_agentic": ["AG01"],
+      "targets": {
+        "sectors": ["it", "professional_services"],
+        "regions": ["global"],
+        "countries": []
+      },
+      "damage_scale": "規模: 不明（エンタープライズMCP導入組織全般が潜在的リスク）",
+      "burst_count": 4,
+      "burst_status": "threshold_met",
+      "axis_x_score": 6,
+      "axis_y_score": 4,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-06-30",
+          "description": "MicrosoftがMCPツール説明文の汚染（Tool Poisoning）に関するセキュリティアドバイザリを公開。エンタープライズAIエージェント導入組織にガバナンス見直しを要請"
+        }
+      ],
+      "overview": "Microsoftは2026-06-30付セキュリティアドバイザリで、MCP（Model Context Protocol）ツールの説明文に隠蔽した悪意ある指示によりAIエージェントが機密データを外部へ漏洩させる「Tool Poisoning」攻撃を警告した。MCPはツール説明文の動的更新を許容するため、再承認トリガーのない構成では汚染版が無審査で有効化される。エージェントは隠蔽指示に従って正規リクエストを装いながら機密データを攻撃者管理サーバーへ送信する。",
+      "attack_flow": [
+        { "step": 1, "description": "攻撃者がMCPツールの説明文（スキーマ内の書式注記等を装う）に隠蔽指示を埋め込む" },
+        { "step": 2, "description": "再承認トリガーのないMCP構成で汚染版の説明文が無審査で有効化される" },
+        { "step": 3, "description": "AIエージェントが隠蔽指示に従い機密データを収集し、正規リクエストを装って外部サーバーへ送信する" }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": ["MCPツール説明文の予期しない変更", "AIエージェントから未承認外部エンドポイントへのデータ送信"]
+      },
+      "monitoring": {
+        "description": "MCPサーバーのツール説明文変更・エージェント送信先の監視",
+        "splunk_spl": [
+          "index=mcp_server_logs event_type=\"tool_description_update\" | stats count by tool_name, server_id, _time"
+        ],
+        "detection_notes": "MCPツール説明文の変更が再承認なしで反映されている場合はガバナンス不備の指標。エージェントの通信先ホワイトリスト逸脱は即時調査。"
+      },
+      "references": [
+        { "url": "https://thehackernews.com/2026/06/microsoft-warns-poisoned-mcp-tool.html", "title": "Microsoft Warns Poisoned MCP Tool Descriptions Can Make AI Agents Leak Data", "language": "en", "source": "The Hacker News" }
+      ],
+      "report_section": "ai_attacks_main"
+    }
+  ],
+  "ai_attacks_reference_b": [
+    {
+      "attack_id": "AI-2026-06-30-003",
+      "title": "282 iOS AI アプリが LLM API キー・AI プロキシアクセスをネットワークトラフィックで漏洩",
+      "category": "C",
+      "subcategory": "C4",
+      "attacker_type": "researcher",
+      "adoption_triggers": ["P", "U"],
+      "atlas_ids": [],
+      "owasp_llm": ["LLM02"],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": ["it"],
+        "regions": ["global"],
+        "countries": []
+      },
+      "damage_scale": "444本中282本（64%）のiOS AIチャットアプリがLLM API認証情報を漏洩。うち146本（52%）が完全悪用可能と確認",
+      "burst_count": 2,
+      "burst_status": "below_threshold",
+      "axis_x_score": 3,
+      "axis_y_score": 3,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-06-30",
+          "description": "Wake Forest大学研究チームによるLLMKeyLensツールを用いたiOS AIアプリ444本の調査結果を初報"
+        }
+      ],
+      "overview": "Wake Forest大学の研究チームがiOS向けAIチャットボットアプリ444本を独自ツールLLMKeyLensで調査した結果、282本（64%）がネットワークトラフィック上でLLM API認証情報（10以上のLLMプロバイダ・5クラウドプラットフォームにまたがる）を露出していることが判明した。最も多い漏洩パターンはJWTベースのトークン漏洩（48%）、次いで未認証バックエンドプロキシアクセス（33%）、平文APIキー送信（19%）。開発者へ通報後3ヶ月経過時点でも28%しか修正されておらず23%は依然として悪用可能な状態が継続している。",
+      "attack_flow": [
+        { "step": 1, "description": "攻撃者がiOSアプリのネットワークトラフィックを傍受しLLM API認証情報を抽出する（ジェイルブレイク不要）" },
+        { "step": 2, "description": "窃取した認証情報を用いてアプリ開発者のLLM APIクォータを不正消費する（LLMjacking）" },
+        { "step": 3, "description": "未認証バックエンドプロキシアクセスの場合はアプリのバックエンドサービスへ直接不正アクセスする" }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": ["想定外のソースからのLLM APIキー利用", "アプリのAPIクォータの異常消費"]
+      },
+      "monitoring": {
+        "description": "LLM APIプロバイダ側での異常利用監視",
+        "splunk_spl": [],
+        "detection_notes": "自社開発のiOS AIアプリがある場合はネットワークトラフィック内のAPIキー露出を点検する。"
+      },
+      "references": [
+        { "url": "https://thehackernews.com/2026/06/282-ios-apps-found-leaking-llm-api-keys.html", "title": "282 iOS AI Apps Leak API Keys and Open AI Proxy Access in Network Traffic Study", "language": "en", "source": "The Hacker News" }
+      ],
+      "report_section": "ai_attacks_reference_b"
+    }
+  ],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-06-30-001",
+      "title": "アフラック生命保険 個人情報漏えい（438万人規模）便乗フィッシングへの警戒",
+      "perspective": "zeroday",
+      "adoption_triggers": ["α", "δ"],
+      "priority": "high",
+      "product_or_service": "アフラック契約者専用サイト「アフラックよりそうネット」",
+      "targets": {
+        "sectors": ["finance"],
+        "regions": ["JP"]
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-06-30",
+          "description": "アフラック生命保険が契約者専用サイト等への不正アクセスにより約438万人の個人情報（うち約23万人は保険料振替口座情報含む）流出を発表"
+        }
+      ],
+      "overview": "大手生命保険会社アフラックの契約者専用サイトが不正アクセスを受け、約438万人分の氏名・住所・電話番号・証券番号、うち約23万人分は保険料振替口座情報も流出した。マイナンバー・クレジットカード情報は含まれないが、漏洩情報を悪用したなりすましフィッシング・サポート詐欺への便乗が想定される大規模国内インシデント。",
+      "recommended_actions": [
+        "自組織従業員・顧客向けにアフラックを騙るフィッシングメール・SMSへの注意喚起を実施する",
+        "アフラック関連を装った不審な連絡（保険料振替口座の確認を求めるもの等）の報告窓口を周知する",
+        "メールゲートウェイでアフラック関連キーワードを含む新規ドメインからのメールを一時的に注視する"
+      ],
+      "monitoring": {
+        "description": "アフラックなりすましフィッシングメールの監視",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        { "url": "https://www.securityweek.com/aflac-japan-data-breach-impacts-4-38-million/", "title": "Aflac Japan Data Breach Impacts 4.38 Million", "language": "en", "source": "SecurityWeek" },
+        { "url": "https://www.nikkei.com/article/DGXZQOUB3046P0Q6A630C2000000/", "title": "アフラック顧客情報438万人分流出 不正アクセス、23万人分は口座も", "language": "ja", "source": "日本経済新聞" }
+      ]
+    },
+    {
+      "rec_id": "SOC-2026-06-30-002",
+      "title": "Oracle PeopleSoft ゼロデイ(CVE-2026-35273)悪用ShinyHuntersキャンペーンの被害拡大（Nissan・NAIC）",
+      "perspective": "cve",
+      "adoption_triggers": ["β", "δ"],
+      "priority": "high",
+      "product_or_service": "Oracle PeopleSoft PeopleTools",
+      "targets": {
+        "sectors": ["manufacturing", "government", "education"],
+        "regions": ["global"]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-06-29",
+          "description": "NissanがOracle PeopleSoftゼロデイ（CVE-2026-35273）攻撃に関連する従業員データ漏えいを開示。NAICもShinyHuntersによるPeopleSoft侵害で公開データの窃取を確認"
+        }
+      ],
+      "overview": "既報のOracle PeopleSoftゼロデイCVE-2026-35273（CVSS 9.8）を悪用したShinyHuntersのキャンペーンで、新たにNissan（従業員のSSN・銀行情報・税務情報窃取の可能性）とNAIC（公開データ・古いログ・設定ファイル窃取）が被害組織として判明した。Mandiantは300以上のPeopleSoftインスタンス・100以上の組織への影響を確認しており、教育セクターを中心に被害が拡大中。自組織でOracle PeopleSoftを利用している場合はパッチ適用状況と侵害有無を確認する必要がある。",
+      "recommended_actions": [
+        "Oracle PeopleSoft PeopleTools 8.61/8.62環境のCVE-2026-35273パッチ適用状況を再確認する",
+        "PSEMHUB（Updates Environment Management）コンポーネントへの2026年5月27日以降のアクセスログを遡及調査する",
+        "ShinyHuntersのデータリークサイトで自組織関連データの掲載有無を確認する"
+      ],
+      "monitoring": {
+        "description": "PeopleSoft PSEMHUBエンドポイント監視",
+        "splunk_spl": ["index=peoplesoft_logs uri_path=\"*PSEMHUB*\" | stats count by src_ip, uri_path | sort -count"],
+        "detection_notes": "PSEMHUBエンドポイントへの認証なしアクセスは侵害の痕跡である可能性が高い。"
+      },
+      "references": [
+        { "url": "https://www.bleepingcomputer.com/news/security/nissan-discloses-employee-data-breach-linked-to-oracle-zero-day-attacks/", "title": "Nissan discloses employee data breach linked to Oracle zero-day attacks", "language": "en", "source": "BleepingComputer" },
+        { "url": "https://www.bleepingcomputer.com/news/security/naic-says-public-data-stolen-in-shinyhunters-peoplesoft-breach/", "title": "NAIC says public data stolen in ShinyHunters' PeopleSoft breach", "language": "en", "source": "BleepingComputer" }
+      ]
+    },
+    {
+      "rec_id": "SOC-2026-06-30-003",
+      "title": "Progress Kemp LoadMaster CVE-2026-8037: 未認証root権限RCEの詳細エクスプロイトチェーン公開",
+      "perspective": "cve",
+      "adoption_triggers": ["β", "γ"],
+      "priority": "high",
+      "product_or_service": "Progress Kemp LoadMaster",
+      "targets": {
+        "sectors": ["it", "telecom"],
+        "regions": ["global"]
+      },
+      "changes_24h": [
+        {
+          "source": "watchTowr Labs",
+          "date": "2026-06-29",
+          "description": "CVE-2026-8037（CVSS 9.8）の詳細エクスプロイトチェーンを公開。未認証root権限RCEが技術的に実証された"
+        }
+      ],
+      "overview": "ロードバランサー製品Kemp LoadMasterの未認証OSコマンドインジェクション脆弱性CVE-2026-8037（CVSS 9.8）について、watchTowr Labsが詳細なエクスプロイトチェーンを公開した。Progressは6月4日にパッチを提供済みで実悪用報告はまだないが、詳細解析の公開により武器化リスクが高まっている。",
+      "recommended_actions": [
+        "Kemp LoadMaster / ECS Connection Manager / Object Scale Connection Manager / MOVEit WAFのパッチ適用状況を即時確認する",
+        "管理APIをインターネットから直接到達不能にする（管理アクセスのIP制限）",
+        "watchTowr公開のPoC公開後の悪用試行有無をログで確認する"
+      ],
+      "monitoring": {
+        "description": "Kemp LoadMaster管理API監視",
+        "splunk_spl": ["index=kemp_loadmaster_logs uri_path=\"*api*\" | stats count by src_ip, uri_path | where count > 10"],
+        "detection_notes": "管理API宛ての異常パラメータを含むリクエストは悪用試行の可能性。"
+      },
+      "references": [
+        { "url": "https://labs.watchtowr.com/enterprise-tech-in-shell-out-progress-kemp-loadmaster-uninitialized-heap-to-pre-auth-rce-cve-2026-8037/", "title": "Enterprise Tech In, Shell Out", "language": "en", "source": "watchTowr Labs" }
+      ]
+    },
+    {
+      "rec_id": "SOC-2026-06-30-004",
+      "title": "GuardFall: AIコーディングエージェントのbashシェルインジェクション対策の即時点検",
+      "perspective": "ai_attack",
+      "adoption_triggers": ["η", "ε"],
+      "priority": "medium",
+      "product_or_service": "オープンソースAIコーディング・コンピュータ操作エージェント全般",
+      "targets": {
+        "sectors": ["it"],
+        "regions": ["global"]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-06-30",
+          "description": "Adversa AIがGuardFall研究を公開。11種のオープンソースAIエージェントのうち10種でシェルインジェクション実証成功"
+        }
+      ],
+      "overview": "開発組織で利用されるオープンソースAIコーディングエージェントの大半が、bashのコマンド書き換え処理を悪用したシェルインジェクション（ブロックリスト回避）に脆弱であることが実証された。汚染リポジトリの読み込みによりSSHキー・クラウド認証情報の窃取・開発環境破壊につながるため、AIエージェントを業務利用する開発チームは設定の即時点検が必要。",
+      "recommended_actions": [
+        "業務で利用しているAIコーディングエージェントがGuardFallの対象10種に該当するか確認する",
+        "エージェントに付与するアカウント権限を最小化し、SSHキー・クラウド認証情報への直接アクセスを制限する",
+        "未知のリポジトリ・READMEをAIエージェントに読み込ませる際はサンドボックス環境を使用する"
+      ],
+      "monitoring": {
+        "description": "AIエージェント経由のシェル実行監視",
+        "splunk_spl": [],
+        "detection_notes": "AIエージェントプロセスを親に持つ予期しないシェルコマンド実行を監視する。"
+      },
+      "references": [
+        { "url": "https://thehackernews.com/2026/06/guardfall-exposes-open-source-ai-coding.html", "title": "GuardFall Exposes Open-Source AI Coding Agents to Decades-Old Shell Injection Risks", "language": "en", "source": "The Hacker News" }
+      ]
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      { "cve_id": "CVE-2026-44024", "product": "Fluentd", "reason": "already_reported", "reason_detail": "2026-06-29既報・参考A採用。24時間窓内に新たな実悪用・状況変化なし", "reported_date": "2026-06-29" },
+      { "cve_id": "CVE-2026-55200", "product": "libssh2", "reason": "already_reported", "reason_detail": "2026-06-29既報・参考A採用。24時間窓内に変化なし", "reported_date": "2026-06-29" },
+      { "cve_id": "CVE-2026-5173", "product": "GitLab CE/EE", "reason": "already_reported", "reason_detail": "2026-06-29既報・参考A採用。24時間窓内に変化なし", "reported_date": "2026-06-29" },
+      { "cve_id": "CVE-2026-12244", "product": "NSD (Name Server Daemon)", "reason": "already_reported", "reason_detail": "2026-06-29既報・参考A採用（CVE-2026-12245/12246と合算）。24時間窓内に変化なし", "reported_date": "2026-06-29" },
+      { "cve_id": "CVE-2026-43707", "product": "Apple iOS / macOS / Safari (WebKit)", "reason": "low_score", "reason_detail": "30件超のセキュリティ修正のうちAI支援発見のWebKitバグ含むが実悪用報告・KEV登録なし。EPSSパーセンタイル0.06と低い。低優先度フラグ", "reported_date": null },
+      { "cve_id": "CVE-2026-20245", "product": "Cisco Catalyst SD-WAN Manager", "reason": "already_reported", "reason_detail": "2026-06-23既報・参考B採用。24時間窓内に変化なし", "reported_date": "2026-06-23" },
+      { "cve_id": "CVE-2026-20230", "product": "Cisco Unified Communications Manager", "reason": "already_reported", "reason_detail": "2026-06-24/27既報・本編採用。FCEB期限は経過済み。24時間窓内に新たな変化なし", "reported_date": "2026-06-27" }
+    ],
+    "apt": [
+      { "campaign_id": "KDDI-2026-EmailSystemBreach", "group_name": "不明（帰属未確定）", "reason": "already_reported", "reason_detail": "2026-06-23既報。24時間窓内に新たな変化なし", "reported_date": "2026-06-23" },
+      { "campaign_id": "FortiBleed-2026-CredentialCampaign", "group_name": "不明（Russian-speaking IAB）", "reason": "already_reported", "reason_detail": "2026-06-27最終更新済み。24時間窓内に新たな変化なし", "reported_date": "2026-06-27" }
+    ],
+    "ai_attacks": [
+      { "attack_id": null, "title": "Telegram bot servers乗っ取りPyPIパッケージ（Malicious PyPI packages）", "reason": "insufficient_evidence", "reason_detail": "AI起因が明確でなく一般的なPyPIサプライチェーン攻撃に分類されるため低優先度フラグ", "reported_date": null },
+      { "attack_id": null, "title": "Amazon Q Developer Flaw / MCP Configs（CVE-2026-12957）", "reason": "out_of_window", "reason_detail": "2026-06-26報道・24時間調査窓外", "reported_date": null }
+    ],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 1,
+      "main": 1,
+      "reference_a": 1,
+      "reference_b": 1,
+      "excluded": 7,
+      "total_processed": 11
+    },
+    "apt": {
+      "main": 2,
+      "notable": 0,
+      "excluded": 2,
+      "total_processed": 4
+    },
+    "ai_attacks": {
+      "main": 2,
+      "reference_a": 0,
+      "reference_b": 1,
+      "excluded": 2,
+      "total_processed": 5,
+      "category_breakdown": {
+        "A": 0,
+        "B": 2,
+        "C": 1
+      }
+    },
+    "soc_recommendations": {
+      "high": 3,
+      "medium": 1,
+      "low": 0,
+      "excluded": 0,
+      "total_processed": 4,
+      "perspective_breakdown": {
+        "cve": 2,
+        "zeroday": 1,
+        "ai_attack": 1
+      }
+    }
+  }
+}

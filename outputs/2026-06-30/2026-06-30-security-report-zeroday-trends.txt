@@ -1,0 +1,201 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-06-30 07:00 JST
+調査期間: 2026-06-29 07:00 〜 2026-06-30 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 2: ゼロデイ・トレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】実悪用確認・緊急対応必須
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-46817 / Oracle E-Business Suite (EBS) - Payments / File Transmission
+対象: 12.2.3〜12.2.15（2026年5月CSPU未適用環境）
+------------------------------------------------------------
+
+優先度: 緊急
+CVSS: 9.8 (Critical)
+状態: 実悪用確認
+パッチ: 2026年5月CSPU提供済み（未適用環境が標的）
+
+【24時間以内の変化】
+[SecurityWeek 2026-06-30] Defused Cyberのハニーポットで2026-06-27に最初の実悪用観測を確認したと報告。PoC公開前の実悪用として詳報
+[SecurityAffairs 2026-06-30] Oracle EBS Payments/File Transmissionモジュールへの未認証ファイル読み取り試行が継続していることを報告
+
+【概要】
+Oracle E-Business Suite（Oracle Payments / File Transmissionコンポーネント）のCVE-2026-46817（CVSS 9.8）はPoC公開前の段階から実悪用が観測されている権限管理不備・認証バイパスの脆弱性で、未認証の攻撃者がHTTPネットワークアクセスのみでOracle Paymentsインスタンスを乗っ取り可能。Defused Cyberのハニーポットは2026年6月27日に単一の発信元から6件の未認証ファイル読み取り試行を観測しており、これはOracleが2026年5月のCritical Patch Update Supplementでパッチを提供してから約6週間後、かつ公開PoCが存在しない時点での実悪用であることが特徴。財務・ERPシステムを狙う標的型の性格が強い。
+
+攻撃の流れ:
+1. 攻撃者がOracle EBS Payments/File Transmissionの公開エンドポイントへ未認証のHTTPリクエストを送信する
+2. 権限管理不備を悪用してOracle Paymentsインスタンスの制御を奪取し、ファイル読み取り・書き込みを行う
+3. 財務・決済データへアクセスし、C2インフラ（45.84.137.125等）へ情報を持ち出す
+
+【暫定緩和策】
+・2026年5月CSPU（Critical Patch Update Supplement）を即時適用する
+・Oracle EBS Payments / File Transmissionモジュールをインターネットから直接到達不能にする（VPN・IP制限の追加）
+・/OA_HTML/ibytransmit 等の関連エンドポイントへのアクセスログを6月27日以降に遡って確認する
+
+【IoC】
+IP: 45.84.137.125
+
+【監視ポイント】
+・[Oracle EBS Webサーバーログ / ネットワークフロー] 異常アクセスを監視する
+Splunk SPL: index=oracle_ebs_logs request_path="/OA_HTML/ibytransmit" method=POST | stats count by src_ip, user_agent | where count > 3
+Splunk SPL: index=network_logs (dest_ip="45.84.137.125" OR src_ip="45.84.137.125") | stats count by src_ip, dest_ip, dest_port
+→ 未認証ユーザーエージェントからのibytransmitへの連続POSTリクエスト、および45.84.137.125との通信は即時インシデント対応へ
+
+【参照】
+https://www.securityweek.com/exploitation-of-recent-oracle-e-business-suite-vulnerability-begins/
+https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html
+https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Mustang Panda（別名: TA416 / RedDelta / Bronze President / Earth Preta / 帰属: CN・高信頼度）
+活動ID: MustangPanda-2026-ZohoWorkDriveIndia
+------------------------------------------------------------
+
+採用契機: P（新規マルウェア・C2手法初報）・Q（インド政府機関への侵害確認）・V（重要インフラ・政府機関への侵害）
+標的: 政府機関・エネルギー（水力発電） / インド・台湾関連MOU機関
+マルウェア: SHARDLOADER（ローダー）・MINIRECON（RAT）・ZOHOMURK（バックドア）
+
+【24時間以内の変化】
+[Acronis TRU 2026-06-29] インド政府機関の水力発電セクターおよび台湾とのMOU関連機関を標的とした2件の並行キャンペーンを初報。Zoho WorkDriveをC2として悪用する新マルウェアZOHOMURKを特定
+
+【概要】
+Acronis Threat Research Unitが2026-06-29に公開した分析によると、中国国家系APTグループMustang Panda（高信頼度帰属）がインド政府機関の水力発電セクターおよび台湾との協力覚書（MOU）関連機関を標的に2件の並行キャンペーンを展開している。新規ツールキットSHARDLOADER・MINIRECON・ZOHOMURKを使用し、ZOHOMURKはハードコードされたZoho OAuth認証情報を用いて攻撃者管理下のZoho WorkDriveアカウントをデッドドロップ（命令受信箱・窃取データ送信箱）として悪用する。2026年6月12日〜22日にアクティブなビーコニングが確認され、インド政府機関の上級職員端末を含む侵害がAcronisにより確認された。CERT-Inと連携して通報・対処を実施中。
+
+攻撃の流れ（判明分）:
+1. 標的のインド政府機関・水力発電セクター職員へスピアフィッシングでSHARDLOADERを配送する
+2. MINIRECONで内部偵察を実施し、ZOHOMURKを展開してZoho WorkDriveアカウントをC2チャネルとして確立する
+3. Zoho WorkDriveの受信箱フォルダから命令を取得し、窃取データを送信箱フォルダへアップロードして情報窃取を継続する
+
+【新規TTP】
+・[T1102] Web Service — Zoho WorkDriveを命令受信・データ送信のデッドドロップとして悪用（Acronis TRU明示）
+・[T1566] Phishing — SHARDLOADER配送のための標的型フィッシング（Acronis TRU明示）
+
+【IoC】
+IoC: 確認されず（ファイル名のみ判明: SHARDLOADER・MINIRECON・ZOHOMURK）
+
+【推奨アクション】
+・Zoho WorkDriveを業務利用するインド国内・関連組織は不審なOAuthアプリ登録・未承認アカウント作成を監査する
+・台湾関連MOU機関は標的型フィッシングへの警戒を強化する
+・CERT-Inのアドバイザリを参照し侵害指標の照合を行う
+・[プロキシログ] Zoho WorkDriveとの定期通信を監視する
+Splunk SPL: index=proxy_logs dest_domain="*workdrive.zoho.com*" | stats count by src_ip, user, dest_domain | where count > 20
+→ 通常業務で使用されないZoho WorkDriveアカウントとの定期的な通信パターンは新規C2チャネルの可能性
+
+【参照】
+https://www.acronis.com/en/tru/posts/mustang-panda-targets-indias-government-and-energy-sectors/
+https://gbhackers.com/mustang-panda-targets-indias-government/
+
+------------------------------------------------------------
+2. Gamaredon（別名: Primitive Bear / Shuckworm / Armageddon / UAC-0010 / 帰属: RU・高信頼度）
+活動ID: Gamaredon-2026-GammaEcosystem-CloudC2
+------------------------------------------------------------
+
+採用契機: S（既知グループの新規TTP）・P（マルウェアアーセナル再編の初報）
+標的: 政府機関・防衛 / ウクライナ
+マルウェア: GammaPhish（VBScript）・GammaLoad・GammaWorm（VBScript）・GammaSteel
+
+【24時間以内の変化】
+[The Hacker News 2026-06-29] ロシア国家系APTグループGamaredonがマルウェアツールセットを「Gamma」エコシステムへ再編し、クラウドサービス悪用によるC2チャネル拡張を行ったことを初報
+
+【概要】
+Gamaredon（ロシア国家系、高信頼度帰属）はマルウェアアーセナルを「Gamma」エコシステム（フィッシング用GammaPhish・ステージング用GammaLoad・自己増殖用GammaWorm・データ窃取用GammaSteel）へ再編し、ウクライナの政府・軍事機関を標的に35件の新規スピアフィッシングキャンペーンを展開した。新規VBScriptワームはWindowsのネイティブ機能内に隠蔽され、正規クラウドストレージサービスを秘匿C2チャネルとして悪用することで検知回避能力を高めている。
+
+攻撃の流れ（判明分）:
+1. GammaPhishによる標的型スピアフィッシングでウクライナ政府・軍事機関職員へ初期アクセスする
+2. GammaLoadがクラウドストレージサービスをC2チャネルとして悪用し追加ペイロードをステージングする
+3. GammaWormで内部ネットワークへ自己増殖し、GammaSteelでデータを窃取する
+
+【新規TTP】
+・[T1102] Web Service — 正規クラウドストレージサービスをC2チャネルとして悪用（The Hacker News報道に基づく）
+・[T1566] Phishing — 35件の新規スピアフィッシングキャンペーン（The Hacker News報道に基づく）
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・ウクライナ関連組織・支援機関はクラウドストレージサービスへの異常な定期通信を監視する
+・リムーバブルメディア経由の自己増殖型VBScriptワームに対するUSB制御ポリシーを強化する
+・[エンドポイントログ] wscript/cscript実行を監視する
+Splunk SPL: index=endpoint_logs process_name IN ("wscript.exe","cscript.exe") parent_process_name="explorer.exe" | stats count by host, CommandLine
+→ explorer.exeを親プロセスとするwscript/cscript実行はリムーバブルメディア経由ワームの典型パターン
+
+【参照】
+https://thehackernews.com/2026/06/gamaredon-expands-ukraine-attacks-with.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向採用基準を満たす活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（監視製品リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-33825 / Microsoft Defender Antimalware Platform（BlueHammer）
+CVSS: 7.8 (High) 状態: 実悪用確認 / KEV登録済み（2026年4月22日・ランサムウェア悪用フラグを本日Unknown→Knownへ更新）
+2026年4月にゼロデイとして公開・KEV登録済みの特権昇格脆弱性で、CISAが2026-06-30付でKEVカタログのランサムウェアキャンペーン悪用フラグを新たに更新した。パッチは2026年4月提供済みのため未パッチ環境のみがリスク対象。
+参照: https://www.bleepingcomputer.com/news/security/cisa-windows-bluehammer-flaw-now-exploited-by-ransomware-gangs/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜168時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Oracle EBS CVE-2026-46817 の CISA KEV 初回追加に備えた未パッチ環境の緊急確認
+Tier: 1
+確度: 中（M3: 確度=高はEPSS%ile≥0.95 AND KEV AND SSVC=Act/Attend。Automatable=noは自動降格）
+観測出口クラス: E1（CISA KEV初回追加）
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: SecurityWeek/SecurityAffairs/Help Net Security 2026-06-30: CVE-2026-46817（Oracle EBS Payments/File Transmission・CVSS 9.8）がPoC公開前から実悪用されていることを確認。Defused Cyberのハニーポットで2026-06-27に最初の未認証ファイル読み取り試行6件を観測。
+  過去パターン: CVSS 9.5以上・実悪用確認済みかつ広く使われるエンタープライズソフトウェアのCVEは、CISAが24〜72時間以内にKEVへ追加する傾向がある。直近ではCVE-2026-48558（SimpleHelp・CVSS 10.0）が実悪用確認の翌日にKEV初回追加された先例がある（2026-06-29）。
+  脅威情報: Oracle EBSは財務・ERPシステムとして広く利用されており、PoC非公開の段階で標的型の実悪用が先行している点で攻撃者の関心の高さを示す。
+  確度アンカー: EPSSパーセンタイル0.476（model_date: 2026-06-30）/ KEV未登録 / SSVC決定=Attend / Automatable=yes。定量ゲートD（KEV AND EPSS%ile≥0.95）未充足のため確度: 中。
+推定部分: （推測）EPSSスコアは新規CVEかつ標的型の限定的悪用のため過小評価されている可能性があるが、確証はない。
+先回り監視: CISA Known Exploited Vulnerabilitiesカタログの更新確認、Mandiant・CrowdStrike等によるCVE-2026-46817関連の新規ブログ投稿を監視する
+的中判定: CISAがCVE-2026-46817をKEVに初回追加した場合（dateAddedが2026-06-30以降の日付と一致、2026-07-03 07:00 JSTまで）。CISA以外の機関の相当リストへの追加は的中とみなさない。
+
+・予報2: Aflac Japan 個人情報漏えい（438万人規模）に便乗したフィッシング・なりすまし攻撃への備え
+Tier: 1
+確度: 中
+観測出口クラス: E3（フィッシング対策協議会・JPCERT/CC・警察庁等の公式発表）
+検証窓: slow_7d（7日間・M2割当根拠: credential_leak_to_attack_report は外部報道までの中央値14日であり72h窓に収まらないため）
+根拠:
+  Evidence: Security NEXT/日本経済新聞/SecurityWeek 2026-06-30: アフラック生命保険が契約者専用サイト「アフラックよりそうネット」等への不正アクセスにより約438万人の個人情報（氏名・住所・電話番号・証券番号、うち約23万人は保険料振替口座情報も含む）が流出したと発表。初回不正アクセスは6月15日、検知・遮断は6月25日。マイナンバー・クレジットカード情報は含まれない。
+  過去パターン: 大規模個人情報漏えい発表後は氏名・住所等の漏えい情報を悪用したなりすましフィッシング・サポート詐欺キャンペーンが数日〜数週間のタイムラグで観測される傾向がある（KDDI漏洩2026-06-23の事例では72時間窓内に外部報道される被害確認はなかった）。
+  確度アンカー: CVEベースではないため非適用。SSVC決定=Track・Automatable=no。
+推定部分: （推測）漏洩情報を悪用したフィッシング・なりすまし詐欺キャンペーンが発生する可能性は高いと推定されるが、72時間以内に外部報道されるかは不確実なためslow_7d窓に割り当てた。
+先回り監視: フィッシング対策協議会のアフラック関連報告、自組織のアフラック関連不審メール・SMS報告件数の増加
+的中判定: JPCERT/CC・IPA・警察庁・フィッシング対策協議会のいずれかがアフラックを騙るフィッシングキャンペーンまたは当該漏洩情報を悪用した二次被害事例を2026-07-07 07:00 JSTまでに公式発表した場合。単なる漏洩規模の更新報道のみでは的中とみなさない。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（APT）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・不明（帰属未確定） / KDDI-2026-EmailSystemBreach → 既報（2026-06-23）。24時間窓内に新たな変化なし
+・不明（Russian-speaking IAB） / FortiBleed-2026-CredentialCampaign → 既報（2026-06-27最終更新）。24時間窓内に新たな変化なし
+
+本日の集計（Section 2）:
+APT — 本編2件 / 注目動向0件 / 除外2件 / 計処理4件
+攻撃予報 — fast_72h 1件 / slow_7d 1件 / 合計2件
+
+========================================
