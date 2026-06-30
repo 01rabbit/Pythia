@@ -1,0 +1,453 @@
+========================================
+PYTHIA セキュリティインテリジェンス日報
+調査日時: 2026-06-30 07:00 JST
+調査期間: 2026-06-29 07:00 〜 2026-06-30 07:00 JST
+警戒レベル: 警戒（Oracle EBS実悪用拡大・Aflac Japan大規模漏えい・ISO Week 27継続）
+========================================
+観測件数: 12件
+CVE: ゼロデイ特報 1 / 本編 1 / 参考A 1 / 参考B 1 / 除外 7 / 処理総数 11
+APT: 本編 2 / 注目動向 0 / 除外 2 / 処理総数 4
+AI攻撃: 本編 2 / 参考B 1 / 除外 2 / 処理総数 5
+SOC推奨: 高 3 / 中 1 / 処理総数 4
+攻撃予報: fast_72h 1 / slow_7d 1
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. GuardFall: オープンソースAIコーディングエージェントを標的とした数十年来のシェルインジェクション手法の実証
+カテゴリ: B（AIモデル・エージェント攻撃）/ サブカテゴリ: B1（プロンプト・コマンドインジェクション）/ 攻撃者種別: 研究者実証
+------------------------------------------------------------
+
+採用契機: P（新規研究発表・実証あり）・S（プラットフォーム脆弱性発見）
+OWASP Agentic: AG01
+バースト検出: 3件（The Hacker News・SecurityWeek・Adversa AI）→ threshold_met
+被害規模: 11種のオープンソースAIコーディング・コンピュータ操作エージェントのうち10種で実証成功（Continueのみ防御に成功）
+
+【24時間以内の変化】
+[The Hacker News 2026-06-30] Adversa AIの研究としてGuardFallを初報。bashのコマンド書き換え処理を悪用しエージェントのブロックリスト型安全機構を回避できることを実証
+[SecurityWeek 2026-06-30] 「Decades-Old Bash Tricks Expose AI Coding Agents to Supply Chain Attacks」として技術詳細を報道
+
+【概要】
+Adversa AIが公開した研究GuardFallは、オープンソースのAIコーディング・コンピュータ操作エージェント11種のうち10種（Continueを除く）に対して、bashがコマンドをプレーンテキストの安全チェック後に書き換える挙動を悪用したシェルインジェクションが成功することを実証した。汚染されたリポジトリ・READMEやMakefileに隠蔽した指示により、フルアカウント権限で動作するエージェントにSSHキー・クラウド認証情報の窃取やファイル削除等のコマンドを気づかれずに実行させることが可能。
+
+攻撃の流れ:
+1. 攻撃者が悪意あるリポジトリ・READMEまたはMakefileに隠蔽コマンドを仕込む
+2. エンジニアがAIコーディングエージェントでこれを読み込ませると、エージェントのブロックリスト型チェックがプレーンテキスト評価のみであるためbashの書き換え後コマンドが見逃される
+3. エージェントがフルアカウント権限で隠蔽コマンドを実行し、SSHキー・クラウド認証情報を窃取または開発環境を破壊する
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: AIコーディングエージェント経由での予期しないシェルコマンド実行
+検知シグナル: リポジトリ内README/Makefileからのコマンド抽出パターン
+
+【監視・対策ポイント】
+・[開発端末EDR / シェル監査ログ] AIエージェントプロセスを親に持つbash/shの実行を監視する
+Splunk SPL: index=dev_endpoint_logs process_name IN ("bash","sh") parent_process_name="*agent*" | stats count by host, user, CommandLine
+→ AIエージェントプロセスを親に持つbash/shの実行で、SSHキー・クラウド認証情報ファイルへのアクセスを伴う場合は即時調査対象
+・業務利用するAIコーディングエージェントの権限を最小化し、未知リポジトリの読み込みはサンドボックス環境を使用する
+
+【参照】
+https://thehackernews.com/2026/06/guardfall-exposes-open-source-ai-coding.html
+https://www.securityweek.com/decades-old-bash-tricks-expose-ai-coding-agents-to-supply-chain-attacks/
+
+------------------------------------------------------------
+2. Microsoft: MCPツール説明文の汚染（Tool Poisoning）によるAIエージェント機密データ漏洩警告
+カテゴリ: B（AIモデル・エージェント攻撃）/ サブカテゴリ: B1（プロンプトインジェクション）/ 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: P（新規研究発表）・T（政府機関・大手ベンダーの警告発行）
+OWASP LLM: LLM01 / OWASP Agentic: AG01
+バースト検出: 4件 → threshold_met
+被害規模: 不明（エンタープライズMCP導入組織全般が潜在的リスク）
+
+【24時間以内の変化】
+[The Hacker News 2026-06-30] MicrosoftがMCPツール説明文の汚染（Tool Poisoning）に関するセキュリティアドバイザリを公開。エンタープライズAIエージェント導入組織にガバナンス見直しを要請
+
+【概要】
+Microsoftは2026-06-30付セキュリティアドバイザリで、MCP（Model Context Protocol）ツールの説明文に隠蔽した悪意ある指示によりAIエージェントが機密データを外部へ漏洩させる「Tool Poisoning」攻撃を警告した。MCPはツール説明文の動的更新を許容するため、再承認トリガーのない構成では汚染版が無審査で有効化される。エージェントは隠蔽指示に従って正規リクエストを装いながら機密データを攻撃者管理サーバーへ送信する。
+
+攻撃の流れ:
+1. 攻撃者がMCPツールの説明文（スキーマ内の書式注記等を装う）に隠蔽指示を埋め込む
+2. 再承認トリガーのないMCP構成で汚染版の説明文が無審査で有効化される
+3. AIエージェントが隠蔽指示に従い機密データを収集し、正規リクエストを装って外部サーバーへ送信する
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: MCPツール説明文の予期しない変更
+検知シグナル: AIエージェントから未承認外部エンドポイントへのデータ送信
+
+【監視・対策ポイント】
+・[MCPサーバーログ] ツール説明文の変更を監視する
+Splunk SPL: index=mcp_server_logs event_type="tool_description_update" | stats count by tool_name, server_id, _time
+→ MCPツール説明文の変更が再承認なしで反映されている場合はガバナンス不備の指標。エージェントの通信先ホワイトリスト逸脱は即時調査
+・MCPツール定義の変更管理に再承認フローを導入する
+
+【参照】
+https://thehackernews.com/2026/06/microsoft-warns-poisoned-mcp-tool.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 282 iOS AI アプリが LLM API キー・AI プロキシアクセスをネットワークトラフィックで漏洩
+カテゴリ: C（AIインフラ攻撃）/ サブカテゴリ: C4（AIモデルホスティング・トークン漏洩）
+------------------------------------------------------------
+
+バースト検出: 2件（The Hacker News・arXiv）→ below_threshold
+
+Wake Forest大学の研究チームがiOS向けAIチャットボットアプリ444本を独自ツールLLMKeyLensで調査した結果、282本（64%）がネットワークトラフィック上でLLM API認証情報（10以上のLLMプロバイダ・5クラウドプラットフォームにまたがる）を露出していることが判明した。最も多い漏洩パターンはJWTベースのトークン漏洩（48%）、次いで未認証バックエンドプロキシアクセス（33%）、平文APIキー送信（19%）。開発者へ通報後3ヶ月経過時点でも28%しか修正されておらず23%は依然として悪用可能な状態が継続している。
+対策: 自社開発のiOS AIアプリがある場合はネットワークトラフィック内のAPIキー露出を点検する。
+
+監視: [LLM APIプロバイダ利用ログ] 想定外のソースからのAPIキー利用を監視
+→ アプリのAPIクォータの異常消費は不正利用の兆候
+
+参照: https://thehackernews.com/2026/06/282-ios-apps-found-leaking-llm-api-keys.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 週次トレンドサマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日（2026-06-30）はAIエージェント自体の安全機構の構造的弱点を突く研究2件が本編を占めた。GuardFallはAIコーディングエージェントのコマンド検証ロジックの根本的弱点（bashのコマンド書き換えとブロックリストの不整合）を実証し、業界標準ツールの過半数に影響することを示した。MicrosoftによるMCPツール汚染の警告は、エンタープライズAIエージェント導入が進む中でサプライチェーン的なガバナンス課題が顕在化していることを示す。282件のiOS AIアプリのAPIキー漏洩調査は、AI機能を組み込んだモバイルアプリの実装品質が依然として低いことを裏付けている。
+
+本日の集計:
+AI攻撃 — 本編2件 / 参考A0件 / 参考B1件 / 除外2件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）2件 / C（インフラ）1件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 2: ゼロデイ・トレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】実悪用確認・緊急対応必須
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-46817 / Oracle E-Business Suite (EBS) - Payments / File Transmission
+対象: 12.2.3〜12.2.15（2026年5月CSPU未適用環境）
+------------------------------------------------------------
+
+優先度: 緊急
+CVSS: 9.8 (Critical)
+状態: 実悪用確認
+パッチ: 2026年5月CSPU提供済み（未適用環境が標的）
+
+【24時間以内の変化】
+[SecurityWeek 2026-06-30] Defused Cyberのハニーポットで2026-06-27に最初の実悪用観測を確認したと報告。PoC公開前の実悪用として詳報
+[SecurityAffairs 2026-06-30] Oracle EBS Payments/File Transmissionモジュールへの未認証ファイル読み取り試行が継続していることを報告
+
+【概要】
+Oracle E-Business Suite（Oracle Payments / File Transmissionコンポーネント）のCVE-2026-46817（CVSS 9.8）はPoC公開前の段階から実悪用が観測されている権限管理不備・認証バイパスの脆弱性で、未認証の攻撃者がHTTPネットワークアクセスのみでOracle Paymentsインスタンスを乗っ取り可能。Defused Cyberのハニーポットは2026年6月27日に単一の発信元から6件の未認証ファイル読み取り試行を観測しており、これはOracleが2026年5月のCritical Patch Update Supplementでパッチを提供してから約6週間後、かつ公開PoCが存在しない時点での実悪用であることが特徴。財務・ERPシステムを狙う標的型の性格が強い。
+
+攻撃の流れ:
+1. 攻撃者がOracle EBS Payments/File Transmissionの公開エンドポイントへ未認証のHTTPリクエストを送信する
+2. 権限管理不備を悪用してOracle Paymentsインスタンスの制御を奪取し、ファイル読み取り・書き込みを行う
+3. 財務・決済データへアクセスし、C2インフラ（45.84.137.125等）へ情報を持ち出す
+
+【暫定緩和策】
+・2026年5月CSPU（Critical Patch Update Supplement）を即時適用する
+・Oracle EBS Payments / File Transmissionモジュールをインターネットから直接到達不能にする（VPN・IP制限の追加）
+・/OA_HTML/ibytransmit 等の関連エンドポイントへのアクセスログを6月27日以降に遡って確認する
+
+【IoC】
+IP: 45.84.137.125
+
+【監視ポイント】
+・[Oracle EBS Webサーバーログ / ネットワークフロー] 異常アクセスを監視する
+Splunk SPL: index=oracle_ebs_logs request_path="/OA_HTML/ibytransmit" method=POST | stats count by src_ip, user_agent | where count > 3
+Splunk SPL: index=network_logs (dest_ip="45.84.137.125" OR src_ip="45.84.137.125") | stats count by src_ip, dest_ip, dest_port
+→ 未認証ユーザーエージェントからのibytransmitへの連続POSTリクエスト、および45.84.137.125との通信は即時インシデント対応へ
+
+【参照】
+https://www.securityweek.com/exploitation-of-recent-oracle-e-business-suite-vulnerability-begins/
+https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html
+https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Mustang Panda（別名: TA416 / RedDelta / Bronze President / Earth Preta / 帰属: CN・高信頼度）
+活動ID: MustangPanda-2026-ZohoWorkDriveIndia
+------------------------------------------------------------
+
+採用契機: P（新規マルウェア・C2手法初報）・Q（インド政府機関への侵害確認）・V（重要インフラ・政府機関への侵害）
+標的: 政府機関・エネルギー（水力発電） / インド・台湾関連MOU機関
+マルウェア: SHARDLOADER（ローダー）・MINIRECON（RAT）・ZOHOMURK（バックドア）
+
+【24時間以内の変化】
+[Acronis TRU 2026-06-29] インド政府機関の水力発電セクターおよび台湾とのMOU関連機関を標的とした2件の並行キャンペーンを初報。Zoho WorkDriveをC2として悪用する新マルウェアZOHOMURKを特定
+
+【概要】
+Acronis Threat Research Unitが2026-06-29に公開した分析によると、中国国家系APTグループMustang Panda（高信頼度帰属）がインド政府機関の水力発電セクターおよび台湾との協力覚書（MOU）関連機関を標的に2件の並行キャンペーンを展開している。新規ツールキットSHARDLOADER・MINIRECON・ZOHOMURKを使用し、ZOHOMURKはハードコードされたZoho OAuth認証情報を用いて攻撃者管理下のZoho WorkDriveアカウントをデッドドロップ（命令受信箱・窃取データ送信箱）として悪用する。2026年6月12日〜22日にアクティブなビーコニングが確認され、インド政府機関の上級職員端末を含む侵害がAcronisにより確認された。CERT-Inと連携して通報・対処を実施中。
+
+攻撃の流れ（判明分）:
+1. 標的のインド政府機関・水力発電セクター職員へスピアフィッシングでSHARDLOADERを配送する
+2. MINIRECONで内部偵察を実施し、ZOHOMURKを展開してZoho WorkDriveアカウントをC2チャネルとして確立する
+3. Zoho WorkDriveの受信箱フォルダから命令を取得し、窃取データを送信箱フォルダへアップロードして情報窃取を継続する
+
+【新規TTP】
+・[T1102] Web Service — Zoho WorkDriveを命令受信・データ送信のデッドドロップとして悪用（Acronis TRU明示）
+・[T1566] Phishing — SHARDLOADER配送のための標的型フィッシング（Acronis TRU明示）
+
+【IoC】
+IoC: 確認されず（ファイル名のみ判明: SHARDLOADER・MINIRECON・ZOHOMURK）
+
+【推奨アクション】
+・Zoho WorkDriveを業務利用するインド国内・関連組織は不審なOAuthアプリ登録・未承認アカウント作成を監査する
+・台湾関連MOU機関は標的型フィッシングへの警戒を強化する
+・CERT-Inのアドバイザリを参照し侵害指標の照合を行う
+・[プロキシログ] Zoho WorkDriveとの定期通信を監視する
+Splunk SPL: index=proxy_logs dest_domain="*workdrive.zoho.com*" | stats count by src_ip, user, dest_domain | where count > 20
+→ 通常業務で使用されないZoho WorkDriveアカウントとの定期的な通信パターンは新規C2チャネルの可能性
+
+【参照】
+https://www.acronis.com/en/tru/posts/mustang-panda-targets-indias-government-and-energy-sectors/
+https://gbhackers.com/mustang-panda-targets-indias-government/
+
+------------------------------------------------------------
+2. Gamaredon（別名: Primitive Bear / Shuckworm / Armageddon / UAC-0010 / 帰属: RU・高信頼度）
+活動ID: Gamaredon-2026-GammaEcosystem-CloudC2
+------------------------------------------------------------
+
+採用契機: S（既知グループの新規TTP）・P（マルウェアアーセナル再編の初報）
+標的: 政府機関・防衛 / ウクライナ
+マルウェア: GammaPhish（VBScript）・GammaLoad・GammaWorm（VBScript）・GammaSteel
+
+【24時間以内の変化】
+[The Hacker News 2026-06-29] ロシア国家系APTグループGamaredonがマルウェアツールセットを「Gamma」エコシステムへ再編し、クラウドサービス悪用によるC2チャネル拡張を行ったことを初報
+
+【概要】
+Gamaredon（ロシア国家系、高信頼度帰属）はマルウェアアーセナルを「Gamma」エコシステム（フィッシング用GammaPhish・ステージング用GammaLoad・自己増殖用GammaWorm・データ窃取用GammaSteel）へ再編し、ウクライナの政府・軍事機関を標的に35件の新規スピアフィッシングキャンペーンを展開した。新規VBScriptワームはWindowsのネイティブ機能内に隠蔽され、正規クラウドストレージサービスを秘匿C2チャネルとして悪用することで検知回避能力を高めている。
+
+攻撃の流れ（判明分）:
+1. GammaPhishによる標的型スピアフィッシングでウクライナ政府・軍事機関職員へ初期アクセスする
+2. GammaLoadがクラウドストレージサービスをC2チャネルとして悪用し追加ペイロードをステージングする
+3. GammaWormで内部ネットワークへ自己増殖し、GammaSteelでデータを窃取する
+
+【新規TTP】
+・[T1102] Web Service — 正規クラウドストレージサービスをC2チャネルとして悪用（The Hacker News報道に基づく）
+・[T1566] Phishing — 35件の新規スピアフィッシングキャンペーン（The Hacker News報道に基づく）
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・ウクライナ関連組織・支援機関はクラウドストレージサービスへの異常な定期通信を監視する
+・リムーバブルメディア経由の自己増殖型VBScriptワームに対するUSB制御ポリシーを強化する
+・[エンドポイントログ] wscript/cscript実行を監視する
+Splunk SPL: index=endpoint_logs process_name IN ("wscript.exe","cscript.exe") parent_process_name="explorer.exe" | stats count by host, CommandLine
+→ explorer.exeを親プロセスとするwscript/cscript実行はリムーバブルメディア経由ワームの典型パターン
+
+【参照】
+https://thehackernews.com/2026/06/gamaredon-expands-ukraine-attacks-with.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向採用基準を満たす活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（監視製品リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CVE-2026-33825 / Microsoft Defender Antimalware Platform（BlueHammer）
+CVSS: 7.8 (High) 状態: 実悪用確認 / KEV登録済み（2026年4月22日・ランサムウェア悪用フラグを本日Unknown→Knownへ更新）
+2026年4月にゼロデイとして公開・KEV登録済みの特権昇格脆弱性で、CISAが2026-06-30付でKEVカタログのランサムウェアキャンペーン悪用フラグを新たに更新した。パッチは2026年4月提供済みのため未パッチ環境のみがリスク対象。
+参照: https://www.bleepingcomputer.com/news/security/cisa-windows-bluehammer-flaw-now-exploited-by-ransomware-gangs/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜168時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+予報1（T1/E1/fast_72h/確度:中）
+Oracle EBS CVE-2026-46817 の CISA KEV 初回追加に備えた未パッチ環境の緊急確認
+根拠: CVSS 9.8・実悪用確認済み。PoC公開前から標的型悪用が先行している。直近ではCVE-2026-48558（CVSS 10.0）が実悪用確認の翌日にKEV初回追加された先例。
+確度アンカー: EPSSパーセンタイル0.476（KEV未登録・SSVC=Attend）→ 定量ゲートD未充足のため確度: 中
+的中判定: CISAがCVE-2026-46817をKEVに初回追加した場合（dateAddedが2026-06-30以降、2026-07-03 07:00 JSTまで）
+先回り監視: CISA KEVカタログ更新確認・Mandiant/CrowdStrike等の新規ブログ投稿
+
+予報2（T1/E3/slow_7d/確度:中）
+Aflac Japan 個人情報漏えい（438万人規模）に便乗したフィッシング・なりすまし攻撃への備え
+根拠: 契約者専用サイトへの不正アクセスで約438万人分の個人情報が流出（うち約23万人は保険料振替口座情報含む）。大規模個人情報漏えい後はなりすましフィッシング・サポート詐欺が数日〜数週間のタイムラグで観測される傾向（KDDI漏洩2026-06-23の事例では72時間窓内の外部報道はなかった）。
+確度アンカー: CVEベースではないため非適用。SSVC=Track・Automatable=no → 確度: 中
+的中判定: JPCERT/CC・IPA・警察庁・フィッシング対策協議会のいずれかがアフラックを騙るフィッシングまたは当該漏洩情報の二次被害を2026-07-07 07:00 JSTまでに公式発表した場合
+先回り監視: フィッシング対策協議会のアフラック関連報告、自組織のアフラック関連不審メール報告増加
+
+APT統計: 本編2件 / 注目動向0件 / 除外2件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CVE-2026-46817 / Oracle EBS 12.2.3〜12.2.15 / CVSS 9.8 / パッチ: 2026年5月CSPU
+（詳細はSection 2 ゼロデイ特報参照）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-48558 / SimpleHelp Remote Support Software
+対象: v5.5.15以下（OIDC認証を有効化した構成）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み（2026-06-29初回追加） / 実悪用確認 / PoC公開
+FCEB期限: 2026-07-02
+
+【24時間以内の変化】
+[CISA 2026-06-29] CVE-2026-48558をKEVカタログに初回追加。BOD 26-04に基づきFCEB機関に3日以内（2026-07-02まで）のパッチ適用を指示（既報2026-06-29時点ではKEV未登録だった状態からの変化）
+[SecurityWeek 2026-06-30] TaskWeaver（Node.jsローダー）の展開を新たに確認。Djinn Stealerに加えて二段階目のマルウェアが投下されていることが判明
+
+【概要】
+SimpleHelpのOIDC認証バイパス脆弱性CVE-2026-48558（CVSS 10.0）は2026-06-29にCISA KEVへ初回登録され、BOD 26-04に基づきFCEB機関へ2026-07-02までの対応が義務付けられた。実悪用では当初確認されたDjinn Stealerに加え、Node.jsベースのローダーTaskWeaverが展開されていることが新たに判明し、攻撃チェーンが多段化していることが分かった。
+
+攻撃の流れ:
+1. OIDC設定を持つSimpleHelp v5.5.15以下の認証エンドポイントへ偽造トークンを送信し認証バイパスでテクニシャンセッションを確立する
+2. テクニシャン権限でTaskWeaver（Node.jsローダー）を配信し、Djinn Stealerを展開する
+3. AI開発者認証情報・SSHキー・クラウド認証情報を収集しC2へ送信する
+
+【IoC】
+IoC: 確認されず（ファイル名のみ: djinn_stealer・TaskWeaver）
+
+【監視ポイント】
+・[SimpleHelp認証ログ / エンドポイントログ] AIツール設定・認証情報アクセスを監視する
+Splunk SPL: index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip | where count > 3
+Splunk SPL: index=endpoint_logs (file_path="*/.claude/*" OR file_path="*/.ssh/id_*" OR file_path="*/.aws/credentials*") NOT process_name IN ("claude","ssh-agent","aws") | stats count by host, process_name, file_path
+→ OIDC経由の不明ユーザーログイン成功は即時対応。AIツール設定・SSHキーへの正規プロセス以外の一括アクセスはDjinn Stealer/TaskWeaver活動の指標
+
+【参照】
+https://thehackernews.com/2026/06/attackers-exploit-simplehelp-cve-2026.html
+https://www.securityweek.com/critical-simplehelp-vulnerability-exploited-for-malware-delivery/
+https://www.helpnetsecurity.com/2026/06/30/simplehelp-vulnerability-exploited-cve-2026-48558/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. CVE-2026-8037 / Progress Kemp LoadMaster / ECS Connection Manager / Object Scale Connection Manager / MOVEit WAF
+CVSS: 9.8 (Critical) 状態: PoC公開（詳細エクスプロイトチェーン） / 実悪用未確認
+escape_quotes()関数のヒープ未初期化・null終端欠落に起因する未認証root権限OSコマンドインジェクション。watchTowr Labsが2026-06-29に詳細なエクスプロイトチェーンを公開し武器化リスクが高まっている。Progressは6月4日に修正版を提供済み。管理APIをインターネットから直接到達不能にし即時パッチ適用を確認すること。
+参照: https://thehackernews.com/2026/06/progress-kemp-loadmaster-flaw-could-let.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CVE-2026-33825 / Microsoft Defender Antimalware Platform（BlueHammer）
+CVSS: 7.8 (High) KEV登録済み（2026年4月・本日ランサムウェア悪用フラグ更新）
+2026年4月パッチ提供済みのTOCTOU特権昇格脆弱性。CISAが本日KEVのランサムウェアキャンペーン悪用フラグをUnknown→Knownへ更新。未パッチ環境は即時パッチ適用を確認すること。
+参照: https://www.bleepingcomputer.com/news/security/cisa-windows-bluehammer-flaw-now-exploited-by-ransomware-gangs/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-44024 (Fluentd) → 既報（2026-06-29・参考A）。24時間窓内に変化なし
+・CVE-2026-55200 (libssh2) → 既報（2026-06-29・参考A）。24時間窓内に変化なし
+・CVE-2026-5173 (GitLab CE/EE) → 既報（2026-06-29・参考A）。24時間窓内に変化なし
+・CVE-2026-12244 / CVE-2026-12245 / CVE-2026-12246 (NSD) → 既報（2026-06-29・参考A）。24時間窓内に変化なし
+・CVE-2026-43707 (Apple iOS/macOS/Safari WebKit) → 実悪用報告・KEV登録なし。EPSSパーセンタイル0.06と低い。低優先度フラグ
+・CVE-2026-20245 (Cisco Catalyst SD-WAN Manager) → 既報（2026-06-23・参考B）。24時間窓内に変化なし
+・CVE-2026-20230 (Cisco UCM) → 既報（2026-06-24/27・本編）。FCEB期限経過済み。24時間窓内に新たな変化なし
+
+CVE統計: ゼロデイ特報1 / 本編1 / 参考A1 / 参考B1 / 除外7 / 処理総数11
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報 — 高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. [高優先度] アフラック生命保険 個人情報漏えい（438万人規模）便乗フィッシングへの警戒
+対象: アフラック契約者専用サイト「アフラックよりそうネット」
+大手生命保険会社アフラックの契約者専用サイトが不正アクセスを受け、約438万人分の氏名・住所・電話番号・証券番号、うち約23万人分は保険料振替口座情報も流出した。マイナンバー・クレジットカード情報は含まれないが、漏洩情報を悪用したなりすましフィッシング・サポート詐欺への便乗が想定される大規模国内インシデント。
+自組織従業員・顧客向けにアフラックを騙るフィッシングメール・SMSへの注意喚起を実施する。アフラック関連を装った不審な連絡（保険料振替口座の確認を求めるもの等）の報告窓口を周知する。メールゲートウェイでアフラック関連キーワードを含む新規ドメインからのメールを一時的に注視する。
+
+2. [高優先度] Oracle PeopleSoft ゼロデイ(CVE-2026-35273)悪用ShinyHuntersキャンペーンの被害拡大（Nissan・NAIC）
+対象: Oracle PeopleSoft PeopleTools
+既報のOracle PeopleSoftゼロデイCVE-2026-35273（CVSS 9.8）を悪用したShinyHuntersのキャンペーンで、新たにNissan（従業員のSSN・銀行情報・税務情報窃取の可能性）とNAIC（公開データ・古いログ・設定ファイル窃取）が被害組織として判明した。Mandiantは300以上のPeopleSoftインスタンス・100以上の組織への影響を確認しており、教育セクターを中心に被害が拡大中。
+Oracle PeopleSoft PeopleTools 8.61/8.62環境のCVE-2026-35273パッチ適用状況を再確認する。PSEMHUB（Updates Environment Management）コンポーネントへの2026年5月27日以降のアクセスログを遡及調査する。ShinyHuntersのデータリークサイトで自組織関連データの掲載有無を確認する。
+Splunk SPL: index=peoplesoft_logs uri_path="*PSEMHUB*" | stats count by src_ip, uri_path | sort -count
+
+3. [高優先度] Progress Kemp LoadMaster CVE-2026-8037: 未認証root権限RCEの詳細エクスプロイトチェーン公開
+対象: Progress Kemp LoadMaster
+ロードバランサー製品Kemp LoadMasterの未認証OSコマンドインジェクション脆弱性CVE-2026-8037（CVSS 9.8）について、watchTowr Labsが詳細なエクスプロイトチェーンを公開した。Progressは6月4日にパッチを提供済みで実悪用報告はまだないが、詳細解析の公開により武器化リスクが高まっている。
+Kemp LoadMaster / ECS Connection Manager / Object Scale Connection Manager / MOVEit WAFのパッチ適用状況を即時確認する。管理APIをインターネットから直接到達不能にする（管理アクセスのIP制限）。watchTowr公開のPoC公開後の悪用試行有無をログで確認する。
+Splunk SPL: index=kemp_loadmaster_logs uri_path="*api*" | stats count by src_ip, uri_path | where count > 10
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報 — 中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4. [中優先度] GuardFall: AIコーディングエージェントのbashシェルインジェクション対策の即時点検
+対象: オープンソースAIコーディング・コンピュータ操作エージェント全般
+開発組織で利用されるオープンソースAIコーディングエージェントの大半が、bashのコマンド書き換え処理を悪用したシェルインジェクション（ブロックリスト回避）に脆弱であることが実証された。汚染リポジトリの読み込みによりSSHキー・クラウド認証情報の窃取・開発環境破壊につながるため、AIエージェントを業務利用する開発チームは設定の即時点検が必要。
+業務で利用しているAIコーディングエージェントがGuardFallの対象10種に該当するか確認する。エージェントに付与するアカウント権限を最小化し、SSHキー・クラウド認証情報への直接アクセスを制限する。未知のリポジトリ・READMEをAIエージェントに読み込ませる際はサンドボックス環境を使用する。
+
+SOC推奨情報統計: 高3件 / 中1件 / 低0件 / 除外0件 / 計処理4件
+観点内訳: CVE関連2件 / ゼロデイ関連1件 / AI攻撃関連1件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ベースライン更新ログ】（ISO Week 27継続）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+詳細は forecaster/forecasts/daily/2026-06-30.md を参照。
+
+全観測件数（累計）: 121件
+
+========================================
+日次パイプライン完了: 2026-06-30 07:00 JST
+========================================

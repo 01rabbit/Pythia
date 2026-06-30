@@ -1,0 +1,134 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-06-30 07:00 JST
+調査期間: 2026-06-29 07:00 〜 2026-06-30 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-46817 / Oracle E-Business Suite (EBS) - Payments / File Transmission
+対象: 12.2.3〜12.2.15（2026年5月CSPU未適用環境）
+------------------------------------------------------------
+
+優先度: 緊急
+CVSS: 9.8 (Critical)
+状態: 実悪用確認
+パッチ: 2026年5月CSPU提供済み（未適用環境が標的）
+
+【24時間以内の変化】
+[SecurityWeek 2026-06-30] Defused Cyberのハニーポットで2026-06-27に最初の実悪用観測を確認したと報告。PoC公開前の実悪用として詳報
+[SecurityAffairs 2026-06-30] Oracle EBS Payments/File Transmissionモジュールへの未認証ファイル読み取り試行が継続していることを報告
+
+【概要】
+Oracle E-Business Suite（Oracle Payments / File Transmissionコンポーネント）のCVE-2026-46817（CVSS 9.8）はPoC公開前の段階から実悪用が観測されている権限管理不備・認証バイパスの脆弱性で、未認証の攻撃者がHTTPネットワークアクセスのみでOracle Paymentsインスタンスを乗っ取り可能。Defused Cyberのハニーポットは2026年6月27日に単一の発信元から6件の未認証ファイル読み取り試行を観測しており、これはOracleが2026年5月のCritical Patch Update Supplementでパッチを提供してから約6週間後、かつ公開PoCが存在しない時点での実悪用であることが特徴。財務・ERPシステムを狙う標的型の性格が強い。
+
+攻撃の流れ:
+1. 攻撃者がOracle EBS Payments/File Transmissionの公開エンドポイントへ未認証のHTTPリクエストを送信する
+2. 権限管理不備を悪用してOracle Paymentsインスタンスの制御を奪取し、ファイル読み取り・書き込みを行う
+3. 財務・決済データへアクセスし、C2インフラ（45.84.137.125等）へ情報を持ち出す
+
+【暫定緩和策】
+・2026年5月CSPU（Critical Patch Update Supplement）を即時適用する
+・Oracle EBS Payments / File Transmissionモジュールをインターネットから直接到達不能にする（VPN・IP制限の追加）
+・/OA_HTML/ibytransmit 等の関連エンドポイントへのアクセスログを6月27日以降に遡って確認する
+
+【IoC】
+IP: 45.84.137.125
+
+【監視ポイント】
+・[Oracle EBS Webサーバーログ / ネットワークフロー] 異常アクセスを監視する
+Splunk SPL: index=oracle_ebs_logs request_path="/OA_HTML/ibytransmit" method=POST | stats count by src_ip, user_agent | where count > 3
+Splunk SPL: index=network_logs (dest_ip="45.84.137.125" OR src_ip="45.84.137.125") | stats count by src_ip, dest_ip, dest_port
+→ 未認証ユーザーエージェントからのibytransmitへの連続POSTリクエスト、および45.84.137.125との通信は即時インシデント対応へ
+
+【参照】
+https://www.securityweek.com/exploitation-of-recent-oracle-e-business-suite-vulnerability-begins/
+https://securityaffairs.com/194463/security/attackers-actively-exploit-the-oracle-e-business-suite-flaw-cve-2026-46817.html
+https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-48558 / SimpleHelp Remote Support Software
+対象: v5.5.15以下（OIDC認証を有効化した構成）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み（2026-06-29初回追加） / 実悪用確認 / PoC公開
+FCEB期限: 2026-07-02
+
+【24時間以内の変化】
+[CISA 2026-06-29] CVE-2026-48558をKEVカタログに初回追加。BOD 26-04に基づきFCEB機関に3日以内（2026-07-02まで）のパッチ適用を指示（既報2026-06-29時点ではKEV未登録だった状態からの変化）
+[SecurityWeek 2026-06-30] TaskWeaver（Node.jsローダー）の展開を新たに確認。Djinn Stealerに加えて二段階目のマルウェアが投下されていることが判明
+
+【概要】
+SimpleHelpのOIDC認証バイパス脆弱性CVE-2026-48558（CVSS 10.0）は2026-06-29にCISA KEVへ初回登録され、BOD 26-04に基づきFCEB機関へ2026-07-02までの対応が義務付けられた。実悪用では当初確認されたDjinn Stealerに加え、Node.jsベースのローダーTaskWeaverが展開されていることが新たに判明し、攻撃チェーンが多段化していることが分かった。
+
+攻撃の流れ:
+1. OIDC設定を持つSimpleHelp v5.5.15以下の認証エンドポイントへ偽造トークンを送信し認証バイパスでテクニシャンセッションを確立する
+2. テクニシャン権限でTaskWeaver（Node.jsローダー）を配信し、Djinn Stealerを展開する
+3. AI開発者認証情報・SSHキー・クラウド認証情報を収集しC2へ送信する
+
+【IoC】
+IoC: 確認されず（ファイル名のみ: djinn_stealer・TaskWeaver）
+
+【監視ポイント】
+・[SimpleHelp認証ログ / エンドポイントログ] AIツール設定・認証情報アクセスを監視する
+Splunk SPL: index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip | where count > 3
+Splunk SPL: index=endpoint_logs (file_path="*/.claude/*" OR file_path="*/.ssh/id_*" OR file_path="*/.aws/credentials*") NOT process_name IN ("claude","ssh-agent","aws") | stats count by host, process_name, file_path
+→ OIDC経由の不明ユーザーログイン成功は即時対応。AIツール設定・SSHキーへの正規プロセス以外の一括アクセスはDjinn Stealer/TaskWeaver活動の指標
+
+【参照】
+https://thehackernews.com/2026/06/attackers-exploit-simplehelp-cve-2026.html
+https://www.securityweek.com/critical-simplehelp-vulnerability-exploited-for-malware-delivery/
+https://www.helpnetsecurity.com/2026/06/30/simplehelp-vulnerability-exploited-cve-2026-48558/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. CVE-2026-8037 / Progress Kemp LoadMaster / ECS Connection Manager / Object Scale Connection Manager / MOVEit WAF
+CVSS: 9.8 (Critical) 状態: PoC公開（詳細エクスプロイトチェーン） / 実悪用未確認
+escape_quotes()関数のヒープ未初期化・null終端欠落に起因する未認証root権限OSコマンドインジェクション。watchTowr Labsが2026-06-29に詳細なエクスプロイトチェーンを公開し武器化リスクが高まっている。Progressは6月4日に修正版を提供済み。管理APIをインターネットから直接到達不能にし即時パッチ適用を確認すること。
+参照: https://thehackernews.com/2026/06/progress-kemp-loadmaster-flaw-could-let.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CVE-2026-33825 / Microsoft Defender Antimalware Platform（BlueHammer）
+CVSS: 7.8 (High) KEV登録済み（2026年4月・本日ランサムウェア悪用フラグ更新）
+2026年4月パッチ提供済みのTOCTOU特権昇格脆弱性。CISAが本日KEVのランサムウェアキャンペーン悪用フラグをUnknown→Knownへ更新。未パッチ環境は即時パッチ適用を確認すること。
+参照: https://www.bleepingcomputer.com/news/security/cisa-windows-bluehammer-flaw-now-exploited-by-ransomware-gangs/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-44024 (Fluentd) → 既報（2026-06-29・参考A）。24時間窓内に変化なし
+・CVE-2026-55200 (libssh2) → 既報（2026-06-29・参考A）。24時間窓内に変化なし
+・CVE-2026-5173 (GitLab CE/EE) → 既報（2026-06-29・参考A）。24時間窓内に変化なし
+・CVE-2026-12244 / CVE-2026-12245 / CVE-2026-12246 (NSD) → 既報（2026-06-29・参考A）。24時間窓内に変化なし
+・CVE-2026-43707 (Apple iOS/macOS/Safari WebKit) → 実悪用報告・KEV登録なし。EPSSパーセンタイル0.06と低い。低優先度フラグ
+・CVE-2026-20245 (Cisco Catalyst SD-WAN Manager) → 既報（2026-06-23・参考B）。24時間窓内に変化なし
+・CVE-2026-20230 (Cisco UCM) → 既報（2026-06-24/27・本編）。FCEB期限経過済み。24時間窓内に新たな変化なし
+
+CVE統計: ゼロデイ特報1 / 本編1 / 参考A1 / 参考B1 / 除外7 / 処理総数11
+
+========================================
