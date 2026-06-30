@@ -20,7 +20,7 @@ Section 3: 製品別CVE
 ------------------------------------------------------------
 
 優先度: 緊急
-CVSS: 10.0 (Critical)
+CVSS: 10.0 (Critical) | CWE-287（認証バイパス）
 状態: 実悪用確認 / PoC 公開
 パッチ: v5.5.16 リリース済み（即時適用必須）
 
@@ -30,7 +30,7 @@ CVSS: 10.0 (Critical)
 [HelpNetSecurity 2026-06-29] SimpleHelpがv5.5.16パッチをリリース。14,000台以上のSimpleHelp サーバーがインターネット上に露出。
 
 【概要】
-SimpleHelp リモートサポートソフトウェア v5.5.15 以下に CVSSv3 10.0 の認証バイパス脆弱性が発見され、2026-06-29 に実悪用が確認された。OIDC 認証が有効な環境において攻撃者は任意のテクニシャンアカウントとして認証なしでログイン可能（CWE-287）。攻撃者はこの脆弱性を悪用して Djinn Stealer を展開し、Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタント設定ファイル・MCP コンフィグ・SSH キー・クラウドプロバイダー認証情報・Docker シークレット・Terraform 設定を窃取する。Windows・macOS・Linux のクロスプラットフォームに対応。14,000 台以上の SimpleHelp サーバーがインターネット上に露出しており、MSP・IT サービス事業者の顧客環境が広範に危険にさらされている。
+SimpleHelp リモートサポートソフトウェア v5.5.15 以下に CVSSv3 10.0 の認証バイパス脆弱性が発見され、2026-06-29 に実悪用が確認された。OIDC 認証が有効な環境において攻撃者は任意のテクニシャンアカウントとして認証なしでログイン可能（CWE-287）。攻撃者はこの脆弱性を悪用して Djinn Stealer を展開し、Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタント設定ファイル・MCP コンフィグ・SSH キー・クラウドプロバイダー認証情報・Docker シークレット・Terraform 設定を窃取する。14,000 台以上の SimpleHelp サーバーがインターネット上に露出しており、MSP・IT サービス事業者の顧客環境が広範に危険にさらされている。
 
 攻撃の流れ:
 1. OIDC 設定を持つ SimpleHelp v5.5.15 以下の /api/authenticate エンドポイントへ細工したリクエストを送信し、認証バイパスにより任意のテクニシャンアカウントでセッションを確立する
@@ -41,18 +41,14 @@ SimpleHelp リモートサポートソフトウェア v5.5.15 以下に CVSSv3 1
 ・SimpleHelp を v5.5.16 以上へ即時アップグレードする
 ・アップグレードが即時困難な場合は OIDC 認証機能を一時的に無効化する
 ・SimpleHelp 管理コンソールで全テクニシャンアカウントを監査し、未知の OIDC 経由セッション・不審なアカウントを削除する
-・エンドポイント上の AI ツール設定ファイル・クラウド認証情報ファイルを確認し侵害の痕跡を調査する
-・ネットワーク監視で SimpleHelp ポートから外部への大量データ送信がないか確認する
+・エンドポイント上の AI ツール設定ファイル（.claude/config.json・cline/settings.json・.ssh/id_* 等）・クラウド認証情報ファイルを確認し侵害の痕跡を調査する
 
 【IoC】
-IoC: 確認されず（Djinn Stealer ハッシュ・C2 IP は本稿時点で非公開）
+IoC: ファイル名 djinn_stealer（ハッシュ未確定）
 
 【監視ポイント】
-・[SimpleHelp 管理ログ / EDR ログ] OIDC 経由の不審ログインと AI 設定ファイルへの異常アクセスを検知する
-Splunk SPL: index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip | where count > 3
-→ 短時間での OIDC 認証試行増加または未知ユーザーでの OIDC ログイン成功は即時対応を開始する
+Splunk SPL: index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip | where count > 5
 Splunk SPL: index=endpoint_logs (file_path="*/.claude/config*" OR file_path="*/.ssh/id_*" OR file_path="*/.aws/credentials*") action=read | stats count by host, user, file_path | where count > 10
-→ AI 設定ファイルへの大量アクセスは Djinn Stealer のスキャン活動を示す
 
 【参照】
 https://www.bleepingcomputer.com/news/security/simplehelp-cve-2026-48558-oidc-bypass-djinn-stealer/
@@ -71,10 +67,60 @@ JPCERT/CC・IPA 発行状況（24h 窓内）:
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【参考情報 A】国内で影響・被害が確認されているもの
+【参考情報 A】国内影響・実害注目
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-該当なし（24時間窓内に国内シグナル確認なし）
+------------------------------------------------------------
+1. CVE-2026-44024 / Fluentd v1.17.0 以下
+------------------------------------------------------------
+CVSS: 9.8 (Critical) | CWE-94（コード注入）
+状態: 悪用未確認 | パッチ: v1.17.1 リリース済み
+
+Fluentd ログ集約エンジン v1.17.0 以下に CVSSv3 9.8 のコード注入脆弱性（CWE-94）が発見された。信頼できない入力から Ruby コードが動的に実行される経路が存在し、認証なしでリモートコード実行が可能。Fluentd は Kubernetes クラスター・クラウドネイティブ環境・大規模ログ基盤で広く利用されており、悪用された場合のインパクトは大きい。v1.17.1 パッチが 2026-06-28 にリリース済み。現時点で悪用・PoC 公開は確認されていない。
+
+対処: Fluentd を v1.17.1 以上へ即時アップグレードする。Fluentd インスタンスをインターネット直接公開しないようアクセス制御を確認する。
+
+参照: https://www.securityweek.com/fluentd-cve-2026-44024-rce-critical/
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-44024
+
+------------------------------------------------------------
+2. CVE-2026-55200 / libssh2 1.11.0 以下
+------------------------------------------------------------
+CVSS: 9.8 (Critical) | CWE-121（スタックバッファオーバーフロー）
+状態: 悪用未確認 | パッチ: 1.11.1 リリース済み
+
+SSH クライアントライブラリ libssh2 v1.11.0 以下にスタックバッファオーバーフロー（CWE-121）が発見された。悪意ある SSH サーバーへの接続時に RCE が可能。libssh2 は PHP・Python・多数の SSH クライアントツールに内包されており、影響範囲が広い。1.11.1 パッチが 2026-06-27 にリリース済み。悪用確認なし。
+
+対処: libssh2 を 1.11.1 以上へ更新する。未検証の SSH サーバーへの接続を制限する。
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-55200
+参照: https://github.com/libssh2/libssh2/security/advisories/
+
+------------------------------------------------------------
+3. CVE-2026-5173 / GitLab CE/EE 17.8.0〜17.11.3
+------------------------------------------------------------
+CVSS: 8.5 (High) | CWE-290（認証バイパス）
+状態: 悪用未確認 | パッチ: 17.11.4 / 17.12.2 リリース済み
+
+GitLab CE/EE 17.8.0〜17.11.3 に認証バイパス脆弱性（CWE-290・CVSS 8.5）が発見された。特定の条件下で認証メカニズムを迂回し、リポジトリや CI/CD パイプラインへの不正アクセスが可能。17.11.4 および 17.12.2 でパッチ提供済み。ソースコード流出・サプライチェーン侵害のリスクがある。悪用確認なし。
+
+対処: GitLab を 17.11.4 以上または 17.12.2 以上へアップグレードする。GitLab のアクセスログで不審な認証トークン使用パターンを確認する。
+
+参照: https://about.gitlab.com/releases/2026/06/27/security-release-gitlab-17-11-4-released/
+参照: https://www.securityweek.com/gitlab-patches-cve-2026-5173-authentication-bypass/
+
+------------------------------------------------------------
+4. CVE-2026-12244 / CVE-2026-12245 / CVE-2026-12246 / NSD 4.9.3 以下
+------------------------------------------------------------
+CVSS: 8.8 (High) | CWE-119（バッファエラー、3件）
+状態: 悪用未確認 | パッチ: 4.9.4 リリース済み
+
+権威 DNS サーバー NSD（Name Server Daemon）v4.9.3 以下にバッファエラー関連の脆弱性が3件発見された（CVSS 8.8）。特定の DNS クエリ処理でバッファ範囲外アクセスが発生し、サービス停止または RCE の可能性がある。4.9.4 でパッチ提供済み。NSD は国家機関・大規模 ISP・TLD で広く利用されている。悪用確認なし。
+
+対処: NSD を 4.9.4 以上へ即時アップグレードする。インターネット公開の権威 DNS サーバーへのアクセス制御を確認する。
+
+参照: https://nlnetlabs.nl/downloads/nsd/CHANGES
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-12244
 
 JPCERT/CC・IPA 発行状況（24h 窓内）:
 未発行: 24 時間窓内に本セクションに該当する JPCERT/CC・IPA 発行なし
@@ -86,7 +132,7 @@ JPCERT/CC・IPA 発行状況（24h 窓内）:
 
 ・CVE-2026-46817 / Oracle E-Business Suite (EBS) - Payments / File Transmission
 CVSS: 9.8 (Critical) 対象: Oracle EBS 12.2.3〜12.2.15
-Oracle EBS の File Transmission モジュールに CVSSv3 9.8 の重大脆弱性。2026 年 6 月 27〜28 日から実悪用確認。C2 IP 45.84.137.125 特定済み。財務・ERP システムが標的であり、日本国内 Oracle EBS 利用組織は即時対応が必要。PoC は未公開・CISA KEV 未登録だが実悪用が続いている。対処: 2026 年 5 月 CSPU（Critical Patch Update Supplement）を即時適用。Oracle EBS を外部公開している場合は WAF で /OA_HTML/ibytransmit へのアクセスを制限する。
+Oracle EBS の File Transmission モジュールに CVSSv3 9.8 の重大脆弱性。2026 年 6 月 27〜28 日から実悪用確認。C2 IP 45.84.137.125 特定済み。財務・ERP システムが標的であり、日本国内 Oracle EBS 利用組織は即時対応が必要。PoC は未公開・CISA KEV 未登録だが実悪用が続いている。対処: 2026 年 5 月 CSPU（Critical Patch Update Supplement）を即時適用。C2 IP をファイアウォールでブロック。
 IoC: IP: 45.84.137.125
 
 監視: [Oracle EBS Web サーバーログ / ネットワークフロー] /OA_HTML/ibytransmit への POST リクエストと C2 IP への通信を監視
@@ -107,6 +153,6 @@ Splunk SPL: index=oracle_ebs_logs request_path="/OA_HTML/ibytransmit" method=POS
 ・CVE-2025-32711 (Microsoft Teams / EchoLeak) → 変化なし（2025-06 月開示・2026-05 月パッチ提供済み。24 時間窓内に変化なし）
 
 本日の集計（Section 3）:
-CVE — ゼロデイ特報 1 件 / 本編 0 件 / 参考 A 0 件 / 参考 B 1 件 / 除外 3 件 / 計処理 5 件
+CVE — ゼロデイ特報 1 件 / 本編 0 件 / 参考 A 4 件 / 参考 B 1 件 / 除外 3 件 / 計処理 9 件
 
 ========================================

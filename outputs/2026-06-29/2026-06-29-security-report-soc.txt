@@ -37,7 +37,7 @@ SimpleHelp の OIDC 認証バイパス脆弱性（CVE-2026-48558・CVSS 10.0）�
 ・侵害が疑われる AI API キー・クラウド認証情報・SSH キーを即時ローテーションする
 ・[SimpleHelp 管理ログ / EDR ログ] OIDC 経由の不審ログインを監視する
 Splunk SPL: index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip, _time | where count > 3
-→ 短時間での OIDC 認証試行増加または未知ユーザーでの OIDC ログイン成功は即時対応を開始する
+→ 未知ユーザーでの OIDC ログイン成功は即時対応を開始する
 
 【参照】
 https://www.bleepingcomputer.com/news/security/simplehelp-cve-2026-48558-oidc-bypass-djinn-stealer/
@@ -61,16 +61,68 @@ Oracle EBS（Oracle Payments / File Transmission モジュール）の CVE-2026-
 ・ファイアウォールで C2 IP アドレス 45.84.137.125 をブロックする（インバウンド・アウトバウンド両方）
 ・2026 年 5 月 CSPU（Critical Patch Update Supplement）の適用状況を確認し、未適用の場合は即時適用する
 ・Oracle EBS Web サーバーのアクセスログで /OA_HTML/ibytransmit エンドポイントへの POST リクエストを 6 月 27 日以降に遡り確認する
-・Oracle EBS をインターネットに直接公開している場合は WAF またはリバースプロキシで /OA_HTML/ibytransmit への外部アクセスを制限する
+・追加 IOC 公開を Mandiant/CrowdStrike/Trend Micro で監視し IOC リストを更新する
 ・[Oracle EBS Web サーバーログ / ネットワークフロー] 悪用エンドポイントへのアクセスと C2 通信を監視する
 Splunk SPL: index=network_logs (dest_ip="45.84.137.125" OR src_ip="45.84.137.125") | stats count by src_ip, dest_ip, dest_port | sort -count
-→ C2 IP との通信を検知した場合はただちにインシデント対応を開始し、Oracle EBS サーバーの forensic 取得を実施する
+→ C2 IP との通信を検知した場合はただちにインシデント対応を開始する
 
 【参照】
 https://www.bleepingcomputer.com/news/security/oracle-ebs-cve-2026-46817-active-exploitation/
 
 ------------------------------------------------------------
-3. Cisco UCM CVE-2026-20230: FCEB 期限（2026-06-28）経過確認とウェブシェル点検
+3. TraderTraitor DeFi サプライチェーン攻撃: DeFi プロジェクト開発者向け npm 依存関係監査
+観点: APT関連
+採用契機: α（当該 APT による標的業種への直接影響）・ζ（重要情報漏えいリスク）
+------------------------------------------------------------
+
+優先度: 高
+対象: DeFi / ブロックチェーンプロジェクト（npm 依存パッケージ）
+
+【24時間以内の変化】
+[Chainalysis / FBI 2026-06-28] TraderTraitor（Lazarus Group/DPRK）が KelpDAO・DriftUK の DeFi スマートコントラクトを改ざん。npm サプライチェーン侵害経由。FBI が高信頼度で帰属確認。
+
+【概要】
+DPRK 国家支援グループ TraderTraitor が DeFi プロジェクトの npm 依存パッケージを侵害しスマートコントラクトを改ざんする攻撃を確認。DeFi・ブロックチェーン・暗号資産関連の開発環境に携わる組織は npm 依存関係の完全性確認を即時実施する必要がある。
+
+【推奨アクション】
+・npm audit・Snyk・Dependency-Track で全依存パッケージの完全性を確認する
+・LinkedIn 経由の採用・コンサルティング接触に対し特別な警戒を実施する（TraderTraitor の典型的な接触手口）
+・スマートコントラクトの最終デプロイコードと正規ソースコードの整合性を検証する
+・npm パッケージの postinstall スクリプトを確認し予期しない外部通信がないか調査する
+・[npm インストールログ / CI/CD パイプライン実行ログ] postinstall の外部通信を監視する
+→ npm postinstall による予期しない外部 HTTP リクエストは即時調査対象
+
+【参照】
+https://www.chainalysis.com/blog/tradertaitor-kelpdao-driftuk-2026/
+https://www.fbi.gov/news/press-releases/tradertaitor-dprk-defi-campaign-2026
+
+------------------------------------------------------------
+4. LiteLLM CVE-2026-42271: SSRF 脆弱性対応とアクセス制御強化
+観点: AI攻撃関連
+採用契機: η（AI インフラの重大脆弱性）
+------------------------------------------------------------
+
+優先度: 高
+対象: LiteLLM 1.42.0 以下
+
+【24時間以内の変化】
+[GitHub Security Advisory / SecurityWeek 2026-06-28] CVE-2026-42271（CVSS 9.1・SSRF）の PoC が公開。LiteLLM 1.43.0 パッチリリース済み。
+
+【概要】
+LiteLLM v1.42.0 以下の SSRF 脆弱性（CVE-2026-42271）の PoC が公開された。AI ゲートウェイ経由での内部ネットワーク偵察・クラウドメタデータ窃取が可能。LiteLLM を外部公開している組織は今日中の対応が必要。
+
+【推奨アクション】
+・LiteLLM を 1.43.0 以上へ即時アップグレードする
+・外部公開の LiteLLM インスタンスを特定し WAF で保護またはアクセス制御を強化する
+・内部メタデータエンドポイント（169.254.169.254 等）へのアクセスログを確認する
+・LiteLLM のリクエストログで内部 IP・メタデータエンドポイントへの不審なアクセスを監視する
+→ LiteLLM から内部 IP への HTTP リクエストは即時調査対象
+
+【参照】
+https://github.com/BerriAI/litellm/security/advisories/
+
+------------------------------------------------------------
+5. Cisco UCM CVE-2026-20230: FCEB 期限（2026-06-28）経過確認とウェブシェル点検
 観点: CVE関連
 採用契機: γ（SOC 運用に直接関係する FCEB 期限管理・ウェブシェル確認）
 ------------------------------------------------------------
@@ -82,18 +134,43 @@ https://www.bleepingcomputer.com/news/security/oracle-ebs-cve-2026-46817-active-
 [CISA KEV 2026-06-28] Cisco UCM CVE-2026-20230 の FCEB 機関向け対応期限（2026-06-28）が昨日経過した。
 
 【概要】
-Cisco Unified Communications Manager（UCM）の CVE-2026-20230 に対する CISA FCEB 期限（連邦民間行政府機関の対応期限）が 2026-06-28 に経過した。FCEB 機関は昨日時点でパッチ適用が完了している必要があるが、残存する未パッチ環境でウェブシェルの設置等の持続的侵害が発生している可能性がある。/platform-services/axis2-web/ パスへの不審なアクセス確認が推奨される。
+Cisco Unified Communications Manager（UCM）の CVE-2026-20230 に対する CISA FCEB 期限が 2026-06-28 に経過した。残存する未パッチ環境でウェブシェルの設置等の持続的侵害が発生している可能性がある。
 
 【推奨アクション】
-・Cisco UCM のパッチ適用状況を確認し、FCEB 期限（2026-06-28）までに適用できなかった場合は即時適用する
-・/platform-services/axis2-web/ パスへのアクセスログ（6 月 15 日以降）を調査し、不審なウェブシェルアクセスを確認する
-・Cisco UCM の管理コンソールで未知のアカウント・サービスの作成が行われていないか確認する
-・[Cisco UCM Web アクセスログ] axis2-web パスへのアクセスを確認する
+・Cisco UCM のパッチ適用状況を確認し、未適用の場合は即時適用する
+・/platform-services/axis2-web/ パスへのアクセスログ（6 月 15 日以降）を調査する
+・Cisco UCM の管理コンソールで未知のアカウント・サービスの作成がないか確認する
 Splunk SPL: index=cisco_ucm_logs request_path="*/axis2-web/*" NOT user IN ("admin","ccmadmin") | stats count by src_ip, request_path, user | sort -count
-→ axis2-web パスへの管理者以外からのアクセスはウェブシェルの設置・利用を示す可能性がある
+→ axis2-web パスへの管理者以外からのアクセスはウェブシェル設置の可能性がある
 
 【参照】
 https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+------------------------------------------------------------
+6. Sapphire Sleet TrilatSummit: 日本の政府・防衛・金融機関向けスピアフィッシング警戒
+観点: APT関連
+採用契機: α（日本機関への直接標的型攻撃）
+------------------------------------------------------------
+
+優先度: 中
+対象: メール / ドキュメント（外交・首脳会談テーマ）
+標的: 日本・韓国・米国の政府・防衛・金融・シンクタンク
+
+【24時間以内の変化】
+[Microsoft Threat Intelligence 2026-06-28] Sapphire Sleet が三カ国首脳会談テーマのスピアフィッシングキャンペーン TrilatSummit を展開中。日本・韓国・米国の金融/防衛/政府機関を標的。
+
+【概要】
+DPRK 国家支援グループ Sapphire Sleet（BlueNoroff）が日米韓三カ国首脳会談テーマの偽招待状を使用したスピアフィッシングキャンペーンを展開中。日本の政府・防衛・金融機関を標的とする可能性があり、外交・安全保障関連メール添付ファイルへの特別な警戒が必要。
+
+【推奨アクション】
+・三カ国首脳会談・外交イベント関連のメール添付ファイルを受け取った場合は CSIRT へ即時報告する
+・外交・政府機関テーマの添付ファイル（PDF・DOCX・PPTX）のサンドボックス検査を強化する
+・Rust 製バイナリの予期しない実行を EDR でブロック・記録する
+・[メールゲートウェイ / EDR] 外交テーマ添付ファイルと Rust バイナリ実行を監視する
+→ 外交・首脳会談テーマの添付ファイルを開いた後の不審なプロセス実行は即時調査対象
+
+【参照】
+https://www.microsoft.com/en-us/security/blog/2026/06/28/sapphire-sleet-trilateral-summit-phishing/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -103,7 +180,7 @@ https://www.cisa.gov/known-exploited-vulnerabilities-catalog
 該当なし（除外エントリなし）
 
 本日の集計（Section 4）:
-SOC推奨情報 — 高 2 件 / 中 1 件 / 低 0 件 / 除外 0 件 / 計処理 3 件
-観点内訳: CVE関連 2 件 / ゼロデイ関連 1 件 / AI攻撃関連 0 件
+SOC推奨情報 — 高 4 件 / 中 2 件 / 低 0 件 / 除外 0 件 / 計処理 6 件
+観点内訳: CVE関連 2 件 / ゼロデイ関連 1 件 / AI攻撃関連 1 件 / APT関連 2 件
 
 ========================================

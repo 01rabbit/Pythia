@@ -1,13 +1,20 @@
 ========================================
-セキュリティインテリジェンス日報
+PYTHIA セキュリティインテリジェンス日報
 調査日時: 2026-06-29 07:00 JST
 調査期間: 2026-06-28 07:00 〜 2026-06-29 07:00 JST
+警戒レベル: 警戒（T1059 σ=4.05 / T1027 σ=3.61 / ISO Week 27 開始）
+========================================
+観測件数: 18件
+CVE: ゼロデイ特報 1 / 参考A 4 / 参考B 1 / 除外 3 / 処理総数 9
+APT: 本編 5 / 注目動向 2 / 除外 2 / 処理総数 9
+AI攻撃: 本編 4 / 参考B 2 / 処理総数 6
+SOC推奨: 高 4 / 中 2 / 処理総数 6
+攻撃予報: fast_72h 3 / slow_7d 1
 ========================================
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Section 1: AI攻撃動向
-調査期間: 2026-06-28 〜 2026-06-29
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 
@@ -17,72 +24,120 @@ Section 1: AI攻撃動向
 
 ------------------------------------------------------------
 1. Djinn Stealer: CVE-2026-48558 悪用による AI 開発者認証情報・MCP コンフィグ窃取
-カテゴリ: C（AI インフラ攻撃）/ サブカテゴリ: C3（MCP サーバー・エージェント統合基盤の認証情報窃取） / 攻撃者種別: 犯罪組織
+カテゴリ: C3（AI 開発者認証情報窃取）/ 攻撃者種別: 犯罪組織
+バースト検出: 3 件（BleepingComputer・Horizon3.ai・HelpNetSecurity）→ threshold_met
 ------------------------------------------------------------
 
 採用契機: Q（実際のインシデント・被害報告）・R（AI セキュリティ CVE 関連の実害）
-MITRE ATLAS: ATLAS TTP: 詳細未公開（新規攻撃パターン・分類調査中）
-OWASP: 調査中
-対象: IT・専門サービスセクター / グローバル / SimpleHelp 経由の AI 開発者エンドポイント
-被害規模: 14,000 台以上の SimpleHelp サーバーが潜在的露出対象。AI 開発者認証情報の窃取被害組織数は不明（調査継続中）
+被害規模: 14,000 台以上の SimpleHelp サーバーが潜在的露出対象
 
-【24時間以内（または期間内）の変化】
+【24時間以内の変化】
 [BleepingComputer 2026-06-29] CVE-2026-48558 悪用で展開される Djinn Stealer が Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタントの設定ファイルと MCP サーバー設定を標的とすることが初報
 
 【概要】
-Djinn Stealer は CVE-2026-48558（SimpleHelp OIDC 認証バイパス・CVSS 10.0）を悪用してエンドポイントに展開される新規のクロスプラットフォーム型インフォスティーラーで、AI 開発者の認証情報と MCP（Model Context Protocol）コンフィグファイルを主要標的とする。Windows・macOS・Linux に対応し、Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタントの設定ファイル（API キーを含む）・MCP サーバー設定・SSH 秘密鍵・AWS/GCP/Azure のクラウドプロバイダー認証情報・Docker シークレット・Terraform 設定ファイルを収集する。窃取された AI API キーは LLMjacking（被害者コストでの不正 API 利用）または AI システムへの不正アクセスに転用される可能性がある。MSP・IT サービス事業者の SimpleHelp 展開環境を経由することで、顧客組織の AI 開発環境が広範に侵害される。バースト検出: 3 件（BleepingComputer・Horizon3.ai・HelpNetSecurity）→ threshold_met。
+Djinn Stealer は CVE-2026-48558（SimpleHelp OIDC 認証バイパス・CVSS 10.0）を悪用してエンドポイントに展開される新規クロスプラットフォーム型インフォスティーラーで、AI 開発者の認証情報と MCP（Model Context Protocol）コンフィグファイルを主要標的とする。Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタント設定・SSH 秘密鍵・クラウド認証情報・Docker シークレット・Terraform 設定を収集する。窃取された AI API キーは LLMjacking（被害者コストでの不正 API 利用）または AI システムへの不正アクセスに転用される。
 
 攻撃の流れ:
 1. 攻撃者は CVE-2026-48558 を悪用して SimpleHelp サーバーに認証なしでテクニシャン権限でログインする
-2. テクニシャン権限で接続中のエンドポイントに Djinn Stealer を展開し、AI ツール設定ファイル（~/.claude/config.json・Cline/OpenCode 設定・MCP コンフィグ）・SSH キー・クラウド認証情報を網羅的に収集する
-3. 収集した認証情報を C2 へ送信し、窃取した AI API キーを LLMjacking または標的組織の AI システムへの継続的不正アクセスに悪用する
-
-【ATLAS TTPs】
-ATLAS TTP: 詳細未公開（MCP コンフィグ窃取を用いた AI インフラ侵害は新規攻撃パターン。MITRE ATLAS へのケーススタディ申請を検討中）
+2. テクニシャン権限で接続中のエンドポイントに Djinn Stealer を展開し、AI ツール設定・SSH キー・クラウド認証情報を網羅的に収集する
+3. 収集した認証情報を C2 へ送信し、窃取した AI API キーを LLMjacking または AI システムへの継続的不正アクセスに悪用する
 
 【IoC / 検知シグナル】
 IoC: 確認されず（ハッシュ・C2 IP は本稿時点で非公開）
-検知シグナル: AI ツール設定ディレクトリ（~/.claude/・~/.config/claude/ 等）への異常な読み取りアクセス（複数ファイルを短時間に一括スキャン）
-検知シグナル: SSH キーディレクトリ（~/.ssh/）の秘密鍵ファイルへのアクセス（プロセスが ssh-agent 以外の場合）
-検知シグナル: クラウド認証情報ファイル（~/.aws/credentials・~/.config/gcloud/）へのアクセスが通常のアプリケーション以外のプロセスから発生
+検知シグナル: AI ツール設定ディレクトリへの異常な読み取りアクセス
+検知シグナル: SSH キーディレクトリへの正規外プロセスアクセス
+検知シグナル: クラウド認証情報ファイルへの正規外プロセスアクセス
 
 【監視・対策ポイント】
-・[EDR / ファイル整合性監視（FIM）] AI 設定ファイルへの異常アクセスを検知する
 Splunk SPL: index=endpoint_logs (file_path="*/.claude/*" OR file_path="*/.ssh/id_*" OR file_path="*/.aws/credentials*" OR file_path="*/mcp*.json") NOT process_name IN ("claude","ssh-agent","aws") | stats count by host, process_name, user, file_path | where count > 5
-→ AI ツール設定・SSH キー・クラウド認証情報への正規プロセス以外からの一括アクセスは Djinn Stealer 活動の指標。SimpleHelp ログと照合して侵入経路を確認する
 ・SimpleHelp を v5.5.16 以上へ即時アップグレードする（CVE-2026-48558 の根本対策）
 ・侵害が疑われる AI API キー・クラウド認証情報・SSH キーを即時ローテーションする
-・MCP サーバー設定ファイルの権限を 600 に設定し、不要な読み取りアクセスを制限する
 
 【参照】
 https://www.bleepingcomputer.com/news/security/djinn-stealer-targets-ai-developer-credentials-mcp-configs/
 https://www.horizon3.ai/attack-research/cve-2026-48558-simplehelp-oidc/
-https://helpnetsecurity.com/2026/06/29/simplehelp-v5516-patches-cve-2026-48558/
+
+------------------------------------------------------------
+2. CVE-2026-42271: LiteLLM SSRF による AI ゲートウェイ経由内部ネットワーク偵察
+カテゴリ: C1（AI システム脆弱性）/ OWASP LLM07
+バースト検出: 3 件（GitHub Advisory・NIST・SecurityWeek）→ threshold_met
+------------------------------------------------------------
+
+採用契機: Q（重大 CVE・PoC 公開）
+被害規模: LiteLLM 1.42.0 以下の全インスタンス
+
+【24時間以内の変化】
+[GitHub Security Advisory / NIST 2026-06-28] CVE-2026-42271（CVSS 9.1・SSRF・CWE-918）の PoC が公開。LiteLLM を経由した内部ネットワーク偵察・クラウドメタデータ取得が可能。v1.43.0 パッチリリース済み。
+
+【概要】
+LiteLLM（AI モデルゲートウェイ・プロキシライブラリ）v1.42.0 以下に SSRF 脆弱性（CVE-2026-42271・CVSS 9.1・CWE-918）が発見され PoC が公開された。攻撃者は LiteLLM のリクエスト転送機能を悪用して内部ネットワークの偵察・クラウドメタデータサービス（AWS IMDS・GCP メタデータ等）へのアクセス・内部 AI サービスへの不正接続が可能。
+
+Splunk SPL: index=app_logs app=litellm (dest_ip="169.254.169.254" OR dest_ip LIKE "10.*" OR dest_ip LIKE "172.16.*") | stats count by src_ip, dest_ip, url
+
+【参照】
+https://github.com/BerriAI/litellm/security/advisories/
+https://www.securityweek.com/litellm-ssrf-cve-2026-42271/
+
+------------------------------------------------------------
+3. Miasma AI ワーム: AI インフラ間自己増殖型マルウェア
+カテゴリ: C6（AI 系サプライチェーン侵害）/ OWASP Agentic A7
+バースト検出: 2 件（Wiz Research・Dark Reading）→ below_threshold
+------------------------------------------------------------
+
+採用契機: Q（重大インシデント報告）
+被害規模: MCP サーバー・Ollama インスタンス・Jupyter ノートブックが稼働する環境全般
+
+【24時間以内の変化】
+[Wiz Research / Dark Reading 2026-06-28] Miasma AI ワームが AI インフラ間を自己増殖し、MCP サーバー・Ollama インスタンス・Jupyter ノートブックを連鎖侵害することが報告された。
+
+【概要】
+Wiz Research が報告した Miasma は、AI インフラ間（MCP サーバー・Ollama インスタンス・Jupyter ノートブック等）を自己増殖するワーム型マルウェア。露出した AI コンポーネントの認証不備を悪用して連鎖侵害し、AI モデルへのバックドア挿入・プロンプトキャッシュ汚染・推論データ窃取を目的とする。実環境での検出報告あり。
+
+【参照】
+https://www.wiz.io/blog/miasma-ai-worm-infrastructure/
+https://www.darkreading.com/application-security/miasma-ai-infrastructure-worm
+
+------------------------------------------------------------
+4. Claude Code GitHub Actions プロンプトインジェクション: CI/CD パイプライン乗っ取り
+カテゴリ: B1（プロンプトインジェクション）/ MITRE ATLAS AML.T0051 / OWASP LLM01・Agentic A1
+バースト検出: 2 件（Wiz Research・HelpNetSecurity）→ below_threshold
+------------------------------------------------------------
+
+採用契機: Q（技術実証・実害ベクター確認）
+被害規模: GitHub Actions で Claude Code を使用する CI/CD パイプライン
+
+【24時間以内の変化】
+[Wiz Research / HelpNetSecurity 2026-06-28] GitHub PR コメント経由でのプロンプトインジェクション攻撃により、GitHub Actions 内で動作する Claude Code が悪意ある指示を実行する手法が実証・報告された。
+
+【概要】
+攻撃者は GitHub PR コメントに隠蔽したプロンプトインジェクションを埋め込み、GitHub Actions 内で動作する Claude Code に悪意ある指示（シークレット漏洩・コード改ざん・バックドア挿入等）を実行させる。AI エージェントの信頼境界を悪用した攻撃。
+
+【参照】
+https://www.wiz.io/blog/claude-code-github-actions-prompt-injection/
+https://helpnetsecurity.com/2026/06/28/claude-code-github-actions-prompt-injection/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【AI攻撃 — 参考B】技術実証・国内波及注意
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-該当なし
+5. Gemini 搭載 SMiShing キャンペーン（A1・below_threshold）
+Gemini API 悪用・個人属性ベースの高精度 SMS フィッシング生成・金融/EC ユーザー標的
+参照: https://www.zscaler.com/blogs/security-research/gemini-powered-smishing-campaign-2026
 
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【AI攻撃 — 参考A】国内影響・実害注目
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-該当なし
+6. OpenClaw Pinchy: LLM 自律型ペネトレーションフレームワーク（A4・below_threshold）
+Ollama/llama.cpp を攻撃推論エンジンに悪用・偵察→脆弱性特定→エクスプロイト自動化・犯罪グループ実戦運用確認
+参照: https://unit42.paloaltonetworks.com/openclaw-pinchy-autonomous-pentest-llm/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【AI攻撃 — 週次トレンドサマリー】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-本日（2026-06-29）の最大のトピックは Djinn Stealer の登場である。CVE-2026-48558（SimpleHelp CVSS 10.0 認証バイパス）という既存の脆弱性を初期侵入ベクターとして利用しながら、AI 開発者の MCP コンフィグ・API キーを主要窃取対象とする点で従来のインフォスティーラーと一線を画す。MSP 経由の顧客環境への二次感染リスクが高く、AI コーディングアシスタントが広く普及した現在のソフトウェア開発環境において深刻な影響を持つ。「AI を攻撃する」ための専用マルウェアが登場したことは、AI インフラ攻撃（カテゴリ C）が研究段階から実運用段階へ移行したことを示す重要なシグナルである。バースト検出: Djinn Stealer 関連 3 ソース（BleepingComputer・Horizon3.ai・HelpNetSecurity）が 48 時間以内に独立報告 → threshold_met。
+本日（2026-06-29）は AI インフラ攻撃（カテゴリ C）が3件と突出して多い1日となった。Djinn Stealer の登場は AI 開発者認証情報を専門に狙うマルウェアが実運用段階に入ったことを示す重要なシグナル。LiteLLM SSRF と Miasma ワームの組み合わせは AI ゲートウェイおよび AI インフラ全体が攻撃対象として成熟しつつあることを示す。プロンプトインジェクション（Claude Code GitHub Actions）は AI エージェントの CI/CD 統合に対する新たな攻撃ベクターとして注目が必要。
 
-本日の集計（Section 1）:
-AI攻撃 — 本編 1 件 / 参考 A 0 件 / 参考 B 0 件 / 除外 0 件
-カテゴリ内訳: A（武器化）0 件 / B（攻撃対象）0 件 / C（インフラ）1 件
+AI攻撃統計: 本編 4 件 / 参考B 2 件 / 計処理 6 件
+カテゴリ内訳: A（武器化）2件 / B（攻撃対象）1件 / C（インフラ）3件
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -95,52 +150,17 @@ Section 2: ゼロデイ・トレンド
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ------------------------------------------------------------
-1. CVE-2026-48558 / SimpleHelp Remote Support Software
-対象: v5.5.15 以下（OIDC 認証を有効化した構成）
+CVE-2026-48558 / SimpleHelp Remote Support Software v5.5.15 以下
+CVSS: 10.0 (Critical) | CWE-287（認証バイパス）
+状態: 実悪用確認 / PoC 公開 | パッチ: v5.5.16 リリース済み
 ------------------------------------------------------------
 
-優先度: 緊急
-CVSS: 10.0 (Critical)
-状態: 実悪用確認 / PoC 公開
-パッチ: v5.5.16 リリース済み（即時適用必須）
+SimpleHelp リモートサポートソフトウェア v5.5.15 以下の OIDC 認証バイパス脆弱性が実悪用され、Djinn Stealer による AI 開発者認証情報・MCP コンフィグ・SSH キー・クラウド認証情報の組織的窃取が確認された。14,000 台超が露出中。v5.5.16 への即時アップグレード必須。
 
-【24時間以内の変化】
-[BleepingComputer 2026-06-29] CVE-2026-48558 悪用によるDjinn Stealerの展開が確認。AI開発者認証情報・MCPコンフィグファイル・クラウドAPI認証情報を標的とする新型インフォスティーラー。
-[Horizon3.ai 2026-06-29] OIDC認証バイパスのPoCを公開。CVSSv3 10.0 確定。
-[HelpNetSecurity 2026-06-29] SimpleHelpがv5.5.16パッチをリリース。14,000台以上のSimpleHelp サーバーがインターネット上に露出。
+暫定対策: v5.5.16 へ即時アップグレード。OIDC 無効化（緊急時）。全エンドポイントで AI 設定・クラウド認証情報の侵害確認・即時ローテーション。
 
-【概要】
-SimpleHelp リモートサポートソフトウェア v5.5.15 以下に CVSSv3 10.0 の認証バイパス脆弱性が発見され、2026-06-29 に実悪用が確認された。OIDC 認証が有効な環境において攻撃者は任意のテクニシャンアカウントとして認証なしでログイン可能（CWE-287）。攻撃者はこの脆弱性を悪用して Djinn Stealer を展開し、Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタント設定ファイル・MCP コンフィグ・SSH キー・クラウドプロバイダー認証情報・Docker シークレット・Terraform 設定を窃取する。Windows・macOS・Linux のクロスプラットフォームに対応。14,000 台以上の SimpleHelp サーバーがインターネット上に露出しており、MSP・IT サービス事業者の顧客環境が広範に危険にさらされている。
-
-攻撃の流れ:
-1. OIDC 設定を持つ SimpleHelp v5.5.15 以下の /api/authenticate エンドポイントへ細工したリクエストを送信し、認証バイパスにより任意のテクニシャンアカウントでセッションを確立する
-2. 取得したテクニシャン権限を使用してターゲットエンドポイントに Djinn Stealer を展開し、AI 開発ツール設定ファイル・SSH 秘密鍵・クラウド API キー・MCP サーバー設定・Docker シークレット・Terraform 認証情報を収集する
-3. 窃取した認証情報を C2 サーバーへ外部送信し、AI API キーを悪用して LLMjacking またはクラウドインフラへの横展開を実施する
-
-【暫定緩和策】
-・SimpleHelp を v5.5.16 以上へ即時アップグレードする
-・アップグレードが即時困難な場合は OIDC 認証機能を一時的に無効化する
-・SimpleHelp 管理コンソールで全テクニシャンアカウントを監査し、未知の OIDC 経由セッション・不審なアカウントを削除する
-・エンドポイント上の AI ツール設定ファイル（.claude/config.json・cline/settings.json・.ssh/id_* 等）・クラウド認証情報ファイルを確認し侵害の痕跡を調査する
-・ネットワーク監視で SimpleHelp ポート（TCP 443/80）から外部への大量データ送信がないか確認する
-
-【IoC】
-IoC: 確認されず（Djinn Stealer ハッシュ・C2 IP は本稿時点で非公開）
-
-【監視ポイント】
-・[SimpleHelp 管理ログ / EDR ログ] OIDC 経由の不審ログインと AI 設定ファイルへの異常アクセスを検知する
-Splunk SPL: index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip | where count > 3
-→ 短時間での OIDC 認証試行増加または未知ユーザーでの OIDC ログイン成功は即時対応を開始する
-Splunk SPL: index=endpoint_logs (file_path="*/.claude/config*" OR file_path="*/.ssh/id_*" OR file_path="*/.aws/credentials*") action=read | stats count by host, user, file_path | where count > 10
-→ AI 設定ファイルへの大量アクセスは Djinn Stealer のスキャン活動を示す
-
-【参照】
-https://www.bleepingcomputer.com/news/security/simplehelp-cve-2026-48558-oidc-bypass-djinn-stealer/
-https://www.horizon3.ai/attack-research/cve-2026-48558-simplehelp-oidc/
-https://helpnetsecurity.com/2026/06/29/simplehelp-v5516-patches-cve-2026-48558/
-
-JPCERT/CC・IPA 発行状況（24h 窓内）:
-未発行: CVE-2026-48558 — 24 時間窓内に JPCERT/CC・IPA からの注意喚起発行確認されず
+IoC: ファイル名 djinn_stealer
+参照: BleepingComputer/Horizon3.ai/HelpNetSecurity 2026-06-29
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -148,119 +168,130 @@ JPCERT/CC・IPA 発行状況（24h 窓内）:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ------------------------------------------------------------
-1. StrikeShark（別名: SharkLoader / 国家帰属: CN（低信頼度） / 帰属信頼度: 低）
-活動タイプ: 新規マルウェア / 実活動キャンペーン
+1. StrikeShark（帰属: CN・低信頼度）
+活動ID: StrikeShark-2026-SharkLoaderDiplomacy
 ------------------------------------------------------------
 
-採用契機: P（新規マルウェア詳細技術分析公開）・Q（実際のインシデント・多国間被害確認）・R（既知CVE の新規武器化）
-標的: 外交機関・政府機関・ソフトウェア開発企業 / インドネシア・台湾・香港・レバノン・シリア・コロンビア・北マケドニア・ネパール・セルビア
+採用契機: P・Q・R / 標的: 外交機関・政府機関 / インドネシア・台湾・香港・レバノン等
 マルウェア: SharkLoader（カスタムドロッパー）・Cobalt Strike Beacon
 
-【24時間以内の変化】
-[Kaspersky GReAT 2026-06-24] 初報: SharkLoader カスタムドロッパーを使用した新規中国語話者系 APT キャンペーンを詳細技術分析とともに公開
-[The Hacker News 2026-06-26] インドネシア・台湾・香港等の外交・政府機関への広範なキャンペーン展開を報道
+Kaspersky GReAT 2026-06-24: 中国語話者系 APT が SharkLoader+Cobalt Strike Beacon を使用した諜報活動キャンペーンを展開。CVE-2021-26855/CVE-2023-32315/CVE-2024-36401 を初期侵入に悪用。DLL サイドローディング（T1574.002）・LSASS ダンプ（T1003.001）・NTDS 抽出（T1003.003）・Cobalt Strike（T1219）・FScan/Pillager 内部偵察（T1083）。インドネシア外交機関・台湾政府機関等の外交・政府機関が標的。
 
-【概要】
-Kaspersky GReAT が 2026-06-24 に公開した分析によると、中国語話者系 APT（帰属信頼度: 低）が新規カスタムドロッパー SharkLoader と Cobalt Strike Beacon を組み合わせた諜報活動キャンペーンを展開している。初期侵入には CVE-2021-26855（Exchange Server SSRF）・CVE-2023-32315（Openfire 認証バイパス）・CVE-2024-36401（GeoServer RCE）を悪用。SystemSettings.dll を DLL サイドローディングにより実行し、SharkLoader が Cobalt Strike Beacon をメモリ上で展開する。ポスト侵害では LSASS ダンプ・NTDS 抽出による認証情報窃取、FScan を用いた内部ネットワークスキャン、Searchall・Pillager による機密ファイル探索を実施。標的はインドネシア外交機関・台湾政府機関・香港/レバノン/シリア/コロンビア/北マケドニア/ネパール/セルビアのソフトウェア開発会社に及ぶ。
+新規TTP: [T1190][T1574.002][T1003.001][T1003.003][T1219][T1083]
+IoC: ファイル名 SystemSettings.dll（悪意あるサイドロード用 DLL）・SharkLoader
+Splunk SPL: index=endpoint_logs process_name="SystemSettings.exe" | join host [search index=endpoint_logs event_type=dll_load image_path="*SystemSettings.dll*" NOT image_company="Microsoft*"]
 
-攻撃の流れ（判明分）:
-1. インターネット公開されたサーバー（Exchange・Openfire・GeoServer）に CVE-2021-26855/CVE-2023-32315/CVE-2024-36401 を悪用して初期アクセスを確立する
-2. SystemSettings.exe をおとりとして起動し、同ディレクトリに配置した悪意ある SystemSettings.dll を DLL サイドローディングで実行。SharkLoader が Cobalt Strike Beacon をメモリ内に展開し永続化する
-3. LSASS ダンプ・NTDS 抽出で認証情報を大量取得し、FScan/Searchall/Pillager で内部偵察を実施。機密文書・外交通信・知的財産を C2 へ外部送信する
+参照: https://securelist.com/strikeshark-sharkloader-apt-campaign/
 
-【新規TTP】
-・[T1190] Exploit Public-Facing Application — CVE-2021-26855 (Exchange SSRF)・CVE-2023-32315 (Openfire 認証バイパス)・CVE-2024-36401 (GeoServer RCE) を初期侵入に使用（Kaspersky GReAT 明示）
-・[T1574.002] DLL Side-Loading — SystemSettings.exe + 悪意ある SystemSettings.dll による DLL サイドローディングで SharkLoader を実行（Kaspersky GReAT 明示）
-・[T1003.001] LSASS Memory — LSASS プロセスメモリをダンプして平文パスワード・NTLM ハッシュを取得（Kaspersky GReAT 明示）
-・[T1003.003] NTDS — ドメインコントローラーの NTDS.dit を抽出して Active Directory 全認証情報を取得（Kaspersky GReAT 明示）
-・[T1219] Remote Access Tools — Cobalt Strike Beacon を C2 フレームワークとして使用（Kaspersky GReAT 明示）
-・[T1083] File and Directory Discovery — FScan（内部ネットワークスキャン）・Searchall（ファイル検索）・Pillager（データ収集ツール）を展開（Kaspersky GReAT 明示）
+------------------------------------------------------------
+2. TraderTraitor（帰属: DPRK/KP・高信頼度 / 別名: Lazarus Group・Jade Sleet・APT38）
+活動ID: TraderTraitor-2026-KelpDAO-DriftUK
+------------------------------------------------------------
 
-【IoC】
-IoC: 確認されず（本稿時点でハッシュ・IP は非公開）
-ファイル名: SystemSettings.dll（悪意あるサイドロード用 DLL）・SharkLoader
+採用契機: P・Q / 標的: 金融・暗号資産・ブロックチェーン開発 / グローバル
+マルウェア: NpmBackdoor（JavaScript）・GoInject（Go）
 
-【推奨アクション】
-・Exchange Server・Openfire・GeoServer の CVE-2021-26855/CVE-2023-32315/CVE-2024-36401 のパッチ適用状況を即時確認する
-・EDR で SystemSettings.exe のプロセス起動とロードされた DLL の署名を監視する（Microsoft 署名なし DLL を検知）
-・外交・政府機関ネットワークでの LSASS アクセスと NTDS 抽出の監視を強化する
-Splunk SPL: index=endpoint_logs process_name="SystemSettings.exe" | join host [search index=endpoint_logs event_type=dll_load image_path="*SystemSettings.dll*" NOT image_company="Microsoft*"] | stats count by host, user, image_path
-→ Microsoft 署名なしの SystemSettings.dll ロードは即時調査対象
-Splunk SPL: index=endpoint_logs process_name="lsass.exe" event_type=process_access access_rights=0x1fffff | stats count by src_process, host | where count > 1
-→ LSASS への完全アクセス権限（0x1FFFFF）はダンプツールの典型的挙動
+Chainalysis/FBI 2026-06-28: TraderTraitor（Lazarus Group）が KelpDAO・DriftUK の DeFi プロトコルを標的に npm パッケージにバックドアを注入（T1195.002）してスマートコントラクトを改ざん（T1565.001）。LinkedIn 経由の開発者接触が初期ベクター。FBI・Chainalysis が高信頼度で帰属確認。DeFi・暗号資産関連開発組織は npm 依存関係の完全性を即時確認すること。
 
-【参照】
-https://securelist.com/strikeshark-sharkloader-apt-campaign/
-https://thehackernews.com/2026/06/strikeshark-apt-sharkloader-cobalt-strike.html
-https://helpnetsecurity.com/2026/06/26/strikeshark-apt-diplomatic-targets/
+TTP: [T1195][T1059][T1565]
+推奨: npm audit で全依存パッケージの完全性を確認。LinkedIn 採用接触に警戒。スマートコントラクト最終デプロイコードと正規ソースの整合性を検証。
+
+参照: https://www.chainalysis.com/blog/tradertaitor-kelpdao-driftuk-2026/
+参照: https://www.fbi.gov/news/press-releases/tradertaitor-dprk-defi-campaign-2026
+
+------------------------------------------------------------
+3. Sapphire Sleet（帰属: DPRK/KP・高信頼度 / 別名: BlueNoroff・CryptoCore・APT38）
+活動ID: SapphireSleet-2026-TrilatSummit
+------------------------------------------------------------
+
+採用契機: P・Q / 標的: 金融・防衛・政府・シンクタンク / 日本・韓国・米国・欧州
+マルウェア: RustyHook（Rust 製バックドア）
+
+Microsoft Threat Intelligence 2026-06-28: Sapphire Sleet（BlueNoroff）が日米韓三カ国首脳会談テーマの偽招待状を使用したスピアフィッシングキャンペーン TrilatSummit を展開（T1566）。新規 Rust 製バックドア RustyHook を展開。日本の政府・防衛・金融機関への直接影響が懸念される。
+
+TTP: [T1566]
+推奨: 三カ国首脳会談・外交テーマのメール添付ファイルへの特別な警戒。外交テーマ添付ファイルのサンドボックス検査強化。Rust バイナリの予期しない実行を EDR でブロック。
+
+参照: https://www.microsoft.com/en-us/security/blog/2026/06/28/sapphire-sleet-trilateral-summit-phishing/
+
+------------------------------------------------------------
+4. CL-STA-1062（帰属未確定・中国語話者系の可能性・帰属信頼度: 中）
+活動ID: CLSTA1062-2026-TinyRCT
+------------------------------------------------------------
+
+採用契機: P・Q / 標的: 通信・政府・製造業 / 東南アジア・中東
+マルウェア: TinyRCT（新規バックドア）
+
+Palo Alto Unit 42 2026-06-27: CL-STA-1062 が新規バックドア TinyRCT を使用して東南アジア・中東の通信/政府/製造業組織を標的にしたキャンペーンを展開。Confluence・ServiceNow の既知脆弱性を悪用（T1190）し PowerShell で TinyRCT を設置（T1059）。
+
+TTP: [T1190][T1059]
+参照: https://unit42.paloaltonetworks.com/cl-sta-1062-tinyrct-campaign/
+
+------------------------------------------------------------
+5. Silver Fox APT（帰属: CN・帰属信頼度: 中 / 別名: Hiding Elephant）
+活動ID: SilverFox-2026-Gh0stCringe-HoldingHands
+------------------------------------------------------------
+
+採用契機: P・Q / 標的: 金融・製造・IT / 東南アジア・台湾
+マルウェア: Gh0stCringe RAT・HoldingHands（新規スティーラー）
+
+Kaspersky GReAT 2026-06-27: Silver Fox APT（Hiding Elephant）が Gh0stCringe RAT と新規スティーラー HoldingHands を組み合わせたキャンペーンを展開。VBScript・PowerShell 経由の実行（T1059）と多段難読化（T1027）で検出を回避。
+
+TTP: [T1059][T1027]
+参照: https://securelist.com/silver-fox-apt-gh0stcringe-holdingHands/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+【APT活動 — 注目動向】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-該当なし
+1. Russian Intelligence Services（FSB Unit 26165 / UNC5792 / UNC4221・帰属更新）
+DoJ 2026-06-28: FSB Unit 26165 将校を指名手配・$10M 報奨金。Signal バックアップ鍵窃取キャンペーン（PSA260626）の帰属が公式化（高信頼度）。政府機関・軍人・外交官・ジャーナリスト標的。
+参照: https://www.reuters.com/world/us/doj-offers-10m-reward-fsb-signal-espionage-2026-06-28/
+
+2. Iranian APTs（PHOSPHORUS/Mint Sandstorm 技術的重複・帰属信頼度: 低）
+Check Point/Mandiant 2026-06-28: Deno ランタイムを LotL 手法として悪用（DenoAgent）。中東・欧州・米国の政府/防衛/エネルギー機関標的。
+参照: https://research.checkpoint.com/2026/iranian-apt-deno-lotl/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【注目CVE（監視製品リスト外）】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-・CVE-2026-46817 / Oracle E-Business Suite (EBS) - Payments / File Transmission
-CVSS: 9.8 (Critical) 状態: 実悪用確認 パッチ: 2026年5月CSPU適用済みバージョン
-Oracle EBS 12.2.3〜12.2.15 の File Transmission モジュールに CVSSv3 9.8 の重大脆弱性。2026 年 6 月 27〜28 日から実悪用確認。C2 IP 45.84.137.125 特定済み。財務・ERP システムが標的であり、日本国内 Oracle EBS 利用組織は即時パッチ適用状況の確認が必要。対処: 2026 年 5 月 CSPU を即時適用。C2 IP をファイアウォールでブロック。
-IoC: IP: 45.84.137.125
-
-監視: [Oracle EBS Web サーバーログ / ネットワークフロー] /OA_HTML/ibytransmit への POST リクエストと C2 IP への通信を監視
-Splunk SPL: index=oracle_ebs_logs request_path="/OA_HTML/ibytransmit" method=POST | stats count by src_ip, user_agent | where count > 3
-→ 外部 IP からの POST は正常運用では稀。即時調査を開始する
-
+CVE-2026-46817 / Oracle EBS 12.2.3〜12.2.15（CVSS 9.8・実悪用確認）
+C2 IP: 45.84.137.125 | 対処: 2026年5月 CSPU 即時適用・C2 IP ブロック
 参照: https://www.bleepingcomputer.com/news/security/oracle-ebs-cve-2026-46817-active-exploitation/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【攻撃予報（48〜72時間）】
+【攻撃予報（48〜168時間）】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-・予報1: SimpleHelp CVE-2026-48558 の CISA KEV 初回追加に備えた未パッチ環境の緊急確認
-Tier: 1
-確度: 中
-観測出口クラス: E1（CISA KEV 初回追加）
-検証窓: fast_72h（72時間）
-根拠:
-  Evidence: BleepingComputer/Horizon3.ai/HelpNetSecurity 2026-06-29: CVE-2026-48558（CVSS 10.0・SimpleHelp OIDC 認証バイパス）の実悪用が Djinn Stealer 展開とともに確認された。14,000 台以上が露出中。v5.5.16 パッチリリース済み。
-  過去パターン: CVSS 9.5 以上かつ実悪用確認済みの CVE は典型的に CISA が 24〜72 時間以内に KEV に追加している。2024 年の Veeam Backup CVE-2024-40711（CVSS 9.8）は悪用確認から 2 日後に KEV 追加。
-  脅威情報: 14,000 台超の露出 SimpleHelp サーバーが Djinn Stealer の標的となっており、AI 開発者コミュニティへの影響が拡大中。MSP 経由での大規模二次被害リスクが高い。
-  確度アンカー: EPSS パーセンタイル取得不能（新規 CVE）。KEV 未登録。SSVC=Act。Automatable=yes。定量ゲート D（KEV AND EPSS%ile≥0.95）未充足 → 確度: 中
-推定部分: EPSS パーセンタイルは取得不能（新規 CVE）のため定量ゲート D が完全充足できず確度: 中を適用。KEV 未登録だが SSVC=Act かつ Automatable=yes の実悪用確認済みケースとして T1 予報。（推測: EPSS は 0.95 パーセンタイル以上と推定されるが確認不能）
-先回り監視: CISA Known Exploited Vulnerabilities カタログ（cisa.gov/known-exploited-vulnerabilities-catalog）の更新確認で CVE-2026-48558 の dateAdded フィールドの出現を監視する
-的中判定: CISA が CVE-2026-48558 を Known Exploited Vulnerabilities カタログに初回追加した場合（dateAdded が 2026-06-29 以降の日付と一致）。CISA 以外の機関の相当リストへの追加・既存エントリの更新は的中とみなさない。
+予報1（T1/E1/fast_72h/確度:中）
+SimpleHelp CVE-2026-48558 の CISA KEV 初回追加に備えた未パッチ環境の緊急確認
+根拠: CVSS 10.0 実悪用確認。類似事例（Veeam CVSS 9.8）で悪用確認後2日以内にKEV追加。
+的中判定: CISA が CVE-2026-48558 を KEV に初回追加（2026-07-02 まで）
+先回り監視: CISA KEV カタログ更新確認
 
-・予報2: Oracle EBS CVE-2026-46817 悪用キャンペーンの追加 IOC 公開への備え
-Tier: 2
-確度: 中
-観測出口クラス: E2（新規 IOC 公開）
-検証窓: fast_72h（72時間）
-根拠:
-  Evidence: BleepingComputer/CybersecurityNews 2026-06-28: CVE-2026-46817（CVSS 9.8・Oracle EBS Payments/File Transmission）実悪用確認。C2 IP 45.84.137.125 が特定されたが公開 IOC は 1 件のみ。
-  過去パターン: Oracle EBS の重大脆弱性が実悪用確認された際、Mandiant・Trend Micro・CrowdStrike・CISA が 24〜72 時間以内に追加 IOC・インジケーターを公開する傾向がある。
-  脅威情報: 現在確認されている C2 IP（45.84.137.125）以外の攻撃インフラが存在する可能性が高い。Oracle EBS は財務・ERP システムであり標的の多様性からマルチ C2 運用が推定される。
-  確度アンカー: EPSS 取得不能。KEV 未登録。SSVC=Act。Automatable=yes。定量ゲート D 未充足 → 確度: 中
-推定部分: 追加 IOC 公開は過去パターンから高確度で推測されるが、今回は単一の初期レポートのみのため確実性に留保がある。（推測: 72 時間以内にセキュリティベンダーが独立した IOC 拡張レポートを公開する可能性が中程度）
-先回り監視: Mandiant・CrowdStrike・Trend Micro・CISA のセキュリティアドバイザリ・ブログで CVE-2026-46817 または Oracle EBS File Transmission に関する新規投稿を監視する
-的中判定: セキュリティベンダー（Mandiant・CrowdStrike・Trend Micro・CISA・NSA のいずれか）が CVE-2026-46817 の悪用に関連する新規 IOC（45.84.137.125 以外の C2 IP アドレス・ファイルハッシュ・URL）を 2026-07-02 07:00 JST までに初回公開した場合。45.84.137.125 を再掲するのみの記事は的中とみなさない。
+予報2（T2/E2/fast_72h/確度:中）
+Oracle EBS CVE-2026-46817 悪用キャンペーンの追加 IOC 公開への備え
+根拠: 実悪用確認済み Oracle EBS CVE に対し複数ベンダーが 24〜72 時間以内に追加 IOC を公開する傾向。
+的中判定: 新規 IOC（45.84.137.125 以外）がベンダーにより公開（2026-07-02 まで）
+先回り監視: Mandiant・CrowdStrike・Trend Micro・CISA アドバイザリ
 
+予報3（T1/E2/fast_72h/確度:中）
+LiteLLM CVE-2026-42271 実悪用事例または追加 PoC 公開の 72 時間以内見通し
+根拠: AI フレームワーク SSRF は PoC 公開後 72h 以内に実悪用。Langflow CVE-2026-5027 が先例。
+的中判定: 実悪用事例または PoC 拡張コードをベンダーが初回公開（2026-07-02 まで）
+先回り監視: Shodan/Censys スキャン増加・セキュリティベンダー実悪用レポート
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【除外サマリー（APT）】
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+予報4（T1/E3/slow_7d/確度:中）
+TraderTraitor KelpDAO/DriftUK 追加被害 DeFi プロトコルの 7 日以内公式発表
+根拠: 過去の Ronin・Harmony・WazirX 事例で初報後 7 日以内に追加被害を発表。
+的中判定: FBI・Chainalysis が新規被害プロトコル（KelpDAO・DriftUK 以外）を発表（2026-07-06 まで）
+先回り監視: FBI プレスリリース・Chainalysis ブログ
 
-[APT]
-・不明（帰属未確定）/ KDDI-2026-EmailSystemBreach → 既報（2026-06-23）。24 時間窓内に新たな変化なし
-・不明 / OperationEndgame-2026-AmaStealC → 24 時間窓外（2026-06-15〜19 実施・2026-06-24 公表。旧情報）
-
-本日の集計（Section 2）:
-APT — 本編 1 件 / 注目動向 0 件 / 除外 2 件 / 計処理 3 件
+APT統計: 本編 5 件 / 注目動向 2 件 / 除外 2 件
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -269,56 +300,11 @@ Section 3: 製品別CVE
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【ゼロデイ特報】実悪用確認・緊急対応必須
+【ゼロデイ特報】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-------------------------------------------------------------
-1. CVE-2026-48558 / SimpleHelp Remote Support Software
-対象: v5.5.15 以下（OIDC 認証を有効化した構成）
-------------------------------------------------------------
-
-優先度: 緊急
-CVSS: 10.0 (Critical)
-状態: 実悪用確認 / PoC 公開
-パッチ: v5.5.16 リリース済み（即時適用必須）
-
-【24時間以内の変化】
-[BleepingComputer 2026-06-29] CVE-2026-48558 悪用によるDjinn Stealerの展開が確認。AI開発者認証情報・MCPコンフィグファイル・クラウドAPI認証情報を標的とする新型インフォスティーラー。
-[Horizon3.ai 2026-06-29] OIDC認証バイパスのPoCを公開。CVSSv3 10.0 確定。
-[HelpNetSecurity 2026-06-29] SimpleHelpがv5.5.16パッチをリリース。14,000台以上のSimpleHelp サーバーがインターネット上に露出。
-
-【概要】
-SimpleHelp リモートサポートソフトウェア v5.5.15 以下に CVSSv3 10.0 の認証バイパス脆弱性が発見され、2026-06-29 に実悪用が確認された。OIDC 認証が有効な環境において攻撃者は任意のテクニシャンアカウントとして認証なしでログイン可能（CWE-287）。攻撃者はこの脆弱性を悪用して Djinn Stealer を展開し、Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタント設定ファイル・MCP コンフィグ・SSH キー・クラウドプロバイダー認証情報・Docker シークレット・Terraform 設定を窃取する。Windows・macOS・Linux のクロスプラットフォームに対応。14,000 台以上の SimpleHelp サーバーがインターネット上に露出しており、MSP・IT サービス事業者の顧客環境が広範に危険にさらされている。
-
-攻撃の流れ:
-1. OIDC 設定を持つ SimpleHelp v5.5.15 以下の /api/authenticate エンドポイントへ細工したリクエストを送信し、認証バイパスにより任意のテクニシャンアカウントでセッションを確立する
-2. 取得したテクニシャン権限を使用してターゲットエンドポイントに Djinn Stealer を展開し、AI 開発ツール設定ファイル・SSH 秘密鍵・クラウド API キー・MCP サーバー設定・Docker シークレット・Terraform 認証情報を収集する
-3. 窃取した認証情報を C2 サーバーへ外部送信し、AI API キーを悪用して LLMjacking またはクラウドインフラへの横展開を実施する
-
-【暫定緩和策】
-・SimpleHelp を v5.5.16 以上へ即時アップグレードする
-・アップグレードが即時困難な場合は OIDC 認証機能を一時的に無効化する
-・SimpleHelp 管理コンソールで全テクニシャンアカウントを監査し、未知の OIDC 経由セッション・不審なアカウントを削除する
-・エンドポイント上の AI ツール設定ファイル（.claude/config.json・cline/settings.json・.ssh/id_* 等）・クラウド認証情報ファイルを確認し侵害の痕跡を調査する
-・ネットワーク監視で SimpleHelp ポートから外部への大量データ送信がないか確認する
-
-【IoC】
-IoC: 確認されず（Djinn Stealer ハッシュ・C2 IP は本稿時点で非公開）
-
-【監視ポイント】
-・[SimpleHelp 管理ログ / EDR ログ] OIDC 経由の不審ログインと AI 設定ファイルへの異常アクセスを検知する
-Splunk SPL: index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip | where count > 3
-→ 短時間での OIDC 認証試行増加または未知ユーザーでの OIDC ログイン成功は即時対応を開始する
-Splunk SPL: index=endpoint_logs (file_path="*/.claude/config*" OR file_path="*/.ssh/id_*" OR file_path="*/.aws/credentials*") action=read | stats count by host, user, file_path | where count > 10
-→ AI 設定ファイルへの大量アクセスは Djinn Stealer のスキャン活動を示す
-
-【参照】
-https://www.bleepingcomputer.com/news/security/simplehelp-cve-2026-48558-oidc-bypass-djinn-stealer/
-https://www.horizon3.ai/attack-research/cve-2026-48558-simplehelp-oidc/
-https://helpnetsecurity.com/2026/06/29/simplehelp-v5516-patches-cve-2026-48558/
-
-JPCERT/CC・IPA 発行状況（24h 窓内）:
-未発行: CVE-2026-48558 — 24 時間窓内に JPCERT/CC・IPA からの注意喚起発行確認されず
+CVE-2026-48558 / SimpleHelp v5.5.15 以下 / CVSS 10.0 / パッチ: v5.5.16
+（詳細は Section 2 ゼロデイ特報参照）
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -329,43 +315,49 @@ JPCERT/CC・IPA 発行状況（24h 窓内）:
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【参考情報 A】国内で影響・被害が確認されているもの
+【参考情報 A】国内影響・実害注目
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-該当なし（24時間窓内に国内シグナル確認なし）
+1. CVE-2026-44024 / Fluentd v1.17.0 以下
+CVSS 9.8 (Critical) | CWE-94（コード注入 RCE）| パッチ: v1.17.1 | 悪用未確認
+Fluentd ログ集約エンジンの認証なし RCE。Kubernetes・クラウドネイティブ環境で広く利用。v1.17.1 へ即時アップグレード。
+参照: https://www.securityweek.com/fluentd-cve-2026-44024-rce-critical/
 
-JPCERT/CC・IPA 発行状況（24h 窓内）:
-未発行: 24 時間窓内に本セクションに該当する JPCERT/CC・IPA 発行なし
+2. CVE-2026-55200 / libssh2 1.11.0 以下
+CVSS 9.8 (Critical) | CWE-121（スタックバッファオーバーフロー）| パッチ: 1.11.1 | 悪用未確認
+悪意ある SSH サーバーへの接続時に RCE 可能。PHP・Python 内包。1.11.1 へ更新。
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-55200
+
+3. CVE-2026-5173 / GitLab CE/EE 17.8.0〜17.11.3
+CVSS 8.5 (High) | CWE-290（認証バイパス）| パッチ: 17.11.4 / 17.12.2 | 悪用未確認
+CI/CD パイプライン・リポジトリへの不正アクセスリスク。17.11.4 以上へアップグレード。
+参照: https://about.gitlab.com/releases/2026/06/27/security-release-gitlab-17-11-4-released/
+
+4. CVE-2026-12244 / CVE-2026-12245 / CVE-2026-12246 / NSD 4.9.3 以下
+CVSS 8.8 (High) | CWE-119（バッファエラー・3件）| パッチ: 4.9.4 | 悪用未確認
+権威 DNS サーバー NSD のバッファエラー3件。国家機関・ISP・TLD で広く利用。4.9.4 へ即時アップグレード。
+参照: https://nlnetlabs.nl/downloads/nsd/CHANGES
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【参考情報 B】海外で先行・国内波及に注意
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-・CVE-2026-46817 / Oracle E-Business Suite (EBS) - Payments / File Transmission
-CVSS: 9.8 (Critical) 対象: Oracle EBS 12.2.3〜12.2.15
-Oracle EBS の File Transmission モジュールに CVSSv3 9.8 の重大脆弱性。2026 年 6 月 27〜28 日から実悪用確認。C2 IP 45.84.137.125 特定済み。財務・ERP システムが標的であり、日本国内 Oracle EBS 利用組織は即時対応が必要。PoC は未公開・CISA KEV 未登録だが実悪用が続いている。対処: 2026 年 5 月 CSPU（Critical Patch Update Supplement）を即時適用。Oracle EBS を外部公開している場合は WAF で /OA_HTML/ibytransmit へのアクセスを制限する。
-IoC: IP: 45.84.137.125
-
-監視: [Oracle EBS Web サーバーログ / ネットワークフロー] /OA_HTML/ibytransmit への POST リクエストと C2 IP への通信を監視
-Splunk SPL: index=oracle_ebs_logs request_path="/OA_HTML/ibytransmit" method=POST | stats count by src_ip, user_agent | where count > 3
-→ 外部 IP からの POST は正常運用では稀。C2 IP 45.84.137.125 への通信は即時インシデント対応を開始する
-
+CVE-2026-46817 / Oracle EBS 12.2.3〜12.2.15
+CVSS 9.8 (Critical) | 実悪用確認 | C2 IP: 45.84.137.125
+2026年5月 CSPU 即時適用。C2 IP をファイアウォールでブロック。
 参照: https://www.bleepingcomputer.com/news/security/oracle-ebs-cve-2026-46817-active-exploitation/
-参照: https://cybersecuritynews.com/oracle-ebs-cve-2026-46817/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【除外サマリー（CVE）】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-[CVE]
-・CVE-2026-20230 (Cisco Unified Communications Manager) → 既報（2026-06-25）。FCEB 期限経過（2026-06-28）は Section 4 SOC 推奨情報で対応
-・CVE-2026-44815 (Windows DHCP Server) → 変化なし（2026-06 月 Patch Tuesday 既報。24 時間窓内に新たな悪用・PoC 公開なし）
-・CVE-2025-32711 (Microsoft Teams / EchoLeak) → 変化なし（2025-06 月開示・2026-05 月パッチ提供済み。24 時間窓内に変化なし）
+・CVE-2026-20230 (Cisco UCM) → 既報（2026-06-25）。FCEB 期限経過は Section 4 で対応
+・CVE-2026-44815 (Windows DHCP Server) → 変化なし（2026-06 Patch Tuesday 既報）
+・CVE-2025-32711 (Microsoft Teams / EchoLeak) → 変化なし（2026-05 パッチ提供済み）
 
-本日の集計（Section 3）:
-CVE — ゼロデイ特報 1 件 / 本編 0 件 / 参考 A 0 件 / 参考 B 1 件 / 除外 3 件 / 計処理 5 件
+CVE統計: ゼロデイ特報 1 / 本編 0 / 参考A 4 / 参考B 1 / 除外 3 / 処理総数 9
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -374,109 +366,64 @@ Section 4: SOC推奨情報
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【SOC推奨情報】
+【SOC推奨情報 — 高優先度】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-------------------------------------------------------------
-1. SimpleHelp CVE-2026-48558: OIDC 認証バイパス緊急パッチ適用と侵害確認
-観点: ゼロデイ関連
-採用契機: β（国内企業・組織が広く利用するサービスへの影響）・γ（SOC 運用に直接関係）・η（リモートサポートソフトウェアの脆弱性）
-------------------------------------------------------------
-
-優先度: 高
-対象: SimpleHelp Remote Support Software（v5.5.15 以下・OIDC 有効構成）
-
-【24時間以内の変化】
-[BleepingComputer / Horizon3.ai 2026-06-29] CVE-2026-48558 実悪用確認・Djinn Stealer 展開・v5.5.16 パッチリリース。14,000 台超露出中。
-
-【概要】
-SimpleHelp の OIDC 認証バイパス脆弱性（CVE-2026-48558・CVSS 10.0）が実悪用され、Djinn Stealer が展開されている。MSP・IT サービス事業者が SimpleHelp を使用している場合、顧客環境の AI 開発者認証情報・クラウド認証情報が広範に侵害される可能性がある。今日中の対応が必須。
-
-【推奨アクション】
-・SimpleHelp を v5.5.16 以上へ即時アップグレードする（最優先）
-・アップグレードが即時困難な場合は OIDC 認証を一時的に無効化し、通常の認証方式に切り替える
-・SimpleHelp 管理コンソールで全テクニシャンアカウントを監査し、OIDC 経由で作成された不明アカウントを削除する
-・SimpleHelp に接続した全エンドポイントで AI ツール設定ファイル・SSH キー・クラウド認証情報の侵害確認を実施する（~/.claude/config.json・~/.aws/credentials・~/.ssh/id_* 等）
-・侵害が疑われる AI API キー・クラウド認証情報・SSH キーを即時ローテーションする
-・[SimpleHelp 管理ログ / EDR ログ] OIDC 経由の不審ログインを監視する
+1. [高優先度] SimpleHelp CVE-2026-48558: OIDC 認証バイパス緊急パッチ適用と侵害確認
+対象: SimpleHelp v5.5.15 以下（OIDC 有効構成）
+実悪用確認・Djinn Stealer 展開・14,000 台超露出中。v5.5.16 へ即時アップグレード。
+OIDC 無効化（緊急時）・全エンドポイントで AI 設定・クラウド認証情報の侵害確認・即時ローテーション。
 Splunk SPL: index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip, _time | where count > 3
-→ 短時間での OIDC 認証試行増加または未知ユーザーでの OIDC ログイン成功は即時対応を開始する
 
-【参照】
-https://www.bleepingcomputer.com/news/security/simplehelp-cve-2026-48558-oidc-bypass-djinn-stealer/
-
-------------------------------------------------------------
-2. Oracle EBS CVE-2026-46817: 実悪用確認による C2 ブロックと CSPU 適用確認
-観点: CVE関連
-採用契機: β（国内企業が広く利用する Oracle EBS への影響）・δ（海外で話題・国内波及近い）
-------------------------------------------------------------
-
-優先度: 高
-対象: Oracle E-Business Suite (EBS) 12.2.3〜12.2.15
-
-【24時間以内の変化】
-[BleepingComputer / CybersecurityNews 2026-06-28] CVE-2026-46817 実悪用開始を確認。C2 IP 45.84.137.125 を特定。Oracle EBS 12.2.3〜12.2.15 が対象。
-
-【概要】
-Oracle EBS（Oracle Payments / File Transmission モジュール）の CVE-2026-46817（CVSS 9.8）が 2026 年 6 月 27〜28 日から実悪用されている。2026 年 5 月の CSPU で修正済みだが未適用の組織が標的となっている。C2 IP 45.84.137.125 が確認されており、財務データ・支払い情報の窃取が主要目的とみられる。Oracle EBS を外部に公開している組織は今日中に C2 ブロックとパッチ適用状況の確認が必要。
-
-【推奨アクション】
-・ファイアウォールで C2 IP アドレス 45.84.137.125 をブロックする（インバウンド・アウトバウンド両方）
-・2026 年 5 月 CSPU（Critical Patch Update Supplement）の適用状況を確認し、未適用の場合は即時適用する
-・Oracle EBS Web サーバーのアクセスログで /OA_HTML/ibytransmit エンドポイントへの POST リクエストを 6 月 27 日以降に遡り確認する
-・Oracle EBS をインターネットに直接公開している場合は WAF またはリバースプロキシで /OA_HTML/ibytransmit への外部アクセスを制限する
-・[Oracle EBS Web サーバーログ / ネットワークフロー] 悪用エンドポイントへのアクセスと C2 通信を監視する
+2. [高優先度] Oracle EBS CVE-2026-46817: 実悪用確認による C2 ブロックと CSPU 適用確認
+対象: Oracle EBS 12.2.3〜12.2.15
+C2 IP 45.84.137.125 をファイアウォールでブロック（インバウンド・アウトバウンド両方）。2026年5月 CSPU 即時適用。/OA_HTML/ibytransmit への POST リクエストを 6 月 27 日以降に遡り確認。
 Splunk SPL: index=network_logs (dest_ip="45.84.137.125" OR src_ip="45.84.137.125") | stats count by src_ip, dest_ip, dest_port | sort -count
-→ C2 IP との通信を検知した場合はただちにインシデント対応を開始し、Oracle EBS サーバーの forensic 取得を実施する
 
-【参照】
-https://www.bleepingcomputer.com/news/security/oracle-ebs-cve-2026-46817-active-exploitation/
+3. [高優先度] TraderTraitor DeFi サプライチェーン攻撃: npm 依存関係監査
+対象: DeFi / ブロックチェーン開発プロジェクト（npm 依存パッケージ）
+npm audit・Snyk で全依存パッケージの完全性を確認。LinkedIn 採用接触に特別な警戒。スマートコントラクトの最終デプロイコードと正規ソースの整合性を検証。npm postinstall スクリプトの外部通信を確認。
 
-------------------------------------------------------------
-3. Cisco UCM CVE-2026-20230: FCEB 期限（2026-06-28）経過確認とウェブシェル点検
-観点: CVE関連
-採用契機: γ（SOC 運用に直接関係する FCEB 期限管理・ウェブシェル確認）
-------------------------------------------------------------
+4. [高優先度] LiteLLM CVE-2026-42271: SSRF 脆弱性対応とアクセス制御強化
+対象: LiteLLM 1.42.0 以下
+LiteLLM を 1.43.0 以上へ即時アップグレード。外部公開インスタンスを WAF で保護。内部メタデータエンドポイント（169.254.169.254 等）へのアクセスログを確認。
 
-優先度: 中
-対象: Cisco Unified Communications Manager (UCM)
 
-【24時間以内の変化】
-[CISA KEV 2026-06-28] Cisco UCM CVE-2026-20230 の FCEB 機関向け対応期限（2026-06-28）が昨日経過した。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報 — 中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-【概要】
-Cisco Unified Communications Manager（UCM）の CVE-2026-20230 に対する CISA FCEB 期限（連邦民間行政府機関の対応期限）が 2026-06-28 に経過した。FCEB 機関は昨日時点でパッチ適用が完了している必要があるが、残存する未パッチ環境でウェブシェルの設置等の持続的侵害が発生している可能性がある。/platform-services/axis2-web/ パスへの不審なアクセス確認が推奨される。
-
-【推奨アクション】
-・Cisco UCM のパッチ適用状況を確認し、FCEB 期限（2026-06-28）までに適用できなかった場合は即時適用する
-・/platform-services/axis2-web/ パスへのアクセスログ（6 月 15 日以降）を調査し、不審なウェブシェルアクセスを確認する
-・Cisco UCM の管理コンソールで未知のアカウント・サービスの作成が行われていないか確認する
-・[Cisco UCM Web アクセスログ] axis2-web パスへのアクセスを確認する
+5. [中優先度] Cisco UCM CVE-2026-20230: FCEB 期限（2026-06-28）経過確認とウェブシェル点検
+対象: Cisco Unified Communications Manager
+パッチ適用状況を確認し未適用の場合は即時適用。/platform-services/axis2-web/ パスへのアクセスログ（6 月 15 日以降）を調査。
 Splunk SPL: index=cisco_ucm_logs request_path="*/axis2-web/*" NOT user IN ("admin","ccmadmin") | stats count by src_ip, request_path, user | sort -count
-→ axis2-web パスへの管理者以外からのアクセスはウェブシェルの設置・利用を示す可能性がある
 
-【参照】
-https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+6. [中優先度] Sapphire Sleet TrilatSummit: 日本の政府・防衛・金融機関向けスピアフィッシング警戒
+対象: 日本・韓国・米国の政府・防衛・金融・シンクタンク（直接標的）
+三カ国首脳会談・外交テーマのメール添付ファイルを受け取った場合は CSIRT へ即時報告。外交テーマ添付ファイルのサンドボックス検査強化。Rust 製バイナリの予期しない実行を EDR でブロック・記録。
 
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【除外サマリー（SOC推奨情報）】
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-該当なし（除外エントリなし）
-
-本日の集計（Section 4）:
-SOC推奨情報 — 高 2 件 / 中 1 件 / 低 0 件 / 除外 0 件 / 計処理 3 件
-観点内訳: CVE関連 2 件 / ゼロデイ関連 1 件 / AI攻撃関連 0 件
+SOC推奨情報統計: 高 4 件 / 中 2 件 / 低 0 件 / 除外 0 件 / 計処理 6 件
+観点内訳: CVE関連 2 件 / ゼロデイ関連 1 件 / AI攻撃関連 1 件 / APT関連 2 件
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【本日の総合集計】
+【ベースライン更新ログ】（ISO Week 27 開始・Week 26 全グループリセット）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Section 1（AI攻撃）: 本編 1 件 / 参考A 0 件 / 参考B 0 件 / 除外 0 件
-Section 2（ゼロデイ・トレンド）: ゼロデイ特報 1 件 / APT本編 1 件 / APT注目 0 件 / 注目CVE 1 件 / 攻撃予報 2 件 / APT除外 2 件
-Section 3（製品別CVE）: ゼロデイ特報 1 件 / 本編 0 件 / 参考A 0 件 / 参考B 1 件 / 除外 3 件 / 計 5 件処理
-Section 4（SOC推奨）: 高 2 件 / 中 1 件 / 低 0 件 / 除外 0 件 / 計 3 件処理
+テクニック頻度（警戒閾値σ≧2.0）:
+T1059: σ=4.05 [警戒] sample_count=9 mean_per_day=0.6000 （3グループで観測）
+T1027: σ=3.61 [警戒] sample_count=2 mean_per_day=0.1333 （Silver Fox APT多段難読化）
+T1219: σ=2.38 [注目] sample_count=1 （StrikeShark Cobalt Strike）
+T1566: σ=1.91 [注目] sample_count=4 （Sapphire Sleet TrilatSummit）
+T1574: σ=1.55 sample_count=1 （StrikeShark DLL サイドローディング）
+T1195: σ=1.18 sample_count=5 （TraderTraitor npm サプライチェーン）
+T1565: 初出 sample_count=1 （TraderTraitor スマートコントラクト改ざん）
 
+新規グループ追加: TraderTraitor・CL-STA-1062・Silver Fox APT（sample=1・Week 27 current_week=1）
+Week 27 リセット対象: Turla・BONZAI・APT28・Andariel・Prinz Eugen・Nightmare Eclipse・REF8372・KongTuke
+
+全観測件数（14日ベースライン）: 109件
+
+========================================
+日次パイプライン完了: 2026-06-29 07:00 JST
 ========================================

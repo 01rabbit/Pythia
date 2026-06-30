@@ -17,54 +17,156 @@ Section 1: AI攻撃動向
 
 ------------------------------------------------------------
 1. Djinn Stealer: CVE-2026-48558 悪用による AI 開発者認証情報・MCP コンフィグ窃取
-カテゴリ: C（AI インフラ攻撃）/ サブカテゴリ: C3（MCP サーバー・エージェント統合基盤の認証情報窃取） / 攻撃者種別: 犯罪組織
+カテゴリ: C（AI インフラ攻撃）/ サブカテゴリ: C3（AI 開発者認証情報窃取）/ 攻撃者種別: 犯罪組織
 ------------------------------------------------------------
 
 採用契機: Q（実際のインシデント・被害報告）・R（AI セキュリティ CVE 関連の実害）
-MITRE ATLAS: ATLAS TTP: 詳細未公開（新規攻撃パターン・分類調査中）
-OWASP: 調査中
-対象: IT・専門サービスセクター / グローバル / SimpleHelp 経由の AI 開発者エンドポイント
-被害規模: 14,000 台以上の SimpleHelp サーバーが潜在的露出対象。AI 開発者認証情報の窃取被害組織数は不明（調査継続中）
+バースト検出: 3 件（BleepingComputer・Horizon3.ai・HelpNetSecurity）→ threshold_met
+被害規模: 14,000 台以上の SimpleHelp サーバーが潜在的露出対象
 
-【24時間以内（または期間内）の変化】
-[BleepingComputer 2026-06-29] CVE-2026-48558 悪用で展開される Djinn Stealer が Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタントの設定ファイルと MCP サーバー設定を標的とすることが初報
+【24時間以内の変化】
+[BleepingComputer 2026-06-29] CVE-2026-48558 悪用で展開される Djinn Stealer が Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタント設定ファイルと MCP サーバー設定を標的とすることが初報
 
 【概要】
-Djinn Stealer は CVE-2026-48558（SimpleHelp OIDC 認証バイパス・CVSS 10.0）を悪用してエンドポイントに展開される新規のクロスプラットフォーム型インフォスティーラーで、AI 開発者の認証情報と MCP（Model Context Protocol）コンフィグファイルを主要標的とする。Windows・macOS・Linux に対応し、Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタントの設定ファイル（API キーを含む）・MCP サーバー設定・SSH 秘密鍵・AWS/GCP/Azure のクラウドプロバイダー認証情報・Docker シークレット・Terraform 設定ファイルを収集する。窃取された AI API キーは LLMjacking（被害者コストでの不正 API 利用）または AI システムへの不正アクセスに転用される可能性がある。MSP・IT サービス事業者の SimpleHelp 展開環境を経由することで、顧客組織の AI 開発環境が広範に侵害される。バースト検出: 3 件（BleepingComputer・Horizon3.ai・HelpNetSecurity）→ threshold_met。
+Djinn Stealer は CVE-2026-48558（SimpleHelp OIDC 認証バイパス・CVSS 10.0）を悪用してエンドポイントに展開される新規クロスプラットフォーム型インフォスティーラーで、AI 開発者の認証情報と MCP（Model Context Protocol）コンフィグファイルを主要標的とする。Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタント設定・SSH 秘密鍵・クラウド認証情報・Docker シークレット・Terraform 設定を収集する。窃取された AI API キーは LLMjacking（被害者コストでの不正 API 利用）または AI システムへの不正アクセスに転用される。
 
 攻撃の流れ:
 1. 攻撃者は CVE-2026-48558 を悪用して SimpleHelp サーバーに認証なしでテクニシャン権限でログインする
-2. テクニシャン権限で接続中のエンドポイントに Djinn Stealer を展開し、AI ツール設定ファイル（~/.claude/config.json・Cline/OpenCode 設定・MCP コンフィグ）・SSH キー・クラウド認証情報を網羅的に収集する
-3. 収集した認証情報を C2 へ送信し、窃取した AI API キーを LLMjacking または標的組織の AI システムへの継続的不正アクセスに悪用する
-
-【ATLAS TTPs】
-ATLAS TTP: 詳細未公開（MCP コンフィグ窃取を用いた AI インフラ侵害は新規攻撃パターン。MITRE ATLAS へのケーススタディ申請を検討中）
+2. テクニシャン権限で接続中のエンドポイントに Djinn Stealer を展開し、AI ツール設定・SSH キー・クラウド認証情報を網羅的に収集する
+3. 収集した認証情報を C2 へ送信し、窃取した AI API キーを LLMjacking または AI システムへの継続的不正アクセスに悪用する
 
 【IoC / 検知シグナル】
 IoC: 確認されず（ハッシュ・C2 IP は本稿時点で非公開）
-検知シグナル: AI ツール設定ディレクトリ（~/.claude/・~/.config/claude/ 等）への異常な読み取りアクセス（複数ファイルを短時間に一括スキャン）
+検知シグナル: AI ツール設定ディレクトリ（~/.claude/・~/.config/claude/ 等）への異常な読み取りアクセス
 検知シグナル: SSH キーディレクトリ（~/.ssh/）の秘密鍵ファイルへのアクセス（プロセスが ssh-agent 以外の場合）
-検知シグナル: クラウド認証情報ファイル（~/.aws/credentials・~/.config/gcloud/）へのアクセスが通常のアプリケーション以外のプロセスから発生
+検知シグナル: クラウド認証情報ファイル（~/.aws/credentials・~/.config/gcloud/）への正規外プロセスアクセス
 
 【監視・対策ポイント】
-・[EDR / ファイル整合性監視（FIM）] AI 設定ファイルへの異常アクセスを検知する
 Splunk SPL: index=endpoint_logs (file_path="*/.claude/*" OR file_path="*/.ssh/id_*" OR file_path="*/.aws/credentials*" OR file_path="*/mcp*.json") NOT process_name IN ("claude","ssh-agent","aws") | stats count by host, process_name, user, file_path | where count > 5
-→ AI ツール設定・SSH キー・クラウド認証情報への正規プロセス以外からの一括アクセスは Djinn Stealer 活動の指標。SimpleHelp ログと照合して侵入経路を確認する
-・SimpleHelp を v5.5.16 以上へ即時アップグレードする（CVE-2026-48558 の根本対策）
-・侵害が疑われる AI API キー・クラウド認証情報・SSH キーを即時ローテーションする
-・MCP サーバー設定ファイルの権限を 600 に設定し、不要な読み取りアクセスを制限する
+→ AI ツール設定・SSH キー・クラウド認証情報への正規プロセス以外からの一括アクセスは Djinn Stealer 活動の指標
 
 【参照】
 https://www.bleepingcomputer.com/news/security/djinn-stealer-targets-ai-developer-credentials-mcp-configs/
 https://www.horizon3.ai/attack-research/cve-2026-48558-simplehelp-oidc/
-https://helpnetsecurity.com/2026/06/29/simplehelp-v5516-patches-cve-2026-48558/
+
+------------------------------------------------------------
+2. CVE-2026-42271: LiteLLM SSRF による AI ゲートウェイ経由内部ネットワーク偵察
+カテゴリ: C（AI インフラ攻撃）/ サブカテゴリ: C1（AI システム脆弱性）/ 攻撃者種別: 犯罪組織
+------------------------------------------------------------
+
+採用契機: Q（重大 CVE・PoC 公開）
+OWASP LLM: LLM07
+バースト検出: 3 件（GitHub Advisory・NIST・SecurityWeek）→ threshold_met
+被害規模: LiteLLM 1.42.0 以下の全インスタンス
+
+【24時間以内の変化】
+[GitHub Security Advisory / NIST 2026-06-28] CVE-2026-42271（CVSS 9.1・SSRF・CWE-918）の PoC が公開された。LiteLLM を経由した内部ネットワーク偵察・クラウドメタデータ取得が可能。
+
+【概要】
+LiteLLM（AI モデルゲートウェイ・プロキシライブラリ）v1.42.0 以下に SSRF 脆弱性（CVE-2026-42271・CVSS 9.1・CWE-918）が発見され PoC が公開された。攻撃者は LiteLLM のリクエスト転送機能を悪用して内部ネットワークの偵察・クラウドメタデータサービス（AWS IMDS・GCP メタデータ等）へのアクセス・内部 AI サービスへの不正接続が可能。v1.43.0 パッチリリース済み。
+
+攻撃の流れ:
+1. 外部公開の LiteLLM インスタンスに細工したリクエストを送信し SSRF を誘発する
+2. 内部ネットワークのサービス（クラウドメタデータ・内部 API）をスキャン・アクセスする
+3. 取得した内部情報・クラウド認証情報を基に横展開を実施する
+
+【IoC / 検知シグナル】
+検知シグナル: 内部メタデータエンドポイント（169.254.169.254）へのアクセス試行
+検知シグナル: LiteLLM からの予期しない内部 IP への HTTP リクエスト
+
+【監視・対策ポイント】
+Splunk SPL: index=app_logs app=litellm (dest_ip="169.254.169.254" OR dest_ip LIKE "10.*" OR dest_ip LIKE "172.16.*") | stats count by src_ip, dest_ip, url
+→ LiteLLM から内部 IP への HTTP リクエストは SSRF 悪用の可能性がある
+
+【参照】
+https://github.com/BerriAI/litellm/security/advisories/
+https://www.securityweek.com/litellm-ssrf-cve-2026-42271/
+
+------------------------------------------------------------
+3. Miasma AI ワーム: AI インフラ間自己増殖型マルウェア
+カテゴリ: C（AI インフラ攻撃）/ サブカテゴリ: C6（AI 系サプライチェーン侵害）/ 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: Q（重大インシデント報告）
+OWASP Agentic: OWASP-A7
+バースト検出: 2 件（Wiz Research・Dark Reading）→ below_threshold
+被害規模: MCP サーバー・Ollama インスタンス・Jupyter ノートブックが稼働する環境全般
+
+【24時間以内の変化】
+[Wiz Research / Dark Reading 2026-06-28] Miasma AI ワームが AI インフラ間を自己増殖し、MCP サーバー・Ollama インスタンス・Jupyter ノートブックを連鎖侵害することが報告された。
+
+【概要】
+Wiz Research が報告した Miasma は、AI インフラ間（MCP サーバー・Ollama インスタンス・Jupyter ノートブック等）を自己増殖するワーム型マルウェアである。露出した AI コンポーネントの認証不備・脆弱な設定を悪用して連鎖侵害し、AI モデルへのバックドア挿入・プロンプトキャッシュ汚染・AI 推論データの窃取を目的とする。実環境での検出報告あり。
+
+攻撃の流れ:
+1. インターネット露出した認証なし MCP サーバー・Ollama インスタンスをスキャンして初期感染する
+2. 感染した AI インフラから接続先の他の AI コンポーネントへ自己複製して横展開する
+3. AI モデルのプロンプトキャッシュを汚染し、推論データを窃取して C2 に送信する
+
+【IoC / 検知シグナル】
+検知シグナル: MCP サーバー・Ollama インスタンスからの予期しない外部通信
+検知シグナル: Jupyter ノートブックの不審なカーネル実行
+
+【参照】
+https://www.wiz.io/blog/miasma-ai-worm-infrastructure/
+https://www.darkreading.com/application-security/miasma-ai-infrastructure-worm
+
+------------------------------------------------------------
+4. Claude Code GitHub Actions プロンプトインジェクション: CI/CD パイプライン乗っ取り
+カテゴリ: B（AI モデル・エージェント攻撃）/ サブカテゴリ: B1（プロンプトインジェクション）/ 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: Q（技術実証・実害ベクター確認）
+MITRE ATLAS: AML.T0051（プロンプトインジェクション）
+OWASP LLM: LLM01 | OWASP Agentic: OWASP-A1
+バースト検出: 2 件（Wiz Research・HelpNetSecurity）→ below_threshold
+被害規模: GitHub Actions で Claude Code を使用する CI/CD パイプライン
+
+【24時間以内の変化】
+[Wiz Research / HelpNetSecurity 2026-06-28] GitHub PR コメント経由でのプロンプトインジェクション攻撃により、GitHub Actions 内で動作する Claude Code が悪意ある指示を実行する手法が実証・報告された。
+
+【概要】
+Wiz Research が実証した攻撃手法で、攻撃者は GitHub Pull Request のコメントに隠蔽したプロンプトインジェクションを埋め込み、GitHub Actions 内で動作する Claude Code に悪意ある指示（シークレット漏洩・コード改ざん・バックドア挿入等）を実行させる。Claude Code が CI/CD 内で自律的に動作する環境で有効。AI エージェントの信頼境界を悪用した攻撃。
+
+攻撃の流れ:
+1. 攻撃者が GitHub PR コメントに隠蔽したプロンプトインジェクション（不可視文字・コードブロック内等）を埋め込む
+2. GitHub Actions がトリガーされ Claude Code が PR コメントを処理した際に悪意ある指示を実行する
+3. Claude Code が GitHub Actions シークレットを漏洩・リポジトリコードを改ざん・外部への HTTP リクエストを実行する
+
+【IoC / 検知シグナル】
+検知シグナル: GitHub Actions ログでの予期しない外部 HTTP リクエスト
+検知シグナル: CI/CD シークレットへの予期しないアクセス
+
+【参照】
+https://www.wiz.io/blog/claude-code-github-actions-prompt-injection/
+https://helpnetsecurity.com/2026/06/28/claude-code-github-actions-prompt-injection/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【AI攻撃 — 参考B】技術実証・国内波及注意
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-該当なし
+------------------------------------------------------------
+1. Gemini 搭載 SMiShing キャンペーン: AI 生成 SMS フィッシングの高精度個別最適化
+カテゴリ: A（AI 悪用攻撃）/ サブカテゴリ: A1（AI 生成フィッシング）
+------------------------------------------------------------
+
+バースト検出: 2 件（Zscaler・ThreatPost）→ below_threshold
+
+Zscaler が報告した Gemini API を悪用した SMiShing キャンペーン。個人属性データに基づき高精度に個別最適化された SMS フィッシングメッセージを Gemini で生成・送信する。金融機関・EC 利用者を標的とし、2026 年初頭からの AI 生成フィッシングの集団→個別最適化移行トレンドの一環。
+
+参照: https://www.zscaler.com/blogs/security-research/gemini-powered-smishing-campaign-2026
+
+------------------------------------------------------------
+2. OpenClaw Pinchy: オープンソース LLM を悪用した自律型ペネトレーションフレームワーク
+カテゴリ: A（AI 悪用攻撃）/ サブカテゴリ: A4（LLM 自律型攻撃エージェント）
+------------------------------------------------------------
+
+バースト検出: 2 件（Unit 42・Dark Reading）→ below_threshold
+
+Unit 42 が報告した OpenClaw（コードネーム: Pinchy）は、Ollama・llama.cpp 等のオープンソース LLM を自律的な攻撃推論エンジンとして悪用するペネトレーションフレームワーク。偵察→脆弱性特定→エクスプロイト選択→実行までを自律的に実施。犯罪グループによる実戦運用が確認されており、既存の LLMjacking（認証なし Ollama 悪用）からさらに進化した攻撃形態。
+
+参照: https://unit42.paloaltonetworks.com/openclaw-pinchy-autonomous-pentest-llm/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -78,10 +180,10 @@ https://helpnetsecurity.com/2026/06/29/simplehelp-v5516-patches-cve-2026-48558/
 【AI攻撃 — 週次トレンドサマリー】
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-本日（2026-06-29）の最大のトピックは Djinn Stealer の登場である。CVE-2026-48558（SimpleHelp CVSS 10.0 認証バイパス）という既存の脆弱性を初期侵入ベクターとして利用しながら、AI 開発者の MCP コンフィグ・API キーを主要窃取対象とする点で従来のインフォスティーラーと一線を画す。MSP 経由の顧客環境への二次感染リスクが高く、AI コーディングアシスタントが広く普及した現在のソフトウェア開発環境において深刻な影響を持つ。「AI を攻撃する」ための専用マルウェアが登場したことは、AI インフラ攻撃（カテゴリ C）が研究段階から実運用段階へ移行したことを示す重要なシグナルである。バースト検出: Djinn Stealer 関連 3 ソース（BleepingComputer・Horizon3.ai・HelpNetSecurity）が 48 時間以内に独立報告 → threshold_met。
+本日（2026-06-29）は AI インフラ攻撃（カテゴリ C）が3件と突出して多い1日となった。最大のトピックは Djinn Stealer の登場である。CVE-2026-48558（SimpleHelp CVSS 10.0）という既存の脆弱性を初期侵入ベクターとして利用しながら、AI 開発者の MCP コンフィグ・API キーを主要窃取対象とする点で従来のインフォスティーラーと一線を画す。LiteLLM の SSRF 脆弱性（CVE-2026-42271）と Miasma ワームの組み合わせは、AI ゲートウェイおよび AI インフラ全体が攻撃対象として成熟しつつあることを示す。プロンプトインジェクション（Claude Code GitHub Actions）は AI エージェントの CI/CD 統合に対する新たな攻撃ベクターとして注目が必要。「AI を攻撃する」専用マルウェアが登場したことは、AI インフラ攻撃が研究段階から実運用段階へ移行したことを示す重要なシグナルである。
 
 本日の集計（Section 1）:
-AI攻撃 — 本編 1 件 / 参考 A 0 件 / 参考 B 0 件 / 除外 0 件
-カテゴリ内訳: A（武器化）0 件 / B（攻撃対象）0 件 / C（インフラ）1 件
+AI攻撃 — 本編 4 件 / 参考 A 0 件 / 参考 B 2 件 / 除外 0 件 / 計処理 6 件
+カテゴリ内訳: A（武器化）2 件 / B（攻撃対象）1 件 / C（インフラ）3 件
 
 ========================================

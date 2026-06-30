@@ -66,3 +66,7 @@
 | CVE-2026-43503 | Linux kernel (net/sched DirtyClone) < 7.1-rc5 | 2026-06-28 | poc_public | 2026-06-28 | YES | CVSS 8.8・CWE-362競合状態LPE・JFrog PoC公開2026-06-25・THN/BleepingComputer 2026-06-27報道・Kubernetes環境コンテナエスケープリスク・参考B採用 |
 | CVE-2026-48558 | SimpleHelp Remote Support Software v5.5.15 以下（OIDC 有効構成） | 2026-06-29 | active_exploitation | 2026-06-29 | YES | CVSS 10.0・CWE-287 OIDC認証バイパス・PoC公開（Horizon3.ai）・Djinn Stealer展開・AI開発者認証情報/MCPコンフィグ/SSH/クラウド認証情報窃取・14,000台超露出・v5.5.16パッチリリース済み・KEV未登録・ゼロデイ特報採用・Section 4 SOC推奨情報(高)採用 |
 | CVE-2026-46817 | Oracle E-Business Suite (EBS) Payments / File Transmission 12.2.3〜12.2.15 | 2026-06-29 | active_exploitation | 2026-06-29 | YES | CVSS 9.8・2026年5月CSPU修正済み・2026-06-27〜28から実悪用確認・C2 IP 45.84.137.125・財務/ERP標的・PoC未公開・KEV未登録・参考B採用（注目CVE）・Section 4 SOC推奨情報(高)採用 |
+| CVE-2026-44024 | Fluentd v1.17.0 以下 | 2026-06-29 | no_exploitation_confirmed | 2026-06-29 | YES | CVSS 9.8・CWE-94コード注入RCE・v1.17.1パッチリリース済み・悪用確認なし・PoC未公開・参考A採用 |
+| CVE-2026-55200 | libssh2 1.11.0 以下 | 2026-06-29 | no_exploitation_confirmed | 2026-06-29 | YES | CVSS 9.8・CWE-121スタックバッファオーバーフロー・1.11.1パッチリリース済み・悪用確認なし・参考A採用 |
+| CVE-2026-5173 | GitLab CE/EE 17.8.0〜17.11.3 | 2026-06-29 | no_exploitation_confirmed | 2026-06-29 | YES | CVSS 8.5・CWE-290認証バイパス・17.11.4/17.12.2パッチリリース済み・悪用確認なし・参考A採用 |
+| CVE-2026-12244 / CVE-2026-12245 / CVE-2026-12246 | NSD (Name Server Daemon) 4.9.3 以下 | 2026-06-29 | no_exploitation_confirmed | 2026-06-29 | YES | CVSS 8.8・CWE-119バッファエラー3件・4.9.4パッチリリース済み・悪用確認なし・参考A採用 |

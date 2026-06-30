@@ -30,7 +30,7 @@ CVSS: 10.0 (Critical)
 [HelpNetSecurity 2026-06-29] SimpleHelpがv5.5.16パッチをリリース。14,000台以上のSimpleHelp サーバーがインターネット上に露出。
 
 【概要】
-SimpleHelp リモートサポートソフトウェア v5.5.15 以下に CVSSv3 10.0 の認証バイパス脆弱性が発見され、2026-06-29 に実悪用が確認された。OIDC 認証が有効な環境において攻撃者は任意のテクニシャンアカウントとして認証なしでログイン可能（CWE-287）。攻撃者はこの脆弱性を悪用して Djinn Stealer を展開し、Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタント設定ファイル・MCP コンフィグ・SSH キー・クラウドプロバイダー認証情報・Docker シークレット・Terraform 設定を窃取する。Windows・macOS・Linux のクロスプラットフォームに対応。14,000 台以上の SimpleHelp サーバーがインターネット上に露出しており、MSP・IT サービス事業者の顧客環境が広範に危険にさらされている。
+SimpleHelp リモートサポートソフトウェア v5.5.15 以下に CVSSv3 10.0 の認証バイパス脆弱性が発見され、2026-06-29 に実悪用が確認された。OIDC 認証が有効な環境において攻撃者は任意のテクニシャンアカウントとして認証なしでログイン可能（CWE-287）。攻撃者はこの脆弱性を悪用して Djinn Stealer を展開し、Claude・Gemini・Codex・Cline・OpenCode・Kilo 等の AI コーディングアシスタント設定ファイル・MCP コンフィグ・SSH キー・クラウドプロバイダー認証情報・Docker シークレット・Terraform 設定を窃取する。14,000 台以上の SimpleHelp サーバーがインターネット上に露出しており、MSP・IT サービス事業者の顧客環境が広範に危険にさらされている。
 
 攻撃の流れ:
 1. OIDC 設定を持つ SimpleHelp v5.5.15 以下の /api/authenticate エンドポイントへ細工したリクエストを送信し、認証バイパスにより任意のテクニシャンアカウントでセッションを確立する
@@ -42,17 +42,13 @@ SimpleHelp リモートサポートソフトウェア v5.5.15 以下に CVSSv3 1
 ・アップグレードが即時困難な場合は OIDC 認証機能を一時的に無効化する
 ・SimpleHelp 管理コンソールで全テクニシャンアカウントを監査し、未知の OIDC 経由セッション・不審なアカウントを削除する
 ・エンドポイント上の AI ツール設定ファイル（.claude/config.json・cline/settings.json・.ssh/id_* 等）・クラウド認証情報ファイルを確認し侵害の痕跡を調査する
-・ネットワーク監視で SimpleHelp ポート（TCP 443/80）から外部への大量データ送信がないか確認する
 
 【IoC】
-IoC: 確認されず（Djinn Stealer ハッシュ・C2 IP は本稿時点で非公開）
+IoC: ファイル名 djinn_stealer（ハッシュ未確定）
 
 【監視ポイント】
-・[SimpleHelp 管理ログ / EDR ログ] OIDC 経由の不審ログインと AI 設定ファイルへの異常アクセスを検知する
 Splunk SPL: index=simplehelp_logs action=login auth_method=oidc | stats count by user, src_ip | where count > 3
-→ 短時間での OIDC 認証試行増加または未知ユーザーでの OIDC ログイン成功は即時対応を開始する
 Splunk SPL: index=endpoint_logs (file_path="*/.claude/config*" OR file_path="*/.ssh/id_*" OR file_path="*/.aws/credentials*") action=read | stats count by host, user, file_path | where count > 10
-→ AI 設定ファイルへの大量アクセスは Djinn Stealer のスキャン活動を示す
 
 【参照】
 https://www.bleepingcomputer.com/news/security/simplehelp-cve-2026-48558-oidc-bypass-djinn-stealer/
@@ -65,12 +61,12 @@ https://helpnetsecurity.com/2026/06/29/simplehelp-v5516-patches-cve-2026-48558/
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ------------------------------------------------------------
-1. StrikeShark（別名: SharkLoader / 国家帰属: CN（低信頼度） / 帰属信頼度: 低）
-活動タイプ: 新規マルウェア / 実活動キャンペーン
+1. StrikeShark（別名: SharkLoader / 帰属: CN（低信頼度））
+活動ID: StrikeShark-2026-SharkLoaderDiplomacy
 ------------------------------------------------------------
 
 採用契機: P（新規マルウェア詳細技術分析公開）・Q（実際のインシデント・多国間被害確認）・R（既知CVE の新規武器化）
-標的: 外交機関・政府機関・ソフトウェア開発企業 / インドネシア・台湾・香港・レバノン・シリア・コロンビア・北マケドニア・ネパール・セルビア
+標的: 外交機関・政府機関・ソフトウェア開発企業 / インドネシア・台湾・香港・レバノン等
 マルウェア: SharkLoader（カスタムドロッパー）・Cobalt Strike Beacon
 
 【24時間以内の変化】
@@ -78,45 +74,140 @@ https://helpnetsecurity.com/2026/06/29/simplehelp-v5516-patches-cve-2026-48558/
 [The Hacker News 2026-06-26] インドネシア・台湾・香港等の外交・政府機関への広範なキャンペーン展開を報道
 
 【概要】
-Kaspersky GReAT が 2026-06-24 に公開した分析によると、中国語話者系 APT（帰属信頼度: 低）が新規カスタムドロッパー SharkLoader と Cobalt Strike Beacon を組み合わせた諜報活動キャンペーンを展開している。初期侵入には CVE-2021-26855（Exchange Server SSRF）・CVE-2023-32315（Openfire 認証バイパス）・CVE-2024-36401（GeoServer RCE）を悪用。SystemSettings.dll を DLL サイドローディングにより実行し、SharkLoader が Cobalt Strike Beacon をメモリ上で展開する。ポスト侵害では LSASS ダンプ・NTDS 抽出による認証情報窃取、FScan を用いた内部ネットワークスキャン、Searchall・Pillager による機密ファイル探索を実施。標的はインドネシア外交機関・台湾政府機関・香港/レバノン/シリア/コロンビア/北マケドニア/ネパール/セルビアのソフトウェア開発会社に及ぶ。
+Kaspersky GReAT が 2026-06-24 に公開した分析によると、中国語話者系 APT（帰属信頼度: 低）が新規カスタムドロッパー SharkLoader と Cobalt Strike Beacon を組み合わせた諜報活動キャンペーンを展開している。初期侵入には CVE-2021-26855（Exchange SSRF）・CVE-2023-32315（Openfire 認証バイパス）・CVE-2024-36401（GeoServer RCE）を悪用。DLL サイドローディング・LSASS/NTDS 認証情報窃取・内部偵察が確認されている。
 
-攻撃の流れ（判明分）:
-1. インターネット公開されたサーバー（Exchange・Openfire・GeoServer）に CVE-2021-26855/CVE-2023-32315/CVE-2024-36401 を悪用して初期アクセスを確立する
-2. SystemSettings.exe をおとりとして起動し、同ディレクトリに配置した悪意ある SystemSettings.dll を DLL サイドローディングで実行。SharkLoader が Cobalt Strike Beacon をメモリ内に展開し永続化する
-3. LSASS ダンプ・NTDS 抽出で認証情報を大量取得し、FScan/Searchall/Pillager で内部偵察を実施。機密文書・外交通信・知的財産を C2 へ外部送信する
+TTP:
+・[T1190] Exploit Public-Facing Application — CVE-2021-26855/CVE-2023-32315/CVE-2024-36401 悪用（Kaspersky GReAT 明示）
+・[T1574.002] DLL Side-Loading — SystemSettings.exe + SystemSettings.dll（Kaspersky GReAT 明示）
+・[T1003.001] LSASS Memory — LSASS ダンプ（Kaspersky GReAT 明示）
+・[T1003.003] NTDS — NTDS.dit 抽出（Kaspersky GReAT 明示）
+・[T1219] Remote Access Tools — Cobalt Strike Beacon（Kaspersky GReAT 明示）
+・[T1083] File and Directory Discovery — FScan / Pillager（Kaspersky GReAT 明示）
 
-【新規TTP】
-・[T1190] Exploit Public-Facing Application — CVE-2021-26855 (Exchange SSRF)・CVE-2023-32315 (Openfire 認証バイパス)・CVE-2024-36401 (GeoServer RCE) を初期侵入に使用（Kaspersky GReAT 明示）
-・[T1574.002] DLL Side-Loading — SystemSettings.exe + 悪意ある SystemSettings.dll による DLL サイドローディングで SharkLoader を実行（Kaspersky GReAT 明示）
-・[T1003.001] LSASS Memory — LSASS プロセスメモリをダンプして平文パスワード・NTLM ハッシュを取得（Kaspersky GReAT 明示）
-・[T1003.003] NTDS — ドメインコントローラーの NTDS.dit を抽出して Active Directory 全認証情報を取得（Kaspersky GReAT 明示）
-・[T1219] Remote Access Tools — Cobalt Strike Beacon を C2 フレームワークとして使用（Kaspersky GReAT 明示）
-・[T1083] File and Directory Discovery — FScan（内部ネットワークスキャン）・Searchall（ファイル検索）・Pillager（データ収集ツール）を展開（Kaspersky GReAT 明示）
-
-【IoC】
-IoC: 確認されず（本稿時点でハッシュ・IP は非公開）
-ファイル名: SystemSettings.dll（悪意あるサイドロード用 DLL）・SharkLoader
-
-【推奨アクション】
-・Exchange Server・Openfire・GeoServer の CVE-2021-26855/CVE-2023-32315/CVE-2024-36401 のパッチ適用状況を即時確認する
-・EDR で SystemSettings.exe のプロセス起動とロードされた DLL の署名を監視する（Microsoft 署名なし DLL を検知）
-・外交・政府機関ネットワークでの LSASS アクセスと NTDS 抽出の監視を強化する
-Splunk SPL: index=endpoint_logs process_name="SystemSettings.exe" | join host [search index=endpoint_logs event_type=dll_load image_path="*SystemSettings.dll*" NOT image_company="Microsoft*"] | stats count by host, user, image_path
+Splunk SPL: index=endpoint_logs process_name="SystemSettings.exe" | join host [search index=endpoint_logs event_type=dll_load image_path="*SystemSettings.dll*" NOT image_company="Microsoft*"]
 → Microsoft 署名なしの SystemSettings.dll ロードは即時調査対象
-Splunk SPL: index=endpoint_logs process_name="lsass.exe" event_type=process_access access_rights=0x1fffff | stats count by src_process, host | where count > 1
-→ LSASS への完全アクセス権限（0x1FFFFF）はダンプツールの典型的挙動
 
 【参照】
 https://securelist.com/strikeshark-sharkloader-apt-campaign/
 https://thehackernews.com/2026/06/strikeshark-apt-sharkloader-cobalt-strike.html
-https://helpnetsecurity.com/2026/06/26/strikeshark-apt-diplomatic-targets/
+
+------------------------------------------------------------
+2. TraderTraitor（別名: Lazarus Group / Jade Sleet / DPRK APT38 / 帰属: KP・高信頼度）
+活動ID: TraderTraitor-2026-KelpDAO-DriftUK
+------------------------------------------------------------
+
+採用契機: P（新規サプライチェーン手法公開）・Q（DeFi 実被害確認）
+標的: 金融・暗号資産・ブロックチェーン開発 / グローバル
+マルウェア: NpmBackdoor（JavaScript）・GoInject（Go）
+
+【24時間以内の変化】
+[Chainalysis 2026-06-28] TraderTraitor が KelpDAO・DriftUK の DeFi スマートコントラクトを改ざんし暗号資産を窃取したことを分析・公開
+[FBI 2026-06-28] FBI が TraderTraitor（Lazarus Group）による DeFi プラットフォーム標的型サプライチェーン攻撃を警告
+
+【概要】
+北朝鮮 DPRK 国家支援グループ TraderTraitor（Lazarus Group / Jade Sleet）が KelpDAO と DriftUK の DeFi プロトコルを標的にサプライチェーン侵害を実行した。LinkedIn を通じてプロジェクト開発者にアクセスし、npm パッケージに JavaScript バックドアを注入してビルドパイプラインを侵害。スマートコントラクトのロジックを改ざんして攻撃者制御ウォレットへの不正送金を実現した。
+
+TTP:
+・[T1195] Supply Chain Compromise — npm パッケージへのバックドア注入（FBI・Chainalysis 明示）
+・[T1059] Command and Scripting Interpreter — JavaScript バックドア T1059.007（FBI 明示）
+・[T1565] Data Manipulation — スマートコントラクト改ざん T1565.001（Chainalysis 明示）
+
+【参照】
+https://www.chainalysis.com/blog/tradertaitor-kelpdao-driftuk-2026/
+https://www.fbi.gov/news/press-releases/tradertaitor-dprk-defi-campaign-2026
+
+------------------------------------------------------------
+3. Sapphire Sleet（別名: BlueNoroff / CryptoCore / APT38 / 帰属: KP・高信頼度）
+活動ID: SapphireSleet-2026-TrilatSummit
+------------------------------------------------------------
+
+採用契機: P（新規マルウェア・日本標的確認）・Q（スピアフィッシングキャンペーン実確認）
+標的: 金融・防衛・政府・シンクタンク / 日本・韓国・米国・欧州
+マルウェア: RustyHook（Rust 製バックドア）
+
+【24時間以内の変化】
+[Microsoft Threat Intelligence 2026-06-28] Sapphire Sleet が日米韓三カ国首脳会談テーマの偽招待状を使用したスピアフィッシングキャンペーン TrilatSummit を展開中であることを公開
+
+【概要】
+Microsoft Threat Intelligence が 2026-06-28 に公開した分析によると、北朝鮮 DPRK 国家支援グループ Sapphire Sleet（BlueNoroff）が日米韓三カ国首脳会談テーマの偽招待状・偽公式文書を装ったスピアフィッシングキャンペーンを展開している。日本・韓国・米国の金融機関・防衛関連企業・政府機関・シンクタンクを標的とし、新規バックドア RustyHook（Rust 製）を展開する。日本の政府・防衛・金融機関への直接影響が懸念される。
+
+TTP:
+・[T1566] Phishing — 三カ国首脳会談テーマ偽招待状スピアフィッシングメール（Microsoft Threat Intelligence 明示）
+
+【参照】
+https://www.microsoft.com/en-us/security/blog/2026/06/28/sapphire-sleet-trilateral-summit-phishing/
+
+------------------------------------------------------------
+4. CL-STA-1062（帰属: 中国語話者系の可能性・帰属信頼度: 中）
+活動ID: CLSTA1062-2026-TinyRCT
+------------------------------------------------------------
+
+採用契機: P（新規 RAT バックドア公開）・Q（多国間標的確認）
+標的: 通信・政府・製造業 / 東南アジア・中東
+マルウェア: TinyRCT（新規バックドア）
+
+【24時間以内の変化】
+[Palo Alto Unit 42 2026-06-27] Unit 42 が CL-STA-1062 クラスターによる TinyRCT 新規バックドアを使用したキャンペーンを公開
+
+【概要】
+Palo Alto Unit 42 が 2026-06-27 に公開した分析によると、CL-STA-1062（帰属未確定・中国語話者系の可能性）が新規バックドア TinyRCT を使用して東南アジア・中東の通信・政府・製造業組織を標的にしたキャンペーンを展開している。Confluence・ServiceNow の既知脆弱性を悪用して初期アクセスを確立（T1190）し、PowerShell スクリプト経由で TinyRCT バックドアを設置する（T1059）。
+
+TTP:
+・[T1190] Exploit Public-Facing Application — Confluence・ServiceNow 既知脆弱性悪用（Unit 42 明示）
+・[T1059] Command and Scripting Interpreter — PowerShell スクリプトで TinyRCT 設置（Unit 42 明示）
+
+【参照】
+https://unit42.paloaltonetworks.com/cl-sta-1062-tinyrct-campaign/
+
+------------------------------------------------------------
+5. Silver Fox APT（別名: Hiding Elephant / 帰属: CN・帰属信頼度: 中）
+活動ID: SilverFox-2026-Gh0stCringe-HoldingHands
+------------------------------------------------------------
+
+採用契機: P（新規スティーラー・マルウェア公開）・Q（東南アジア標的確認）
+標的: 金融・製造・IT / 東南アジア・台湾
+マルウェア: Gh0stCringe RAT・HoldingHands（新規スティーラー）
+
+【24時間以内の変化】
+[Kaspersky GReAT 2026-06-27] Silver Fox APT（Hiding Elephant）が Gh0stCringe RAT と新規スティーラー HoldingHands を組み合わせたキャンペーンを展開中であることを公開
+
+【概要】
+Kaspersky GReAT が 2026-06-27 に公開した分析によると、中国語話者系 APT グループ Silver Fox APT（Hiding Elephant）が Gh0stCringe RAT と新規スティーラー HoldingHands を組み合わせたキャンペーンを東南アジア・台湾の金融・製造・IT 組織に対して展開している。VBScript・PowerShell 経由の実行（T1059）と多段難読化（T1027）で検出を回避する。
+
+TTP:
+・[T1059] Command and Scripting Interpreter — VBScript・PowerShell で Gh0stCringe を実行（Kaspersky GReAT 明示）
+・[T1027] Obfuscated Files or Information — 多段エンコード・暗号化（Kaspersky GReAT 明示）
+
+【参照】
+https://securelist.com/silver-fox-apt-gh0stcringe-holdingHands/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-該当なし
+------------------------------------------------------------
+1. Russian Intelligence Services（FSB Unit 26165 / UNC5792 / UNC4221）
+活動ID: RIS-2026-SignalBackupKey-PSA260626（帰属更新）
+------------------------------------------------------------
+
+[Reuters / BleepingComputer 2026-06-28] DoJ が FSB Unit 26165 の将校を指名手配し $10M の報奨金を発表。Signal バックアップ鍵窃取・QR コード偽装キャンペーンへの帰属が公式化。
+
+2026-06-26 の FBI/CISA PSA260626 で公開された Signal バックアップ鍵窃取キャンペーンについて、DoJ が 2026-06-28 に FSB Unit 26165 の将校を指名手配し $10M の報奨金を発表した。帰属が高信頼度で確定し、政府機関・軍人・ジャーナリスト・外交官を標的とした国家主導の通信諜報活動であることが公式化された。
+
+参照: https://www.reuters.com/world/us/doj-offers-10m-reward-fsb-signal-espionage-2026-06-28/
+
+------------------------------------------------------------
+2. Iranian APTs（PHOSPHORUS / Mint Sandstorm 技術的重複 / 帰属信頼度: 低）
+活動ID: IranianAPTs-2026-Q2-DenoRuntime
+------------------------------------------------------------
+
+[Check Point Research / Mandiant 2026-06-28] イラン系 APT が Deno ランタイムを LotL 手法として利用した DenoAgent マルウェアを展開中であることが報告された。中東・欧州・米国の政府・防衛・エネルギー機関を標的とする。
+
+Check Point Research と Mandiant が 2026-06-28 に公開した分析によると、イラン系 APT（PHOSPHORUS/Mint Sandstorm との技術的重複を指摘）が Deno JavaScript ランタイムを Living off the Land（LotL）手法として悪用した DenoAgent マルウェアを展開している。Deno の正規性を利用してセキュリティツールの検出を回避する。国家帰属は情報源が明示していないため低信頼度。
+
+参照: https://research.checkpoint.com/2026/iranian-apt-deno-lotl/
+参照: https://www.mandiant.com/resources/blog/iranian-apt-deno-runtime-lotl
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -128,44 +219,55 @@ CVSS: 9.8 (Critical) 状態: 実悪用確認 パッチ: 2026年5月CSPU適用済
 Oracle EBS 12.2.3〜12.2.15 の File Transmission モジュールに CVSSv3 9.8 の重大脆弱性。2026 年 6 月 27〜28 日から実悪用確認。C2 IP 45.84.137.125 特定済み。財務・ERP システムが標的であり、日本国内 Oracle EBS 利用組織は即時パッチ適用状況の確認が必要。対処: 2026 年 5 月 CSPU を即時適用。C2 IP をファイアウォールでブロック。
 IoC: IP: 45.84.137.125
 
-監視: [Oracle EBS Web サーバーログ / ネットワークフロー] /OA_HTML/ibytransmit への POST リクエストと C2 IP への通信を監視
 Splunk SPL: index=oracle_ebs_logs request_path="/OA_HTML/ibytransmit" method=POST | stats count by src_ip, user_agent | where count > 3
-→ 外部 IP からの POST は正常運用では稀。即時調査を開始する
 
 参照: https://www.bleepingcomputer.com/news/security/oracle-ebs-cve-2026-46817-active-exploitation/
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-【攻撃予報（48〜72時間）】
+【攻撃予報（48〜168時間）】
+警戒レベル: 警戒（T1059 σ=4.05 閾値超過）
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ・予報1: SimpleHelp CVE-2026-48558 の CISA KEV 初回追加に備えた未パッチ環境の緊急確認
-Tier: 1
-確度: 中
-観測出口クラス: E1（CISA KEV 初回追加）
-検証窓: fast_72h（72時間）
+Tier: 1 | 確度: 中 | E1（CISA KEV 初回追加）| fast_72h（72時間）
 根拠:
-  Evidence: BleepingComputer/Horizon3.ai/HelpNetSecurity 2026-06-29: CVE-2026-48558（CVSS 10.0・SimpleHelp OIDC 認証バイパス）の実悪用が Djinn Stealer 展開とともに確認された。14,000 台以上が露出中。v5.5.16 パッチリリース済み。
-  過去パターン: CVSS 9.5 以上かつ実悪用確認済みの CVE は典型的に CISA が 24〜72 時間以内に KEV に追加している。2024 年の Veeam Backup CVE-2024-40711（CVSS 9.8）は悪用確認から 2 日後に KEV 追加。
-  脅威情報: 14,000 台超の露出 SimpleHelp サーバーが Djinn Stealer の標的となっており、AI 開発者コミュニティへの影響が拡大中。MSP 経由での大規模二次被害リスクが高い。
-  確度アンカー: EPSS パーセンタイル取得不能（新規 CVE）。KEV 未登録。SSVC=Act。Automatable=yes。定量ゲート D（KEV AND EPSS%ile≥0.95）未充足 → 確度: 中
-推定部分: EPSS パーセンタイルは取得不能（新規 CVE）のため定量ゲート D が完全充足できず確度: 中を適用。KEV 未登録だが SSVC=Act かつ Automatable=yes の実悪用確認済みケースとして T1 予報。（推測: EPSS は 0.95 パーセンタイル以上と推定されるが確認不能）
-先回り監視: CISA Known Exploited Vulnerabilities カタログ（cisa.gov/known-exploited-vulnerabilities-catalog）の更新確認で CVE-2026-48558 の dateAdded フィールドの出現を監視する
-的中判定: CISA が CVE-2026-48558 を Known Exploited Vulnerabilities カタログに初回追加した場合（dateAdded が 2026-06-29 以降の日付と一致）。CISA 以外の機関の相当リストへの追加・既存エントリの更新は的中とみなさない。
+  BleepingComputer/Horizon3.ai/HelpNetSecurity 2026-06-29: CVE-2026-48558（CVSS 10.0・実悪用確認済み）。14,000 台以上露出中。v5.5.16 パッチリリース済み。
+  過去パターン: CVSS 9.5 以上かつ実悪用確認済みの CVE は典型的に CISA が 24〜72 時間以内に KEV に追加している。
+確度アンカー: EPSS 取得不能（新規 CVE）→ 確度: 中（推測: EPSS は 0.95 パーセンタイル以上と推定）
+先回り監視: CISA KEV カタログで CVE-2026-48558 の dateAdded フィールドの出現を監視する
+的中判定: CISA が CVE-2026-48558 を KEV に初回追加（dateAdded が 2026-06-29 以降）
+期限: 2026-07-02
 
 ・予報2: Oracle EBS CVE-2026-46817 悪用キャンペーンの追加 IOC 公開への備え
-Tier: 2
-確度: 中
-観測出口クラス: E2（新規 IOC 公開）
-検証窓: fast_72h（72時間）
+Tier: 2 | 確度: 中 | E2（新規 IOC 公開）| fast_72h（72時間）
 根拠:
-  Evidence: BleepingComputer/CybersecurityNews 2026-06-28: CVE-2026-46817（CVSS 9.8・Oracle EBS Payments/File Transmission）実悪用確認。C2 IP 45.84.137.125 が特定されたが公開 IOC は 1 件のみ。
-  過去パターン: Oracle EBS の重大脆弱性が実悪用確認された際、Mandiant・Trend Micro・CrowdStrike・CISA が 24〜72 時間以内に追加 IOC・インジケーターを公開する傾向がある。
-  脅威情報: 現在確認されている C2 IP（45.84.137.125）以外の攻撃インフラが存在する可能性が高い。Oracle EBS は財務・ERP システムであり標的の多様性からマルチ C2 運用が推定される。
-  確度アンカー: EPSS 取得不能。KEV 未登録。SSVC=Act。Automatable=yes。定量ゲート D 未充足 → 確度: 中
-推定部分: 追加 IOC 公開は過去パターンから高確度で推測されるが、今回は単一の初期レポートのみのため確実性に留保がある。（推測: 72 時間以内にセキュリティベンダーが独立した IOC 拡張レポートを公開する可能性が中程度）
-先回り監視: Mandiant・CrowdStrike・Trend Micro・CISA のセキュリティアドバイザリ・ブログで CVE-2026-46817 または Oracle EBS File Transmission に関する新規投稿を監視する
-的中判定: セキュリティベンダー（Mandiant・CrowdStrike・Trend Micro・CISA・NSA のいずれか）が CVE-2026-46817 の悪用に関連する新規 IOC（45.84.137.125 以外の C2 IP アドレス・ファイルハッシュ・URL）を 2026-07-02 07:00 JST までに初回公開した場合。45.84.137.125 を再掲するのみの記事は的中とみなさない。
+  BleepingComputer/CybersecurityNews 2026-06-28: CVE-2026-46817（CVSS 9.8）実悪用確認。C2 IP 45.84.137.125 のみ公開。
+  過去パターン: 実悪用確認済み Oracle EBS CVE に対し複数ベンダーが 24〜72 時間以内に追加 IOC を公開する傾向。
+確度アンカー: EPSS 取得不能 → 確度: 中（推測: 72 時間以内に追加 IOC 公開の可能性が中程度）
+先回り監視: Mandiant・CrowdStrike・Trend Micro・CISA のアドバイザリで CVE-2026-46817 関連の新規投稿を監視
+的中判定: セキュリティベンダーが 45.84.137.125 以外の新規 IOC を 2026-07-02 07:00 JST までに初回公開
+期限: 2026-07-02
+
+・予報3: LiteLLM CVE-2026-42271 実悪用事例または追加 PoC 公開の 72 時間以内見通し
+Tier: 1 | 確度: 中 | E2（実悪用初報・PoC 拡張）| fast_72h（72時間）
+根拠:
+  GitHub Advisory/NIST 2026-06-28: CVE-2026-42271（CVSS 9.1・LiteLLM SSRF）の PoC が公開。LiteLLM 1.42.0 以下が対象。1.43.0 パッチリリース済み。
+  過去パターン: AI フレームワーク SSRF 脆弱性は PoC 公開後 72 時間以内に実悪用が確認される傾向。Langflow CVE-2026-5027（CVSS 8.8）が 48 時間以内実悪用の先例。
+確度アンカー: EPSS 取得不能 → 確度: 中（推測: Shodan スキャン増加・実悪用初報の可能性が中程度）
+先回り監視: Shodan/Censys での LiteLLM 露出インスタンスへのスキャン増加・セキュリティベンダーの実悪用レポートを監視
+的中判定: セキュリティベンダーが CVE-2026-42271 の実悪用事例または PoC 拡張悪用コードを 2026-07-02 07:00 JST までに初回公開
+期限: 2026-07-02
+
+・予報4: TraderTraitor KelpDAO/DriftUK 追加被害 DeFi プロトコルの 7 日以内公式発表
+Tier: 1 | 確度: 中 | E3（追加被害組織発表）| slow_7d（7日間）
+根拠:
+  Chainalysis/FBI 2026-06-28: TraderTraitor が KelpDAO・DriftUK の DeFi スマートコントラクトを改ざんし暗号資産を窃取。npm サプライチェーン侵害経由。被害額調査中。
+  過去パターン: TraderTraitor は過去の DeFi 窃取（Ronin $625M・Harmony $100M・WazirX $230M）で単一初報後 7 日以内に追加被害組織・被害額確定を発表している。
+確度アンカー: EPSS 取得不能・KEV 非対象 → 確度: 中（推測: 7 日以内に追加被害 DeFi 発表の可能性が中程度）
+先回り監視: FBI プレスリリース・Chainalysis ブログ・DeFi プロジェクトの公式アカウントを監視
+的中判定: FBI・Chainalysis・または被害 DeFi プロジェクトが TraderTraitor による新規被害プロトコル（KelpDAO・DriftUK 以外）を 2026-07-06 07:00 JST までに公式発表
+期限: 2026-07-06
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -177,6 +279,7 @@ Tier: 2
 ・不明 / OperationEndgame-2026-AmaStealC → 24 時間窓外（2026-06-15〜19 実施・2026-06-24 公表。旧情報）
 
 本日の集計（Section 2）:
-APT — 本編 1 件 / 注目動向 0 件 / 除外 2 件 / 計処理 3 件
+APT — 本編 5 件 / 注目動向 2 件 / 除外 2 件 / 計処理 9 件
+攻撃予報 — fast_72h 3 件 / slow_7d 1 件 / 合計 4 件
 
 ========================================
