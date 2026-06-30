@@ -123,11 +123,13 @@ C2摘発 observation には「摘発はリスク低下であって終息では�
 
 **M3 EPSS+SSVC 確度アンカー**: 確度=高は「KEV登録 AND EPSS percentile≥0.95 AND SSVC=Act/Attend」を満たす場合のみ。SSVC `Automatable=no`（ASLR回避・認証・多段要）は確度=高から自動降格。EPSSは確度裏取りのみに使い72h的中条件に流用しない。
 
-**M2 検証窓**: 外部報道依存の主題（漏洩→国内被害等）は `forecast_class: slow_7d`（7日窓）へ割り当て。72h的中率の分母に混入させない。割当判断は `incident-visibility-timelines.json` の median_days_to_external_report に従う（3日超は fast_72h で発行しない）。
+**M2 検証窓**: 外部報道依存の主題（漏洩→国内被害等）は `forecast_class: slow_7d`（7日窓）へ割り当て。72h的中率の分母に混入させない。割当判断は `incident-visibility-timelines.json` の median_days_to_external_report に従う（3日超は fast_72h で発行しない）。ベンダー追随IOCの的中条件への扱いは下記「T2 E2追随ベンダー除外（暫定）」に従う。
 
 **T3足切り**: T3予報候補は `poc-exploitation-criteria.json` の required を全て満たし disqualifying を満たさない場合のみ採用。1つでも欠ければ本編・参考Aの注意点1行へ格下げ（教訓10）。
 
 **low-visibility遷移**: `technique-chains.json` の `low_visibility_chains`（漏洩→BEC・BYOVD回避更新）に該当する主題は外部報道を的中条件にせず slow_7d または先回り監視へ。
+
+**T2 E2追随ベンダー除外（暫定）**: T2予報のE2（新規IOC公開）的中判定に「競合（一次ソース以外の）ベンダーの72h追随IOC公開」を使用しない。代替: 一次ソース自身の続報・追加IOC更新、またはKEV初回追加(E1)。追随速度の実測は `vendor-ioc-followup-timelines.json` に蓄積し `pct_within_72h≥50%` を確認できるまでE2的中条件に採用しない（Issue #19・人間レビュー前の暫定対応）。
 
 **M4 KEVスナップショット**: 各予報に発行時点のKEV状態（dateAdded / ランサムフラグ / 参照セット）を `kev_snapshot` として記録し、検証時に再登録（変化なし）を非的中判別できるようにする。
 
