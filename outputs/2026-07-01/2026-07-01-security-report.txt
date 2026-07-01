@@ -1,0 +1,599 @@
+========================================
+PYTHIA セキュリティインテリジェンス日報
+調査日時: 2026-07-01 07:00 JST
+調査期間: 2026-06-30 07:00 〜 2026-07-01 07:00 JST
+警戒レベル: 注意（Kemp LoadMaster実悪用試行開始・AIエージェント攻撃面拡大・APT観測は既報継続）
+========================================
+観測件数: 13件
+CVE: ゼロデイ特報 0 / 本編 1 / 参考A 2 / 参考B 3 / 除外 65 / 処理総数 71
+APT: 本編 0 / 注目動向 1 / 除外 32 / 処理総数 33
+AI攻撃: 本編 2 / 参考A 0 / 参考B 0 / 除外 5 / 処理総数 7
+SOC推奨: 高 2 / 中 2 / 低 0 / 処理総数 8
+攻撃予報: fast_72h 1 / slow_7d 0
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. BioShocking攻撃：ゲーム型間接プロンプトインジェクションでAIブラウザから認証情報窃取
+カテゴリ: B（AIモデル・エージェント攻撃）（B1）/ 攻撃者種別: 研究者実証
+------------------------------------------------------------
+
+採用契機: P・V
+OWASP: LLM01
+バースト検出: 7件 → burst_exceeded
+被害規模: 不明
+
+【24時間以内の変化】
+[LayerX 2026-06-30] セキュリティ企業LayerXが「BioShocking」と名付けた新たな間接プロンプトインジェクション攻撃を初公開。ChatGPT Atlas・Perplexity Comet・Anthropic Claude Chrome拡張・Fellou・Genspark Browser・Sigma Browserの6種のAIブラウザ／エージェント拡張を対象に、ゲーム風の誤答報酬パズルでガードレールを段階的に無効化し、ログイン済みGitHubアカウント等から認証情報を窃取させることに成功したと報告。
+[The Hacker News / BleepingComputer / Infosecurity Magazine 2026-06-30] 追加報道により、OpenAIはChatGPT Atlasで修正済み、Perplexityは報告を対応せずクローズ、AnthropicはClaude拡張の修正を試みたもののLayerXの再検証で防御が破られたことが判明。CVE番号は付与されていない。
+
+【概要】
+LayerXのセキュリティ研究者が「BioShocking」と名付けた新種の間接プロンプトインジェクション攻撃を公表し、わざと誤った回答を正解として報酬付けするパズル型コンテンツを悪意あるWebページ上でAIエージェントに提示することでガードレールへの信頼を段階的に低下させ、最終的にGitHubリポジトリ等のログイン済みアカウントから認証情報をコピーさせ攻撃者サーバーへ送信させることに研究デモとして成功した（実被害の確認はなし）。ChatGPT Atlas、Perplexity Comet、Anthropic Claude Chrome拡張、Fellou、Genspark Browser、Sigma Browserの6種が対象とされ、OpenAIはChatGPT Atlasで修正済みである一方、Perplexityは対応を見送って報告をクローズし、AnthropicはClaude拡張の修正を試みたもののLayerXの再検証で防御が破られたと報じられている。
+
+攻撃の流れ:
+1. 攻撃者が「誤った回答こそ正解」とするゲーム風パズルを仕込んだ悪意あるWebページを用意する
+2. ユーザーがAIブラウザ／エージェント機能でそのページを閲覧し、エージェントがパズルの誤答を『正解』として受け入れる
+3. この受容プロセスを通じてエージェントの安全判断基準が段階的に緩められる（コンディショニング）
+4. ページ上の最終指示により、エージェントがログイン済みアカウントからSSH認証情報等をコピーする
+5. 窃取した認証情報が攻撃者管理サーバーへ送信される
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: AIエージェントによる、閲覧中のWebページ由来の指示に基づくログイン済みアカウントへの予期しないアクセス
+検知シグナル: 外部Webページ閲覧直後に発生する認証情報のコピー／送信アクション
+
+【監視・対策ポイント】
+・[AIブラウザ／エージェント拡張が閲覧ページからの指示のみでログイン済みアカウントの資格情報にアクセスする挙動を監視し、機密操作の前には確認プロンプトを必須化することが有効とLayerXは提言している。]
+→ 公式のSPLクエリやシグネチャは公表されていない。LayerXは、AIブラウザがログイン済みアカウントからデータを取得する前に確認プロンプトを必須化すること、エージェントのアクセス範囲を必要最小限に制限することを推奨している。
+
+【参照】
+https://layerxsecurity.com/blog/bioshocking-ai-gaming-the-ai-browser-and-escaping-its-guardrails/
+https://thehackernews.com/2026/06/new-bioshocking-attack-tricks-ai.html
+https://www.bleepingcomputer.com/news/security/new-bioshocking-attack-manipulates-ai-browser-into-data-theft/
+
+------------------------------------------------------------
+2. Djinn Stealer/TaskWeaver続報：CVE-2026-48558悪用の二段階ローダー構成とKEV登録拡大確認
+カテゴリ: C（AIインフラ攻撃）（C3）/ 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: Q・R
+バースト検出: 8件 → burst_exceeded
+被害規模: 不明
+
+【24時間以内の変化】
+[The Hacker News 2026-06-30] Djinn Stealerが単独ではなく、TaskWeaverという難読化されたNode.jsローダー（jquery.jsに偽装、node.exe経由で実行）による二段階構成であることが判明。TaskWeaverはa.dev-tunnels[.]comと通信し暗号化ペイロード配送チャネルを確立、Djinn Stealerはその第2段階ペイロードとして展開される。
+[SecurityWeek / Infosecurity Magazine / SOCRadar 2026-06-30] 初報（2026-06-29）から24時間以内に独立ソースが拡大しバーストステータスがthreshold_metからburst_exceededへ移行。CVE-2026-48558はCISAのKEVカタログに登録済みで、連邦機関に2026年7月2日までのパッチ適用が義務付けられていることが複数ソースで確認された。
+
+【概要】
+既報のDjinn Stealerについて続報があり、TaskWeaverという難読化されたNode.jsローダー（jquery.jsという名称で配布されnode.exe経由で実行される）が第1段階として展開され、暗号化された通信チャネル（a.dev-tunnels[.]com）を確立した上で第2段階ペイロードとしてDjinn Stealer本体を投下する二段階構成であることが判明した。Djinn StealerはSimpleHelpのCVE-2026-48558（CVSS10.0のOIDC認証バイパス）経由で侵入した攻撃者により配送され、Claude/Gemini/Codex/Cline/OpenCode/Kilo等のAI開発ツールの設定・認証・セッション・プロジェクトデータに加え、SSH鍵・クラウド認証情報・Docker/Terraform設定・ソースコード管理トークン・暗号資産ウォレット・ブラウザデータを標的とする。
+
+攻撃の流れ:
+1. 攻撃者がCVE-2026-48558を悪用し、未認証のまま偽造IDトークンで完全な技術者セッションを取得する
+2. 取得したセッションを通じて、jquery.jsに偽装した難読化Node.jsローダー『TaskWeaver』をnode.exe経由で配送・実行する
+3. TaskWeaverがa.dev-tunnels[.]comと通信し、暗号化されたペイロード配送チャネルを確立する
+4. 第2段階ペイロードとしてDjinn Stealerを展開し、AI開発ツールの設定・認証情報、SSH鍵、クラウド認証情報等を窃取する
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: a.dev-tunnels[.]com
+Hash: 確認されず
+検知シグナル: jquery.jsという名称で偽装されたNode.jsプロセスがnode.exe経由で実行される挙動
+検知シグナル: SimpleHelpの技術者ログにおける未知のテクニシャン名／メールアドレス
+検知シグナル: AI開発ツールの設定ファイル・認証情報への異常アクセス
+
+【監視・対策ポイント】
+・[SimpleHelpを5.5.16／6.0 RC2未満で運用している組織は速やかにパッチ適用を行い、技術者ログの不審なアカウントを確認するとともに、AI開発ツールの認証情報・MCPコンフィグのローテーションを実施することが推奨される。]
+Splunk SPL: index=endpoint ProcessName="node.exe" CommandLine="*jquery.js*" | stats count by host, CommandLine
+→ SimpleHelpの管理ログにおける未知の技術者名・メールアドレスの確認、node.exe経由で実行されるjquery.js偽装プロセスの検出、a.dev-tunnels[.]comへの通信監視が有効とされる。
+
+【参照】
+https://thehackernews.com/2026/06/attackers-exploit-simplehelp-cve-2026.html
+https://www.securityweek.com/critical-simplehelp-vulnerability-exploited-for-malware-delivery/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 週次トレンドサマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日（2026-07-01）はAIエージェント／ブラウザの安全機構を狙った攻撃研究が引き続き主体となった。BioShockingはAIブラウザのガードレールをゲーム型プロンプトインジェクションで段階的に無効化しログイン済みアカウントから認証情報を窃取する手口を実証し、6種のAIブラウザ・拡張機能のうち複数で防御失敗が確認された。前日発生したSimpleHelp CVE-2026-48558悪用キャンペーン（Djinn Stealer）は、TaskWeaverという難読化Node.jsローダーによる二段階構成であることが新たに判明し、AI開発ツールの認証情報を明確に標的とする攻撃チェーンの多段化が進んでいる。SOC推奨情報ではGuardFall・DuneSlideの2件のAIコーディングエージェント関連脆弱性も新たに報告されており、AI開発ワークフロー全体の攻撃対象面拡大が本日の共通テーマである。
+
+本日の集計:
+AI攻撃 — 本編2件 / 参考A0件 / 参考B0件 / 除外5件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）1件 / C（インフラ）1件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 2: ゼロデイ・トレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】実悪用確認・緊急対応必須
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報基準を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用基準を満たす活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定） / 保険大手Aflacの日本法人であるAflac Japanが、2026年6月15日から25日の間に第三者による不正アクセスを受け、顧客・保険代理店合計約438万人分の個人情報（氏名・住所・電話番号・生年月日・性別・保険契約情報）が窃取されたことを2026年6月30日に開示した。うち約23万人分については保険料振替口座情報も窃取された可能性がある。同社は影響を受けたシステムを停止して被害拡大を防止する一方、米国事業のシステムには影響がないことを確認しており、日本の金融庁および関係当局への通知を行った。攻撃者の身元は現時点で特定されていない（推測：情報漏えいの規模や手口から金銭目的の犯行とみられるが加害者は未特定であり、2025年の米国Aflac侵害との関連性も確認されていない）。
+採用契機: new_target。帰属信頼度: unconfirmed。
+推奨アクション: 保険・金融セクターの組織は、顧客個人情報および口座情報を扱うシステムへのアクセス制御・多要素認証の強化、異常なデータアクセス・大量エクスポートの監視強化を実施する。委託先・海外子会社を含むグループ全体でのインシデント対応体制と、規制当局（金融庁等）への迅速な通知プロセスを再確認する。攻撃者・手口が未特定であるため、フィッシング・ヘルプデスクを狙ったソーシャルエンジニアリングへの警戒も継続する（推測）。
+参照: https://www.bleepingcomputer.com/news/security/insurance-giant-aflac-discloses-data-breach-after-subsidiary-hack/
+参照: https://asia.nikkei.com/spotlight/cybersecurity/aflac-japan-reports-breach-on-4.38-million-customers-includes-bank-details
+参照: https://securityaffairs.com/194488/data-breach/hackers-steal-data-of-4-38-million-aflac-japan-customers.html
+参照: https://therecord.media/japan-cyber-breaches-aflac-sapporo-nidec-kddi
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（監視製品リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CVE-2026-46817 / Oracle E-Business Suite（Oracle Payments / File Transmission）
+CVSS: 9.8 (Critical) 状態: 実悪用確認
+CVE-2026-46817はOracle E-Business Suite（EBS）のOracle Paymentsモジュール内File Transmissionコンポーネントに存在する権限管理不備・認証不備に起因する重大な脆弱性で、CVSSv3基本値は9.8。未認証の攻撃者がネットワーク経由でOracle Paymentsを完全に乗っ取ることが可能。Oracleは2026年5月のCritical Patch Updateで修正済みだが、脅威インテリジェンス企業Defusedによれば、パッチ公開から約6週間後の2026年6月27日から28日にかけて、ハニーポット上で未認証のファイル読み取り攻撃が観測されており、公開PoCが存在しない段階での実悪用という点で警戒度が高い。Shadowserverの調査では約950台のインスタンスが依然インターネットに公開されている。現時点で日本国内での被害報告や国内メディアでの報道は確認されていない。
+参照: https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/
+
+CVE-2026-48558 / SimpleHelp RMM
+CVSS: 10.0 (Critical) 状態: KEV登録済み / 実悪用確認 / PoC公開
+CVE-2026-48558はSimpleHelp（RMMソフトウェア）のOIDC認証フローにおいて、ログイン時に提示されるIDトークンの暗号署名検証を行わない不備に起因する認証バイパスの脆弱性で、CVSSv3基本値は10.0。既に既報の脆弱性だが、2026年6月29日にCISA KEVカタログへ新規登録（連邦機関対応期限7月2日）され、さらに本レポート期間中にBlackpoint Cyberが本脆弱性を悪用した新たな攻撃キャンペーンの詳細（TaskWeaverという難読化されたNode.jsローダーを介した二段階目のDjinn Stealer展開）を報告した。SimpleHelpはMSPで広く使われているため、一つの侵害が多数の顧客組織へ波及するリスクがある。
+参照: https://thehackernews.com/2026/06/attackers-exploit-simplehelp-cve-2026.html
+
+CVE-2026-8037 / Progress Kemp LoadMaster / ECS Connection Manager / Object Scale Connection Manager / MOVEit WAF
+CVSS: 9.8 (Critical) 状態: 実悪用確認 / PoC公開
+CVE-2026-8037はProgress Kemp LoadMaster（ロードバランサー/ADC製品）のAPI処理に存在する未認証の事前認証リモートコード実行脆弱性で、CVSSv3基本値は9.8。原因はescape_quotes()関数がmalloc()で確保したバッファを未初期化のまま使用し、かつNULL終端を書き込まないことで隣接ヒープメモリへの範囲外読み取りが発生する点にある。既報の脆弱性だが、2026年6月29日にwatchTowr Labsが独自解析による技術詳細と動作するPoCを公開し、同日から実際の悪用試行がeSentireにより観測された。観測された試行は失敗に終わったとされるが、PoC公開に伴い今後の悪用拡大が懸念される。
+参照: https://labs.watchtowr.com/enterprise-tech-in-shell-out-progress-kemp-loadmaster-uninitialized-heap-to-pre-auth-rce-cve-2026-8037/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜168時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+予報1（T1/E1/fast_72h/確度:中）
+Kemp LoadMaster CVE-2026-8037 のPoC公開後実悪用成功に備えた緊急パッチ確認・管理API露出の即時遮断
+根拠: watchTowr Labs 2026-06-29: CVE-2026-8037（Kemp LoadMaster、CVSSv3 9.8、未認証Pre-Auth RCE、escape_quotes()関数の未初期化バッファ・NULL終端欠落によるヒープ隣接メモリ読み取り）の詳細技術解析と動作するPoCを公開。The Hacker News 2026-07-01: カナダのセキュリティ企業eSentireが2026-06-29から本脆弱性を狙った実悪用試行（送信元IP 192.42.116.58・192.42.116.105・146.70.139.154）を観測したと報告。試行は失敗に終わり侵害後活動は確認されなかったが、PoC公開と同日からの継続的な悪用試みが確認された。
+過去パターン: CVSS9.5以上の未認証RCEで実悪用試行が確認されたインターネット公開型エッジデバイス脆弱性は、CISAが72時間以内にKEVへ追加する傾向がある（cve_exploit_to_cert_advisory・中央値48時間、incident-visibility-timelines.json参照）。CVE-2026-48558（SimpleHelp・CVSS10.0）は実悪用確認から数日以内にKEV初回登録された先例がある。
+確度アンカー: EPSSパーセンタイル0.94176（model_date:2026-07-01）・KEV未登録・SSVC=Attend・Automatable=yes
+推定部分: （推測）PoC公開・実悪用試行開始という組み合わせからKEV追加までの期間が短縮される可能性が高いと推定しているが、eSentireが観測した試行はすべて失敗しており、実際に成功した侵害が確認されるまでKEV追加のタイミングは不確実である。EPSSパーセンタイル0.94176はKEV未登録のため定量ゲートD（KEV AND EPSS%ile≥0.95）を充足せず、確度は中にとどめた。
+的中判定: CISAがCVE-2026-8037をKnown Exploited Vulnerabilitiesカタログへ初回追加した場合（dateAddedが2026-07-01以降の日付と一致）。CISA以外の機関の類似リストへの追加や既存エントリの更新は的中とみなさない。
+先回り監視: eSentireやwatchTowr Labs等セキュリティベンダーによる新たな悪用成功報告、Kemp LoadMaster管理APIへの新規スキャン増加、Shadowserver等によるインターネット公開インスタンス数の変動、CISA KEVカタログの更新確認
+期限: 2026-07-04 07:00 JST
+
+APT統計: 本編0件 / 注目動向1件 / 除外32件
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-33825 / Windows Defender (Microsoft Defender Antivirus)
+対象: Antimalware Platform versions prior to 4.18.26030.3011（2026年4月Patch Tuesdayで提供済み）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 7.8 (High)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+FCEB期限: 2026-05-06
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-06-30] CISAがKEVカタログのCVE-2026-33825（通称BlueHammer）エントリを更新し、本脆弱性がランサムウェア攻撃で悪用されていることを新たにフラグ付けした。具体的な悪用グループ名は公表されていない。
+[BleepingComputer 2026-06-30] CISAの更新を受け、Windows Defenderの特権昇格脆弱性BlueHammerがランサムウェア攻撃チェーンの一部として使われていると報道。初回KEV登録は2026年4月22日、今回はランサムウェア悪用フラグのステータス変更（Unknown→Known）のみで新規登録ではない。
+
+【概要】
+CVE-2026-33825（通称BlueHammer）はWindows Defenderの脅威修復エンジンに存在するTOCTOU（Time-of-Check to Time-of-Use）レースコンディションに起因するローカル特権昇格の脆弱性であり、Defenderが検体隔離処理中のファイルパス検証を悪用してNTFSジャンクションポイントでリダイレクトを行うことでSYSTEM権限を奪取できる（研究者Nightmare Eclipseが2026年4月7日にPoC付きで公開した経緯があり、パッチは同月のPatch Tuesdayで提供済み）。CISAは2026年4月22日にKEVカタログへ追加していたが、今回の更新でランサムウェアグループによる悪用が新たに確認されたとフラグを追加した。攻撃者名や具体的な侵入経路の詳細情報源は明示されていない（推測を避け原文ママ記載）。
+
+攻撃の流れ:
+1. 攻撃者はローカルアクセスまたは既存の低権限アクセスを足がかりに、Defenderの検知をトリガーする悪性ファイルを配置する（推測：初期侵入経路はランサムウェア展開の後段階が多い）
+2. Defenderのリアルタイム保護が検体を検知し修復処理を開始する際、攻撃者はオポチュニスティックロック（oplock）を用いて処理を一時停止させる
+3. 停止中にNTFSジャンクションポイントを作成し、修復対象パスをC:\Windows\System32配下にリダイレクトする
+4. Defenderが特権操作を実行することでSYSTEM権限相当の書き込みが行われ、権限昇格が成立する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Defenderのシグネチャ更新・検体隔離処理に関連する異常なジャンクションポイント作成やSystem32配下への予期しない書き込みを監視する。パッチ未適用端末の棚卸しを最優先とする。]
+Splunk SPL: index=windows EventCode=4663 object_name="*System32*" | where NOT (process_name="MsMpEng.exe")
+Splunk SPL: index=sysmon EventCode=5 OR EventCode=11 process_name="MsMpEng.exe" TargetFilename="*\\System32\\*" | stats count by host, TargetFilename
+→ Sysmonでのジャンクションポイント作成イベントとMsMpEng.exeプロセスによる想定外のファイル操作の相関分析が有効。EDR側でDefenderプロセスの異常な権限操作をアラート化することを推奨。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/cisa-windows-bluehammer-flaw-now-exploited-by-ransomware-gangs/
+https://www.securityweek.com/bluehammer-vulnerability-exploited-in-ransomware-attacks/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. CVE-2026-56137 / RPGツクールMV / RPGツクールMZ
+CVSS: 7.8 (High) 状態: ゼロデイ
+
+【24時間以内の変化】
+[JVN / JVN iPedia 2026-06-30] JVNDB-2026-000093としてRPGツクールMV/MZのセーブデータ読み込み時のOSコマンドインジェクション脆弱性（CVE-2026-56137）が新規公開された。公開時点でパッチは未提供。
+[AUTOMATON 2026-07-01] 国内ゲーム系メディアが本脆弱性を報道し、開発元Gotcha Gotcha Gamesが不審なゲーム・セーブデータ・素材を読み込まないよう注意喚起している旨を伝えた。
+
+【概要】
+RPGツクールMV（1.6.3以前）およびMZ（1.10.0以前）には、セーブデータの読み込み処理において細工されたコンテンツを適切に取り扱わないことに起因するOSコマンドインジェクションの脆弱性（CVE-2026-56137、CVSSv3:7.8／CVSSv4:8.4）が存在する。悪意あるセーブデータやゲーム素材を読み込ませることで任意のOSコマンドが実行される可能性がある。2026年6月30日にJVNで新規公開され、開発元のGotcha Gotcha Gamesは本稿執筆時点でパッチを提供しておらず、不審なゲーム・セーブデータ・プラグイン素材を読み込まないことを注意喚起している。国内では個人開発者・同人ゲーム制作者を中心に広く利用されているツールであり、悪用の実例は確認されていないが影響範囲の観点から国内関連度が高い。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[RPGツクール製ゲームの実行プロセスから子プロセスとしてcmd.exeやPowerShellが起動されるなど、ゲームプロセスからの異常な子プロセス生成を監視する。]
+Splunk SPL: index=endpoint ParentProcessName="*Game.exe*" OR ParentProcessName="*RPGMaker*" (ProcessName="cmd.exe" OR ProcessName="powershell.exe")
+→ 個人利用端末が中心のため企業SOCでの直接検知対象になりにくいが、社内でゲーム開発・配信を行う組織では、ゲーム実行ファイルからの異常な子プロセス生成をアラート化することを推奨する。
+
+【参照】
+https://jvndb.jvn.jp/en/contents/2026/JVNDB-2026-000093.html
+https://automaton-media.com/articles/newsjp/20260701-452738/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [JVN#69681784: RPGツクールMV/MZにおけるOSコマンドインジェクションの脆弱性] https://jvndb.jvn.jp/en/contents/2026/JVNDB-2026-000093.html
+
+2. CVE-2026-56808 / DGM3103SCT（3MP H.265 IR ネットワークカメラ）
+CVSS: 7.2 (High) 状態: 変化なし
+
+【24時間以内の変化】
+[JVN / JVN iPedia 2026-06-30] JVNDB-2026-000094（JVN#28979424）としてAVTECH製ネットワークカメラDGM3103SCTのOSコマンドインジェクション脆弱性（CVE-2026-56808）が新規公開された。Web管理コンソールにログイン可能なユーザーがroot権限で任意コマンドを実行できる。
+
+【概要】
+AVTECH Security Corporation製のネットワークカメラDGM3103SCT（ファームウェア3.2.5.4以前）には、Web管理コンソールにログイン可能なユーザーがroot権限で任意のOSコマンドを実行できるOSコマンドインジェクションの脆弱性（CVE-2026-56808、CVSSv3:7.2／CVSSv4:8.6）が存在する。2026年6月30日にJVNで公開された。悪用には管理コンソールへの認証が前提となるため深刻度は相対的に低いが、監視カメラは重要インフラ・製造・小売等の物理セキュリティ用途で国内でも利用されており、開発元は最新ファームウェアへの更新を推奨している。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ネットワークカメラ管理画面への異常なログイン試行や、デバイスからの予期しない外向き通信を監視する。]
+Splunk SPL: index=network dest_port=80 OR dest_port=443 src_category="iot_camera" | stats count by src_ip, dest_ip
+→ 監視カメラ機器からの通常業務範囲外の通信や管理画面への総当たりログイン試行をIoT向けネットワーク監視で検知することを推奨。
+
+【参照】
+https://jvndb.jvn.jp/en/contents/2026/JVNDB-2026-000094.html
+https://jvn.jp/jp/JVN28979424/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [JVN#28979424: DGM3103SCTにおけるOSコマンドインジェクションの脆弱性] https://jvn.jp/jp/JVN28979424/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. CVE-2026-46817 / Oracle E-Business Suite（Oracle Payments / File Transmission）
+CVSS: 9.8 (Critical)
+CVE-2026-46817はOracle E-Business Suite（EBS）のOracle Paymentsモジュール内File Transmissionコンポーネントに存在する権限管理不備・認証不備に起因する重大な脆弱性で、CVSSv3基本値は9.8。未認証の攻撃者がネットワーク経由でOracle Paymentsを完全に乗っ取ることが可能。Oracleは2026年5月のCritical Patch Updateで修正済みだが、脅威インテリジェンス企業Defusedによれば、パッチ公開から約6週間後の2026年6月27日から28日にかけて、ハニーポット上で未認証のファイル読み取り攻撃が観測されており、公開PoCが存在しない段階での実悪用という点で警戒度が高い。Shadowserverの調査では約950台のインスタンスが依然インターネットに公開されている。現時点で日本国内での被害報告や国内メディアでの報道は確認されていない。
+IoC:
+IoC: 確認されず
+
+監視: [Oracle EBSの/OA_HTML/ibytransmitエンドポイントへの未認証アクセスやCODEX_PULLスキームを含むXMLペイロードを監視する。]
+Splunk SPL: index=web_logs uri_path="*ibytransmit*" method=POST | stats count by src_ip, uri_path
+→ WAFやリバースプロキシのアクセスログでibytransmitエンドポイントへの外部からのPOSTリクエストを重点監視し、未パッチのEBSインスタンスは速やかに2026年5月CPUを適用すること。
+
+参照: https://www.helpnetsecurity.com/2026/06/30/oracle-payments-cve-2026-46817-exploitation/
+参照: https://thehackernews.com/2026/06/oracle-e-business-suite-flaw-cve-2026.html
+
+2. CVE-2026-48558 / SimpleHelp RMM
+CVSS: 10.0 (Critical)
+CVE-2026-48558はSimpleHelp（RMMソフトウェア）のOIDC認証フローにおいて、ログイン時に提示されるIDトークンの暗号署名検証を行わない不備に起因する認証バイパスの脆弱性で、CVSSv3基本値は10.0。既に既報の脆弱性だが、2026年6月29日にCISA KEVカタログへ新規登録（連邦機関対応期限7月2日）され、さらに本レポート期間中にBlackpoint Cyberが本脆弱性を悪用した新たな攻撃キャンペーンの詳細（TaskWeaverという難読化されたNode.jsローダーを介した二段階目のDjinn Stealer展開）を報告した。SimpleHelpはMSPで広く使われているため、一つの侵害が多数の顧客組織へ波及するリスクがある。
+IoC:
+Domain: a.dev-tunnels[.]com
+Filename: jquery.js
+
+監視: [SimpleHelpサーバー経由で配布されるnode.exeの異常な実行や、jquery.jsという名前を偽装したNode.jsスクリプトの実行を監視する。]
+Splunk SPL: index=endpoint ParentProcessName="*SimpleHelp*" ProcessName="node.exe"
+Splunk SPL: index=endpoint ProcessName="node.exe" CommandLine="*jquery.js*" | stats count by host, CommandLine
+→ SimpleHelpサーバーの管理画面ログでOIDCログイン成功イベントのうち通常と異なるクライアント属性を持つセッションを重点監視することを推奨。
+
+参照: https://thehackernews.com/2026/06/attackers-exploit-simplehelp-cve-2026.html
+参照: https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-simplehelp-flaw-deploy-new-djinn-infostealer-taskweaver-malware/
+
+3. CVE-2026-8037 / Progress Kemp LoadMaster / ECS Connection Manager / Object Scale Connection Manager / MOVEit WAF
+CVSS: 9.8 (Critical)
+CVE-2026-8037はProgress Kemp LoadMaster（ロードバランサー/ADC製品）のAPI処理に存在する未認証の事前認証リモートコード実行脆弱性で、CVSSv3基本値は9.8。原因はescape_quotes()関数がmalloc()で確保したバッファを未初期化のまま使用し、かつNULL終端を書き込まないことで隣接ヒープメモリへの範囲外読み取りが発生する点にある。既報の脆弱性だが、2026年6月29日にwatchTowr Labsが独自解析による技術詳細と動作するPoCを公開し、同日から実際の悪用試行がeSentireにより観測された。観測された試行は失敗に終わったとされるが、PoC公開に伴い今後の悪用拡大が懸念される。
+IoC:
+IP: 192.42.116.58
+IP: 192.42.116.105
+IP: 146.70.139.154
+
+監視: [Kemp LoadMasterのAPIエンドポイントへの外部アクセス、および上記IoC送信元IPからの通信を監視する。]
+Splunk SPL: index=firewall dest_ip="<LoadMaster_mgmt_ip>" src_ip IN ("192.42.116.58","192.42.116.105","146.70.139.154")
+Splunk SPL: index=web_logs product="LoadMaster" uri_path="*api*" method=POST | stats count by src_ip
+→ API機能が不要な環境では無効化を推奨。管理インターフェースをインターネットに公開している場合は直ちにアクセス制限とパッチ適用を行うこと。
+
+参照: https://labs.watchtowr.com/enterprise-tech-in-shell-out-progress-kemp-loadmaster-uninitialized-heap-to-pre-auth-rce-cve-2026-8037/
+参照: https://thehackernews.com/2026/07/latest-progress-kemp-loadmaster-pre.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-50751 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-10520 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-42897 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-54420 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-20262 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-53435 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-39808 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-39813 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-47281 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-35273 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-5027 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-50656 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-24858 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-48907 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-20253 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-42530 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-42055 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-20181 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-20190 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-28318 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-11645 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-20245 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-7473 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-4020 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-8461 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-47729 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-10735 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-49777 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-7273 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-0533 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-0534 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-0535 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-45585 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-34908 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-34909 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-34910 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2025-67038 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-20230 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-8732 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-11374 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-24155 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-24252 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-24228 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-41089 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-49975 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-44963 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-13028 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-13032 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-13033 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-13038 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-13281 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-13282 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-13283 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-12569 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-46331 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-13136 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-13135 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2025-15660 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-43503 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-44024 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-55200 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-5173 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-12244 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-12245 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+・CVE-2026-12246 → 本調査期間（2026-06-30 07:00〜2026-07-01 07:00 JST）内に新規の状況変化（KEV追加・新規実悪用報告・PoC公開等）は確認できなかった。
+
+[APT]
+・Velvet Ant / Velvet-Ant-2026-OperationHighland → already_reported
+・不明（帰属未確定） / AtomicArch-2026-AURSupplyChain → already_reported
+・Screening Serpens / ScreeningSerpens-2026-EpicFury-MiniUpdate → already_reported
+・UNC6508 / UNC6508-2026-REDCap-INFINITERED → already_reported
+・不明（Russian-speaking IAB） / FortiBleed-2026-CredentialCampaign → already_reported
+・Gentlemen（RaaS） / Gentlemen-2026-GentleKillerByovd → already_reported
+・Icarus / Icarus-2026-KlueSalesforceOAuth → already_reported
+・Sapphire Sleet（BlueNoroff/APT38） / SapphireSleet-2026-MastraNpmSupplyChain → already_reported
+・Andariel（Onyx Sleet） / Andariel-2026-FullDisclosure-AhnLab → already_reported
+・不明（帰属未確定） / AryStinger-2026-DLinkBotnet → already_reported
+・Prinz Eugen / PrinzEugen-2026-RecentFileRansomware → already_reported
+・不明（Russian-speaking財務動機） / REF8372-2026-OXLOADER-CastleStealer → already_reported
+・不明（Chinese-speaking） / WhatsApp-VBScript-2026-ManageEngine → already_reported
+・不明（帰属未確定） / KDDI-2026-EmailSystemBreach → already_reported
+・Nightmare Eclipse / NightmareEclipse-2026-WindowsZeroDayDisclosure → already_reported
+・KongTuke / KongTuke-2026-Mistic-IAB → already_reported
+・不明（DPRK/BONZAI関連） / Gaslight-2026-macOSBONZAI → already_reported
+・Turla / Turla-2026-STOCKSTAY-EspionageCampaign → already_reported
+・Turla / Turla-2026-STOCKSTAY-Ukraine → already_reported
+・APT28 / APT28-2026-PRISMEX-NATOLogistics → already_reported
+・Russian Intelligence Services / RIS-2026-SignalBackupKey-PSA260626 → already_reported
+・StrikeShark / StrikeShark-2026-SharkLoaderDiplomacy → already_reported
+・TraderTraitor / TraderTraitor-2026-KelpDAO-DriftUK → already_reported
+・Sapphire Sleet / SapphireSleet-2026-TrilatSummit → already_reported
+・CL-STA-1062 / CLSTA1062-2026-TinyRCT → already_reported
+・Silver Fox APT / SilverFox-2026-Gh0stCringe-HoldingHands → already_reported
+・不明（イラン系APT） / IranianAPTs-2026-Q2-DenoRuntime → already_reported
+・Mustang Panda / MustangPanda-2026-ZohoWorkDriveIndia → already_reported
+・Gamaredon / Gamaredon-2026-GammaEcosystem-CloudC2 → already_reported
+・不明（未帰属） / 不明（未帰属） → DHS HSIN（情報共有プラットフォーム）侵害。攻撃者・手口とも未特定で技術的詳細なし。単一組織の限定的観測にとどまりaxis_q基準未達。
+・不明（未帰属） / 不明（未帰属） → Oracle E-Business Suite CVE-2026-46817の悪用は脅威アクター未特定であり帰属情報なし。CVEはSection 2/3で扱う。
+・ShinyHunters（UNC6240） / ShinyHunters（UNC6240） → Oracle PeopleSoft CVE-2026-35273の新規被害者（Nissan・NAIC）はいずれも本ウィンドウ以前の既報事案。
+
+CVE統計: ゼロデイ特報0 / 本編1 / 参考A2 / 参考B3 / 除外65 / 処理総数71
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報 — 高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. GuardFall続報: AIコーディングエージェント10種でシェルコマンド安全チェックが数十年来の難読化手法により回避可能
+観点: AI攻撃関連
+採用契機: ε・η
+------------------------------------------------------------
+
+優先度: 高優先度
+対象: オープンソースAIコーディングエージェント（opencode, Goose, Cline, Roo-Code, Aider, Plandex, Open Interpreter, OpenHands, SWE-agent, Hermes等。Continueのみ耐性あり）
+
+【24時間以内の変化】
+[Adversa AI / The Hacker News 2026-06-30] Adversa AIが「GuardFall」と名付けた手法を公開。11種のオープンソースAIコーディングエージェントのうち10種（Continueを除く）で、シェルコマンドの安全性チェックが文字列照合ベースのため、bashの展開処理（空クオート挿入・$IFS区切り・base64エンコード等）を悪用して拒否リスト/許可リストを回避し任意コマンドを実行できることが実証された。単一CVEでなく設計上のクラス的問題として報告。
+
+【概要】
+Adversa AIの調査により、Claude Codeを除く主要なオープンソースAIコーディングエージェント10製品において、自動実行モードやサンドボックス無効時にシェルコマンドの安全性チェックが文字列一致ベースで行われているためbashの展開処理を悪用した数十年来のシェル難読化手法で回避できる「GuardFall」という設計上の脆弱性クラスが2026年6月30日に公開され、汚染されたリポジトリのREADMEやビルドファイルを読み込ませるだけでSSHキーやクラウド認証情報の窃取につながり得るため、生成AIを用いた開発ワークフローを導入している組織のSOCは自動実行設定やサンドボックス構成の点検を優先的に行う必要がある。
+
+【推奨アクション】
+・AIコーディングエージェントの自動実行フラグを無効化し、シェルコマンド実行前に人間のレビューを必須化する
+・エージェントの$HOMEを使い捨てディレクトリにリダイレクトし、実クレデンシャルへの直接アクセスを遮断する
+・外部フォークからのプルリクエストをエージェントに自動処理させない運用に見直す
+・自社利用のAIコーディングエージェントが本手法に耐性があるかベンダー・開発コミュニティに確認する
+・[開発端末・CI環境でAIエージェントが実行するシェルコマンドの難読化パターンを監視する。]
+Splunk SPL: index=edr process=bash OR process=sh (CommandLine="*$IFS*" OR CommandLine="*base64 -d*") ParentProcessName IN ("opencode","goose","aider","open-interpreter")
+→ EDRで開発端末上のAIエージェントプロセスを親プロセスとする子プロセスの起動履歴を収集し、難読化パターンをルール化して検知する。
+
+【参照】
+https://thehackernews.com/2026/06/guardfall-exposes-open-source-ai-coding.html
+
+------------------------------------------------------------
+2. DuneSlide: Cursor IDEにゼロクリック プロンプトインジェクション経由のRCE脆弱性2件（CVE-2026-50548/50549）
+観点: AI攻撃関連
+採用契機: ε・η
+------------------------------------------------------------
+
+優先度: 高優先度
+対象: Cursor IDE（Cursor 3.0未満の全バージョン）
+
+【24時間以内の変化】
+[Cato Networks (Cato AI Labs) / The Hacker News 2026-07-01] Cato AI Labsが「DuneSlide」と名付けたCursor IDEの脆弱性2件（CVE-2026-50548、CVE-2026-50549、CVSSv3.1 9.8／CVSSv4.0 9.3）を公開。攻撃者が制御する外部コンテンツをエージェントに読み込ませるだけ（ゼロクリック）でサンドボックス脱出・無サンドボックスRCEに至ることが示された。2026年4月2日リリースのCursor 3.0で修正済みだが、それ以前の全バージョンが影響を受ける。
+
+【概要】
+Cato Networksの調査チームが2026年7月1日に公開した「DuneSlide」は、Cursor IDEにおいてrun_terminal_cmdツールのworking_directoryパラメータ設定とシンボリックリンク検証の失敗時フォールバック処理という2つの設計上の不備を悪用し、攻撃者が用意した外部コンテンツをエージェントに一度読み込ませるだけでサンドボックスヘルパー自体を上書きし以降のコマンドが無サンドボックスで実行される状態に至る、ユーザー操作を必要としないRCEであり、脆弱性自体は2026年4月のCursor 3.0で既に修正済みであるものの、修正版へのアップデートが遅れている開発環境では依然として攻撃対象となり得る。
+
+【推奨アクション】
+・組織内で利用しているCursorのバージョンを棚卸しし、3.0未満が残っていれば直ちに最新版へ更新する
+・run_terminal_cmdツール等、作業ディレクトリをエージェントが任意に変更できる設定を許可制にする
+・エージェントに未検証の外部リポジトリ・ドキュメント・Webコンテンツを直接読み込ませる運用を避ける
+・開発環境の資産管理にAIコーディングツールのバージョンを追加し、パッチ適用状況を継続的に追跡する
+・[Cursorエージェントによるサンドボックスヘルパーファイルへの書き込みや、通常想定されないディレクトリへのファイル書き込みを監視する。]
+Splunk SPL: index=edr process=Cursor* (TargetFilename="*/helpers/cursorsandbox*") EventType=FileWrite
+→ EDRでCursorプロセスによるサンドボックスヘルパーバイナリへの書き込みイベント、シンボリックリンク経由のプロジェクト外パス書き込みを異常として検知する。
+
+【参照】
+https://thehackernews.com/2026/07/critical-cursor-flaws-could-let-prompt.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報 — 中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+3. セイコーソリューションズ製 SkyBridge MB-A100/MB-A110 にOSコマンドインジェクションの脆弱性（EOL機器・パッチ提供なし）
+観点: CVE関連
+採用契機: α・β
+------------------------------------------------------------
+
+優先度: 中優先度
+対象: セイコーソリューションズ SkyBridge MB-A100/MB-A110（LTE/3G対応無線ルーター、遠隔監視制御用途）
+
+【24時間以内の変化】
+[JVN (JVN#20721579) 2026-07-01] セイコーソリューションズ製 SkyBridge MB-A100/MB-A110 にOSコマンドインジェクションの脆弱性（CVE-2026-50043、CVSSv3.0基本値7.2／CVSSv4.0基本値8.6）が新規公開された。管理者権限で認証済みの攻撃者が任意のOSコマンドを実行できる。製品は既にサポート終了（EOL）扱いでファームウェア修正は提供されず、回避策のみが案内されている。
+
+【概要】
+国内のLTE/3G対応監視・制御用ルーターであるSkyBridge MB-A100/MB-A110において、既定の管理者パスワードのままリモート監視制御機能を有効化している場合に第三者からOSコマンドを実行される脆弱性が2026年7月1日付でJVNに公開された。製品はメーカーサポートが終了しておりファームウェア修正が提供されない点が本件の実務上の最大の課題であり、恒久的な脆弱性解消ではなく運用側での緩和策の徹底が必須となる。
+
+【推奨アクション】
+・SkyBridge MB-A100/MB-A110の設置有無を資産台帳で棚卸しし、遠隔監視制御機能（WebUI）が有効なままインターネットに公開されていないか確認する
+・既定の管理者パスワードを使用している機器は直ちに変更する
+・遠隔監視制御機能が不要な場合は無効化し、必要な場合はアクセス元IPアドレスを制限する
+・サポート終了製品であるため、中長期的には代替機種への更新を計画する
+・[SkyBridge管理画面（WebUI）への外部からの管理者ログイン試行およびOSコマンド実行の兆候となる異常なHTTPリクエストパラメータを監視する。]
+Splunk SPL: index=network_devices sourcetype=skybridge* (uri_path="*/cgi-bin/*" OR uri_path="*.cgi") | search cmd=* OR ";" OR "|" OR "`"
+→ 境界ファイアウォール/プロキシログで当該機器のWebUIポートへの外部アクセスを洗い出し、シェルメタ文字を含むパラメータの有無を確認する。
+
+【参照】
+https://jvn.jp/en/jp/JVN20721579/
+
+------------------------------------------------------------
+4. RustDuckボットネットがRustへ全面書き換え、家庭用ルーター・IoTカメラを狙いDDoS踏み台化を拡大
+観点: ゼロデイ関連
+採用契機: δ・ε
+------------------------------------------------------------
+
+優先度: 中優先度
+対象: 家庭用ルーター・IPカメラ/DVR・Android系STB等（TP-Link、ZTE、Ruijie、D-Link、Huawei、TVT製品等）
+
+【24時間以内の変化】
+[QiAnXin XLab / The Hacker News 2026-06-30] 2026年2月から追跡されていたボットネット「RustDuck」がC言語からRustへの全面書き換えを完了し、解析回避を強化した新版が確認された。CVE-2025-29635・CVE-2017-17215・CVE-2024-1781・CVE-2018-8007等の既知脆弱性、および初期設定のTelnet/SSH認証情報を悪用してルーター・IPカメラ・Android端末・公開サーバに感染し、DDoS攻撃用の踏み台として増殖している。
+
+【概要】
+QiAnXinのXLabが2月から追跡してきたRust製DDoSボットネット「RustDuck」が、検知・解析を回避するための全面的な言語移行（C→Rust）とC2通信の独自プロトコル化を完了したことが2026年6月30日に報告され、家庭用ルーターやIPカメラ、Android系セットトップボックス、管理が不十分な公開サーバを対象に、既知の未修正脆弱性と初期設定認証情報の悪用によって感染を拡大している状況であり、同種の回避手法が他の攻撃者集団に流用され国内向け機器を含め拡散する可能性がある点でSOCとして把握しておく価値がある。
+
+【推奨アクション】
+・組織内および委託先で稼働するルーター・IPカメラ・DVR等のIoT機器についてTelnet/SSHの初期パスワード使用有無を棚卸しし変更する
+・D-Link DIR-823X等、パッチ提供のない機器はリプレースまたはネットワーク隔離を検討する
+・IoT機器の管理インターフェースをインターネットから遮断し、必要な場合はVPN経由に限定する
+・既知のC2ドメイン基盤（duckdns.org等の動的DNS）や配信元IP（176.65.139.204等）への通信をブロックリストに追加する
+・[IoT機器・組み込みLinux機器からの異常な外向き通信（DDoS踏み台化やC2接続）を監視する。]
+Splunk SPL: index=firewall (dest_ip="176.65.139.204" OR dest_domain="*.duckdns.org") | stats count by src_ip dest_ip dest_domain
+→ duckdns.org系の動的DNSドメインへの接続、およびIoTセグメントからの新規外向きコネクションレート急増をDDoS踏み台化の予兆として監視する。
+
+【参照】
+https://thehackernews.com/2026/06/rustduck-botnet-rebuilds-in-rust-to.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報 — 低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に α〜η 条件を満たす低優先度情報なし）
+
+SOC推奨情報統計: 高2件 / 中2件 / 低0件 / 除外4件 / 計処理8件
+観点内訳: CVE関連1件 / ゼロデイ関連1件 / AI攻撃関連2件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ベースライン更新ログ】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+詳細は forecaster/forecasts/daily/2026-07-01.md を参照。
+
+========================================
+日次パイプライン完了: 2026-07-01 07:00 JST
+========================================
