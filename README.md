@@ -1,5 +1,9 @@
 # PYTHIA — サイバー戦術予報士
 
+<p align="center">
+  <img src="assets/images/pythia-banner.png" alt="PYTHIA banner" width="100%" />
+</p>
+
 > 神託は、あなたの観測から生まれる。
 
 PYTHIA は、サイバー脅威の「天気予報士」です。
