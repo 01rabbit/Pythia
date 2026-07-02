@@ -22,6 +22,10 @@
 
 ## 入力
 
+0. `forecaster/forecasts/daily/YYYY-MM-DD.json`（予報サイドカーJSON）— 存在する場合は
+   検証の**一次入力**とする。`forecaster/forecasts/daily/YYYY-MM-DD.md` は当該日付の
+   サイドカーJSONが存在しない場合のみ一次入力として使用し、サイドカーJSONが存在する日は
+   Markdownを補足参照（文脈確認用）に留める。
 1. `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report.json` — 実行日から過去14日分。
    **検証の一次入力はJSONとする。** M4判定に必須の `kev_snapshot` / `anchor` /
    `forecast_class_rationale` / `deadline_date` はJSON専用出力（pipeline-output-schema.md 参照）
@@ -97,6 +101,24 @@ slow_7d トラック（7日窓）は最大14日遡って走査する（M2）。
 E4（PoC公開）の予報でも、KEV の参照セットへの PoC/エクスプロイト追加が判定材料になる場合は
 同様に CISA KEV JSON を直接照会して確認する。
 
+### 確度キャリブレーション算出（目標帯乖離判定・Brierスコア）
+
+`monthly_summary.by_confidence` の各確度（high/medium/low）について以下を算出する
+（目標帯・代表確率の定義は pipeline-forecast-verification.md「確度の定義」参照）:
+
+1. **目標帯乖離判定**: `hit_rate_including_partial` を目標帯（高0.70-1.00／中0.40-0.70／
+   低0.00-0.40）と比較し、`calibration_status` に `within_target` / `deviation_high`
+   （帯より上振れ）/ `deviation_low`（帯より下振れ）を設定する。該当確度の `total` が
+   0件の場合は `calibration_status: null`（判定不能）とする。
+2. **Brierスコア算出**: 代表確率（高=0.75／中=0.55／低=0.30）を予測確率 `p` とし、
+   各予報の実績を2値結果 `o`（hit=1・partial=0.5・miss=0。unverifiableは対象外）として、
+   `(p - o)^2` を確度内の対象予報について平均し `brier_score` に記録する
+   （0に近いほど較正が良い。0.25はランダム相当の目安）。
+3. **2ヶ月連続乖離の検出**: 当月と前月の `verification/YYYY-MM.json` を比較し、
+   同一確度で2ヶ月連続 `deviation_high` または `deviation_low` が検出された場合、
+   `bias_analysis` に確度適用条件の見直し提案を起票する（下記バイアス分析参照）。
+   前月ファイルが存在しない、または前月の当該確度が `total: 0` の場合は連続判定をスキップする。
+
 ### 固定一次ソース＋エスカレーション規則
 
 観測出口クラス（E1〜E4）の一次データソースは pipeline-forecast-verification.md の表で
@@ -147,7 +169,7 @@ miss ではなく **unverifiable（固定ソース確認待ち）**と判定す�
       "forecast_index": 1,
       "forecast_title": "予報タイトル",
       "tier": "T1|T2|T3",
-      "confidence": "high|medium",
+      "confidence": "high|medium|low",
       "forecast_class": "fast_72h|slow_7d",
       "window_hours": 72,
       "deadline_date": "YYYY-MM-DD",
@@ -173,8 +195,9 @@ miss ではなく **unverifiable（固定ソース確認待ち）**と判定す�
     "hit_rate_strict": null,
     "hit_rate_including_partial": null,
     "by_confidence": {
-      "high":   { "total": 0, "hit": 0, "partial": 0, "miss": 0, "unverifiable": 0, "hit_rate_strict": null, "hit_rate_including_partial": null },
-      "medium": { "total": 0, "hit": 0, "partial": 0, "miss": 0, "unverifiable": 0, "hit_rate_strict": null, "hit_rate_including_partial": null }
+      "high":   { "total": 0, "hit": 0, "partial": 0, "miss": 0, "unverifiable": 0, "hit_rate_strict": null, "hit_rate_including_partial": null, "target_band": "0.70-1.00", "calibration_status": null, "representative_probability": 0.75, "brier_score": null },
+      "medium": { "total": 0, "hit": 0, "partial": 0, "miss": 0, "unverifiable": 0, "hit_rate_strict": null, "hit_rate_including_partial": null, "target_band": "0.40-0.70", "calibration_status": null, "representative_probability": 0.55, "brier_score": null },
+      "low":    { "total": 0, "hit": 0, "partial": 0, "miss": 0, "unverifiable": 0, "hit_rate_strict": null, "hit_rate_including_partial": null, "target_band": "0.00-0.40", "calibration_status": null, "representative_probability": 0.30, "brier_score": null }
     },
     "by_track": {
       "fast_72h": { "total": 0, "hit": 0, "partial": 0, "miss": 0, "unverifiable": 0 },
@@ -193,7 +216,14 @@ miss ではなく **unverifiable（固定ソース確認待ち）**と判定す�
 - `kev_snapshot_diff`: `outcome_channel` が E1 以外、または発行時 `kev_snapshot` が存在しない
   場合は `null` とする。
 - `by_confidence`: **確度別的中率のキャリブレーション表**。確度「高」が「中」より的中率で
-  劣後していないかを毎回確認する（下記バイアス分析参照）。
+  劣後していないかを毎回確認する（下記バイアス分析参照）。各確度には目標確率帯
+  （`target_band`: 高=0.70-1.00／中=0.40-0.70／低=0.00-0.40、
+  pipeline-forecast-verification.md「確度の定義」参照）を固定値として記録し、
+  `hit_rate_including_partial` が帯の外にあれば `calibration_status` に
+  `deviation_high`（目標帯より上振れ）または `deviation_low`（目標帯より下振れ）を、
+  帯内であれば `within_target` を設定する。`representative_probability`
+  （高=0.75／中=0.55／低=0.30固定）と実際の hit/partial/miss 結果からBrierスコア
+  （下記「キャリブレーション算出」参照）を算出し `brier_score` に記録する。
 - `by_track`: **補助内訳のみ**（M2ガード1）。主指標（トップレベルの hit_rate）に昇格させない。
 
 ---
@@ -210,6 +240,20 @@ miss ではなく **unverifiable（固定ソース確認待ち）**と判定す�
   下回る場合、確度較正の異常として `bias_analysis` に記録し、「確度: 高」適用条件
   （定量ゲートD含む）の見直しを提案する。見直しは確度付与の入口の厳格化に限り、
   的中判定基準（hit_criteria）には一切触れない（M3の原則）。
+- **キャリブレーション見直し手順（2ヶ月連続乖離）**: 「確度キャリブレーション算出」で
+  同一確度が2ヶ月連続で `deviation_high` または `deviation_low` と判定された場合、
+  `bias_analysis` に以下の形式で確度適用条件の見直し提案を起票する:
+
+  ```
+  確度較正見直し提案 [確度: high|medium|low]:
+    2ヶ月連続 [deviation_high|deviation_low]（YYYY-MM: 実績X% / YYYY-MM: 実績Y%、目標帯Z%）
+    提案: [適用条件A〜D・定量ゲートDの具体的な見直し方向]
+  ```
+
+  **禁止事項（発行済み予報の再採点禁止）**: この見直しは将来発行する予報の確度**適用条件**
+  にのみ適用し、`verification/YYYY-MM.json` に記録済みの過去エントリの `confidence` /
+  `outcome` を遡って書き換えることは禁止する（原則D・pipeline-forecast-verification.md
+  「確度キャリブレーション運用」参照）。1ヶ月のみの乖離は記録に留め、見直し起票は行わない。
 - **発行ルール違反**: 発行ルール遵守チェックで検出した違反（1日3件以上の発行・
   hit_criteria / outcome_channel / forecast_class の欠落・発行後のトラック移動）を
   `bias_analysis` に記録する。
@@ -234,12 +278,13 @@ pipeline-forecast-verification.md の「チャット表示形式」に準拠し�
 - 予報別検証（確度・出口クラス E1〜E4・トラック fast_72h|slow_7d・判定・根拠1〜2行）
 - 週次サマリー主指標（全予報統合・M2ガード1）
 - 補助内訳（トラック別・主指標に昇格させない・slow_7d の期限超過自動外れ件数を含む）
-- **キャリブレーション表（確度別的中率）**:
+- **キャリブレーション表（確度別的中率・目標帯乖離・Brierスコア）**:
 
-  | 確度 | 総数 | 的中 | 部分的中 | 外れ | 検証不能 | 的中率（部分含む） |
-  |------|------|------|----------|------|----------|--------------------|
-  | 高 | | | | | | |
-  | 中 | | | | | | |
+  | 確度 | 総数 | 的中 | 部分的中 | 外れ | 検証不能 | 的中率（部分含む） | 目標帯 | 乖離判定 | Brierスコア |
+  |------|------|------|----------|------|----------|--------------------|--------|----------|-------------|
+  | 高 | | | | | | | 70%以上 | | |
+  | 中 | | | | | | | 40〜70% | | |
+  | 低 | | | | | | | 40%未満 | | |
 
 - カバレッジ（M1ゲートの剪定可視化: 発行予報数 / 候補主題数・見送りクラス数）
 - 発行ルール遵守チェック結果（違反ゼロの場合もその旨を明記）
@@ -249,8 +294,10 @@ pipeline-forecast-verification.md の「チャット表示形式」に準拠し�
 
 ## 実行手順
 
-1. 入力を読み込む: `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report.json`（過去14日分）・
-   `forecaster/forecasts/daily/`（過去14日分）・対応期間の observations・既存 verification ファイル。
+1. 入力を読み込む: `forecaster/forecasts/daily/YYYY-MM-DD.json`（サイドカーJSON・存在すれば
+   一次入力・過去14日分）・`outputs/YYYY-MM-DD/YYYY-MM-DD-security-report.json`（過去14日分）・
+   `forecaster/forecasts/daily/YYYY-MM-DD.md`（サイドカーJSON不在日のみ一次入力・それ以外は
+   補足参照）・対応期間の observations・既存 verification ファイル（当月分・前月分）。
 2. 検証対象の予報を列挙する: 検証窓が満了した未検証予報、および既存エントリのうち
    unverifiable（未確定）で窓が満了したもの。
 3. CISA KEV JSON を直接取得し、E1 / E4 関連予報の `kev_snapshot` 差分を計算する（M4）。
@@ -260,8 +307,13 @@ pipeline-forecast-verification.md の「チャット表示形式」に準拠し�
 6. `forecaster/verification/YYYY-MM.json` に結果を記録する（新規エントリは v1.1 新形式・
    未確定エントリは確定更新のみ・確定済み過去エントリは変更しない）。
 7. `monthly_summary`（全体主指標＋ by_confidence キャリブレーション＋ by_track 補助内訳）を更新する。
-8. 対象 observations の `verified_outcome` と `related_forecast_id` を更新する（この2フィールドのみ）。
-9. バイアス分析と補正提案を更新し、週次検証レポート
-   `forecaster/verification/YYYY-MM-DD-verification.md` を作成する。
-10. 変更した全ファイルをコミット対象として報告する。コミット・PR発行は週次検証スキル
+   by_confidence では目標帯乖離判定（`calibration_status`）とBrierスコア（`brier_score`）を
+   算出する（「確度キャリブレーション算出」参照）。
+8. 前月の `verification/YYYY-MM.json` と比較し、同一確度の2ヶ月連続乖離を検出した場合、
+   `bias_analysis` に確度較正見直し提案を起票する（発行済み予報の再採点は禁止）。
+9. 対象 observations の `verified_outcome` と `related_forecast_id` を更新する（この2フィールドのみ）。
+10. バイアス分析と補正提案を更新し、週次検証レポート
+    `forecaster/verification/YYYY-MM-DD-verification.md` を作成する（キャリブレーション表に
+    目標帯・乖離判定・Brierスコア列を含める）。
+11. 変更した全ファイルをコミット対象として報告する。コミット・PR発行は週次検証スキル
     （`.skills/forecast-verification/SKILL.md`）の手順に従う（本手順書自体はコミットを行わない）。
