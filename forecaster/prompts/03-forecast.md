@@ -7,7 +7,8 @@
 
 このステージは既存パイプラインの `pipeline-3-weighting.md` の【攻撃予報（48〜72時間）】セクションを
 **強化**するものであり、**置き換えではない**。
-生成した予報は `forecaster/forecasts/daily/YYYY-MM-DD.md` に出力する。
+生成した予報は `forecaster/forecasts/daily/YYYY-MM-DD.md`（人間向け正本）と
+`forecaster/forecasts/daily/YYYY-MM-DD.json`（機械可読正本・サイドカー）に**二重出力**する。
 既存パイプラインの outputs/ へのコピーは行わない（pipeline-3-weighting.md 側から参照するのみ）。
 
 ---
@@ -70,6 +71,20 @@ Technique は「ベースライン未確立」として別枠で報告する。
 （sample_count が極小のエントリは新規1件でも +4σ 級になり誤検知源となるため）。
 定性的言及（「本日初観測」「ベースライン未確立のため逸脱評価不能」等）のみ可。
 
+**σ逸脱の予報文言ルール**: σ逸脱（1.0σ以上）を予報や分析の文言に反映する際は、報道量・観測件数を
+実際の攻撃活動と直結させない。observations は報道・公開情報のプロキシであり、報告件数の増加が
+必ずしも攻撃活動そのものの増加を意味しない（報道量バイアス）。このため σ逸脱を文中で言及する
+場合は必ず以下の形式に従う。
+
+```
+〜の報告が増加（推測: 活動増加の可能性）
+```
+
+- 悪い例: 「Lazarus Groupの活動が急増している」（報道量増加を断定的な活動増加として記述）
+- 良い例: 「Lazarus Group関連の報告が増加（推測: 活動増加の可能性）」
+- σ逸脱を根拠に Tier 昇格・確度引き上げを行う場合も、根拠欄の文言は上記形式を用い、
+  「報告件数の逸脱」と「実際の活動水準」を混同しない。
+
 ### Step B: グループ活性化の判定
 
 `group-activity.json` の `sigma_deviation` を参照する。
@@ -109,6 +124,41 @@ parent_group "Lazarus Group" のプロファイルを参照してよい。その
    次段階の代表 Technique を推定する。
 
 この推定は「（推測）」として必ず明記すること。
+
+**evidence_basis ゲート（placeholder値の使用禁止）**: `technique-chains.json` の遷移確率・
+`attack-groups.json` の `frequency` には `evidence_basis`（区分は `_evidence_basis_legend` 参照:
+`placeholder` = 出典のない初期推定値 / `observed` = observations 実データから較正済み /
+`cited` = 外部一次情報に出典明示）が付与されている。**`evidence_basis.type` が `observed` の
+値のみ** Step C の遷移確率判定・予報の直接根拠として使用してよい。`placeholder` および
+`cited` は現時点では発動根拠に使用禁止とする（`cited` は将来的な拡張区分であり、本ゲートの
+対象緩和は人間レビューを経てから行う）。
+
+- `attack-groups.json`: `common_techniques[].evidence_basis.type` を個別エントリごとに確認する。
+- `technique-chains.json`: `transition_matrix` の遷移確率は個別付与ではなく、トップレベルの
+  `matrix_evidence_basis`（`applies_to: "transition_matrix.*.next.*"`）による一括付与方式を採る。
+  判定手順は次のとおり。
+  1. まず `matrix_evidence_basis.exceptions` に該当する `from`/`to` の組み合わせがあるか確認する。
+     あれば exceptions 側のエントリを優先して参照する。
+  2. exceptions に該当がなければ `matrix_evidence_basis.type` を適用する。
+  3. `exceptions` に載っていても `type` フィールド自体を持たない・明示的に `observed` と
+     書かれていない限り、そのエントリも `matrix_evidence_basis.type`（現状 `placeholder`）を
+     継承しているとみなす。exceptions は根拠の補足説明であり、区分の自動昇格ではない。
+  現状（2026-07時点）は `matrix_evidence_basis.type: "placeholder"` のため、
+  `transition_matrix` の遷移確率は原則すべて Step C の発動根拠として使用禁止である。
+  該当する遷移は「（推測・未較正の初期値に基づく参考情報）」として定性的に言及するにとどめ、
+  予報のTier昇格・確度根拠には使わない。
+- 本ゲートの対象は `frequency`（attack-groups.json）と `transition_matrix` の遷移確率
+  （technique-chains.json）の数値のみである。`low_visibility_chains[].evidence_basis`
+  （文字列型・個別チェーンの出典メモ）は本ゲートの対象外であり、従来どおり M1/M2 の
+  slow_7d 割当根拠として参照してよい。
+- `_observed_preview` のように「calibration_status: 統計的に不十分」と明記された値も
+  昇格されるまでは placeholder 扱いのまま参照してはならない。
+- 判断に迷う場合は evidence_basis 側を疑い、予報を見送るか注意点1行へ格下げする
+  （原則1: Evidence起点の義務化に従う）。
+- 実務上、上記判定手順により当面 Step C は「遷移確率 ≥ 0.60」を予報の直接根拠にできない
+  （すべて placeholder のため）。この場合 Step C は「（推測・未較正の初期値に基づく参考情報）」
+  として言及するにとどめ、予報候補としては他ステップ（Step A'・Step A・Step B・Step C'）の
+  観測事実に基づくものを優先する。observed への昇格後は本ゲートの運用を見直す。
 
 ### Step C': 認証情報・トークン連鎖予報
 
@@ -150,6 +200,8 @@ C2摘発 observation には「摘発はリスク低下であって終息では�
 
 **M3 EPSS+SSVC 確度アンカー**: 確度=高は「KEV登録 AND EPSS percentile≥0.95 AND SSVC=Act/Attend」を満たす場合のみ。SSVC `Automatable=no`（ASLR回避・認証・多段要）は確度=高から自動降格。EPSSは確度裏取りのみに使い72h的中条件に流用しない。
 
+**確度: 低の扱い**: 確度「高」「中」の適用条件（A〜D）をいずれも満たさないが、M1 観測可能性ゲート（下記）の発行前チェックリストを通過する予報には確度「低」を適用してよい。「低」は発行を見送るべき曖昧な予報ではなく、精度は保証できないが防御行動として発行価値がある予報という積極的な分類である。適用条件・目標的中率帯の正式定義は `pipeline-forecast-verification.md` の「確度: 低」適用条件を参照する（本書では重複定義しない）。「低」を適用する場合も的中判定条件（hit_criteria）の記載義務は変わらない。
+
 **M2 検証窓**: 外部報道依存の主題（漏洩→国内被害等）は `forecast_class: slow_7d`（7日窓）へ割り当て。72h的中率の分母に混入させない。割当判断は `incident-visibility-timelines.json` の median_days_to_external_report に従う（3日超は fast_72h で発行しない）。ベンダー追随IOCの的中条件への扱いは下記「T2 E2追随ベンダー除外（暫定）」に従う。
 
 **T3足切り**: T3予報候補は `poc-exploitation-criteria.json` の required を全て満たし disqualifying を満たさない場合のみ採用。1つでも欠ければ本編・参考Aの注意点1行へ格下げ（教訓10）。
@@ -160,9 +212,56 @@ C2摘発 observation には「摘発はリスク低下であって終息では�
 
 **M4 KEVスナップショット**: 各予報に発行時点のKEV状態（dateAdded / ランサムフラグ / 参照セット）を `kev_snapshot` として記録し、検証時に再登録（変化なし）を非的中判別できるようにする。
 
+**base_rate_estimate（発行時ベースレート見積もり・記入必須）**: 各予報に、その的中条件（hit_criteria）が
+「予報のスキルなしに偶然成立する確率」の発行時主観値を 0〜1 で記録する（サイドカーJSONの
+`base_rate_estimate`）。この値は予報の情報量（ベースレート対比でどれだけ優れた予報か）を後から
+測定するための記録であり、的中判定基準を緩めたり厳しくしたりする用途には使わない。
+
+記入指針:
+
+- **E1（KEV初回追加）を的中条件とする予報**: 対象CVEが**既にKEV未登録**で、かつ実悪用・PoC公開等の
+  強いEvidenceがある場合でも、CISAのKEV追加自体は候補となるCVE全体で見れば発生率が高くない
+  事象であることに留意し、根拠なく低い値（例: 0.05未満）に倒さない。一方、KEV登録済みCVEの
+  「再登録」を誤って的中条件にしないよう M4 の非的中判別を優先する（本フィールドとは別軸）。
+  Evidenceが強い（実悪用試行が既に観測されている等）T1予報ほどベースレートは相対的に高くなる
+  （0.2〜0.4程度を目安とし、個別の状況に応じて調整する）。
+- **E2〜E4（新規IOC公開・CERT初回勧告・PoC公開）を的中条件とする予報**: 発行時点で既にPoC公開や
+  ベンダー分析が進行中であればベースレートは相対的に高い（0.3〜0.5程度）。逆に新規性の低い
+  観測（単発の脆弱性報告のみ）から発行する予報はベースレートを低め（0.1未満）に見積もる。
+- **T3（新規PoC/KEV追加からの急拡大予測）**: 一般に武器化までの成功率は低いため、ベースレートは
+  低め（0.1〜0.2程度）を基本とし、poc-exploitation-criteria.json の足切り条件を満たす場合のみ
+  やや高めに調整してよい。
+- 数値の厳密な較正は不要（主観値でよい）が、**同種の予報間で一貫した相対順序**（Evidenceが
+  強いほど高いベースレート）を保つこと。極端な値（0または1に近い値）は根拠を明記しない限り
+  避ける。
+- この見積もりは検証ステージ（04-verify.md）が的中実績と突合し、ベースレート対比の予報スキルを
+  月次で算出するために使う。予報生成段階では見積もり値の記録のみを行う。
+
 ---
 
-## 出力ファイル形式
+## 出力ファイル形式（Markdown + サイドカー JSON の二重出力）
+
+予報1回の生成につき、同一内容を2ファイルへ出力する。**Markdown が人間向け正本、
+サイドカー JSON（`forecaster/schema/forecast.schema.json` 準拠）が検証・確度別集計・
+期限管理の機械可読正本**である。両ファイルの内容（confidence・tier・hit_criteria 等）は
+必ず一致させること（不一致は検証ステージでの誤判定の原因になる）。
+
+### 生成手順
+
+1. Step A'〜D の判定結果から確定した予報（最大2件）ごとに、Markdown 本文用の記述と
+   サイドカー JSON 用のフィールド値を**同時に**組み立てる（後付けでJSON化しない。
+   Markdown の文章表現とJSONの構造化値の間で数値・enum が食い違わないようにするため）。
+2. `forecaster/forecasts/daily/YYYY-MM-DD.md` を下記 Markdown テンプレートで出力する。
+3. `forecaster/forecasts/daily/YYYY-MM-DD.json` を下記 JSON テンプレートで出力する。
+   `forecast_id` は `fc-YYYYMMDD-N`（N=当日連番・1始まり）とし、`forecast_index` は
+   Markdown本文の「予報N」の N と一致させる。
+4. 予報がゼロ件（Step A'〜D のいずれも予報候補なし）の日は、Markdown は通常どおり
+   「予測」セクションに予報なしの旨を記載する。サイドカー JSON は `forecasts: []` の
+   空配列 wrapper を出力する（ファイル自体は生成する）。
+5. 出力後、`python3 scripts/validate_forecasts.py --date YYYY-MM-DD` でサイドカー JSON を
+   検証する。違反があれば発行前に修正する（違反を残したままコミットしない）。
+
+### Markdown テンプレート
 
 `forecaster/forecasts/daily/YYYY-MM-DD.md` に以下の形式で保存する。
 
@@ -182,22 +281,26 @@ Technique 逸脱上位:
   - Lazarus Group: 当週X件 / 週平常平均Y.Y件 (+Z.Zσ) [警戒]
 
 ## 分析
-[ベースライン逸脱の解釈。事実として確認できたことのみ記述。]
+[ベースライン逸脱の解釈。事実として確認できたことのみ記述。σ逸脱の言及は「〜の報告が増加（推測: 活動増加の可能性）」形式を用いる。]
 
 ## 予測
 [Tier・確度・根拠・推定部分を明記。推測には「（推測）」を付ける。]
 
 ・予報1: [タイトル]
+forecast_id: fc-YYYYMMDD-1
 Tier: X
-確度: 高/中（M3: 確度=高はEPSS%ile≥0.95 AND KEV AND SSVC=Act/Attend。Automatable=noは自動降格）
+確度: 高/中/低（M3: 確度=高はEPSS%ile≥0.95 AND KEV AND SSVC=Act/Attend。Automatable=noは自動降格。低はA〜Dいずれも非充足だがM1通過・pipeline-forecast-verification.md「確度: 低」適用条件を参照）
 観測出口クラス: E1/E2/E3/E4（M1）
 検証窓: fast_72h / slow_7d（M2・slow_7dは割当根拠1行）
+検証期限: YYYY-MM-DD（fast_72hは+3日・slow_7dは+7日目安）
 Evidence: [具体的なソース名と日付]
 過去パターン: [類似事象の実績]
 確度アンカー: [EPSS percentile / KEV状態 / SSVC決定 / Automatable / EPSS算出日]（M3）
+ベースレート見積もり: 0.XX（この的中条件が偶然成立する確率の発行時主観値。記入指針は上記参照）
 推定部分: [推論箇所の明示]（推測）
 先回り監視: [最初に現れるシグナル]
 的中判定: [観測出口クラスE1〜E4の一次・二値イベントのみ。「国内被害報道」禁止（M1・原則B）]
+除外条件: [的中とみなさない条件。例: 他機関リストへの追加・既存エントリ更新・再登録は非的中]
 KEVスナップショット: [dateAdded / ランサムフラグ / 参照セット]（M4・E1予報時）
 
 ## 推奨アクション
@@ -206,6 +309,57 @@ KEVスナップショット: [dateAdded / ランサムフラグ / 参照セッ�
 ## ベースライン未確立の観測（参考）
 [stddev=0 / baseline_status: "not_established" / baseline 未収録の Technique・グループ出現リスト。σ・警戒レベルは付けない]
 ```
+
+### JSON テンプレート（サイドカー）
+
+`forecaster/forecasts/daily/YYYY-MM-DD.json` に `forecaster/schema/forecast.schema.json` 準拠で
+以下の形式で保存する。全フィールドの意味・enum は同スキーマの description を正とする。
+
+```json
+{
+  "_schema_version": "1.0",
+  "_forecast_date": "YYYY-MM-DD",
+  "_source_markdown": "forecaster/forecasts/daily/YYYY-MM-DD.md",
+  "forecasts": [
+    {
+      "forecast_id": "fc-YYYYMMDD-1",
+      "forecast_index": 1,
+      "subject": "[Markdown「予報1」のタイトルと同一内容の1行]",
+      "tier": "T1",
+      "confidence": "high",
+      "forecast_class": "fast_72h",
+      "forecast_class_rationale": "[slow_7d の場合は必須。fast_72hでも根拠が明確なら記載推奨]",
+      "outcome_channel": "E1",
+      "window": "fast_72h",
+      "deadline_date": "YYYY-MM-DD",
+      "hit_criteria": "[Markdownの「的中判定」と同一内容]",
+      "exclusions": "[Markdownの「除外条件」と同一内容]",
+      "base_rate_estimate": 0.0,
+      "kev_snapshot": {
+        "cve": "CVE-YYYY-NNNNN",
+        "date_added": null,
+        "ransomware_flag": null,
+        "reference_set_hash": null
+      },
+      "evidence": "[Markdownの「Evidence」と同一内容]",
+      "anchor": {
+        "epss_percentile": 0.0,
+        "epss_model_date": "YYYY-MM-DD",
+        "kev_registered": false,
+        "ssvc_decision": "Attend",
+        "automatable": "yes"
+      },
+      "related_observation_ids": ["obs-YYYY-MMDD-NNN"],
+      "related_group": null,
+      "estimated_portion": "[Markdownの「推定部分」と同一内容。省略可の場合は省略]",
+      "verified_outcome": null
+    }
+  ]
+}
+```
+
+予報がゼロ件の日は `"forecasts": []` とする（`_forecast_date` / `_source_markdown` は記載してよい）。
+`verified_outcome` は必ず `null` で出力する（CLAUDE.md 行動原則4・検証ステージ04-verify.mdのみが書き込む）。
 
 ---
 
@@ -219,4 +373,14 @@ KEVスナップショット: [dateAdded / ランサムフラグ / 参照セッ�
   （IOC公開 / 新規TTP報告 / CERT勧告のいずれか）が揃った場合のみ予報候補とする。
 - ベースライン期間が14日未満の場合、定量逸脱スコアを予報の根拠として使わない。
   その場合は既存パイプライン（pipeline-forecast-verification.md）のルールのみで予報を作成する。
-- `pipeline-forecast-verification.md` の「確度: 高」適用条件・絞り込みルール・的中判定条件の記載義務を必ず遵守する。
+- `pipeline-forecast-verification.md` の「確度: 高」「確度: 中」「確度: 低」適用条件・絞り込みルール・的中判定条件の記載義務を必ず遵守する。
+- Markdown とサイドカー JSON は同日・同内容で二重出力する。JSON が機械正本であるため、
+  Markdown 本文の数値・enum 相当語（Tier・確度・観測出口クラス・検証窓等）と
+  サイドカー JSON のフィールド値は必ず一致させる。
+- サイドカー JSON は `forecaster/schema/forecast.schema.json` に準拠させ、出力後
+  `python3 scripts/validate_forecasts.py --date YYYY-MM-DD` で検証してから確定する。
+- `verified_outcome` は正規化・予報段階では書き込まない（null 固定）。検証ステージ
+  （04-verify.md）のみが書き込む（CLAUDE.md 行動原則4）。
+- `technique-chains.json`・`attack-groups.json` の `evidence_basis.type` が `observed` 以外
+  （`placeholder` / `cited`）の値は Step C の予報の直接根拠に使用しない（上記 evidence_basis
+  ゲート参照）。

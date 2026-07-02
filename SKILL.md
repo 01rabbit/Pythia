@@ -148,6 +148,7 @@ Section 4: SOC推奨情報
 - `forecaster/baseline/technique-freq.json`
 - `forecaster/baseline/group-activity.json`
 - `forecaster/forecasts/daily/YYYY-MM-DD.md`
+- `forecaster/forecasts/daily/YYYY-MM-DD.json`（予報サイドカー・03-forecast.md 参照）
 
 ### Step 4: ファイル更新・保存・コミット
 - 本日報告したCVE IDは `reported-cves.md` の該当行を更新する
@@ -163,8 +164,8 @@ Section 4: SOC推奨情報
   4. `YYYY-MM-DD-security-report-zeroday-trends.txt` — Section 2: ゼロデイ・トレンド
   5. `YYYY-MM-DD-security-report-ai.txt` — Section 1: AI攻撃動向
   6. `YYYY-MM-DD-security-report-soc.txt` — Section 4: SOC推奨情報
-- コミット直前に `python3 scripts/check_reported.py` と `python3 scripts/validate_observations.py` を
-  実行し、違反があれば修正してからコミットする
+- コミット直前に `python3 scripts/check_reported.py`・`python3 scripts/validate_observations.py`・
+  `python3 scripts/validate_forecasts.py` を実行し、違反があれば修正してからコミットする
 - 変更ファイル（reported-*.md / outputs/YYYY-MM-DD/ / forecaster/ の Step 3.5 成果物）を
   git add → git commit → git push する。コミットメッセージ: `daily report: YYYY-MM-DD`
 - 保存完了後、`security-report.txt`（全セクション完全版）の全文をチャットに表示する
