@@ -3,6 +3,27 @@
   "_schema_version": "1.0",
   "_last_updated": "2026-06-26",
 
+  "_evidence_basis_legend": {
+    "_comment": "transition_matrix 配下の各遷移確率（例: initial-access→execution 0.80）に適用する evidence_basis の意味。03-forecast.md Step C はこれらの確率を遷移確率≥0.60ゲートで次段階 Technique 予測の根拠に使うため、根拠区分を明示する。行列全体で一様な区分のため、遷移ごとの個別付与ではなく matrix_evidence_basis による一括付与 + exceptions 方式を採る（機械可読性維持のため）。",
+    "placeholder": "出典のない初期推定値。導出根拠・出典が明記されていない値はすべてこの区分とする。note に「初期推定値・出典なし・予報根拠への使用禁止（03-forecast Step C ゲート対象）」を明記する。Step C 側のゲート実装（別エージェント対応）が完成するまでは、この区分の遷移確率を予報候補の根拠に使ってはならない。",
+    "observed": "本リポジトリの forecaster/observations/ 実データから較正した値。note に較正日（calibrated_on）と標本数（n）を明記する。",
+    "cited": "外部一次情報に出典が明示されている値。note にレポート名・機関名・URL 等の出典を明記する。一般知識からの出典補完（例:「MITREの統計では」等の未確認出典）は行わない。"
+  },
+
+  "matrix_evidence_basis": {
+    "_comment": "transition_matrix 配下の全遷移確率（各 tactic.next.* の値）に一括適用する evidence_basis。個別遷移ごとの重複記述を避けるための行列全体規定。exceptions で個別上書き可能。",
+    "applies_to": "transition_matrix.*.next.*",
+    "type": "placeholder",
+    "note": "初期推定値・出典なし・予報根拠への使用禁止（03-forecast Step C ゲート対象）。「ATT&CK統計・過去キャンペーン分析に基づく」とのみ記載され、具体的な出典（レポート名・URL・分析対象キャンペーン一覧等）が本ファイルに明記されていないため、個別の出典を捏造せず一律 placeholder として扱う。",
+    "exceptions": [
+      {
+        "from": "initial-access",
+        "to": "persistence",
+        "note": "_observed_preview 参照。85観測（2週分・暫定）で initial-access→persistence の実観測遷移プレビューあり（観測10件・確率≈0.50 / 種0.60）。ただし13日分・統計的に不十分で確定較正前のため type は placeholder のまま据え置く。observed への昇格は90日蓄積後、from別 n>=10 を満たした時点で検証ループ（Issue/PR・人間レビュー）を経て行う。"
+      }
+    ]
+  },
+
   "transition_matrix": {
     "reconnaissance": {
       "next": {
