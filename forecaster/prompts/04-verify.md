@@ -23,13 +23,17 @@
 ## 入力
 
 0. `forecaster/forecasts/daily/YYYY-MM-DD.json`（予報サイドカーJSON）— 存在する場合は
-   検証の**一次入力**とする。`forecaster/forecasts/daily/YYYY-MM-DD.md` は当該日付の
-   サイドカーJSONが存在しない場合のみ一次入力として使用し、サイドカーJSONが存在する日は
-   Markdownを補足参照（文脈確認用）に留める。
-1. `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report.json` — 実行日から過去14日分。
-   **検証の一次入力はJSONとする。** M4判定に必須の `kev_snapshot` / `anchor` /
-   `forecast_class_rationale` / `deadline_date` はJSON専用出力（pipeline-output-schema.md 参照）
-   のため、`.txt` を検証入力に使ってはならない。
+   検証の**一次入力**とする。
+1. `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report.json` の `forecasts` 配列 —
+   サイドカーJSONが不在の日でも、この配列に `kev_snapshot` / `anchor` / `deadline_date` 等
+   M4判定に必須のフィールドが揃っており、一次情報源として使用できる。
+   **一次入力の優先順位: サイドカーJSON（0） > outputs JSON の `forecasts` 配列（1） >
+   予報Markdown（`forecaster/forecasts/daily/YYYY-MM-DD.md`）。**
+   MarkdownはサイドカーJSON・outputs JSON双方に必要フィールドが欠落している場合のみ一次入力とし、
+   それ以外は補足参照（文脈確認用）に留める。
+   いずれの場合も **`.txt` を検証入力に使ってはならない**（M4判定に必須の `kev_snapshot` /
+   `anchor` / `forecast_class_rationale` / `deadline_date` はJSON専用出力・
+   pipeline-output-schema.md 参照）。
 2. `forecaster/forecasts/daily/YYYY-MM-DD.md` — 実行日から過去14日分の予報ファイル。
 3. `forecaster/observations/` 配下の対応期間の observations。
 4. `forecaster/verification/` 配下の既存検証ファイル（未確定エントリの再判定に使う）。
@@ -52,6 +56,11 @@ slow_7d トラック（7日窓）は最大14日遡って走査する（M2）。
   （observations の他フィールドの変更は禁止）
 
 上記以外のファイル（knowledge/・baseline/・outputs/・予報ファイル・pipeline-*.md 等）は変更しない。
+
+**月次ファイルの帰属規則**: 検証エントリは**予報の発行日（`forecast_date`）が属する月**の
+`verification/YYYY-MM.json` に記録する（検証を実施した日の月ではない）。
+月をまたいで確定した判定（例: 6月発行のslow_7d予報を7月に検証で確定する場合）も、
+発行月のファイル（`2026-06.json`）の該当エントリを更新する。新規に別月のファイルを作らない。
 
 ---
 
@@ -90,13 +99,21 @@ slow_7d トラック（7日窓）は最大14日遡って走査する（M2）。
 `outcome_channel: E1` の予報は以下の手順で判定する:
 
 1. CISA KEV JSON を直接取得し、当該CVEのエントリを検索する。
-2. 発行時 `kev_snapshot`（`date_added` / `ransomware_flag` / `reference_set`）との差分を計算する。
-3. 的中を構成するのは以下のみ:
+2. **同一CVE番号・別内容の確認（必須）**: エントリが見つかった場合、`vulnerabilityName` /
+   `shortDescription` が予報対象の脆弱性と一致することを必ず確認する。CVE番号が一致していても
+   KEVエントリの記載内容が予報対象と異なる脆弱性を指している場合がある（例: CVE-2026-42271
+   でKEVに同番号のエントリが存在したが、`vulnerabilityName` が予報対象とは別の脆弱性だった実例）。
+   `dateAdded` の差分だけを見て一致とみなしてはならない。内容が不一致の場合はそのKEVエントリを
+   的中根拠にせず、`miss` または `unverifiable`（固定一次ソース＋エスカレーション規則に従う）とする。
+3. 発行時 `kev_snapshot`（`date_added` / `ransomware_flag` / `reference_set`）との差分を計算する。
+4. 的中を構成するのは以下のみ:
    - `dateAdded` が当該検証イベントと一致する**初回追加**（KEVカタログ上の新規追加）
    - `Known Ransomware Campaign Use` の Unknown→Known 変化、または新規勧告/参照の追加
-4. `dateAdded` 同一・ランサムフラグ同一・新規参照なしの再公開（内容変化なしの「再登録」）は
+   （いずれも上記2の内容一致確認を満たした場合に限る）
+5. `dateAdded` 同一・ランサムフラグ同一・新規参照なしの再公開（内容変化なしの「再登録」）は
    **非的中**として扱う（教訓13）。
-5. 差分結果を検証エントリの `kev_snapshot_diff` に記録する。
+6. 差分結果を検証エントリの `kev_snapshot_diff` に記録する。内容不一致で的中根拠から除外した
+   場合はその旨（対象CVEとKEVエントリの脆弱性名が異なる等）を `evidence_for_outcome` に明記する。
 
 E4（PoC公開）の予報でも、KEV の参照セットへの PoC/エクスプロイト追加が判定材料になる場合は
 同様に CISA KEV JSON を直接照会して確認する。
@@ -294,10 +311,12 @@ pipeline-forecast-verification.md の「チャット表示形式」に準拠し�
 
 ## 実行手順
 
-1. 入力を読み込む: `forecaster/forecasts/daily/YYYY-MM-DD.json`（サイドカーJSON・存在すれば
-   一次入力・過去14日分）・`outputs/YYYY-MM-DD/YYYY-MM-DD-security-report.json`（過去14日分）・
-   `forecaster/forecasts/daily/YYYY-MM-DD.md`（サイドカーJSON不在日のみ一次入力・それ以外は
-   補足参照）・対応期間の observations・既存 verification ファイル（当月分・前月分）。
+1. 入力を読み込む（優先順位: サイドカーJSON > outputs JSON の `forecasts` 配列 >
+   予報Markdown）: `forecaster/forecasts/daily/YYYY-MM-DD.json`（サイドカーJSON・存在すれば
+   一次入力・過去14日分）・`outputs/YYYY-MM-DD/YYYY-MM-DD-security-report.json` の `forecasts`
+   配列（過去14日分・サイドカーJSON不在日の一次入力として使用可）・
+   `forecaster/forecasts/daily/YYYY-MM-DD.md`（双方に必要フィールドが欠落する日のみ一次入力・
+   それ以外は補足参照）・対応期間の observations・既存 verification ファイル（当月分・前月分）。
 2. 検証対象の予報を列挙する: 検証窓が満了した未検証予報、および既存エントリのうち
    unverifiable（未確定）で窓が満了したもの。
 3. CISA KEV JSON を直接取得し、E1 / E4 関連予報の `kev_snapshot` 差分を計算する（M4）。
@@ -306,6 +325,7 @@ pipeline-forecast-verification.md の「チャット表示形式」に準拠し�
 5. 発行ルール遵守チェックを実施し、違反を `bias_analysis` に記録する。
 6. `forecaster/verification/YYYY-MM.json` に結果を記録する（新規エントリは v1.1 新形式・
    未確定エントリは確定更新のみ・確定済み過去エントリは変更しない）。
+   記録先は各予報の `forecast_date` が属する月のファイルとする（月次ファイルの帰属規則）。
 7. `monthly_summary`（全体主指標＋ by_confidence キャリブレーション＋ by_track 補助内訳）を更新する。
    by_confidence では目標帯乖離判定（`calibration_status`）とBrierスコア（`brier_score`）を
    算出する（「確度キャリブレーション算出」参照）。
