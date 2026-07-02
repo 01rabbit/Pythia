@@ -2,14 +2,58 @@
 
 ## 調査区分
 
-Step 1 のCVE調査は以下の2トラックで行う（製品リストによる絞り込みは行わない）:
+Step 1 のCVE調査は以下の2トラックで行う。
+監視対象の製品リストは存在せず、製品リストによる絞り込みは行わない。
+各CVE・脆弱性事象の帰属先は下記「トラックA/B 排他的決定木」で一意に決定する。
+**トラック定義の正は本ファイルのみ**であり、SKILL.md・pipeline-soc-recommend.md 等は
+本ファイルを参照する（二重定義しない）。
 
-**トラック A（製品別CVE）**: 下記「採用条件 A〜H」を満たす全製品のCVEを収集し、
+**トラック A（製品別CVE）**: 採用条件 A〜H を満たし、影響製品・OSSが特定できるCVEを収集し、
   Section 3【製品別CVE】として出力する。製品カテゴリは問わない。
 
-**トラック B（トレンドCVE）**: CVSS 9.0以上・CISA KEV登録・実悪用確認・PoC公開済みなど
-  高インパクトのCVEを収集し、Section 2【ゼロデイ・セキュリティトレンド】へ渡す
+**トラック B（トレンドCVE）**: Section 3 の個別エントリとして扱えない高インパクト事象
+  （CVE未採番のゼロデイ、製品単位に紐付かないキャンペーン等）を収集し、
+  `section_route: trends` タグを付けて Section 2【ゼロデイ・セキュリティトレンド】へ渡す
   （pipeline-2-trends.md が吸収する）。
+
+---
+
+## トラックA/B 排他的決定木
+
+各CVE・脆弱性事象に対して上から順に判定し、**最初に該当した節で帰属先を一意に確定する**。
+同一CVEを Section 2 と Section 3 の両方に個別エントリとして掲載することは禁止する
+（Section 2 のAPT・トレンド記事の本文中でCVEに言及するのは帰属ではないため可）。
+
+**D1. 期間内に採用条件 A〜H が1つも確認できない**
+→ 不採用。既報（reported-cves.md 掲載済み）かつ変化なしは除外、
+それ以外は下記「除外ルール」の低優先度フラグ規則に従う。
+
+**D2. CVE採番済み かつ 影響製品・OSSが特定できる（ベンダーアドバイザリ・パッチ情報に紐付く）**
+→ **トラック A（Section 3）へ帰属**。高インパクト条件（下記）の該当有無を問わず
+Section 3 への帰属を優先する（Section 3 本編優先の原則）。
+高インパクト条件に該当する場合は `high_impact: true` を付与し、
+Step 3 の重みづけで Section 3 のゼロデイ特報・本編へ優先配置する。
+
+**D3. D2に該当せず、高インパクト条件のいずれかに該当**
+（CVE未採番のゼロデイ、単一製品に紐付かないキャンペーン・大規模スキャン・
+エコシステム横断事象 等）
+→ **トラック B（Section 2）へ帰属**。`section_route: trends` タグを付けて
+pipeline-2-trends.md へ引き渡す。後日CVEが採番され製品に紐付いた場合は、
+翌日以降の実行で D2 により Section 3 へ帰属し直す（reported-cves.md の備考に移行を記録する）。
+
+**D4. 上記いずれにも該当しない**
+→ Section 4（SOC推奨情報）の候補としてストックする
+（採用判定は pipeline-soc-recommend.md の採用条件 α〜η による）。
+
+### 高インパクト条件（D2のフラグ・D3の判定に使用）
+
+- CISA KEV 新規追加
+- CVSS 9.0以上 Critical
+- ゼロデイ・実悪用確認
+- PoC公開後 48h 以内の攻撃加速報告
+
+※ 旧ルールにあった「国内で広く使われる製品」はトラック振り分け条件から除外した。
+国内影響は Step 3 の軸2（実環境影響度）と参考A昇格トリガー（pipeline-2-trends.md）で評価する。
 
 ---
 
@@ -25,12 +69,8 @@ Step 1 のCVE調査は以下の2トラックで行う（製品リストによる
 - 既報（reported-cves.md 掲載済み）かつ期間内に変化なし → 除外（ただし一覧に記録）
 
 ### トラック B のルール
-- 以下に該当するCVEは `section_route: trends` タグを付けて pipeline-2-trends.md へ引き渡す:
-  - CISA KEV 新規追加
-  - CVSS 9.0以上 Critical
-  - ゼロデイ・実悪用確認
-  - PoC公開後 48h 以内の攻撃加速報告
-  - 国内で広く使われる製品（官公庁・金融・医療等で標準採用）
+- 帰属判定は上記「トラックA/B 排他的決定木」の D3 のみで行う（本節で独自の条件を追加しない）
+- 該当事象には `section_route: trends` タグを付けて pipeline-2-trends.md へ引き渡す
 
 ---
 
@@ -73,6 +113,13 @@ Step 1 のCVE調査は以下の2トラックで行う（製品リストによる
 - 採用契機: 新規公開 or 状況変化
 - 期間内の変化: いつ・どのソースで・何が変化したか
 - actively_exploited: true / false
+- exploitation_stage: 以下の4値のみ使用可（enum・これ以外の表記は禁止）
+  - `active_exploitation` — 実悪用が確認されている（KEV登録の有無を問わず、報道・ベンダー確認・ハニーポット観測等の根拠あり）
+  - `kev_listed` — CISA KEV 登録済みだが、独立した実悪用観測の報道は未確認
+  - `poc_public` — PoC・エクスプロイトコードが公開済みだが、実悪用・KEV登録は未確認
+  - `none` — 上記いずれにも該当しない（悪用・PoCとも未確認。`no_exploitation_confirmed` 等の別表記は禁止し `none` を使用する）
+  - 複数該当時は active_exploitation > kev_listed > poc_public > none の優先順で最上位1値のみを採用する
+  - reported-cves.md の exploitation_stage 列にもこの語彙のみを記録する（`scripts/check_reported.py` が機械検査する）
 - PoC公開: true / false / 未確認（true の場合URL必須）
 - EPSS: score（0〜1）/ percentile（0〜1）/ model_date（EPSS算出日 YYYY-MM-DD）。取得不能な場合は null。
 - 優先度タグ: 必須 / 高 / 中 / 低優先度

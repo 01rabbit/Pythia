@@ -42,7 +42,7 @@ forecaster/verification/                 ← 予報 × 実績の突合記録（�
 forecaster/prompts/01〜04.md             ← 4ステージ（正規化・ベースライン・予報・検証）のプロンプト
 
 # 観測データ供給：日次収集ルール
-pipeline-1-cve.md                        ← Step 1: CVE調査ルール（監視対象23製品リスト含む）
+pipeline-1-cve.md                        ← Step 1: CVE調査ルール（トラックA/B排他的決定木含む・製品リストなし）
 pipeline-1b-apt.md                       ← Step 1b: APT活動調査ルール
 pipeline-2-trends.md                     ← Step 2: 動向収集ルール（Section 2: ゼロデイ・トレンド）
 pipeline-3-weighting.md                  ← Step 3: 重みづけ・出力ルール
