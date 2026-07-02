@@ -13,9 +13,13 @@
 
 ## 精度検証タスクの手順（火曜・木曜 12:00 実行）
 
-### 対象期間
-実行日から過去7日分の outputs/YYYY-MM-DD-security-report.txt を全件読み込む。
-ただし予報の検証窓は主題により異なる（下記 検証窓の主題依存ルーティング）。7日窓トラックの予報は最大14日遡って走査する。
+### 対象期間・検証入力
+検証の一次入力は以下の2系統とし、実行日から過去14日分を全件読み込む:
+
+1. `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report.json` — M4判定に必須の `kev_snapshot` / `anchor` / `forecast_class_rationale` / `deadline_date` はJSON専用出力（pipeline-output-schema.md 参照）のため、`.txt` を検証入力に使ってはならない
+2. `forecaster/forecasts/daily/YYYY-MM-DD.md` — 予報ファイル本体
+
+ただし予報の検証窓は主題により異なる（下記 検証窓の主題依存ルーティング）。fast_72h トラックの判定対象は過去7日分で足りるが、7日窓トラック（slow_7d）の予報は最大14日遡って走査する。
 
 ### 検証窓の主題依存ルーティング（M2）— 72hトラック / 7d+トラックの二分
 
