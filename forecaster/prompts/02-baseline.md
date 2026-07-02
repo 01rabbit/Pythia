@@ -130,6 +130,10 @@ technique-freq.json / group-activity.json（`parent_rollups` 含む）の全エ�
 
 ## 実行手順
 
+> 参照実装: `scripts/regen_baseline.py`（本手順の決定的な再集計スクリプト。
+> `python3 scripts/regen_baseline.py` で全観測データから両ファイルを再生成できる。
+> 手動集計との差異が出た場合はスクリプト側の結果を優先し、ルール変更時は両方を更新する）
+
 1. `forecaster/observations/` を再帰的に読み込み、全 observation を収集する。
 2. 当日から90日前の日付を算出し、対象期間外を除外する。
 3. `forecaster/knowledge/group-aliases.json` を読み込み、actor_group を canonical へ名寄せする
