@@ -18,6 +18,7 @@
 2. `forecaster/baseline/technique-freq.json`
 3. `forecaster/baseline/group-activity.json`
 4. `forecaster/knowledge/attack-groups.json`
+4b. `forecaster/knowledge/group-aliases.json`（グループ名寄せマップ・Step B/C の照合に使用）
 5. `forecaster/knowledge/technique-chains.json`
 6. `forecaster/knowledge/poc-exploitation-criteria.json`（T3採用のPoC難易度足切り）
 7. `forecaster/knowledge/incident-visibility-timelines.json`（M2 検証窓割当の根拠）
@@ -63,11 +64,22 @@ KEV起点予報テンプレート:
 | 1.0 ≤ σ < 2.0 | 注意（caution） |
 | σ ≥ 2.0 | 警戒（warning） |
 
-baseline が未確立（stddev = 0 or null）の Technique は「ベースライン未確立」として別枠で報告する。
+baseline が未確立（stddev = 0 or null、または `baseline_status: "not_established"`）の
+Technique は「ベースライン未確立」として別枠で報告する。
+これらの Technique にσを算出して警戒レベル（注意・警戒）を付けることは禁止する
+（sample_count が極小のエントリは新規1件でも +4σ 級になり誤検知源となるため）。
+定性的言及（「本日初観測」「ベースライン未確立のため逸脱評価不能」等）のみ可。
 
 ### Step B: グループ活性化の判定
 
 `group-activity.json` の `sigma_deviation` を参照する。
+
+**対象グループの判定は `group-aliases.json` による名寄せ後の canonical 単位、
+および `parent_rollups` の parent_group 単位で行う**（例: Sapphire Sleet / Andariel /
+TraderTraitor の観測は APT38 / Andariel / TraderTraitor の canonical 行に加え、
+`parent_rollups` の Lazarus Group 行としても評価する）。
+`attack-groups.json` との照合も、生の actor_group 文字列ではなく名寄せ後の
+canonical / parent_group で行う。
 
 | 条件 | 判定 |
 |------|------|
@@ -75,9 +87,21 @@ baseline が未確立（stddev = 0 or null）の Technique は「ベースライ
 | 1.0 ≤ sigma_deviation < 2.0 | やや活性化（注意） |
 | last_seen が7日以内かつ sigma_deviation 不明 | 直近観測あり（要注視） |
 
+**`baseline_status: "not_established"` の行（canonical・parent_rollups とも）の
+sigma_deviation を活性化判定に使うことは禁止する**（生涯1回の観測でも +1.4σ となり
+誤って「活性化」判定されるため）。該当グループは「ベースライン未確立・直近観測あり」
+として定性的言及のみ可とし、上表の「要注視」扱いを上限とする。
+`sigma_note: "week_early_provisional"` が付いた σ も単独では活性化判定に使わず、
+参考値として扱う。
+
 ### Step C: 次段階TTP予測
 
 活性化グループについて `attack-groups.json` の `typical_tactics_order` を参照する。
+対象グループの特定は名寄せ後の canonical / parent_group で行う。
+`attack-groups.json` のキーと canonical が一致しない場合は `group-aliases.json` の
+aliases / parent_group を経由して照合する（例: canonical "APT38" は
+parent_group "Lazarus Group" のプロファイルを参照してよい。その場合は
+アンブレラ帰属にもとづく推定であることを「（推測）」として明記する）。
 
 1. 当日の observations でそのグループが観測された最後の tactic を特定する。
 2. `technique-chains.json` の `transition_matrix` から次段階への遷移確率を参照する。
@@ -117,7 +141,10 @@ C2摘発 observation には「摘発はリスク低下であって終息では�
 - T1 > T2（σ≥1.0）> T2（KEV+実確認）> T3 の優先順
 - 同Tier内ではKEV起点を優先
 - T3 は原則「確度: 中」
-- ベースライン逸脱の定量証拠があれば T2 への昇格根拠として使用可能
+- ベースライン逸脱の定量証拠があれば T2 への昇格根拠として使用可能。
+  ただし **`baseline_status: "established"` のσに限る**。`baseline_status: "not_established"`
+  のエントリのσ（および null のσ）を Tier 昇格・活性化判定の根拠に使うことは禁止し、
+  「ベースライン未確立」として定性的言及のみ可とする
 
 **M1 観測可能性ゲート（発行前必須）**: 各予報の的中条件を観測出口クラス E1〜E4（KEV初回追加 / 新規IOC公開 / CERT初回勧告 / PoC公開）の一次・二値イベントに紐付ける。「国内被害報道」「KEV再登録」「悪用拡大（曖昧）」を的にする予報は発行せず注意点1行へ格下げ。
 
@@ -177,7 +204,7 @@ KEVスナップショット: [dateAdded / ランサムフラグ / 参照セッ�
 [予測に対応する防御行動]
 
 ## ベースライン未確立の観測（参考）
-[stddev=0 または baseline 未収録の Technique 出現リスト]
+[stddev=0 / baseline_status: "not_established" / baseline 未収録の Technique・グループ出現リスト。σ・警戒レベルは付けない]
 ```
 
 ---
@@ -185,7 +212,8 @@ KEVスナップショット: [dateAdded / ランサムフラグ / 参照セッ�
 ## 重要制約
 
 - 事実（observations）と推測（次段階予測）を絶対に混在させない。
-- `attack-groups.json` に登録されていないグループの次段階予測は行わない。
+- `attack-groups.json` に登録されていないグループの次段階予測は行わない
+  （登録の有無は `group-aliases.json` による名寄せ後の canonical / parent_group で判定する）。
 - 地政学シグナル単体での予報生成は禁止する。
   `geopolitical_signal` を含む observation に加え、同日の独立した技術的観測
   （IOC公開 / 新規TTP報告 / CERT勧告のいずれか）が揃った場合のみ予報候補とする。
