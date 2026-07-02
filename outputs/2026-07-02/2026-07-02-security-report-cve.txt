@@ -1,0 +1,260 @@
+========================================
+PYTHIA セキュリティインテリジェンス日報
+調査日時: 2026-07-02 07:00 JST
+調査期間: 2026-07-01 07:00 〜 2026-07-02 07:00 JST
+警戒レベル: 注意（FortiBleed認証情報キャンペーンのランサムウェア転売判明・NetScaler CitrixBleed類似パターン開示・AI攻撃面拡大）
+========================================
+観測件数: 15件
+CVE: ゼロデイ特報 0 / 本編 1 / 参考A 7 / 参考B 0 / 除外 12 / 処理総数 20
+APT: 本編 1 / 注目動向 0 / 除外 7 / 処理総数 8
+AI攻撃: 本編 2 / 参考A 0 / 参考B 1 / 除外 18 / 処理総数 21
+SOC推奨: 高 1 / 中 1 / 低 1 / 処理総数 5
+攻撃予報: fast_72h 1 / slow_7d 0
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】実悪用確認・緊急対応必須
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報基準を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-8451 / NetScaler ADC / NetScaler Gateway
+対象: NetScaler ADC/Gateway 14.1系（14.1-72.61未満）および13.1系（13.1-63.18未満）。FIPS/NDcPP構成も同様に影響。
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 8.8 (High)
+状態: PoC公開
+
+【24時間以内の変化】
+[The Hacker News 2026-07-01] CitrixがNetScaler ADC/Gatewayの脆弱性6件（CVE-2026-8451含む）へのパッチ提供を報じた記事を公開。SAML IDP設定時の境界外メモリ読み取りとして解説。
+[Security NEXT 2026-07-01] 国内メディアSecurity NEXTが「NetScaler ADC/Gateway」の複数脆弱性（CVE-2026-8451等6件）について報道（記事186634）。
+
+【概要】
+NetScaler ADC/GatewayをSAML IDPとして構成している場合、カスタムXML属性パーサーが引用符なしの属性値を改行で終端する不正なSAML AuthnRequestを適切に処理できず境界外のヒープメモリを読み取ってしまう欠陥がある。読み取られたバイト列はNSC_TASSクッキーとしてクライアントへ返却されるためセッション関連情報等が漏洩し得る（CVSS v4: 8.8 High、v3.1: 7.5 High）。脆弱性はwatchTowr Labsが発見し2026年6月30日にCitrixがアドバイザリCTX696604とともにパッチを公開、同日watchTowrが検知用ツール（Detection Artifact Generator）をGitHubで公開した。2026年7月1〜2日時点の複数の独立した報道はいずれも「確認された実悪用は無い」と明記しておりCISA KEVにも未登録である。境界に位置するリモートアクセス機器という性質上CitrixBleed（CVE-2023-4966）と同様のセッション窃取パターンへ発展するリスクがあるためパッチ未適用環境の把握を優先すべき事案として本編採用する。
+
+攻撃の流れ:
+1. 攻撃者がSAML IDPとして構成されたNetScaler ADC/Gatewayの/saml/loginエンドポイントへ、属性値を引用符で囲まず改行で終端した不正なSAML AuthnRequestを送信する。
+2. カスタムXMLパーサーが属性値の境界判定に失敗し、意図した範囲を超えてヒープ上の隣接メモリを読み取る。
+3. 読み取られたメモリ内容がNSC_TASSクッキーに埋め込まれ攻撃者へ返却される。漏洩内容次第でセッション窃取等の後続攻撃に利用され得る（実悪用は2026-07-02時点で未確認）。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[NetScaler ADC/GatewayのSAML関連アクセスログ・監査ログを監視し、/saml/loginエンドポイントへの畸形AuthnRequest送信や同一送信元からの高頻度アクセスを検知する。]
+Splunk SPL: index=netscaler sourcetype="citrix:netscaler:syslog" uri_path="/saml/login" | stats count by src_ip | where count > 5
+Splunk SPL: index=netscaler sourcetype="citrix:netscaler:ns_vpn" _raw="*AuthnRequest*" | table _time src_ip uri_path http_status
+→ 通常のSAML認証フローでは同一送信元から短時間に多数の/saml/loginリクエストは発生しにくい。畸形AuthnRequest（属性値が引用符なしで改行終端）を模したペイロードの検知を優先し、正規SSOプロバイダからの定常トラフィックと区別する。
+
+【参照】
+https://www.security-next.com/186634
+https://thehackernews.com/2026/07/citrix-patches-six-netscaler-flaws.html
+https://labs.watchtowr.com/citrixbleed-to-infinity-and-beyond-citrix-netscaler-pre-auth-memory-overread-cve-2026-8451/
+https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX696604
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. CVE-2026-55957 / Apache Tomcat
+CVSS: 7.3 (High) 状態: 実悪用・PoCとも未確認
+
+【24時間以内の変化】
+[JVN 2026-07-01] JVNVU#93304382としてApache Tomcatの複数脆弱性が新規公開。JNDIRealmをGSSAPI経由のバインド認証で構成している場合に正しいパスワードなしで認証を通過できる欠陥（CVE-2026-55957）を含む。
+
+【概要】
+JNDIRealmをGSSAPI経由のバインド認証に構成している場合、認証処理の重要なステップが欠落しており、攻撃者が正しいパスワードを提供せずに認証を通過できる（Missing Critical Step in Authentication）。Apache Software Foundationが2026年6月29日にアドバイザリを公開し、JVNが2026年7月1日に国内向けに周知した。実悪用・PoC公開の報告は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[TomcatのJNDIRealm/GSSAPI認証ログを監視し、認証成功件数の異常増加やパスワード未提示での認証成功を検知する。]
+Splunk SPL: index=app_logs sourcetype=tomcat:catalina "JNDIRealm" OR "GSSAPI" | stats count by user src_ip result
+→ パッチ適用（11.0.5/10.1.37/9.0.101）が根本対策。監視は暫定的な補助手段に留まる。
+
+【参照】
+https://jvn.jp/vu/JVNVU93304382
+
+2. CVE-2026-55956 / Apache Tomcat
+CVSS: 6.5 (Medium) 状態: 実悪用・PoCとも未確認
+
+【24時間以内の変化】
+[JVN 2026-07-01] JVNVU#93304382として公開。デフォルトサーブレットに設定されたセキュリティ制約が、メソッド指定・メソッド除外設定を無視してしまう欠陥。
+[Security NEXT 2026-07-01] Security NEXT記事186655にて本件を含む6脆弱性を報道。開発チーム評価は「Moderate以下」だが外部評価では「Critical」とするものもあると紹介。
+
+【概要】
+デフォルトサーブレットに指定したセキュリティ制約が、設定されたHTTPメソッド指定・メソッド除外を無視して適用されてしまう認可制御の不備（Improper Authorization）。想定した範囲を超えてリソースへアクセスされる可能性がある。実悪用・PoC公開の報告はなし。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Tomcatアクセスログでデフォルトサーブレットへの想定外メソッド（PUT/DELETE等）によるアクセスを監視する。]
+Splunk SPL: index=app_logs sourcetype=tomcat:access method IN (PUT,DELETE,OPTIONS) | stats count by clientip uri_path status
+→ パッチ適用が根本対策。制約回避を試みる異常メソッドの継続的な使用有無を確認する。
+
+【参照】
+https://jvn.jp/vu/JVNVU93304382
+https://www.security-next.com/186655
+
+3. CVE-2026-55955 / Apache Tomcat
+CVSS: 6.5 (Medium) 状態: 実悪用・PoCとも未確認
+
+【24時間以内の変化】
+[JVN 2026-07-01] JVNVU#93304382として公開。クラスタ機能のEncryptInterceptorに対するリプレイ攻撃を許してしまう認証不備。
+[Security NEXT 2026-07-01] Security NEXT記事186655にて本件を含む6脆弱性を報道。
+
+【概要】
+Tomcatクラスタ構成のEncryptInterceptorに対するリプレイ攻撃を許してしまう認証不備（Improper Authentication）。クラスタノード間通信を対象とした限定的な攻撃面だが、リプレイされたメッセージが正当なものとして扱われるリスクがある。実悪用・PoC公開の報告はなし。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Tomcatクラスタ通信ログでEncryptInterceptorメッセージの重複・再送を監視する。]
+Splunk SPL: index=app_logs sourcetype=tomcat:cluster "EncryptInterceptor" | stats count by message_id | where count > 1
+→ パッチ適用が根本対策。クラスタ間通信網のネットワーク分離状況も併せて確認する。
+
+【参照】
+https://jvn.jp/vu/JVNVU93304382
+https://www.security-next.com/186655
+
+4. CVE-2026-55276 / Apache Tomcat
+CVSS: 9.1 (Critical) 状態: 実悪用・PoCとも未確認
+
+【24時間以内の変化】
+[JVN 2026-07-01] JVNVU#93304382として公開。特殊ロールおよび空の認可制約が、実効web.xmlのログ出力から欠落する制御フロー不備（CVSS 9.1 Critical）。
+[Security NEXT 2026-07-01] Security NEXT記事186655が本件を含む6脆弱性を報道。開発チームは「Moderate以下」評価だが外部評価では「Critical」とするものもあると紹介。
+
+【概要】
+実効中のweb.xml設定をログ出力する際、特殊ロールや空の認可制約が欠落して記録される制御フロー不備（Always-Incorrect Control Flow Implementation）。管理者が実際の設定内容を誤認し、意図しないアクセス制御漏れに気づけなくなるリスクがある。CVSS 9.1（NVD Critical）だが、直接の未認証RCEや認証バイパスではなく、設定監査・可観測性の不備が本質。実悪用・PoC公開の報告はなし。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[パッチ適用後に実効web.xmlのログ出力内容を再監査し、意図しない認可制約の欠落がないか確認する。]
+Splunk SPL: index=app_logs sourcetype=tomcat:catalina "effective web.xml" | table _time host
+→ 本脆弱性はログの可観測性欠陥であり攻撃検知よりも設定監査の再実施が優先。
+
+【参照】
+https://jvn.jp/vu/JVNVU93304382
+https://www.security-next.com/186655
+
+5. CVE-2026-53434 / Apache Tomcat
+CVSS: 9.1 (Critical) 状態: 実悪用・PoCとも未確認
+
+【24時間以内の変化】
+[JVN 2026-07-01] JVNVU#93304382として公開。FFM（Foreign Function & Memory）ベースコネクタでCRL（証明書失効リスト）を設定した際にエラー条件検知後の対処が行われない欠陥（CVSS 9.1 Critical）。
+[Security NEXT 2026-07-01] Security NEXT記事186655が本件を含む6脆弱性を報道。
+
+【概要】
+FFMベースのコネクタでクライアント証明書のCRL検証を構成している場合、CRL関連のエラー条件を検知しても適切に対処されない不備（Detection of Error Condition Without Action）。失効済み証明書を用いたクライアント認証がすり抜ける可能性があり、相互TLS認証を用いる構成では影響が大きい。実悪用・PoC公開の報告はなし。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[相互TLS構成のFFMコネクタで、失効済み証明書によるクライアント認証成功がないか監査する。]
+Splunk SPL: index=app_logs sourcetype=tomcat:catalina "CRL" OR "certificate" | stats count by client_cert_serial result
+→ CRL関連ログの欠落自体が本脆弱性の症状であるため、証明書失効管理システム側のログとの突合が必要。
+
+【参照】
+https://jvn.jp/vu/JVNVU93304382
+https://www.security-next.com/186655
+
+6. CVE-2026-53404 / Apache Tomcat
+CVSS: 7.3 (High) 状態: 実悪用・PoCとも未確認
+
+【24時間以内の変化】
+[JVN 2026-07-01] JVNVU#93304382として公開。RewriteValveのOR条件チェーンで最初の条件が一致した場合、後続の非OR条件処理がスキップされてしまう制御フロー不備。
+[Security NEXT 2026-07-01] Security NEXT記事186655が本件を含む6脆弱性を報道。
+
+【概要】
+RewriteValveの条件式でOR条件チェーンの最初の条件が一致すると、後続に設定された非OR条件（アクセス制限等）の評価がスキップされてしまう制御フロー不備。管理者が意図したリライト・アクセス制御ルールが一部無効化される可能性がある。実悪用・PoC公開の報告はなし。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[RewriteValveルールを使用している場合、意図した制限が有効に機能しているかパッチ適用後に再検証する。]
+Splunk SPL: index=app_logs sourcetype=tomcat:access | stats count by uri_path status | where status=200
+→ 設定ロジックの不備でありログからの直接検知は難しい。パッチ適用後にルール動作を再テストすることを推奨。
+
+【参照】
+https://jvn.jp/vu/JVNVU93304382
+https://www.security-next.com/186655
+
+7. CVE-2026-50229 / Apache Tomcat
+CVSS: 6.1 (Medium) 状態: 実悪用・PoCとも未確認
+
+【24時間以内の変化】
+[JVN 2026-07-01] JVNVU#93304382として公開。同梱サンプルアプリ「number guess」における反射型XSS（Basic XSS）。
+[Security NEXT 2026-07-01] Security NEXT記事186655が本件を含む6脆弱性を報道。
+
+【概要】
+Tomcat同梱のサンプルアプリケーション「number guess」において、HTMLタグを含む入力値が適切に無害化されずクロスサイトスクリプティング（XSS）が可能。本番運用でサンプルアプリを削除していない環境が対象。実悪用・PoC公開の報告はなし。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[本番環境にexamplesディレクトリ（number guessアプリ含む）が残存していないか確認する。]
+Splunk SPL: index=app_logs sourcetype=tomcat:access uri_path="*/examples/*numguess*" | stats count by clientip
+→ 根本対策はexamplesディレクトリの削除。パッチ適用のみでは残存リスクが解消しない場合がある。
+
+【参照】
+https://jvn.jp/vu/JVNVU93304382
+https://www.security-next.com/186655
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [Apache Tomcatにおける複数の脆弱性（JVNVU#93304382）] https://jvn.jp/vu/JVNVU93304382
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-8037 → 本日窓内記事（The Hacker News）はeSentireが観測した実悪用試行（送信元IP 3件・失敗）を報じているが、2026-07-01付レポートのreference_bエントリと同一内容で新規の状態変化なし。
+・CVE-2026-50548 → axis1=4、axis2=1（国内ソース確認できず）で除外。ただしAI攻撃パイプライン側でDuneSlideとしてai_attacks_mainに採用済み。
+・CVE-2026-50549 → CVE-2026-50548と同一disclosure（DuneSlide）に基づく対の脆弱性。axis1=4・axis2=1で同様に除外。AI攻撃パイプライン側で採用済み。
+・CVE-2026-45659 → CISA KEV新規追加を伴う実悪用確認事案だが記事公開は調査窓終了（2026-07-02 07:00 JST）後のため対象外。翌日実行での最優先確認事項として引き継ぐ。
+・CVE-2026-20230 → 既報CVEの追加報道だが記事公開が調査窓終了後のため対象外。
+・CVE-2025-5777 → ランサムウェアグループの認証情報悪用に関する総括記事が調査窓終了後のため対象外。
+・CVE-2026-33017 → Monero採掘マルウェア展開の記事が調査窓開始より前のため対象外。EPSS 0.984・KEV登録済み（2026-03-25）であり次回以降要注視。
+・CVE-2026-48558 → TaskWeaver/Djinn Stealer二段階攻撃チェーンの詳細は既に2026-07-01付レポートに記録済み。本日窓内の新規記事は確認されず。
+・CVE-2026-46817 → Defusedハニーポット観測・Shadowserverの露出インスタンス数は既に2026-07-01付レポートに記録済み。本日窓内の新規記事は確認されず。
+・CVE-2026-43707 → Apple 30+件パッチの記事は調査窓より前に公開。CVSS 6.5 Medium・要ユーザー操作・実悪用報告なし。
+・CVE-2026-55200 → 2026-06-29付で既報・参考A採用済み。本日窓内の新規記事なし。
+・CVE-2026-33825 → ランサムウェア悪用フラグのUnknown→Known変化は既に2026-07-01付レポートに記録済み。本日窓内の新規記事は確認されず。
+
+[APT]
+・CL-STA-1062（中国語話者系APTの可能性・UAT-7237と重複あり・Unit 42追跡） / CLSTA1062-2026-TinyRCT → Dark Reading 2026-07-01報道「China-Linked Group Targets Southeast Asia Critical Systems」はUnit 42のCL-STA-1062/TinyRCT初報（2026-06-25公開、reported-apts.mdへ2026-06-29登録済み）の再構成記事。被害組織数（10、うち国家所有企業2）・TinyRCTバックドア（PerfWatson2.exe偽装・簡体字コメント）等の技術詳細に新規性なし。
+・不明（DHS HSIN情報共有プラットフォーム侵害・攻撃者不明） / 不明（未帰属） → BleepingComputer 2026-07-01報道。米国土安全保障省(DHS)がHomeland Security Information Network(HSIN)/SharePoint基盤への侵害（侵入時期は2026年5月末〜6月初旬）を確認したが、DHSは「特定の脅威アクター・外国政府への帰属は行っていない」と明言。技術的侵入経路・IOC・TTPの開示もなし。軸P=5（重要インフラ/政府機関侵害確認のみ）・軸Q=1（単一組織）。
+・不明（Kubota North America侵害・攻撃者不明） / 不明（未帰属） → BleepingComputer 2026-07-01報道。2026年3月16日〜4月20日の約1ヶ月間、Kubota North America（製造業・農機具）のネットワークへの不正アクセスが発生し、従業員・扶養家族のSSN・銀行口座・給付情報等が流出。ランサムウェア／恐喝グループの犯行声明なし、攻撃手法・IOCの開示もなし。
+・不明（ChocoPoC / PyPI経由の偽PoC配布キャンペーン） / 不明（未帰属） → Sekoia/YesWeHack 2026-07-01報道。GitHub上の偽PoCエクスプロイト（FortiWeb・PAN-OS・Ivanti Sentry等7件のCVEを偽装）およびPyPIパッケージ経由でPython製RAT「ChocoPoC」を配布し、脆弱性研究者・ペネトレーションテスターを標的化。軸P=3・軸Q=1で本編/注目動向の閾値未達のため除外（trends/SOCエージェントがSection 4向けに別途扱う）。
+・不明（VEIL#DROP / PureLogsスティーラー配布チェーン） / 不明（未帰属） → The Hacker News 2026-07-01報道（Securonix命名）。Bloggerプラットフォームを悪用した多段階攻撃チェーンでPureLogsスティーラーを配布。攻撃者は帰属未確定・financially motivated、規模の裏付けなし。軸P=3・軸Q=1で閾値未達。
+・不明（ScreenConnect悪用AsyncRAT配布キャンペーン） / 不明（未帰属） → The Hacker News 2026-07-01報道（Kaspersky調査）。OBS Studio等の人気ソフトウェアを偽装したSEO汚染サイト経由でScreenConnect/AsyncRATを配布する多ドメイン・多言語キャンペーン。既知の汎用RATであり新規マルウェアファミリー（R）に該当せず、帰属も未確定。軸P=3・軸Q=3で閾値未達（trends/SOCエージェントがSection 2トレンドで別途扱う）。
+・Ousaban（既知バンキング型トロイの木馬） / 不明（未帰属） → The Hacker News 2026-07-01報道（Fortinet FortiGuard Labs、初観測は2026年5月）。スペイン・ポルトガルの銀行利用者を狙う既知バンキング型トロイの木馬の詳細分析記事であり新規マルウェアファミリーではない。対象地域も限定的で軸P・軸Qともに低スコア。
+
+CVE統計: ゼロデイ特報0 / 本編1 / 参考A7 / 参考B0 / 除外12 / 処理総数20
+
+========================================
+日次パイプライン完了: 2026-07-02 07:00 JST
+========================================

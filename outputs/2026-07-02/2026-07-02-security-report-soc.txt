@@ -1,0 +1,116 @@
+========================================
+PYTHIA セキュリティインテリジェンス日報
+調査日時: 2026-07-02 07:00 JST
+調査期間: 2026-07-01 07:00 〜 2026-07-02 07:00 JST
+警戒レベル: 注意（FortiBleed認証情報キャンペーンのランサムウェア転売判明・NetScaler CitrixBleed類似パターン開示・AI攻撃面拡大）
+========================================
+観測件数: 15件
+CVE: ゼロデイ特報 0 / 本編 1 / 参考A 7 / 参考B 0 / 除外 12 / 処理総数 20
+APT: 本編 1 / 注目動向 0 / 除外 7 / 処理総数 8
+AI攻撃: 本編 2 / 参考A 0 / 参考B 1 / 除外 18 / 処理総数 21
+SOC推奨: 高 1 / 中 1 / 低 1 / 処理総数 5
+攻撃予報: fast_72h 1 / slow_7d 0
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報 — 高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Argo CD repo-serverの未パッチ未認証RCE、Kubernetesクラスタ完全掌握につながる脆弱性を仏Synacktivが公開
+観点: ゼロデイ関連
+採用契機: β・γ・δ
+------------------------------------------------------------
+
+優先度: 高優先度
+対象: Argo CD（GitOps継続的デリバリーツール・repo-serverコンポーネント）
+
+【24時間以内の変化】
+[The Hacker News 2026-07-02] Synacktivが2026年7月1日に公開したArgo CD repo-serverの未認証コード実行につながる欠陥を報道。2025年1月にメンテナへ報告されたが約18ヶ月間未修正・CVE未採番のまま。内部gRPCサービスに認証がなく、Kustomize経由のHelm関連ビルドオプションを悪用してコマンド実行に至り、REDIS_PASSWORD窃取とRedisキャッシュ汚染を組み合わせることで完全なクラスタ乗っ取りが実証された
+
+【概要】
+GitOpsデプロイで広く使われるArgo CDのrepo-serverコンポーネントに、内部gRPCサービスの認証欠如を突く未認証RCEが存在することが仏Synacktivにより公開された。2025年1月の報告から約18ヶ月間パッチが提供されないまま今回の公開に至っており、CVE番号も未採番。攻撃者はKustomizeのHelm関連ビルドオプションを悪用してコマンド実行を達成でき、REDIS_PASSWORD環境変数の窃取とArgo CDのRedisキャッシュ汚染を組み合わせることで、次回同期時に攻撃者制御のマニフェストを強制展開させ、Kubernetesクラスタを完全に掌握できることが実証されている。パッチが存在しないため、ネットワークポリシーによる内部コンポーネント間通信の制限が唯一の実質的な緩和策であり、GitOps基盤を運用する組織は至急の設定確認が必要である。
+
+【推奨アクション】
+・自組織のKubernetes環境でArgo CDの利用有無・バージョンを棚卸しする
+・Kubernetes NetworkPolicyを設定し、repo-serverおよびRedisのポートへはArgo CD自身のコンポーネントからのみ到達可能に制限する
+・REDIS_PASSWORD等の環境変数をローテーションし、Redisキャッシュへの外部アクセス経路がないか確認する
+・Argo CDの公式リポジトリ・メーリングリストで正式パッチの提供状況を継続的に監視する
+・manifest generation時のKustomize Helmビルドオプション使用有無を確認し、不要な機能は無効化を検討する
+・[Kubernetes監査ログでrepo-server/Redis関連ポッドへの内部ネットワーク通信のうち、Argo CD管理コンポーネント以外からのアクセスを監視する。]
+Splunk SPL: index=k8s_audit sourcetype=kube-audit objectRef.namespace=argocd (objectRef.resource=pods OR objectRef.resource=services) | where NOT match(user.username, "system:serviceaccount:argocd:.*") | stats count by user.username, verb, objectRef.name
+→ repo-server・Redisポッドへの想定外ソースからの接続、および同期直後のマニフェスト内容の急激な変化（想定外のGitコミット無しでの構成変更）を異常として扱う。
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-argo-cd-repo-server-flaw.html
+https://www.csoonline.com/article/4192188/argo-cd-flaw-shows-why-gitops-infrastructure-should-be-treated-as-tier-zero.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報 — 中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+2. Microsoft Teams、無許可の外部AIボットの会議参加を制御する新管理ポリシーを追加（2026年8月には全自動ブロック機能も展開予定）
+観点: AI攻撃関連
+採用契機: β・γ
+------------------------------------------------------------
+
+優先度: 中優先度
+対象: Microsoft Teams（Teams管理センター）
+
+【24時間以内の変化】
+[SecurityWeek 2026-07-02] Microsoftが会議参加時に無許可の外部AIボットを検知しロビーで足止めして主催者の承認を要求する新管理ポリシー「Manage external bots」をTeams管理センターに追加したと報道。主催者がロビーバイパスを許可している会議でもボットには承認が必要。2026年8月からは全外部ボットを自動ブロックする機能の展開開始も予定
+
+【概要】
+Microsoftは会議主催者の承認なしに外部AIボット（会議メモ取得ボット等）が参加することを防ぐ新しい管理ポリシー「Manage external bots and their access to meetings」をTeams管理センターに追加した。ボットを自動検知してロビーに留め、既定値の「RequireApprovalWhenDetected」に加え「AllowAllBots」「BlockDetectedBots」を選択可能で、個別ユーザー・グループ単位で適用できる。2026年8月からはAndroid・デスクトップ・iOS・Mac・Web全プラットフォームで全外部ボットを自動ブロックする機能の段階的展開も予定されている。無許可のAIボットによる会議内容の窃取・無断記録・情報漏えいリスクへの対策として、機密会議を扱う組織は設定の確認・強化が推奨される。
+
+【推奨アクション】
+・Teams管理センターで「Manage external bots」ポリシーの現状設定（既定値のRequireApprovalWhenDetectedのままか）を確認する
+・役員会議・M&A協議等の機密性が高い会議体には個別ポリシーで「BlockDetectedBots」を優先適用する
+・2026年8月予定の全外部ボット自動ブロック機能のロールアウトに備え、業務上必要な正規ボット（許可対象）を事前に洗い出す
+・会議レコーディング・文字起こしを行う正規AIツールの利用実態を棚卸しし、許可リストの整備を進める
+・[Microsoft 365監査ログ（Teams会議監査ログ）でボット検知・ロビー保留・参加許可/拒否イベントを確認し、想定外の外部ボット参加試行を監視する。]
+Splunk SPL: index=o365_audit Workload=MicrosoftTeams Operation="MeetingParticipantDetected" ParticipantType=Bot | stats count by MeetingId, BotId, Action
+→ 承認済みの正規ボット以外がロビーで検知・保留されたイベント、および想定外のBlockDetectedBots以外の設定へ変更された管理操作を確認する。
+
+【参照】
+https://www.securityweek.com/microsoft-adds-new-teams-controls-to-block-unauthorized-ai-bots-from-meetings/
+https://techcommunity.microsoft.com/blog/microsoftteamsblog/introducing-smarter-bot-protection-in-microsoft-teams-meetings/4531375
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報 — 低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+3. Windows 10コンシューマー向け拡張セキュリティ更新（ESU）提供期限が2027年10月12日まで延長
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 低優先度
+対象: Windows 10（コンシューマー向けESU）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-01] 2025年10月にサポートが終了したWindows 10について、コンシューマー向け拡張セキュリティ更新プログラム（ESU）の提供期限を2027年10月12日まで延長すると案内された
+
+【概要】
+サポートが既に終了しているWindows 10について、コンシューマー向け拡張セキュリティ更新プログラム（ESU）の提供期限が2027年10月12日まで延長されることが案内された。企業向けESUとは別枠の措置であり、対象範囲・登録条件・費用の有無など詳細は別途確認が必要である。国内でも教育機関・中小企業・BYOD端末等でWindows 10が残存しているケースが多く、資産管理・パッチ適用計画の見直し材料として把握しておく価値がある。
+
+【推奨アクション】
+・資産管理台帳でWindows 10端末の残存数・用途・管理主体（自社管理／BYOD／委託先）を再確認する
+・コンシューマー向けESUの適用条件（登録方法・対象外条件・費用）を確認し、対象外となる端末の更新計画を前倒しする
+・管理外（BYOD・委託先）のWindows 10端末についてネットワークアクセス制御の観点で棚卸しを強化する
+・[資産管理・EDRのOSバージョンインベントリでWindows 10端末の残存状況を継続的に可視化する。]
+Splunk SPL: index=edr_inventory os_name="Windows 10" | stats count by os_build, department
+→ ESU未登録のWindows 10端末が外部公開ネットワークセグメントに存在しないかを優先確認する。
+
+【参照】
+https://scan.netsecurity.ne.jp/article/2026/07/01/55604.html
+
+SOC推奨情報統計: 高1件 / 中1件 / 低1件 / 除外2件 / 計処理5件
+観点内訳: CVE関連1件 / ゼロデイ関連1件 / AI攻撃関連1件
+
+========================================
+日次パイプライン完了: 2026-07-02 07:00 JST
+========================================

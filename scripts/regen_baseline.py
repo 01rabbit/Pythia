@@ -10,11 +10,12 @@ forecaster/baseline/technique-freq.json と group-activity.json を
 """
 import json
 import glob
+import os
 import statistics
 from collections import defaultdict, Counter
 from datetime import date, timedelta
 
-REPO = "/Users/mao/Documents/GitHub/Pythia"
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TODAY = date(2026, 7, 2)  # currentDate context
 
 # ---------------------------------------------------------------------------

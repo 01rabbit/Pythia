@@ -1,0 +1,150 @@
+========================================
+PYTHIA セキュリティインテリジェンス日報
+調査日時: 2026-07-02 07:00 JST
+調査期間: 2026-07-01 07:00 〜 2026-07-02 07:00 JST
+警戒レベル: 注意（FortiBleed認証情報キャンペーンのランサムウェア転売判明・NetScaler CitrixBleed類似パターン開示・AI攻撃面拡大）
+========================================
+観測件数: 15件
+CVE: ゼロデイ特報 0 / 本編 1 / 参考A 7 / 参考B 0 / 除外 12 / 処理総数 20
+APT: 本編 1 / 注目動向 0 / 除外 7 / 処理総数 8
+AI攻撃: 本編 2 / 参考A 0 / 参考B 1 / 除外 18 / 処理総数 21
+SOC推奨: 高 1 / 中 1 / 低 1 / 処理総数 5
+攻撃予報: fast_72h 1 / slow_7d 0
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Phantom Squatting: LLMハルシネーションドメインを悪用したフィッシング・サプライチェーン攻撃
+カテゴリ: AI武器化（A1）/ 攻撃者種別: 犯罪組織
+------------------------------------------------------------
+
+採用契機: A-P・A-Q・A-U
+ATLAS: 該当タクティクスなし・調査中
+OWASP: LLM09
+対象: retail、finance、it / global
+バースト検出: 6件 → burst_exceeded
+被害規模: Unit42調査: 913ブランド・68万5,339プロンプトを分析し220万URLを特定、うち1万3,229件が悪用済みと分類、約25万件の未登録ハルシネーションドメインが乗っ取り可能な状態。実例2件でカード番号・銀行振込情報・国民ID等の窃取を確認。被害総額・被害者数は不明
+
+【24時間以内（または期間内）の変化】
+[Unit 42 (Palo Alto Networks) 2026-07-01] 913ブランド・68万超プロンプトの大規模調査でLLMハルシネーションドメインを悪用した実被害事例（フィッシングキット「Montana Empire」等）を公表
+[The Hacker News 2026-07-01] Unit42調査を受けて報道、攻撃者がAIツールへのユーザーの信頼を悪用しフィッシング・マルウェア配布を行う実態を追加解説
+[Dark Reading 2026-07-02] AI駆動型サプライチェーン脅威として同研究を分析、ソフトウェアサプライチェーンへの波及リスクを指摘
+
+【概要】
+Unit 42（Palo Alto Networks）は、大規模言語モデル（LLM）が実在ブランドに関連する存在しないWebドメインを恒常的にハルシネーション（幻覚）生成する現象を悪用する「Phantom Squatting」という攻撃手口を報告した。913の世界的ブランド・68万5,339件のプロンプトを分析した結果、220万件のURLが特定され、うち1万3,229件がすでに悪用済みと分類され、約25万件の未登録ハルシネーションドメインが攻撃者に乗っ取られうる状態にあるという。実例として、AIコーディングアシスタントを用いて構築されたフィッシングキット「Montana Empire」が、検知パイプラインが23日前に高リスクハルシネーションターゲットと識別していたドメインを標的にし、実店舗サイトをリアルタイムで模倣してカード番号・銀行振込情報・国民IDを窃取した事例、および郵便サービスのハルシネーションドメインを51日先回りで検知したにもかかわらず攻撃者が登録し偽アプリ配布に悪用した事例が確認された。
+
+攻撃の流れ:
+1. LLMがユーザーへの応答生成時に実在しないブランド関連ドメインをハルシネーションとして提示する
+2. 攻撃者がハルシネーションされやすいドメインパターンを事前に特定・先回り登録し、正規サイトを模倣したフィッシングサイトやマルウェア配布サイトを構築する
+3. AIツールを信頼するユーザーや、AIコーディングアシスタントが生成したリンクを辿ったユーザーが偽サイトに誘導され、認証情報・カード情報・個人情報を窃取される
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: WHOIS登録30日以内の類似ブランドドメインへのアクセス
+検知シグナル: AIツール応答内のリンク先ドメインが正規ドメインリストと不一致
+
+【監視・対策ポイント】
+・[自社ブランド名に類似したLLMハルシネーションドメインの新規登録監視・DNS/WHOIS監視、従業員のAIツール利用時のリンク遷移ログ監視]
+Splunk SPL: index=proxy | rex field=url "https?://(?<domain>[^/]+)" | lookup brand_domain_whitelist domain OUTPUT is_known | search is_known=false | stats count by domain, user
+Splunk SPL: index=dns | stats count by query, src | where count > 5
+→ 既知の正規ドメインリストにない類似ドメインへのアクセスや、新規登録ドメイン（WHOIS登録30日以内）へのトラフィックを重点的に精査する。
+
+【参照】
+https://unit42.paloaltonetworks.com/phantom-squatting-hallucinated-web-domains/
+https://thehackernews.com/2026/07/phantom-squatting-uses-ai-hallucinated.html
+https://www.darkreading.com/endpoint-security/phantom-squatting-ai-driven-supply-chain-threat
+
+------------------------------------------------------------
+2. DuneSlide: Cursor IDEのゼロクリック・プロンプトインジェクションによるサンドボックス回避RCE（CVE-2026-50548/CVE-2026-50549）
+カテゴリ: AIモデル・エージェント攻撃（B1）/ 攻撃者種別: 研究者実証
+------------------------------------------------------------
+
+採用契機: A-R・A-V
+MITRE ATLAS: AML.T0051
+OWASP: LLM01
+対象: it、professional_services / global
+バースト検出: 6件 → burst_exceeded
+被害規模: Cursor開発元によればFortune 500企業の過半数が同ツールを利用（インストールベースの推定露出であり、確認済み被害組織数・件数は不明）
+
+【24時間以内（または期間内）の変化】
+[The Hacker News 2026-07-01] Cato AI LabsによるCVE-2026-50548/CVE-2026-50549（DuneSlide）の詳細技術解析を報道。ゼロクリック・プロンプトインジェクションでCursor IDEのサンドボックスを回避しRCEに至る手口を確認。両脆弱性とも修正済みバージョン3.0（2026年4月2日リリース）で対応済み
+[CSO Online 2026-07-02] プロンプトインジェクションがRCEベクターとして成立する構造的リスクとして分析記事を掲載
+
+【概要】
+Cato AI LabsがCursor IDE（AIコーディングエディタ）に存在する2件の重大なゼロクリック・プロンプトインジェクション脆弱性DuneSlide（CVE-2026-50548、CVE-2026-50549、いずれもCVSS 9.8）を発見した。MCPサーバ経由の外部コンテンツやWeb検索結果に埋め込まれた悪意ある指示をCursorのAIエージェントが読み込むことで、ユーザー操作なしにサンドボックスを回避し任意のコマンド実行・ファイル書き込みが可能になる。CVE-2026-50548はrun_terminal_cmdツールのworking_directoryパラメータの検証不備、CVE-2026-50549はシンボリックリンク解決チェックのフォールバック不備をそれぞれ悪用する。Cursorの開発元によればFortune 500企業の過半数が同ツールを利用しており、修正済みバージョン3.0（2026年4月2日リリース）未満の全バージョンが影響を受ける。
+
+攻撃の流れ:
+1. 攻撃者がMCP経由の外部コンテンツやWeb検索結果ページに悪意ある指示を埋め込む（ゼロクリック・プロンプトインジェクション）
+2. Cursorのエージェントが当該コンテンツを読み込み、run_terminal_cmdのworking_directoryパラメータ悪用（CVE-2026-50548）またはシンボリックリンク解決チェックのフォールバック不備悪用（CVE-2026-50549）によりサンドボックス外への書き込み許可を取得
+3. サンドボックスを回避した任意ファイル書き込み・コマンド実行が成立し、開発者マシン上で任意コード実行（RCE）が可能になる
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: run_terminal_cmdツール呼び出し時のworking_directoryパラメータへの非標準パス指定
+検知シグナル: プロジェクトディレクトリ外へのシンボリックリンク経由書き込み
+
+【監視・対策ポイント】
+・[Cursor IDEプロセスによる異常なファイル書き込み・シンボリックリンク経由の書き込み・run_terminal_cmdのworking_directory外部指定を監視。MCPサーバ経由の外部コンテンツ取得ログも監視対象]
+Splunk SPL: index=edr (process_name="Cursor.exe" OR process_name="cursor") file_operation IN ("write","create") NOT file_path="*\\workspace\\*" | stats count by host, file_path, user
+Splunk SPL: index=proxy (url="*mcp*" OR http_user_agent="Cursor*") | stats count by src_ip, dest_host
+→ プロジェクトディレクトリ外への書き込みイベントやシンボリックリンク経由の書き込みは要精査。資産管理台帳でCursorバージョン3.0未満の利用有無を確認し未パッチ資産を洗い出す。
+
+【参照】
+https://thehackernews.com/2026/07/critical-cursor-flaws-could-let-prompt.html
+https://www.catonetworks.com/blog/duneslide-two-critical-rce-vulnerabilities/
+https://www.csoonline.com/article/4191923/sandbox-bypass-flaws-in-cursor-ide-highlight-prompt-injection-as-an-rce-vector.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・DeepSeek生成のブラウザ単体型ランサムウェア技術（InfernoGrabber v9.0、Chromium File System Access API悪用）
+カテゴリ: AI武器化（A3）採用契機: A-P・A-X
+MITRE ATLAS: 該当タクティクスなし・調査中
+OWASP: 該当なし
+Check Point Researchは、DeepSeek（LLM）を用いて生成された、ブラウザ単体で完結する新種のランサムウェア技術（マルウェア作成者はInfernoGrabber v9.0と命名）を報告した。検体はDiscordアバターAIアップスケーラーを装ったFlaskベースの偽Webサーバとして機能し、Chromiumの File System Access API を悪用してネイティブペイロードのインストールやroot権限なしにファイルの読み取り・暗号化・上書きを行う。加えてDiscordトークン窃取・クレジットカード番号やクリプト資産のシードフレーズ収集・キーロギング・Webカメラ/マイクの不正取得も実装されている。同技術はWindows・Linux・macOS・AndroidのFile System Access API対応Chromiumベースブラウザで動作し、フロンティアAIモデルが理論上のリスクを実用的な攻撃手法へ独力で橋渡しした初の確認事例とされる。現時点で実際の被害組織・件数は確認されていない（研究者によるVirusTotal検体解析段階）。
+
+監視: [ブラウザのFile System Access API呼び出し・大量ファイル書き込み/上書きパターン・不審なFlaskベースWebサーバへのアクセスを監視] 検知SPL: index=edr (process_name="chrome.exe" OR process_name="msedge.exe") file_operation="write" | stats count by user, file_path | where count > 100; index=proxy (url="*upscaler*" OR url="*discord*avatar*") | stats count by src_ip, dest_ip, dest_port
+→ 短時間に大量のファイル上書き/暗号化イベントが同一ブラウザプロセスから発生していないか監視。File System Access API利用ログがあれば異常な書き込みパターンを重点的に検出する。
+
+参照: https://research.checkpoint.com/2026/browser-only-ransomware-from-llm-hallucinations-to-a-practical-attack-technique/
+参照: https://thehackernews.com/2026/07/ai-generated-browser-ransomware-abuses.html
+参照: https://www.bankinfosecurity.com/breach-roundup-deepseek-sparks-browser-ransomware-a-32149
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 週次トレンドサマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はLLMの構造的欠陥そのものを悪用する攻撃パターンが2件浮上した。Unit 42の「Phantom Squatting」研究は、LLMがブランド関連ドメインを恒常的にハルシネーション生成する性質を攻撃者が先回り登録・悪用し、実際にカード情報等を窃取した事例を確認しており、AI利用の信頼構造そのものが新たな攻撃面になっている点で注目度が高い。Cato AI LabsがCursor IDEで発見した「DuneSlide」（CVE-2026-50548/CVE-2026-50549、CVSS9.8）はゼロクリック・プロンプトインジェクションからサンドボックス回避RCEに至る深刻な脆弱性で、開発者端末の大規模侵害リスクを示す。いずれも既に修正済み・実被害未確認だが、AI開発ワークフロー全体の攻撃対象面拡大が本日の共通テーマである。
+
+本日の集計:
+AI攻撃 — 本編2件 / 参考A0件 / 参考B1件 / 除外18件
+カテゴリ内訳: A（武器化）2件 / B（攻撃対象）1件 / C（インフラ）0件
+
+========================================
+日次パイプライン完了: 2026-07-02 07:00 JST
+========================================

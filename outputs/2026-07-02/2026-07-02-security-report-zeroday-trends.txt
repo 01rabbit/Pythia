@@ -1,0 +1,121 @@
+========================================
+PYTHIA セキュリティインテリジェンス日報
+調査日時: 2026-07-02 07:00 JST
+調査期間: 2026-07-01 07:00 〜 2026-07-02 07:00 JST
+警戒レベル: 注意（FortiBleed認証情報キャンペーンのランサムウェア転売判明・NetScaler CitrixBleed類似パターン開示・AI攻撃面拡大）
+========================================
+観測件数: 15件
+CVE: ゼロデイ特報 0 / 本編 1 / 参考A 7 / 参考B 0 / 除外 12 / 処理総数 20
+APT: 本編 1 / 注目動向 0 / 除外 7 / 処理総数 8
+AI攻撃: 本編 2 / 参考A 0 / 参考B 1 / 除外 18 / 処理総数 21
+SOC推奨: 高 1 / 中 1 / 低 1 / 処理総数 5
+攻撃予報: fast_72h 1 / slow_7d 0
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】実悪用確認・緊急対応必須
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報基準を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 不明（FortiBleed認証情報窃取キャンペーン実行者 / Russian-speaking IABの可能性・帰属信頼度: 中）（別名: なし / 国家帰属: 不明 / 帰属信頼度: medium）
+活動タイプ: 新規/継続キャンペーン / TTP更新 / インフラ変更
+------------------------------------------------------------
+
+標的: it、government、finance、critical_infrastructure、other / global
+マルウェア: FortiGate Sniffer
+
+【24時間以内の変化】
+[BleepingComputer（SOCRadar調査引用） 2026-07-02] SOCRadarの調査により、FortiBleed感染基盤内のWindowsサーバからINC・Lynx両ランサムウェアグループの交渉パネル（被害者との対応チャット画面）へのブラウザセッションアクセスが確認され、盗取VPN認証情報のマネタイズ経路（ランサムウェアグループへの転売）が判明した。スニッファー展開先は約19,000台のFortiGate機器（被害通知後は約11,000台に減少）、運用サーバ約500台、追加インフラ200件以上、運用メンバーは約20名と推定。バックドアアカウント名「adminin」を確認。未公開のNextcloudゼロデイ脆弱性を悪用した疑いも新たに浮上した。
+
+【概要】
+2026年6月に初報されたFortiBleed認証情報窃取キャンペーンは、Golang製の「FortiGate Sniffer」を用いて世界430,000台超のFortiGateファイアウォールからVPN認証情報を大量窃取する犯罪キャンペーンであるが、2026年7月1日のSOCRadar調査（BleepingComputer報道）により、この基盤がINCおよびLynxランサムウェア（LynxはINCのリブランドと目される）の交渉パネルへの直接アクセスと結び付いていることが判明し、窃取した認証情報・アクセス権をランサムウェアグループへ販売するマネタイズ経路が具体的に確認された。攻撃者は依然として特定の脅威アクター名・国家帰属は判明していないが、194カ国にまたがる大規模な被害範囲、複数の独立した研究者・報道機関による確認、および具体的な収益化スキームの発覚により、本日時点で軸P・軸Qともに本編相当の水準に達したと判断した。
+
+攻撃の流れ（判明分）:
+1. Golang製「FortiGate Sniffer」を用いてFortiGateデバイスのネットワークトラフィックからVPN認証情報を大量傍受（推定19,000台に展開）
+2. バックドアアカウント「adminin」の作成による持続的アクセス確立、および未公開Nextcloudゼロデイ脆弱性の悪用が疑われる追加侵入経路の利用
+3. 窃取した認証情報・アクセス権をINC/Lynx両ランサムウェアグループの交渉パネル経由で運用・販売し、被害組織へのランサムウェア展開に利用
+
+【新規TTP】
+・[T1040] Network Sniffing — Golang製カスタムツール「FortiGate Sniffer」でFortiGateデバイスのネットワークトラフィックからVPN認証情報を傍受（SOCRadar調査・BleepingComputer 2026-07-01報道）
+・[T1136] Create Account — 侵害デバイス上にユーザー名「adminin」のバックドアアカウントを作成し持続的アクセスを確保（同上ソース）
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・全FortiGate機器でユーザー名「adminin」を含む不審な管理者アカウントの作成有無を確認し、発見次第削除・認証情報を全面ローテーションする。VPN経由でのFortiGate認証情報を用いた過去ログイン履歴を精査し、地理的異常・時間帯異常のあるログインを洗い出す。SOCRadarの技術レポート（IOC付き）公開後は速やかに参照し、ブロックリストへ反映する。Nextcloudを併用している場合はベンダーからの新規アドバイザリを監視し、パッチ未公開の間は外部公開範囲を制限する。
+Splunk SPL: index=fortigate sourcetype=fortios_event (eventtype=vpn OR eventtype=user) user="adminin" | table _time, user, srcip, action
+Splunk SPL: index=wineventlog (EventCode=4720 OR EventCode=4728 OR EventCode=4732) Account_Name="adminin" | stats count by ComputerName, Account_Name
+→ 「adminin」に類似した命名規則の正規管理者アカウントが存在する組織では誤検知に注意し、アカウント作成者・作成経路（GUI/CLI/API）を突き合わせて判断する。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/fortibleed-credential-theft-campaign-linked-to-lynx-ransomware/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向採用基準を満たす活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（監視製品リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] Azure CLI/Microsoft 365を狙う大規模パスワードスプレー攻撃、8100万件超の試行で64組織・78アカウントが侵害
+セキュリティ企業Huntressの分析により、2026年6月12日〜26日の間にAzure CLIを標的とした大規模パスワードスプレー攻撃が確認された。攻撃者はAS32167（LSHIY LLC）配下のIPv6インフラから8100万件を超えるログイン試行を行い、64組織にまたがる少なくとも78件のMicrosoft/Microsoft 365アカウントを侵害した。攻撃は非推奨のOAuthフローであるROPC（Resource Owner Password Credentials）を悪用し条件付きアクセスポリシー（Conditional Access Policy）を回避しており、多くの被害組織でCAPが有効だったにもかかわらずブラウザサインインのみを対象としたMFA設定ではプログラムアクセス経路を防御できなかった点が要因とみられる（推測: 過去の侵害で流出した認証情報リストを用いた総当たりの可能性が高い）。Huntressはパスワードスプレー攻撃全体が前年比155倍以上に急増していると報告しており、単発のキャンペーンではなく持続的なトレンドである。（バースト検出閾値超過: 24時間窓内でThe Hacker News・SecurityWeek・BleepingComputerの独立3ソースが報道、Web検索で確認した外部ソースを含めると6ソース以上）
+参照: https://thehackernews.com/2026/07/azure-cli-password-spray-hits-at-least.html
+参照: https://www.securityweek.com/massive-password-spray-campaign-targeting-azure-cli
+参照: https://www.bleepingcomputer.com/news/security/hackers-target-microsoft-365-accounts-with-81-million-login-attempts
+
+・[トレンド記事] SEO汚染された偽フリーソフト配布サイトがScreenConnectを悪用しAsyncRATを展開、90超ドメイン・10言語の多言語キャンペーン
+Kasperskyの報告によると、OBS Studio・DNS Jumper・DS4Windows・Bandicam等の人気フリーソフトを装った偽配布サイトが検索エンジン最適化（SEO）を悪用して検索結果上位に表示され、正規署名済みのMicrosoft install.exeバイナリと悪性DLL（install.res.1033.dll）を組み合わせたDLLサイドローディング手法でリモート監視ツールScreenConnectをカスタム展開し、最終的にAsyncRATを実行する大規模キャンペーンが確認された。90を超えるドメインが英語・ロシア語・中国語・ドイツ語・フランス語・スペイン語・ポルトガル語・アラビア語等10言語に対応しており、個人利用者・組織双方のWindows環境を標的としている。一部ドメインは2025年8月〜2026年3月にかけて準備されていたことが判明しており、長期にわたり計画的に運用されてきたインフラとみられる（推測: 正規ツールの悪用により初期検知・EDRのアラートを回避する狙いがあるとみられる）。（バースト検出閾値超過: Kaspersky発の一次報告に加え、24時間窓内でThe Hacker News、Web検索で確認したcyberpress・gbhackers・SC Media等の独立ソースが多数報道）
+参照: https://thehackernews.com/2026/07/seo-poisoned-software-sites-abuse.html
+参照: https://www.kaspersky.com/about/press-releases/kaspersky-warns-of-a-large-scale-sampaign-using-fake-free-software-to-deploy-a-rat-via-screenconnect
+
+・[トレンド記事] ChocoPoC: GitHub上の武器化されたPoCエクスプロイトを通じてセキュリティ研究者・ペネトレーションテスターを狙うPython製RAT
+脅威インテリジェンス企業Sekoiaは、GitHub上に公開された複数の武器化済みPoC（概念実証）エクスプロイトが、Pythonの依存パッケージ内に偽装した「ChocoPoC」と呼ばれるPythonベースのRAT（遠隔操作型トロイの木馬）を配布していると報告した。攻撃者は侵害済みアカウントを用いて悪性PyPIパッケージやPoCリポジトリを公開しており、環境依存のキー照合により対象の疑似PoCスクリプトが実際に実行された場合にのみ発火する仕組みを実装し、標準的な自動サンドボックス環境では休眠状態を保つことで自動検査を回避する。マルウェアはコマンド実行・ファイル窃取・ブラウザ認証情報の収集が可能で、脆弱性研究者・ペネトレーションテスターという特殊な標的層を狙っている（推測: 研究者が保有する社内アクセス権限や未公開の脆弱性情報の窃取が目的とみられる）。（バースト検出閾値超過: Sekoiaの一次報告に加え、24時間窓内でBleepingComputer、Web検索で確認したThe Hacker News・cyberpress・gbhackers・SC Media等の独立ソースが多数報道）
+参照: https://www.bleepingcomputer.com/news/security/chocopoc-malware-delivered-via-trojanized-exploits-on-github
+参照: https://www.sekoia.com/blog/dont-eat-the-chocopocs-how-vulnerability-researchers-were-repeatedly-targeted-by-trojanised-exploits
+
+・[トレンド記事] ClickFix攻撃基盤がAPI駆動型へ進化、3,000件のライブ配信ペイロード解析で判明（単発シグナル・継続監視）
+セキュリティ研究者Bert-Jan Pals氏による分析（6月30日公開）により、偽の「人間であることを証明」ページの背後にあるClickFix攻撃基盤がAPI駆動型のサーバーへ進化していることが判明した。訪問者ごとに異なる偽装で同一マルウェアを配信し、25言語に対応、訪問者のOS判定によりWindows/macOS別のコマンドを出し分ける機能を備える。Dark Readingは別途、脅威インテリジェンス企業ReliaQuestの分析（2026年3月〜5月の観測データ）を引用し、ClickFixが初期アクセス・防御回避カテゴリで攻撃者に最も好まれる手法として定着したと報じている（推測: URLベースの静的検知を回避しつつ被害者自身に実行させることで検出製品のアラートを回避する狙いがあるとみられる）。（単発シグナル: 24時間窓内の独立ソースはThe Hacker News・Dark Readingの2件で3件未満のため参考B相当に留める。ただし過去数ヶ月にわたりMicrosoft・Malwarebytes・Unit 42・Opera等が継続報道している既存の持続的トレンドである点は付記する）
+参照: https://thehackernews.com/2026/07/researcher-analyzes-3000-live-clickfix.html
+参照: https://www.darkreading.com/vulnerabilities-threats/winner-dominant-malware-delivery-clickfix
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜168時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+予報1（T1/E2/fast_72h/確度:低）
+FortiBleed認証情報窃取キャンペーンの新規IOC公開に備えたFortiGate管理アカウント監査・認証情報ローテーションの実施
+根拠: BleepingComputer 2026-07-01（SOCRadar調査引用）: FortiBleed感染基盤とINC/Lynx両ランサムウェアグループの交渉パネルへの直接アクセスを確認、窃取VPN認証情報のマネタイズ経路が判明。バックドアアカウント「adminin」・推定19,000台への展開・未公開Nextcloudゼロデイ悪用疑いを新たに確認。
+過去パターン: 大規模認証情報窃取キャンペーンでは、初報後にセキュリティベンダーが詳細な技術レポート（追加IOC・C2インフラ情報等）を数日以内に公開する傾向がある。SOCRadarは記事内で詳細な技術レポート発行を示唆している。
+確度アンカー: KEV未登録
+推定部分: （推測）SOCRadarが技術レポート発行を示唆しているが、実際に72時間以内に公開されるか、内容に「adminin」以外の新規IOCが含まれるかは未確定。収益化の巧妙さから同種犯罪インフラの再利用可能性があるが、これは過去事例からの推測であり本キャンペーン特有の確証ではない。
+的中判定: SOCRadar自身（一次ソース）が、本キャンペーンに関する新規IOC（バックドアアカウント作成パターン以外の追加侵害指標・C2ドメイン・ハッシュ等）を発行日から72時間以内に公開した場合。他のベンダー・メディアによる追随報道は的中とみなさない。
+先回り監視: FortiGate管理ログでの「adminin」以外の不審な管理者アカウント作成、既知FortiGate VPN認証情報を用いた異常地域・異常時間帯からのログイン試行の急増、Nextcloud未公開ゼロデイに関連する追加アドバイザリの公開。
+期限: 2026-07-05 07:00 JST
+
+[APT除外]
+・CL-STA-1062（中国語話者系APTの可能性・UAT-7237と重複あり・Unit 42追跡） / CLSTA1062-2026-TinyRCT → Dark Reading 2026-07-01報道「China-Linked Group Targets Southeast Asia Critical Systems」はUnit 42のCL-STA-1062/TinyRCT初報（2026-06-25公開、reported-apts.mdへ2026-06-29登録済み）の再構成記事。被害組織数（10、うち国家所有企業2）・TinyRCTバックドア（PerfWatson2.exe偽装・簡体字コメント）等の技術詳細に新規性なし。
+・不明（DHS HSIN情報共有プラットフォーム侵害・攻撃者不明） / 不明（未帰属） → BleepingComputer 2026-07-01報道。米国土安全保障省(DHS)がHomeland Security Information Network(HSIN)/SharePoint基盤への侵害（侵入時期は2026年5月末〜6月初旬）を確認したが、DHSは「特定の脅威アクター・外国政府への帰属は行っていない」と明言。技術的侵入経路・IOC・TTPの開示もなし。軸P=5（重要インフラ/政府機関侵害確認のみ）・軸Q=1（単一組織）。
+・不明（Kubota North America侵害・攻撃者不明） / 不明（未帰属） → BleepingComputer 2026-07-01報道。2026年3月16日〜4月20日の約1ヶ月間、Kubota North America（製造業・農機具）のネットワークへの不正アクセスが発生し、従業員・扶養家族のSSN・銀行口座・給付情報等が流出。ランサムウェア／恐喝グループの犯行声明なし、攻撃手法・IOCの開示もなし。
+・不明（ChocoPoC / PyPI経由の偽PoC配布キャンペーン） / 不明（未帰属） → Sekoia/YesWeHack 2026-07-01報道。GitHub上の偽PoCエクスプロイト（FortiWeb・PAN-OS・Ivanti Sentry等7件のCVEを偽装）およびPyPIパッケージ経由でPython製RAT「ChocoPoC」を配布し、脆弱性研究者・ペネトレーションテスターを標的化。軸P=3・軸Q=1で本編/注目動向の閾値未達のため除外（trends/SOCエージェントがSection 4向けに別途扱う）。
+・不明（VEIL#DROP / PureLogsスティーラー配布チェーン） / 不明（未帰属） → The Hacker News 2026-07-01報道（Securonix命名）。Bloggerプラットフォームを悪用した多段階攻撃チェーンでPureLogsスティーラーを配布。攻撃者は帰属未確定・financially motivated、規模の裏付けなし。軸P=3・軸Q=1で閾値未達。
+・不明（ScreenConnect悪用AsyncRAT配布キャンペーン） / 不明（未帰属） → The Hacker News 2026-07-01報道（Kaspersky調査）。OBS Studio等の人気ソフトウェアを偽装したSEO汚染サイト経由でScreenConnect/AsyncRATを配布する多ドメイン・多言語キャンペーン。既知の汎用RATであり新規マルウェアファミリー（R）に該当せず、帰属も未確定。軸P=3・軸Q=3で閾値未達（trends/SOCエージェントがSection 2トレンドで別途扱う）。
+・Ousaban（既知バンキング型トロイの木馬） / 不明（未帰属） → The Hacker News 2026-07-01報道（Fortinet FortiGuard Labs、初観測は2026年5月）。スペイン・ポルトガルの銀行利用者を狙う既知バンキング型トロイの木馬の詳細分析記事であり新規マルウェアファミリーではない。対象地域も限定的で軸P・軸Qともに低スコア。
+
+APT統計: 本編1件 / 注目動向0件 / 除外7件 / 処理総数8件
+
+========================================
+日次パイプライン完了: 2026-07-02 07:00 JST
+========================================

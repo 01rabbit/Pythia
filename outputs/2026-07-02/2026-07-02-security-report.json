@@ -1,0 +1,1941 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-07-02",
+    "generated_at": "2026-07-02T07:00:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-07-01T07:00:00+09:00",
+      "to": "2026-07-02T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [
+    {
+      "cve_id": "CVE-2026-8451",
+      "product": "NetScaler ADC / NetScaler Gateway",
+      "vendor": "Cloud Software Group (Citrix)",
+      "affected_versions": "NetScaler ADC/Gateway 14.1系（14.1-72.61未満）および13.1系（13.1-63.18未満）。FIPS/NDcPP構成も同様に影響。",
+      "priority": "high",
+      "cvss_v3": 7.5,
+      "cvss_v4": 8.8,
+      "cvss_severity": "High",
+      "cwe_ids": [
+        "CWE-125"
+      ],
+      "epss": {
+        "score": 0.005,
+        "percentile": 0.3923,
+        "model_date": "2026-07-02"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "14.1-72.61 / 13.1-63.18（FIPS/NDcPP同等版含む）",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 8,
+      "axis2_score": 4,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-01T12:54:22+09:00",
+          "description": "CitrixがNetScaler ADC/Gatewayの脆弱性6件（CVE-2026-8451含む）へのパッチ提供を報じた記事を公開。SAML IDP設定時の境界外メモリ読み取りとして解説。"
+        },
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-01T07:00:00+09:00",
+          "description": "国内メディアSecurity NEXTが「NetScaler ADC/Gateway」の複数脆弱性（CVE-2026-8451等6件）について報道（記事186634）。"
+        }
+      ],
+      "overview": "NetScaler ADC/GatewayをSAML IDPとして構成している場合、カスタムXML属性パーサーが引用符なしの属性値を改行で終端する不正なSAML AuthnRequestを適切に処理できず境界外のヒープメモリを読み取ってしまう欠陥がある。読み取られたバイト列はNSC_TASSクッキーとしてクライアントへ返却されるためセッション関連情報等が漏洩し得る（CVSS v4: 8.8 High、v3.1: 7.5 High）。脆弱性はwatchTowr Labsが発見し2026年6月30日にCitrixがアドバイザリCTX696604とともにパッチを公開、同日watchTowrが検知用ツール（Detection Artifact Generator）をGitHubで公開した。2026年7月1〜2日時点の複数の独立した報道はいずれも「確認された実悪用は無い」と明記しておりCISA KEVにも未登録である。境界に位置するリモートアクセス機器という性質上CitrixBleed（CVE-2023-4966）と同様のセッション窃取パターンへ発展するリスクがあるためパッチ未適用環境の把握を優先すべき事案として本編採用する。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者がSAML IDPとして構成されたNetScaler ADC/Gatewayの/saml/loginエンドポイントへ、属性値を引用符で囲まず改行で終端した不正なSAML AuthnRequestを送信する。"
+        },
+        {
+          "step": 2,
+          "description": "カスタムXMLパーサーが属性値の境界判定に失敗し、意図した範囲を超えてヒープ上の隣接メモリを読み取る。"
+        },
+        {
+          "step": 3,
+          "description": "読み取られたメモリ内容がNSC_TASSクッキーに埋め込まれ攻撃者へ返却される。漏洩内容次第でセッション窃取等の後続攻撃に利用され得る（実悪用は2026-07-02時点で未確認）。"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "watchTowr Labs（2026-06-30公開記事）が、外部公開されたNetScaler ADC/Gatewayの/saml/loginエンドポイントへ細工したHTTPリクエストを送信することで境界外メモリ読み取りを実証したと説明している。"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "NetScaler ADC/GatewayのSAML関連アクセスログ・監査ログを監視し、/saml/loginエンドポイントへの畸形AuthnRequest送信や同一送信元からの高頻度アクセスを検知する。",
+        "splunk_spl": [
+          "index=netscaler sourcetype=\"citrix:netscaler:syslog\" uri_path=\"/saml/login\" | stats count by src_ip | where count > 5",
+          "index=netscaler sourcetype=\"citrix:netscaler:ns_vpn\" _raw=\"*AuthnRequest*\" | table _time src_ip uri_path http_status"
+        ],
+        "detection_notes": "通常のSAML認証フローでは同一送信元から短時間に多数の/saml/loginリクエストは発生しにくい。畸形AuthnRequest（属性値が引用符なしで改行終端）を模したペイロードの検知を優先し、正規SSOプロバイダからの定常トラフィックと区別する。"
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/186634",
+          "title": "「NetScaler ADC/Gateway」に複数脆弱性 - アップデートで修正",
+          "language": "ja",
+          "source": "Security NEXT"
+        },
+        {
+          "url": "https://thehackernews.com/2026/07/citrix-patches-six-netscaler-flaws.html",
+          "title": "Citrix Patches Six NetScaler Flaws Allowing File Read and Denial-of-Service",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://labs.watchtowr.com/citrixbleed-to-infinity-and-beyond-citrix-netscaler-pre-auth-memory-overread-cve-2026-8451/",
+          "title": "CitrixBleed To Infinity And Beyond",
+          "language": "en",
+          "source": "watchTowr Labs"
+        },
+        {
+          "url": "https://support.citrix.com/support-home/kbsearch/article?articleNumber=CTX696604",
+          "title": "CTX696604",
+          "language": "en",
+          "source": "Citrix (Cloud Software Group)"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global",
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve"
+    }
+  ],
+  "reference_a": [
+    {
+      "cve_id": "CVE-2026-55957",
+      "product": "Apache Tomcat",
+      "vendor": "Apache Software Foundation",
+      "affected_versions": "11.0.0-M1〜11.0.4 / 10.1.0-M1〜10.1.36 / 9.0.0.M1〜9.0.100 / 8.5.0〜8.5.100 / 7.0.0〜7.0.109",
+      "priority": "medium",
+      "cvss_v3": 7.3,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [
+        "CWE-304"
+      ],
+      "epss": {
+        "score": 0.00252,
+        "percentile": 0.16399,
+        "model_date": "2026-07-02"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "11.0.5 / 10.1.37 / 9.0.101",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 4,
+      "axis2_score": 4,
+      "jpcert_ipa": {
+        "issued": true,
+        "entries": [
+          {
+            "title": "Apache Tomcatにおける複数の脆弱性（JVNVU#93304382）",
+            "url": "https://jvn.jp/vu/JVNVU93304382"
+          }
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "JVN",
+          "date": "2026-07-01T11:00:15+09:00",
+          "description": "JVNVU#93304382としてApache Tomcatの複数脆弱性が新規公開。JNDIRealmをGSSAPI経由のバインド認証で構成している場合に正しいパスワードなしで認証を通過できる欠陥（CVE-2026-55957）を含む。"
+        }
+      ],
+      "overview": "JNDIRealmをGSSAPI経由のバインド認証に構成している場合、認証処理の重要なステップが欠落しており、攻撃者が正しいパスワードを提供せずに認証を通過できる（Missing Critical Step in Authentication）。Apache Software Foundationが2026年6月29日にアドバイザリを公開し、JVNが2026年7月1日に国内向けに周知した。実悪用・PoC公開の報告は確認されていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "JNDIRealm+GSSAPI構成のTomcatに対し、正しい資格情報を持たない攻撃者がバインド認証を試行する。"
+        },
+        {
+          "step": 2,
+          "description": "認証処理の必須チェックが欠落しているため、攻撃者が認証を通過してしまう。"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "TomcatのJNDIRealm/GSSAPI認証ログを監視し、認証成功件数の異常増加やパスワード未提示での認証成功を検知する。",
+        "splunk_spl": [
+          "index=app_logs sourcetype=tomcat:catalina \"JNDIRealm\" OR \"GSSAPI\" | stats count by user src_ip result"
+        ],
+        "detection_notes": "パッチ適用（11.0.5/10.1.37/9.0.101）が根本対策。監視は暫定的な補助手段に留まる。"
+      },
+      "references": [
+        {
+          "url": "https://jvn.jp/vu/JVNVU93304382",
+          "title": "Apache Tomcatにおける複数の脆弱性",
+          "language": "ja",
+          "source": "JVN"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a"
+    },
+    {
+      "cve_id": "CVE-2026-55956",
+      "product": "Apache Tomcat",
+      "vendor": "Apache Software Foundation",
+      "affected_versions": "11.0.0-M1〜11.0.22 / 10.1.0-M1〜10.1.55 / 9.0.0.M1〜9.0.118 / 8.5.0〜8.5.100 / 7.0.0〜7.0.109",
+      "priority": "low",
+      "cvss_v3": 6.5,
+      "cvss_v4": null,
+      "cvss_severity": "Medium",
+      "cwe_ids": [
+        "CWE-285"
+      ],
+      "epss": {
+        "score": 0.00186,
+        "percentile": 0.08355,
+        "model_date": "2026-07-02"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "11.0.23 / 10.1.56 / 9.0.119",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 1,
+      "axis2_score": 7,
+      "jpcert_ipa": {
+        "issued": true,
+        "entries": [
+          {
+            "title": "Apache Tomcatにおける複数の脆弱性（JVNVU#93304382）",
+            "url": "https://jvn.jp/vu/JVNVU93304382"
+          }
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "JVN",
+          "date": "2026-07-01T11:00:15+09:00",
+          "description": "JVNVU#93304382として公開。デフォルトサーブレットに設定されたセキュリティ制約が、メソッド指定・メソッド除外設定を無視してしまう欠陥。"
+        },
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-01T07:00:00+09:00",
+          "description": "Security NEXT記事186655にて本件を含む6脆弱性を報道。開発チーム評価は「Moderate以下」だが外部評価では「Critical」とするものもあると紹介。"
+        }
+      ],
+      "overview": "デフォルトサーブレットに指定したセキュリティ制約が、設定されたHTTPメソッド指定・メソッド除外を無視して適用されてしまう認可制御の不備（Improper Authorization）。想定した範囲を超えてリソースへアクセスされる可能性がある。実悪用・PoC公開の報告はなし。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "デフォルトサーブレットにメソッド限定のセキュリティ制約を設定している環境で、攻撃者が制約対象外とされるはずのメソッドでアクセスを試みる。"
+        },
+        {
+          "step": 2,
+          "description": "制約のメソッド指定が無視されるため意図しないアクセスが許可される可能性がある。"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Tomcatアクセスログでデフォルトサーブレットへの想定外メソッド（PUT/DELETE等）によるアクセスを監視する。",
+        "splunk_spl": [
+          "index=app_logs sourcetype=tomcat:access method IN (PUT,DELETE,OPTIONS) | stats count by clientip uri_path status"
+        ],
+        "detection_notes": "パッチ適用が根本対策。制約回避を試みる異常メソッドの継続的な使用有無を確認する。"
+      },
+      "references": [
+        {
+          "url": "https://jvn.jp/vu/JVNVU93304382",
+          "title": "Apache Tomcatにおける複数の脆弱性",
+          "language": "ja",
+          "source": "JVN"
+        },
+        {
+          "url": "https://www.security-next.com/186655",
+          "title": "「Apache Tomcat」に複数脆弱性 - 「クリティカル」との評価も",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a"
+    },
+    {
+      "cve_id": "CVE-2026-55955",
+      "product": "Apache Tomcat",
+      "vendor": "Apache Software Foundation",
+      "affected_versions": "11.0.0-M1〜11.0.22 / 10.1.0-M1〜10.1.55 / 9.0.13〜9.0.18 / 8.5.38〜8.5.100 / 7.0.100〜7.0.109",
+      "priority": "low",
+      "cvss_v3": 6.5,
+      "cvss_v4": null,
+      "cvss_severity": "Medium",
+      "cwe_ids": [
+        "CWE-287"
+      ],
+      "epss": {
+        "score": 0.00148,
+        "percentile": 0.04371,
+        "model_date": "2026-07-02"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "11.0.23 / 10.1.56 / 9.0.119",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 4,
+      "axis2_score": 7,
+      "jpcert_ipa": {
+        "issued": true,
+        "entries": [
+          {
+            "title": "Apache Tomcatにおける複数の脆弱性（JVNVU#93304382）",
+            "url": "https://jvn.jp/vu/JVNVU93304382"
+          }
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "JVN",
+          "date": "2026-07-01T11:00:15+09:00",
+          "description": "JVNVU#93304382として公開。クラスタ機能のEncryptInterceptorに対するリプレイ攻撃を許してしまう認証不備。"
+        },
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-01T07:00:00+09:00",
+          "description": "Security NEXT記事186655にて本件を含む6脆弱性を報道。"
+        }
+      ],
+      "overview": "Tomcatクラスタ構成のEncryptInterceptorに対するリプレイ攻撃を許してしまう認証不備（Improper Authentication）。クラスタノード間通信を対象とした限定的な攻撃面だが、リプレイされたメッセージが正当なものとして扱われるリスクがある。実悪用・PoC公開の報告はなし。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "クラスタ内通信を観測・記録できる立場の攻撃者が、正当なEncryptInterceptorメッセージをキャプチャする。"
+        },
+        {
+          "step": 2,
+          "description": "キャプチャしたメッセージを再送（リプレイ）し、正当な通信として処理させる。"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Tomcatクラスタ通信ログでEncryptInterceptorメッセージの重複・再送を監視する。",
+        "splunk_spl": [
+          "index=app_logs sourcetype=tomcat:cluster \"EncryptInterceptor\" | stats count by message_id | where count > 1"
+        ],
+        "detection_notes": "パッチ適用が根本対策。クラスタ間通信網のネットワーク分離状況も併せて確認する。"
+      },
+      "references": [
+        {
+          "url": "https://jvn.jp/vu/JVNVU93304382",
+          "title": "Apache Tomcatにおける複数の脆弱性",
+          "language": "ja",
+          "source": "JVN"
+        },
+        {
+          "url": "https://www.security-next.com/186655",
+          "title": "「Apache Tomcat」に複数脆弱性 - 「クリティカル」との評価も",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a"
+    },
+    {
+      "cve_id": "CVE-2026-55276",
+      "product": "Apache Tomcat",
+      "vendor": "Apache Software Foundation",
+      "affected_versions": "11.0.0-M1〜11.0.22 / 10.1.0-M1〜10.1.55 / 9.0.0.M1〜9.0.118 / 8.5.0〜8.5.100",
+      "priority": "high",
+      "cvss_v3": 9.1,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-670"
+      ],
+      "epss": {
+        "score": 0.00285,
+        "percentile": 0.20345,
+        "model_date": "2026-07-02"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "11.0.23 / 10.1.56 / 9.0.119",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 4,
+      "axis2_score": 7,
+      "jpcert_ipa": {
+        "issued": true,
+        "entries": [
+          {
+            "title": "Apache Tomcatにおける複数の脆弱性（JVNVU#93304382）",
+            "url": "https://jvn.jp/vu/JVNVU93304382"
+          }
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "JVN",
+          "date": "2026-07-01T11:00:15+09:00",
+          "description": "JVNVU#93304382として公開。特殊ロールおよび空の認可制約が、実効web.xmlのログ出力から欠落する制御フロー不備（CVSS 9.1 Critical）。"
+        },
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-01T07:00:00+09:00",
+          "description": "Security NEXT記事186655が本件を含む6脆弱性を報道。開発チームは「Moderate以下」評価だが外部評価では「Critical」とするものもあると紹介。"
+        }
+      ],
+      "overview": "実効中のweb.xml設定をログ出力する際、特殊ロールや空の認可制約が欠落して記録される制御フロー不備（Always-Incorrect Control Flow Implementation）。管理者が実際の設定内容を誤認し、意図しないアクセス制御漏れに気づけなくなるリスクがある。CVSS 9.1（NVD Critical）だが、直接の未認証RCEや認証バイパスではなく、設定監査・可観測性の不備が本質。実悪用・PoC公開の報告はなし。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "管理者が実効web.xmlのログ出力を確認して認可制約の設定を監査する。"
+        },
+        {
+          "step": 2,
+          "description": "特殊ロール・空の認可制約がログに反映されないため、実際には存在する設定漏れ・過剰許可に気づけない。"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "パッチ適用後に実効web.xmlのログ出力内容を再監査し、意図しない認可制約の欠落がないか確認する。",
+        "splunk_spl": [
+          "index=app_logs sourcetype=tomcat:catalina \"effective web.xml\" | table _time host"
+        ],
+        "detection_notes": "本脆弱性はログの可観測性欠陥であり攻撃検知よりも設定監査の再実施が優先。"
+      },
+      "references": [
+        {
+          "url": "https://jvn.jp/vu/JVNVU93304382",
+          "title": "Apache Tomcatにおける複数の脆弱性",
+          "language": "ja",
+          "source": "JVN"
+        },
+        {
+          "url": "https://www.security-next.com/186655",
+          "title": "「Apache Tomcat」に複数脆弱性 - 「クリティカル」との評価も",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a"
+    },
+    {
+      "cve_id": "CVE-2026-53434",
+      "product": "Apache Tomcat",
+      "vendor": "Apache Software Foundation",
+      "affected_versions": "11.0.0-M1〜11.0.22 / 10.1.0-M7〜10.1.55 / 9.0.83〜9.0.118（FFMベースコネクタ使用時）",
+      "priority": "high",
+      "cvss_v3": 9.1,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-390"
+      ],
+      "epss": {
+        "score": 0.00285,
+        "percentile": 0.20344,
+        "model_date": "2026-07-02"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "11.0.23 / 10.1.56 / 9.0.119",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 4,
+      "axis2_score": 7,
+      "jpcert_ipa": {
+        "issued": true,
+        "entries": [
+          {
+            "title": "Apache Tomcatにおける複数の脆弱性（JVNVU#93304382）",
+            "url": "https://jvn.jp/vu/JVNVU93304382"
+          }
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "JVN",
+          "date": "2026-07-01T11:00:15+09:00",
+          "description": "JVNVU#93304382として公開。FFM（Foreign Function & Memory）ベースコネクタでCRL（証明書失効リスト）を設定した際にエラー条件検知後の対処が行われない欠陥（CVSS 9.1 Critical）。"
+        },
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-01T07:00:00+09:00",
+          "description": "Security NEXT記事186655が本件を含む6脆弱性を報道。"
+        }
+      ],
+      "overview": "FFMベースのコネクタでクライアント証明書のCRL検証を構成している場合、CRL関連のエラー条件を検知しても適切に対処されない不備（Detection of Error Condition Without Action）。失効済み証明書を用いたクライアント認証がすり抜ける可能性があり、相互TLS認証を用いる構成では影響が大きい。実悪用・PoC公開の報告はなし。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "FFMベースコネクタで相互TLS＋CRL検証を構成した環境に対し、失効済み証明書を保有する攻撃者が接続を試みる。"
+        },
+        {
+          "step": 2,
+          "description": "CRLエラー条件検知後の処理が欠落しているため、本来失効しているはずの証明書によるクライアント認証が通ってしまう可能性がある。"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "相互TLS構成のFFMコネクタで、失効済み証明書によるクライアント認証成功がないか監査する。",
+        "splunk_spl": [
+          "index=app_logs sourcetype=tomcat:catalina \"CRL\" OR \"certificate\" | stats count by client_cert_serial result"
+        ],
+        "detection_notes": "CRL関連ログの欠落自体が本脆弱性の症状であるため、証明書失効管理システム側のログとの突合が必要。"
+      },
+      "references": [
+        {
+          "url": "https://jvn.jp/vu/JVNVU93304382",
+          "title": "Apache Tomcatにおける複数の脆弱性",
+          "language": "ja",
+          "source": "JVN"
+        },
+        {
+          "url": "https://www.security-next.com/186655",
+          "title": "「Apache Tomcat」に複数脆弱性 - 「クリティカル」との評価も",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a"
+    },
+    {
+      "cve_id": "CVE-2026-53404",
+      "product": "Apache Tomcat",
+      "vendor": "Apache Software Foundation",
+      "affected_versions": "11.0.0-M1〜11.0.22 / 10.1.0-M1〜10.1.55 / 9.0.0.M1〜9.0.118 / 8.5.0〜8.5.100",
+      "priority": "medium",
+      "cvss_v3": 7.3,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [
+        "CWE-670"
+      ],
+      "epss": {
+        "score": 0.00218,
+        "percentile": 0.12253,
+        "model_date": "2026-07-02"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "11.0.23 / 10.1.56 / 9.0.119",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 1,
+      "axis2_score": 7,
+      "jpcert_ipa": {
+        "issued": true,
+        "entries": [
+          {
+            "title": "Apache Tomcatにおける複数の脆弱性（JVNVU#93304382）",
+            "url": "https://jvn.jp/vu/JVNVU93304382"
+          }
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "JVN",
+          "date": "2026-07-01T11:00:15+09:00",
+          "description": "JVNVU#93304382として公開。RewriteValveのOR条件チェーンで最初の条件が一致した場合、後続の非OR条件処理がスキップされてしまう制御フロー不備。"
+        },
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-01T07:00:00+09:00",
+          "description": "Security NEXT記事186655が本件を含む6脆弱性を報道。"
+        }
+      ],
+      "overview": "RewriteValveの条件式でOR条件チェーンの最初の条件が一致すると、後続に設定された非OR条件（アクセス制限等）の評価がスキップされてしまう制御フロー不備。管理者が意図したリライト・アクセス制御ルールが一部無効化される可能性がある。実悪用・PoC公開の報告はなし。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "OR条件と非OR条件を組み合わせたRewriteValveルールを設定している環境で、攻撃者がOR条件の最初の項目に一致するリクエストを送信する。"
+        },
+        {
+          "step": 2,
+          "description": "後続の非OR条件（想定していたアクセス制限等）がスキップされ、意図しないリクエストが処理される可能性がある。"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "RewriteValveルールを使用している場合、意図した制限が有効に機能しているかパッチ適用後に再検証する。",
+        "splunk_spl": [
+          "index=app_logs sourcetype=tomcat:access | stats count by uri_path status | where status=200"
+        ],
+        "detection_notes": "設定ロジックの不備でありログからの直接検知は難しい。パッチ適用後にルール動作を再テストすることを推奨。"
+      },
+      "references": [
+        {
+          "url": "https://jvn.jp/vu/JVNVU93304382",
+          "title": "Apache Tomcatにおける複数の脆弱性",
+          "language": "ja",
+          "source": "JVN"
+        },
+        {
+          "url": "https://www.security-next.com/186655",
+          "title": "「Apache Tomcat」に複数脆弱性 - 「クリティカル」との評価も",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a"
+    },
+    {
+      "cve_id": "CVE-2026-50229",
+      "product": "Apache Tomcat",
+      "vendor": "Apache Software Foundation",
+      "affected_versions": "11.0.0-M1〜11.0.22 / 10.1.0-M1〜10.1.55 / 9.0.0.M1〜9.0.118 / 8.5.0〜8.5.100 / 7.0.0〜7.0.109（number guessサンプルアプリ使用時）",
+      "priority": "low",
+      "cvss_v3": 6.1,
+      "cvss_v4": null,
+      "cvss_severity": "Medium",
+      "cwe_ids": [
+        "CWE-80"
+      ],
+      "epss": {
+        "score": 0.00173,
+        "percentile": 0.07033,
+        "model_date": "2026-07-02"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "11.0.23 / 10.1.56 / 9.0.119",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 1,
+      "axis2_score": 7,
+      "jpcert_ipa": {
+        "issued": true,
+        "entries": [
+          {
+            "title": "Apache Tomcatにおける複数の脆弱性（JVNVU#93304382）",
+            "url": "https://jvn.jp/vu/JVNVU93304382"
+          }
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "JVN",
+          "date": "2026-07-01T11:00:15+09:00",
+          "description": "JVNVU#93304382として公開。同梱サンプルアプリ「number guess」における反射型XSS（Basic XSS）。"
+        },
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-01T07:00:00+09:00",
+          "description": "Security NEXT記事186655が本件を含む6脆弱性を報道。"
+        }
+      ],
+      "overview": "Tomcat同梱のサンプルアプリケーション「number guess」において、HTMLタグを含む入力値が適切に無害化されずクロスサイトスクリプティング（XSS）が可能。本番運用でサンプルアプリを削除していない環境が対象。実悪用・PoC公開の報告はなし。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "サンプルアプリ「number guess」が本番環境に残存している場合、攻撃者が細工したスクリプトを含む入力を送信する誘導リンクを被害者に開かせる。"
+        },
+        {
+          "step": 2,
+          "description": "入力値が無害化されずページに反映され、被害者のブラウザ上でスクリプトが実行される。"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "本番環境にexamplesディレクトリ（number guessアプリ含む）が残存していないか確認する。",
+        "splunk_spl": [
+          "index=app_logs sourcetype=tomcat:access uri_path=\"*/examples/*numguess*\" | stats count by clientip"
+        ],
+        "detection_notes": "根本対策はexamplesディレクトリの削除。パッチ適用のみでは残存リスクが解消しない場合がある。"
+      },
+      "references": [
+        {
+          "url": "https://jvn.jp/vu/JVNVU93304382",
+          "title": "Apache Tomcatにおける複数の脆弱性",
+          "language": "ja",
+          "source": "JVN"
+        },
+        {
+          "url": "https://www.security-next.com/186655",
+          "title": "「Apache Tomcat」に複数脆弱性 - 「クリティカル」との評価も",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a"
+    }
+  ],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-07-02-001",
+        "title": "Azure CLI/Microsoft 365を狙う大規模パスワードスプレー攻撃、8100万件超の試行で64組織・78アカウントが侵害",
+        "summary": "セキュリティ企業Huntressの分析により、2026年6月12日〜26日の間にAzure CLIを標的とした大規模パスワードスプレー攻撃が確認された。攻撃者はAS32167（LSHIY LLC）配下のIPv6インフラから8100万件を超えるログイン試行を行い、64組織にまたがる少なくとも78件のMicrosoft/Microsoft 365アカウントを侵害した。攻撃は非推奨のOAuthフローであるROPC（Resource Owner Password Credentials）を悪用し条件付きアクセスポリシー（Conditional Access Policy）を回避しており、多くの被害組織でCAPが有効だったにもかかわらずブラウザサインインのみを対象としたMFA設定ではプログラムアクセス経路を防御できなかった点が要因とみられる（推測: 過去の侵害で流出した認証情報リストを用いた総当たりの可能性が高い）。Huntressはパスワードスプレー攻撃全体が前年比155倍以上に急増していると報告しており、単発のキャンペーンではなく持続的なトレンドである。（バースト検出閾値超過: 24時間窓内でThe Hacker News・SecurityWeek・BleepingComputerの独立3ソースが報道、Web検索で確認した外部ソースを含めると6ソース以上）",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-07-01T14:46:03+09:00",
+            "description": "Azure CLIへのパスワードスプレー攻撃で少なくとも78件のMicrosoftアカウントが侵害されたと報道。ROPCフロー悪用によるConditional Access Policy回避の手口を指摘"
+          },
+          {
+            "source": "SecurityWeek",
+            "date": "2026-07-01T16:46:33+09:00",
+            "description": "大規模パスワードスプレーキャンペーンとして続報。攻撃元インフラをLSHIY合同会社（AS32167）と特定"
+          },
+          {
+            "source": "BleepingComputer",
+            "date": "2026-07-02T01:38:01+09:00",
+            "description": "Huntressの分析として8100万件超のログイン試行・64組織・78アカウント侵害の詳細を報道"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/07/azure-cli-password-spray-hits-at-least.html",
+            "title": "Azure CLI Password Spray Hits at Least 78 Microsoft Accounts in 81M+ Attempts",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.securityweek.com/massive-password-spray-campaign-targeting-azure-cli",
+            "title": "Massive Password Spray Campaign Targeting Azure CLI",
+            "language": "en",
+            "source": "SecurityWeek"
+          },
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/hackers-target-microsoft-365-accounts-with-81-million-login-attempts",
+            "title": "Hackers target Microsoft 365 accounts with 81 million login attempts",
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic"
+      },
+      {
+        "topic_id": "TREND-2026-07-02-002",
+        "title": "SEO汚染された偽フリーソフト配布サイトがScreenConnectを悪用しAsyncRATを展開、90超ドメイン・10言語の多言語キャンペーン",
+        "summary": "Kasperskyの報告によると、OBS Studio・DNS Jumper・DS4Windows・Bandicam等の人気フリーソフトを装った偽配布サイトが検索エンジン最適化（SEO）を悪用して検索結果上位に表示され、正規署名済みのMicrosoft install.exeバイナリと悪性DLL（install.res.1033.dll）を組み合わせたDLLサイドローディング手法でリモート監視ツールScreenConnectをカスタム展開し、最終的にAsyncRATを実行する大規模キャンペーンが確認された。90を超えるドメインが英語・ロシア語・中国語・ドイツ語・フランス語・スペイン語・ポルトガル語・アラビア語等10言語に対応しており、個人利用者・組織双方のWindows環境を標的としている。一部ドメインは2025年8月〜2026年3月にかけて準備されていたことが判明しており、長期にわたり計画的に運用されてきたインフラとみられる（推測: 正規ツールの悪用により初期検知・EDRのアラートを回避する狙いがあるとみられる）。（バースト検出閾値超過: Kaspersky発の一次報告に加え、24時間窓内でThe Hacker News、Web検索で確認したcyberpress・gbhackers・SC Media等の独立ソースが多数報道）",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-07-02T02:53:06+09:00",
+            "description": "Kaspersky調査を引用し、ScreenConnect悪用による多言語AsyncRAT配信キャンペーンを報道。90超ドメイン・10言語対応、フリーソフト偽装によるDLLサイドローディングの手口を報じた"
+          }
+        ],
+        "sector_impact": [
+          "it",
+          "other"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/07/seo-poisoned-software-sites-abuse.html",
+            "title": "SEO-Poisoned Software Sites Abuse ScreenConnect to Deploy AsyncRAT",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.kaspersky.com/about/press-releases/kaspersky-warns-of-a-large-scale-sampaign-using-fake-free-software-to-deploy-a-rat-via-screenconnect",
+            "title": "Kaspersky warns of a large-scale campaign using fake free software to deploy a RAT via ScreenConnect",
+            "language": "en",
+            "source": "Kaspersky"
+          }
+        ],
+        "report_section": "trends_topic"
+      },
+      {
+        "topic_id": "TREND-2026-07-02-003",
+        "title": "ChocoPoC: GitHub上の武器化されたPoCエクスプロイトを通じてセキュリティ研究者・ペネトレーションテスターを狙うPython製RAT",
+        "summary": "脅威インテリジェンス企業Sekoiaは、GitHub上に公開された複数の武器化済みPoC（概念実証）エクスプロイトが、Pythonの依存パッケージ内に偽装した「ChocoPoC」と呼ばれるPythonベースのRAT（遠隔操作型トロイの木馬）を配布していると報告した。攻撃者は侵害済みアカウントを用いて悪性PyPIパッケージやPoCリポジトリを公開しており、環境依存のキー照合により対象の疑似PoCスクリプトが実際に実行された場合にのみ発火する仕組みを実装し、標準的な自動サンドボックス環境では休眠状態を保つことで自動検査を回避する。マルウェアはコマンド実行・ファイル窃取・ブラウザ認証情報の収集が可能で、脆弱性研究者・ペネトレーションテスターという特殊な標的層を狙っている（推測: 研究者が保有する社内アクセス権限や未公開の脆弱性情報の窃取が目的とみられる）。（バースト検出閾値超過: Sekoiaの一次報告に加え、24時間窓内でBleepingComputer、Web検索で確認したThe Hacker News・cyberpress・gbhackers・SC Media等の独立ソースが多数報道）",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-07-02T05:08:13+09:00",
+            "description": "Sekoia調査を引用し、GitHub上のトロイ化PoCによるChocoPoC RAT配布キャンペーンを報道。環境依存起動・サンドボックス回避の技術詳細を報じた"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/chocopoc-malware-delivered-via-trojanized-exploits-on-github",
+            "title": "New ChocoPoC malware targets researchers via trojanized PoC exploits",
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://www.sekoia.com/blog/dont-eat-the-chocopocs-how-vulnerability-researchers-were-repeatedly-targeted-by-trojanised-exploits",
+            "title": "Don't eat the ChocoPoCs! How vulnerability researchers were repeatedly targeted by trojanised exploits",
+            "language": "en",
+            "source": "Sekoia"
+          }
+        ],
+        "report_section": "trends_topic"
+      },
+      {
+        "topic_id": "TREND-2026-07-02-004",
+        "title": "ClickFix攻撃基盤がAPI駆動型へ進化、3,000件のライブ配信ペイロード解析で判明（単発シグナル・継続監視）",
+        "summary": "セキュリティ研究者Bert-Jan Pals氏による分析（6月30日公開）により、偽の「人間であることを証明」ページの背後にあるClickFix攻撃基盤がAPI駆動型のサーバーへ進化していることが判明した。訪問者ごとに異なる偽装で同一マルウェアを配信し、25言語に対応、訪問者のOS判定によりWindows/macOS別のコマンドを出し分ける機能を備える。Dark Readingは別途、脅威インテリジェンス企業ReliaQuestの分析（2026年3月〜5月の観測データ）を引用し、ClickFixが初期アクセス・防御回避カテゴリで攻撃者に最も好まれる手法として定着したと報じている（推測: URLベースの静的検知を回避しつつ被害者自身に実行させることで検出製品のアラートを回避する狙いがあるとみられる）。（単発シグナル: 24時間窓内の独立ソースはThe Hacker News・Dark Readingの2件で3件未満のため参考B相当に留める。ただし過去数ヶ月にわたりMicrosoft・Malwarebytes・Unit 42・Opera等が継続報道している既存の持続的トレンドである点は付記する）",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-07-01T14:32:12+09:00",
+            "description": "研究者による3,000件のClickFixペイロード分析結果を報道。API駆動型配信基盤・25言語対応・OS判定機能を指摘"
+          },
+          {
+            "source": "Dark Reading",
+            "date": "2026-07-02T04:46:34+09:00",
+            "description": "ReliaQuestのデータを引用し、ClickFixが初期アクセス・防御回避で最多利用の手法になったと報道"
+          }
+        ],
+        "sector_impact": [],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/07/researcher-analyzes-3000-live-clickfix.html",
+            "title": "Researcher Analyzes 3,000 Live ClickFix Payloads, Exposing API-Driven Malware Delivery",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.darkreading.com/vulnerabilities-threats/winner-dominant-malware-delivery-clickfix",
+            "title": "And the Winner in Dominant Malware Delivery? ClickFix",
+            "language": "en",
+            "source": "Dark Reading"
+          }
+        ],
+        "report_section": "trends_topic"
+      }
+    ]
+  },
+  "apt_main": [
+    {
+      "group_name": "不明（FortiBleed認証情報窃取キャンペーン実行者 / Russian-speaking IABの可能性・帰属信頼度: 中）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "medium",
+      "campaign_id": "FortiBleed-2026-CredentialCampaign",
+      "activity_type": [
+        "active_campaign",
+        "ttp_update",
+        "infrastructure_change"
+      ],
+      "motivation": "financial",
+      "first_seen": "2026-06-22",
+      "last_seen": "2026-07-02",
+      "targets": {
+        "sectors": [
+          "it",
+          "government",
+          "finance",
+          "critical_infrastructure",
+          "other"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "malware": [
+        {
+          "name": "FortiGate Sniffer",
+          "type": "other",
+          "language": "Go",
+          "delivery": [
+            "device_implant"
+          ],
+          "persistence": [
+            "backdoor_account"
+          ],
+          "c2_protocol": []
+        }
+      ],
+      "axis_p_score": 9,
+      "axis_q_score": 8,
+      "changes_24h": [
+        {
+          "source": "BleepingComputer（SOCRadar調査引用）",
+          "date": "2026-07-02T06:37:24+09:00",
+          "description": "SOCRadarの調査により、FortiBleed感染基盤内のWindowsサーバからINC・Lynx両ランサムウェアグループの交渉パネル（被害者との対応チャット画面）へのブラウザセッションアクセスが確認され、盗取VPN認証情報のマネタイズ経路（ランサムウェアグループへの転売）が判明した。スニッファー展開先は約19,000台のFortiGate機器（被害通知後は約11,000台に減少）、運用サーバ約500台、追加インフラ200件以上、運用メンバーは約20名と推定。バックドアアカウント名「adminin」を確認。未公開のNextcloudゼロデイ脆弱性を悪用した疑いも新たに浮上した。"
+        }
+      ],
+      "overview": "2026年6月に初報されたFortiBleed認証情報窃取キャンペーンは、Golang製の「FortiGate Sniffer」を用いて世界430,000台超のFortiGateファイアウォールからVPN認証情報を大量窃取する犯罪キャンペーンであるが、2026年7月1日のSOCRadar調査（BleepingComputer報道）により、この基盤がINCおよびLynxランサムウェア（LynxはINCのリブランドと目される）の交渉パネルへの直接アクセスと結び付いていることが判明し、窃取した認証情報・アクセス権をランサムウェアグループへ販売するマネタイズ経路が具体的に確認された。攻撃者は依然として特定の脅威アクター名・国家帰属は判明していないが、194カ国にまたがる大規模な被害範囲、複数の独立した研究者・報道機関による確認、および具体的な収益化スキームの発覚により、本日時点で軸P・軸Qともに本編相当の水準に達したと判断した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Golang製「FortiGate Sniffer」を用いてFortiGateデバイスのネットワークトラフィックからVPN認証情報を大量傍受（推定19,000台に展開）"
+        },
+        {
+          "step": 2,
+          "description": "バックドアアカウント「adminin」の作成による持続的アクセス確立、および未公開Nextcloudゼロデイ脆弱性の悪用が疑われる追加侵入経路の利用"
+        },
+        {
+          "step": 3,
+          "description": "窃取した認証情報・アクセス権をINC/Lynx両ランサムウェアグループの交渉パネル経由で運用・販売し、被害組織へのランサムウェア展開に利用"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1040",
+          "name": "Network Sniffing",
+          "implementation": "Golang製カスタムツール「FortiGate Sniffer」でFortiGateデバイスのネットワークトラフィックからVPN認証情報を傍受（SOCRadar調査・BleepingComputer 2026-07-01報道）"
+        },
+        {
+          "mitre_id": "T1136",
+          "name": "Create Account",
+          "implementation": "侵害デバイス上にユーザー名「adminin」のバックドアアカウントを作成し持続的アクセスを確保（同上ソース）"
+        }
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "全FortiGate機器でユーザー名「adminin」を含む不審な管理者アカウントの作成有無を確認し、発見次第削除・認証情報を全面ローテーションする。VPN経由でのFortiGate認証情報を用いた過去ログイン履歴を精査し、地理的異常・時間帯異常のあるログインを洗い出す。SOCRadarの技術レポート（IOC付き）公開後は速やかに参照し、ブロックリストへ反映する。Nextcloudを併用している場合はベンダーからの新規アドバイザリを監視し、パッチ未公開の間は外部公開範囲を制限する。",
+      "splunk_spl": [
+        "index=fortigate sourcetype=fortios_event (eventtype=vpn OR eventtype=user) user=\"adminin\" | table _time, user, srcip, action",
+        "index=wineventlog (EventCode=4720 OR EventCode=4728 OR EventCode=4732) Account_Name=\"adminin\" | stats count by ComputerName, Account_Name"
+      ],
+      "detection_notes": "「adminin」に類似した命名規則の正規管理者アカウントが存在する組織では誤検知に注意し、アカウント作成者・作成経路（GUI/CLI/API）を突き合わせて判断する。",
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/fortibleed-credential-theft-campaign-linked-to-lynx-ransomware/",
+          "title": "FortiBleed credential-theft campaign linked to Lynx ransomware",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_main"
+    }
+  ],
+  "apt_notable": [],
+  "forecasts": [
+    {
+      "forecast_number": 1,
+      "title": "FortiBleed認証情報窃取キャンペーンの新規IOC公開に備えたFortiGate管理アカウント監査・認証情報ローテーションの実施",
+      "tier": 1,
+      "confidence": "low",
+      "confidence_numeric": 0.3,
+      "framing": "defensive_action",
+      "outcome_channel": "E2",
+      "window_hours": 72,
+      "forecast_class": "fast_72h",
+      "forecast_class_rationale": "一次ソース（SOCRadar）自身による技術レポート・追加IOC公開は72時間窓で外部可視化される性質の一次イベントと判断した（M2）。",
+      "root": {
+        "evidence": "BleepingComputer 2026-07-01（SOCRadar調査引用）: FortiBleed感染基盤とINC/Lynx両ランサムウェアグループの交渉パネルへの直接アクセスを確認、窃取VPN認証情報のマネタイズ経路が判明。バックドアアカウント「adminin」・推定19,000台への展開・未公開Nextcloudゼロデイ悪用疑いを新たに確認。",
+        "past_patterns": "大規模認証情報窃取キャンペーンでは、初報後にセキュリティベンダーが詳細な技術レポート（追加IOC・C2インフラ情報等）を数日以内に公開する傾向がある。SOCRadarは記事内で詳細な技術レポート発行を示唆している。",
+        "threat_intel": "スニッファー展開先は推定19,000台（被害通知後は約11,000台に減少）、運用サーバ約500台、追加インフラ200件超、運用メンバー推定20名。"
+      },
+      "anchor": {
+        "epss_score": null,
+        "epss_percentile": null,
+        "epss_model_date": null,
+        "kev_registered": false,
+        "ssvc_decision": null,
+        "ssvc_automatable": null
+      },
+      "kev_snapshot": {
+        "date_added": null,
+        "ransomware_flag": null,
+        "reference_set": []
+      },
+      "estimated_part": "（推測）SOCRadarが技術レポート発行を示唆しているが、実際に72時間以内に公開されるか、内容に「adminin」以外の新規IOCが含まれるかは未確定。収益化の巧妙さから同種犯罪インフラの再利用可能性があるが、これは過去事例からの推測であり本キャンペーン特有の確証ではない。",
+      "early_warning_signals": "FortiGate管理ログでの「adminin」以外の不審な管理者アカウント作成、既知FortiGate VPN認証情報を用いた異常地域・異常時間帯からのログイン試行の急増、Nextcloud未公開ゼロデイに関連する追加アドバイザリの公開。",
+      "hit_criteria": "SOCRadar自身（一次ソース）が、本キャンペーンに関する新規IOC（バックドアアカウント作成パターン以外の追加侵害指標・C2ドメイン・ハッシュ等）を発行日から72時間以内に公開した場合。他のベンダー・メディアによる追随報道は的中とみなさない。",
+      "deadline_date": "2026-07-05",
+      "related_cves": [],
+      "related_apt_campaigns": [
+        "FortiBleed-2026-CredentialCampaign"
+      ]
+    }
+  ],
+  "ai_attacks_main": [
+    {
+      "attack_id": "AI-2026-07-02-001",
+      "title": "Phantom Squatting: LLMハルシネーションドメインを悪用したフィッシング・サプライチェーン攻撃",
+      "category": "A",
+      "subcategory": "A1",
+      "attacker_type": "criminal_org",
+      "adoption_triggers": [
+        "A-P",
+        "A-Q",
+        "A-U"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [
+        "LLM09"
+      ],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "retail",
+          "finance",
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "Unit42調査: 913ブランド・68万5,339プロンプトを分析し220万URLを特定、うち1万3,229件が悪用済みと分類、約25万件の未登録ハルシネーションドメインが乗っ取り可能な状態。実例2件でカード番号・銀行振込情報・国民ID等の窃取を確認。被害総額・被害者数は不明",
+      "burst_count": 6,
+      "burst_status": "burst_exceeded",
+      "axis_x_score": 7,
+      "axis_y_score": 8,
+      "changes_24h": [
+        {
+          "source": "Unit 42 (Palo Alto Networks)",
+          "date": "2026-07-01T10:00:11+09:00",
+          "description": "913ブランド・68万超プロンプトの大規模調査でLLMハルシネーションドメインを悪用した実被害事例（フィッシングキット「Montana Empire」等）を公表"
+        },
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-01T16:20:51+09:00",
+          "description": "Unit42調査を受けて報道、攻撃者がAIツールへのユーザーの信頼を悪用しフィッシング・マルウェア配布を行う実態を追加解説"
+        },
+        {
+          "source": "Dark Reading",
+          "date": "2026-07-02T00:17:14+09:00",
+          "description": "AI駆動型サプライチェーン脅威として同研究を分析、ソフトウェアサプライチェーンへの波及リスクを指摘"
+        }
+      ],
+      "overview": "Unit 42（Palo Alto Networks）は、大規模言語モデル（LLM）が実在ブランドに関連する存在しないWebドメインを恒常的にハルシネーション（幻覚）生成する現象を悪用する「Phantom Squatting」という攻撃手口を報告した。913の世界的ブランド・68万5,339件のプロンプトを分析した結果、220万件のURLが特定され、うち1万3,229件がすでに悪用済みと分類され、約25万件の未登録ハルシネーションドメインが攻撃者に乗っ取られうる状態にあるという。実例として、AIコーディングアシスタントを用いて構築されたフィッシングキット「Montana Empire」が、検知パイプラインが23日前に高リスクハルシネーションターゲットと識別していたドメインを標的にし、実店舗サイトをリアルタイムで模倣してカード番号・銀行振込情報・国民IDを窃取した事例、および郵便サービスのハルシネーションドメインを51日先回りで検知したにもかかわらず攻撃者が登録し偽アプリ配布に悪用した事例が確認された。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "LLMがユーザーへの応答生成時に実在しないブランド関連ドメインをハルシネーションとして提示する"
+        },
+        {
+          "step": 2,
+          "description": "攻撃者がハルシネーションされやすいドメインパターンを事前に特定・先回り登録し、正規サイトを模倣したフィッシングサイトやマルウェア配布サイトを構築する"
+        },
+        {
+          "step": 3,
+          "description": "AIツールを信頼するユーザーや、AIコーディングアシスタントが生成したリンクを辿ったユーザーが偽サイトに誘導され、認証情報・カード情報・個人情報を窃取される"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": true,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "WHOIS登録30日以内の類似ブランドドメインへのアクセス",
+          "AIツール応答内のリンク先ドメインが正規ドメインリストと不一致"
+        ]
+      },
+      "monitoring": {
+        "description": "自社ブランド名に類似したLLMハルシネーションドメインの新規登録監視・DNS/WHOIS監視、従業員のAIツール利用時のリンク遷移ログ監視",
+        "splunk_spl": [
+          "index=proxy | rex field=url \"https?://(?<domain>[^/]+)\" | lookup brand_domain_whitelist domain OUTPUT is_known | search is_known=false | stats count by domain, user",
+          "index=dns | stats count by query, src | where count > 5"
+        ],
+        "detection_notes": "既知の正規ドメインリストにない類似ドメインへのアクセスや、新規登録ドメイン（WHOIS登録30日以内）へのトラフィックを重点的に精査する。"
+      },
+      "references": [
+        {
+          "url": "https://unit42.paloaltonetworks.com/phantom-squatting-hallucinated-web-domains/",
+          "title": null,
+          "language": "en",
+          "source": "Unit 42"
+        },
+        {
+          "url": "https://thehackernews.com/2026/07/phantom-squatting-uses-ai-hallucinated.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.darkreading.com/endpoint-security/phantom-squatting-ai-driven-supply-chain-threat",
+          "title": null,
+          "language": "en",
+          "source": "Dark Reading"
+        }
+      ],
+      "report_section": "ai_attacks_main"
+    },
+    {
+      "attack_id": "AI-2026-07-02-002",
+      "title": "DuneSlide: Cursor IDEのゼロクリック・プロンプトインジェクションによるサンドボックス回避RCE（CVE-2026-50548/CVE-2026-50549）",
+      "category": "B",
+      "subcategory": "B1",
+      "attacker_type": "researcher",
+      "adoption_triggers": [
+        "A-R",
+        "A-V"
+      ],
+      "atlas_ids": [
+        "AML.T0051"
+      ],
+      "owasp_llm": [
+        "LLM01"
+      ],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it",
+          "professional_services"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "Cursor開発元によればFortune 500企業の過半数が同ツールを利用（インストールベースの推定露出であり、確認済み被害組織数・件数は不明）",
+      "burst_count": 6,
+      "burst_status": "burst_exceeded",
+      "axis_x_score": 7,
+      "axis_y_score": 8,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-01T23:42:54+09:00",
+          "description": "Cato AI LabsによるCVE-2026-50548/CVE-2026-50549（DuneSlide）の詳細技術解析を報道。ゼロクリック・プロンプトインジェクションでCursor IDEのサンドボックスを回避しRCEに至る手口を確認。両脆弱性とも修正済みバージョン3.0（2026年4月2日リリース）で対応済み"
+        },
+        {
+          "source": "CSO Online",
+          "date": "2026-07-02T05:00:00+09:00",
+          "description": "プロンプトインジェクションがRCEベクターとして成立する構造的リスクとして分析記事を掲載"
+        }
+      ],
+      "overview": "Cato AI LabsがCursor IDE（AIコーディングエディタ）に存在する2件の重大なゼロクリック・プロンプトインジェクション脆弱性DuneSlide（CVE-2026-50548、CVE-2026-50549、いずれもCVSS 9.8）を発見した。MCPサーバ経由の外部コンテンツやWeb検索結果に埋め込まれた悪意ある指示をCursorのAIエージェントが読み込むことで、ユーザー操作なしにサンドボックスを回避し任意のコマンド実行・ファイル書き込みが可能になる。CVE-2026-50548はrun_terminal_cmdツールのworking_directoryパラメータの検証不備、CVE-2026-50549はシンボリックリンク解決チェックのフォールバック不備をそれぞれ悪用する。Cursorの開発元によればFortune 500企業の過半数が同ツールを利用しており、修正済みバージョン3.0（2026年4月2日リリース）未満の全バージョンが影響を受ける。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者がMCP経由の外部コンテンツやWeb検索結果ページに悪意ある指示を埋め込む（ゼロクリック・プロンプトインジェクション）"
+        },
+        {
+          "step": 2,
+          "description": "Cursorのエージェントが当該コンテンツを読み込み、run_terminal_cmdのworking_directoryパラメータ悪用（CVE-2026-50548）またはシンボリックリンク解決チェックのフォールバック不備悪用（CVE-2026-50549）によりサンドボックス外への書き込み許可を取得"
+        },
+        {
+          "step": 3,
+          "description": "サンドボックスを回避した任意ファイル書き込み・コマンド実行が成立し、開発者マシン上で任意コード実行（RCE）が可能になる"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "run_terminal_cmdツール呼び出し時のworking_directoryパラメータへの非標準パス指定",
+          "プロジェクトディレクトリ外へのシンボリックリンク経由書き込み"
+        ]
+      },
+      "monitoring": {
+        "description": "Cursor IDEプロセスによる異常なファイル書き込み・シンボリックリンク経由の書き込み・run_terminal_cmdのworking_directory外部指定を監視。MCPサーバ経由の外部コンテンツ取得ログも監視対象",
+        "splunk_spl": [
+          "index=edr (process_name=\"Cursor.exe\" OR process_name=\"cursor\") file_operation IN (\"write\",\"create\") NOT file_path=\"*\\\\workspace\\\\*\" | stats count by host, file_path, user",
+          "index=proxy (url=\"*mcp*\" OR http_user_agent=\"Cursor*\") | stats count by src_ip, dest_host"
+        ],
+        "detection_notes": "プロジェクトディレクトリ外への書き込みイベントやシンボリックリンク経由の書き込みは要精査。資産管理台帳でCursorバージョン3.0未満の利用有無を確認し未パッチ資産を洗い出す。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/critical-cursor-flaws-could-let-prompt.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.catonetworks.com/blog/duneslide-two-critical-rce-vulnerabilities/",
+          "title": null,
+          "language": "en",
+          "source": "Cato Networks"
+        },
+        {
+          "url": "https://www.csoonline.com/article/4191923/sandbox-bypass-flaws-in-cursor-ide-highlight-prompt-injection-as-an-rce-vector.html",
+          "title": null,
+          "language": "en",
+          "source": "CSO Online"
+        }
+      ],
+      "report_section": "ai_attacks_main"
+    }
+  ],
+  "ai_attacks_reference_b": [
+    {
+      "attack_id": "AI-2026-07-02-003",
+      "title": "DeepSeek生成のブラウザ単体型ランサムウェア技術（InfernoGrabber v9.0、Chromium File System Access API悪用）",
+      "category": "A",
+      "subcategory": "A3",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-P",
+        "A-X"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "VirusTotalへの単一検体アップロード（2026年1月25日）の解析事例。確認済みの実被害組織・件数はなし（研究実証段階）",
+      "burst_count": 5,
+      "burst_status": "threshold_met",
+      "axis_x_score": 6,
+      "axis_y_score": 3,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-01T21:59:19+09:00",
+          "description": "Check Point ResearchがDeepSeek生成のブラウザ単体型ランサムウェア（InfernoGrabber v9.0）を報告。Chromium File System Access API悪用の新手口を確認"
+        }
+      ],
+      "overview": "Check Point Researchは、DeepSeek（LLM）を用いて生成された、ブラウザ単体で完結する新種のランサムウェア技術（マルウェア作成者はInfernoGrabber v9.0と命名）を報告した。検体はDiscordアバターAIアップスケーラーを装ったFlaskベースの偽Webサーバとして機能し、Chromiumの File System Access API を悪用してネイティブペイロードのインストールやroot権限なしにファイルの読み取り・暗号化・上書きを行う。加えてDiscordトークン窃取・クレジットカード番号やクリプト資産のシードフレーズ収集・キーロギング・Webカメラ/マイクの不正取得も実装されている。同技術はWindows・Linux・macOS・AndroidのFile System Access API対応Chromiumベースブラウザで動作し、フロンティアAIモデルが理論上のリスクを実用的な攻撃手法へ独力で橋渡しした初の確認事例とされる。現時点で実際の被害組織・件数は確認されていない（研究者によるVirusTotal検体解析段階）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "マルウェア作成者がDeepSeek（LLM）を用いて、理論上不可能とされていたブラウザ単体型ランサムウェアの実装を生成"
+        },
+        {
+          "step": 2,
+          "description": "Discordアバターアップスケーラーを装った偽Webサイト（Flaskベース）でユーザーを誘引し、Chromium File System Access APIへのアクセス許可を取得"
+        },
+        {
+          "step": 3,
+          "description": "取得した権限でローカルファイルの読み取り・暗号化・上書きに加え、Discordトークン窃取・キーロギング・Webカメラ/マイクの不正取得を実行（ネイティブペイロード不要）"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "ファイル名 deepseek_python_20260125_da0631.py としてVirusTotalに投稿された検体",
+          "Discordアバターアップスケーラーを装う偽サイト",
+          "File System Access APIによる大量ファイル書き込み/上書きパターン"
+        ]
+      },
+      "monitoring": {
+        "description": "ブラウザのFile System Access API呼び出し・大量ファイル書き込み/上書きパターン・不審なFlaskベースWebサーバへのアクセスを監視",
+        "splunk_spl": [
+          "index=edr (process_name=\"chrome.exe\" OR process_name=\"msedge.exe\") file_operation=\"write\" | stats count by user, file_path | where count > 100",
+          "index=proxy (url=\"*upscaler*\" OR url=\"*discord*avatar*\") | stats count by src_ip, dest_ip, dest_port"
+        ],
+        "detection_notes": "短時間に大量のファイル上書き/暗号化イベントが同一ブラウザプロセスから発生していないか監視。File System Access API利用ログがあれば異常な書き込みパターンを重点的に検出する。"
+      },
+      "references": [
+        {
+          "url": "https://research.checkpoint.com/2026/browser-only-ransomware-from-llm-hallucinations-to-a-practical-attack-technique/",
+          "title": null,
+          "language": "en",
+          "source": "Check Point Research"
+        },
+        {
+          "url": "https://thehackernews.com/2026/07/ai-generated-browser-ransomware-abuses.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bankinfosecurity.com/breach-roundup-deepseek-sparks-browser-ransomware-a-32149",
+          "title": null,
+          "language": "en",
+          "source": "BankInfoSecurity"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b"
+    }
+  ],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-07-02-001",
+      "title": "Argo CD repo-serverの未パッチ未認証RCE、Kubernetesクラスタ完全掌握につながる脆弱性を仏Synacktivが公開",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "β",
+        "γ",
+        "δ"
+      ],
+      "priority": "high",
+      "product_or_service": "Argo CD（GitOps継続的デリバリーツール・repo-serverコンポーネント）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-02T04:40:06+09:00",
+          "description": "Synacktivが2026年7月1日に公開したArgo CD repo-serverの未認証コード実行につながる欠陥を報道。2025年1月にメンテナへ報告されたが約18ヶ月間未修正・CVE未採番のまま。内部gRPCサービスに認証がなく、Kustomize経由のHelm関連ビルドオプションを悪用してコマンド実行に至り、REDIS_PASSWORD窃取とRedisキャッシュ汚染を組み合わせることで完全なクラスタ乗っ取りが実証された"
+        }
+      ],
+      "overview": "GitOpsデプロイで広く使われるArgo CDのrepo-serverコンポーネントに、内部gRPCサービスの認証欠如を突く未認証RCEが存在することが仏Synacktivにより公開された。2025年1月の報告から約18ヶ月間パッチが提供されないまま今回の公開に至っており、CVE番号も未採番。攻撃者はKustomizeのHelm関連ビルドオプションを悪用してコマンド実行を達成でき、REDIS_PASSWORD環境変数の窃取とArgo CDのRedisキャッシュ汚染を組み合わせることで、次回同期時に攻撃者制御のマニフェストを強制展開させ、Kubernetesクラスタを完全に掌握できることが実証されている。パッチが存在しないため、ネットワークポリシーによる内部コンポーネント間通信の制限が唯一の実質的な緩和策であり、GitOps基盤を運用する組織は至急の設定確認が必要である。",
+      "recommended_actions": [
+        "自組織のKubernetes環境でArgo CDの利用有無・バージョンを棚卸しする",
+        "Kubernetes NetworkPolicyを設定し、repo-serverおよびRedisのポートへはArgo CD自身のコンポーネントからのみ到達可能に制限する",
+        "REDIS_PASSWORD等の環境変数をローテーションし、Redisキャッシュへの外部アクセス経路がないか確認する",
+        "Argo CDの公式リポジトリ・メーリングリストで正式パッチの提供状況を継続的に監視する",
+        "manifest generation時のKustomize Helmビルドオプション使用有無を確認し、不要な機能は無効化を検討する"
+      ],
+      "monitoring": {
+        "description": "Kubernetes監査ログでrepo-server/Redis関連ポッドへの内部ネットワーク通信のうち、Argo CD管理コンポーネント以外からのアクセスを監視する。",
+        "splunk_spl": [
+          "index=k8s_audit sourcetype=kube-audit objectRef.namespace=argocd (objectRef.resource=pods OR objectRef.resource=services) | where NOT match(user.username, \"system:serviceaccount:argocd:.*\") | stats count by user.username, verb, objectRef.name"
+        ],
+        "detection_notes": "repo-server・Redisポッドへの想定外ソースからの接続、および同期直後のマニフェスト内容の急激な変化（想定外のGitコミット無しでの構成変更）を異常として扱う。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/unpatched-argo-cd-repo-server-flaw.html",
+          "title": "Unpatched Argo CD Repo-Server Flaw Could Let Attackers Take Over Kubernetes Clusters",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.csoonline.com/article/4192188/argo-cd-flaw-shows-why-gitops-infrastructure-should-be-treated-as-tier-zero.html",
+          "title": "Argo CD flaw shows why GitOps infrastructure should be treated as tier zero",
+          "language": "en",
+          "source": "CSO Online"
+        }
+      ]
+    },
+    {
+      "rec_id": "SOC-2026-07-02-002",
+      "title": "Microsoft Teams、無許可の外部AIボットの会議参加を制御する新管理ポリシーを追加（2026年8月には全自動ブロック機能も展開予定）",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "β",
+        "γ"
+      ],
+      "priority": "medium",
+      "product_or_service": "Microsoft Teams（Teams管理センター）",
+      "targets": {
+        "sectors": [
+          "it",
+          "professional_services"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SecurityWeek",
+          "date": "2026-07-02T03:08:15+09:00",
+          "description": "Microsoftが会議参加時に無許可の外部AIボットを検知しロビーで足止めして主催者の承認を要求する新管理ポリシー「Manage external bots」をTeams管理センターに追加したと報道。主催者がロビーバイパスを許可している会議でもボットには承認が必要。2026年8月からは全外部ボットを自動ブロックする機能の展開開始も予定"
+        }
+      ],
+      "overview": "Microsoftは会議主催者の承認なしに外部AIボット（会議メモ取得ボット等）が参加することを防ぐ新しい管理ポリシー「Manage external bots and their access to meetings」をTeams管理センターに追加した。ボットを自動検知してロビーに留め、既定値の「RequireApprovalWhenDetected」に加え「AllowAllBots」「BlockDetectedBots」を選択可能で、個別ユーザー・グループ単位で適用できる。2026年8月からはAndroid・デスクトップ・iOS・Mac・Web全プラットフォームで全外部ボットを自動ブロックする機能の段階的展開も予定されている。無許可のAIボットによる会議内容の窃取・無断記録・情報漏えいリスクへの対策として、機密会議を扱う組織は設定の確認・強化が推奨される。",
+      "recommended_actions": [
+        "Teams管理センターで「Manage external bots」ポリシーの現状設定（既定値のRequireApprovalWhenDetectedのままか）を確認する",
+        "役員会議・M&A協議等の機密性が高い会議体には個別ポリシーで「BlockDetectedBots」を優先適用する",
+        "2026年8月予定の全外部ボット自動ブロック機能のロールアウトに備え、業務上必要な正規ボット（許可対象）を事前に洗い出す",
+        "会議レコーディング・文字起こしを行う正規AIツールの利用実態を棚卸しし、許可リストの整備を進める"
+      ],
+      "monitoring": {
+        "description": "Microsoft 365監査ログ（Teams会議監査ログ）でボット検知・ロビー保留・参加許可/拒否イベントを確認し、想定外の外部ボット参加試行を監視する。",
+        "splunk_spl": [
+          "index=o365_audit Workload=MicrosoftTeams Operation=\"MeetingParticipantDetected\" ParticipantType=Bot | stats count by MeetingId, BotId, Action"
+        ],
+        "detection_notes": "承認済みの正規ボット以外がロビーで検知・保留されたイベント、および想定外のBlockDetectedBots以外の設定へ変更された管理操作を確認する。"
+      },
+      "references": [
+        {
+          "url": "https://www.securityweek.com/microsoft-adds-new-teams-controls-to-block-unauthorized-ai-bots-from-meetings/",
+          "title": "Microsoft Adds New Teams Controls to Block Unauthorized AI Bots From Meetings",
+          "language": "en",
+          "source": "SecurityWeek"
+        },
+        {
+          "url": "https://techcommunity.microsoft.com/blog/microsoftteamsblog/introducing-smarter-bot-protection-in-microsoft-teams-meetings/4531375",
+          "title": "Introducing smarter bot protection in Microsoft Teams meetings",
+          "language": "en",
+          "source": "Microsoft Tech Community"
+        }
+      ]
+    },
+    {
+      "rec_id": "SOC-2026-07-02-003",
+      "title": "Windows 10コンシューマー向け拡張セキュリティ更新（ESU）提供期限が2027年10月12日まで延長",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "low",
+      "product_or_service": "Windows 10（コンシューマー向けESU）",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "JP",
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-01T08:00:19+09:00",
+          "description": "2025年10月にサポートが終了したWindows 10について、コンシューマー向け拡張セキュリティ更新プログラム（ESU）の提供期限を2027年10月12日まで延長すると案内された"
+        }
+      ],
+      "overview": "サポートが既に終了しているWindows 10について、コンシューマー向け拡張セキュリティ更新プログラム（ESU）の提供期限が2027年10月12日まで延長されることが案内された。企業向けESUとは別枠の措置であり、対象範囲・登録条件・費用の有無など詳細は別途確認が必要である。国内でも教育機関・中小企業・BYOD端末等でWindows 10が残存しているケースが多く、資産管理・パッチ適用計画の見直し材料として把握しておく価値がある。",
+      "recommended_actions": [
+        "資産管理台帳でWindows 10端末の残存数・用途・管理主体（自社管理／BYOD／委託先）を再確認する",
+        "コンシューマー向けESUの適用条件（登録方法・対象外条件・費用）を確認し、対象外となる端末の更新計画を前倒しする",
+        "管理外（BYOD・委託先）のWindows 10端末についてネットワークアクセス制御の観点で棚卸しを強化する"
+      ],
+      "monitoring": {
+        "description": "資産管理・EDRのOSバージョンインベントリでWindows 10端末の残存状況を継続的に可視化する。",
+        "splunk_spl": [
+          "index=edr_inventory os_name=\"Windows 10\" | stats count by os_build, department"
+        ],
+        "detection_notes": "ESU未登録のWindows 10端末が外部公開ネットワークセグメントに存在しないかを優先確認する。"
+      },
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/article/2026/07/01/55604.html",
+          "title": "Windows 10 サポート終了、コンシューマー向けESUを2027年10月12日まで提供",
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ]
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-8037",
+        "product": "Progress Kemp LoadMaster",
+        "reason": "already_reported",
+        "reason_detail": "本日窓内記事（The Hacker News）はeSentireが観測した実悪用試行（送信元IP 3件・失敗）を報じているが、2026-07-01付レポートのreference_bエントリと同一内容で新規の状態変化なし。",
+        "reported_date": "2026-06-30"
+      },
+      {
+        "cve_id": "CVE-2026-50548",
+        "product": "Cursor（AIコードエディタ）",
+        "reason": "low_score",
+        "reason_detail": "axis1=4、axis2=1（国内ソース確認できず）で除外。ただしAI攻撃パイプライン側でDuneSlideとしてai_attacks_mainに採用済み。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-50549",
+        "product": "Cursor（AIコードエディタ）",
+        "reason": "low_score",
+        "reason_detail": "CVE-2026-50548と同一disclosure（DuneSlide）に基づく対の脆弱性。axis1=4・axis2=1で同様に除外。AI攻撃パイプライン側で採用済み。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-45659",
+        "product": "Microsoft SharePoint",
+        "reason": "out_of_window",
+        "reason_detail": "CISA KEV新規追加を伴う実悪用確認事案だが記事公開は調査窓終了（2026-07-02 07:00 JST）後のため対象外。翌日実行での最優先確認事項として引き継ぐ。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-20230",
+        "product": "Cisco Unified Communications Manager",
+        "reason": "out_of_window",
+        "reason_detail": "既報CVEの追加報道だが記事公開が調査窓終了後のため対象外。",
+        "reported_date": "2026-06-24"
+      },
+      {
+        "cve_id": "CVE-2025-5777",
+        "product": "Citrix NetScaler（Citrix Bleed 2）",
+        "reason": "out_of_window",
+        "reason_detail": "ランサムウェアグループの認証情報悪用に関する総括記事が調査窓終了後のため対象外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-33017",
+        "product": "Langflow",
+        "reason": "out_of_window",
+        "reason_detail": "Monero採掘マルウェア展開の記事が調査窓開始より前のため対象外。EPSS 0.984・KEV登録済み（2026-03-25）であり次回以降要注視。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-48558",
+        "product": "SimpleHelp Remote Support Software",
+        "reason": "already_reported",
+        "reason_detail": "TaskWeaver/Djinn Stealer二段階攻撃チェーンの詳細は既に2026-07-01付レポートに記録済み。本日窓内の新規記事は確認されず。",
+        "reported_date": "2026-06-29"
+      },
+      {
+        "cve_id": "CVE-2026-46817",
+        "product": "Oracle E-Business Suite",
+        "reason": "already_reported",
+        "reason_detail": "Defusedハニーポット観測・Shadowserverの露出インスタンス数は既に2026-07-01付レポートに記録済み。本日窓内の新規記事は確認されず。",
+        "reported_date": "2026-06-29"
+      },
+      {
+        "cve_id": "CVE-2026-43707",
+        "product": "Apple iOS / macOS / Safari",
+        "reason": "out_of_window",
+        "reason_detail": "Apple 30+件パッチの記事は調査窓より前に公開。CVSS 6.5 Medium・要ユーザー操作・実悪用報告なし。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-55200",
+        "product": "libssh2",
+        "reason": "already_reported",
+        "reason_detail": "2026-06-29付で既報・参考A採用済み。本日窓内の新規記事なし。",
+        "reported_date": "2026-06-29"
+      },
+      {
+        "cve_id": "CVE-2026-33825",
+        "product": "Microsoft Defender（BlueHammer）",
+        "reason": "already_reported",
+        "reason_detail": "ランサムウェア悪用フラグのUnknown→Known変化は既に2026-07-01付レポートに記録済み。本日窓内の新規記事は確認されず。",
+        "reported_date": "2026-06-16"
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "CLSTA1062-2026-TinyRCT",
+        "group_name": "CL-STA-1062（中国語話者系APTの可能性・UAT-7237と重複あり・Unit 42追跡）",
+        "reason": "already_reported",
+        "reason_detail": "Dark Reading 2026-07-01報道「China-Linked Group Targets Southeast Asia Critical Systems」はUnit 42のCL-STA-1062/TinyRCT初報（2026-06-25公開、reported-apts.mdへ2026-06-29登録済み）の再構成記事。被害組織数（10、うち国家所有企業2）・TinyRCTバックドア（PerfWatson2.exe偽装・簡体字コメント）等の技術詳細に新規性なし。",
+        "reported_date": "2026-06-29"
+      },
+      {
+        "campaign_id": null,
+        "group_name": "不明（DHS HSIN情報共有プラットフォーム侵害・攻撃者不明）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "BleepingComputer 2026-07-01報道。米国土安全保障省(DHS)がHomeland Security Information Network(HSIN)/SharePoint基盤への侵害（侵入時期は2026年5月末〜6月初旬）を確認したが、DHSは「特定の脅威アクター・外国政府への帰属は行っていない」と明言。技術的侵入経路・IOC・TTPの開示もなし。軸P=5（重要インフラ/政府機関侵害確認のみ）・軸Q=1（単一組織）。",
+        "reported_date": "2026-07-02"
+      },
+      {
+        "campaign_id": null,
+        "group_name": "不明（Kubota North America侵害・攻撃者不明）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "BleepingComputer 2026-07-01報道。2026年3月16日〜4月20日の約1ヶ月間、Kubota North America（製造業・農機具）のネットワークへの不正アクセスが発生し、従業員・扶養家族のSSN・銀行口座・給付情報等が流出。ランサムウェア／恐喝グループの犯行声明なし、攻撃手法・IOCの開示もなし。",
+        "reported_date": "2026-07-02"
+      },
+      {
+        "campaign_id": null,
+        "group_name": "不明（ChocoPoC / PyPI経由の偽PoC配布キャンペーン）",
+        "reason": "low_score",
+        "reason_detail": "Sekoia/YesWeHack 2026-07-01報道。GitHub上の偽PoCエクスプロイト（FortiWeb・PAN-OS・Ivanti Sentry等7件のCVEを偽装）およびPyPIパッケージ経由でPython製RAT「ChocoPoC」を配布し、脆弱性研究者・ペネトレーションテスターを標的化。軸P=3・軸Q=1で本編/注目動向の閾値未達のため除外（trends/SOCエージェントがSection 4向けに別途扱う）。",
+        "reported_date": "2026-07-02"
+      },
+      {
+        "campaign_id": null,
+        "group_name": "不明（VEIL#DROP / PureLogsスティーラー配布チェーン）",
+        "reason": "low_score",
+        "reason_detail": "The Hacker News 2026-07-01報道（Securonix命名）。Bloggerプラットフォームを悪用した多段階攻撃チェーンでPureLogsスティーラーを配布。攻撃者は帰属未確定・financially motivated、規模の裏付けなし。軸P=3・軸Q=1で閾値未達。",
+        "reported_date": "2026-07-02"
+      },
+      {
+        "campaign_id": null,
+        "group_name": "不明（ScreenConnect悪用AsyncRAT配布キャンペーン）",
+        "reason": "low_score",
+        "reason_detail": "The Hacker News 2026-07-01報道（Kaspersky調査）。OBS Studio等の人気ソフトウェアを偽装したSEO汚染サイト経由でScreenConnect/AsyncRATを配布する多ドメイン・多言語キャンペーン。既知の汎用RATであり新規マルウェアファミリー（R）に該当せず、帰属も未確定。軸P=3・軸Q=3で閾値未達（trends/SOCエージェントがSection 2トレンドで別途扱う）。",
+        "reported_date": "2026-07-02"
+      },
+      {
+        "campaign_id": null,
+        "group_name": "Ousaban（既知バンキング型トロイの木馬）",
+        "reason": "low_score",
+        "reason_detail": "The Hacker News 2026-07-01報道（Fortinet FortiGuard Labs、初観測は2026年5月）。スペイン・ポルトガルの銀行利用者を狙う既知バンキング型トロイの木馬の詳細分析記事であり新規マルウェアファミリーではない。対象地域も限定的で軸P・軸Qともに低スコア。",
+        "reported_date": "2026-07-02"
+      }
+    ],
+    "ai_attacks": [
+      {
+        "attack_id": null,
+        "title": "Microsoft Adds New Teams Controls to Block Unauthorized AI Bots From Meetings",
+        "reason": "insufficient_evidence",
+        "reported_date": "2026-07-01"
+      },
+      {
+        "attack_id": null,
+        "title": "Agentjacking（SentryMCP経由）",
+        "reason": "no_change",
+        "reported_date": "2026-06-19"
+      },
+      {
+        "attack_id": null,
+        "title": "LiteLLM PyPI供給チェーン侵害（TeamPCP）",
+        "reason": "no_change",
+        "reported_date": "2026-06-19"
+      },
+      {
+        "attack_id": null,
+        "title": "CVE-2026-7482（Ollama Bleeding Llama）",
+        "reason": "no_change",
+        "reported_date": "2026-06-19"
+      },
+      {
+        "attack_id": null,
+        "title": "OWASP State of Agentic AI Security 2026 v2.01",
+        "reason": "no_change",
+        "reported_date": "2026-06-19"
+      },
+      {
+        "attack_id": null,
+        "title": "AI生成フィッシング集団→個別最適化移行（Zscaler）",
+        "reason": "no_change",
+        "reported_date": "2026-06-19"
+      },
+      {
+        "attack_id": null,
+        "title": "LLMjacking Evolved: VAPTアジェンティックフレームワーク",
+        "reason": "no_change",
+        "reported_date": "2026-06-27"
+      },
+      {
+        "attack_id": null,
+        "title": "macOS.Gaslight AIプロンプトインジェクション回避（DPRK BONZAI）",
+        "reason": "no_change",
+        "reported_date": "2026-06-28"
+      },
+      {
+        "attack_id": "AI-2026-06-29-001",
+        "title": "Djinn Stealer: CVE-2026-48558経由AI開発者認証情報・MCPコンフィグ窃取",
+        "reason": "no_change",
+        "reported_date": "2026-07-01"
+      },
+      {
+        "attack_id": "AI-2026-07-01-001",
+        "title": "BioShocking: ゲーム型間接プロンプトインジェクションでAIブラウザから認証情報窃取",
+        "reason": "no_change",
+        "reported_date": "2026-07-01"
+      },
+      {
+        "attack_id": "AI-2026-06-29-002",
+        "title": "LiteLLM CVE-2026-42271 SSRF（AIゲートウェイ内部偵察）",
+        "reason": "no_change",
+        "reported_date": "2026-06-29"
+      },
+      {
+        "attack_id": "AI-2026-06-29-003",
+        "title": "Miasma AIワーム（AIインフラ間自己増殖型マルウェア）",
+        "reason": "no_change",
+        "reported_date": "2026-06-29"
+      },
+      {
+        "attack_id": "AI-2026-06-29-004",
+        "title": "Gemini搭載SMiShingキャンペーン",
+        "reason": "no_change",
+        "reported_date": "2026-06-29"
+      },
+      {
+        "attack_id": "AI-2026-06-29-005",
+        "title": "Claude Code GitHub Actionsプロンプトインジェクション",
+        "reason": "no_change",
+        "reported_date": "2026-06-29"
+      },
+      {
+        "attack_id": "AI-2026-06-29-006",
+        "title": "OpenClaw Pinchy: オープンソースLLM自律型ペネトレーションフレームワーク",
+        "reason": "no_change",
+        "reported_date": "2026-06-29"
+      },
+      {
+        "attack_id": "AI-2026-06-30-001",
+        "title": "GuardFall: オープンソースAIコーディングエージェントのbashシェルインジェクション",
+        "reason": "no_change",
+        "reported_date": "2026-06-30"
+      },
+      {
+        "attack_id": "AI-2026-06-30-002",
+        "title": "Microsoft MCPツール説明文汚染（Tool Poisoning）警告",
+        "reason": "no_change",
+        "reported_date": "2026-06-30"
+      },
+      {
+        "attack_id": "AI-2026-06-30-003",
+        "title": "282 iOS AIアプリ LLM APIキー漏洩調査",
+        "reason": "no_change",
+        "reported_date": "2026-06-30"
+      }
+    ],
+    "soc_recommendations": [
+      {
+        "title": "セイコーソリューションズ製SkyBridge MB-A100/MB-A110におけるOSコマンドインジェクションの脆弱性（JVN#20721579 / CVE-2026-50043）",
+        "reason": "already_reported",
+        "reported_date": "2026-07-01"
+      },
+      {
+        "title": "DuneSlide: Cursor IDEのゼロクリックプロンプトインジェクション経由RCE脆弱性2件（CVE-2026-50548/50549、The Hacker News記事URL完全一致）",
+        "reason": "already_reported",
+        "reported_date": "2026-07-01"
+      }
+    ]
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 1,
+      "reference_a": 7,
+      "reference_b": 0,
+      "excluded": 12,
+      "total_processed": 20
+    },
+    "apt": {
+      "main": 1,
+      "notable": 0,
+      "excluded": 7,
+      "total_processed": 8
+    },
+    "ai_attacks": {
+      "main": 2,
+      "reference_a": 0,
+      "reference_b": 1,
+      "excluded": 18,
+      "total_processed": 21,
+      "category_breakdown": {
+        "A": 2,
+        "B": 1,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 1,
+      "medium": 1,
+      "low": 1,
+      "excluded": 2,
+      "total_processed": 5,
+      "perspective_breakdown": {
+        "cve": 1,
+        "zeroday": 1,
+        "ai_attack": 1
+      }
+    }
+  }
+}
