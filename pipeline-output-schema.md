@@ -29,6 +29,10 @@ outputs/YYYY-MM-DD/
   "main_cve": [ CVEエントリ ],
   "reference_a": [ CVEエントリ ],
   "reference_b": [ CVEエントリ ],
+  "trends": {
+    "trends_cve": [ CVEエントリ（section_route: trends） ],
+    "trends_topic": [ トレンド記事エントリ ]
+  },
   "apt_main": [ APTエントリ ],
   "apt_notable": [ APTエントリ ],
   "forecasts": [ 予報エントリ ],
@@ -46,6 +50,11 @@ outputs/YYYY-MM-DD/
 }
 ```
 
+`trends` はトップレベルの新設セクションであり、pipeline-1-cve.md のトラック B（`section_route: trends` タグ付きCVE）と
+pipeline-2-trends.md が収集する一般トレンド記事（CVE未採番のゼロデイ・APT以外のキャンペーン動向等）を格納する。
+既存の Section 2 テキスト出力（【ゼロデイ・セキュリティトレンド】内の「注目CVE（リスト外）」サブセクションおよび
+トレンド記事）の内容と対応する。詳細は下記「trends オブジェクト」参照。
+
 ---
 
 ## meta オブジェクト
@@ -56,6 +65,7 @@ outputs/YYYY-MM-DD/
   "report_date": "YYYY-MM-DD",
   "generated_at": "YYYY-MM-DDTHH:MM:SS+09:00",
   "mode": 3,
+  "mode_deprecated": true,
   "investigation_period": {
     "from": "YYYY-MM-DDTHH:MM:SS+09:00",
     "to":   "YYYY-MM-DDTHH:MM:SS+09:00"
@@ -67,9 +77,10 @@ outputs/YYYY-MM-DD/
 |---|---|---|
 | schema_version | string | スキーマバージョン（固定: "1.0"） |
 | report_date | string | レポート対象日 YYYY-MM-DD |
-| generated_at | string | 生成日時 ISO 8601+09:00 |
-| mode | integer | 1 / 2 / 3 |
-| investigation_period | object | 調査窓の開始・終了（ISO 8601） |
+| generated_at | string | 生成日時 ISO 8601+09:00（タイムスタンプ規則は本ファイル末尾「タイムスタンプ規則」参照） |
+| mode | integer | **非推奨（deprecated: true）**。モード選択は pipeline-3-weighting.md にて廃止済み・常に3固定。過去JSONとの後方互換性維持のためのみフィールドを残置し、新規ロジックでは参照しないこと |
+| mode_deprecated | boolean | 常に true。mode フィールドが非推奨であることを機械可読に示す注記フラグ |
+| investigation_period | object | 調査窓の開始・終了（ISO 8601、時刻・タイムゾーンオフセット必須） |
 
 ---
 
@@ -104,6 +115,7 @@ outputs/YYYY-MM-DD/
     "eta": null
   },
   "fceb_deadline": "2026-06-26",
+  "kev_date_added": "2026-06-24",
   "axis1_score": 10,
   "axis2_score": 7,
   "jpcert_ipa": {
@@ -113,7 +125,7 @@ outputs/YYYY-MM-DD/
   "changes_24h": [
     {
       "source": "BleepingComputer",
-      "date": "2026-06-25",
+      "date": "2026-06-25T14:30:00+09:00",
       "description": "PoCの詳細技術解析が公開された"
     }
   ],
@@ -122,6 +134,14 @@ outputs/YYYY-MM-DD/
     { "step": 1, "description": "初期侵入の説明" },
     { "step": 2, "description": "横展開の説明" },
     { "step": 3, "description": "最終被害の説明" }
+  ],
+  "techniques": [
+    {
+      "technique_id": "T1190",
+      "sub_technique_id": null,
+      "tactic": "initial-access",
+      "evidence": "ソースが明示する根拠の引用・要約（ソース名+日付を含む）"
+    }
   ],
   "temp_mitigation": [],
   "ioc": {
@@ -150,6 +170,7 @@ outputs/YYYY-MM-DD/
   "sector_impact": ["manufacturing", "government"],
   "region_impact": ["JP", "US"],
   "exploited_by": [],
+  "section_route": "product_cve",
   "report_section": "main_cve"
 }
 ```
@@ -179,13 +200,15 @@ outputs/YYYY-MM-DD/
 | patch_info.version | string \| null | パッチ適用済みバージョン |
 | patch_info.eta | string \| null | パッチ提供予定日（YYYY-MM-DD）|
 | fceb_deadline | string \| null | CISA FCEB機関の対応期限（YYYY-MM-DD） |
+| kev_date_added | string \| null | CISA KEVカタログへの登録日（YYYY-MM-DD）。KEV未登録の場合は null。予報エントリの `kev_snapshot.date_added` と同じ値の出典として使用する |
 | axis1_score | integer | 軸1スコア（技術的深刻度） |
 | axis2_score | integer | 軸2スコア（実環境影響度） |
 | jpcert_ipa.issued | boolean | JPCERT/CCまたはIPAが24時間窓内に注意喚起を発行したか |
 | jpcert_ipa.entries | array[{title, url}] | 発行済みの場合のタイトルとURL |
-| changes_24h | array[{source, date, description}] | 24時間以内の変化。dateはYYYY-MM-DD |
+| changes_24h | array[{source, date, description}] | 24時間以内の変化。dateはISO 8601（+09:00・時刻まで）。時刻が情報源から判明しない場合は当日07:00+09:00（調査窓の基準時刻）を補完値として使用する |
 | overview | string | 概要（自由テキスト。AI分析での文脈理解用） |
 | attack_flow | array[{step, description}] | 攻撃の流れ（stepは1始まりの整数） |
+| techniques | array[{technique_id, sub_technique_id, tactic, evidence}] | MITRE ATT&CK Technique（**情報源が明示する場合のみ**付与。ハルシネーション厳禁の原則に従い、判断不能な場合は空配列とする）。構造は `forecaster/schema/observation.schema.json` の `technique` 定義と同形: technique_id は "T\d{4}" 形式（親のみ）、sub_technique_id は "T\d{4}\.\d{3}" 形式またはnull、tactic は ATT&CK タクティック語彙、evidence はソース名+日付を含む根拠の要約 |
 | temp_mitigation | array[string] | ゼロデイ特報のみ: 暫定緩和策の箇条書き |
 | ioc.confirmed | boolean | IoCが確認されているか |
 | ioc.ips | array[string] | C2・攻撃インフラのIPアドレス |
@@ -200,10 +223,126 @@ outputs/YYYY-MM-DD/
 | sector_impact | array[string] | 影響セクター（下記の制御語彙を使用） |
 | region_impact | array[string] | 影響地域（"JP"/"US"/"global"等のISO 3166-1 alpha-2 or "global"） |
 | exploited_by | array[string] | このCVEを悪用しているAPTのcampaign_id（cross-reference） |
-| report_section | string | "zero_day_special"/"main_cve"/"reference_a"/"reference_b" |
+| section_route | string | "product_cve"（pipeline-1-cve.md トラックA・Section 3 製品別CVE）/ "trends"（トラックB・`section_route: trends` タグ付き・Section 2 trends.trends_cve へ帰属）。pipeline-1-cve.md のトラックA/B排他的決定木の判定結果をそのまま記録する |
+| report_section | string | "zero_day_special"/"main_cve"/"reference_a"/"reference_b"/"trends_cve"（section_route: trends のCVEが trends.trends_cve に格納される場合。振り分け先の本編/参考A/参考Bの区別は pipeline-3-weighting.md の軸1×軸2振り分けをtrends内でも適用し、値として保持する） |
 
 **sector_impact 制御語彙**:
 "government" / "finance" / "healthcare" / "manufacturing" / "telecom" / "energy" / "education" / "retail" / "it" / "professional_services" / "defense" / "critical_infrastructure" / "other"
+
+---
+
+## trends オブジェクト（trends.trends_cve / trends.trends_topic）
+
+pipeline-2-trends.md が構成する Section 2【ゼロデイ・セキュリティトレンド】の観測材料を格納する。
+JSON-first 原則（正規化ステージ 01 は JSON から observation を生成する）に従い、
+Section 2 のテキスト出力に対応する構造化データをここに保持する。
+
+```json
+"trends": {
+  "trends_cve": [
+    {
+      "cve_id": null,
+      "product": "紐付け不能（製品単位に紐付かないキャンペーン）",
+      "vendor": null,
+      "affected_versions": null,
+      "priority": "high",
+      "cvss_v3": null,
+      "cvss_v4": null,
+      "cvss_severity": null,
+      "cwe_ids": [],
+      "epss": { "score": null, "percentile": null, "model_date": null },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": true,
+        "patch_available": false
+      },
+      "patch_info": { "available": false, "version": null, "eta": null },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 9,
+      "axis2_score": 3,
+      "jpcert_ipa": { "issued": false, "entries": [] },
+      "changes_24h": [
+        {
+          "source": "watchTowr Labs",
+          "date": "2026-06-25T11:00:00+09:00",
+          "description": "CVE未採番のゼロデイキャンペーンの詳細解析を公開"
+        }
+      ],
+      "overview": "段落テキスト。改行なし。",
+      "attack_flow": [
+        { "step": 1, "description": "初期侵入の説明" }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": { "confirmed": false, "ips": [], "domains": [], "hashes": [], "urls": [], "filenames": [] },
+      "monitoring": { "description": "監視観点", "splunk_spl": [], "detection_notes": null },
+      "references": [
+        { "url": "https://labs.watchtowr.com/...", "title": null, "language": "en", "source": "watchTowr Labs" }
+      ],
+      "sector_impact": [],
+      "region_impact": ["global"],
+      "exploited_by": [],
+      "section_route": "trends",
+      "report_section": "trends_cve"
+    }
+  ],
+  "trends_topic": [
+    {
+      "topic_id": "TREND-2026-06-25-001",
+      "title": "トレンド記事のタイトル",
+      "summary": "概要テキスト。改行なし。",
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-06-25T13:00:00+09:00",
+          "description": "24時間以内に確認された変化"
+        }
+      ],
+      "sector_impact": [],
+      "region_impact": ["global"],
+      "references": [
+        { "url": "https://www.bleepingcomputer.com/...", "title": null, "language": "en", "source": "BleepingComputer" }
+      ],
+      "report_section": "trends_topic"
+    }
+  ]
+}
+```
+
+### trends.trends_cve フィールド定義
+
+CVEエントリ（zero_day_special / main_cve / reference_a / reference_b）と同一の型を使用する。
+相違点のみ以下に示す:
+
+| フィールド | 型 | 値 / 説明 |
+|---|---|---|
+| cve_id | string \| null | CVE未採番の場合は null（例: CVE未採番のゼロデイ） |
+| section_route | string | 常に "trends"（pipeline-1-cve.md トラックB由来であることを示す） |
+| report_section | string | 常に "trends_cve" |
+| axis1_score / axis2_score | integer | pipeline-3-weighting.md のCVE重みづけモデル（軸1×軸2）をそのまま適用し、本編/参考A/参考B相当の優先度をこの中で表現する（振り分け先の呼称はテキスト変換時に「注目CVE（リスト外）」内のランク表記として扱う） |
+
+後日CVEが採番され製品に紐付いた場合、pipeline-1-cve.md の規定により翌日以降の実行で
+D2判定によりトラックA（Section 3・zero_day_special/main_cve/reference_a/reference_b のいずれか）へ
+帰属し直す。reported-cves.md の備考に移行を記録する（pipeline-1-cve.md D3 節を参照）。
+
+### trends.trends_topic フィールド定義
+
+trends_topic は Section 2 に収録される「CVEに紐付かない一般トレンド記事・APT以外のキャンペーン動向」を格納する。
+CVE型ともAPT型とも異なる軽量な型を使用する。
+
+| フィールド | 型 | 値 / 説明 |
+|---|---|---|
+| topic_id | string | "TREND-YYYY-MM-DD-NNN" 形式の一意ID |
+| title | string | トレンド記事のタイトル |
+| summary | string | 概要（自由テキスト。改行なし） |
+| changes_24h | array[{source, date, description}] | 24時間以内の変化。dateはISO 8601（+09:00・時刻まで） |
+| sector_impact | array[string] | CVEエントリと同じ制御語彙 |
+| region_impact | array[string] | CVEエントリと同じ制御語彙 |
+| references | array[{url, title, language, source}] | 参照URL |
+| report_section | string | 常に "trends_topic" |
 
 ---
 
@@ -240,7 +379,7 @@ outputs/YYYY-MM-DD/
   "changes_24h": [
     {
       "source": "Symantec",
-      "date": "2026-06-24",
+      "date": "2026-06-24T10:00:00+09:00",
       "description": "初報: Misticバックドアの詳細技術分析を公開"
     }
   ],
@@ -360,7 +499,7 @@ outputs/YYYY-MM-DD/
 | title | string | 予報タイトル |
 | tier | integer | 1 / 2 / 3（pipeline-forecast-verification.md 定義準拠） |
 | confidence | string | "high" / "medium" / "low" |
-| confidence_numeric | number | high=0.8 / medium=0.5 / low=0.3（AI分析での定量化用） |
+| confidence_numeric | number | high=0.8 / medium=0.5 / low=0.3（AI分析での定量化用）。**注意**: これはレポート項目のAI分析用定量化値であり、予報の確度キャリブレーション（Brierスコア用代表確率: 高0.75/中0.55/低0.30、pipeline-forecast-verification.md 定義）とは別体系。予報の採点・較正には後者を正とする |
 | framing | string | "defensive_action" / "attacker_behavior" |
 | outcome_channel | string | **M1**: 的中条件の観測出口クラス "E1"（KEV初回追加）/"E2"（新規IOC公開）/"E3"（CERT初回勧告）/"E4"（PoC公開）。"E5"（スキャン増）は予約値で的中主条件には未使用 |
 | window_hours | integer | **M2**: 検証窓（72 または 168以上） |
@@ -393,7 +532,7 @@ outputs/YYYY-MM-DD/
   "category": "B",
   "subcategory": "B1",
   "attacker_type": "nation_state",
-  "adoption_triggers": ["P", "Q"],
+  "adoption_triggers": ["A-P", "A-Q"],
   "atlas_ids": ["AML.T0043"],
   "owasp_llm": ["LLM01"],
   "owasp_agentic": [],
@@ -410,7 +549,7 @@ outputs/YYYY-MM-DD/
   "changes_24h": [
     {
       "source": "SentinelOne",
-      "date": "2026-06-23",
+      "date": "2026-06-23T09:00:00+09:00",
       "description": "macOS.GaslightのAIプロンプトインジェクション回避機能を詳報"
     }
   ],
@@ -444,7 +583,7 @@ outputs/YYYY-MM-DD/
 | category | string | "A" / "B" / "C"（pipeline-ai-1.md のカテゴリ定義） |
 | subcategory | string | "A1"〜"A6" / "B1"〜"B6" / "C1"〜"C6" |
 | attacker_type | string | "criminal_org" / "nation_state" / "researcher" / "unknown" |
-| adoption_triggers | array[string] | P/Q/R/S/T/U/V/W/X/Y（pipeline-ai-1.md の採用条件） |
+| adoption_triggers | array[string] | A-P/A-Q/A-R/A-S/A-T/A-U/A-V/A-W/A-X/A-Y 形式（pipeline-ai-1.md の採用条件。旧 P〜Y 単独記号から改名。過去JSON中の単独記号表記は後方互換として許容するが、新規出力は A- 接頭辞付き形式のみを使用する） |
 | atlas_ids | array[string] | MITRE ATLAS ID（"AML.Txxxx"形式） |
 | owasp_llm | array[string] | OWASP LLM Top 10 ID（"LLM01"等） |
 | owasp_agentic | array[string] | OWASP Agentic Top 10 ID（"AG01"等） |
@@ -476,7 +615,7 @@ outputs/YYYY-MM-DD/
   "changes_24h": [
     {
       "source": "JPCERT/CC",
-      "date": "2026-06-26",
+      "date": "2026-06-26T08:00:00+09:00",
       "description": "24時間内に確認された変化"
     }
   ],
@@ -603,6 +742,8 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 | main_cve | 【本編】セクション |
 | reference_a | 【参考情報A】セクション |
 | reference_b | 【参考情報B】セクション |
+| trends.trends_cve | 【ゼロデイ・トレンド】内「注目CVE（リスト外）」サブセクション |
+| trends.trends_topic | 【ゼロデイ・トレンド】内トレンド記事サブセクション |
 | apt_main | 【APT活動—本編】セクション |
 | apt_notable | 【APT活動—注目動向】セクション |
 | forecasts | 【攻撃予報】セクション |
@@ -619,7 +760,7 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 |----------|---------------|
 | security-report.txt | Section 1〜4 全セクション + 除外サマリー + 集計行 |
 | security-report-cve.txt | Section 3（製品別CVE）: zero_day_special / main_cve / reference_a / reference_b / exclusions.cve / statistics.cve |
-| security-report-zeroday-trends.txt | Section 2（ゼロデイ・トレンド）: zero_day_special / apt_main / apt_notable / forecasts / exclusions.apt / statistics.apt |
+| security-report-zeroday-trends.txt | Section 2（ゼロデイ・トレンド）: zero_day_special / trends.trends_cve / trends.trends_topic / apt_main / apt_notable / forecasts / exclusions.apt / statistics.apt |
 | security-report-ai.txt | Section 1（AI攻撃）: ai_attacks_main / ai_attacks_reference_b / ai_attacks_reference_a / exclusions.ai_attacks / statistics.ai_attacks |
 | security-report-soc.txt | Section 4（SOC推奨）: soc_recommendations（priority順）/ exclusions.soc_recommendations / statistics.soc_recommendations |
 
