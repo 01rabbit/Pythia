@@ -26,7 +26,24 @@
 
 `forecaster/observations/YYYY/MM/YYYY-MM-DD.json`
 
-形式: observation オブジェクトの JSON 配列 `[]`。
+形式: **wrapper 形式に一本化する（スキーマ v1.1）**。素の JSON 配列 `[]` や独自形式での出力は禁止。
+
+```json
+{
+  "_schema_version": "1.1",
+  "_observation_date": "YYYY-MM-DD",
+  "_normalization_mode": "source_explicit_all",
+  "_normalization_note": "（任意の注記）",
+  "observations": [
+    { /* observation オブジェクト */ }
+  ]
+}
+```
+
+- `_schema_version` と `observations` は必須。`_schema_version` は `"1.1"` 固定。
+- `_observation_date` はファイル名の日付と一致させる。
+- observation オブジェクトの構造は `forecaster/schema/observation.schema.json` の `$defs/observation` に従う。
+- 書き出し後は `python3 scripts/validate_observations.py --date YYYY-MM-DD` で検証し、違反ゼロを確認してからコミットする。
 
 ---
 
@@ -36,7 +53,7 @@
 
 - **全観測（CVE / APT / AI）に対し、情報源が明示する場合のみ** techniques・actor_group を付与する（通常ルール R3・R4 を全観測に適用）。
 - `focus_group: "Lazarus Group"` は引き続き日次の重点【人間レビュー】対象（Technique 付与の正誤チェック先）だが、技術付与の対象を Lazarus に限定しない。
-- ★R3・R4 の evidence-based 原則は厳守する。情報源が技術・帰属を明示していない場合は `techniques: []` / `actor_group: null` とし、推測による付与は引き続き禁止。
+- ★R3・R4 の evidence-based 原則は厳守する。情報源が技術・帰属を明示していない場合は `techniques: []` / `actor_group: null` とし、推測による付与は引き続き禁止。「明示」の操作的定義（具体的な手口・挙動の記述があれば付与する）は R3 を参照。
 - ATT&CK 以外の体系（ATLAS 等）の技術は `techniques`（ATT&CK 専用）に入れない。該当する ATT&CK 技術が情報源から導ける場合のみ付与する（例: 盗用コンピュート悪用 → T1496 Resource Hijacking）。
 
 ---
@@ -51,10 +68,34 @@ CVE・APT活動・AI攻撃のそれぞれを独立した observation オブジ�
 当日内で001から連番。既存ファイルがある場合は最大番号に続ける。
 
 ### R3: techniques フィールドの付与ルール
-- ATT&CK Technique ID は確証がある場合のみ付与する。
-- 情報源が特定の技術・手法を明記している場合のみ対応する ID を記載する。
-- 確証がない・判断できない場合は `techniques: []` とし、`confidence: "low"` とする。
+
+**「明示」の定義（操作化）:**
+情報源が **具体的な手口・挙動** を記述していれば、対応する ATT&CK Technique への機械的マッピングは「明示」とみなして **付与する**。
+情報源本文に ATT&CK ID そのものが記載されている必要はない。
+「ATT&CK ID の記載がない」ことだけを理由に `techniques: []` としてはならない。
+一方、**グループ名のみ・「高度な攻撃」等の抽象記述** からの付与は禁止する。
+
+**付与すべき例（具体的な手口・挙動の記述あり → 機械的マッピング可）:**
+
+| 情報源の記述 | 付与する Technique |
+|----|----|
+| 「公開APIの未認証パストラバーサル脆弱性が実悪用された」 | T1190（initial-access） |
+| 「Webシェルを設置して持続的なアクセスを確保した」 | T1505 / sub_technique_id: T1505.003（persistence） |
+| 「フィッシングメールの添付ZIPを開かせてマルウェアを実行させた」 | T1566 / sub_technique_id: T1566.001（initial-access） |
+
+**付与してはならない例（抽象記述・帰属のみ → 付与禁止）:**
+
+| 情報源の記述 | 判断 |
+|----|----|
+| 「Lazarus Group によるものと帰属された」（手口の記述なし） | グループの既知TTPからの類推付与は禁止。`techniques: []` |
+| 「高度で多段階な（sophisticated）攻撃キャンペーンが確認された」 | 抽象記述のみ。`techniques: []` |
+| 「データ侵害が発生し個人情報が窃取された」（侵入経路の記述なし） | 結果のみで手口不明。T1190 等を推測付与しない。`techniques: []` |
+
+**運用ルール:**
+- `technique_id` は親テクニックID（`^T\d{4}$`。例: T1566）のみを記載する。サブテクニックは `technique_id` に直書きせず、別フィールド `sub_technique_id`（例: T1566.001）に記載する。`sub_technique_id` は `technique_id` と前方一致すること。
 - `evidence` フィールドには「情報源が〇〇を記述していたため T1566 を付与」の形式で1文記載する。
+- 手口の記述はあるがどの Technique に対応するか判断に迷った場合は、付与を見送り、observation の `techniques_note` フィールドに迷った理由を1〜2文で記録する。`techniques_note` 付きエントリは人間レビュー対象となる。
+- 手口・挙動の記述が一切なく Technique 付与不能な場合は `techniques: []` とし、`confidence` の判定は R5 に従う。
 - 推測・類推による Technique 付与は禁止。
 
 ### R4: actor_group の帰属ルール
@@ -66,10 +107,14 @@ CVE・APT活動・AI攻撃のそれぞれを独立した observation オブジ�
 |----|------|
 | high | CERT/政府機関の勧告 / 複数独立ベンダーの確認あり |
 | medium | 信頼性の高い単一ベンダー報告 / OSINT複数確認あり |
-| low | 単一ニュースソースのみ / Technique 付与不能 |
+| low | 単一ニュースソースのみ等、情報源の信頼度が低い |
 
-### R6: verified_outcome は必ず null
-検証ステージ（04-verify.md）のみが書き込む。正規化ステージで変更禁止。
+`confidence` は **情報源の確度** を表し、Technique 付与の可否とは独立に判定する
+（例: 政府機関の勧告で手口の記述がない場合、`techniques: []` かつ `confidence: "high"` があり得る）。
+
+### R6: verified_outcome / related_forecast_id の書き込み権限
+- `verified_outcome` は正規化段階では必ず `null`。**検証ステージ（04-verify.md）のみ** が書き込む。正規化・予報段階で変更禁止。
+- `related_forecast_id` は正規化段階では `null` とする。**予報ステージ（03-forecast.md）が設定してよい**（観測を既存予報に紐付ける場合）。検証ステージも設定・更新できる。
 
 ### R7: summary の記述
 - 1〜2文で記述する。
@@ -114,18 +159,24 @@ IoC を `iocs` に記録する場合:
 
 1. 入力 JSON の各エントリを読み込む。
 2. 各エントリに対して上記ルールに従い observation オブジェクトを生成する。
-3. 全オブジェクトを配列にまとめ `forecaster/observations/YYYY/MM/YYYY-MM-DD.json` に書き出す。
+3. 全オブジェクトを wrapper 形式（`_schema_version: "1.1"` + `observations` 配列）にまとめ `forecaster/observations/YYYY/MM/YYYY-MM-DD.json` に書き出す。
 4. ディレクトリが存在しない場合は作成する。
-5. 処理件数（生成 observation 数）をチャットに報告する。
+5. `python3 scripts/validate_observations.py --date YYYY-MM-DD` を実行し、違反があれば修正して再実行する（違反ゼロになるまでコミットしない）。
+6. 処理件数（生成 observation 数）とバリデータ結果をチャットに報告する。
 
 ---
 
 ## 品質チェック（出力前に確認）
 
+- [ ] 出力が wrapper 形式（`_schema_version: "1.1"` + `observations` 配列）になっているか（素の配列は禁止）
 - [ ] `techniques` に ATT&CK 以外の ID（ATLAS 等）が含まれていないか
+- [ ] `technique_id` にサブテクニックID（T1566.001 等）を直書きしていないか（サブテクニックは `sub_technique_id` へ、`technique_id` と前方一致）
 - [ ] 各 technique に情報源由来の `evidence`（1文）が付いているか（推測付与でないか）
+- [ ] 情報源が具体的な手口・挙動を記述しているのに、ATT&CK ID の記載がないことを理由に `techniques: []` としていないか（R3「明示」の定義を再確認）
+- [ ] Technique 付与の判断に迷ったエントリに `techniques_note`（理由1〜2文）を記録したか
 - [ ] `actor_group` に情報源が明示していないグループ名が入っていないか
-- [ ] `verified_outcome` がすべて `null` になっているか
-- [ ] `confidence: "low"` のエントリで `techniques` が空配列になっているか
+- [ ] `verified_outcome` がすべて `null`、`related_forecast_id` がすべて `null` になっているか（正規化段階では埋めない）
+- [ ] Technique 付与不能で `techniques: []` としたエントリの `confidence` が R5 の基準に従っているか
 - [ ] CVE observation に `exploitation_stage` が付与されているか
 - [ ] `observation_id` が重複していないか
+- [ ] `python3 scripts/validate_observations.py --date YYYY-MM-DD` が違反ゼロで通ったか

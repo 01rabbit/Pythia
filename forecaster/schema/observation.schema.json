@@ -1,195 +1,250 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "CyberThreatObservation",
-  "description": "サイバー脅威観測データの正規化スキーマ。1情報 = 1オブジェクト。",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "CyberThreatObservationFile",
+  "description": "サイバー脅威観測データファイル（forecaster/observations/YYYY/MM/YYYY-MM-DD.json）のスキーマ v1.1。wrapper 形式（_schema_version + observations 配列）に一本化。observation 本体は $defs/observation を参照。1情報 = 1オブジェクト。",
   "type": "object",
-  "required": [
-    "observation_id",
-    "observed_date",
-    "ingested_date",
-    "source",
-    "techniques",
-    "target",
-    "confidence",
-    "summary",
-    "verified_outcome"
-  ],
+  "required": ["_schema_version", "observations"],
+  "additionalProperties": false,
   "properties": {
-    "observation_id": {
+    "_schema_version": {
       "type": "string",
-      "description": "観測ID。形式: obs-YYYY-MMDD-NNN（例: obs-2026-0626-001）",
-      "pattern": "^obs-\\d{4}-\\d{4}-\\d{3}$"
+      "enum": ["1.0", "1.1"],
+      "description": "スキーマバージョン。新規出力は \"1.1\" 固定（01-normalize.md）。\"1.0\" は wrapper 形式かつフィールド構造が本スキーマに準拠する既存ファイル（例: 2026-07-01）向けの後方互換値であり、フィールド定義自体は 1.0/1.1 間で差異はない。"
     },
-    "observed_date": {
-      "type": "string",
-      "format": "date",
-      "description": "情報源が報告した日付（YYYY-MM-DD）"
-    },
-    "ingested_date": {
+    "_observation_date": {
       "type": "string",
       "format": "date",
-      "description": "本システムへ取り込んだ日付（YYYY-MM-DD）"
+      "description": "このファイルが対象とする観測日（YYYY-MM-DD）。任意だがファイル名と一致させることを推奨。"
     },
-    "source": {
+    "_normalization_mode": {
+      "type": "string",
+      "description": "正規化モード（phase1-config.json の normalization 設定値。例: source_explicit_all）。任意。"
+    },
+    "_normalization_note": {
+      "type": "string",
+      "description": "正規化時の注記。任意。"
+    },
+    "_retro_normalized": {
+      "type": "boolean",
+      "description": "旧形式（素の配列・独自形式）から遡及正規化されたファイルであることを示すフラグ。任意。"
+    },
+    "_retro_note": {
+      "type": "string",
+      "description": "遡及正規化の経緯メモ（元形式・変換日・変換方針など）。任意。"
+    },
+    "observations": {
+      "type": "array",
+      "description": "observation オブジェクトの配列。",
+      "items": { "$ref": "#/$defs/observation" }
+    }
+  },
+  "$defs": {
+    "observation": {
+      "title": "CyberThreatObservation",
+      "description": "サイバー脅威観測データの正規化オブジェクト。1情報 = 1オブジェクト。",
       "type": "object",
-      "required": ["name", "url", "type"],
+      "required": [
+        "observation_id",
+        "observed_date",
+        "ingested_date",
+        "source",
+        "techniques",
+        "target",
+        "confidence",
+        "summary",
+        "verified_outcome"
+      ],
+      "additionalProperties": false,
       "properties": {
-        "name": { "type": "string", "description": "情報源名（例: BleepingComputer, JPCERT/CC）" },
-        "url": { "type": "string", "format": "uri", "description": "出典URL" },
+        "observation_id": {
+          "type": "string",
+          "description": "観測ID。形式: obs-YYYY-MMDD-NNN（例: obs-2026-0626-001）。全ファイル横断で一意。",
+          "pattern": "^obs-\\d{4}-\\d{4}-\\d{3}$"
+        },
+        "observed_date": {
+          "type": "string",
+          "format": "date",
+          "description": "情報源が報告した日付（YYYY-MM-DD）"
+        },
+        "ingested_date": {
+          "type": "string",
+          "format": "date",
+          "description": "本システムへ取り込んだ日付（YYYY-MM-DD）"
+        },
+        "source": {
+          "type": "object",
+          "required": ["name", "url", "type"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "type": "string", "description": "情報源名（例: BleepingComputer, JPCERT/CC）" },
+            "url": { "type": "string", "format": "uri", "description": "出典URL" },
+            "type": {
+              "type": "string",
+              "enum": ["vendor_report", "osint", "advisory", "news"],
+              "description": "情報源種別"
+            }
+          }
+        },
+        "actor_group": {
+          "type": ["string", "null"],
+          "description": "攻撃者グループ名。情報源が明示する場合のみ記入。推測で埋めない。"
+        },
+        "actor_aliases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "グループの別名リスト"
+        },
+        "techniques": {
+          "type": "array",
+          "description": "MITRE ATT&CK Technique のリスト。確証がない場合は空配列とする。",
+          "items": { "$ref": "#/$defs/technique" }
+        },
+        "techniques_note": {
+          "type": "string",
+          "description": "Technique 付与の判断に迷った場合の理由記録（人間レビュー対象）。例: 「手口の記述はあるが T1190 と T1133 のどちらに該当するか判断できず未付与」"
+        },
+        "target": {
+          "type": "object",
+          "required": ["sectors", "geos"],
+          "additionalProperties": false,
+          "properties": {
+            "sectors": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "標的セクター（例: finance, healthcare, government, energy, manufacturing）"
+            },
+            "geos": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "標的地域（ISO 3166-1 alpha-2コード。例: JP, US, EU。全世界規模は GLOBAL）"
+            }
+          }
+        },
+        "cve": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^CVE-\\d{4}-\\d{4,}$" },
+          "description": "関連CVE番号リスト"
+        },
+        "exploitation_stage": {
+          "type": "string",
+          "enum": [
+            "active_exploitation",
+            "kev_listed",
+            "poc_public",
+            "limited_exploitation",
+            "none",
+            "unknown"
+          ],
+          "description": "悪用ステージ（優先順: active_exploitation > kev_listed > poc_public > limited_exploitation > none > unknown）。複数該当時は最上位のみ採用する。"
+        },
+        "geopolitical_signal": {
+          "type": ["string", "null"],
+          "enum": [
+            "north_korea_nexus",
+            "russia_nexus",
+            "china_nexus",
+            "iran_nexus",
+            "geopolitical_unattributed",
+            null
+          ],
+          "description": "関連する地政学シグナル（任意）。国家帰属が明示されないが連鎖を記録すべき場合は geopolitical_unattributed を使用する。"
+        },
+        "iocs": {
+          "type": "array",
+          "description": "侵害指標のリスト（任意）",
+          "items": { "$ref": "#/$defs/ioc" }
+        },
+        "confidence": {
+          "type": "string",
+          "enum": ["high", "medium", "low"],
+          "description": "情報源の確度。予報の重み付けに使用する。"
+        },
+        "summary": {
+          "type": "string",
+          "description": "1〜2文の要約。事実のみ記述し、推測を混入しない。"
+        },
+        "verified_outcome": {
+          "type": ["string", "null"],
+          "enum": ["hit", "miss", "partial", null],
+          "description": "予報との突合結果。初期は必ず null。検証ステージ（04-verify.md）のみが書き込む。正規化・予報段階では変更禁止。"
+        },
+        "related_forecast_id": {
+          "type": ["string", "null"],
+          "description": "この観測に関連する予報の参照（例: forecaster/forecasts/daily/YYYY-MM-DD.md:forecast_index=N）。正規化段階では null。予報ステージ（03-forecast.md）が設定してよい。"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "任意タグ（例: zero-day, ransomware, supply-chain）"
+        }
+      }
+    },
+    "technique": {
+      "title": "AttackTechnique",
+      "type": "object",
+      "required": ["technique_id", "tactic", "evidence"],
+      "additionalProperties": false,
+      "properties": {
+        "technique_id": {
+          "type": "string",
+          "pattern": "^T\\d{4}$",
+          "description": "ATT&CK Technique ID（親テクニックのみ。例: T1566）。サブテクニックID（T1566.001 等）をここに直書きしない。"
+        },
+        "sub_technique_id": {
+          "type": ["string", "null"],
+          "pattern": "^T\\d{4}\\.\\d{3}$",
+          "description": "サブテクニックID（例: T1566.001）。なければ null。technique_id と前方一致すること（T1566.001 なら technique_id は T1566）。前方一致はバリデータ（scripts/validate_observations.py）が検査する。"
+        },
+        "tactic": {
+          "type": "string",
+          "enum": [
+            "reconnaissance",
+            "resource-development",
+            "initial-access",
+            "execution",
+            "persistence",
+            "privilege-escalation",
+            "defense-evasion",
+            "credential-access",
+            "discovery",
+            "lateral-movement",
+            "collection",
+            "command-and-control",
+            "exfiltration",
+            "impact"
+          ],
+          "description": "MITRE ATT&CK タクティック"
+        },
+        "evidence": {
+          "type": "string",
+          "description": "このTechnique IDを付与した根拠（情報源の記述を1文で要約）"
+        }
+      }
+    },
+    "ioc": {
+      "title": "IndicatorOfCompromise",
+      "type": "object",
+      "required": ["value", "type"],
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "IoC値（defang形式可: example[.]com）"
+        },
         "type": {
           "type": "string",
-          "enum": ["vendor_report", "osint", "advisory", "news"],
-          "description": "情報源種別"
-        }
-      }
-    },
-    "actor_group": {
-      "type": ["string", "null"],
-      "description": "攻撃者グループ名。情報源が明示する場合のみ記入。推測で埋めない。"
-    },
-    "actor_aliases": {
-      "type": "array",
-      "items": { "type": "string" },
-      "description": "グループの別名リスト"
-    },
-    "techniques": {
-      "type": "array",
-      "description": "MITRE ATT&CK Technique のリスト。確証がない場合は空配列とする。",
-      "items": {
-        "type": "object",
-        "required": ["technique_id", "tactic", "evidence"],
-        "properties": {
-          "technique_id": {
-            "type": "string",
-            "pattern": "^T\\d{4}$",
-            "description": "ATT&CK Technique ID（例: T1566）"
-          },
-          "sub_technique_id": {
-            "type": ["string", "null"],
-            "pattern": "^T\\d{4}\\.\\d{3}$",
-            "description": "サブテクニックID（例: T1566.001）。なければ null。"
-          },
-          "tactic": {
-            "type": "string",
-            "enum": [
-              "reconnaissance",
-              "resource-development",
-              "initial-access",
-              "execution",
-              "persistence",
-              "privilege-escalation",
-              "defense-evasion",
-              "credential-access",
-              "discovery",
-              "lateral-movement",
-              "collection",
-              "command-and-control",
-              "exfiltration",
-              "impact"
-            ],
-            "description": "MITRE ATT&CK タクティック"
-          },
-          "evidence": {
-            "type": "string",
-            "description": "このTechnique IDを付与した根拠（情報源の記述を1文で要約）"
-          }
-        }
-      }
-    },
-    "target": {
-      "type": "object",
-      "required": ["sectors", "geos"],
-      "properties": {
-        "sectors": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "標的セクター（例: finance, healthcare, government, energy, manufacturing）"
+          "enum": ["ip", "domain", "hash", "url", "email"]
         },
-        "geos": {
-          "type": "array",
-          "items": { "type": "string" },
-          "description": "標的地域（ISO 3166-1 alpha-2コード。例: JP, US, EU）"
+        "defanged": {
+          "type": "boolean",
+          "default": false,
+          "description": "defang処理済みか"
+        },
+        "note": {
+          "type": "string",
+          "description": "運用判断注記（例: プロキシ終端の可能性・単純ブロック非推奨）"
         }
       }
-    },
-    "cve": {
-      "type": "array",
-      "items": { "type": "string", "pattern": "^CVE-\\d{4}-\\d{4,}$" },
-      "description": "関連CVE番号リスト"
-    },
-    "exploitation_stage": {
-      "type": "string",
-      "enum": [
-        "active_exploitation",
-        "kev_listed",
-        "poc_public",
-        "limited_exploitation",
-        "none",
-        "unknown"
-      ],
-      "description": "悪用ステージ（優先順: active_exploitation > kev_listed > poc_public > limited_exploitation > none > unknown）。複数該当時は最上位のみ採用する。"
-    },
-    "geopolitical_signal": {
-      "type": ["string", "null"],
-      "enum": [
-        "north_korea_nexus",
-        "russia_nexus",
-        "china_nexus",
-        "iran_nexus",
-        "geopolitical_unattributed",
-        null
-      ],
-      "description": "関連する地政学シグナル（任意）。国家帰属が明示されないが連鎖を記録すべき場合は geopolitical_unattributed を使用する。"
-    },
-    "iocs": {
-      "type": "array",
-      "description": "侵害指標のリスト（任意）",
-      "items": {
-        "type": "object",
-        "required": ["value", "type"],
-        "properties": {
-          "value": {
-            "type": "string",
-            "description": "IoC値（defang形式可: example[.]com）"
-          },
-          "type": {
-            "type": "string",
-            "enum": ["ip", "domain", "hash", "url", "email"]
-          },
-          "defanged": {
-            "type": "boolean",
-            "default": false,
-            "description": "defang処理済みか"
-          },
-          "note": {
-            "type": "string",
-            "description": "運用判断注記（例: プロキシ終端の可能性・単純ブロック非推奨）"
-          }
-        }
-      }
-    },
-    "confidence": {
-      "type": "string",
-      "enum": ["high", "medium", "low"],
-      "description": "情報源の確度。予報の重み付けに使用する。"
-    },
-    "summary": {
-      "type": "string",
-      "description": "1〜2文の要約。事実のみ記述し、推測を混入しない。"
-    },
-    "verified_outcome": {
-      "type": ["string", "null"],
-      "enum": ["hit", "miss", "partial", null],
-      "description": "予報との突合結果。初期は必ず null。verification ステージのみが書き込む。"
-    },
-    "related_forecast_id": {
-      "type": ["string", "null"],
-      "description": "この観測が検証対象とする予報ID。verification ステージが設定する。"
-    },
-    "tags": {
-      "type": "array",
-      "items": { "type": "string" },
-      "description": "任意タグ（例: zero-day, ransomware, supply-chain）"
     }
   }
 }
