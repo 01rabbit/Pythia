@@ -1,5 +1,10 @@
 # pipeline-2-trends.md — Step 2: 動向収集ルール
 
+## 情報収集の原則
+
+一次入力は `security-intel-collector/data/raw/` の当日・前日分（GitHub Actions が3時間おきに機械収集済み）とする。
+Web 検索は data/raw に無い情報を補完する場合にのみ使用する。
+
 ## このステップの区分
 
 Step 2 は「ゼロデイ及びセキュリティのトレンド」セクションを構成する。
@@ -28,24 +33,28 @@ pipeline-1-cve.md のトラック B から渡されたCVE（`section_route: tren
 - 窓外の情報はメインに据えない（継続フォローとして扱う）
 
 ## 必須ソース（英語）
-| ソース | URL |
-|--------|-----|
-| BleepingComputer | bleepingcomputer.com |
-| The Hacker News | thehackernews.com |
-| SecurityWeek | securityweek.com |
-| The Record (Recorded Future) | therecord.media |
-| Mandiant Blog | cloud.google.com/blog/topics/threat-intelligence |
-| Rapid7 Blog | rapid7.com/blog |
-| CISA Alerts | cisa.gov/news-events/alerts |
+| ソース | URL | feeds.json |
+|--------|-----|-----------|
+| BleepingComputer | bleepingcomputer.com | 収録済み |
+| The Hacker News | thehackernews.com | 収録済み |
+| SecurityWeek | securityweek.com | 収録済み |
+| The Record (Recorded Future) | therecord.media | 未収録 |
+| Mandiant Blog（Google Threat Intelligence） | cloud.google.com/blog/topics/threat-intelligence | 収録済み（"Google Threat Intelligence (Mandiant)"） |
+| Rapid7 Blog | rapid7.com/blog | 未収録 |
+| CISA Alerts | cisa.gov/news-events/alerts | 収録済み（"CISA Advisories"） |
+| Unit 42（Palo Alto Networks） | unit42.paloaltonetworks.com | 収録済み |
+| watchTowr Labs | labs.watchtowr.com | 収録済み |
 
 ## 必須ソース（日本語）
-| ソース | URL | 昇格トリガー |
-|--------|-----|------------|
-| Security NEXT | security-next.com | 記事掲載 → 参考A昇格 |
-| JPCERT/CC 注意喚起 | jpcert.or.jp/at/ | 注意喚起発行 → 参考A昇格 |
-| IPA 重要なセキュリティ情報 | ipa.go.jp/security/security-alert/ | 発行 → 参考A昇格 |
-| ScanNetSecurity | scan.netsecurity.ne.jp | 国内被害報道 → 参考A昇格 |
-| 警察庁サイバー警察局 | npa.go.jp/bureau/cyber/ | 公表 → 参考A昇格 |
+| ソース | URL | 昇格トリガー | feeds.json |
+|--------|-----|------------|-----------|
+| Security NEXT | security-next.com | 記事掲載 → 参考A昇格 | 収録済み |
+| JPCERT/CC 注意喚起 | jpcert.or.jp/at/ | 注意喚起発行 → 参考A昇格 | 収録済み（"JPCERT/CC"） |
+| IPA 重要なセキュリティ情報 | ipa.go.jp/security/security-alert/ | 発行 → 参考A昇格 | 収録済み |
+| ScanNetSecurity | scan.netsecurity.ne.jp | 国内被害報道 → 参考A昇格 | 収録済み |
+| JVN（脆弱性対策情報） | jvn.jp | 発行 → 参考A昇格 | 収録済み |
+| 警察庁サイバー警察局 | npa.go.jp/bureau/cyber/ | 公表 → 参考A昇格 | 未収録（RSS配信なし・確認済み。Web検索で補完） |
+| NISC（国家サイバー統括室） | cyber.go.jp | 公表 → 参考A昇格 | 未収録（RSS配信なし・確認済み。Web検索で補完） |
 
 ## 参考A（国内）昇格トリガー
 以下のいずれか1つ以上で昇格:
@@ -93,16 +102,18 @@ Step 1b（APT活動調査）では pipeline-1b-apt.md に定義したソース�
 Step 2 は以下の追加ソースで APT関連の動向を補完する。
 
 ### APT活動の補完確認ソース
-| ソース | URL | 用途 |
-|--------|-----|------|
-| Microsoft MSTIC Blog | microsoft.com/en-us/security/blog/ | 帰属・TTP |
-| CrowdStrike Blog | crowdstrike.com/blog/ | キャンペーン観測 |
-| Unit 42（Palo Alto） | unit42.paloaltonetworks.com | マルウェア分析 |
-| Talos Intelligence | blog.talosintelligence.com | インフラ追跡 |
-| Secureworks CTU | secureworks.com/research/threat-profiles | グループプロファイル |
-| SentinelLabs | sentinelone.com/labs/ | マルウェア技術分析 |
-| Elastic Security Labs | elastic.co/security-labs | TTP詳細 |
-| NISC（日本） | nisc.go.jp/news/ | 公式勧告 |
+| ソース | URL | 用途 | feeds.json |
+|--------|-----|------|-----------|
+| Microsoft MSTIC Blog | microsoft.com/en-us/security/blog/ | 帰属・TTP | 未収録 |
+| CrowdStrike Blog | crowdstrike.com/blog/ | キャンペーン観測 | 未収録 |
+| Unit 42（Palo Alto） | unit42.paloaltonetworks.com | マルウェア分析 | 収録済み |
+| Talos Intelligence | blog.talosintelligence.com | インフラ追跡 | 未収録 |
+| Secureworks CTU | secureworks.com/research/threat-profiles | グループプロファイル | 未収録 |
+| SentinelLabs | sentinelone.com/labs/ | マルウェア技術分析 | 未収録 |
+| Elastic Security Labs | elastic.co/security-labs | TTP詳細 | 未収録 |
+| watchTowr Labs | labs.watchtowr.com | 脆弱性リサーチ・実証 | 収録済み |
+| Google Threat Intelligence（Mandiant） | cloud.google.com/blog/topics/threat-intelligence | 帰属・キャンペーン分析 | 収録済み（"Google Threat Intelligence (Mandiant)"） |
+| NISC（日本） | cyber.go.jp | 公式勧告 | 未収録（RSS配信なし・確認済み。Web検索で補完） |
 
 ### APT情報の参考A昇格トリガー（CVEと同様）
 以下のいずれか1つ以上で昇格:

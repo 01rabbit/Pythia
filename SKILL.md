@@ -13,7 +13,7 @@ schedule: daily
 1. `reported-cves.md` — 既報CVEリスト（重複除外に使用）
 2. `reported-apts.md` — 既報APT活動リスト（重複除外に使用）
 3. `reported-ai-attacks.md` — 既報AI攻撃リスト（重複除外に使用）
-4. `pipeline-1-cve.md` — Step 1 CVE調査ルール（監視対象23製品リスト含む）
+4. `pipeline-1-cve.md` — Step 1 CVE調査ルール（トラックA/B排他的決定木含む・製品リストなし）
 5. `pipeline-1b-apt.md` — Step 1b APT活動調査ルール
 6. `pipeline-2-trends.md` — Step 2 動向収集ルール
 7. `pipeline-3-weighting.md` — Step 3 重みづけ・出力ルール
@@ -37,13 +37,13 @@ Section 2: ゼロデイ・セキュリティトレンド
   → 注目CVE（リスト外製品 — トラック B CVE: CVSS9.0以上・KEV・ゼロデイ等）
 
 Section 3: 製品別CVE
-  → pipeline-1-cve.md の「監視対象製品リスト」（23製品）を対象
+  → pipeline-1-cve.md のトラックA/B排他的決定木（D2）でトラックAに帰属したCVEを対象
   → 製品ごとにCVEを収集・優先度評価
   → 本編 / 参考A（国内）/ 参考B（国際先行）/ 除外サマリー
 
 Section 4: SOC推奨情報
   → pipeline-soc-recommend.md で収集・分類
-  → 監視対象23製品以外で CVE・ゼロデイ・AI攻撃の3観点に関連して注目すべき情報
+  → Section 1〜3 に採用されなかったが SOC 運用上把握すべき情報
   → 優先度タグ（高 / 中 / 低）で分類
 ```
 
@@ -55,13 +55,19 @@ Section 4: SOC推奨情報
 - 現在時刻（JST）を取得する
 - 調査対象期間: 実施日前日 07:00 JST 〜 実施日 07:00 JST（固定ウィンドウ）
 
+### Step 0.5: 機械収集データの読み込み（一次入力）
+- `security-intel-collector/data/raw/` の当日・前日分 JSON（`news-YYYY-MM-DD.json` / `cves-YYYY-MM-DD.json`、
+  無ければ `news-latest.json` / `cves-latest.json`）を読み込み、`items[]` を Step 1〜2 の調査起点とする
+- GitHub Actions が3時間おきに自動収集しているため、当日 07:00 JST 時点で複数回分が蓄積されている
+- Web 検索は data/raw に無い情報の補完としてのみ使用する（再現性確保のため）
+- data/raw が取得できない・空の場合はその旨をレポート meta に記録し、Web 検索へフォールバックする
+
 ### Step 1: CVE調査（pipeline-1-cve.md に従う）
-- **トラック A（製品別CVE / Section 3 向け）**:
-  監視対象製品リスト（23製品）のCVEを NVD / CISA KEV / ベンダーアドバイザリで横断検索
-  期間内に A〜H の変化が確認できるCVEを収集。`reported-cves.md` と照合し既報除外
-- **トラック B（トレンドCVE / Section 2 向け）**:
-  リスト外製品で CVSS 9.0以上・CISA KEV・ゼロデイ・実悪用・PoC公開等の高インパクトCVEを収集
-  `section_route: trends` タグを付けて Step 2 へ渡す
+- 一次入力: Step 0.5 の `cves-*.json`（NVD API 機械収集済み）。Web 検索は補完のみ
+- トラックA/B の定義・帰属判定は pipeline-1-cve.md の「トラックA/B 排他的決定木」に従う
+  （本ファイルでは重複定義しない）
+- 期間内に採用条件 A〜H の変化が確認できるCVEを収集。`reported-cves.md` と照合し既報除外
+- トラックBに帰属した事象には `section_route: trends` タグを付けて Step 2 へ渡す
 - 除外基準はフラグ付け（足切りしない）
 
 ### Step 1b: APT活動調査（pipeline-1b-apt.md に従う）※Step 1 と並行実行
@@ -78,6 +84,7 @@ Section 4: SOC推奨情報
 - Temporal Burst Filtering（48時間以内に3件以上の独立ソース）を適用（3件未満 → 低優先度）
 
 ### Step 2: 動向収集（pipeline-2-trends.md に従う）
+- 一次入力: Step 0.5 の `news-*.json`（RSS 機械収集済み・feeds.json 収録14フィード）。Web 検索は補完のみ
 - 英語ソース: BleepingComputer / The Hacker News / SecurityWeek / Mandiant 等
 - 日本語ソース（必須）: Security NEXT / JPCERT/CC 注意喚起 / IPA重要情報 / ScanNetSecurity
 - APT補完ソース: MSTIC / CrowdStrike / Unit 42 / NISC / 警察庁サイバー警察局
@@ -156,6 +163,8 @@ Section 4: SOC推奨情報
   4. `YYYY-MM-DD-security-report-zeroday-trends.txt` — Section 2: ゼロデイ・トレンド
   5. `YYYY-MM-DD-security-report-ai.txt` — Section 1: AI攻撃動向
   6. `YYYY-MM-DD-security-report-soc.txt` — Section 4: SOC推奨情報
+- コミット直前に `python3 scripts/check_reported.py` と `python3 scripts/validate_observations.py` を
+  実行し、違反があれば修正してからコミットする
 - 変更ファイル（reported-*.md / outputs/YYYY-MM-DD/ / forecaster/ の Step 3.5 成果物）を
   git add → git commit → git push する。コミットメッセージ: `daily report: YYYY-MM-DD`
 - 保存完了後、`security-report.txt`（全セクション完全版）の全文をチャットに表示する
