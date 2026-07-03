@@ -98,7 +98,7 @@
 
 [確認されたバイアス・改善ポイント]
 
-・**KEV初回追加（E1）予報の分岐が新たに確認された**: SimpleHelp CVE-2026-48558（的中・露出14,000台超）とOracle EBS CVE-2026-46817（外れ・露出約950台）は、いずれも「CVSS9.5以上×実悪用確認済み」という共通条件を満たしながらKEV追加の有無が分かれた。想定インターネット露出インスタンス数の違いが一因である可能性がある（推測）。詳細は knowledge/kev-initial-add-timelines.json 補正提案（下記）を参照。
+・**KEV初回追加（E1）予報の分岐が新たに確認された（訂正あり）**: SimpleHelp CVE-2026-48558（的中・露出14,000台超）とOracle EBS CVE-2026-46817（外れ・露出約950台）は、いずれも「CVSS9.5以上×実悪用確認済み」という共通条件を満たしながらKEV追加の有無が分かれた。当初この論点をknowledge補正の新規提案（Issue #30）として起票したが、検証後の確認で forecaster/knowledge/kev-initial-add-timelines.json は既にIssue #28・PR #29で新設・マージ済み（本検証実行時の見落とし）であり、SimpleHelp事例も既に記録済みであることが判明した。Oracle EBS（露出約950台）は同ファイルの採用基準（exposure_scope: 概ね数千台以上）を満たさず記録対象外のため、追加のknowledge補正は不要と判断した。重複していたIssue #30はduplicateとしてクローズ済み。詳細は下記「knowledge/ 補正提案」を参照。
 
 ・**ベンダー事前告知型予報（Cisco Catalyst Center）の確定に3日を要した**: イベント発生日が事前判明している予報は、自レポート網の受動的収集のみでは的中/外れの確定が遅延する。日次収集ルールへの直接照会チェック追加を提案する（本検証タスクの権限外）。
 
@@ -117,10 +117,9 @@
 
 自動書き換えは行わず、以下を提案として記録する（人間レビュー待ち）:
 
-1. **forecaster/knowledge/kev-initial-add-timelines.json（未作成・新規Issue起票）**
-   提案内容: CVSS9.5以上×実悪用確認済みの組み合わせについて、実悪用確認からCISA KEV初回追加までの実測タイムライン統計と、想定インターネット露出インスタンス数を記録するファイルを新設する。
-   根拠: SimpleHelp CVE-2026-48558（CVSS10.0・露出14,000台超→即日〜翌日でKEV追加・hit）とOracle EBS CVE-2026-46817（CVSS9.8・露出約950台→72時間超経過してもKEV未追加・miss）の対照的な2データポイント。
-   状態: GitHub Issue #30 として提案済み: https://github.com/01rabbit/Pythia/issues/30
+1. **forecaster/knowledge/kev-initial-add-timelines.json（訂正: 既に対応済み）**
+   本検証では当初、CVSS9.5以上×実悪用確認済みの組み合わせについてKEV初回追加タイムライン・露出インスタンス数を記録するファイルの新設をIssue #30として提案したが、これは誤りだった。同ファイルは既にIssue #28・PR #29で新設・マージ済み（本検証実行時に見落としていた既存ファイル）であり、SimpleHelp CVE-2026-48558のデータポイント（露出14,000台超・hit）を既に記録している。Oracle EBS CVE-2026-46817（露出約950台・miss）は同ファイルの採用基準（exposure_scope: 概ね数千台以上）を満たさないため記録対象外であり、追加のknowledge補正は不要と判断した。
+   状態: 対応済み（Issue #28 → PR #29）。誤って重複提案したIssue #30はduplicateとしてクローズ済み: https://github.com/01rabbit/Pythia/issues/30
 
 2. 既存提案（継続・ステータス変更なし）:
    - incident-visibility-timelines.json → Issue #2
