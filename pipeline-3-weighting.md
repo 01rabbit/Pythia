@@ -19,6 +19,9 @@ Step 3 の出力は必ず以下の順序で行う:
    pipeline-1-cve.md トラックB（`section_route: trends` タグ付きCVE）は `trends.trends_cve` に、
    pipeline-2-trends.md が収集する一般トレンド記事は `trends.trends_topic` に格納する
    （トップレベル `trends` オブジェクト。pipeline-output-schema.md の「trends オブジェクト」参照）。
+   CVE / APT / AI攻撃 / SOC推奨情報 / トレンド記事の各エントリには `info_id`（収集情報の一意ID）を
+   付与する。生成規則・カテゴリコード表は pipeline-output-schema.md の「info_id（収集情報の一意ID・
+   全エントリ共通フィールド）」節を参照（JSON専用フィールド・テキスト非出力）。
 2. JSON の内容を本ファイルおよび pipeline-report-modes.md・pipeline-ai-2.md・pipeline-soc-recommend.md の
    テンプレートに従い以下5種のプレーンテキストファイルに変換する:
    - security-report.txt: 全セクション完全版（Section 1〜4 + 除外サマリー + 集計行）

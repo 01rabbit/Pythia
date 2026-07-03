@@ -57,6 +57,58 @@ pipeline-2-trends.md が収集する一般トレンド記事（CVE未採番の�
 
 ---
 
+## info_id（収集情報の一意ID・全エントリ共通フィールド）
+
+収集した情報（CVE / APT / AI攻撃 / SOC推奨情報 / トレンド記事の各エントリ）には、日をまたいだ横断分析・重複検知のための一意識別子 `info_id` を付与する。JSON専用フィールドであり、テキスト出力には含めない（他の `axis1_score` 等の JSON専用フィールドと同様の扱い）。
+
+### フォーマット
+
+```
+YYYYMMDD-カテゴリ-ハッシュ値
+例: 20260702-CVEP-232ffbaf
+```
+
+| 要素 | 内容 |
+|---|---|
+| YYYYMMDD | `meta.report_date` を `-` なしで8桁表記にしたもの |
+| カテゴリ | 下表のカテゴリコード（英大文字4文字固定） |
+| ハッシュ値 | SHA-256ハッシュの先頭8桁（16進小文字） |
+
+### カテゴリコード表（全て4文字で統一）
+
+| コード | 対象 | 該当する report_section / trends 配列 |
+|---|---|---|
+| `CVEP` | Section 3 製品別CVE（トラックA） | zero_day_special / main_cve / reference_a / reference_b |
+| `CVET` | Section 2 注目CVE（トラックB） | trends.trends_cve |
+| `TRND` | Section 2 トレンド記事 | trends.trends_topic |
+| `APTC` | Section 2 APT活動 | apt_main / apt_notable |
+| `AIAT` | Section 1 AI攻撃 | ai_attacks_main / ai_attacks_reference_a / ai_attacks_reference_b |
+| `SOCR` | Section 4 SOC推奨情報 | soc_recommendations |
+
+forecasts（予報）と observations（forecaster正規化データ）は「収集情報」ではなく本パイプラインの生成物・分析結果であるため対象外とする（既存の `forecast_id` / `observation_id` をそのまま使う）。
+
+### ハッシュ入力の構成（案B: 日付＋タイトル＋主URL）
+
+```
+raw = "{YYYYMMDD}::{タイトル}::{主URL}"
+ハッシュ値 = SHA256(raw の UTF-8バイト列) の先頭8桁（16進）
+```
+
+- **主URL**: そのエントリの `references[0].url`（配列の先頭要素）。参照が0件の場合は空文字列とする。
+- **タイトル**: エントリ種別によって以下を使う（`title` フィールドを持たないCVE/APTエントリは代替の識別文字列を組み立てる）。
+
+| エントリ種別 | タイトルの組み立て方 |
+|---|---|
+| CVEエントリ（zero_day_special / main_cve / reference_a / reference_b / trends.trends_cve） | `"{cve_id}/{product}"`（`cve_id` が null の場合は `"CVE未採番/{product}"`） |
+| APTエントリ（apt_main / apt_notable） | `"{group_name}/{campaign_id}"` |
+| AI攻撃エントリ（ai_attacks_*） | `title` フィールドをそのまま使用 |
+| SOC推奨情報エントリ（soc_recommendations） | `title` フィールドをそのまま使用 |
+| トレンド記事エントリ（trends.trends_topic） | `title` フィールドをそのまま使用 |
+
+同一エントリを同日に再度JSON化しても同一の `info_id` が再現される（決定的生成）。翌日以降に同一事象が継続報告される場合、`report_date` が変わるため `info_id` も変わる（`info_id` は「その日その情報がどう記録されたか」の識別子であり、`cve_id` / `campaign_id` のような事象そのものの継続識別子ではない。事象の継続追跡は引き続き `cve_id` / `campaign_id` / `attack_id` / `rec_id` / `topic_id` を正とする）。
+
+---
+
 ## meta オブジェクト
 
 ```json
@@ -171,7 +223,8 @@ pipeline-2-trends.md が収集する一般トレンド記事（CVE未採番の�
   "region_impact": ["JP", "US"],
   "exploited_by": [],
   "section_route": "product_cve",
-  "report_section": "main_cve"
+  "report_section": "main_cve",
+  "info_id": "20260626-CVEP-a1b2c3d4"
 }
 ```
 
@@ -225,6 +278,7 @@ pipeline-2-trends.md が収集する一般トレンド記事（CVE未採番の�
 | exploited_by | array[string] | このCVEを悪用しているAPTのcampaign_id（cross-reference） |
 | section_route | string | "product_cve"（pipeline-1-cve.md トラックA・Section 3 製品別CVE）/ "trends"（トラックB・`section_route: trends` タグ付き・Section 2 trends.trends_cve へ帰属）。pipeline-1-cve.md のトラックA/B排他的決定木の判定結果をそのまま記録する |
 | report_section | string | "zero_day_special"/"main_cve"/"reference_a"/"reference_b"/"trends_cve"（section_route: trends のCVEが trends.trends_cve に格納される場合。振り分け先の本編/参考A/参考Bの区別は pipeline-3-weighting.md の軸1×軸2振り分けをtrends内でも適用し、値として保持する） |
+| info_id | string | 収集情報の一意ID（"YYYYMMDD-CVEP-xxxxxxxx"）。生成規則は本ファイル冒頭の「info_id（収集情報の一意ID・全エントリ共通フィールド）」参照。JSON専用フィールド（テキスト非出力） |
 
 **sector_impact 制御語彙**:
 "government" / "finance" / "healthcare" / "manufacturing" / "telecom" / "energy" / "education" / "retail" / "it" / "professional_services" / "defense" / "critical_infrastructure" / "other"
@@ -306,7 +360,8 @@ Section 2 のテキスト出力に対応する構造化データをここに保�
       "references": [
         { "url": "https://www.bleepingcomputer.com/...", "title": null, "language": "en", "source": "BleepingComputer" }
       ],
-      "report_section": "trends_topic"
+      "report_section": "trends_topic",
+      "info_id": "20260625-TRND-e5f6a7b8"
     }
   ]
 }
@@ -323,6 +378,7 @@ CVEエントリ（zero_day_special / main_cve / reference_a / reference_b）と�
 | section_route | string | 常に "trends"（pipeline-1-cve.md トラックB由来であることを示す） |
 | report_section | string | 常に "trends_cve" |
 | axis1_score / axis2_score | integer | pipeline-3-weighting.md のCVE重みづけモデル（軸1×軸2）をそのまま適用し、本編/参考A/参考B相当の優先度をこの中で表現する（振り分け先の呼称はテキスト変換時に「注目CVE（リスト外）」内のランク表記として扱う） |
+| info_id | string | カテゴリコードは `CVEP` ではなく `CVET` を使う（trends.trends_cve 専用コード）。生成規則は他は共通 |
 
 後日CVEが採番され製品に紐付いた場合、pipeline-1-cve.md の規定により翌日以降の実行で
 D2判定によりトラックA（Section 3・zero_day_special/main_cve/reference_a/reference_b のいずれか）へ
@@ -343,6 +399,7 @@ CVE型ともAPT型とも異なる軽量な型を使用する。
 | region_impact | array[string] | CVEエントリと同じ制御語彙 |
 | references | array[{url, title, language, source}] | 参照URL |
 | report_section | string | 常に "trends_topic" |
+| info_id | string | 収集情報の一意ID（"YYYYMMDD-TRND-xxxxxxxx"）。生成規則は本ファイル冒頭の「info_id」節参照 |
 
 ---
 
@@ -413,7 +470,8 @@ CVE型ともAPT型とも異なる軽量な型を使用する。
     { "url": "https://...", "title": null, "language": "en", "source": "Symantec" }
   ],
   "related_cves": [],
-  "report_section": "apt_notable"
+  "report_section": "apt_notable",
+  "info_id": "20260625-APTC-c9d0e1f2"
 }
 ```
 
@@ -446,6 +504,7 @@ CVE型ともAPT型とも異なる軽量な型を使用する。
 | ttps[].implementation | string | 具体的な実装方法 |
 | related_cves | array[string] | このグループが悪用しているCVE IDのリスト（cross-reference） |
 | report_section | string | "apt_main" / "apt_notable" |
+| info_id | string | 収集情報の一意ID（"YYYYMMDD-APTC-xxxxxxxx"）。タイトル要素は `"{group_name}/{campaign_id}"`。生成規則は本ファイル冒頭の「info_id」節参照 |
 
 **activity_type 制御語彙**:
 "new_malware" / "active_campaign" / "ttp_update" / "official_attribution" / "ioc_release" / "new_target" / "infrastructure_change" / "initial_access_broker" / "resume_activity"
@@ -572,7 +631,8 @@ CVE型ともAPT型とも異なる軽量な型を使用する。
   "references": [
     { "url": "https://...", "title": null, "language": "en", "source": "SentinelOne" }
   ],
-  "report_section": "ai_attacks_main"
+  "report_section": "ai_attacks_main",
+  "info_id": "20260625-AIAT-f1a2b3c4"
 }
 ```
 
@@ -595,6 +655,7 @@ CVE型ともAPT型とも異なる軽量な型を使用する。
 | ioc_signals.confirmed | boolean | IoC・検知シグナルが確認されているか |
 | ioc_signals.detection_signals | array[string] | プロンプトパターン・行動的シグナル等 |
 | report_section | string | "ai_attacks_main"/"ai_attacks_reference_b"/"ai_attacks_reference_a" |
+| info_id | string | 収集情報の一意ID（"YYYYMMDD-AIAT-xxxxxxxx"）。タイトル要素は `title` フィールドをそのまま使用。生成規則は本ファイル冒頭の「info_id」節参照 |
 
 ---
 
@@ -631,7 +692,8 @@ CVE型ともAPT型とも異なる軽量な型を使用する。
   },
   "references": [
     { "url": "https://example.com", "title": null, "language": "ja", "source": "JPCERT/CC" }
-  ]
+  ],
+  "info_id": "20260626-SOCR-a7b8c9d0"
 }
 ```
 
@@ -645,6 +707,7 @@ CVE型ともAPT型とも異なる軽量な型を使用する。
 | product_or_service | string \| null | 対象製品・サービス名。なければ null |
 | recommended_actions | array[string] | SOCが取るべき具体的アクションのリスト |
 | monitoring.splunk_spl | array[string] | SPLクエリ（オプション。なければ空配列） |
+| info_id | string | 収集情報の一意ID（"YYYYMMDD-SOCR-xxxxxxxx"）。タイトル要素は `title` フィールドをそのまま使用。生成規則は本ファイル冒頭の「info_id」節参照 |
 
 ---
 
@@ -774,6 +837,7 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 - `confidence_numeric` はテキストには出力しない（JSON専用フィールド）
 - `axis1_score` / `axis2_score` / `axis_p_score` / `axis_q_score` はテキストには出力しない（JSON専用フィールド）
 - `report_section` フィールドはテキストには出力しない（JSON専用フィールド）
+- `info_id` フィールドはテキストには出力しない（JSON専用フィールド。生成規則は本ファイル冒頭の「info_id」節参照）
 - 予報の `outcome_channel` / `forecast_class` / `window_hours` はテキストに出力する（【攻撃予報】の「観測出口クラス:」「検証窓:」行。pipeline-3-weighting.md テンプレート参照）
 - 予報の `anchor` / `kev_snapshot` / `forecast_class_rationale` / `deadline_date` はテキストには出力しない（JSON専用・検証ステージが使用）
 - CVEの `epss.score` / `epss.percentile` / `epss.model_date` はテキストには出力しない（JSON専用・確度アンカー算出用）
