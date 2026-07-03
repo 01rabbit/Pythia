@@ -1,0 +1,344 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-04 07:44 JST
+調査期間: 2026-07-03 07:00 〜 2026-07-04 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-6682 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+2. CVE-2026-6683 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+3. CVE-2026-6684 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: R0.16未満（本CVEのみR0.16で緩和・他6件は未パッチ）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 非公表
+状態: PoC公開
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+4. CVE-2026-6685 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+5. CVE-2026-6686 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+6. CVE-2026-6687 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+7. CVE-2026-6688 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸P・軸Q閾値を満たすAPT活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（北朝鮮nexus・過去のContagious Interview/Lazarus系npmキャンペーンとの手口類似が指摘されるが本キャンペーン単体への具体的グループ名の帰属はソースが明示していない）（別名: なし / 国家帰属: KP / 帰属信頼度: low）
+活動概要: 正規のRollupプラグイン「rollup-plugin-polyfill-node」を模倣した悪意あるnpmパッケージ群が新たに確認された。パッケージ内にBase64エンコードされたnpmインストールコマンドが仕込まれ、SVGサニタイズユーティリティ等を装った第2段階パッケージ（swift-parse-stream / quirky-token / react-icon-svgs 等）を取得し、JSONKeeper経由でJavaScriptマルウェアを実行する。窃取対象はnpmトークン・Git認証情報・AWS/Azureクラウド鍵・Google Gemini/Anthropic Claude等のAIサービス認証情報・SSH鍵・ブラウザデータ・暗号資産ウォレット・VS Code/Windsurf/Cursorの編集履歴・クリップボード・スクリーンショットと多岐にわたる。ソースは本キャンペーンを「北朝鮮に関連する」と記述するが、具体的なグループ名（Lazarus等）への帰属は本キャンペーン単体には明示していない（過去のContagious Interviewキャンペーンとの手口類似のみ言及）。（推測）2026年4月の108パッケージ・261バージョンによる大規模npmサプライチェーン攻撃（BeaverTail/OtterCookie配布・Contagious Interview関連）と同系統の脅威者による継続活動である可能性があるが、本記事はそれを断定していない。
+推奨アクション: npm依存関係の棚卸しでrollup-packages-polyfill-core/rollup-runtime-polyfill-core等の不審パッケージ名の混入有無を確認し、発見次第削除する。開発環境のnpmトークン・クラウド認証情報・AIサービスAPIキーをローテーションする。CIパイプラインでのnpm install時のネットワーク接続先を監視し、216.126.236[.]244への通信をブロックする。
+参照: https://thehackernews.com/2026/07/north-korea-linked-npm-packages-mimic.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] Google・FBIが2百万台超のNetNut住宅用プロキシネットワークを摘発
+GoogleとFBIが、トロイの木馬化されたAndroidアプリ/SDK（Badbox 2.0等）で侵害した200万台超のAndroidスマートTV・ストリーミングボックスを住宅用プロキシ出口ノードとして悪用していたNetNut（別名Popa、Alarum Technologies関連）を共同摘発した。Googleは2026年6月の1週間だけで316件の異なる脅威クラスタ（犯罪グループ・国家系スパイ活動グループ双方を含む）がNetNut出口ノードをパスワードスプレー攻撃・不正アクセス・身元偽装に利用していたことを観測した。GoogleはPlay Protectで感染アプリにフラグを立て、関連アカウント・C2用サービスを無効化した。
+参照: https://www.securityweek.com/google-fbi-disrupt-netnut-residential-proxy-network-powered-by-millions-of-devices/
+
+・[トレンド記事] 欧州議会PEGA委員会の元委員がPegasusスパイウェアの被害と確認
+Citizen Labは、EUのスパイウェア調査委員会（PEGA委員会）の元代理委員だったギリシャの元欧州議会議員Stelios Kouloglou氏がNSO GroupのPegasusスパイウェアの被害に遭っていたことをフォレンジック調査で確認したと発表した。感染は2022年10月21日（ギリシャで入院中）と2023年3月6〜7日（アテネ〜ブリュッセル間の移動中）の2回確認され、いずれもゼロクリックエクスプロイト「PWNYOURHOME」が使われた。Citizen Labは特定の政府への帰属は現時点で行っておらず、ギリシャ政府の関与を示す証拠もないとしている。PEGA委員会委員がPegasus被害と確認された初の公開事例。
+参照: https://citizenlab.ca/research/member-of-committee-investigating-spyware-hacked-with-pegasus/
+
+・[トレンド記事] PamStealer: 偽Maccyサイト・PAM認証チェックを使うmacOS認証情報窃取マルウェア
+Jamf Threat Labsは、クリップボード管理ツール「Maccy」を装う新種のmacOS向け2段階型情報窃取マルウェア「PamStealer」を報告した。第1段階はディスクイメージ内のコンパイル済みAppleScriptで、macOSのPAM APIを使いローカルでシステムパスワードを検証した上で偽のGatekeeper警告（「Maccyが破損しています」）を表示し痕跡を隠す。第2段階はRust製の情報窃取マルウェアで、CPUアーキテクチャ・ロケール・キーボード配列・タイムゾーンから復号鍵を導出する解析耐性を持ち、ブラウザデータ・暗号資産ウォレット拡張機能・iCloudキーチェーン・クリップボードを窃取する。悪性ドメインmaccyapp[.]com（正規のmaccy[.]appを模倣）・持ち出し先avenger-sync[.]liveを確認。
+参照: https://thehackernews.com/2026/07/pamstealer-uses-fake-maccy-sites-and.html
+
+・[トレンド記事] ARToken PhaaS: EvilTokens系M365フィッシングツールキットの内部実態をCisco Talosが解析
+Cisco Talosは、フィッシング/BECサービス「EvilTokens」のアフィリエイトパネル「ARToken」の内部実態を解析・公開した。デバイスコードフィッシング（Microsoft発行のデバイスコードを正規ログイン画面で入力させMFAを回避してMicrosoftから直接トークンを発行させる手口）を用い、M365認証トークンを窃取後Primary Refresh Token（PRT）で永続化、Outlookメールボックスの完全アクセス（送信代理・受信トレイの隠蔽/転送ルール設定）やSharePoint/OneDriveアクセスを取得する。EvilTokens自体は月額500ドル+初期費用1,500ドルで運用されるPhaaS。侵害された企業の請求書関連メールを装ったなりすましメールが観測されている。
+参照: https://www.bleepingcomputer.com/news/security/artoken-phaas-exposes-eviltokens-microsoft-365-phishing-toolkit/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: 北朝鮮nexusのnpmサプライチェーン攻撃キャンペーンに関する追加IOC公開に備えたAI開発ツール・クラウド認証情報のローテーション実施
+Tier: 2
+確度: 低
+観測出口クラス: E2
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: The Hacker News 2026-07-04（JFrog調査引用）: 正規npmパッケージ「rollup-plugin-polyfill-node」を模倣した悪意あるパッケージ「rollup-packages-polyfill-core」「rollup-runtime-polyfill-core」を新規確認。npmトークン・Git認証情報・AWS/Azureクラウド鍵・Google Gemini/Anthropic Claude等のAIサービス認証情報・SSH鍵を標的とし、C2サーバ216.126.236[.]244への通信を確認。
+  過去パターン: 2026年4月に確認された同系統のnpmサプライチェーン攻撃（108パッケージ・261バージョン、BeaverTail/OtterCookie配布）では、初報後に追加の悪意あるパッケージ・C2インフラが段階的に判明する展開が過去に観測されている。
+  脅威情報: C2サーバ216.126.236.244への通信を確認。標的はnpmトークン・クラウド鍵・AIサービス認証情報・SSH鍵。
+  確度アンカー: KEV登録=なし
+推定部分: （推測）過去の同系統npmキャンペーンのパターンから追加IOC公開の可能性を推測しているが、JFrog自身が72時間以内に続報を出すことを確約する情報はソースに存在しない。また「北朝鮮nexus」という帰属自体もソースが具体的グループ名を明示しない広い表現に基づく推測の域を出ない。
+先回り監視: CI/CD環境からのnpm install時に216.126.236[.]244または類似の未知IPへの通信、開発者端末でのnpmトークン・AIサービスAPIキーの異常な参照・送信ログ、rollup関連パッケージ名のタイポスクワッティングの有無確認。
+的中判定: JFrogまたは他の独立したセキュリティベンダーが、本キャンペーンに関連する新規の悪意あるnpmパッケージ名またはC2インフラを発行日（2026-07-04）から72時間以内に追加公開した場合。他のベンダーによる単なる要約記事・再報道は的中とみなさない。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（APT）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・Armored Likho（Eagle Werewolf） / RIS-2026-ArmoredLikho-BusySnake → 軸P=6（新規マルウェア発見+単一ベンダー帰属）・軸Q=6（政府/電力セクター集中+複数国）。軸P<8のため本編不採用。参考A昇格トリガー（国内公表・国内組織侵害・国内ベンダーアドバイザリ）該当なし（標的はロシア・ブラジル・カザフスタン）のため注目動向にも不採用。継続監視対象として reported-apts.md には登録せず、来歴のみ本除外エントリに記録
+・不明（Avalon/CrownXフレームワーク運用者） / RIS-2026-AvalonCrownX-RansomwareFramework → 軸P=3（新規マルウェア発見のみ・単一ベンダー報告）・軸Q=1（セクター/地域特定なし・単一ソース報道）。両軸とも閾値未達で参考A昇格トリガーもなし
+
+本日の集計:
+APT — 本編0件 / 注目動向1件 / 除外2件
+========================================

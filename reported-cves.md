@@ -93,3 +93,31 @@
 | CVE-2026-50229 | Apache Tomcat（JVNVU#93304382・number guessサンプルアプリ使用時） | 2026-07-02 | none | 2026-07-02 | YES | CVSS 6.1・同梱サンプルアプリの反射型XSS・JVN発行・参考A採用（同一JVNVU#93304382内の複合脆弱性） |
 | CVE-2026-50548 | Cursor IDE（AIコードエディタ、3.0未満） | 2026-07-01 | poc_public | 2026-07-02 | YES | CVSSv3.1 9.8/CVSSv4 9.3・Cato AI Labs発見「DuneSlide」・ゼロクリック・プロンプトインジェクション経由サンドボックス回避RCE・run_terminal_cmd working_directory検証不備・修正済み(3.0)・実悪用未確認・CVEパイプラインではlow_score（国内ソース未確認）だがAI攻撃本編で採用 |
 | CVE-2026-50549 | Cursor IDE（AIコードエディタ、3.0未満） | 2026-07-01 | poc_public | 2026-07-02 | YES | CVE-2026-50548と同一disclosure（DuneSlide）・シンボリックリンク解決チェックのフォールバック不備・修正済み(3.0)・実悪用未確認・CVEパイプラインではlow_scoreだがAI攻撃本編で採用 |
+| CVE-2026-6682 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6683 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6684 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6685 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6686 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6687 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6688 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-13368 | WatchGuard Firebox（Fireware OS） | 2026-07-04 | none | 2026-07-04 | YES | CVSSv4 9.2・WatchGuard Fireware OS外部LDAP認証構成VPN use-after-free・Security NEXT国内報道・参考A採用 |
+| CVE-2026-44946 | SUSE Rancher（コンテナ管理ツール） | 2026-07-04 | none | 2026-07-04 | YES | CVSSv4 9.5(一部ソースのみ・NVD未確認)・SAMLアサーション再生（事前認証Cookie窃取前提）・Rancher 2.14.3で修正・参考A採用 |
+| CVE-2026-44947 | SUSE Rancher（コンテナ管理ツール） | 2026-07-04 | none | 2026-07-04 | YES | PSAクリーンアップ権限昇格・Rancher 2.14.3で修正・参考A採用（CVE-2026-44946と同一アドバイザリ内の複合脆弱性） |
+| CVE-2026-44948 | SUSE Rancher（コンテナ管理ツール） | 2026-07-04 | none | 2026-07-04 | YES | Fleet ImageScanパストラバーサル/DoS・Rancher 2.14.3で修正・参考A採用（同一アドバイザリ内の複合脆弱性） |
+| CVE-2026-44949 | SUSE Rancher（コンテナ管理ツール） | 2026-07-04 | none | 2026-07-04 | YES | Fleet workspace RBAC不備・Rancher 2.14.3で修正・参考A採用（同一アドバイザリ内の複合脆弱性） |
+| CVE-2026-24260 | NVIDIA Container Toolkit / GPU Operator | 2026-07-04 | none | 2026-07-04 | YES | CVSS8.5・NVIDIA Container Toolkit/GPU Operator TOCTOU競合状態・権限昇格リスク・Security NEXT国内報道・参考A採用 |
+| CVE-2026-33612 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | CVSS7.5・PowerDNS Recursor ZoneToCacheキャッシュポイズニング・ScanNetSecurity国内報道・参考A採用 |
+| CVE-2026-40012 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・ScanNetSecurity国内報道・参考A採用（CVE-2026-33612と同一アドバイザリ） |
+| CVE-2026-42005 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-42387 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-42388 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-42389 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-42390 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-52690 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-56809 | Ricoh Web Image Monitor（複数のレーザープリンタ・複合機/MFP搭載） | 2026-07-04 | none | 2026-07-04 | YES | CVSS6.1・Ricoh Web Image Monitor反射型XSS（複数プリンタ/MFP）・ユーザー操作前提・ScanNetSecurity国内報道・参考A採用 |
+| CVE-2026-50043 | セイコーソリューションズ SkyBridge MB-A100 / MB-A110（IoT向けルータ） | 2026-07-04 | none | 2026-07-04 | YES | CVSS7.2/CVSSv4 8.6・セイコーソリューションズSkyBridge OSコマンドインジェクション・EOL製品でパッチ提供予定なし・ScanNetSecurity/Security NEXT国内報道・参考A採用 |
+| CVE-2026-12166 | Little Orbit GamersFirst Anti-Cheat（GFAC_Sys_x64.sysドライバ） | 2026-07-04 | none | 2026-07-04 | YES | Little Orbit GamersFirst Anti-CheatドライバNULLポインタ参照DoS・ローカル限定・JVN発行・参考A採用 |
+| CVE-2026-12167 | Little Orbit GamersFirst Anti-Cheat（GFAC_Sys_x64.sysドライバ） | 2026-07-04 | none | 2026-07-04 | YES | GFACドライバminifilter通信ポートセキュリティ記述子不備・ローカル限定・JVN発行・参考A採用（同一JVN内複合脆弱性） |
+| CVE-2026-12168 | Little Orbit GamersFirst Anti-Cheat（GFAC_Sys_x64.sysドライバ） | 2026-07-04 | none | 2026-07-04 | YES | GFACドライバ任意カーネルメモリ書き込みSYSTEM権限昇格・ローカル限定・JVN発行・参考A採用（同一JVN内複合脆弱性） |
+| CVE-2026-14355 | PHP | 2026-07-04 | none | 2026-07-04 | YES | PHP OpenSSL AES-WRAP-PADメモリ破損（openssl_encrypt）・Security NEXT国内報道・参考A採用 |
+| CVE-2026-12184 | PHP | 2026-07-04 | none | 2026-07-04 | YES | PHP file_get_contents()プロキシ経由DoS（8.3.32のみ）・Security NEXT国内報道・参考A採用（CVE-2026-14355と同一更新内複合脆弱性） |

@@ -1,0 +1,837 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-04 07:44 JST
+調査期間: 2026-07-03 07:00 〜 2026-07-04 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-6682 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+2. CVE-2026-6683 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+3. CVE-2026-6684 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: R0.16未満（本CVEのみR0.16で緩和・他6件は未パッチ）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 非公表
+状態: PoC公開
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+4. CVE-2026-6685 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+5. CVE-2026-6686 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+6. CVE-2026-6687 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+------------------------------------------------------------
+7. CVE-2026-6688 / FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み）
+対象: 全バージョン（メンテナ未応答・パッチ未提供）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 非公表
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] runZero研究者がFatFsの7件の脆弱性とPoC(GitHub)を公開。メンテナは開示連絡に応答せず、6件は未パッチのまま
+
+【概要】
+組込み機器で広く使われる汎用FATファイルシステムライブラリFatFsに7件の脆弱性(CVE-2026-6682〜6688)が判明した。runZeroの研究者が技術詳細とPoCディスクイメージをGitHubで公開したが、FatFsの開発者（個人メンテナ）は開示連絡に応答せず、R0.16でGPT検証を追加したCVE-2026-6684以外の6件は未パッチのまま公開された。Espressif ESP-IDF・STMicroelectronics STM32Cube・Zephyr RTOS・MicroPython・ArduPilot・RT-Thread・Arm Mbed・Samsung TizenRT・SWUpdateなど極めて広範な組込み製品にFatFsが組み込まれており、単一ベンダーの問題ではなくOSSエコシステム横断の課題である。
+
+攻撃の流れ:
+1. 細工したUSBメモリ・SDカード等のFATボリュームを対象機器に挿入（一部シナリオではOTA/firmware自動マウント経由の悪用可能性も指摘）
+2. FatFsのボリューム解析・ディレクトリ/FATテーブル処理ロジックの不備を突きメモリ破損・クラッシュ・想定外動作を誘発
+3. 組込み機器の可用性喪失、機種・実装によってはさらなる不正動作につながる可能性（詳細はCVEごとに異なる）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・信頼できない外部ストレージメディア（USB/SDカード等）を組込み機器に接続しない運用を徹底する
+・自組織製品がFatFsを使用しているか（直接・間接のSDK経由含む）棚卸しを行う
+・ベンダー（Espressif/ST/Zephyr Project等）からの個別パッチ・ミティゲーション情報を注視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・組込み機器の管理基盤・EDR的機能がある場合はクラッシュ/再起動ログ、外部メディア挿入イベントを監視する
+Splunk SPL: index=iot_logs sourcetype=embedded_syslog ("mount" OR "fatfs") ("error" OR "panic" OR "crash") | stats count by host
+→ 組込み機器のログ収集基盤がない環境が多いため、物理アクセス制御（USB/SDスロットの無効化・施錠）を優先する
+
+【参照】
+https://thehackernews.com/2026/07/unpatched-flaws-disclosed-in.html
+https://www.runzero.com/blog/fatfs-bugs/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1・軸2閾値を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-13368 / WatchGuard Firebox（Fireware OS）
+CVSS: (v4: 9.2) (Critical) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-03] WatchGuardがFireware OSのモバイルユーザーVPN（IKEv2・LDAP認証構成時）に深刻なRCE脆弱性のアドバイザリ(WGSA-2026-00023)を公開
+
+【概要】
+WatchGuard FireboxのVPN機能（IKEv2によるモバイルユーザーVPンで外部LDAP認証サーバを構成している場合）のikedプロセスにuse-after-free（CWE-416）の脆弱性が確認された。攻撃条件が複雑（レースコンディション条件・特定の認証構成が前提）であり、既知の実悪用は確認されていないが、境界に設置されるVPN/ファイアウォール機器への影響でありパッチ適用を優先すべきである。2025年12月に開示され実悪用・KEV登録済みの別のFirebox IKEv2 RCE（CVE-2025-14733）とは異なる、新規に開示された脆弱性である点に注意が必要。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Firebox管理ログ・ikedプロセスのクラッシュ/異常終了イベントを監視する
+Splunk SPL: index=firewall sourcetype=watchguard:firebox (process=iked) ("crash" OR "restart" OR "segfault")
+→ 外部LDAP認証を使用していない構成は影響を受けないため、まず自組織の認証構成を確認する
+
+【参照】
+https://www.watchguard.com/wgrd-psirt/advisory/wgsa-2026-00023
+https://www.security-next.com/186797
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-13368 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-44946 / SUSE Rancher（コンテナ管理ツール）
+CVSS: (v4: 9.5) (Critical) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] SUSEがRancher 2.14.3で複数脆弱性を修正するアップデートを公開
+
+【概要】
+コンテナ管理ツールRancherに複数の脆弱性が確認された。CVE-2026-44946はSAMLアサーション再生攻撃（事前認証状態Cookieの窃取が前提）。CVSSスコアは一部ソースでのみ言及されており（9.5）、NVD/GHSA一次情報での確認は取れていない点に留意する。Rancher 2.14.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Rancher管理APIへの異常なSAMLログイン試行・Fleet ImageScan関連の異常アクセスを監視する
+Splunk SPL: index=k8s_audit sourcetype=rancher:audit ("saml" OR "fleet") ("error" OR "denied")
+→ CVE-2026-44946はMITM等による事前認証Cookie窃取が前提のため、TLS終端の健全性確認を優先する
+
+【参照】
+https://www.security-next.com/186734
+https://github.com/rancher/rancher/security/advisories
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-44946 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-44947 / SUSE Rancher（コンテナ管理ツール）
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] SUSEがRancher 2.14.3で複数脆弱性を修正するアップデートを公開
+
+【概要】
+コンテナ管理ツールRancherに複数の脆弱性が確認された。CVE-2026-44947はPSA（Pod Security Admission）クリーンアップ処理の権限昇格。CVSSスコアは一部ソースでのみ言及されており（未公表）、NVD/GHSA一次情報での確認は取れていない点に留意する。Rancher 2.14.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Rancher管理APIへの異常なSAMLログイン試行・Fleet ImageScan関連の異常アクセスを監視する
+Splunk SPL: index=k8s_audit sourcetype=rancher:audit ("saml" OR "fleet") ("error" OR "denied")
+→ CVE-2026-44946はMITM等による事前認証Cookie窃取が前提のため、TLS終端の健全性確認を優先する
+
+【参照】
+https://www.security-next.com/186734
+https://github.com/rancher/rancher/security/advisories
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-44947 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-44948 / SUSE Rancher（コンテナ管理ツール）
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] SUSEがRancher 2.14.3で複数脆弱性を修正するアップデートを公開
+
+【概要】
+コンテナ管理ツールRancherに複数の脆弱性が確認された。CVE-2026-44948はFleet ImageScanのパストラバーサル/DoS。CVSSスコアは一部ソースでのみ言及されており（未公表）、NVD/GHSA一次情報での確認は取れていない点に留意する。Rancher 2.14.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Rancher管理APIへの異常なSAMLログイン試行・Fleet ImageScan関連の異常アクセスを監視する
+Splunk SPL: index=k8s_audit sourcetype=rancher:audit ("saml" OR "fleet") ("error" OR "denied")
+→ CVE-2026-44946はMITM等による事前認証Cookie窃取が前提のため、TLS終端の健全性確認を優先する
+
+【参照】
+https://www.security-next.com/186734
+https://github.com/rancher/rancher/security/advisories
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-44948 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-44949 / SUSE Rancher（コンテナ管理ツール）
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] SUSEがRancher 2.14.3で複数脆弱性を修正するアップデートを公開
+
+【概要】
+コンテナ管理ツールRancherに複数の脆弱性が確認された。CVE-2026-44949はFleet workspace RBAC不備。CVSSスコアは一部ソースでのみ言及されており（未公表）、NVD/GHSA一次情報での確認は取れていない点に留意する。Rancher 2.14.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Rancher管理APIへの異常なSAMLログイン試行・Fleet ImageScan関連の異常アクセスを監視する
+Splunk SPL: index=k8s_audit sourcetype=rancher:audit ("saml" OR "fleet") ("error" OR "denied")
+→ CVE-2026-44946はMITM等による事前認証Cookie窃取が前提のため、TLS終端の健全性確認を優先する
+
+【参照】
+https://www.security-next.com/186734
+https://github.com/rancher/rancher/security/advisories
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-44949 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-24260 / NVIDIA Container Toolkit / GPU Operator
+CVSS: 8.5 (High) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] NVIDIAがContainer ToolkitおよびGPU Operatorの権限昇格脆弱性に対するアドバイザリを公開
+
+【概要】
+NVIDIA Container Toolkit（Linux）にTOCTOU（Time-of-check to time-of-use）競合状態の脆弱性が確認された。ネットワークアクセス+低権限の認証が前提だが、コード実行・権限昇格・データ改ざんにつながりうる。GPU Operatorを併用する構成にも影響する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・コンテナランタイムのGPUデバイスマウント処理・異常な権限昇格試行を監視する
+Splunk SPL: index=k8s_audit sourcetype=nvidia:container-toolkit ("privilege" OR "mount") ("denied" OR "error")
+→ AI/MLワークロードでGPUコンテナを多用する環境は優先度を上げてパッチ適用状況を確認する
+
+【参照】
+https://nvidia.custhelp.com/app/answers/detail/a_id/5850
+https://www.security-next.com/186740
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-24260 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-33612 / PowerDNS Recursor
+CVSS: 7.5 (High) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-02] PowerDNSがRecursorの複数脆弱性を修正するセキュリティアドバイザリ2026-08を公開
+
+【概要】
+PowerDNS Recursorに複数の脆弱性が確認された。うちCVE-2026-33612は悪意あるゾーンをZoneToCache機能経由でキャッシュした際にキャッシュポイズニングを招く可能性がありDNS応答の完全性に影響する。他7件は詳細CVSS非公表（Medium相当と報告）。5.2.11/5.3.8/5.4.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PowerDNS RecursorのZoneToCache利用状況・異常なDNSキャッシュ変化を監視する
+Splunk SPL: index=dns sourcetype=powerdns:recursor ("ZoneToCache" OR "cache") level=WARN
+→ ZoneToCache機能を使用していない環境ではCVE-2026-33612の影響を受けない
+
+【参照】
+https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor
+https://scan.netsecurity.ne.jp/article/2026/07/03/55625.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-33612 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-40012 / PowerDNS Recursor
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-02] PowerDNSがRecursorの複数脆弱性を修正するセキュリティアドバイザリ2026-08を公開
+
+【概要】
+PowerDNS Recursorに複数の脆弱性が確認された。うちCVE-2026-33612は悪意あるゾーンをZoneToCache機能経由でキャッシュした際にキャッシュポイズニングを招く可能性がありDNS応答の完全性に影響する。他7件は詳細CVSS非公表（Medium相当と報告）。5.2.11/5.3.8/5.4.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PowerDNS RecursorのZoneToCache利用状況・異常なDNSキャッシュ変化を監視する
+Splunk SPL: index=dns sourcetype=powerdns:recursor ("ZoneToCache" OR "cache") level=WARN
+→ ZoneToCache機能を使用していない環境ではCVE-2026-33612の影響を受けない
+
+【参照】
+https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor
+https://scan.netsecurity.ne.jp/article/2026/07/03/55625.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-40012 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-42005 / PowerDNS Recursor
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-02] PowerDNSがRecursorの複数脆弱性を修正するセキュリティアドバイザリ2026-08を公開
+
+【概要】
+PowerDNS Recursorに複数の脆弱性が確認された。うちCVE-2026-33612は悪意あるゾーンをZoneToCache機能経由でキャッシュした際にキャッシュポイズニングを招く可能性がありDNS応答の完全性に影響する。他7件は詳細CVSS非公表（Medium相当と報告）。5.2.11/5.3.8/5.4.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PowerDNS RecursorのZoneToCache利用状況・異常なDNSキャッシュ変化を監視する
+Splunk SPL: index=dns sourcetype=powerdns:recursor ("ZoneToCache" OR "cache") level=WARN
+→ ZoneToCache機能を使用していない環境ではCVE-2026-33612の影響を受けない
+
+【参照】
+https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor
+https://scan.netsecurity.ne.jp/article/2026/07/03/55625.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-42005 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-42387 / PowerDNS Recursor
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-02] PowerDNSがRecursorの複数脆弱性を修正するセキュリティアドバイザリ2026-08を公開
+
+【概要】
+PowerDNS Recursorに複数の脆弱性が確認された。うちCVE-2026-33612は悪意あるゾーンをZoneToCache機能経由でキャッシュした際にキャッシュポイズニングを招く可能性がありDNS応答の完全性に影響する。他7件は詳細CVSS非公表（Medium相当と報告）。5.2.11/5.3.8/5.4.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PowerDNS RecursorのZoneToCache利用状況・異常なDNSキャッシュ変化を監視する
+Splunk SPL: index=dns sourcetype=powerdns:recursor ("ZoneToCache" OR "cache") level=WARN
+→ ZoneToCache機能を使用していない環境ではCVE-2026-33612の影響を受けない
+
+【参照】
+https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor
+https://scan.netsecurity.ne.jp/article/2026/07/03/55625.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-42387 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-42388 / PowerDNS Recursor
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-02] PowerDNSがRecursorの複数脆弱性を修正するセキュリティアドバイザリ2026-08を公開
+
+【概要】
+PowerDNS Recursorに複数の脆弱性が確認された。うちCVE-2026-33612は悪意あるゾーンをZoneToCache機能経由でキャッシュした際にキャッシュポイズニングを招く可能性がありDNS応答の完全性に影響する。他7件は詳細CVSS非公表（Medium相当と報告）。5.2.11/5.3.8/5.4.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PowerDNS RecursorのZoneToCache利用状況・異常なDNSキャッシュ変化を監視する
+Splunk SPL: index=dns sourcetype=powerdns:recursor ("ZoneToCache" OR "cache") level=WARN
+→ ZoneToCache機能を使用していない環境ではCVE-2026-33612の影響を受けない
+
+【参照】
+https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor
+https://scan.netsecurity.ne.jp/article/2026/07/03/55625.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-42388 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-42389 / PowerDNS Recursor
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-02] PowerDNSがRecursorの複数脆弱性を修正するセキュリティアドバイザリ2026-08を公開
+
+【概要】
+PowerDNS Recursorに複数の脆弱性が確認された。うちCVE-2026-33612は悪意あるゾーンをZoneToCache機能経由でキャッシュした際にキャッシュポイズニングを招く可能性がありDNS応答の完全性に影響する。他7件は詳細CVSS非公表（Medium相当と報告）。5.2.11/5.3.8/5.4.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PowerDNS RecursorのZoneToCache利用状況・異常なDNSキャッシュ変化を監視する
+Splunk SPL: index=dns sourcetype=powerdns:recursor ("ZoneToCache" OR "cache") level=WARN
+→ ZoneToCache機能を使用していない環境ではCVE-2026-33612の影響を受けない
+
+【参照】
+https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor
+https://scan.netsecurity.ne.jp/article/2026/07/03/55625.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-42389 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-42390 / PowerDNS Recursor
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-02] PowerDNSがRecursorの複数脆弱性を修正するセキュリティアドバイザリ2026-08を公開
+
+【概要】
+PowerDNS Recursorに複数の脆弱性が確認された。うちCVE-2026-33612は悪意あるゾーンをZoneToCache機能経由でキャッシュした際にキャッシュポイズニングを招く可能性がありDNS応答の完全性に影響する。他7件は詳細CVSS非公表（Medium相当と報告）。5.2.11/5.3.8/5.4.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PowerDNS RecursorのZoneToCache利用状況・異常なDNSキャッシュ変化を監視する
+Splunk SPL: index=dns sourcetype=powerdns:recursor ("ZoneToCache" OR "cache") level=WARN
+→ ZoneToCache機能を使用していない環境ではCVE-2026-33612の影響を受けない
+
+【参照】
+https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor
+https://scan.netsecurity.ne.jp/article/2026/07/03/55625.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-42390 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-52690 / PowerDNS Recursor
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-02] PowerDNSがRecursorの複数脆弱性を修正するセキュリティアドバイザリ2026-08を公開
+
+【概要】
+PowerDNS Recursorに複数の脆弱性が確認された。うちCVE-2026-33612は悪意あるゾーンをZoneToCache機能経由でキャッシュした際にキャッシュポイズニングを招く可能性がありDNS応答の完全性に影響する。他7件は詳細CVSS非公表（Medium相当と報告）。5.2.11/5.3.8/5.4.3で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PowerDNS RecursorのZoneToCache利用状況・異常なDNSキャッシュ変化を監視する
+Splunk SPL: index=dns sourcetype=powerdns:recursor ("ZoneToCache" OR "cache") level=WARN
+→ ZoneToCache機能を使用していない環境ではCVE-2026-33612の影響を受けない
+
+【参照】
+https://blog.powerdns.com/2026/06/25/powerdns-security-advisory-2026-08-for-powerdns-recursor
+https://scan.netsecurity.ne.jp/article/2026/07/03/55625.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-52690 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-56809 / Ricoh Web Image Monitor（複数のレーザープリンタ・複合機/MFP搭載）
+CVSS: 6.1 (v4: 5.1) (Medium) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-02] Ricohが複数のレーザープリンタ・MFPのWeb Image Monitorに反射型XSSの脆弱性ありとアドバイザリを公開
+
+【概要】
+Ricoh製の複数のレーザープリンタ・複合機（MFP）に搭載されるWeb Image Monitor（デバイス管理用Webインターフェース）に反射型XSSの脆弱性が確認された。攻撃には被害者が細工リンクをクリックする必要がある（ユーザー操作前提）。Ricohは国内オフィス機器で広く採用されており国内エンタープライズ環境への影響が想定される。機種別ファームウェア更新で対応する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・プリンタ管理インターフェースへの異常なパラメータ付きアクセスを監視する
+Splunk SPL: index=proxy sourcetype=web_image_monitor uri_query="*<script*" OR uri_query="*javascript:*"
+→ 社内利用のみに管理画面公開範囲を制限しているか確認する
+
+【参照】
+https://jp.ricoh.com/security/products/vulnerabilities/vul?id=ricoh-2026-000005
+https://scan.netsecurity.ne.jp/article/2026/07/03/55624.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-56809 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-50043 / セイコーソリューションズ SkyBridge MB-A100 / MB-A110（IoT向けルータ）
+CVSS: 7.2 (v4: 8.6) (High) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[ScanNetSecurity / Security NEXT 2026-07-02] セイコーソリューションズ製IoT向けルータSkyBridge MB-A100/MB-A110にOSコマンドインジェクションの脆弱性(JVN#20721579)。製品はEOLで修正予定なし
+
+【概要】
+セイコーソリューションズ製のIoT向けルータSkyBridge MB-A100/MB-A110のWeb管理インターフェースにOSコマンドインジェクションの脆弱性が確認された。悪用には管理者権限での認証済みアクセスが前提となる。製品は販売終了（EOL）で、ベンダーはファームウェア修正を提供しない方針を明らかにしている。回避策として管理者パスワード変更・WebUI無効化・WAN側IPアクセス制限・閉域網での運用が推奨される。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・SkyBridgeルータ管理画面への認証試行・コマンド実行痕跡を監視する
+Splunk SPL: index=network_devices sourcetype=skybridge ("login" OR "cmd") action=success
+→ EOL製品でありパッチが提供されないため、可能な限り後継製品への更新を中長期的に検討する
+
+【参照】
+https://scan.netsecurity.ne.jp/article/2026/07/03/55626.html
+https://www.security-next.com/186747
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-50043 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-12166 / Little Orbit GamersFirst Anti-Cheat（GFAC_Sys_x64.sysドライバ）
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[JVN 2026-07-03] JVN(VU#98406800)がLittle Orbit GamersFirst Anti-Cheatドライバの複数のローカル特権昇格脆弱性を公開。NULLポインタ参照によるDoS
+
+【概要】
+ゲーム向けアンチチートドライバ GamersFirst Anti-Cheat（GFAC_Sys_x64.sys）に複数のローカル脆弱性が確認された。CVE-2026-12166はNULLポインタ参照によるDoS。悪用にはローカルでの低権限コード実行が前提でありリモートからの直接悪用は不可。CVE番号を含むGitHubリポジトリの存在は確認されたが、PoC内容自体は未検証のためpoc_published=falseとして扱う。ベンダーのパッチ提供状況はCERT/CC VU#639124で要確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・ゲーミング端末等でGFACドライバのロード・異常な権限昇格挙動を監視する
+Splunk SPL: index=wineventlog EventCode=7045 ImageLoaded="*GFAC_Sys*"
+→ 業務端末でゲーム関連ソフトウェアの使用が許可されているか棚卸しを行う
+
+【参照】
+https://kb.cert.org/vuls/id/639124
+https://jvn.jp/vu/JVNVU98406800/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-12166 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-12167 / Little Orbit GamersFirst Anti-Cheat（GFAC_Sys_x64.sysドライバ）
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[JVN 2026-07-03] JVN(VU#98406800)がLittle Orbit GamersFirst Anti-Cheatドライバの複数のローカル特権昇格脆弱性を公開。minifilter通信ポートのセキュリティ記述子不備（低権限からの接続を許可）
+
+【概要】
+ゲーム向けアンチチートドライバ GamersFirst Anti-Cheat（GFAC_Sys_x64.sys）に複数のローカル脆弱性が確認された。CVE-2026-12167はminifilter通信ポートのセキュリティ記述子不備（低権限からの接続を許可）。悪用にはローカルでの低権限コード実行が前提でありリモートからの直接悪用は不可。CVE番号を含むGitHubリポジトリの存在は確認されたが、PoC内容自体は未検証のためpoc_published=falseとして扱う。ベンダーのパッチ提供状況はCERT/CC VU#639124で要確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・ゲーミング端末等でGFACドライバのロード・異常な権限昇格挙動を監視する
+Splunk SPL: index=wineventlog EventCode=7045 ImageLoaded="*GFAC_Sys*"
+→ 業務端末でゲーム関連ソフトウェアの使用が許可されているか棚卸しを行う
+
+【参照】
+https://kb.cert.org/vuls/id/639124
+https://jvn.jp/vu/JVNVU98406800/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-12167 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-12168 / Little Orbit GamersFirst Anti-Cheat（GFAC_Sys_x64.sysドライバ）
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[JVN 2026-07-03] JVN(VU#98406800)がLittle Orbit GamersFirst Anti-Cheatドライバの複数のローカル特権昇格脆弱性を公開。任意カーネルメモリ書き込みによるSYSTEM権限昇格
+
+【概要】
+ゲーム向けアンチチートドライバ GamersFirst Anti-Cheat（GFAC_Sys_x64.sys）に複数のローカル脆弱性が確認された。CVE-2026-12168は任意カーネルメモリ書き込みによるSYSTEM権限昇格。悪用にはローカルでの低権限コード実行が前提でありリモートからの直接悪用は不可。CVE番号を含むGitHubリポジトリの存在は確認されたが、PoC内容自体は未検証のためpoc_published=falseとして扱う。ベンダーのパッチ提供状況はCERT/CC VU#639124で要確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・ゲーミング端末等でGFACドライバのロード・異常な権限昇格挙動を監視する
+Splunk SPL: index=wineventlog EventCode=7045 ImageLoaded="*GFAC_Sys*"
+→ 業務端末でゲーム関連ソフトウェアの使用が許可されているか棚卸しを行う
+
+【参照】
+https://kb.cert.org/vuls/id/639124
+https://jvn.jp/vu/JVNVU98406800/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-12168 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-14355 / PHP
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-03] PHPプロジェクトが複数の脆弱性を修正するセキュリティ更新（8.5.8/8.4.23/8.3.32/8.2.32）を公開
+
+【概要】
+PHPに複数の脆弱性を修正するセキュリティ更新が公開された。CVE-2026-14355はOpenSSL AES-WRAP-PADモードでのメモリ破損（openssl_encrypt関数）。CVSSスコアは非公表（PHPプロジェクトは通例CVSSを公表しない）。openssl_encrypt()やfile_get_contents()を利用するアプリケーションは影響を受ける可能性がある。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PHPアプリケーションのバージョン棚卸しと更新状況を確認する
+→ openssl_encrypt()でAES-WRAP-PADモードを使用しているアプリケーションを優先確認する
+
+【参照】
+https://www.php.net/ChangeLog-8.php
+https://www.security-next.com/186792
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-14355 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-12184 / PHP
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-03] PHPプロジェクトが複数の脆弱性を修正するセキュリティ更新（8.5.8/8.4.23/8.3.32/8.2.32）を公開
+
+【概要】
+PHPに複数の脆弱性を修正するセキュリティ更新が公開された。CVE-2026-12184はfile_get_contents()のHTTPS経由プロキシ処理におけるDoS（PHP 8.3.32のみ該当）。CVSSスコアは非公表（PHPプロジェクトは通例CVSSを公表しない）。openssl_encrypt()やfile_get_contents()を利用するアプリケーションは影響を受ける可能性がある。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PHPアプリケーションのバージョン棚卸しと更新状況を確認する
+→ openssl_encrypt()でAES-WRAP-PADモードを使用しているアプリケーションを優先確認する
+
+【参照】
+https://www.php.net/ChangeLog-8.php
+https://www.security-next.com/186792
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-12184 — 24時間窓内に発行確認されず
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・CVE-2026-55957 (Apache Tomcat) → 2026-07-02に参考A採用済み。JVNVU#93304382の同一脆弱性群で本日窓内の新規変化報告なし
+・CVE-2026-55956 (Apache Tomcat) → 2026-07-02に参考A採用済み。本日窓内の新規変化報告なし
+・CVE-2026-55955 (Apache Tomcat) → 2026-07-02に参考A採用済み。本日窓内の新規変化報告なし
+・CVE-2026-55276 (Apache Tomcat) → 2026-07-02に参考A採用済み。本日窓内の新規変化報告なし
+・CVE-2026-53434 (Apache Tomcat) → 2026-07-02に参考A採用済み。本日窓内の新規変化報告なし
+・CVE-2026-53404 (Apache Tomcat) → 2026-07-02に参考A採用済み。本日窓内の新規変化報告なし
+・CVE-2026-50229 (Apache Tomcat) → 2026-07-02に参考A採用済み。本日窓内の新規変化報告なし
+・CVE-2026-50548 (Cursor IDE（AIコードエディタ）) → DuneSlideとして2026-07-01/07-02に本編（AI攻撃）・参考B等で既報。SecurityWeek 2026-07-03記事は同一disclosure（Cato Networks/Cato AI Labs研究）の再報道で新規技術情報なし
+・CVE-2026-50549 (Cursor IDE（AIコードエディタ）) → DuneSlideとして2026-07-01/07-02に既報。本日窓内の新規変化なし
+・CVE-2026-45659 (Microsoft SharePoint Server) → CISA KEV登録2026-07-01（本日調査窓外）。2026-07-02レポートで既報済み、本日窓内の新規変化報告なし
+
+本日の集計:
+CVE — ゼロデイ特報7件 / 本編0件 / 参考A21件 / 参考B0件 / 除外10件
+========================================
