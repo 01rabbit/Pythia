@@ -1,0 +1,510 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-03 08:30 JST
+調査期間: 2026-07-02 07:00 〜 2026-07-03 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当事象なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-45659 / Microsoft SharePoint Server（Subscription Edition / 2019 / Enterprise Server 2016）
+対象: 2026年5月CU未適用環境
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.8 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[The Hacker News / CISA 2026-07-02] CISAがCVE-2026-45659をKEVカタログへ新規追加（実悪用確認）。FCEB機関の対応期限は2026-07-04
+[Security NEXT 2026-07-02] 米当局がSharePoint Server脆弱性の悪用について注意喚起を発行
+[BleepingComputer 2026-07-02] Shadowserverの調査でインターネット上に露出したSharePointサーバが1万台超確認されたと報道（パッチ適用状況は不明）
+
+【概要】
+Microsoft SharePoint Server（Subscription Edition・2019・Enterprise Server 2016）のデシリアライゼーション脆弱性CVE-2026-45659（CVSS8.8）が実悪用され、CISAがKEVカタログへ新規追加した。認証済み（Site Memberレベルの最小権限）の攻撃者がリモートコード実行を達成できる。パッチは2026年5月に提供済みだが、Shadowserverの調査でインターネットに露出したSharePointサーバが1万台超確認されており、パッチ未適用環境が相当数残存している可能性がある。2021年以降KEVに追加されたSharePoint関連CVEとしては11件目で、うち7件は過去にランサムウェア攻撃で悪用された実績がある。
+
+攻撃の流れ:
+1. Site Memberレベルの最小権限で認証（内部者・侵害済みアカウント経由等）
+2. デシリアライゼーション脆弱性を悪用しSharePointサーバ上でリモートコード実行
+3. サーバ乗っ取り・横展開・ランサムウェア展開等（過去のSharePoint KEVエントリでの実績パターン）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・SharePointサーバへの異常なSite Member権限での操作・デシリアライゼーション関連の異常プロセス生成を監視する
+Splunk SPL: index=iis sourcetype=sharepoint:ulslog ("Deserialization" OR "w3wp.exe") EventID=* | stats count by user, cs_uri_stem
+→ 1万台超のインターネット露出サーバが確認されているため、自組織のSharePoint露出範囲とパッチ適用状況を最優先で確認する（FCEB期限2026-07-04）
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/07/01/cisa-adds-one-known-exploited-vulnerability-catalog
+https://thehackernews.com/2026/07/sharepoint-rce-cve-2026-45659-added-to.html
+https://www.security-next.com/186679
+https://www.bleepingcomputer.com/news/security/cisa-microsoft-sharepoint-rce-flaw-now-actively-exploited/
+
+------------------------------------------------------------
+2. CVE-2026-20230 / Cisco Unified Communications Manager（Unified CM） / Unified CM SME
+対象: 14.x / 15.x（WebDialerサービス有効時。デフォルトは無効）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.6 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-01] CiscoがWebDialer SSRF脆弱性(CVE-2026-20230)の実悪用を公式に確認したと発表。従来はPoCのみ確認としていたが方針転換
+[Security NEXT 2026-07-03] 「Cisco Unified CM」のSSRF脆弱性の悪用について国内向けに注意喚起記事を公開
+
+【概要】
+Cisco Unified Communications Manager（Unified CM）のWebDialerサービスに存在するSSRF脆弱性CVE-2026-20230（CVSS8.6）について、Ciscoが実悪用を公式に確認した。従来Cisco PSIRTはPoCのみを確認としていたが、脅威インテル企業Defusedの報告（2026-06-22頃から file:// ペイロードを用いた攻撃観測）を受け方針を転換した。攻撃はWebDialer SSRFを起点に不正なApache Axisサービスへ到達し、JSPファイルライターでWebシェルを/platform-services/axis2-web/配下に設置する3段階のチェーン。ShadowserverはアジアおよびN.アメリカを中心にインターネット露出中のUnified CMインスタンスを200台超確認している。EPSSパーセンタイルは98.5と極めて高い。
+
+攻撃の流れ:
+1. WebDialerサービス（デフォルト無効・有効化環境が対象）へSSRFリクエストを送信
+2. 不正なApache Axisサービスへ到達させJSPファイルライターを介してWebシェルを生成
+3. /platform-services/axis2-web/配下にWebシェルを設置し永続アクセスを確保
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Unified CM WebDialerサービスの有効化状況・axis2-web配下への不審なファイル書き込みを監視する
+Splunk SPL: index=ucm sourcetype=cisco:ucm:webdialer | search url="*axis2-web*"
+Splunk SPL: index=ucm sourcetype=cisco:ucm:filesystem path="*/platform-services/axis2-web/*" action=create
+→ WebDialerを使用していない環境は速やかに無効化することでリスクを大幅に低減できる
+
+【参照】
+https://www.bleepingcomputer.com/news/security/cisco-finally-confirms-attackers-exploiting-unified-cm-flaw/
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-cucm-ssrf-cXPnHcW
+https://www.security-next.com/186698
+
+------------------------------------------------------------
+3. CVE-2026-8451 / Citrix NetScaler ADC / NetScaler Gateway（「CitrixBleed To Infinity And Beyond」）
+対象: 14.1-72.61未満 / 13.1-63.18未満（FIPS/NDcPP含む）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 7.5 (v4: 8.8) (High)
+状態: 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[SecurityWeek 2026-07-03] スコットランドのセキュリティ企業LupovisがCVE-2026-8451の実悪用を確認。2026-06-30の開示・watchTowr技術解説公開から24時間以内に完全なエクスプロイトペイロードをセンサーで観測
+
+【概要】
+2026-07-02付の本レポートで参考A（後日本編相当と評価）としていたNetScaler ADC/GatewayのSAML IDP設定時境界外メモリ読み取り脆弱性CVE-2026-8451について、開示からわずか24時間以内の実悪用が確認された。Lupovisのセンサーが2026-06-30〜07-01にかけて完全なエクスプロイトペイロードを観測しており、watchTowr Labsの技術解説公開が攻撃者の武器化を直接後押しした可能性が高い。CISA KEVには本稿執筆時点で未登録。
+
+攻撃の流れ:
+1. SAML IDP設定済みのNetScaler ADC/Gatewayに対し、引用符なしXML属性値+改行を含む細工リクエストを送信
+2. XMLパーサーがバッファ境界を超えて読み取りNSC_TASSクッキーへメモリ内容が漏洩
+3. 漏洩したセッション情報等を用いた侵害拡大（CitrixBleed同様のセッション窃取パターン）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・NetScaler ADC/GatewayのSAML関連ログ・異常なメモリ読み取りパターンを監視する
+Splunk SPL: index=netscaler sourcetype=citrix:netscaler:syslog ("SAML" OR "NSC_TASS") | stats count by src_ip
+→ パッチ未適用のSAML IDP構成インスタンスは最優先でパッチ適用する。CitrixBleed（CVE-2023-4966）同様セッショントークンの再発行を検討する
+
+【参照】
+https://www.securityweek.com/new-citrixbleed-vulnerability-exploited-immediately-after-public-disclosure/
+https://cyberscoop.com/citrix-netscaler-flaw-cve-2026-8451-citrixbleed/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-10109 / IBM Db2 Server
+CVSS: 9.8 (Critical) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] IBMがDb2 Serverの未認証事前認証コードインジェクション脆弱性に対する暫定修正（Special Build）を公開
+
+【概要】
+IBM Db2 Server（V11.5系・V12.1系、Windows/AIX/Linux/Linux on Z全プラットフォーム）に、DRDAハンドシェイク処理における未認証の事前認証コードインジェクション脆弱性CVE-2026-10109（CVSS9.8・CWE-94）が確認された。IBMはExploit詳細を非公開としているが、認証不要でリモートから任意コード実行が可能な深刻度である。正式なGA修正はまだ提供されておらずSpecial Build（暫定修正）のみが公開されている。同一アドバイザリ内にDoS脆弱性CVE-2026-11906・情報漏洩脆弱性CVE-2025-36372も含まれる。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Db2サーバへの異常なDRDA接続試行・認証前の異常なパケットパターンを監視する
+Splunk SPL: index=db2 sourcetype=db2:diag ("DRDA" AND "error")
+→ 正式なGA修正が未提供のため、Special Build適用状況とネットワーク露出範囲の制限を優先する
+
+【参照】
+https://www.security-next.com/186679
+https://www.ibm.com/support/pages/node/7277424
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-10109 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-43724 / macOS Tahoe（Apple、37件の脆弱性を含む更新の代表CVE）
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] Appleが「macOS Tahoe 26.5.2」を公開し37件の脆弱性を修正。AI支援エクスプロイト開発への懸念から通常の26.6サイクルより前倒しでの早期リリースとしている
+
+【概要】
+Appleは通常の26.6アップデートサイクルに先行し「macOS Tahoe 26.5.2」を公開、カーネル・WebKit（26件）・WebRTC等37件の脆弱性を修正した。代表的なものにカーネルのクラッシュ/メモリ書き込み不具合CVE-2026-43724、メモリ破損CVE-2026-39868、情報漏洩CVE-2026-43722がある。いずれも実悪用・KEV登録は確認されていない。Appleは早期リリースの理由としてAI支援によるエクスプロイト開発の高速化への懸念を挙げている。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・macOS端末の更新適用状況（MDM経由）を確認する
+→ 37件のうち実悪用確認済みのものはないが、AI支援エクスプロイト開発を懸念した早期リリースである点を踏まえ迅速な適用を推奨する
+
+【参照】
+https://www.security-next.com/186684
+https://support.apple.com/en-us/127595
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-43724 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-14241 / Mozilla Firefox
+CVSS: 非公表 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] MozillaがFirefoxのメモリ破壊脆弱性を修正するアップデート152.0.4を公開（MFSA 2026-62）
+
+【概要】
+Mozilla Firefoxにメモリ安全性の脆弱性CVE-2026-14241（Mozilla severity: High）が確認された。任意コード実行につながるおそれがある。152.0.4で修正済み。実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Firefoxのバージョン管理・自動更新状況を確認する
+
+【参照】
+https://www.security-next.com/186686
+https://www.mozilla.org/en-US/security/advisories/mfsa2026-62/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-14241 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-20213 / ClamAV（Cisco Secure Endpoint Connector に同梱）
+CVSS: 7.5 (High) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] ClamAVの複数ファイルフォーマットパーサー（PE/FSG/7z/InstallShield/PESpin/ALZ/DMG）に脆弱性。Cisco Secure Endpoint Connectorにも影響
+
+【概要】
+マルウェア対策エンジンClamAVのファイルフォーマットパーサーに複数の脆弱性が確認された。スキャン処理のクラッシュ・中断を招くDoS類の脆弱性でリモートコード実行は報告されていない。Cisco Secure Endpoint ConnectorはWindows版がHigh（CVSS7.5）、Linux/Mac版はPrivilegeコンテキスト依存でMedium（CVSS5.3）評価。Cisco Secure Endpoint Private Cloudは影響を受けない。回避策はなくパッチ適用が必要。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・エンドポイント保護ソフトのスキャンプロセスの異常終了・クラッシュを監視する
+Splunk SPL: index=endpoint sourcetype=clamav ("crash" OR "segfault")
+→ 回避策がないためパッチ適用を優先する
+
+【参照】
+https://www.security-next.com/186715
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-clamav-88cFYyxR
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-20213 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-20214 / ClamAV（Cisco Secure Endpoint Connector に同梱）
+CVSS: 7.5 (High) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] ClamAVの複数ファイルフォーマットパーサー（PE/FSG/7z/InstallShield/PESpin/ALZ/DMG）に脆弱性。Cisco Secure Endpoint Connectorにも影響
+
+【概要】
+マルウェア対策エンジンClamAVのファイルフォーマットパーサーに複数の脆弱性が確認された。スキャン処理のクラッシュ・中断を招くDoS類の脆弱性でリモートコード実行は報告されていない。Cisco Secure Endpoint ConnectorはWindows版がHigh（CVSS7.5）、Linux/Mac版はPrivilegeコンテキスト依存でMedium（CVSS5.3）評価。Cisco Secure Endpoint Private Cloudは影響を受けない。回避策はなくパッチ適用が必要。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・エンドポイント保護ソフトのスキャンプロセスの異常終了・クラッシュを監視する
+Splunk SPL: index=endpoint sourcetype=clamav ("crash" OR "segfault")
+→ 回避策がないためパッチ適用を優先する
+
+【参照】
+https://www.security-next.com/186715
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-clamav-88cFYyxR
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-20214 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-20215 / ClamAV（Cisco Secure Endpoint Connector に同梱）
+CVSS: 7.5 (High) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] ClamAVの複数ファイルフォーマットパーサー（PE/FSG/7z/InstallShield/PESpin/ALZ/DMG）に脆弱性。Cisco Secure Endpoint Connectorにも影響
+
+【概要】
+マルウェア対策エンジンClamAVのファイルフォーマットパーサーに複数の脆弱性が確認された。スキャン処理のクラッシュ・中断を招くDoS類の脆弱性でリモートコード実行は報告されていない。Cisco Secure Endpoint ConnectorはWindows版がHigh（CVSS7.5）、Linux/Mac版はPrivilegeコンテキスト依存でMedium（CVSS5.3）評価。Cisco Secure Endpoint Private Cloudは影響を受けない。回避策はなくパッチ適用が必要。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・エンドポイント保護ソフトのスキャンプロセスの異常終了・クラッシュを監視する
+Splunk SPL: index=endpoint sourcetype=clamav ("crash" OR "segfault")
+→ 回避策がないためパッチ適用を優先する
+
+【参照】
+https://www.security-next.com/186715
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-clamav-88cFYyxR
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-20215 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-20216 / ClamAV（Cisco Secure Endpoint Connector に同梱）
+CVSS: 7.5 (High) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] ClamAVの複数ファイルフォーマットパーサー（PE/FSG/7z/InstallShield/PESpin/ALZ/DMG）に脆弱性。Cisco Secure Endpoint Connectorにも影響
+
+【概要】
+マルウェア対策エンジンClamAVのファイルフォーマットパーサーに複数の脆弱性が確認された。スキャン処理のクラッシュ・中断を招くDoS類の脆弱性でリモートコード実行は報告されていない。Cisco Secure Endpoint ConnectorはWindows版がHigh（CVSS7.5）、Linux/Mac版はPrivilegeコンテキスト依存でMedium（CVSS5.3）評価。Cisco Secure Endpoint Private Cloudは影響を受けない。回避策はなくパッチ適用が必要。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・エンドポイント保護ソフトのスキャンプロセスの異常終了・クラッシュを監視する
+Splunk SPL: index=endpoint sourcetype=clamav ("crash" OR "segfault")
+→ 回避策がないためパッチ適用を優先する
+
+【参照】
+https://www.security-next.com/186715
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-clamav-88cFYyxR
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-20216 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-20217 / ClamAV（Cisco Secure Endpoint Connector に同梱）
+CVSS: 7.5 (High) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] ClamAVの複数ファイルフォーマットパーサー（PE/FSG/7z/InstallShield/PESpin/ALZ/DMG）に脆弱性。Cisco Secure Endpoint Connectorにも影響
+
+【概要】
+マルウェア対策エンジンClamAVのファイルフォーマットパーサーに複数の脆弱性が確認された。スキャン処理のクラッシュ・中断を招くDoS類の脆弱性でリモートコード実行は報告されていない。Cisco Secure Endpoint ConnectorはWindows版がHigh（CVSS7.5）、Linux/Mac版はPrivilegeコンテキスト依存でMedium（CVSS5.3）評価。Cisco Secure Endpoint Private Cloudは影響を受けない。回避策はなくパッチ適用が必要。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・エンドポイント保護ソフトのスキャンプロセスの異常終了・クラッシュを監視する
+Splunk SPL: index=endpoint sourcetype=clamav ("crash" OR "segfault")
+→ 回避策がないためパッチ適用を優先する
+
+【参照】
+https://www.security-next.com/186715
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-clamav-88cFYyxR
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-20217 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-20243 / ClamAV（Cisco Secure Endpoint Connector に同梱）
+CVSS: 7.5 (High) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] ClamAVの複数ファイルフォーマットパーサー（PE/FSG/7z/InstallShield/PESpin/ALZ/DMG）に脆弱性。Cisco Secure Endpoint Connectorにも影響
+
+【概要】
+マルウェア対策エンジンClamAVのファイルフォーマットパーサーに複数の脆弱性が確認された。スキャン処理のクラッシュ・中断を招くDoS類の脆弱性でリモートコード実行は報告されていない。Cisco Secure Endpoint ConnectorはWindows版がHigh（CVSS7.5）、Linux/Mac版はPrivilegeコンテキスト依存でMedium（CVSS5.3）評価。Cisco Secure Endpoint Private Cloudは影響を受けない。回避策はなくパッチ適用が必要。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・エンドポイント保護ソフトのスキャンプロセスの異常終了・クラッシュを監視する
+Splunk SPL: index=endpoint sourcetype=clamav ("crash" OR "segfault")
+→ 回避策がないためパッチ適用を優先する
+
+【参照】
+https://www.security-next.com/186715
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-clamav-88cFYyxR
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-20243 — 24時間窓内に発行確認されず
+
+
+・CVE-2026-20244 / ClamAV（Cisco Secure Endpoint Connector に同梱）
+CVSS: 7.5 (High) 状態: 状態変化なし（新規disclosure・実悪用未確認）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-02] ClamAVの複数ファイルフォーマットパーサー（PE/FSG/7z/InstallShield/PESpin/ALZ/DMG）に脆弱性。Cisco Secure Endpoint Connectorにも影響
+
+【概要】
+マルウェア対策エンジンClamAVのファイルフォーマットパーサーに複数の脆弱性が確認された。スキャン処理のクラッシュ・中断を招くDoS類の脆弱性でリモートコード実行は報告されていない。Cisco Secure Endpoint ConnectorはWindows版がHigh（CVSS7.5）、Linux/Mac版はPrivilegeコンテキスト依存でMedium（CVSS5.3）評価。Cisco Secure Endpoint Private Cloudは影響を受けない。回避策はなくパッチ適用が必要。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・エンドポイント保護ソフトのスキャンプロセスの異常終了・クラッシュを監視する
+Splunk SPL: index=endpoint sourcetype=clamav ("crash" OR "segfault")
+→ 回避策がないためパッチ適用を優先する
+
+【参照】
+https://www.security-next.com/186715
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-clamav-88cFYyxR
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-20244 — 24時間窓内に発行確認されず
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2025-5777 / Citrix NetScaler ADC / NetScaler Gateway（Citrix Bleed 2）
+CVSS: 9.3 (Critical)
+2025年に開示された既知のNetScaler認証バイパス脆弱性CVE-2025-5777（Citrix Bleed 2）について、Anubisランサムウェアのアフィリエイトによる初期侵入への悪用が新たに確認された。侵害後はScreenConnect・Zoho Assist・MeshAgent・Remotely・UltraVNC・Total Software Deployment等の正規RMMツールを悪用し検知回避を図る。EPSSパーセンタイルは99.96とほぼ最大値であり、パッチ未適用環境は極めて高いリスクにさらされている。
+【IoC】
+IoC: 確認されず
+
+監視: NetScaler認証ログ・組織内で許可していないRMMツールのインストール/実行を監視する
+参照: https://thehackernews.com/2026/07/ransomware-groups-turn-to-citrix-bleed.html
+
+
+・CVE-2026-48276 / Adobe ColdFusion
+CVSS: 10.0 (Critical)
+Adobeのセキュリティ速報APSB26-68で修正された11件のColdFusion脆弱性のうちCVE-2026-48276（CVSS10.0）。watchTowr Labsの技術解析により、Adobeの公式リストに記載のない追加の脆弱性（任意ファイル移動・削除・ディレクトリ作成/一覧化）もパッチで暗黙に修正されていたことが判明した。事前認証でのリモートコード実行が可能。Adobeは本稿執筆時点で実悪用は確認していないとしている。ColdFusion 2025 Update 10 / 2023 Update 21で修正済み。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの異常なファイル操作・管理者権限昇格の兆候を監視する
+参照: https://labs.watchtowr.com/its-37oc-and-all-we-can-think-about-is-coldfusion-adobe-coldfusion-security-bulletin-apsb26-68-cve-bonanza/
+
+
+・CVE-2026-48277 / Adobe ColdFusion
+CVSS: 10.0 (Critical)
+Adobeのセキュリティ速報APSB26-68で修正された11件のColdFusion脆弱性のうちCVE-2026-48277（CVSS10.0）。watchTowr Labsの技術解析により、Adobeの公式リストに記載のない追加の脆弱性（任意ファイル移動・削除・ディレクトリ作成/一覧化）もパッチで暗黙に修正されていたことが判明した。事前認証でのリモートコード実行が可能。Adobeは本稿執筆時点で実悪用は確認していないとしている。ColdFusion 2025 Update 10 / 2023 Update 21で修正済み。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの異常なファイル操作・管理者権限昇格の兆候を監視する
+参照: https://labs.watchtowr.com/its-37oc-and-all-we-can-think-about-is-coldfusion-adobe-coldfusion-security-bulletin-apsb26-68-cve-bonanza/
+
+
+・CVE-2026-48281 / Adobe ColdFusion
+CVSS: 10.0 (Critical)
+Adobeのセキュリティ速報APSB26-68で修正された11件のColdFusion脆弱性のうちCVE-2026-48281（CVSS10.0）。watchTowr Labsの技術解析により、Adobeの公式リストに記載のない追加の脆弱性（任意ファイル移動・削除・ディレクトリ作成/一覧化）もパッチで暗黙に修正されていたことが判明した。事前認証でのリモートコード実行が可能。Adobeは本稿執筆時点で実悪用は確認していないとしている。ColdFusion 2025 Update 10 / 2023 Update 21で修正済み。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの異常なファイル操作・管理者権限昇格の兆候を監視する
+参照: https://labs.watchtowr.com/its-37oc-and-all-we-can-think-about-is-coldfusion-adobe-coldfusion-security-bulletin-apsb26-68-cve-bonanza/
+
+
+・CVE-2026-48316 / Adobe ColdFusion
+CVSS: 10.0 (Critical)
+Adobeのセキュリティ速報APSB26-68で修正された11件のColdFusion脆弱性のうちCVE-2026-48316（CVSS10.0）。watchTowr Labsの技術解析により、Adobeの公式リストに記載のない追加の脆弱性（任意ファイル移動・削除・ディレクトリ作成/一覧化）もパッチで暗黙に修正されていたことが判明した。事前認証でのリモートコード実行が可能。Adobeは本稿執筆時点で実悪用は確認していないとしている。ColdFusion 2025 Update 10 / 2023 Update 21で修正済み。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの異常なファイル操作・管理者権限昇格の兆候を監視する
+参照: https://labs.watchtowr.com/its-37oc-and-all-we-can-think-about-is-coldfusion-adobe-coldfusion-security-bulletin-apsb26-68-cve-bonanza/
+
+
+・CVE-2026-48282 / Adobe ColdFusion
+CVSS: 10.0 (Critical)
+Adobeのセキュリティ速報APSB26-68で修正された11件のColdFusion脆弱性のうちCVE-2026-48282（CVSS10.0）。watchTowr Labsの技術解析により、Adobeの公式リストに記載のない追加の脆弱性（任意ファイル移動・削除・ディレクトリ作成/一覧化）もパッチで暗黙に修正されていたことが判明した。事前認証でのリモートコード実行が可能。Adobeは本稿執筆時点で実悪用は確認していないとしている。ColdFusion 2025 Update 10 / 2023 Update 21で修正済み。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの異常なファイル操作・管理者権限昇格の兆候を監視する
+参照: https://labs.watchtowr.com/its-37oc-and-all-we-can-think-about-is-coldfusion-adobe-coldfusion-security-bulletin-apsb26-68-cve-bonanza/
+
+
+・CVE-2026-48283 / Adobe ColdFusion
+CVSS: 10.0 (Critical)
+Adobeのセキュリティ速報APSB26-68で修正された11件のColdFusion脆弱性のうちCVE-2026-48283（CVSS10.0）。watchTowr Labsの技術解析により、Adobeの公式リストに記載のない追加の脆弱性（任意ファイル移動・削除・ディレクトリ作成/一覧化）もパッチで暗黙に修正されていたことが判明した。Adobeは本稿執筆時点で実悪用は確認していないとしている。ColdFusion 2025 Update 10 / 2023 Update 21で修正済み。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの異常なファイル操作・管理者権限昇格の兆候を監視する
+参照: https://labs.watchtowr.com/its-37oc-and-all-we-can-think-about-is-coldfusion-adobe-coldfusion-security-bulletin-apsb26-68-cve-bonanza/
+
+
+・CVE-2026-48313 / Adobe ColdFusion
+CVSS: 9.3 (Critical)
+Adobeのセキュリティ速報APSB26-68で修正された11件のColdFusion脆弱性のうちCVE-2026-48313（CVSS9.3）。watchTowr Labsの技術解析により、Adobeの公式リストに記載のない追加の脆弱性（任意ファイル移動・削除・ディレクトリ作成/一覧化）もパッチで暗黙に修正されていたことが判明した。Adobeは本稿執筆時点で実悪用は確認していないとしている。ColdFusion 2025 Update 10 / 2023 Update 21で修正済み。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの異常なファイル操作・管理者権限昇格の兆候を監視する
+参照: https://labs.watchtowr.com/its-37oc-and-all-we-can-think-about-is-coldfusion-adobe-coldfusion-security-bulletin-apsb26-68-cve-bonanza/
+
+
+・CVE-2026-48307 / Adobe ColdFusion
+CVSS: 8.8 (High)
+Adobeのセキュリティ速報APSB26-68で修正された11件のColdFusion脆弱性のうちCVE-2026-48307（CVSS8.8）。watchTowr Labsの技術解析により、Adobeの公式リストに記載のない追加の脆弱性（任意ファイル移動・削除・ディレクトリ作成/一覧化）もパッチで暗黙に修正されていたことが判明した。事前認証でのリモートコード実行が可能。Adobeは本稿執筆時点で実悪用は確認していないとしている。ColdFusion 2025 Update 10 / 2023 Update 21で修正済み。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの異常なファイル操作・管理者権限昇格の兆候を監視する
+参照: https://labs.watchtowr.com/its-37oc-and-all-we-can-think-about-is-coldfusion-adobe-coldfusion-security-bulletin-apsb26-68-cve-bonanza/
+
+
+・CVE-2026-48285 / Adobe ColdFusion
+CVSS: 8.6 (High)
+Adobeのセキュリティ速報APSB26-68で修正された11件のColdFusion脆弱性のうちCVE-2026-48285（CVSS8.6）。watchTowr Labsの技術解析により、Adobeの公式リストに記載のない追加の脆弱性（任意ファイル移動・削除・ディレクトリ作成/一覧化）もパッチで暗黙に修正されていたことが判明した。事前認証でのリモートコード実行が可能。Adobeは本稿執筆時点で実悪用は確認していないとしている。ColdFusion 2025 Update 10 / 2023 Update 21で修正済み。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの異常なファイル操作・管理者権限昇格の兆候を監視する
+参照: https://labs.watchtowr.com/its-37oc-and-all-we-can-think-about-is-coldfusion-adobe-coldfusion-security-bulletin-apsb26-68-cve-bonanza/
+
+
+・CVE-2026-48315 / Adobe ColdFusion
+CVSS: 9.3 (Critical)
+Adobeのセキュリティ速報APSB26-68で修正された11件のColdFusion脆弱性のうちCVE-2026-48315（CVSS9.3）。watchTowr Labsの技術解析により、Adobeの公式リストに記載のない追加の脆弱性（任意ファイル移動・削除・ディレクトリ作成/一覧化）もパッチで暗黙に修正されていたことが判明した。Adobeは本稿執筆時点で実悪用は確認していないとしている。ColdFusion 2025 Update 10 / 2023 Update 21で修正済み。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの異常なファイル操作・管理者権限昇格の兆候を監視する
+参照: https://labs.watchtowr.com/its-37oc-and-all-we-can-think-about-is-coldfusion-adobe-coldfusion-security-bulletin-apsb26-68-cve-bonanza/
+
+
+・CVE-2026-48314 / Adobe ColdFusion
+CVSS: 6.5 (High)
+Adobeのセキュリティ速報APSB26-68で修正された11件のColdFusion脆弱性のうちCVE-2026-48314（CVSS6.5）。watchTowr Labsの技術解析により、Adobeの公式リストに記載のない追加の脆弱性（任意ファイル移動・削除・ディレクトリ作成/一覧化）もパッチで暗黙に修正されていたことが判明した。Adobeは本稿執筆時点で実悪用は確認していないとしている。ColdFusion 2025 Update 10 / 2023 Update 21で修正済み。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの異常なファイル操作・管理者権限昇格の兆候を監視する
+参照: https://labs.watchtowr.com/its-37oc-and-all-we-can-think-about-is-coldfusion-adobe-coldfusion-security-bulletin-apsb26-68-cve-bonanza/
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・CVE-2026-56137 (RPGツクールMV / MZ) → 2026-07-01にJVN新規公開・参考A採用済み。ScanNetSecurity 2026-07-02記事は同一JVN公開の再報道で新規変化なし
+・CVE-2026-56808 (AVTECH DGM3103SCT) → 2026-07-01にJVN新規公開・参考A採用済み。ScanNetSecurity 2026-07-02記事は同一JVN公開の再報道で新規変化なし
+・CVE-2026-33017 (Langflow（Monero採掘マルウェア展開）) → 記事公開（2026-06-30）が調査窓開始（2026-07-02 07:00 JST）より前のため対象外。EPSS 0.984・KEV登録済み（2026-03-25）であり継続注視が必要
+・CVE-2026-43707 (Apple iOS / macOS / Safari) → Apple 30+件パッチの記事は調査窓より前に公開。CVSS6.5 Medium・要ユーザー操作・実悪用報告なし
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編3件 / 参考A10件 / 参考B12件 / 除外4件
+========================================

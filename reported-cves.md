@@ -49,7 +49,7 @@
 | CVE-2026-34909 | Ubiquiti UniFi OS Server 5.0.6以前 | 2026-06-24 | kev_listed | 2026-06-24 | YES | CVSS 10.0・KEV登録（2026-06-23）・FCEB期限2026-06-26・パストラバーサル・RCEチェーン構成・本編採用 |
 | CVE-2026-34910 | Ubiquiti UniFi OS Server 5.0.6以前 | 2026-06-24 | kev_listed | 2026-06-24 | YES | CVSS 10.0・KEV登録（2026-06-23）・FCEB期限2026-06-26・コマンドインジェクション・root RCE・本編採用 |
 | CVE-2025-67038 | Lantronix EDS5000 2.1.0.0R3以前 | 2026-06-24 | kev_listed | 2026-06-24 | YES | CVSS 9.8・KEV登録（2026-06-23）・FCEB期限2026-06-26・未認証root権限コマンドインジェクション・Security NEXT国内報道・本編採用 |
-| CVE-2026-20230 | Cisco Unified Communications Manager / Unified CM SME 14.x/15.x | 2026-06-24 | active_exploitation | 2026-06-27 | YES | CVSS 8.6・Cisco Critical SIR・PoC公開（SSD 2026-06-24）・実悪用確認（Tor経由ウェブシェル展開 2026-06-22〜24）・KEV未登録・本編採用 / CVSS 8.6・KEV登録（2026-06-25、既報2026-06-24からKEV未登録→登録のステータス変化）・FCEB期限2026-06-28・パッチ後Webシェル残存確認（/platform-services/axis2-web/）・本編再採用 |
+| CVE-2026-20230 | Cisco Unified Communications Manager / Unified CM SME 14.x/15.x | 2026-06-24 | active_exploitation | 2026-07-03 | YES | CVSS 8.6・Cisco Critical SIR・PoC公開（SSD 2026-06-24）・実悪用確認（Tor経由ウェブシェル展開 2026-06-22〜24）・KEV未登録・本編採用 / CVSS 8.6・KEV登録（2026-06-25、既報2026-06-24からKEV未登録→登録のステータス変化）・FCEB期限2026-06-28・パッチ後Webシェル残存確認（/platform-services/axis2-web/）・本編再採用 / Cisco公式が実悪用を確認（BleepingComputer 2026-07-01）・Defused観測で2026-06-22頃からfile://ペイロード攻撃・Shadowserverがアジア/北米中心に露出インスタンス200台超確認・EPSSパーセンタイル98.5・攻撃予報1（T1/E2/fast_72h/確度中・2026-07-03分バックフィル・期限2026-07-06）起点・本編再採用（2026-07-03分バックフィルレポート） |
 | CVE-2026-8732 | WP Maps Pro WordPress プラグイン 6.1.0以前 | 2026-06-24 | active_exploitation | 2026-06-24 | YES | CVSS 9.8・実悪用確認（Wordfence 24h 2,858件ブロック）・未認証管理者アカウント作成・本編採用 |
 | CVE-2026-11374 | ManageEngine ADSelfService Plus 6528以前 / RecoveryManager Plus 6320以前 / M365 Manager Plus 4816以前 / ADAudit Plus 8702以前 | 2026-06-24 | none | 2026-06-24 | YES | CVSS 9.0・SSO認証チケット予測によるアカウント乗っ取り・Security NEXT国内報道・参考A採用 |
 | CVE-2026-24155 | NVIDIA NeMo AIフレームワーク 2.7.2以前 | 2026-06-24 | none | 2026-06-24 | YES | CVSS 7.8・コードインジェクション・Security NEXT国内報道・参考A採用 |
@@ -83,7 +83,7 @@
 | CVE-2026-33825 | Microsoft Defender Antimalware Platform（BlueHammer） | 2026-06-30 | active_exploitation | 2026-07-01 | YES | CVSS 7.8・KEV登録済み（2026年4月22日）・2026-06-30にCISAがランサムウェアキャンペーン悪用フラグをUnknown→Knownへ更新（M4観測）・2026年4月パッチ提供済み・本日本編採用 |
 | CVE-2026-56137 | RPGツクールMV（1.6.3以前） / RPGツクールMZ（1.10.0以前） | 2026-07-01 | none | 2026-07-01 | YES | CVSS 7.8/CVSSv4 8.4・JVN新規公開（JVNDB-2026-000093）・セーブデータ読み込み時OSコマンドインジェクション・パッチ未提供（開発元EOL対応中）・参考A採用 |
 | CVE-2026-56808 | AVTECH DGM3103SCT（3MP H.265 IRネットワークカメラ、ファームウェア3.2.5.4以前） | 2026-07-01 | none | 2026-07-01 | YES | CVSS 7.2/CVSSv4 8.6・JVN新規公開（JVN#28979424）・認証済み管理者権限が前提のOSコマンドインジェクション・パッチ提供済み・参考A採用 |
-| CVE-2026-8451 | NetScaler ADC / NetScaler Gateway（14.1-72.61未満 / 13.1-63.18未満、FIPS/NDcPP含む） | 2026-07-02 | poc_public | 2026-07-02 | YES | CVSSv4 8.8/CVSSv3 7.5・watchTowr Labs発見「CitrixBleed To Infinity And Beyond」・SAML IDP設定時の境界外メモリ読み取り（NSC_TASSクッキー漏洩）・KEV未登録・実悪用未確認・Security NEXT国内報道・本編採用 |
+| CVE-2026-8451 | NetScaler ADC / NetScaler Gateway（14.1-72.61未満 / 13.1-63.18未満、FIPS/NDcPP含む） | 2026-07-02 | active_exploitation | 2026-07-03 | YES | CVSSv4 8.8/CVSSv3 7.5・watchTowr Labs発見「CitrixBleed To Infinity And Beyond」・SAML IDP設定時の境界外メモリ読み取り（NSC_TASSクッキー漏洩）・KEV未登録・実悪用未確認・Security NEXT国内報道・本編採用 / Lupovisが開示から24時間以内（2026-06-30〜07-01）に完全なエクスプロイトペイロードを観測・実悪用確認・KEV未登録・本編再採用（2026-07-03分バックフィルレポート） |
 | CVE-2026-55957 | Apache Tomcat（JVNVU#93304382・複数バージョン系列） | 2026-07-02 | none | 2026-07-02 | YES | CVSS 7.3・JNDIRealm+GSSAPIバインド認証時の認証バイパス（Missing Critical Step in Authentication）・JVN発行・実悪用未確認・参考A採用 |
 | CVE-2026-55956 | Apache Tomcat（JVNVU#93304382・複数バージョン系列） | 2026-07-02 | none | 2026-07-02 | YES | CVSS 6.5・デフォルトサーブレットのメソッド制約無視（Improper Authorization）・JVN発行・参考A採用（同一JVNVU#93304382内の複合脆弱性） |
 | CVE-2026-55955 | Apache Tomcat（JVNVU#93304382・複数バージョン系列） | 2026-07-02 | none | 2026-07-02 | YES | CVSS 6.5・クラスタEncryptInterceptorリプレイ攻撃（Improper Authentication）・JVN発行・参考A採用（同一JVNVU#93304382内の複合脆弱性） |
@@ -93,3 +93,54 @@
 | CVE-2026-50229 | Apache Tomcat（JVNVU#93304382・number guessサンプルアプリ使用時） | 2026-07-02 | none | 2026-07-02 | YES | CVSS 6.1・同梱サンプルアプリの反射型XSS・JVN発行・参考A採用（同一JVNVU#93304382内の複合脆弱性） |
 | CVE-2026-50548 | Cursor IDE（AIコードエディタ、3.0未満） | 2026-07-01 | poc_public | 2026-07-02 | YES | CVSSv3.1 9.8/CVSSv4 9.3・Cato AI Labs発見「DuneSlide」・ゼロクリック・プロンプトインジェクション経由サンドボックス回避RCE・run_terminal_cmd working_directory検証不備・修正済み(3.0)・実悪用未確認・CVEパイプラインではlow_score（国内ソース未確認）だがAI攻撃本編で採用 |
 | CVE-2026-50549 | Cursor IDE（AIコードエディタ、3.0未満） | 2026-07-01 | poc_public | 2026-07-02 | YES | CVE-2026-50548と同一disclosure（DuneSlide）・シンボリックリンク解決チェックのフォールバック不備・修正済み(3.0)・実悪用未確認・CVEパイプラインではlow_scoreだがAI攻撃本編で採用 |
+| CVE-2026-6682 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6683 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6684 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6685 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6686 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6687 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-6688 | FatFs（ChaN製 汎用FATファイルシステムライブラリ。ESP-IDF/STM32Cube/Zephyr RTOS/MicroPython/ArduPilot/RT-Thread/Mbed/TizenRT/SWUpdate等に組み込み） | 2026-07-04 | poc_public | 2026-07-04 | YES | ゼロデイ特報採用・パッチ未提供（開発元EOL/未応答対応中）・PoC公開済み(GitHub)・実悪用未確認・FatFs OSSエコシステム横断事案 |
+| CVE-2026-13368 | WatchGuard Firebox（Fireware OS） | 2026-07-04 | none | 2026-07-04 | YES | CVSSv4 9.2・WatchGuard Fireware OS外部LDAP認証構成VPN use-after-free・Security NEXT国内報道・参考A採用 |
+| CVE-2026-44946 | SUSE Rancher（コンテナ管理ツール） | 2026-07-04 | none | 2026-07-04 | YES | CVSSv4 9.5(一部ソースのみ・NVD未確認)・SAMLアサーション再生（事前認証Cookie窃取前提）・Rancher 2.14.3で修正・参考A採用 |
+| CVE-2026-44947 | SUSE Rancher（コンテナ管理ツール） | 2026-07-04 | none | 2026-07-04 | YES | PSAクリーンアップ権限昇格・Rancher 2.14.3で修正・参考A採用（CVE-2026-44946と同一アドバイザリ内の複合脆弱性） |
+| CVE-2026-44948 | SUSE Rancher（コンテナ管理ツール） | 2026-07-04 | none | 2026-07-04 | YES | Fleet ImageScanパストラバーサル/DoS・Rancher 2.14.3で修正・参考A採用（同一アドバイザリ内の複合脆弱性） |
+| CVE-2026-44949 | SUSE Rancher（コンテナ管理ツール） | 2026-07-04 | none | 2026-07-04 | YES | Fleet workspace RBAC不備・Rancher 2.14.3で修正・参考A採用（同一アドバイザリ内の複合脆弱性） |
+| CVE-2026-24260 | NVIDIA Container Toolkit / GPU Operator | 2026-07-04 | none | 2026-07-04 | YES | CVSS8.5・NVIDIA Container Toolkit/GPU Operator TOCTOU競合状態・権限昇格リスク・Security NEXT国内報道・参考A採用 |
+| CVE-2026-33612 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | CVSS7.5・PowerDNS Recursor ZoneToCacheキャッシュポイズニング・ScanNetSecurity国内報道・参考A採用 |
+| CVE-2026-40012 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・ScanNetSecurity国内報道・参考A採用（CVE-2026-33612と同一アドバイザリ） |
+| CVE-2026-42005 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-42387 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-42388 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-42389 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-42390 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-52690 | PowerDNS Recursor | 2026-07-04 | none | 2026-07-04 | YES | PowerDNS Recursor複合脆弱性・参考A採用（同一アドバイザリ） |
+| CVE-2026-56809 | Ricoh Web Image Monitor（複数のレーザープリンタ・複合機/MFP搭載） | 2026-07-04 | none | 2026-07-04 | YES | CVSS6.1・Ricoh Web Image Monitor反射型XSS（複数プリンタ/MFP）・ユーザー操作前提・ScanNetSecurity国内報道・参考A採用 |
+| CVE-2026-50043 | セイコーソリューションズ SkyBridge MB-A100 / MB-A110（IoT向けルータ） | 2026-07-04 | none | 2026-07-04 | YES | CVSS7.2/CVSSv4 8.6・セイコーソリューションズSkyBridge OSコマンドインジェクション・EOL製品でパッチ提供予定なし・ScanNetSecurity/Security NEXT国内報道・参考A採用 |
+| CVE-2026-12166 | Little Orbit GamersFirst Anti-Cheat（GFAC_Sys_x64.sysドライバ） | 2026-07-04 | none | 2026-07-04 | YES | Little Orbit GamersFirst Anti-CheatドライバNULLポインタ参照DoS・ローカル限定・JVN発行・参考A採用 |
+| CVE-2026-12167 | Little Orbit GamersFirst Anti-Cheat（GFAC_Sys_x64.sysドライバ） | 2026-07-04 | none | 2026-07-04 | YES | GFACドライバminifilter通信ポートセキュリティ記述子不備・ローカル限定・JVN発行・参考A採用（同一JVN内複合脆弱性） |
+| CVE-2026-12168 | Little Orbit GamersFirst Anti-Cheat（GFAC_Sys_x64.sysドライバ） | 2026-07-04 | none | 2026-07-04 | YES | GFACドライバ任意カーネルメモリ書き込みSYSTEM権限昇格・ローカル限定・JVN発行・参考A採用（同一JVN内複合脆弱性） |
+| CVE-2026-14355 | PHP | 2026-07-04 | none | 2026-07-04 | YES | PHP OpenSSL AES-WRAP-PADメモリ破損（openssl_encrypt）・Security NEXT国内報道・参考A採用 |
+| CVE-2026-12184 | PHP | 2026-07-04 | none | 2026-07-04 | YES | PHP file_get_contents()プロキシ経由DoS（8.3.32のみ）・Security NEXT国内報道・参考A採用（CVE-2026-14355と同一更新内複合脆弱性） |
+| CVE-2026-45659 | Microsoft SharePoint Server（Subscription Edition / 2019 / Enterprise Server 2016） | 2026-07-03 | active_exploitation | 2026-07-03 | YES | CVSS8.8・KEV登録（2026-07-01）・FCEB期限2026-07-04・デシリアライゼーションRCE（Site Member最小権限で悪用可）・Shadowserver露出サーバ1万台超確認・Security NEXT国内報道・本編採用（2026-07-03分バックフィルレポート） |
+| CVE-2025-5777 | Citrix NetScaler ADC / NetScaler Gateway（Citrix Bleed 2） | 2025年（既存CVE） | active_exploitation | 2026-07-03 | YES | CVSS9.3・KEV登録済み（2025-07-10）・EPSSパーセンタイル99.96・Anubisランサムウェアアフィリエイトによる新規悪用確認・正規RMMツール悪用・参考B採用（2026-07-03分バックフィルレポート） |
+| CVE-2026-10109 | IBM Db2 Server（V11.5.0〜11.5.9 / V12.1.0〜12.1.4） | 2026-07-03 | none | 2026-07-03 | YES | CVSS9.8・CWE-94未認証事前認証コードインジェクション・正式GA修正未提供（Special Build暫定修正のみ）・実悪用未確認・Security NEXT国内報道・参考A採用（2026-07-03分バックフィルレポート） |
+| CVE-2026-43724 | macOS Tahoe（26.5.2未満・37件の脆弱性を含む更新の代表CVE） | 2026-07-03 | none | 2026-07-03 | YES | カーネルクラッシュ/メモリ書き込み不具合・AI支援エクスプロイト開発懸念による早期リリース・実悪用未確認・Security NEXT国内報道・参考A採用（他36件は同一更新内の複合脆弱性、2026-07-03分バックフィルレポート） |
+| CVE-2026-14241 | Mozilla Firefox（152.0.3未満） | 2026-07-03 | none | 2026-07-03 | YES | Mozilla severity: High・メモリ安全性脆弱性（MFSA 2026-62）・実悪用未確認・Security NEXT国内報道・参考A採用（2026-07-03分バックフィルレポート） |
+| CVE-2026-20213 | ClamAV（Cisco Secure Endpoint Connector同梱） | 2026-07-03 | none | 2026-07-03 | YES | CVSS7.5・ファイルフォーマットパーサー脆弱性（DoS類）・回避策なし・Security NEXT国内報道・参考A採用（同一Ciscoアドバイザリ内の複合脆弱性、2026-07-03分バックフィルレポート） |
+| CVE-2026-20214 | ClamAV（Cisco Secure Endpoint Connector同梱） | 2026-07-03 | none | 2026-07-03 | YES | CVSS7.5・ファイルフォーマットパーサー脆弱性・参考A採用（同一Ciscoアドバイザリ内の複合脆弱性） |
+| CVE-2026-20215 | ClamAV（Cisco Secure Endpoint Connector同梱） | 2026-07-03 | none | 2026-07-03 | YES | CVSS7.5・ファイルフォーマットパーサー脆弱性・参考A採用（同一Ciscoアドバイザリ内の複合脆弱性） |
+| CVE-2026-20216 | ClamAV（Cisco Secure Endpoint Connector同梱） | 2026-07-03 | none | 2026-07-03 | YES | CVSS7.5・ファイルフォーマットパーサー脆弱性・参考A採用（同一Ciscoアドバイザリ内の複合脆弱性） |
+| CVE-2026-20217 | ClamAV（Cisco Secure Endpoint Connector同梱） | 2026-07-03 | none | 2026-07-03 | YES | CVSS7.5・ファイルフォーマットパーサー脆弱性・参考A採用（同一Ciscoアドバイザリ内の複合脆弱性） |
+| CVE-2026-20243 | ClamAV（Cisco Secure Endpoint Connector同梱） | 2026-07-03 | none | 2026-07-03 | YES | CVSS7.5・ファイルフォーマットパーサー脆弱性・参考A採用（同一Ciscoアドバイザリ内の複合脆弱性） |
+| CVE-2026-20244 | ClamAV（Cisco Secure Endpoint Connector同梱） | 2026-07-03 | none | 2026-07-03 | YES | CVSS7.5・ファイルフォーマットパーサー脆弱性・参考A採用（同一Ciscoアドバイザリ内の複合脆弱性） |
+| CVE-2026-48276 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE・Adobe Priority Rating 1・watchTowr技術解析・実悪用未確認・参考B採用（APSB26-68・11件の複合脆弱性、2026-07-03分バックフィルレポート） |
+| CVE-2026-48277 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
+| CVE-2026-48281 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
+| CVE-2026-48316 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
+| CVE-2026-48282 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE（任意ファイル書き込み）・参考B採用（APSB26-68内の複合脆弱性） |
+| CVE-2026-48283 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・ファイル/権限関連・参考B採用（APSB26-68内の複合脆弱性） |
+| CVE-2026-48313 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS9.3・任意ファイル読み取り・参考B採用（APSB26-68内の複合脆弱性） |
+| CVE-2026-48307 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS8.8・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
+| CVE-2026-48285 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS8.6・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
+| CVE-2026-48315 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS9.3・参考B採用（APSB26-68内の複合脆弱性） |
+| CVE-2026-48314 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS6.5・Important・参考B採用（APSB26-68内の複合脆弱性） |
