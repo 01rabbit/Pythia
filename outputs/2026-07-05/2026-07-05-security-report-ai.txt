@@ -1,0 +1,128 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-05 07:50 JST
+調査期間: 2026-07-04 07:00 〜 2026-07-05 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-07-04 〜 2026-07-05
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. JadePuffer: Langflow CVE-2025-3248起点のエージェント型AIランサムウェア — 新規技術詳細判明
+カテゴリ: A4 / 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: A-Q, A-P
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: it / global
+被害規模: 被害組織名・金額は非公開。Nacos設定1,342件破壊（既報既知）
+
+【24時間以内（または期間内）の変化】
+[BleepingComputer 2026-07-04] AIエージェントが失敗したログイン試行から31秒で手法を修正するなど適応的挙動を示したこと、PostgreSQLダンプ・MinIO列挙・Nacos横展開・30分間隔cronジョブ永続化・MySQL AES_ENCRYPT()による暗号化(実質AES-128-ECBと指摘)・恐喝テーブル作成等の技術詳細が新たに判明
+
+【概要】
+既報のJadePuffer（Langflow CVE-2025-3248を起点としNacos脆弱性で横展開する、エンドツーエンドで完結するエージェント型AIランサムウェア）について、BleepingComputer/The Hacker Newsが追加技術詳細を報じた。攻撃コード生成物に運用判断根拠を記した自然言語コメントが含まれ従来型マルウェアと識別可能である点が検知の手がかりとして強調されている。
+
+攻撃の流れ:
+1. Langflow CVE-2025-3248（未認証コード実行）で初期侵入
+2. AIエージェントがPostgreSQL/環境変数/MinIOを自律的に探索・資格情報窃取、Nacos脆弱性で横展開
+3. cronジョブで30分間隔のC2ビーコン確立、MySQL AES_ENCRYPT()（実質AES-128-ECB相当）でNacos設定を暗号化・恐喝
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+検知シグナル: 30分間隔の定期外部通信を行うcronジョブ
+検知シグナル: MinIOへのデフォルト認証情報アクセス試行
+検知シグナル: Nacos設定APIへの異常な書き込み・暗号化操作
+検知シグナル: MySQL上でのAES_ENCRYPT()関数の異常呼び出し
+
+【監視・対策ポイント】
+・[ログソース / SIEM（Splunk等）] 定期外部通信を行う新規cronジョブ、データベース監査ログ上の異常な暗号化関数呼び出しを監視する
+Splunk SPL: index=linux_audit sourcetype=cron_audit action=create | join host [search index=network dest!=internal_range] | stats count by host, dest, _time
+Splunk SPL: index=db_audit (sourcetype=mysql_general_log "AES_ENCRYPT" OR sourcetype=minio_audit action=GetObject) | stats count by user, src_ip
+→ 業務外の定期的な外向き通信を伴う新規cronジョブ、短時間での大量暗号化関数呼び出しは即時調査・ブロック対象とする
+
+【参照】
+https://www.bleepingcomputer.com/news/security/jadepuffer-ransomware-used-ai-agent-to-automate-entire-attack/
+https://thehackernews.com/2026/07/ai-agent-exploits-langflow-rce-to.html
+------------------------------------------------------------
+2. TeamPCPとVectのランサムウェア提携 — サプライチェーン窃取認証情報が実際の恐喝に転化
+カテゴリ: C6 / 攻撃者種別: 犯罪組織
+------------------------------------------------------------
+
+採用契機: A-Q, A-U
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: it, professional_services / global
+被害規模: Aqua Security Trivy侵害でCI/CDワークフロー10,000件・認証情報50万件超（クラウドトークン含む）窃取（既知）。Vectによる実際のランサムウェア展開が少なくとも1件確認（新規）
+
+【24時間以内（または期間内）の変化】
+[Sophos 2026-07-03] TeamPCP（The Com系）とVect（RaaS）が正式提携し、TeamPCPが窃取した認証情報を用いてVectが少なくとも1件で実際にランサムウェアを展開したことが初めて確認された。FBIはAI普及がこの種の攻撃自動化・産業化を加速させると警告
+
+【概要】
+既報のLiteLLM PyPIサプライチェーン侵害（TeamPCP）は開発者・AI関連認証情報の窃取に留まっていたが、TeamPCPの窃取認証情報基盤とVectのランサムウェア展開能力が正式に統合され、少なくとも1件で実際の暗号化・恐喝が確認されたことで、AI開発環境を含むサプライチェーン侵害が金銭的実害に直結する段階へ進展したことが確認された。
+
+攻撃の流れ:
+1. TeamPCPによるLiteLLM PyPIパッケージ／Aqua Security Trivyサプライチェーン侵害でクラウドトークン・SSH鍵・Kubernetesシークレット・AI開発ツール認証情報を大量窃取
+2. TeamPCPとVectの提携によりRaaSインフラへ窃取認証情報を供給
+3. Vectが窃取認証情報を用いて標的環境に実際にランサムウェアを展開・暗号化・恐喝（確認済み1件以上）
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+検知シグナル: LiteLLM/Trivy侵害バージョンからの認証情報の再利用
+検知シグナル: CI/CD環境からの異常な外部認証・クラウドAPIコール
+検知シグナル: 既知TeamPCP侵害環境における新規ランサムウェアバイナリの展開
+
+【監視・対策ポイント】
+・[ログソース / SIEM（Splunk等）] TeamPCP侵害の疑いがある組織で窃取クラウドトークンの再利用を監視する
+Splunk SPL: index=cloud_audit (action=AssumeRole OR action=GetSessionToken) | stats count by src_ip, user | where src_ip NOT IN (known_corporate_ranges)
+→ 既知侵害環境の認証情報が非社内IPから利用された場合は即時失効・調査を行う
+
+【参照】
+https://www.infosecurity-magazine.com/news/industrialized-cyberattacks/
+https://www.itpro.com/security/ransomware/cyber-experts-issue-alert-after-two-ransomware-groups-team-up-on-unprecedented-threat-campaign
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考B採用AI攻撃なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A採用AI攻撃なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はJadePuffer（LangflowのAIエージェント型自律ランサムウェア）の新規技術詳細と、TeamPCP/Vectのランサムウェア提携によるサプライチェーン窃取認証情報の実際の金銭的恐喝への転化が本編2件として採用された。いずれも既存インシデントの継続的エスカレーションであり、新規の単発シグナルはバースト検出閾値未達のため見送った。
+
+[除外]
+[AI攻撃]
+・InkJect（DeepKeep視覚的プロンプトインジェクション） → 独立ソース3件未満（プレスリリース系列1件＋IT-Online1件）でburst below_threshold。初報2026-07-01・窓内の新規継続報道確認できず
+・Sockpuppeting（Trend Micro assistant-prefillジェイルブレイク） → 実際の発表日は2026-04-10と判明、窓から大幅に外れるため除外
+・Claude Fable 5ジェイルブレイク／Jailbreak Severity Framework → 中核記事は2026-07-01付。窓内（07-04〜07-05）の独立した新規続報が確認できず鮮度チェック不合格
+・Djinn Stealer / TaskWeaver（CVE-2026-48558経由） → CISA是正期限2026-07-07の付随情報のみ新規判明、技術内容の変化なし
+
+本日の集計:
+AI攻撃 — 本編2件 / 参考A0件 / 参考B0件 / 除外4件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）0件 / C（インフラ）1件
+
+========================================
