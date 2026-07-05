@@ -1,0 +1,90 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-05 07:50 JST
+調査期間: 2026-07-04 07:00 〜 2026-07-05 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. ARToken/EvilTokens — OAuthデバイスコードフィッシングのPhaaS拡大
+観点: ゼロデイ関連
+採用契機: epsilon, delta
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft 365 / Microsoft Entra ID（OAuth 2.0 Device Code Flow）
+
+【24時間以内の変化】
+[Cisco Talos 2026-07-01] Talos報告のARTokenパネル（EvilTokens系PhaaS）をBleepingComputerが追跡報道。デバイスコードフィッシングが前年比37倍に急増し、11以上のフィッシングキットが対応していると確認。
+
+【概要】
+攻撃者はMicrosoft公式のデバイスコード認証フローを悪用し、被害者に正規ログイン画面上で攻撃者が生成したコードを入力させることでMFAを経ずにアクセス・更新トークンを取得する。取得後はPrimary Refresh Tokenによる永続化、Outlook/SharePoint/OneDriveへのアクセス、受信ボックスルール改ざんによる隠蔽、BEC実行までを自動化するPhaaSパネルが月額500ドル程度で流通しており、財務・人事・物流担当者が主要標的となっている。
+
+【推奨アクション】
+・Entra ID サインインログでdevice code flow（grant_type=device_code）の使用有無を確認し、通常業務で使用していない場合はテナントレベルで無効化を検討する
+・条件付きアクセスポリシーがブラウザサインインのみを対象としていないか点検し、レガシー認証・デバイスコードフローも含めた全経路へのMFA適用を確認する
+・請求書・見積り等の実在取引先を装ったなりすましメールへの警戒喚起を経理・購買部門に実施する
+Splunk SPL: index=azuread sourcetype=AzureADSignInLogs authenticationProtocol="deviceCode" | stats count by userPrincipalName, ipAddress, appDisplayName
+
+【参照】
+https://blog.talosintelligence.com/artoken-inside-an-eviltokens-affiliate-panel-targeting-microsoft-365/
+https://www.helpnetsecurity.com/2026/07/01/artoken-phishing-panel-microsoft-365-accounts/
+------------------------------------------------------------
+2. Avalonマルウェアフレームワーク／CrownXランサムウェア — バックアップ・仮想化基盤を優先攻撃
+観点: ゼロデイ関連
+採用契機: epsilon, delta
+------------------------------------------------------------
+
+優先度: 高
+対象: Veeam, Acronis, NetApp, Synology, vCenter, Hyper-V等のバックアップ・仮想化基盤
+
+【24時間以内の変化】
+[The Hacker News 2026-07-03] 未文書化の新規マルウェアフレームワーク「Avalon」（内蔵ランサムウェアモジュール名「CrownX」）が初報告された。
+
+【概要】
+ISOイメージに偽装した「正規文書」配布によりメールゲートウェイのスキャンを回避し、資格情報収集・横展開・リモートアクセス・復旧妨害・ランサムウェア実行を一体化した攻撃を行う。VSS停止・シャドウコピー削除・WinRE改ざんに加え、バックアップ／仮想化基盤を横展開の優先探索対象としており、復旧手段そのものを無力化してから暗号化に至る点が特徴。
+
+【推奨アクション】
+・バックアップ管理コンソール（Veeam/Acronis等）への認証をMFA必須化し、管理アカウントの通常業務端末からの利用を制限する
+・VSS/シャドウコピー削除コマンド（vssadmin, wmic shadowcopy delete等）の実行をSIEMで監視する
+・ISOイメージファイルの添付・ダウンロードに対するメールゲートウェイ／EDRでの検査を強化する
+Splunk SPL: index=wineventlog EventCode=4688 (New_Process_Name="*vssadmin.exe" OR CommandLine="*shadowcopy delete*" OR CommandLine="*wbadmin delete*") | table _time, ComputerName, Account_Name, CommandLine
+
+【参照】
+https://thehackernews.com/2026/07/new-avalon-malware-framework-packs.html
+------------------------------------------------------------
+3. ChocoPoC — 偽PoCエクスプロイト依存関係経由でセキュリティ研究者・ペンテスターを狙うRAT配布
+観点: ゼロデイ関連
+採用契機: epsilon, beta
+------------------------------------------------------------
+
+優先度: 中
+対象: GitHub / PyPI（Pythonパッケージ生態系）
+
+【24時間以内の変化】
+[Sekoia 2026-07-01] SekoiaとBleepingComputer/The Hacker Newsが、脆弱性研究者を狙う偽PoC配布キャンペーン「ChocoPoC」を報告。過去（2025年末）の類似キャンペーンとの関連（GitHubコミッターアドレスの重複）も指摘。
+
+【概要】
+GitHub上の武器化PoCがエクスプロイト本体ではなく依存パッケージ（PyPI経由）にマルウェアを仕込む手口で、ファイル窃取・ブラウザ資格情報収集・任意コマンド実行が可能なPython製RAT「ChocoPoC」を配布している。標的は脆弱性研究者・ペネトレーションテスターであり、侵害された研究環境が正規のセキュリティツールへコードを混入させる二次サプライチェーン汚染の踏み台にされるリスクが指摘されている。
+
+【推奨アクション】
+・社内のレッドチーム/研究者環境でGitHub上のPoCを検証利用する際は、専用の隔離VM・ネットワーク遮断環境での実行を徹底する
+・PoC付随のrequirements.txt等依存関係ファイルを事前レビューし、無関係な出所不明パッケージが含まれていないか確認する
+Splunk SPL: index=edr sourcetype=process_create parent_process="python*" | search (process="*credential*" OR network_connection=true) | stats count by host, user, process
+
+【参照】
+https://www.sekoia.io/en/blog/dont-eat-the-chocopocs-how-vulnerability-researchers-were-repeatedly-targeted-by-trojanised-exploits/
+https://www.bleepingcomputer.com/news/security/new-chocopoc-malware-targets-researchers-via-trojanized-poc-exploits/
+
+[除外]
+・防災わかやまメール配信サービスのスパム踏み台悪用 → 技術的経緯・被害規模・原典URLとも十分に確認できず確度が低い
+・ランサムウェア初期侵入手法の多様化（Citrix Bleed2継続悪用+BYOVD+サプライチェーン窃取資格情報） → 原典記事の恒久URLが未確認のため確度不十分。個別CVEはTrack A/Bで既報済み
+
+本日の集計:
+SOC推奨情報 — 高2件 / 中1件 / 低0件 / 除外2件
+
+========================================

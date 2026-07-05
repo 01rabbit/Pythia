@@ -1,0 +1,802 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-07-05",
+    "generated_at": "2026-07-05T07:50:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-07-04T07:00:00+09:00",
+      "to": "2026-07-05T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2025-3248",
+      "product": "Langflow",
+      "vendor": "Langflow AI",
+      "affected_versions": "1.3.0未満（/api/v1/validate/code エンドポイントの認証欠如）",
+      "priority": "high",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-306"
+      ],
+      "epss": {
+        "score": 0.9997,
+        "percentile": 0.9998,
+        "model_date": "2026-07-04"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "1.3.0",
+        "eta": null
+      },
+      "fceb_deadline": "2025-05-26",
+      "kev_date_added": "2025-05-05",
+      "axis1_score": 9,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-07-04T07:00:00+09:00",
+          "description": "Sysdigが「初の完全AIエージェント駆動ランサムウェア作戦」と評するJadePufferを報告。パッチ済みだが露出したままの本CVEを侵入起点として自律型AIエージェントが偵察から恐喝まで自動実行したことを確認"
+        }
+      ],
+      "overview": "2025年5月にKEV登録・パッチ提供済みのLangflow未認証コード実行脆弱性CVE-2025-3248が、パッチ未適用のまま露出したサーバへの侵入起点として新たに実悪用確認された。侵入後は自律型LLMエージェントが偵察・認証情報窃取・横展開・データベース暗号化・恐喝までを人手を介さず遂行する「JadePuffer」と名付けられたエージェント型ランサムウェア事例としてSysdigが報告し、既知脆弱性の残存リスクとAIエージェント型攻撃の実運用段階入りを示す事例となった。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "パッチ未適用・露出したままのLangflowサーバへ/api/v1/validate/code経由で未認証RCEを実行し侵入"
+        },
+        {
+          "step": 2,
+          "description": "自律AIエージェントがPostgreSQLダンプ・MinIO列挙・環境変数探索により認証情報を収集し、Nacos脆弱性で横展開"
+        },
+        {
+          "step": 3,
+          "description": "cronジョブでC2への定期ビーコンを確立し永続化、MySQL上でデータベースを暗号化・恐喝テーブルを作成して金銭要求"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "Langflowの/api/v1/validate/codeエンドポイントに対する未認証コード実行の悪用が明示されているためT1190を付与"
+        },
+        {
+          "technique_id": "T1486",
+          "sub_technique_id": null,
+          "tactic": "impact",
+          "evidence": "MySQL上でデータベースを暗号化し恐喝テーブルを作成したことが明示されているためT1486を付与"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "露出したLangflowエンドポイントへのアクセス試行、および暗号化ファイル生成の急増を監視する",
+        "splunk_spl": [
+          "index=web sourcetype=access_combined uri_path=\"*/api/v1/validate/code*\" | stats count by clientip",
+          "index=endpoint sourcetype=Sysmon EventCode=11 (TargetFilename=\"*.encrypted\" OR TargetFilename=\"*.locked\") | stats count by Computer"
+        ],
+        "detection_notes": "未パッチLangflowへの外部アクセス試行は既知の内部開発トラフィックを除外した上で即時調査、暗号化ファイル生成の急増はランサムウェア活動の兆候として即時対応する"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/jadepuffer-ransomware-used-ai-agent-to-automate-entire-attack/",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://hackread.com/sysdig-jadepuffer-first-agentic-ransomware-operation/",
+          "title": null,
+          "language": "en",
+          "source": "HackRead"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260705-CVEP-06a08698"
+    }
+  ],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-07-05-001",
+        "title": "Kairos、身代金交渉なしのデータ恐喝で米オハイオ州郡政府機関から約100万ドルを獲得",
+        "summary": "研究者の分析により、2025年5月に米オハイオ州の郡政府機関がKairosを名乗る攻撃者からブルートフォースによる資格情報窃取を受け、ランサムウェア（暗号化）を一切用いない純粋なデータ窃取・恐喝により約9.44BTC（約100万ドル）を支払ったことが判明した。45,487人分の社会保障番号・指紋・パスポート情報等が窃取された。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-07-04T07:00:00+09:00",
+            "description": "研究者の分析により、2025年5月に米オハイオ州の郡政府機関がKairosを名乗る攻撃者からブルートフォースによる資格情報窃取を受け、ランサムウェア（暗号化）を"
+          }
+        ],
+        "sector_impact": [
+          "government"
+        ],
+        "region_impact": [
+          "US"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/07/us-government-entity-paid-kairos-group.html",
+            "title": null,
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://securityaffairs.com/194750/security/u-s-government-agency-paid-1m-to-data-extortion-group-kairos.html",
+            "title": null,
+            "language": "en",
+            "source": "SecurityAffairs"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260705-TRND-d8e06833"
+      },
+      {
+        "topic_id": "TREND-2026-07-05-002",
+        "title": "欧州議会PEGA委員会（スパイウェア濫用調査委員会）メンバーの一人がPegasusスパイウェアで侵害されていたことが判明",
+        "summary": "Citizen Labの調査により、スパイウェア濫用を調査する欧州議会PEGA委員会に2022〜2023年に在籍していた元議員Stelios Kouloglou氏のiPhoneが、2022年10月および2023年3月にPegasusスパイウェアで侵害されていたことがフォレンジック分析で確認された。委員会在籍中に監視対象となった初の公表事例であり、攻撃の国家帰属は明示されていない。",
+        "changes_24h": [
+          {
+            "source": "Citizen Lab",
+            "date": "2026-07-03T07:00:00+09:00",
+            "description": "Citizen Labの調査により、スパイウェア濫用を調査する欧州議会PEGA委員会に2022〜2023年に在籍していた元議員Stelios Kouloglou"
+          }
+        ],
+        "sector_impact": [
+          "government"
+        ],
+        "region_impact": [
+          "EU"
+        ],
+        "references": [
+          {
+            "url": "https://citizenlab.ca/research/member-of-committee-investigating-spyware-hacked-with-pegasus/",
+            "title": null,
+            "language": "en",
+            "source": "Citizen Lab"
+          },
+          {
+            "url": "https://thehackernews.com/2026/07/european-parliament-member.html",
+            "title": null,
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260705-TRND-73a75322"
+      },
+      {
+        "topic_id": "TREND-2026-07-05-003",
+        "title": "macOSインフォスティーラー「PamStealer」がクリップボード管理アプリ「Maccy」を偽装して配布",
+        "summary": "Jamf Threat Labsが、正規のクリップボード管理アプリ「Maccy」を偽装した偽サイト（maccyapp.com）経由で配布されるRust製macOSインフォスティーラー「PamStealer」を発見した。macOSのPAM（Pluggable Authentication Modules）でパスワードの正当性を検証してから資格情報を窃取する点が特徴で、ブラウザデータ・iCloudキーチェーン・クリップボード内容も窃取する。",
+        "changes_24h": [
+          {
+            "source": "Jamf Threat Labs",
+            "date": "2026-07-02T07:00:00+09:00",
+            "description": "Jamf Threat Labsが、正規のクリップボード管理アプリ「Maccy」を偽装した偽サイト（maccyapp.com）経由で配布されるRust製macO"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.jamf.com/blog/pamstealer-macos-infostealer-applescript-rust/",
+            "title": null,
+            "language": "en",
+            "source": "Jamf Threat Labs"
+          },
+          {
+            "url": "https://thehackernews.com/2026/07/pamstealer-uses-fake-maccy-sites-and.html",
+            "title": null,
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260705-TRND-41fd427e"
+      },
+      {
+        "topic_id": "TREND-2026-07-05-004",
+        "title": "Kubota North America、月単位の不正アクセスによる従業員個人情報流出を通知",
+        "summary": "Kubota North America Corporationが2026年3月16日〜4月20日の約1ヶ月間、社内ネットワークへの不正アクセスを受け、人事部門が保持する従業員・扶養家族の氏名・社会保障番号・生年月日・税務ID・銀行口座情報・企業決済カード情報等が流出した可能性があると通知した。ランサムウェア・恐喝グループの犯行声明はない。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-07-03T07:00:00+09:00",
+            "description": "Kubota North America Corporationが2026年3月16日〜4月20日の約1ヶ月間、社内ネットワークへの不正アクセスを受け、人事部門"
+          }
+        ],
+        "sector_impact": [
+          "manufacturing"
+        ],
+        "region_impact": [
+          "US"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/kubota-says-hackers-had-month-long-access-to-network-systems/",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260705-TRND-d403b26e"
+      }
+    ]
+  },
+  "apt_main": [],
+  "apt_notable": [],
+  "forecasts": [],
+  "ai_attacks_main": [
+    {
+      "attack_id": "AI-2026-07-05-001",
+      "title": "JadePuffer: Langflow CVE-2025-3248起点のエージェント型AIランサムウェア — 新規技術詳細判明",
+      "category": "A",
+      "subcategory": "A4",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-Q",
+        "A-P"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "被害組織名・金額は非公開。Nacos設定1,342件破壊（既報既知）",
+      "burst_count": 2,
+      "burst_status": "below_threshold",
+      "axis_x_score": 9,
+      "axis_y_score": 5,
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-07-04T07:00:00+09:00",
+          "description": "AIエージェントが失敗したログイン試行から31秒で手法を修正するなど適応的挙動を示したこと、PostgreSQLダンプ・MinIO列挙・Nacos横展開・30分間隔cronジョブ永続化・MySQL AES_ENCRYPT()による暗号化(実質AES-128-ECBと指摘)・恐喝テーブル作成等の技術詳細が新たに判明"
+        }
+      ],
+      "overview": "既報のJadePuffer（Langflow CVE-2025-3248を起点としNacos脆弱性で横展開する、エンドツーエンドで完結するエージェント型AIランサムウェア）について、BleepingComputer/The Hacker Newsが追加技術詳細を報じた。攻撃コード生成物に運用判断根拠を記した自然言語コメントが含まれ従来型マルウェアと識別可能である点が検知の手がかりとして強調されている。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Langflow CVE-2025-3248（未認証コード実行）で初期侵入"
+        },
+        {
+          "step": 2,
+          "description": "AIエージェントがPostgreSQL/環境変数/MinIOを自律的に探索・資格情報窃取、Nacos脆弱性で横展開"
+        },
+        {
+          "step": 3,
+          "description": "cronジョブで30分間隔のC2ビーコン確立、MySQL AES_ENCRYPT()（実質AES-128-ECB相当）でNacos設定を暗号化・恐喝"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "30分間隔の定期外部通信を行うcronジョブ",
+          "MinIOへのデフォルト認証情報アクセス試行",
+          "Nacos設定APIへの異常な書き込み・暗号化操作",
+          "MySQL上でのAES_ENCRYPT()関数の異常呼び出し"
+        ]
+      },
+      "monitoring": {
+        "description": "定期外部通信を行う新規cronジョブ、データベース監査ログ上の異常な暗号化関数呼び出しを監視する",
+        "splunk_spl": [
+          "index=linux_audit sourcetype=cron_audit action=create | join host [search index=network dest!=internal_range] | stats count by host, dest, _time",
+          "index=db_audit (sourcetype=mysql_general_log \"AES_ENCRYPT\" OR sourcetype=minio_audit action=GetObject) | stats count by user, src_ip"
+        ],
+        "detection_notes": "業務外の定期的な外向き通信を伴う新規cronジョブ、短時間での大量暗号化関数呼び出しは即時調査・ブロック対象とする"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/jadepuffer-ransomware-used-ai-agent-to-automate-entire-attack/",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://thehackernews.com/2026/07/ai-agent-exploits-langflow-rce-to.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20260705-AIAT-1bb1844d"
+    },
+    {
+      "attack_id": "AI-2026-07-05-002",
+      "title": "TeamPCPとVectのランサムウェア提携 — サプライチェーン窃取認証情報が実際の恐喝に転化",
+      "category": "C",
+      "subcategory": "C6",
+      "attacker_type": "criminal_org",
+      "adoption_triggers": [
+        "A-Q",
+        "A-U"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it",
+          "professional_services"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "Aqua Security Trivy侵害でCI/CDワークフロー10,000件・認証情報50万件超（クラウドトークン含む）窃取（既知）。Vectによる実際のランサムウェア展開が少なくとも1件確認（新規）",
+      "burst_count": 5,
+      "burst_status": "threshold_met",
+      "axis_x_score": 7,
+      "axis_y_score": 10,
+      "changes_24h": [
+        {
+          "source": "Sophos",
+          "date": "2026-07-03T07:00:00+09:00",
+          "description": "TeamPCP（The Com系）とVect（RaaS）が正式提携し、TeamPCPが窃取した認証情報を用いてVectが少なくとも1件で実際にランサムウェアを展開したことが初めて確認された。FBIはAI普及がこの種の攻撃自動化・産業化を加速させると警告"
+        }
+      ],
+      "overview": "既報のLiteLLM PyPIサプライチェーン侵害（TeamPCP）は開発者・AI関連認証情報の窃取に留まっていたが、TeamPCPの窃取認証情報基盤とVectのランサムウェア展開能力が正式に統合され、少なくとも1件で実際の暗号化・恐喝が確認されたことで、AI開発環境を含むサプライチェーン侵害が金銭的実害に直結する段階へ進展したことが確認された。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "TeamPCPによるLiteLLM PyPIパッケージ／Aqua Security Trivyサプライチェーン侵害でクラウドトークン・SSH鍵・Kubernetesシークレット・AI開発ツール認証情報を大量窃取"
+        },
+        {
+          "step": 2,
+          "description": "TeamPCPとVectの提携によりRaaSインフラへ窃取認証情報を供給"
+        },
+        {
+          "step": 3,
+          "description": "Vectが窃取認証情報を用いて標的環境に実際にランサムウェアを展開・暗号化・恐喝（確認済み1件以上）"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "LiteLLM/Trivy侵害バージョンからの認証情報の再利用",
+          "CI/CD環境からの異常な外部認証・クラウドAPIコール",
+          "既知TeamPCP侵害環境における新規ランサムウェアバイナリの展開"
+        ]
+      },
+      "monitoring": {
+        "description": "TeamPCP侵害の疑いがある組織で窃取クラウドトークンの再利用を監視する",
+        "splunk_spl": [
+          "index=cloud_audit (action=AssumeRole OR action=GetSessionToken) | stats count by src_ip, user | where src_ip NOT IN (known_corporate_ranges)"
+        ],
+        "detection_notes": "既知侵害環境の認証情報が非社内IPから利用された場合は即時失効・調査を行う"
+      },
+      "references": [
+        {
+          "url": "https://www.infosecurity-magazine.com/news/industrialized-cyberattacks/",
+          "title": null,
+          "language": "en",
+          "source": "Infosecurity Magazine"
+        },
+        {
+          "url": "https://www.itpro.com/security/ransomware/cyber-experts-issue-alert-after-two-ransomware-groups-team-up-on-unprecedented-threat-campaign",
+          "title": null,
+          "language": "en",
+          "source": "IT Pro"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20260705-AIAT-11e0f2f0"
+    }
+  ],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-07-05-001",
+      "title": "ARToken/EvilTokens — OAuthデバイスコードフィッシングのPhaaS拡大",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "epsilon",
+        "delta"
+      ],
+      "priority": "high",
+      "product_or_service": "Microsoft 365 / Microsoft Entra ID（OAuth 2.0 Device Code Flow）",
+      "targets": {
+        "sectors": [
+          "finance",
+          "professional_services"
+        ],
+        "regions": [
+          "global",
+          "JP"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Cisco Talos",
+          "date": "2026-07-01T07:00:00+09:00",
+          "description": "Talos報告のARTokenパネル（EvilTokens系PhaaS）をBleepingComputerが追跡報道。デバイスコードフィッシングが前年比37倍に急増し、11以上のフィッシングキットが対応していると確認。"
+        }
+      ],
+      "overview": "攻撃者はMicrosoft公式のデバイスコード認証フローを悪用し、被害者に正規ログイン画面上で攻撃者が生成したコードを入力させることでMFAを経ずにアクセス・更新トークンを取得する。取得後はPrimary Refresh Tokenによる永続化、Outlook/SharePoint/OneDriveへのアクセス、受信ボックスルール改ざんによる隠蔽、BEC実行までを自動化するPhaaSパネルが月額500ドル程度で流通しており、財務・人事・物流担当者が主要標的となっている。",
+      "recommended_actions": [
+        "Entra ID サインインログでdevice code flow（grant_type=device_code）の使用有無を確認し、通常業務で使用していない場合はテナントレベルで無効化を検討する",
+        "条件付きアクセスポリシーがブラウザサインインのみを対象としていないか点検し、レガシー認証・デバイスコードフローも含めた全経路へのMFA適用を確認する",
+        "請求書・見積り等の実在取引先を装ったなりすましメールへの警戒喚起を経理・購買部門に実施する"
+      ],
+      "monitoring": {
+        "description": "攻撃者はMicrosoft公式のデバイスコード認証フローを悪用し、被害者に正規ログイン画面上で攻撃者",
+        "splunk_spl": [
+          "index=azuread sourcetype=AzureADSignInLogs authenticationProtocol=\"deviceCode\" | stats count by userPrincipalName, ipAddress, appDisplayName"
+        ],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://blog.talosintelligence.com/artoken-inside-an-eviltokens-affiliate-panel-targeting-microsoft-365/",
+          "title": null,
+          "language": "en",
+          "source": "Cisco Talos"
+        },
+        {
+          "url": "https://www.helpnetsecurity.com/2026/07/01/artoken-phishing-panel-microsoft-365-accounts/",
+          "title": null,
+          "language": "en",
+          "source": "Help Net Security"
+        }
+      ],
+      "info_id": "20260705-SOCR-a62aee96"
+    },
+    {
+      "rec_id": "SOC-2026-07-05-002",
+      "title": "Avalonマルウェアフレームワーク／CrownXランサムウェア — バックアップ・仮想化基盤を優先攻撃",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "epsilon",
+        "delta"
+      ],
+      "priority": "high",
+      "product_or_service": "Veeam, Acronis, NetApp, Synology, vCenter, Hyper-V等のバックアップ・仮想化基盤",
+      "targets": {
+        "sectors": [
+          "it",
+          "manufacturing",
+          "finance"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-03T07:00:00+09:00",
+          "description": "未文書化の新規マルウェアフレームワーク「Avalon」（内蔵ランサムウェアモジュール名「CrownX」）が初報告された。"
+        }
+      ],
+      "overview": "ISOイメージに偽装した「正規文書」配布によりメールゲートウェイのスキャンを回避し、資格情報収集・横展開・リモートアクセス・復旧妨害・ランサムウェア実行を一体化した攻撃を行う。VSS停止・シャドウコピー削除・WinRE改ざんに加え、バックアップ／仮想化基盤を横展開の優先探索対象としており、復旧手段そのものを無力化してから暗号化に至る点が特徴。",
+      "recommended_actions": [
+        "バックアップ管理コンソール（Veeam/Acronis等）への認証をMFA必須化し、管理アカウントの通常業務端末からの利用を制限する",
+        "VSS/シャドウコピー削除コマンド（vssadmin, wmic shadowcopy delete等）の実行をSIEMで監視する",
+        "ISOイメージファイルの添付・ダウンロードに対するメールゲートウェイ／EDRでの検査を強化する"
+      ],
+      "monitoring": {
+        "description": "ISOイメージに偽装した「正規文書」配布によりメールゲートウェイのスキャンを回避し、資格情報収集・横",
+        "splunk_spl": [
+          "index=wineventlog EventCode=4688 (New_Process_Name=\"*vssadmin.exe\" OR CommandLine=\"*shadowcopy delete*\" OR CommandLine=\"*wbadmin delete*\") | table _time, ComputerName, Account_Name, CommandLine"
+        ],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/new-avalon-malware-framework-packs.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20260705-SOCR-be3e17cb"
+    },
+    {
+      "rec_id": "SOC-2026-07-05-003",
+      "title": "ChocoPoC — 偽PoCエクスプロイト依存関係経由でセキュリティ研究者・ペンテスターを狙うRAT配布",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "epsilon",
+        "beta"
+      ],
+      "priority": "medium",
+      "product_or_service": "GitHub / PyPI（Pythonパッケージ生態系）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Sekoia",
+          "date": "2026-07-01T07:00:00+09:00",
+          "description": "SekoiaとBleepingComputer/The Hacker Newsが、脆弱性研究者を狙う偽PoC配布キャンペーン「ChocoPoC」を報告。過去（2025年末）の類似キャンペーンとの関連（GitHubコミッターアドレスの重複）も指摘。"
+        }
+      ],
+      "overview": "GitHub上の武器化PoCがエクスプロイト本体ではなく依存パッケージ（PyPI経由）にマルウェアを仕込む手口で、ファイル窃取・ブラウザ資格情報収集・任意コマンド実行が可能なPython製RAT「ChocoPoC」を配布している。標的は脆弱性研究者・ペネトレーションテスターであり、侵害された研究環境が正規のセキュリティツールへコードを混入させる二次サプライチェーン汚染の踏み台にされるリスクが指摘されている。",
+      "recommended_actions": [
+        "社内のレッドチーム/研究者環境でGitHub上のPoCを検証利用する際は、専用の隔離VM・ネットワーク遮断環境での実行を徹底する",
+        "PoC付随のrequirements.txt等依存関係ファイルを事前レビューし、無関係な出所不明パッケージが含まれていないか確認する"
+      ],
+      "monitoring": {
+        "description": "GitHub上の武器化PoCがエクスプロイト本体ではなく依存パッケージ（PyPI経由）にマルウェアを",
+        "splunk_spl": [
+          "index=edr sourcetype=process_create parent_process=\"python*\" | search (process=\"*credential*\" OR network_connection=true) | stats count by host, user, process"
+        ],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.sekoia.io/en/blog/dont-eat-the-chocopocs-how-vulnerability-researchers-were-repeatedly-targeted-by-trojanised-exploits/",
+          "title": null,
+          "language": "en",
+          "source": "Sekoia"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/new-chocopoc-malware-targets-researchers-via-trojanized-poc-exploits/",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20260705-SOCR-5cd5f6fe"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-46242",
+        "product": "Linux kernel (epoll)",
+        "reason": "low_score",
+        "reason_detail": "軸1=5（PoC公開+2・CVSS7.5-8.9+2・広く使われるOSS+1）・軸2=1（海外複数ソース報道のみ）。軸1<8のため除外。ただしAndroid/サーバ横断・kernelCTF PoC(約99%成功率)公開・Chromeレンダラサンドボックス経由の連鎖リスクがあり定性的重要度は高い（Step1調査担当より再確認推奨の申し送りあり）",
+        "reported_date": "2026-07-05"
+      },
+      {
+        "cve_id": "CVE-2025-71380",
+        "product": "n8n (Execute Command node)",
+        "reason": "low_score",
+        "reason_detail": "軸1=3（CVSS7.5-8.9+2・広く使われるOSS+1）・軸2=0。認証済み低権限ユーザー前提でありPoC非公開",
+        "reported_date": "2026-07-05"
+      },
+      {
+        "cve_id": "CVE-2026-12195",
+        "product": "myVesta",
+        "reason": "low_score",
+        "reason_detail": "軸1=2（CVSS7.5-8.9+2）・軸2=0。ニッチなホスティング管理パネル製品",
+        "reported_date": "2026-07-05"
+      },
+      {
+        "cve_id": "CVE-2026-12196",
+        "product": "HestiaCP",
+        "reason": "low_score",
+        "reason_detail": "軸1=2（CVSS相当7.5-8.9+2）・軸2=0。ニッチなホスティング管理パネル製品",
+        "reported_date": "2026-07-05"
+      },
+      {
+        "cve_id": "CVE-2026-54424",
+        "product": "Unity Parsec (Windows)",
+        "reason": "low_score",
+        "reason_detail": "軸1=2（CVSS7.5-8.9+2）・軸2=0。ローカル権限昇格のみでリモート悪用不可",
+        "reported_date": "2026-07-05"
+      },
+      {
+        "cve_id": "CVE-2026-45659",
+        "product": "Microsoft SharePoint Server",
+        "reason": "already_reported",
+        "reason_detail": "KEV登録・Storm-2603帰属は既に2026-07-03既報に反映済み。EPSS更新（86.7%ile）のみでは採用条件A〜Hに該当せず",
+        "reported_date": "2026-07-03"
+      },
+      {
+        "cve_id": "CVE-2026-8451",
+        "product": "Citrix NetScaler ADC/Gateway",
+        "reason": "already_reported",
+        "reason_detail": "実悪用確認（Lupovis観測）は既に2026-07-03既報に反映済み。窓内の新規変化なし",
+        "reported_date": "2026-07-03"
+      },
+      {
+        "cve_id": "CVE-2026-20230",
+        "product": "Cisco Unified Communications Manager",
+        "reason": "already_reported",
+        "reason_detail": "Shadowserver露出台数・EPSS98.5・攻撃予報起点まで2026-07-03バックフィルで反映済み。窓内の新規進展なし",
+        "reported_date": "2026-07-03"
+      },
+      {
+        "cve_id": "CVE-2026-8037",
+        "product": "Progress Kemp LoadMaster",
+        "reason": "already_reported",
+        "reason_detail": "eSentire観測（実悪用試行・失敗）は既報内容と同一。窓内の新規進展なし",
+        "reported_date": "2026-07-01"
+      },
+      {
+        "cve_id": "CVE-2026-24858",
+        "product": "Fortinet FortiCloud SSO (FortiBleed)",
+        "reason": "already_reported",
+        "reason_detail": "SOCRadarによるLynx/INCランサムウェア帰属・Nextcloud関連付けは2026-07-02既報に反映済み。窓内の新規発表確認できず",
+        "reported_date": "2026-07-02"
+      },
+      {
+        "cve_id": "CVE-2026-46817",
+        "product": "Oracle E-Business Suite",
+        "reason": "already_reported",
+        "reason_detail": "既報2026-06-29/07-01で反映済み。窓内の新規進展なし",
+        "reported_date": "2026-07-01"
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "ArmoredLikho-2026-BusySnakeStealer",
+        "group_name": "Armored Likho（Eagle Werewolf）",
+        "reason": "already_reported",
+        "reason_detail": "同一Securelist記事（2026-07-03公開）に基づく評価は2026-07-04分レポートで実施済み（軸P6・軸Q6・low_score）。本windowでの新規進展確認できず",
+        "reported_date": "2026-07-04"
+      },
+      {
+        "campaign_id": "RIS-2026-ChocoPoC-PoCTrojan",
+        "group_name": "不明（帰属未確定・偽PoC配布キャンペーン）",
+        "reason": "low_score",
+        "reason_detail": "軸P≈3（新規マルウェア発見のみ・単一/準単一ベンダー分析）・軸Q≈1（限定的にセキュリティ研究者のみ標的）。APT活動としては不採用のためSection4 SOC推奨情報側で採用",
+        "reported_date": "2026-07-05"
+      },
+      {
+        "campaign_id": "RIS-2026-HSINBreach-DHS",
+        "group_name": "不明（帰属未確定・DHS情報共有基盤侵害）",
+        "reason": "low_score",
+        "reason_detail": "軸P≈5（政府機関侵害の可能性はあるが技術詳細非公開・単一ソース系）・軸Q≈1（単一組織）。参考A昇格トリガーなし（米国案件）",
+        "reported_date": "2026-07-05"
+      },
+      {
+        "campaign_id": "RIS-2026-LSHIY-AzureCLISpray",
+        "group_name": "不明（帰属未確定・LSHIY LLC/AS32167インフラ）",
+        "reason": "low_score",
+        "reason_detail": "軸P≈2（IOC大量公開のみ・APT特有ではない汎用的クレデンシャルアクセス手法）・軸Q≈2（64組織だが単一セクター横断ではない）",
+        "reported_date": "2026-07-05"
+      }
+    ],
+    "ai_attacks": [
+      {
+        "attack_id": null,
+        "title": "InkJect（DeepKeep視覚的プロンプトインジェクション）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "独立ソース3件未満（プレスリリース系列1件＋IT-Online1件）でburst below_threshold。初報2026-07-01・窓内の新規継続報道確認できず",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "Sockpuppeting（Trend Micro assistant-prefillジェイルブレイク）",
+        "reason": "out_of_window",
+        "reason_detail": "実際の発表日は2026-04-10と判明、窓から大幅に外れるため除外",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "Claude Fable 5ジェイルブレイク／Jailbreak Severity Framework",
+        "reason": "insufficient_evidence",
+        "reason_detail": "中核記事は2026-07-01付。窓内（07-04〜07-05）の独立した新規続報が確認できず鮮度チェック不合格",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "Djinn Stealer / TaskWeaver（CVE-2026-48558経由）",
+        "reason": "no_change",
+        "reason_detail": "CISA是正期限2026-07-07の付随情報のみ新規判明、技術内容の変化なし",
+        "reported_date": "2026-07-01"
+      }
+    ],
+    "soc_recommendations": [
+      {
+        "attack_id": null,
+        "title": "防災わかやまメール配信サービスのスパム踏み台悪用",
+        "reason": "insufficient_evidence",
+        "reason_detail": "技術的経緯・被害規模・原典URLとも十分に確認できず確度が低い",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "ランサムウェア初期侵入手法の多様化（Citrix Bleed2継続悪用+BYOVD+サプライチェーン窃取資格情報）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "原典記事の恒久URLが未確認のため確度不十分。個別CVEはTrack A/Bで既報済み",
+        "reported_date": null
+      }
+    ]
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 1,
+      "excluded": 11,
+      "total_processed": 12
+    },
+    "apt": {
+      "main": 0,
+      "notable": 0,
+      "excluded": 4,
+      "total_processed": 4
+    },
+    "ai_attacks": {
+      "main": 2,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 4,
+      "total_processed": 6,
+      "category_breakdown": {
+        "A": 1,
+        "B": 0,
+        "C": 1
+      }
+    },
+    "soc_recommendations": {
+      "high": 2,
+      "medium": 1,
+      "low": 0,
+      "excluded": 2,
+      "total_processed": 5,
+      "perspective_breakdown": {
+        "cve": 0,
+        "zeroday": 3,
+        "ai_attack": 0
+      }
+    }
+  }
+}

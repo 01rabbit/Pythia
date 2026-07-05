@@ -120,6 +120,7 @@
 | CVE-2026-12167 | Little Orbit GamersFirst Anti-Cheat（GFAC_Sys_x64.sysドライバ） | 2026-07-04 | none | 2026-07-04 | YES | GFACドライバminifilter通信ポートセキュリティ記述子不備・ローカル限定・JVN発行・参考A採用（同一JVN内複合脆弱性） |
 | CVE-2026-12168 | Little Orbit GamersFirst Anti-Cheat（GFAC_Sys_x64.sysドライバ） | 2026-07-04 | none | 2026-07-04 | YES | GFACドライバ任意カーネルメモリ書き込みSYSTEM権限昇格・ローカル限定・JVN発行・参考A採用（同一JVN内複合脆弱性） |
 | CVE-2026-14355 | PHP | 2026-07-04 | none | 2026-07-04 | YES | PHP OpenSSL AES-WRAP-PADメモリ破損（openssl_encrypt）・Security NEXT国内報道・参考A採用 |
+| CVE-2025-3248 | Langflow | 2025年5月（既存CVE） | active_exploitation | 2026-07-05 | YES | CVSS9.8・CWE-306未認証コード実行・KEV登録済み（2025-05-05）・v1.3.0で修正済み・自律型AIエージェント駆動ランサムウェア「JadePuffer」（Sysdig報告）の侵入起点として新規実悪用確認・EPSSパーセンタイル99.98（2026-07-04時点）・参考B採用 |
 | CVE-2026-12184 | PHP | 2026-07-04 | none | 2026-07-04 | YES | PHP file_get_contents()プロキシ経由DoS（8.3.32のみ）・Security NEXT国内報道・参考A採用（CVE-2026-14355と同一更新内複合脆弱性） |
 | CVE-2026-45659 | Microsoft SharePoint Server（Subscription Edition / 2019 / Enterprise Server 2016） | 2026-07-03 | active_exploitation | 2026-07-03 | YES | CVSS8.8・KEV登録（2026-07-01）・FCEB期限2026-07-04・デシリアライゼーションRCE（Site Member最小権限で悪用可）・Shadowserver露出サーバ1万台超確認・Security NEXT国内報道・本編採用（2026-07-03分バックフィルレポート） |
 | CVE-2025-5777 | Citrix NetScaler ADC / NetScaler Gateway（Citrix Bleed 2） | 2025年（既存CVE） | active_exploitation | 2026-07-03 | YES | CVSS9.3・KEV登録済み（2025-07-10）・EPSSパーセンタイル99.96・Anubisランサムウェアアフィリエイトによる新規悪用確認・正規RMMツール悪用・参考B採用（2026-07-03分バックフィルレポート） |

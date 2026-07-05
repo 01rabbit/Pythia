@@ -1,0 +1,63 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-05 07:50 JST
+調査期間: 2026-07-04 07:00 〜 2026-07-05 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A採用CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2025-3248 / Langflow
+CVSS: 9.8
+2025年5月にKEV登録・パッチ提供済みのLangflow未認証コード実行脆弱性CVE-2025-3248が、パッチ未適用のまま露出したサーバへの侵入起点として新たに実悪用確認された。侵入後は自律型LLMエージェントが偵察・認証情報窃取・横展開・データベース暗号化・恐喝までを人手を介さず遂行する「JadePuffer」と名付けられたエージェント型ランサムウェア事例としてSysdigが報告し、既知脆弱性の残存リスクとAIエージェント型攻撃の実運用段階入りを示す事例となった。
+IoC: 確認されず
+監視: [ログソース / SIEM（Splunk等）] 露出したLangflowエンドポイントへのアクセス試行、および暗号化ファイル生成の急増を監視する
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/api/v1/validate/code*" | stats count by clientip
+Splunk SPL: index=endpoint sourcetype=Sysmon EventCode=11 (TargetFilename="*.encrypted" OR TargetFilename="*.locked") | stats count by Computer
+→ 未パッチLangflowへの外部アクセス試行は既知の内部開発トラフィックを除外した上で即時調査、暗号化ファイル生成の急増はランサムウェア活動の兆候として即時対応する
+参照: https://www.bleepingcomputer.com/news/security/jadepuffer-ransomware-used-ai-agent-to-automate-entire-attack/
+参照: https://hackread.com/sysdig-jadepuffer-first-agentic-ransomware-operation/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+[CVE]
+・CVE-2026-46242 (Linux kernel (epoll)) → 軸1=5（PoC公開+2・CVSS7.5-8.9+2・広く使われるOSS+1）・軸2=1（海外複数ソース報道のみ）。軸1<8のため除外。ただしAndroid/サーバ横断・kernelCTF PoC(約99%成功率)公開・Chromeレンダラサンドボックス経由の連鎖リスクがあり定性的重要度は高い（Step1調査担当より再確認推奨の申し送りあり）
+・CVE-2025-71380 (n8n (Execute Command node)) → 軸1=3（CVSS7.5-8.9+2・広く使われるOSS+1）・軸2=0。認証済み低権限ユーザー前提でありPoC非公開
+・CVE-2026-12195 (myVesta) → 軸1=2（CVSS7.5-8.9+2）・軸2=0。ニッチなホスティング管理パネル製品
+・CVE-2026-12196 (HestiaCP) → 軸1=2（CVSS相当7.5-8.9+2）・軸2=0。ニッチなホスティング管理パネル製品
+・CVE-2026-54424 (Unity Parsec (Windows)) → 軸1=2（CVSS7.5-8.9+2）・軸2=0。ローカル権限昇格のみでリモート悪用不可
+・CVE-2026-45659 (Microsoft SharePoint Server) → KEV登録・Storm-2603帰属は既に2026-07-03既報に反映済み。EPSS更新（86.7%ile）のみでは採用条件A〜Hに該当せず
+・CVE-2026-8451 (Citrix NetScaler ADC/Gateway) → 実悪用確認（Lupovis観測）は既に2026-07-03既報に反映済み。窓内の新規変化なし
+・CVE-2026-20230 (Cisco Unified Communications Manager) → Shadowserver露出台数・EPSS98.5・攻撃予報起点まで2026-07-03バックフィルで反映済み。窓内の新規進展なし
+・CVE-2026-8037 (Progress Kemp LoadMaster) → eSentire観測（実悪用試行・失敗）は既報内容と同一。窓内の新規進展なし
+・CVE-2026-24858 (Fortinet FortiCloud SSO (FortiBleed)) → SOCRadarによるLynx/INCランサムウェア帰属・Nextcloud関連付けは2026-07-02既報に反映済み。窓内の新規発表確認できず
+・CVE-2026-46817 (Oracle E-Business Suite) → 既報2026-06-29/07-01で反映済み。窓内の新規進展なし
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B1件 / 除外11件
+
+========================================
