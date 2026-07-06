@@ -83,7 +83,7 @@
 | CVE-2026-33825 | Microsoft Defender Antimalware Platform（BlueHammer） | 2026-06-30 | active_exploitation | 2026-07-01 | YES | CVSS 7.8・KEV登録済み（2026年4月22日）・2026-06-30にCISAがランサムウェアキャンペーン悪用フラグをUnknown→Knownへ更新（M4観測）・2026年4月パッチ提供済み・本日本編採用 |
 | CVE-2026-56137 | RPGツクールMV（1.6.3以前） / RPGツクールMZ（1.10.0以前） | 2026-07-01 | none | 2026-07-01 | YES | CVSS 7.8/CVSSv4 8.4・JVN新規公開（JVNDB-2026-000093）・セーブデータ読み込み時OSコマンドインジェクション・パッチ未提供（開発元EOL対応中）・参考A採用 |
 | CVE-2026-56808 | AVTECH DGM3103SCT（3MP H.265 IRネットワークカメラ、ファームウェア3.2.5.4以前） | 2026-07-01 | none | 2026-07-01 | YES | CVSS 7.2/CVSSv4 8.6・JVN新規公開（JVN#28979424）・認証済み管理者権限が前提のOSコマンドインジェクション・パッチ提供済み・参考A採用 |
-| CVE-2026-8451 | NetScaler ADC / NetScaler Gateway（14.1-72.61未満 / 13.1-63.18未満、FIPS/NDcPP含む） | 2026-07-02 | active_exploitation | 2026-07-03 | YES | CVSSv4 8.8/CVSSv3 7.5・watchTowr Labs発見「CitrixBleed To Infinity And Beyond」・SAML IDP設定時の境界外メモリ読み取り（NSC_TASSクッキー漏洩）・KEV未登録・実悪用未確認・Security NEXT国内報道・本編採用 / Lupovisが開示から24時間以内（2026-06-30〜07-01）に完全なエクスプロイトペイロードを観測・実悪用確認・KEV未登録・本編再採用（2026-07-03分バックフィルレポート） |
+| CVE-2026-8451 | NetScaler ADC / NetScaler Gateway（14.1-72.61未満 / 13.1-63.18未満、FIPS/NDcPP含む） | 2026-07-02 | active_exploitation | 2026-07-07 | YES | CVSSv4 8.8/CVSSv3 7.5・watchTowr Labs発見「CitrixBleed To Infinity And Beyond」・SAML IDP設定時の境界外メモリ読み取り（NSC_TASSクッキー漏洩）・KEV未登録・実悪用未確認・Security NEXT国内報道・本編採用 / Lupovisが開示から24時間以内（2026-06-30〜07-01）に完全なエクスプロイトペイロードを観測・実悪用確認・KEV未登録・本編再採用（2026-07-03分バックフィルレポート） / Dark Reading 2026-07-06「CitrixBleed-ing Again?」は既報内容の再掲・新規事実なしのため既報・変化なしとして除外（2026-07-07分レポート） |
 | CVE-2026-55957 | Apache Tomcat（JVNVU#93304382・複数バージョン系列） | 2026-07-02 | none | 2026-07-02 | YES | CVSS 7.3・JNDIRealm+GSSAPIバインド認証時の認証バイパス（Missing Critical Step in Authentication）・JVN発行・実悪用未確認・参考A採用 |
 | CVE-2026-55956 | Apache Tomcat（JVNVU#93304382・複数バージョン系列） | 2026-07-02 | none | 2026-07-02 | YES | CVSS 6.5・デフォルトサーブレットのメソッド制約無視（Improper Authorization）・JVN発行・参考A採用（同一JVNVU#93304382内の複合脆弱性） |
 | CVE-2026-55955 | Apache Tomcat（JVNVU#93304382・複数バージョン系列） | 2026-07-02 | none | 2026-07-02 | YES | CVSS 6.5・クラスタEncryptInterceptorリプレイ攻撃（Improper Authentication）・JVN発行・参考A採用（同一JVNVU#93304382内の複合脆弱性） |
@@ -138,10 +138,16 @@
 | CVE-2026-48277 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48281 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48316 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
-| CVE-2026-48282 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE（任意ファイル書き込み）・参考B採用（APSB26-68内の複合脆弱性） |
+| CVE-2026-48282 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | active_exploitation | 2026-07-07 | YES | CVSS10.0・事前認証RCE（任意ファイル書き込み）・参考B採用（APSB26-68内の複合脆弱性）／KEVIntel創業者がハニーポットで実悪用を確認（BleepingComputer 2026-07-06）・exploitation_stageをnone→active_exploitationへ更新・KEV未登録・攻撃予報1（T1/E1/fast_72h/確度低・期限2026-07-10）起点・参考B再採用 |
 | CVE-2026-48283 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・ファイル/権限関連・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48313 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS9.3・任意ファイル読み取り・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48307 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS8.8・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48285 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS8.6・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48315 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS9.3・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48314 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS6.5・Important・参考B採用（APSB26-68内の複合脆弱性） |
+| CVE-2026-22153 | Fortinet FortiOS（SSL-VPN/LDAPエージェントレス認証・FSSO構成） | 2026-07-07 | none | 2026-07-07 | YES | CVSS8.1・LDAP認証バイパス・恒久修正はFortiOS 7.6.5・IPS向け仮想パッチ「FG-VD-10009566.0day」を2026-07-04公開（Security NEXT）・実悪用未確認・参考A採用（国内広範製品トリガー） |
+| CVE-2026-20896 | Gitea Docker images（1.26.2以前） | 2026-07-07 | none | 2026-07-07 | YES | CVSS9.8・X-WEBAUTH-USERヘッダ偽装による認証バイパス・Sysdigが初期調査段階のプロービングのみ観測（実悪用未確認）・軸1=6点のため除外・継続監視対象 |
+| CVE-2026-46242 | Linuxカーネル epoll（Bad Epoll・6.4以降 / Android含む） | 2026-07-07 | poc_public | 2026-07-07 | YES | CVSS7.8・PoC公開済み（kernelCTF）・実悪用・KEV登録は未確認・軸1=5点のため除外・継続監視対象 |
+| CVE-2026-14191 | WinRAR / UnRAR（RAR5リカバリボリューム処理・7.23未満） | 2026-07-07 | none | 2026-07-07 | YES | CVSS7.8（AV:L/UI:R）・CVE-2023-40477類似変種・PoC/実悪用未確認・過去に同系統がロシア系脅威アクターによりウクライナ向けに悪用された実績あり・軸1=3点のため除外 |
+| CVE-2026-54428 | Apache HttpComponents Client/Core 5.4.3未満 | 2026-07-07 | none | 2026-07-07 | YES | CVSS7.5・HTTP/2 HPACKデコーダ及びHTTP/1.1メッセージ解析のリソース過剰消費によるDoSのみ・低優先度規則該当のため除外 |
+| CVE-2026-54399 | Apache HttpComponents Client/Core 5.4.3未満 | 2026-07-07 | none | 2026-07-07 | YES | CVE-2026-54428と同一アドバイザリ内の複合DoS脆弱性・CVSS7.5・DoSのみのため除外 |

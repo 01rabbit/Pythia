@@ -1,0 +1,60 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-07 07:50 JST
+調査期間: 2026-07-06 07:00 〜 2026-07-07 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用条件を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT 2026-07-06 報道
+
+
+
+・CVE-2026-22153 / Fortinet FortiOS（SSL-VPN/LDAPエージェントレス認証・FSSO構成）
+CVSS: 8.1 状態: パッチ提供済み（仮想パッチ含む）
+
+【24時間以内の変化】
+[Security NEXT 2026-07-06] FortiOSのSSL-VPNコンポーネントに判明したLDAP認証バイパス脆弱性CVE-2026-22153について、FortinetがIPS向け仮想パッチ「FG-VD-10009566.0day」を2026-07-04付で公開したと報道。
+
+【概要】
+FortiOS 7.6系のSSL-VPNコンポーネントにおいて、エージェントレスLDAP認証またはFSSOポリシーで特定のLDAPサーバ構成を用いる環境でLDAP認証がバイパスされるおそれがある脆弱性CVE-2026-22153（CVSS 8.1・High）が判明した。恒久修正はFortiOS 7.6.5で提供されるが、Fortinetは修正版リリースに先行してIPS向け仮想パッチ「FG-VD-10009566.0day」を2026-07-04に公開している。実悪用の報告は現時点で確認されていないが、FortiGate/FortiOSは国内の行政・金融機関を含め広く採用されているSSL-VPN製品であり、過去にはLDAPバインドの未認証設定を悪用した侵害事例も報告されている。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[FortiGate SSL-VPNのLDAP認証ログにおける異常な認証成功パターン・想定外のバインド方式を監視する]
+Splunk SPL: index=fortigate sourcetype=fortios_event eventtype=vpn (action="tunnel-up" OR logdesc="SSL VPN login*") | stats count by user, remip, reason
+→ LDAPバインド方式（agentless/FSSO）を明示的に確認し、仮想パッチ適用状況とFortiOS 7.6.5への更新計画を突き合わせて判断する。
+
+【参照】
+https://www.security-next.com/186841
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-22153 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━
+
+・CVE-2026-48282 / Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満）
+CVSS: 10.0 (Critical)
+Adobe ColdFusion（2025 Update 10未満・2023 Update 21未満）の事前認証RCE（任意ファイル書き込み経由）脆弱性CVE-2026-48282（CVSS10.0・APSB26-68）について、KEVIntelが独自のグローバルハニーポット網でセキュリティアップデート公開から2時間以内の実悪用を観測したと報告した。2026-07-03分レポートでは実悪用未確認（exploitation_stage: none）として参考B採用としていたが、本日この状態は active_exploitation に更新する。CISA KEVカタログへの登録は本調査時点（KEVカタログバージョン2026.07.01）では未確認。Shadowserverはインターネットに露出したAdobe ColdFusionインスタンスを約800台確認している。
+【IoC】
+IoC: 確認されず
+
+監視: ColdFusionサーバへの想定外のファイル書き込み・新規JSP/CFMファイルの設置を監視する
+Splunk SPL: index=coldfusion sourcetype=coldfusion:access OR sourcetype=iis (cs_method=POST) | stats count by cs_uri_stem, c_ip
+→ KEVIntel等の技術的IOC公開を継続的に確認し、公開後は速やかにブロックリスト・検知シグネチャへ反映する。CISA KEV登録の有無も日次で確認する。
+参照: https://www.bleepingcomputer.com/news/security/max-severity-adobe-coldfusion-flaw-now-exploited-in-attacks
