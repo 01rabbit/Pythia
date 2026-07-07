@@ -1,0 +1,199 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-08 07:45 JST
+調査期間: 2026-07-07 07:00 〜 2026-07-08 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用基準を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-11405 / Tenda ルーター（FH1201 / W15E / AC10 / AC5 / AC6 V2）ファームウェア
+CVSS: 未公開
+Tenda複数ルーター製品（FH1201/W15E/AC10/AC5/AC6 V2）のファームウェアにハードコードされたバックドア認証情報の脆弱性CVE-2026-11405が確認された。/bin/httpd内のlogin()処理がsys.rzadmin.passwordという設定値との一致比較のみで管理権限（role=2）セッションを許可するため、当該値を知る攻撃者はUDP 7329番ポート経由で認証なしに管理アクセスを取得できる。パッチは提供されておらず、CERT/CCはリモート管理の無効化とデフォルトLAN IPの変更を推奨している。
+IoC: 確認されず
+
+監視: [Tenda製ルーターのUDP 7329番ポートへの外部・内部アクセスを監視する]
+Splunk SPL: index=network dest_port=7329 protocol=UDP | stats count by src_ip, dest_ip
+→ リモート管理無効化・デフォルトLAN IP変更が未実施の機器を優先確認する。パッチ未提供のため運用回避策が現状唯一の対処。
+
+参照: https://thehackernews.com/2026/07/certcc-warns-of-hidden-admin-backdoor.html
+https://www.bleepingcomputer.com/news/security/hidden-backdoor-in-tenda-router-firmware-grants-admin-access
+https://kb.cert.org/vuls/id/213560
+https://jvn.jp/vu/JVNVU93316066
+
+・CVE-2026-11712 / IBM WebSphere Application Server（管理コンソール）
+CVSS: 9.3
+IBM WebSphere Application Server管理コンソールに反射型/保存型クロスサイトスクリプティング（管理コンソールのヘルプ機能）の脆弱性CVE-2026-11712（CVSS 9.3）が確認された。暫定修正APAR PH71756が提供されており、恒久的な修正パッチは2026年第3四半期に予定されている。実悪用は確認されていない。
+IoC: 確認されず
+
+監視: [WebSphere管理コンソールへのアクセスログ・異常なURLパラメータを監視する]
+Splunk SPL: index=websphere sourcetype=was:admin_console | search url=*script* OR url="*..%2f*"
+→ 管理コンソールを外部公開しない運用が前提。インターネットへ直接公開されたインスタンスがないか棚卸しする。
+
+参照: https://www.security-next.com/186863
+
+・CVE-2026-11708 / IBM WebSphere Application Server（管理コンソール）
+CVSS: 9.3
+IBM WebSphere Application Server管理コンソールにクロスサイトスクリプティング（管理コンソールのヘルプ機能、CVE-2026-11712と同一アドバイザリ）の脆弱性CVE-2026-11708（CVSS 9.3）が確認された。暫定修正APAR PH71756が提供されており、恒久的な修正パッチは2026年第3四半期に予定されている。実悪用は確認されていない。
+IoC: 確認されず
+
+監視: [WebSphere管理コンソールへのアクセスログ・異常なURLパラメータを監視する]
+Splunk SPL: index=websphere sourcetype=was:admin_console | search url=*script* OR url="*..%2f*"
+→ 管理コンソールを外部公開しない運用が前提。インターネットへ直接公開されたインスタンスがないか棚卸しする。
+
+参照: https://www.security-next.com/186863
+
+・CVE-2026-11595 / IBM WebSphere Application Server（管理コンソール）
+CVSS: 4.3
+IBM WebSphere Application Server管理コンソールにパストラバーサル（ヘルプシステム、同一アドバイザリ内の複合脆弱性）の脆弱性CVE-2026-11595（CVSS 4.3）が確認された。暫定修正APAR PH71756が提供されており、恒久的な修正パッチは2026年第3四半期に予定されている。実悪用は確認されていない。
+IoC: 確認されず
+
+監視: [WebSphere管理コンソールへのアクセスログ・異常なURLパラメータを監視する]
+Splunk SPL: index=websphere sourcetype=was:admin_console | search url=*script* OR url="*..%2f*"
+→ 管理コンソールを外部公開しない運用が前提。インターネットへ直接公開されたインスタンスがないか棚卸しする。
+
+参照: https://www.security-next.com/186863
+
+・CVE-2025-23351 / NVIDIA BlueField DPU / ConnectX（DC向けネットワーキング機器）
+CVSS: 9.0
+NVIDIA BlueField DPUおよびConnectXのコマンドインターフェースに境界外書き込み脆弱性CVE-2025-23351（CVSS9.0）が確認された。仮想関数(VF)経由でアクセス可能な環境では、マルチテナントホスティング環境において任意コード実行につながる可能性がある。ファームウェア修正が2026-06-30にリリース済み。
+IoC: 確認されず
+
+監視: [BlueField/ConnectXファームウェアバージョンの棚卸しとVFアクセス制御ログの確認]
+Splunk SPL: index=infra sourcetype=nvidia:bluefield | stats count by vf_id, action
+→ ファームウェア更新未適用のマルチテナントホスト環境を優先確認する。
+
+参照: https://www.security-next.com/186899
+
+・CVE-2025-23350 / NVIDIA BlueField DPU / ConnectX（DC向けネットワーキング機器）
+CVSS: 9.0
+NVIDIA BlueField DPUおよびConnectXのコマンドインターフェースに境界外書き込み脆弱性CVE-2025-23350（CVSS9.0）が確認された。仮想関数(VF)経由でアクセス可能な環境では、マルチテナントホスティング環境において任意コード実行につながる可能性がある。ファームウェア修正が2026-06-30にリリース済み。
+IoC: 確認されず
+
+監視: [BlueField/ConnectXファームウェアバージョンの棚卸しとVFアクセス制御ログの確認]
+Splunk SPL: index=infra sourcetype=nvidia:bluefield | stats count by vf_id, action
+→ ファームウェア更新未適用のマルチテナントホスト環境を優先確認する。
+
+参照: https://www.security-next.com/186899
+
+・CVE-2026-50242 / JetBrains Hub / YouTrack / GoLand / Kotlin
+CVSS: 10.0
+JetBrains製品においてJetBrains Hubの認証バイパス（データベースへの直接アクセス・管理者権限奪取につながる可能性）の脆弱性CVE-2026-50242（CVSS10.0）が確認され、2026年6月に修正された。実悪用は確認されていない。
+IoC: 確認されず
+
+監視: [JetBrains Hub管理操作ログ・認証失敗ログを監視する]
+Splunk SPL: index=jetbrains sourcetype=hub:auth | stats count by user, result | where result="bypass_attempt"
+→ Hub/YouTrackの公開バージョンを棚卸しし、修正版未適用インスタンスを優先パッチ適用する。
+
+参照: https://www.security-next.com/186901
+
+・CVE-2026-56142 / JetBrains Hub / YouTrack / GoLand / Kotlin
+CVSS: 9.9
+JetBrains製品において認証情報割当を経由した権限昇格の脆弱性CVE-2026-56142（CVSS9.9）が確認され、2026年6月に修正された。実悪用は確認されていない。
+IoC: 確認されず
+
+監視: [JetBrains Hub管理操作ログ・認証失敗ログを監視する]
+Splunk SPL: index=jetbrains sourcetype=hub:auth | stats count by user, result | where result="bypass_attempt"
+→ Hub/YouTrackの公開バージョンを棚卸しし、修正版未適用インスタンスを優先パッチ適用する。
+
+参照: https://www.security-next.com/186901
+
+・CVE-2026-56141 / JetBrains Hub / YouTrack / GoLand / Kotlin
+CVSS: 9.8
+JetBrains製品において弱い疑似乱数生成器によるリカバリコード予測でのアカウント侵害の脆弱性CVE-2026-56141（CVSS9.8）が確認され、2026年6月に修正された。実悪用は確認されていない。
+IoC: 確認されず
+
+監視: [JetBrains Hub管理操作ログ・認証失敗ログを監視する]
+Splunk SPL: index=jetbrains sourcetype=hub:auth | stats count by user, result | where result="bypass_attempt"
+→ Hub/YouTrackの公開バージョンを棚卸しし、修正版未適用インスタンスを優先パッチ適用する。
+
+参照: https://www.security-next.com/186901
+
+・CVE-2026-7840 / UltraVNC（Repeater HTTP管理サーバ）
+CVSS: 9.8
+UltraVNC RepeaterにUltraVNC RepeaterのHTTP管理サーバにおけるバッファオーバーフロー（RCEにつながる可能性）の脆弱性CVE-2026-7840（CVSS9.8）が確認された。他8件の脆弱性も同時に修正されている。実悪用は確認されていない。
+IoC: 確認されず
+
+監視: [UltraVNC Repeater管理ポート(HTTP)へのアクセスログを監視する]
+Splunk SPL: index=network (dest_port=80 OR dest_port=443) app=ultravnc_repeater | stats count by src_ip
+→ 管理ポートを信頼ネットワークのみに制限し、初期設定時のデフォルトパスワード使用有無を確認する。
+
+参照: https://www.security-next.com/186896
+
+・CVE-2026-7839 / UltraVNC（Repeater HTTP管理サーバ）
+CVSS: 9.1
+UltraVNC Repeaterに初期設定時に設定ファイルが存在しない場合にデフォルトパスワードが使用される問題の脆弱性CVE-2026-7839（CVSS9.1）が確認された。他8件の脆弱性も同時に修正されている。実悪用は確認されていない。
+IoC: 確認されず
+
+監視: [UltraVNC Repeater管理ポート(HTTP)へのアクセスログを監視する]
+Splunk SPL: index=network (dest_port=80 OR dest_port=443) app=ultravnc_repeater | stats count by src_ip
+→ 管理ポートを信頼ネットワークのみに制限し、初期設定時のデフォルトパスワード使用有無を確認する。
+
+参照: https://www.security-next.com/186896
+
+・CVE未採番 / HP Deskjet 2800シリーズ プリンター
+CVSS: 未公開
+HP Deskjet 2800シリーズプリンターのWebサーバに認可制御の不備（Missing Authorization）が確認され、管理機能への不正アクセスにつながる可能性がある。詳細はCERT/CC VU#828543を参照。パッチ有無は現時点で不明。
+IoC: 確認されず
+
+監視: [対象プリンターのWeb管理画面へのアクセスログを監視する]
+→ プリンター管理画面をインターネットに直接公開しない。
+
+参照: https://jvn.jp/vu/JVNVU90409906
+
+・CVE-2026-58315 / セイコーエプソン製プリンター・スキャナー（Web Config、複数モデル）
+CVSS: 4.3
+セイコーエプソン製プリンター・スキャナーのWeb ConfigにクロスサイトリクエストフォージェリCVE-2026-58315（CVSSv3 4.3 / v4 5.1）が確認された。認証済みユーザーが悪意あるページを閲覧した場合、意図しない設定変更が行われる可能性がある。パッチは未提供でエプソン公開の回避策を参照。
+IoC: 確認されず
+
+監視: [対象製品のWeb Configへの想定外の設定変更を監視する]
+→ エプソン公開の回避策（信頼できないサイトの閲覧制限等）の適用状況を確認する。
+
+参照: https://jvn.jp/jp/JVN87285119
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-40138 / BeyondTrust Remote Support / Privileged Remote Access (PRA)
+CVSS: 9.2
+BeyondTrust Remote SupportおよびPrivileged Remote Access (PRA)の共有認証サブシステムに、事前認証の認証バイパス脆弱性CVE-2026-40138（CVSS9.2）が確認された。特定の認証設定を有効にしている環境では、ネットワーク経路を持つ攻撃者が認証チェックをバイパスし、特権アカウントを含む認可されていないアクセスを取得できる可能性がある。ベンダーは実悪用の報告はないとしているが、同社の過去の類似脆弱性（CVE-2026-1731）はPoC公開から4日以内に実悪用が観測された実績がある。
+IoC: 確認されず
+
+監視: [BeyondTrust Remote Support/PRAの認証ログを監視し、通常と異なる認証パス・特権アカウントへの異常アクセスを検知する]
+Splunk SPL: index=beyondtrust sourcetype=beyondtrust:auth | stats count by user, src_ip, auth_method | where auth_method!="standard"
+→ パッチ適用状況（cloud/self-hosted）を確認し、25.3.3未満の自己ホスト型インスタンスを優先的に確認する。
+
+参照: https://thehackernews.com/2026/07/beyondtrust-patches-critical-auth.html
+https://www.bleepingcomputer.com/news/security/beyondtrust-warns-of-critical-flaws-in-remote-access-software
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-53359 (Linux kernel KVM（"Januscape"）) → CWE-416 use-after-free・KVMシャドウMMU・kvmCTFゼロデイ報奨金プログラムで実証・研究用PoC(V4bel/Januscape)公開・実悪用未確認・16年物バグ・軸1=3点(PoC公開+2・広く使われるOSS+1)のため除外・参考A昇格トリガーなし・継続監視対象
+・CVE-2026-20896 (Gitea Docker images) → SecurityWeek本日記事は2026-07-06 Sysdig観測（ProtonVPN経由の単発プロービングのみ、実悪用未確認）の再掲・新規事実なし・既報（2026-07-07）から変化なしのため除外
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A13件 / 参考B1件 / 除外2件
+
+
+========================================

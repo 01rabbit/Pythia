@@ -1,0 +1,140 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-08 07:45 JST
+調査期間: 2026-07-07 07:00 〜 2026-07-08 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. GitLost: 公開GitHub IssueによるGitHubエージェント型ワークフローからの非公開リポジトリデータ漏洩
+カテゴリ: B（B1） / 攻撃者種別: 研究者実証
+------------------------------------------------------------
+
+採用契機: A-P・A-V
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: LLM01
+対象: it / global
+被害規模: 規模: 不明
+（バースト検出閾値超過: 48時間以内に5件以上の独立ソースが報道）
+
+【24時間以内（または期間内）の変化】
+[Noma Security / The Hacker News 2026-07-07] 公開GitHub Issueに隠蔽指示を仕込みGitHubエージェント型ワークフロー（Copilot/Claude/Gemini/Codex駆動）へ非公開リポジトリ内容を公開コメントとして漏洩させる手法「GitLost」が実証された
+
+【概要】
+GitHub Agentic Workflows（技術プレビュー、GitHub Copilot・Anthropic Claude・Google Gemini・OpenAI Codex等のLLMで駆動）に対し、公開Issue本文に隠蔽した指示を混入させる間接プロンプトインジェクション手法「GitLost」がNoma Securityにより実証された。Issueがトリガーとなりクロスリポジトリ読み取り権限を持つエージェントが起動すると、非公開リポジトリの内容を公開コメントとして投稿し外部の観察者へ漏洩させる。実被害の確認はなくPoCレベルの実証。
+
+攻撃の流れ:
+1. 「VP of Sales」等を装う体裁の公開GitHub Issueを作成し、「Additionally」等の無害な語で始まる隠蔽指示を本文に混入させる
+2. Issue割り当て等でエージェント型ワークフローがトリガーされ、クロスリポジトリ読み取りトークンを保持したエージェントが起動する
+3. エージェントが非公開リポジトリのREADME等を読み取り、公開コメントとして投稿し外部の観察者へ漏洩させる
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+検知シグナル: Issue本文中の「Additionally」等に続く不自然な指示文・エージェントによる公開コメントへの非公開情報の転記
+
+【監視・対策ポイント】
+・[GitHubエージェント型ワークフローの実行ログ・投稿コメント内容を監視する]
+Splunk SPL: index=github sourcetype=github:actions action=agentic_workflow_run | search comment_body=*README* OR comment_body=*secret*
+→ Issue経由のエージェントトリガーではクロスリポジトリ読み取り権限を必要最小限に制限する。
+
+【参照】
+https://thehackernews.com/2026/07/public-github-issue-could-trick-github.html
+https://www.darkreading.com/cyber-risk/gitlost-leaks-private-data-github-agentic-workflows
+
+------------------------------------------------------------
+2. Rogue Agent: Google Dialogflow CXの共有コード実行環境を悪用したAIチャットボット乗っ取り・データ窃取
+カテゴリ: B（B1） / 攻撃者種別: 研究者実証
+------------------------------------------------------------
+
+採用契機: A-P・A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: it / global
+被害規模: 規模: 不明
+
+【24時間以内（または期間内）の変化】
+[Varonis Threat Labs / The Hacker News 2026-07-08] Google Dialogflow CXのCode Block機能を有効化した全エージェントが単一のCloud Run実行環境を共有し、Pythonのexec()による横断的なコード実行が可能な設計不備「Rogue Agent」が確認された
+
+【概要】
+Google Cloud Dialogflow CXにおいて、Code Block機能を有効化した全エージェントが単一のCloud Run実行環境を共有しており、Pythonのexec()で任意コードを実行できる設計不備が確認された。dialogflow.playbooks.update権限を持つ攻撃者が1エージェントへ悪意あるコードを注入すると、同一プロジェクト内の全エージェントを横断して会話内容の窃取やチャットボット出力の乗っ取りが可能になる。Google・Varonisともに実悪用の証拠はないとしている。
+
+攻撃の流れ:
+1. Dialogflow CX Playbooks＋カスタムPythonコードブロックを持つ1エージェントへの編集権限を取得する
+2. 共有Cloud Run環境で永続的に動作する悪意あるコードをcode_execution_env.pyへ注入する
+3. 同一プロジェクト内の他エージェントの会話を横断的に窃取、またはフィッシング目的で応答を改ざんする
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+
+【監視・対策ポイント】
+・[Dialogflow CXのCode Block実行ログ・編集権限変更を監視する]
+Splunk SPL: index=gcp sourcetype=dialogflow:audit methodName=*playbooks.update* | stats count by principalEmail
+→ dialogflow.playbooks.update権限の付与範囲を最小化し、Code Block機能利用エージェントを棚卸しする。
+
+【参照】
+https://thehackernews.com/2026/07/rogue-agent-flaw-could-let.html
+https://www.darkreading.com/application-security/dialogflow-cx-rogue-agent-flaw-enabled-ai-chatbot-data-theft
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Writer AIエージェントのライブプレビュー機能によるテナント横断セッショントークン漏洩
+カテゴリ: B（B1） 採用契機: A-P
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+エンタープライズ生成AIプラットフォームWriterにおいて、公開ライブプレビューリンクを介したセッションハイジャック脆弱性が確認された。認証済みユーザーがリンクを開くとセッションCookieがプレビュープロキシ経由で攻撃者制御のサンドボックスへ転送され、プライベートチャット・モデル・コネクタへのアクセストークンが窃取されうる。単一ソースのみの報道で修正済み・実被害は確認されていない。
+
+監視: [Writerプラットフォームのプレビューリンクアクセスログを監視する（自組織で利用している場合）] 検知SPL: 該当なし
+→ 他テナントとの共有プロキシ経由でのセッション転送有無をベンダーに確認する。
+
+参照: https://thehackernews.com/2026/07/writer-ai-flaw-could-let-agent-previews.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はAIエージェント型ワークフロー・チャットボット基盤を標的とした間接プロンプトインジェクション/コード実行境界不備の報告が集中した。GitLost（GitHubエージェント型ワークフロー経由の非公開リポジトリ漏洩）とRogue Agent（Google Dialogflow CXの共有コード実行環境悪用）はいずれもバースト検出閾値超過・充足の複数ソース報道があり本編採用。Writer AIのセッショントークン漏洩は単一ソースのため参考Bに留めた。RedWing MaaS・求人偽装フィッシングはAI関与の確証が得られず除外した。
+
+本日の集計:
+AI攻撃 — 本編2件 / 参考A0件 / 参考B1件 / 除外3件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）3件 / C（インフラ）0件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】AI攻撃
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・RedWing MaaS（Android銀行詐欺Telegramレンタルサービス） → Android銀行詐欺MaaS・C2パネルによるテンプレート型inject生成のみでAI関与の確証なし
+・Big Brand Jobs Scam（マーケター向け求人偽装フィッシング） → AI生成コンテンツ・ディープフェイクの言及なし・通常のフィッシング/ソーシャルエンジニアリング
+・GitHub Actions CI/CD攻撃パターン（Cordyceps、BleepingComputer報道） → AI関与は「AIコーディングツールが脆弱なワークフローパターンを大量生成」という間接的言及のみ・GitLostとは別脆弱性でAIエージェント自体への攻撃ではない
+
+本日の集計:
+AI攻撃 — 本編2件 / 参考A0件 / 参考B1件 / 除外3件
+
+
+========================================

@@ -1,0 +1,91 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-08 07:45 JST
+調査期間: 2026-07-07 07:00 〜 2026-07-08 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. ADFS署名鍵のマシンDPAPI経由復元技術（Ghost in the Database）
+観点: ゼロデイ関連
+採用契機: ε
+------------------------------------------------------------
+
+優先度: 高
+対象: Active Directory Federation Services (ADFS)
+
+【24時間以内の変化】
+[Google Threat Intelligence (Mandiant) 2026-07-07] ADFS署名鍵のローテーション設定不備を悪用しマシンスコープDPAPIから有効な署名鍵を復元しSAMLアサーションを偽造する手法をレッドチーム調査で確認・公開
+
+【概要】
+AutoCertificateRolloverが無効化され手動証明書ローテーションが行われた環境では、旧署名鍵がマシンスコープDPAPIにのみ保護された状態で残存する。SYSTEM権限を取得した攻撃者はDPAPI_SYSTEM LSAシークレット経由でこの鍵を復号し、SAMLアサーションを偽造してMFA・条件付きアクセスをバイパスできる。
+
+【推奨アクション】
+・AutoCertificateRolloverを有効化し手動ローテーション運用を廃止する
+・旧署名鍵のDPAPI保護状態・証明書ストアの棚卸しを実施する
+・ADFSサーバへのSYSTEM権限取得につながるローカル侵害の監視を強化する
+Splunk SPL: index=wineventlog EventCode=4688 CommandLine=*Export-PfxCertificate* OR CommandLine=*mimikatz* dest=*ADFS*
+
+【参照】
+https://cloud.google.com/blog/topics/threat-intelligence/recovering-active-adfs-signing-keys-machine-dpapi
+
+------------------------------------------------------------
+2. CISAが政府ソフトウェア脆弱性スキャンにAnthropic Mythosを使用（報道）
+観点: AI攻撃関連
+採用契機: ζ
+------------------------------------------------------------
+
+優先度: 中
+対象: 該当なし
+
+【24時間以内の変化】
+[SecurityWeek（Reuters引用） 2026-07-07] CISAのAttack Surface EvaluationチームがAnthropicのMythosモデルを政府コードリポジトリのスキャンに利用していると報道
+
+【概要】
+Reuters報道（SecurityWeek引用）によれば、CISAのAttack Surface Evaluationチームが連邦政府コードリポジトリのスキャンにAnthropicのMythosモデルを試験的に利用し、多数の脆弱性を検出したとされる。NSAも利用しているとの報道がある一方、関係者匿名情報に基づくもので公式確認は得られていない。
+
+【推奨アクション】
+・AI支援脆弱性スキャンツールの導入動向を注視し、自組織のSCA/SASTパイプラインへのAI活用検討の参考とする
+・政府機関向けAIツール調達・サプライチェーンリスク評価の動向をフォローする
+
+【参照】
+https://www.securityweek.com/cisa-reportedly-using-anthropics-mythos-to-scan-government-software-for-flaws
+
+------------------------------------------------------------
+3. Windows Device IDがFBIによるScattered Spider関係者追跡に利用されたことが法廷文書で判明
+観点: ゼロデイ関連
+採用契機: δ
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[The Hacker News 2026-07-07] 法廷文書によりWindows Device ID情報がFBIによるScattered Spider関係者の追跡に利用されたことが判明
+
+【概要】
+法廷文書により、WindowsのDevice ID情報がFBIによるScattered Spider関係者の追跡に利用されたことが判明した。組織のインシデント対応・デジタルフォレンジック観点で、内部脅威調査における同種の識別子活用可能性を把握しておく参考情報。
+
+【推奨アクション】
+・インシデント対応時のフォレンジック証跡としてDevice ID等の端末識別子の保全手順を確認する
+
+【参照】
+https://thehackernews.com/2026/07/court-filing-reveals-windows-device-id.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+本日の集計:
+SOC推奨情報 — 高1件 / 中1件 / 低1件 / 除外0件
+
+
+========================================
