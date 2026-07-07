@@ -202,13 +202,20 @@ C2摘発 observation には「摘発はリスク低下であって終息では�
 
 **確度: 低の扱い**: 確度「高」「中」の適用条件（A〜D）をいずれも満たさないが、M1 観測可能性ゲート（下記）の発行前チェックリストを通過する予報には確度「低」を適用してよい。「低」は発行を見送るべき曖昧な予報ではなく、精度は保証できないが防御行動として発行価値がある予報という積極的な分類である。適用条件・目標的中率帯の正式定義は `pipeline-forecast-verification.md` の「確度: 低」適用条件を参照する（本書では重複定義しない）。「低」を適用する場合も的中判定条件（hit_criteria）の記載義務は変わらない。
 
-**M2 検証窓**: 外部報道依存の主題（漏洩→国内被害等）は `forecast_class: slow_7d`（7日窓）へ割り当て。72h的中率の分母に混入させない。割当判断は `incident-visibility-timelines.json` の median_days_to_external_report に従う（3日超は fast_72h で発行しない）。ベンダー追随IOCの的中条件への扱いは下記「T2 E2追随ベンダー除外（暫定）」に従う。
+**M2 検証窓**: 外部報道依存の主題（漏洩→国内被害等）は `forecast_class: slow_7d`（7日窓）へ割り当て。72h的中率の分母に混入させない。割当判断は `incident-visibility-timelines.json` の median_days_to_external_report に従う（3日超は fast_72h で発行しない）。ベンダー追随IOCの的中条件への扱いは下記「E2追随IOC除外（全Tier）」に従う。
 
 **T3足切り**: T3予報候補は `poc-exploitation-criteria.json` の required を全て満たし disqualifying を満たさない場合のみ採用。1つでも欠ければ本編・参考Aの注意点1行へ格下げ（教訓10）。
 
 **low-visibility遷移**: `technique-chains.json` の `low_visibility_chains`（漏洩→BEC・BYOVD回避更新）に該当する主題は外部報道を的中条件にせず slow_7d または先回り監視へ。
 
-**T2 E2追随ベンダー除外（暫定）**: T2予報のE2（新規IOC公開）的中判定に「競合（一次ソース以外の）ベンダーの72h追随IOC公開」を使用しない。代替: 一次ソース自身の続報・追加IOC更新、またはKEV初回追加(E1)。追随速度の実測は `vendor-ioc-followup-timelines.json` に蓄積し `pct_within_72h≥50%` を確認できるまでE2的中条件に採用しない（Issue #19・人間レビュー前の暫定対応）。
+**E2追随IOC除外（全Tier・累計6件連続外れへの対応）**: 「一次ソースの詳細分析公開後72時間以内に追随IOC（競合ベンダー・一次ソース自身のいずれを問わず新規の IP / ドメイン / ハッシュ / 侵害指標）が公開される」ことを的中条件とする `forecast_class: fast_72h` の E2 予報は、**T1〜T3 の全Tierで発行しない**。この前提は 2026-06〜2026-07 で6件連続外れ（Windchill CVE-2026-12569・APT28 PRISMEX・Chrome WebGL UAF・FortiBleed・Cisco UCM CVE-2026-20230・npm北朝鮮サプライチェーン）しており、構造的過信としてほぼ確定した。
+
+対応（優先順）:
+1. 的中条件を E1（KEV初回追加）へ置換できる場合は E1 で `fast_72h` 発行する。
+2. 一次ソース自身による明示的な「**同一キャンペーン・同一CVE の続報 / 追加IOC更新**」に限定できる場合のみ E2 を残してよい。この場合、別キャンペーンの類似IOCを的中に構成させないため、**帰属・対象エコシステム・C2インフラの3点一致**を `hit_criteria` に明記する（教訓: PolinRider を npm北朝鮮キャンペーンの続報と誤認しかけた事例）。
+3. 上記いずれも満たせない「追随IOC公開期待型」の主題は `forecast_class: slow_7d` へ割り当てるか、本編注意点1行へ格下げする。
+
+追随速度の実測は `vendor-ioc-followup-timelines.json` に蓄積し `pct_within_72h≥50%` を確認できるまで、72時間の追随IOC公開を E2 的中条件に採用しない（Issue #19・人間レビュー前の暫定強化。従来の「T2限定・競合ベンダー限定」ルールを全Tier・全ソースへ拡大）。
 
 **M4 KEVスナップショット**: 各予報に発行時点のKEV状態（dateAdded / ランサムフラグ / 参照セット）を `kev_snapshot` として記録し、検証時に再登録（変化なし）を非的中判別できるようにする。
 
