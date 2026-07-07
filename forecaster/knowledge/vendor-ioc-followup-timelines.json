@@ -1,15 +1,19 @@
 {
   "_comment": "セキュリティベンダー/機関が一次ソースの詳細技術分析・KEV追加・CERT勧告を公開した後、競合（一次ソース以外）のベンダー/機関が追随IOCを公開するまでの実測タイムライン。Issue #19 対応。T2予報のE2（新規IOC公開）的中判定で「競合ベンダー72h追随IOC公開」を採用してよいかの定量的閾値を導出するためのデータ。自動適用禁止・本ファイルはPRによる人間レビュー後にのみ更新すること（CLAUDE.md 行動原則5）。verified_outcome は検証ステージ(04)のみが書き込む。",
   "_schema_version": "1.0",
-  "_last_updated": "2026-06-30",
+  "_last_updated": "2026-07-07",
   "_related": {
     "issue": "#19",
-    "rules": "pipeline-forecast-verification.md 観測出口クラス E2（ベンダー/PSIRTによる新規IOC初回公開） / 03-forecast.md 「T2 E2追随ベンダー除外（暫定）」",
+    "rules": "pipeline-forecast-verification.md 観測出口クラス E2（ベンダー/PSIRTによる新規IOC初回公開）・教訓14 / 03-forecast.md 「E2追随IOC除外（全Tier）」（PR #37）",
     "related_issues": ["#2", "#3"],
-    "lessons": ["2026-06-30 週次精度検証: 競合ベンダー72h追随IOCを的中条件としたT2/E2予報が3件連続で外れ"]
+    "related_prs": ["#37"],
+    "lessons": [
+      "2026-06-30 週次精度検証: 競合ベンダー72h追随IOCを的中条件としたT2/E2予報が3件連続で外れ",
+      "2026-07-07 週次精度検証: 一次ソース自身の続報型を含め累計8件(0%)まで確認。PR #37でE2追随IOC予報の発行を全Tier/全ソースで停止"
+    ]
   },
 
-  "_usage": "T2予報のE2的中判定条件に「競合（一次ソース以外の）ベンダーによる72h追随IOC公開」を使用しない。代替の的中条件は『一次ソース自身による続報・追加IOC更新』または『KEV初回追加(E1)』とする。サンプルが10件以上蓄積された時点で pct_within_72h を確認し、50%未満であれば fast_72h/E2 の的中判定条件から「競合ベンダー追随IOC」を正式除外する。それまでは暫定除外を維持。",
+  "_usage": "現行の適用ルールは 03-forecast.md「E2追随IOC除外（全Tier）」（PR #37・2026-07-07マージ）である: 全Tier(T1〜T3)・全ソース(競合ベンダー/一次ソース自身)の72h追随IOC公開を fast_72h/E2 の的中条件に使用しない。代替は『KEV初回追加(E1)への置換』『一次ソース自身の同一キャンペーン続報（帰属・エコシステム・C2の3点一致を明記）に限定』『slow_7d割当/格下げ』。当初Issue #19が定めた『サンプル10件以上かつ pct_within_72h<50% で正式除外』の閾値ルールは、実データが8件で頭打ちかつPR #37が発行停止により追加蓄積経路を閉じたため、正式除外への昇格可否は summary_statistics.threshold_status の★人間レビュー判断事項に委ねる（本ファイルは自動昇格しない・CLAUDE.md 行動原則5）。",
 
   "observations": [
     {
@@ -44,14 +48,85 @@
       "outcome": "no_followup_72h",
       "forecast_ref": "2026-06-28 予報: APT28 PRISMEX E2 fast_72h",
       "notes": "一次ソース=Trend Micro（2026-06-27 公開）の詳細分析。帰属（APT28）はIssue #19 が明示する範囲。期待した競合追随（CrowdStrike・Microsoft・CISA）による新規IOC(E2)は72h窓内に非公開。追随IOC観測なしのため actual_followup_hours/date は null。E2的中判定に競合ベンダー72h追随IOCを用いた結果、外れ。"
+    },
+    {
+      "primary_source_type": "vendor_report",
+      "primary_source": "Oracle EBS CVE-2026-46817 悪用キャンペーン報告（公開IOC=C2 IP 45.84.137.125 の1件のみ）",
+      "primary_source_date": "2026-06-29",
+      "followup_source_scope": "competitor",
+      "expected_followers": ["Mandiant", "CrowdStrike", "Trend Micro", "CISA", "NSA"],
+      "actual_followup_hours": null,
+      "actual_followup_date": null,
+      "outcome": "no_followup_72h",
+      "forecast_ref": "2026-06-29 予報: Oracle EBS CVE-2026-46817 追加IOC公開への備え E2 fast_72h（期限2026-07-02）",
+      "verification_ref": "forecaster/verification/2026-06.json（forecast_date 2026-06-29・outcome miss）",
+      "notes": "72h窓（〜2026-07-02）満了。観測（obs-2026-0630-001・obs-2026-0701-004）でも公開IOCはC2 IP 45.84.137.125の1件から変化なく、Mandiant・CrowdStrike・Trend Micro・CISA・NSAいずれによる差分のある新規IOC(E2)の初回公開も非確認。CISA KEVもCVE-2026-46817未掲載（2026.07.01版）。追随IOC観測なしのため actual_followup_hours/date は null。"
+    },
+    {
+      "primary_source_type": "vendor_report",
+      "primary_source": "GitHub Advisory（LiteLLM CVE-2026-42271・SSRF・CVSS9.1・2026-06-28公開）",
+      "primary_source_date": "2026-06-29",
+      "followup_source_scope": "any_source",
+      "expected_followers": [],
+      "actual_followup_hours": null,
+      "actual_followup_date": null,
+      "outcome": "no_followup_72h",
+      "forecast_ref": "2026-06-29 予報: LiteLLM CVE-2026-42271 実悪用事例または追加PoC公開の見通し E2 fast_72h（期限2026-07-02）",
+      "verification_ref": "forecaster/verification/2026-06.json（forecast_date 2026-06-29・outcome miss）",
+      "notes": "境界事例: 的中条件が『実悪用初報または追加PoC公開』でありE2(新規IOC)とE4(PoC)の中間だが検証JSONではE2として記録。72h窓満了。既存KEV登録はCVE-2026-42271の別脆弱性（コマンドインジェクション・dateAdded 2026-06-08）であり本予報対象のSSRFに該当せず、追加PoC・実悪用初報も非確認。expected_followers は特定ベンダーではなく事象発生を的にしたため空。"
+    },
+    {
+      "primary_source_type": "vendor_report",
+      "primary_source": "SOCRadar（FortiBleed認証情報窃取キャンペーン・バックドアアカウント adminin）",
+      "primary_source_date": "2026-07-02",
+      "followup_source_scope": "primary_source_self",
+      "expected_followers": ["SOCRadar"],
+      "actual_followup_hours": null,
+      "actual_followup_date": null,
+      "outcome": "no_followup_72h",
+      "forecast_ref": "2026-07-02 予報: FortiBleed 新規IOC公開への備え E2 fast_72h（期限2026-07-05）",
+      "verification_ref": "forecaster/verification/2026-07.json（forecast_date 2026-07-02・outcome miss）",
+      "notes": "一次ソース自身(SOCRadar)の続報を的とした事例。観測（07-03〜07-07）にadminin以外の新規IOC（追加侵害指標・C2ドメイン・ハッシュ）は非公開。競合ベンダーではなく一次ソース自身の続報も72h窓内に発生しないことを示す（除外の全ソース拡大の根拠・PR #37）。"
+    },
+    {
+      "primary_source_type": "vendor_report",
+      "primary_source": "Cisco Unified CM CVE-2026-20230 継続侵害（KEV既登録 dateAdded 2026-06-25・ランサムフラグUnknown）",
+      "primary_source_date": "2026-07-03",
+      "followup_source_scope": "competitor",
+      "expected_followers": ["Cisco PSIRT", "Shadowserver"],
+      "actual_followup_hours": null,
+      "actual_followup_date": null,
+      "outcome": "no_followup_72h",
+      "forecast_ref": "2026-07-03 予報: Cisco UCM CVE-2026-20230 継続侵害拡大への備え E2 fast_72h（期限2026-07-06）",
+      "verification_ref": "forecaster/verification/2026-07.json（forecast_date 2026-07-03・outcome miss）",
+      "notes": "KEV既登録CVEの継続侵害を起点に追加IOC公開を的とした事例。72h窓満了時点でKEVは dateAdded 2026-06-25 のまま変化なし、Cisco PSIRT・Shadowserverによる新規IOC（追加Webシェルパターン・ハッシュ・侵害ホスト数更新）も非公開。教訓13（KEV再登録は非的中）とも整合。"
+    },
+    {
+      "primary_source_type": "vendor_report",
+      "primary_source": "JFrog（北朝鮮nexus npmサプライチェーン・rollup-plugin-polyfill-node模倣・C2 216.126.236.244）",
+      "primary_source_date": "2026-07-04",
+      "followup_source_scope": "any_source",
+      "expected_followers": ["JFrog", "独立系セキュリティベンダー"],
+      "actual_followup_hours": null,
+      "actual_followup_date": null,
+      "outcome": "no_followup_72h",
+      "forecast_ref": "2026-07-04 予報: npm北朝鮮サプライチェーン 追加IOC公開への備え E2 fast_72h（期限2026-07-07）",
+      "verification_ref": "forecaster/verification/2026-07.json（forecast_date 2026-07-04・outcome miss）",
+      "notes": "類似テーマの別キャンペーン誤認回避の教訓を含む。07-07観測にWiz/Socket.dev報告の別キャンペーン『PolinRider』（Contagious Interview帰属・npm/Packagist/Go/Chrome拡張108種・別C2）が出現したが、帰属・エコシステム・C2が本キャンペーン（JFrog報告・C2 216.126.236.244）と不一致のため追随IOCに非該当。JFrog自身の続報も非確認。帰属・エコシステム・C2の3点一致確認はPR #37「E2追随IOC除外」対応2に反映済み。"
     }
   ],
 
   "summary_statistics": {
-    "sample_count": 3,
+    "sample_count": 8,
     "median_hours_to_followup": null,
     "pct_within_72h": 0,
     "pct_no_followup_within_7d": null,
-    "note": "3件すべて72h（事例2は48h）窓内に競合ベンダー/機関の追随IOC(E2)が非公開で pct_within_72h=0/3=0.0。ただしサンプル3件は閾値10件未満であり統計的判断不可（Issue #19 暫定対応の正式除外条件 sample_count>=10 未達）。追随IOCゼロのため median_hours_to_followup は null。pct_no_followup_within_7d は3事例とも7日窓未到達（観測継続中）のため null。"
+    "by_followup_source_scope": {
+      "competitor": {"count": 5, "followup_within_72h": 0},
+      "primary_source_self": {"count": 1, "followup_within_72h": 0},
+      "any_source": {"count": 2, "followup_within_72h": 0}
+    },
+    "note": "8件すべて（事例2のWindchillのみ48h窓、他は72h窓）で追随IOC(E2)が窓内に非公開。pct_within_72h=0/8=0.0。内訳: 競合ベンダー追随5件・一次ソース自身続報1件(FortiBleed)・事象発生型2件(LiteLLM/npm) いずれも0%。追随IOCゼロのため median_hours_to_followup は null。pct_no_followup_within_7d は複数事例が7日窓観測未完了のため null。",
+    "threshold_status": "実データで確認可能なE2追随/追加IOC公開型の外れは検証記録上この8件が全数であり、当初の正式除外条件 sample_count>=10 には実データが届かない（捏造による水増しはしない）。さらにPR #37（2026-07-07 マージ・03-forecast.md「E2追随IOC除外」全Tier/全ソース拡大）により当該型の予報発行を停止したため、今後の自然蓄積で10件に到達する経路も閉じた。★人間レビュー判断事項: (a)8/8=0%とPR #37の発行停止をもって『正式除外』を確定し閾値10件ルールを撤回/緩和する、または(b)暫定除外のまま維持する。本ファイルは判断材料の提示に留め、_usage の閾値ルール本文は人間の決定まで変更しない（CLAUDE.md 行動原則5）。"
   }
 }
