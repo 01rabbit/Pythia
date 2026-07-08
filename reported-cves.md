@@ -151,3 +151,17 @@
 | CVE-2026-14191 | WinRAR / UnRAR（RAR5リカバリボリューム処理・7.23未満） | 2026-07-07 | none | 2026-07-07 | YES | CVSS7.8（AV:L/UI:R）・CVE-2023-40477類似変種・PoC/実悪用未確認・過去に同系統がロシア系脅威アクターによりウクライナ向けに悪用された実績あり・軸1=3点のため除外 |
 | CVE-2026-54428 | Apache HttpComponents Client/Core 5.4.3未満 | 2026-07-07 | none | 2026-07-07 | YES | CVSS7.5・HTTP/2 HPACKデコーダ及びHTTP/1.1メッセージ解析のリソース過剰消費によるDoSのみ・低優先度規則該当のため除外 |
 | CVE-2026-54399 | Apache HttpComponents Client/Core 5.4.3未満 | 2026-07-07 | none | 2026-07-07 | YES | CVE-2026-54428と同一アドバイザリ内の複合DoS脆弱性・CVSS7.5・DoSのみのため除外 |
+| CVE-2026-40138 | BeyondTrust Remote Support / Privileged Remote Access (PRA) | 2026-07-08 | none | 2026-07-08 | YES | CVSS9.2・事前認証認証バイパス・クラウド修正済み(2026-04-21)/自己ホスト型は25.3.3で修正・実悪用未確認・参考B採用 |
+| CVE-2026-11405 | Tenda ルーター（FH1201/W15E/AC10/AC5/AC6 V2） | 2026-07-08 | poc_public | 2026-07-08 | YES | ハードコードされたバックドア認証情報(CWE-798)・CERT/CC勧告・Nmap検出スクリプト公開・パッチ未提供・JVN発行・参考A採用 |
+| CVE-2026-11712 | IBM WebSphere Application Server（管理コンソール） | 2026-07-08 | none | 2026-07-08 | YES | CVSS9.3・管理コンソールヘルプ機能のXSS・暫定修正APAR PH71756・恒久修正2026年Q3予定・Security NEXT国内報道・参考A採用 |
+| CVE-2026-11708 | IBM WebSphere Application Server（管理コンソール） | 2026-07-08 | none | 2026-07-08 | YES | CVSS9.3・CVE-2026-11712と同一アドバイザリのXSS・参考A採用 |
+| CVE-2026-11595 | IBM WebSphere Application Server（管理コンソール） | 2026-07-08 | none | 2026-07-08 | YES | CVSS4.3・ヘルプシステムのパストラバーサル・同一アドバイザリ内複合脆弱性・参考A採用 |
+| CVE-2025-23351 | NVIDIA BlueField DPU / ConnectX | 2026-07-08 | none | 2026-07-08 | YES | CVSS9.0・コマンドインターフェース境界外書き込み・仮想関数(VF)経由・ファームウェア修正2026-06-30リリース済み・Security NEXT国内報道・参考A採用 |
+| CVE-2025-23350 | NVIDIA BlueField DPU / ConnectX | 2026-07-08 | none | 2026-07-08 | YES | CVSS9.0・CVE-2025-23351と同一アドバイザリ・参考A採用 |
+| CVE-2026-50242 | JetBrains Hub / YouTrack / GoLand / Kotlin | 2026-07-08 | none | 2026-07-08 | YES | CVSS10.0・Hub認証バイパス（DB直接アクセス・管理者権限奪取につながる可能性）・2026年6月修正済み・Security NEXT国内報道・参考A採用 |
+| CVE-2026-56142 | JetBrains Hub / YouTrack / GoLand / Kotlin | 2026-07-08 | none | 2026-07-08 | YES | CVSS9.9・認証情報割当経由の権限昇格・同一報道内複合脆弱性・参考A採用 |
+| CVE-2026-56141 | JetBrains Hub / YouTrack / GoLand / Kotlin | 2026-07-08 | none | 2026-07-08 | YES | CVSS9.8・弱い疑似乱数生成器によるリカバリコード予測・同一報道内複合脆弱性・参考A採用 |
+| CVE-2026-7840 | UltraVNC（Repeater HTTP管理サーバ） | 2026-07-08 | none | 2026-07-08 | YES | CVSS9.8・HTTP管理サーバのバッファオーバーフロー(RCE可能性)・1.8.2.2以前・他8件も同時修正・Security NEXT国内報道・参考A採用 |
+| CVE-2026-7839 | UltraVNC（Repeater HTTP管理サーバ） | 2026-07-08 | none | 2026-07-08 | YES | CVSS9.1・初期設定時の設定ファイル不在時デフォルトパスワード使用・同一報道内複合脆弱性・参考A採用 |
+| CVE-2026-58315 | セイコーエプソン製プリンター・スキャナー（Web Config） | 2026-07-08 | none | 2026-07-08 | YES | CVSSv3 4.3/v4 5.1・CSRF（CWE-352）・JVN発行・パッチ未提供（回避策あり）・参考A採用 |
+| CVE-2026-53359 | Linux kernel KVM（"Januscape"、Intel/AMD） | 2026-07-08 | poc_public | 2026-07-08 | YES | CWE-416 use-after-free（シャドウMMU）・kvmCTFゼロデイ報奨金プログラムで実証・研究用PoC(V4bel/Januscape)公開・16年物バグ・修正済み(コミット81ccda30b4e8)・実悪用未確認・軸1=3点のため除外・継続監視対象 |
