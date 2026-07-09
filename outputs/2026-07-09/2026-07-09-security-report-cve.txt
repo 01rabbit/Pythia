@@ -1,0 +1,251 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-09 07:48 JST
+調査期間: 2026-07-08 07:00 〜 2026-07-09 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当事案なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-48282 / Adobe ColdFusion
+対象: 2025 Update 10未満 / 2023 Update 21未満（APSB26-68内の複合脆弱性群の一つ）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[The Hacker News 2026-07-08] CISAが本CVEを含む4件をKEVカタログへ新規追加（dateAdded 2026-07-07・FCEB期限2026-07-10）。パストラバーサル経由の任意コード実行で、公開直後の悪用が確認されインドのIPからの攻撃試行が記録された。
+[Security NEXT 2026-07-08] 米当局（CISA）によるColdFusion/Langflow脆弱性の悪用注意喚起を国内メディアが報道。
+
+【概要】
+Adobe ColdFusionのパストラバーサル脆弱性CVE-2026-48282(CVSS10.0)について、既報の実悪用確認（2026-07-03初報・以降参考B継続採用）に続き、CISAが2026-07-07付でKEVカタログへ新規追加したことが本日確認された。公開直後の悪用でインド所在IPからの攻撃試行が記録されており、FCEB機関への対応期限は2026-07-10。
+
+攻撃の流れ:
+1. パストラバーサルにより認証不要でファイルシステムへアクセス
+2. 任意ファイル書き込み・配置により任意コード実行
+3. Webシェル設置等による持続的アクセス確保（既報時点で確認）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ColdFusionサーバのアクセスログ・ファイル書き込みイベントを監視する]
+Splunk SPL: index=web sourcetype=coldfusion_access uri_path="*..%2f*" OR uri_path="*..\\*" | stats count by clientip, uri_path
+→ 正規運用でのパストラバーサル文字列を含むリクエストは稀であるため、検知時は即時遮断・フォレンジック調査を優先する
+
+【参照】
+https://thehackernews.com/2026/07/cisa-adds-4-actively-exploited-adobe.html
+https://www.securityweek.com/cisa-urges-immediate-patching-of-exploited-coldfusion-langflow-joomla-flaws/
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-50746 / Ubiquiti UniFi Connect / Talk / Access / Protect / OS（複合脆弱性群）
+CVSS: 10.0 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[The Hacker News 2026-07-08] Ubiquitiが複数UniFi製品にまたがる7件の脆弱性を修正。うちCVE-2026-50746(UniFi Connect、CVSS10.0)は不適切なアクセス制御によるホストデバイス上のコマンドインジェクション。他CVE-2026-50747(UniFi Talk、CVSS9.9・SQLi経由権限昇格)、CVE-2026-50748(UniFi Access、CVSS9.9・コマンドインジェクション)、CVE-2026-54400(UniFi Access、CVSS9.1・権限昇格)、CVE-2026-55115(UniFi Protect、CVSS9.9・SSRF経由権限昇格)、CVE-2026-54402(UniFi OS、CVSS9.9・コマンドインジェクション)、CVE-2026-55116(UniFi OS、CVSS9.0・不正なデバイス変更)。
+[JPCERT/CC 2026-07-08] JPCERT/CC Weekly Reportが複数Ubiquiti製品の脆弱性を掲載。
+[BleepingComputer 2026-07-08] 「Ubiquiti warns of new max severity UniFi OS vulnerability」として報道。
+
+【概要】
+Ubiquitiが2026-07-08、UniFi Connect/Talk/Access/Protect/OSにまたがる最大深刻度CVSS10.0を含む7件の脆弱性を修正した。代表格のCVE-2026-50746(UniFi Connect)は不適切なアクセス制御によりホストデバイス上でコマンドインジェクションが可能。現時点で実悪用・PoC公開の報告はないが、過去にUniFi OS関連CVE(CVE-2026-34908/34909/34910)がCISA KEVで武器化された実績があり、早期パッチ適用が推奨される。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[UniFi Networkコントローラ・UniFi OSデバイスの管理APIアクセスログを監視する]
+Splunk SPL: index=network sourcetype=unifi_audit action=api_call | stats count by src_ip, uri_path, user | where count > 50
+→ パッチ未適用機器からの異常な管理API呼び出し急増を確認した場合は隔離・ファームウェア更新を優先する
+
+【参照】
+https://thehackernews.com/2026/07/ubiquiti-patches-critical-unifi-flaws.html
+https://www.bleepingcomputer.com/news/security/ubiquiti-warns-of-new-max-severity-unifi-os-vulnerability
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [Weekly Report: 複数のUbiquiti製品に脆弱性] https://www.jpcert.or.jp/wr/
+
+・CVE-2026-56843 / Plesk（ホスティング管理パネル）
+CVSS: 9.9 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[Security NEXT 2026-07-08] PleskのXML API処理に関する脆弱性2件を報道。CVE-2026-56843は低権限ユーザーが他テナントのFTP認証情報を取得しリモートコード実行につながる恐れ。
+
+【概要】
+共用ホスティング管理パネルPleskのXML API処理に関する脆弱性CVE-2026-56843(CVSS9.9)。低権限ユーザーが他テナントのFTP認証情報を取得可能で、リモートからのコード実行につながる恐れがある。18.0.79で修正済み。実悪用は本日時点で確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Plesk XML APIへのテナント横断リクエスト・FTP認証イベントを監視する]
+Splunk SPL: index=plesk sourcetype=plesk_xml_api | stats count by src_ip, requested_domain, auth_user | where count > 20
+→ テナント契約と異なるドメインへのFTP認証情報要求が確認された場合は当該APIキーを即座に無効化する
+
+【参照】
+https://www.security-next.com/187008
+
+・CVE-2026-48614 / Plesk（ホスティング管理パネル）
+CVSS: 9.9 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[Security NEXT 2026-07-08] 認可処理の不備により認証済みユーザーがroot権限でファイル書き込み可能な脆弱性を報道（CVE-2026-56843と同一記事内の複合脆弱性）。
+
+【概要】
+Plesk管理パネルの認可処理不備CVE-2026-48614(CVSS9.9)。認証済みユーザーがroot権限でファイル書き込みを行える恐れがあり、サーバ権限取得につながる。18.0.79以降で完全修正済み。CVE-2026-56843と同一Security NEXT記事内の複合脆弱性。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Pleskの認証済みファイル書き込みAPI呼び出しを監視する]
+Splunk SPL: index=plesk sourcetype=plesk_xml_api method=fileWrite | stats count by auth_user, target_path | where like(target_path, "%root%")
+→ 低権限アカウントによるroot配下へのファイル書き込み要求は即座に隔離・調査する
+
+【参照】
+https://www.security-next.com/187008
+
+・CVE-2026-53481 / Dell PowerProtect Data Domain（143件の複合脆弱性の代表格）
+CVSS: 9.8 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[Security NEXT 2026-07-08] Dell PowerProtect Data Domainに143件の脆弱性が確認されたと報道。うちCVE-2026-53481(パストラバーサル)・CVE-2026-53483(認証不備)はCVSSv3.1 9.8。アドバイザリ重要度は4段階中最高の「クリティカル」。
+
+【概要】
+Dell PowerProtect Data Domainのセキュリティアドバイザリで143件の脆弱性が公表された（うち製品固有26件）。代表格のCVE-2026-53481(パストラバーサル)・CVE-2026-53483(認証不備、CVE-2026-53483は別記事参照)はいずれもCVSSv3.1 9.8で、リモートアクセス可能な場合は認証不要でシステム制御を奪われる恐れがある。2026-07-02にアドバイザリ公開・修正済みアップデート提供済み。実悪用は本日時点で確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Data Domainバックアップアプライアンスの管理インタフェースへの認証イベント・ファイルアクセスを監視する]
+Splunk SPL: index=storage sourcetype=data_domain_audit | stats count by src_ip, action | where action="unauth_access_attempt"
+→ バックアップアプライアンス管理面はインターネット非露出が原則のため、外部IPからのアクセス試行は即時遮断・調査する
+
+【参照】
+https://www.security-next.com/186965
+
+・CVE-2026-56437 / 富士電機製Pupsmanインストーラ
+CVSS: 7.8 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[JVN 2026-07-08] JVNがCVE-2026-56437を新規公開。ファイル検索パスの制御不備。SYSTEM権限での任意コード実行につながる恐れ。
+
+【概要】
+富士電機製Pupsmanインストーラ（3.9.0より前の全バージョン）にファイル検索パスの制御不備SYSTEM権限での任意コード実行につながる恐れという脆弱性CVE-2026-56437(CVSSv3 7.8/CVSSv4 8.4)がJVNで公開された。3.9.0以降へのアップデートが推奨されている。実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Pupsmanインストーラ実行ログ・SYSTEM権限プロセス生成を監視する]
+Splunk SPL: index=endpoint sourcetype=sysmon EventCode=1 ParentImage="*pupsman*" | table _time, host, Image, CommandLine
+→ インストーラ実行後に想定外の子プロセスがSYSTEM権限で生成されていないか確認する
+
+【参照】
+https://jvn.jp/jp/JVN62347140
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [JVN#62347140: 富士電機製Pupsmanのインストーラにおける複数の脆弱性] https://jvn.jp/jp/JVN62347140
+
+・CVE-2026-57895 / 富士電機製Pupsmanインストーラ
+CVSS: 7.8 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[JVN 2026-07-08] JVNがCVE-2026-57895を新規公開。インストール時の不適切なファイルアクセス権設定。SYSTEM権限での任意コード実行につながる恐れ。
+
+【概要】
+富士電機製Pupsmanインストーラ（3.9.0より前の全バージョン）にインストール時の不適切なファイルアクセス権設定SYSTEM権限での任意コード実行につながる恐れという脆弱性CVE-2026-57895(CVSSv3 7.8/CVSSv4 8.5)がJVNで公開された。3.9.0以降へのアップデートが推奨されている。実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Pupsmanインストーラ実行ログ・SYSTEM権限プロセス生成を監視する]
+Splunk SPL: index=endpoint sourcetype=sysmon EventCode=1 ParentImage="*pupsman*" | table _time, host, Image, CommandLine
+→ インストーラ実行後に想定外の子プロセスがSYSTEM権限で生成されていないか確認する
+
+【参照】
+https://jvn.jp/jp/JVN62347140
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [JVN#62347140: 富士電機製Pupsmanのインストーラにおける複数の脆弱性] https://jvn.jp/jp/JVN62347140
+
+・CVE-2026-13753 / HP DeskJet 2800シリーズ プリンタ
+CVSS: 7.5 状態: ゼロデイ
+
+【24時間以内の変化】
+[Security NEXT 2026-07-08] HP DeskJet 2800シリーズに認可欠如の脆弱性が確認されたと報道。ネットワーク経由でAPIへ直接リクエストすることで認証なしに設定情報を取得可能。
+
+【概要】
+HP DeskJet 2800シリーズプリンタに認可欠如(Missing Authorization)の脆弱性CVE-2026-13753(CVSS7.5)。ネットワーク経由でAPIへ直接リクエストすることで、認証なしにWi-Fi DirectのSSID・パスフレーズや管理構成データを取得される恐れがある。修正プログラムは提供されておらずCERT/CCとHPの連絡調整も未了。信頼できるネットワークセグメントへの配置等の緩和策が推奨される。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[プリンタ管理APIへの未認証アクセス試行をネットワーク監視する]
+Splunk SPL: index=network sourcetype=firewall dest_port=80 OR dest_port=443 dest_category="printer" | stats count by src_ip, dest_ip | where count > 30
+→ 管理VLAN外からのプリンタAPI直接アクセスを検知した場合はセグメンテーションを見直す
+
+【参照】
+https://www.security-next.com/186984
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-56290 / Joomla Page Builder
+CVSS: 10.0
+Joomla向けサードパーティ拡張機能「Page Builder」の不適切なアクセス制御脆弱性CVE-2026-56290(CVSS10.0)。未認証での任意ファイルアップロードによりRCEが可能で、CISAが2026-07-07にKEVへ追加。2026-06-27時点でWebシェル設置が確認されている。国内報道・JPCERT/IPA注意喚起は本日時点で確認されず。
+IoC: 確認されず
+
+監視: [Joomla拡張機能アップロードディレクトリへの新規PHPファイル書き込みを監視する]
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/pagebuilder/*" method=POST status=200 | stats count by src_ip, uri_path
+→ アップロードディレクトリ配下への新規.phpファイル生成をファイル整合性監視(FIM)で検知した場合は即時隔離する
+
+参照: https://thehackernews.com/2026/07/cisa-adds-4-actively-exploited-adobe.html
+
+・CVE-2026-48908 / JoomShaper SP Page Builder
+CVSS: 10.0
+JoomShaper製「SP Page Builder」の無制限ファイルアップロード脆弱性CVE-2026-48908(CVSS10.0)。修正版公開前からゼロデイとして悪用されPHPシェルの設置が確認され、CISAが2026-07-07にKEVへ追加。国内報道・JPCERT/IPA注意喚起は本日時点で確認されず。
+IoC: 確認されず
+
+監視: [SP Page Builderのファイルアップロードエンドポイントへのリクエストを監視する]
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/sppagebuilder/*upload*" method=POST | stats count by src_ip
+→ アップロード後に新規.phpファイルが生成されていないかWebルート配下のFIMで確認する
+
+参照: https://thehackernews.com/2026/07/cisa-adds-4-actively-exploited-adobe.html
+
+
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-43499 (Linux kernel（futex優先度継承・GhostLock）) → CVSS7.8・PoC公開済みだがKEV未登録・実悪用未確認・国内報道/JPCERT言及なし。軸1=5点・軸2=0点（参考A昇格トリガーなし）のため除外。広範なOSSスコープを踏まえ継続監視対象とする。
+・CVE-2026-55255 (Langflow) → CISAが2026-07-07にKEV追加したが、CVSS6.1・限定的な悪用（単一オペレータによる認可バイパス）に留まり軸1=6点・軸2=1点で本編/参考いずれの閾値にも未達のため除外。継続監視対象とする。
+
+本日の集計:
+CVE — 本編1件 / 参考A7件 / 参考B2件 / 除外2件
