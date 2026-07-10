@@ -23,7 +23,7 @@
 | CVE-2026-47281 | Microsoft Defender (Windows 10/11 全バージョン) | 2026-06-16 | active_exploitation | 2026-06-16 | YES | ゼロデイ未パッチ・CVSS 9.6・PoC公開・実悪用確認・RoguePlanet・本編採用 |
 | CVE-2026-35273 | Oracle PeopleSoft Enterprise PeopleTools 8.61/8.62 | 2026-06-16 | active_exploitation | 2026-06-16 | YES | CVSS 9.8・KEV登録・BOD 26-04期限6/15到来・ShinyHunters実悪用・ランサムウェア展開・Security NEXT国内報道・本編採用 |
 | CVE-2026-5027 | Langflow AIアプリ開発プラットフォーム (1.8.x以前) | 2026-06-18 | active_exploitation | 2026-06-18 | YES | CVSS 8.8・VulnCheck KEV登録・実悪用確認・PoC公開・Security NEXT国内報道・本編採用 |
-| CVE-2026-50656 | Microsoft Defender (Windows 10/11 全バージョン・完全パッチ適用環境含む) | 2026-06-18 | poc_public | 2026-06-18 | YES | CVSS 7.8・ゼロデイ（パッチ未提供）・PoC公開（Nightmare Eclipse）・RoguePlanet CVE-2026-47281修正バイパス・参考B採用 |
+| CVE-2026-50656 | Microsoft Defender (Windows 10/11 全バージョン・完全パッチ適用環境含む) | 2026-06-18 | poc_public | 2026-07-11 | YES | CVSS 7.8・ゼロデイ（パッチ未提供）・PoC公開（Nightmare Eclipse）・RoguePlanet CVE-2026-47281修正バイパス・参考B採用 / Microsoftがマルウェア対策エンジン1.1.26060.3008で修正を確認（Security NEXT 2026-07-10報道）・実悪用は本日時点で確認されず・参考A再採用 |
 | CVE-2026-24858 | Fortinet FortiCloud SSO (FortiGate 全バージョン) | 2026-06-19 | none | 2026-06-19 | YES | CVSS 9.8・SAMLバイパス・FortiBleed大規模クレデンシャル流出（73,932台）・June 18公開・本編採用 |
 | CVE-2026-48907 | Widget Factory Joomla Content Editor (JCE) 1.0.0〜2.9.99.4 | 2026-06-19 | kev_listed | 2026-06-19 | YES | CVSS 10.0・KEV登録（2026-06-16）・BOD 26-04期限2026-06-19到来・未認証PHPコード実行・参考B採用 |
 | CVE-2026-20253 | Splunk Enterprise 10.2.0〜10.2.3 / 10.0.0〜10.0.6 | 2026-06-21 | active_exploitation | 2026-06-21 | YES | CVSS 9.8・KEV登録（2026-06-18）・FCEB期限2026-06-21・未認証RCE（PostgreSQLサイドカー）・実悪用確認・Security NEXT 2026-06-19報道・本編採用 |
@@ -164,7 +164,7 @@
 | CVE-2026-48315 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS9.3・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48314 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS6.5・Important・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-22153 | Fortinet FortiOS（SSL-VPN/LDAPエージェントレス認証・FSSO構成） | 2026-07-07 | none | 2026-07-07 | YES | CVSS8.1・LDAP認証バイパス・恒久修正はFortiOS 7.6.5・IPS向け仮想パッチ「FG-VD-10009566.0day」を2026-07-04公開（Security NEXT）・実悪用未確認・参考A採用（国内広範製品トリガー） |
-| CVE-2026-20896 | Gitea Docker images（1.26.2以前） | 2026-07-07 | none | 2026-07-07 | YES | CVSS9.8・X-WEBAUTH-USERヘッダ偽装による認証バイパス・Sysdigが初期調査段階のプロービングのみ観測（実悪用未確認）・軸1=6点のため除外・継続監視対象 |
+| CVE-2026-20896 | Gitea Docker images（1.26.2以前） | 2026-07-07 | active_exploitation | 2026-07-11 | YES | CVSS9.8・X-WEBAUTH-USERヘッダ偽装による認証バイパス・Sysdigが初期調査段階のプロービングのみ観測（実悪用未確認）・軸1=6点のため除外・継続監視対象 / Sysdig・シンガポールCSAが実悪用を確認（BleepingComputer 2026-07-10報道）・開示前から一部悪用が開始され開示後も継続・約6,200台が公開状態・exploitation_stageをnone→active_exploitationへ更新・参考B採用・攻撃予報1（T1/E1/fast_72h/確度低・期限2026-07-14）起点 |
 | CVE-2026-46242 | Linuxカーネル epoll（Bad Epoll・6.4以降 / Android含む） | 2026-07-07 | poc_public | 2026-07-07 | YES | CVSS7.8・PoC公開済み（kernelCTF）・実悪用・KEV登録は未確認・軸1=5点のため除外・継続監視対象 |
 | CVE-2026-14191 | WinRAR / UnRAR（RAR5リカバリボリューム処理・7.23未満） | 2026-07-07 | none | 2026-07-07 | YES | CVSS7.8（AV:L/UI:R）・CVE-2023-40477類似変種・PoC/実悪用未確認・過去に同系統がロシア系脅威アクターによりウクライナ向けに悪用された実績あり・軸1=3点のため除外 |
 | CVE-2026-54428 | Apache HttpComponents Client/Core 5.4.3未満 | 2026-07-07 | none | 2026-07-07 | YES | CVSS7.5・HTTP/2 HPACKデコーダ及びHTTP/1.1メッセージ解析のリソース過剰消費によるDoSのみ・低優先度規則該当のため除外 |
@@ -183,3 +183,11 @@
 | CVE-2026-7839 | UltraVNC（Repeater HTTP管理サーバ） | 2026-07-08 | none | 2026-07-08 | YES | CVSS9.1・初期設定時の設定ファイル不在時デフォルトパスワード使用・同一報道内複合脆弱性・参考A採用 |
 | CVE-2026-58315 | セイコーエプソン製プリンター・スキャナー（Web Config） | 2026-07-08 | none | 2026-07-08 | YES | CVSSv3 4.3/v4 5.1・CSRF（CWE-352）・JVN発行・パッチ未提供（回避策あり）・参考A採用 |
 | CVE-2026-53359 | Linux kernel KVM（"Januscape"、Intel/AMD） | 2026-07-08 | poc_public | 2026-07-08 | YES | CWE-416 use-after-free（シャドウMMU）・kvmCTFゼロデイ報奨金プログラムで実証・研究用PoC(V4bel/Januscape)公開・16年物バグ・修正済み(コミット81ccda30b4e8)・実悪用未確認・軸1=3点のため除外・継続監視対象 |
+| CVE-2026-10698 | MOVEit Transfer（カスタムレポートモジュール） | 2026-07-11 | none | 2026-07-11 | YES | アクセス制御不備・高権限前提でAPIトークン露出リスク・2026-07-08修正版提供・Security NEXT国内報道・実悪用/PoC未確認・参考A採用 |
+| CVE-2026-11903 | MOVEit Transfer（アドホックモジュール） | 2026-07-11 | none | 2026-07-11 | YES | CWE-79格納型XSS・2026-07-08修正版提供・同一報道内複合脆弱性・参考A採用 |
+| CVE-2026-10699 | MOVEit Transfer（SFTPサービス） | 2026-07-11 | none | 2026-07-11 | YES | CWE-401メモリリークによるDoS・2026-07-08修正版提供・同一報道内複合脆弱性・DoSのみのため低優先度フラグ該当・参考A採用 |
+| CVE-2026-15062 | Snowflake Snowpark Python SDK（1.53.0未満） | 2026-07-11 | none | 2026-07-11 | YES | CVSS9.6・CWE-89 SQLインジェクション・テナント間データ漏洩リスク・snowpark-python 1.53.0で修正済み・Security NEXT国内報道・実悪用/PoC未確認・参考A採用 |
+| CVE-2026-4832 | Schneider Electric Easergy MiCOM Px40シリーズ（保護リレー） | 2026-07-11 | none | 2026-07-11 | YES | CVSSv3 5.3・CWE-798ハードコードSNMP認証情報によるデバイス情報漏洩・CISA ICSA-26-190-03（2026-07-09）・JVN集約掲載・パッチ未提供（緩和策あり）・参考A採用 |
+| CVE-2026-2399 | Schneider Electric PowerChute Serial Shutdown（1.4以前） | 2026-07-11 | none | 2026-07-11 | YES | CVSSv3 6.1/v4 6.9・複合脆弱性群（CVE-2026-2399〜2405）代表CVE・CISA ICSA-26-190-02（2026-07-09）・JVN集約掲載・1.5で修正済み・参考A採用 |
+| CVE-2026-56291 | Balbooa Forms（Joomla拡張、2.4.0以前） | 2026-07-11 | active_exploitation | 2026-07-11 | YES | CVSSv4 10.0・CWE-434未認証ファイルアップロードRCE・開示前2026-07-08時点で実悪用確認・CISA KEV登録（2026-07-10）・FCEB期限2026-07-13・2.4.1で修正済み・Joomla拡張ファイルアップロード系KEV連続登録の3件目・参考B採用 |
+| CVE-2026-48939 | iCagenda（Joomlaイベント管理拡張、3.2.1〜3.9.14/4.0〜4.0.7） | 2026-07-11 | active_exploitation | 2026-07-11 | YES | CVSSv4 10.0・CWE-434未認証ファイルアップロードRCE・PoC公開（GitHub）・発見時点で自動化スキャナによる実悪用確認・CISA KEV登録（2026-07-10）・FCEB期限2026-07-13・4.0.8/3.9.15で修正済み・Joomla拡張ファイルアップロード系KEV連続登録の4件目・参考B採用 |
