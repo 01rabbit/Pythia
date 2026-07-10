@@ -218,6 +218,36 @@ M1〜M4 と同じ「入口のみ操作可・出口固定」を厳守する。
   「retrieval を使った予報」と「使わない予報」の的中率・Brierスコアを比較して見直す。
 - 見直しは将来発行予報の**入口条件のみ**に及び、発行済み予報の再採点には及ばない（原則D）。
 
+### 8.1 較正データの収集（実装済み・2026-07-10）
+
+較正は「後で振り返って測る」ため、その時に測れるデータを**検証のたびに凍結保存**しておく必要がある
+（辞書 `product-categories.json` や observations は育つため、後からでは発行時点を再現できない）。
+そのため検証ステージ（04-verify.md 手順8c）が確定予報ごとに較正レコードを追記する。
+
+- **データセット**: `forecaster/verification/retrieval-calibration.json`
+  （スキーマ: `forecaster/schema/retrieval-calibration.schema.json`）。
+- **生成器**: `scripts/record_retrieval_calibration.py`（`--all` で遡及ブートストラップ・
+  `--date/--index` で増分・forecast_id で冪等）。初回は既存の全検証済み予報27件を遡及投入済み。
+- **各レコードが凍結するもの**:
+  - `realized_outcome` / `realized_hit_binary` — 実際の的中結果（既存の検証エントリから読むのみ）。
+  - `retrieval_present_at_issue` / `retrieval_snapshot_at_issue` — 発行時に retrieval を参照したか
+    と、その集計（本機能導入前の予報は false / null）。
+  - `retrieval_recompute` — 発行日as-ofで min_similarity=0 で再計算した**全ランク曲線**
+    （閾値未満も含む・各事例の `similarity` / 実績 `outcome` / 一致要素 `matched_on`）。
+    過去事例のみ対象で決定論的なため、導入前の予報にも遡及付与できる。
+
+### 8.2 収集データの用途（§8 較正の4分析）
+
+| 較正対象 | 使うフィールド |
+|----------|----------------|
+| 閾値（min_similarity） | `retrieval_recompute.ranked_cases` の similarity→outcome 曲線。閾値を動かした時の的中相関を測る |
+| スコア重み（§4.2） | `ranked_cases[].matched_on` × similarity × その事例の outcome。どの一致要素が予測力を持つか回帰 |
+| 最小サンプル数 | `aggregate_at_threshold.observed_gate_passed` と実績の関係 |
+| retrieval 有効性 | `retrieval_present_at_issue` で層別した的中率・Brier（参照あり vs なし）／`empirical_hit_rate` vs `base_rate_estimate` の予測力比較 |
+
+**この収集・分析は将来発行予報の入口条件（閾値・重み・降格運用）にのみ反映し、発行済み予報の
+再採点・hit_criteria 変更には使わない**（原則D・入口可/出口固定）。
+
 ---
 
 ## 9. 実装スコープ（レビュー承認後）
