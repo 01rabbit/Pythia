@@ -192,6 +192,51 @@
           "type": ["string", "null"],
           "enum": ["hit", "partial", "miss", "unverifiable", null],
           "description": "予報との突合結果。初期は必ず null。検証ステージ（04-verify.md）のみが書き込む。予報生成段階では変更禁止（CLAUDE.md 行動原則4）。"
+        },
+        "retrieval": {
+          "type": ["object", "null"],
+          "description": "類似過去事例検索（Case-Based Retrieval・03-forecast.md Step C''／forecaster/case-based-retrieval-design.md）の結果サマリー。scripts/retrieve_similar_cases.py が生成した aggregate を発行時に記録する監査証跡。予報の直接根拠（base_rate_estimate の較正）に使えるのは observed_gate_passed=true の集計のみ。確度の引き上げには使わない（降格方向のみ・design §6）。該当検索を実施しない予報では省略または null 可。",
+          "additionalProperties": false,
+          "properties": {
+            "n_cases": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "類似度閾値を超えた過去事例の件数（上位N件に絞った後）。"
+            },
+            "n_hit": { "type": "integer", "minimum": 0, "description": "類似事例のうち的中（hit）件数。" },
+            "n_partial": { "type": "integer", "minimum": 0, "description": "類似事例のうち部分的中（partial）件数。" },
+            "n_miss": { "type": "integer", "minimum": 0, "description": "類似事例のうち外れ（miss）件数。" },
+            "empirical_hit_rate": {
+              "type": ["number", "null"],
+              "minimum": 0,
+              "maximum": 1,
+              "description": "(n_hit + n_partial) / n_cases。類似事例が0件のとき null。"
+            },
+            "observed_gate_passed": {
+              "type": "boolean",
+              "description": "n_cases が最小サンプル数（既定3）以上か。false の場合は base_rate_estimate の自動較正に使わず参考表示に留める（design §6 ガード3）。"
+            },
+            "matched_forecast_ids": {
+              "type": "array",
+              "items": { "type": "string", "pattern": "^fc-\\d{8}-\\d+$" },
+              "description": "類似と判定した過去予報の forecast_id リスト（監査証跡）。"
+            },
+            "external_cases": {
+              "type": "array",
+              "description": "外部（インターネット上）の類似過去事案の監査証跡（03-forecast.md Step C'''・Phase D）。一次ソースに出典URLを明示できる事案のみ記録する（原則1）。内部実績（上記 n_* 集計）とは別軸であり、base_rate_estimate の直接根拠には使わない（参考・防御行動の補強のみ）。",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["source_name", "source_url", "relevance"],
+                "properties": {
+                  "source_name": { "type": "string", "description": "一次ソース名（CERT/ベンダー/CISA等）。" },
+                  "source_url": { "type": "string", "format": "uri", "description": "出典URL（一次ソース）。" },
+                  "published_date": { "type": ["string", "null"], "format": "date", "description": "事案の公開日（判れば）。" },
+                  "relevance": { "type": "string", "description": "当該事案との類似点（製品カテゴリ・TTP・攻撃者等）と、そこから読み取れる示唆の要約。推測は「（推測）」と明記する。" }
+                }
+              }
+            }
+          }
         }
       }
     }

@@ -1,8 +1,16 @@
 # 類似過去事例検索（Case-Based Retrieval）— 予報エンジン拡張 設計書
 
-ステータス: **提案（実装前レビュー待ち）**
+ステータス: **実装済み（Phase A+B+D 一括実装・2026-07-10）**
 起票: 2026-07-10
 対象ブランチ: `claude/attack-forecast-past-cases-67iz0k`
+
+**実装物**（本設計 §9 の成果物）:
+- `scripts/retrieve_similar_cases.py` — 内部実績の決定論的類似検索（§3〜§6）
+- `forecaster/knowledge/product-categories.json` — CVE/製品→カテゴリ辞書（§4.3）
+- `forecaster/prompts/03-forecast.md` — Step C''（内部実績）・Step C'''（外部事案・Phase D）追加
+- `forecaster/schema/forecast.schema.json` — `retrieval` フィールド追加（§7）
+- `scripts/validate_forecasts.py` — `retrieval` の任意検査を追加（§9 #6）
+- `forecaster/prompts/04-verify.md` — retrieval 乖離の還流記録（§5.3・手順8b）
 関連原則: CLAUDE.md 行動原則 1（ハルシネーション厳禁）・2（事実と推測の分離）・5（knowledge 自動書き換え禁止）
 関連ステージ: `forecaster/prompts/03-forecast.md`（Step C 拡張）・`forecaster/prompts/04-verify.md`（実績還流）
 

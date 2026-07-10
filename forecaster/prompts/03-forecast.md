@@ -24,6 +24,9 @@
 6. `forecaster/knowledge/poc-exploitation-criteria.json`（T3採用のPoC難易度足切り）
 7. `forecaster/knowledge/incident-visibility-timelines.json`（M2 検証窓割当の根拠）
 8. 当日レポート JSON の CVE エントリの `epss`（EPSS スコア/パーセンタイル）・`status.kev_registered`（M3 確度アンカー用）
+9. `forecaster/knowledge/product-categories.json`（Step C'' 類似過去事例検索の CVE→製品カテゴリ抽象化辞書）
+10. 検証済み過去予報ストア（Step C'' が `scripts/retrieve_similar_cases.py` 経由で読む）:
+    `forecaster/verification/YYYY-MM.json`・`forecaster/forecasts/daily/*.json`・`forecaster/observations/`
 
 ---
 
@@ -183,6 +186,66 @@ parent_group "Lazarus Group" のプロファイルを参照してよい。その
 法執行・摘発に関する observation がある場合も、流出資産の継続利用予報は維持してよい。
 C2摘発 observation には「摘発はリスク低下であって終息ではない」と注記する。
 
+### Step C'': 類似過去事例の想起（内部実績・Case-Based Retrieval）
+
+Step A'〜C' で確定した各予報候補について、**蓄積済みの検証済み過去予報から類似事例を検索し、
+その実績（hit/miss/partial）を確度付け・ベースレート見積もりの根拠に反映する**。
+設計の全体像・濫用防止ガードは `forecaster/case-based-retrieval-design.md` を正とする。
+
+**この検索は LLM の記憶で行わない**。必ず決定論的スクリプトで引く（原則1: ハルシネーション厳禁）。
+
+手順:
+
+1. 各予報候補から検索キーを組み立てる（`outcome_channel` / `cve`（リスト）/ `actor_group`（生名可・
+   スクリプトが名寄せ）/ `techniques`（親T-idリスト）/ `tactics` / `exploitation_stage` /
+   `forecast_class` / `tier`）。
+2. 次を実行する（発行日を `--date` に渡す。**発行日より前の事例のみ**が対象となり未来リークを防ぐ）:
+
+   ```
+   python3 scripts/retrieve_similar_cases.py --date YYYY-MM-DD \
+     --candidate '{"outcome_channel":"E1","cve":["CVE-YYYY-NNNNN"],"actor_group":"...","techniques":["T1190"],"exploitation_stage":"kev_listed","forecast_class":"fast_72h","tier":"T1"}'
+   ```
+
+3. 出力の `aggregate`（`n_cases` / `n_hit` / `n_partial` / `n_miss` / `empirical_hit_rate` /
+   `observed_gate_passed`）と `matched_cases`・`guidance` を読み、以下に反映する:
+   - **Markdown「過去パターン」欄**: 検索結果の要約を記述する（従来の自由記述＝担当者の記憶頼りを置換）。
+     必ず「（過去実績）」と明記し、**当該事案の予測を断定する根拠にしない**（原則2: 事実と推測の分離）。
+     例: `過去パターン: 類似5件（outcome_channel=E2・actor=Lazarus系・製品=金融API）中 的中0・部分0・外れ5（経験的的中率0%）。（過去実績）`
+   - **`base_rate_estimate`**: `observed_gate_passed=true`（＝`n_cases` が最小サンプル数以上）の場合のみ、
+     `empirical_hit_rate` を**参考**に主観値を較正してよい。**自動上書きはしない**（少数サンプルの過信防止）。
+   - **サイドカー JSON `retrieval`**: `aggregate` の該当フィールドをそのまま記録する（監査証跡）。
+
+**濫用防止ガード（非交渉・design §6）**:
+
+- **確度の引き上げには使わない（降格方向のみ）**。類似事例の高的中率を根拠に確度=高へ昇格させることを
+  禁止する。逆に類似事例が全滅（`empirical_hit_rate=0.0`・`guidance` が★で警告）の型は、
+  **確度降格・発行見送り・注意点1行への格下げの根拠にしてよい**（M3 の Automatable 降格と同じ非対称性）。
+  これは教訓14（E2追随IOC 8/8=0%）のような系統的過信をデータ駆動で自動再発見する経路である。
+- **hit_criteria を緩める根拠にしない**（過去に外れたからと的中条件を甘くしない・教訓12）。
+- `observed_gate_passed=false`（サンプル不足）の集計は base_rate 較正に使わず「参考（サンプル不足）」表示に留める。
+- スクリプトが返す `guidance` 文をそのまま判断の一次根拠とし、独自解釈で上書きしない。
+
+### Step C''': 外部類似事案の参照（Phase D・インターネット上の過去事案）
+
+Step C'' の**内部実績**に加えて、**インターネット上の類似過去事案**（CERT/ベンダー/CISA 等の
+一次公開情報）を参照し、防御行動の具体化・先回り監視シグナルの補強に用いてよい。内部データが
+浅い時期（ベースライン未確立期）を補う目的の**補助**ステップである。
+
+**原則1（ハルシネーション厳禁）を最優先する**。以下のゲートを全て満たす事案のみ採用する:
+
+1. **一次ソースに出典URLを明示できる**こと（CERT・PSIRT・ベンダー公式・CISA 等）。二次報道・要約
+   ブログのみを根拠にしない。出典URLは `retrieval.external_cases[].source_url` に記録する。
+2. 参照した事案は `retrieval.external_cases`（`source_name` / `source_url` / `published_date` /
+   `relevance`）へ**監査証跡として記録**する。`relevance` には当該事案との類似点と示唆を書き、
+   推測は「（推測）」と明記する。
+3. **外部事案は base_rate_estimate の直接根拠にしない**（内部の検証済み実績＝Step C'' の集計とは
+   別軸・較正されていない）。用途は「推奨アクション」「先回り監視」欄の具体化と、防御行動フレーミング
+   （原則2）の補強に限る。
+4. 外部事案を根拠に攻撃者帰属を新規に作らない（原則3）。TTP 類似のみで断定しない。
+
+外部事案が原則1のゲートを満たせない（一次出典を示せない）場合は、**参照しない**（記憶からの
+それらしい事案の捏造を絶対にしない）。該当なしの場合 `retrieval.external_cases` は省略または空配列とする。
+
 ### Step D: 予報の絞り込みと Tier 判定
 
 `pipeline-forecast-verification.md` のルール（M1〜M4 含む）に完全準拠する。
@@ -318,7 +381,8 @@ Tier: X
 検証窓: fast_72h / slow_7d（M2・slow_7dは割当根拠1行）
 検証期限: YYYY-MM-DD（fast_72hは+3日固定。slow_7dは上記M2の分類別表に従う分類キーごとの日数。該当分類なしの場合は+7日をフォールバックとする）
 Evidence: [具体的なソース名と日付]
-過去パターン: [類似事象の実績]
+過去パターン: [Step C'' の類似過去事例検索の要約。「類似N件中 的中X・部分Y・外れZ（経験的的中率W%）」形式。必ず「（過去実績）」明記。該当なしは「類似過去事例なし」]（過去実績）
+外部類似事案: [Step C''' で一次ソース出典を示せた外部事案があれば要約。防御行動・先回り監視の補強用。なければ省略]（推測を含む場合は明記）
 確度アンカー: [EPSS percentile / KEV状態 / SSVC決定 / Automatable / EPSS算出日]（M3）
 ベースレート見積もり: 0.XX（この的中条件が偶然成立する確率の発行時主観値。記入指針は上記参照）
 推定部分: [推論箇所の明示]（推測）
@@ -376,11 +440,25 @@ KEVスナップショット: [dateAdded / ランサムフラグ / 参照セッ�
       "related_observation_ids": ["obs-YYYY-MMDD-NNN"],
       "related_group": null,
       "estimated_portion": "[Markdownの「推定部分」と同一内容。省略可の場合は省略]",
+      "retrieval": {
+        "n_cases": 0,
+        "n_hit": 0,
+        "n_partial": 0,
+        "n_miss": 0,
+        "empirical_hit_rate": null,
+        "observed_gate_passed": false,
+        "matched_forecast_ids": [],
+        "external_cases": []
+      },
       "verified_outcome": null
     }
   ]
 }
 ```
+
+`retrieval` は Step C'' のスクリプト出力 `aggregate` をそのまま記録する（監査証跡）。
+Step C'' の検索を実施しなかった予報では `retrieval` を省略または `null` にしてよい。
+`external_cases` は Step C''' で一次ソース出典を示せた外部事案のみ記録する（原則1）。
 
 予報がゼロ件の日は `"forecasts": []` とする（`_forecast_date` / `_source_markdown` は記載してよい）。
 `verified_outcome` は必ず `null` で出力する（CLAUDE.md 行動原則4・検証ステージ04-verify.mdのみが書き込む）。
@@ -408,3 +486,10 @@ KEVスナップショット: [dateAdded / ランサムフラグ / 参照セッ�
 - `technique-chains.json`・`attack-groups.json` の `evidence_basis.type` が `observed` 以外
   （`placeholder` / `cited`）の値は Step C の予報の直接根拠に使用しない（上記 evidence_basis
   ゲート参照）。
+- Step C'' の類似過去事例検索は**確度の引き上げに使わない（降格方向のみ）**。`observed_gate_passed=false`
+  の集計は base_rate_estimate の較正に使わず参考表示に留める。過去に外れた型だからと hit_criteria を
+  緩めない（design §6・教訓12）。検索は `scripts/retrieve_similar_cases.py` で決定論的に行い、
+  LLM の記憶で類似事例を捏造しない（原則1）。
+- Step C''' の外部事案は**一次ソースの出典URLを示せる場合のみ**参照し `retrieval.external_cases` に
+  記録する。base_rate_estimate の直接根拠にはせず、推奨アクション・先回り監視の補強に限る。一次出典を
+  示せない事案は参照しない（記憶からの捏造禁止・原則1）。
