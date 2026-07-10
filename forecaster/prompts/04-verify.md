@@ -229,7 +229,10 @@ miss ではなく **unverifiable（固定ソース確認待ち）**と判定す�
 フィールド補足:
 
 - `deadline_date`: fast_72h は発行+3日（72時間窓の満了日）、slow_7d は発行時JSONの
-  `deadline_date`（発行+7日）を転記する。期限管理と期限超過自動missの判定に使う。
+  `deadline_date`（03-forecast.mdの分類別ルールに従い設定された日数。
+  credential_leak_to_attack_report=+14日・domestic_incident_media_report=+10日・
+  apt_geographic_spillover=+21日、該当分類なしは+7日をフォールバック。Issue #45対応）を
+  転記する。期限管理と期限超過自動missの判定に使う。
 - `kev_snapshot_diff`: `outcome_channel` が E1 以外、または発行時 `kev_snapshot` が存在しない
   場合は `null` とする。
 - `by_confidence`: **確度別的中率のキャリブレーション表**。確度「高」が「中」より的中率で

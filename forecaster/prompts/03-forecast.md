@@ -202,7 +202,24 @@ C2摘発 observation には「摘発はリスク低下であって終息では�
 
 **確度: 低の扱い**: 確度「高」「中」の適用条件（A〜D）をいずれも満たさないが、M1 観測可能性ゲート（下記）の発行前チェックリストを通過する予報には確度「低」を適用してよい。「低」は発行を見送るべき曖昧な予報ではなく、精度は保証できないが防御行動として発行価値がある予報という積極的な分類である。適用条件・目標的中率帯の正式定義は `pipeline-forecast-verification.md` の「確度: 低」適用条件を参照する（本書では重複定義しない）。「低」を適用する場合も的中判定条件（hit_criteria）の記載義務は変わらない。
 
-**M2 検証窓**: 外部報道依存の主題（漏洩→国内被害等）は `forecast_class: slow_7d`（7日窓）へ割り当て。72h的中率の分母に混入させない。割当判断は `incident-visibility-timelines.json` の median_days_to_external_report に従う（3日超は fast_72h で発行しない）。ベンダー追随IOCの的中条件への扱いは下記「E2追随IOC除外（全Tier）」に従う。
+**M2 検証窓**: 外部報道依存の主題（漏洩→国内被害等）は `forecast_class: slow_7d` へ割り当て。72h的中率の分母に混入させない。割当判断は `incident-visibility-timelines.json` の median_days_to_external_report に従う（3日超は fast_72h で発行しない）。ベンダー追随IOCの的中条件への扱いは下記「E2追随IOC除外（全Tier）」に従う。
+
+**slow_7d の検証期限（分類別・一律+7日固定にしない）**: `incident-visibility-timelines.json` は
+credential_leak_to_attack_report（中央値14日）・domestic_incident_media_report（中央値10日）・
+apt_geographic_spillover（中央値21日）など、外部可視化までの中央値が7日を上回る分類を既に記録して
+いる。`deadline_date` はこの中央値に合わせて設定し、一律+7日に固定しない（2026-07-10 精度検証の
+分析・Issue #45 対応）:
+
+| `incident-visibility-timelines.json` の分類キー | 検証期限（発行日+N日） |
+|---|---|
+| credential_leak_to_attack_report | +14日 |
+| domestic_incident_media_report | +10日 |
+| apt_geographic_spillover | +21日 |
+| 上記いずれにも該当しない slow_7d 主題 | +7日（フォールバック値） |
+
+採用した分類キーと日数根拠は `forecast_class_rationale` に1行明記する。期限超過の未確定は
+この分類別期限の到達をもって自動で「外れ」に倒す（M2ガード2・保留の永続化禁止は変わらない）。
+発行後にこの期限を後から延長・短縮すること（トラック移動に準じる運用）は禁止する。
 
 **T3足切り**: T3予報候補は `poc-exploitation-criteria.json` の required を全て満たし disqualifying を満たさない場合のみ採用。1つでも欠ければ本編・参考Aの注意点1行へ格下げ（教訓10）。
 
@@ -299,7 +316,7 @@ Tier: X
 確度: 高/中/低（M3: 確度=高はEPSS%ile≥0.95 AND KEV AND SSVC=Act/Attend。Automatable=noは自動降格。低はA〜Dいずれも非充足だがM1通過・pipeline-forecast-verification.md「確度: 低」適用条件を参照）
 観測出口クラス: E1/E2/E3/E4（M1）
 検証窓: fast_72h / slow_7d（M2・slow_7dは割当根拠1行）
-検証期限: YYYY-MM-DD（fast_72hは+3日・slow_7dは+7日目安）
+検証期限: YYYY-MM-DD（fast_72hは+3日固定。slow_7dは上記M2の分類別表に従う分類キーごとの日数。該当分類なしの場合は+7日をフォールバックとする）
 Evidence: [具体的なソース名と日付]
 過去パターン: [類似事象の実績]
 確度アンカー: [EPSS percentile / KEV状態 / SSVC決定 / Automatable / EPSS算出日]（M3）
