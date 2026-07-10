@@ -52,6 +52,7 @@ slow_7d トラック（7日窓）は最大14日遡って走査する（M2）。
 
 - `forecaster/verification/YYYY-MM.json`（月次ファイルに追記）
 - `forecaster/verification/YYYY-MM-DD-verification.md`（週次検証レポート・実行日付）
+- `forecaster/verification/retrieval-calibration.json`（retrieval 較正データの増分追記・手順8c・design §8）
 - 対象 observations の `verified_outcome` / `related_forecast_id` **の2フィールドのみ**
   （observations の他フィールドの変更は禁止）
 
@@ -334,6 +335,16 @@ pipeline-forecast-verification.md の「チャット表示形式」に準拠し�
    算出する（「確度キャリブレーション算出」参照）。
 8. 前月の `verification/YYYY-MM.json` と比較し、同一確度の2ヶ月連続乖離を検出した場合、
    `bias_analysis` に確度較正見直し提案を起票する（発行済み予報の再採点は禁止）。
+8c. **retrieval 較正データ収集（design §8・閾値/重み較正の一次データ）**: 今回新たに確定した
+    各予報について `python3 scripts/record_retrieval_calibration.py --date <発行日> --index <N>` を
+    実行し、`forecaster/verification/retrieval-calibration.json` へ較正レコードを追記する
+    （既存 forecast_id は再実行で更新＝冪等）。このレコードは『実際の的中結果』『発行時 retrieval 集計
+    （あれば）』『発行日as-ofで決定論的に再計算した類似曲線（閾値未満含む全ランク・各事例の一致要素と
+    実績）』を凍結する。ベースライン確立後にこのデータで min_similarity・最小サンプル数・スコア重みを
+    ホールドアウト較正する（design §8）。**このデータ収集は較正の入口データ蓄積であり、発行済み予報の
+    再採点・hit_criteria 変更には一切使わない**（原則D）。書き込み先は verification/ 配下のみ。
+    （初回の遡及ブートストラップ `--all` は 2026-07-10 に実施済み。以後は確定分を増分記録する。）
+
 8b. **retrieval 乖離チェック（Case-Based Retrieval 還流・design §5.3）**: 予報サイドカーに
     `retrieval`（Step C'' の類似過去事例集計）が記録されている場合、その `empirical_hit_rate`
     （発行時点の類似事例の経験的的中率）と当該予報の実際の `outcome` を突合する。

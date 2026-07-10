@@ -1,0 +1,97 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RetrievalCalibrationDataset",
+  "description": "類似過去事例検索（Case-Based Retrieval）の閾値・重み較正用データセット（forecaster/verification/retrieval-calibration.json）のスキーマ v1.0。検証ステージ（04-verify.md 手順8c）が、確定した各予報について『発行時点の retrieval 集計（あれば）』『発行日as-ofで決定論的に再計算した類似曲線』『実際の的中結果』を凍結保存する。forecaster/case-based-retrieval-design.md §8（ホールドアウト較正）の一次データ。将来の閾値（min_similarity）・最小サンプル数・スコア重みの見直しに使う。発行済み予報の再採点には使わない（原則D・入口可/出口固定）。",
+  "type": "object",
+  "required": ["_schema_version", "records"],
+  "additionalProperties": false,
+  "properties": {
+    "_schema_version": { "type": "string", "enum": ["1.0"] },
+    "_comment": { "type": "string" },
+    "_governance": { "type": "string" },
+    "_generator": { "type": "string", "description": "このデータセットを生成するスクリプト名。" },
+    "records": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/record" }
+    }
+  },
+  "$defs": {
+    "record": {
+      "type": "object",
+      "required": [
+        "forecast_id",
+        "forecast_date",
+        "forecast_index",
+        "realized_outcome",
+        "retrieval_present_at_issue",
+        "retrieval_recompute"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "forecast_id": { "type": "string", "pattern": "^fc-\\d{8}-\\d+$" },
+        "forecast_date": { "type": "string", "format": "date" },
+        "forecast_index": { "type": "integer", "minimum": 1 },
+        "verified_at": { "type": ["string", "null"], "description": "検証確定日（判れば）。YYYY-MM-DD または null。" },
+        "confidence": { "type": ["string", "null"], "enum": ["high", "medium", "low", null] },
+        "tier": { "type": ["string", "null"] },
+        "forecast_class": { "type": ["string", "null"] },
+        "outcome_channel": { "type": ["string", "null"] },
+        "base_rate_estimate": {
+          "type": ["number", "null"],
+          "description": "発行時のベースレート主観値（サイドカーJSONがある場合）。retrieval の empirical_hit_rate と実績の予測力を比較する対照に使う。"
+        },
+        "realized_outcome": {
+          "type": "string",
+          "enum": ["hit", "partial", "miss"],
+          "description": "検証で確定した実際の結果（verification エントリの outcome）。unverifiable/未確定は較正母集団に入れない。"
+        },
+        "realized_hit_binary": {
+          "type": "integer",
+          "enum": [0, 1],
+          "description": "部分的中含む的中を1、外れを0にした二値（hit/partial=1, miss=0）。予測力・Brier算出用の便宜フィールド。"
+        },
+        "retrieval_present_at_issue": {
+          "type": "boolean",
+          "description": "発行時のサイドカーJSONに retrieval 集計が記録されていたか（＝この予報が実際に Step C'' を参照して発行されたか）。§8 の『retrieval参照あり vs なし』比較のアーム分けに使う。本機能導入前の予報は false。"
+        },
+        "retrieval_snapshot_at_issue": {
+          "type": ["object", "null"],
+          "description": "発行時サイドカーの retrieval 集計を凍結したもの（あれば）。なければ null。フィールドは forecast.schema.json の retrieval に準拠。",
+          "additionalProperties": true
+        },
+        "retrieval_recompute": {
+          "type": "object",
+          "description": "発行日as-ofで scripts/retrieve_similar_cases.py を min_similarity=0 で再実行した決定論的再計算。過去事例のみ対象のため遡及的にも有効（本機能導入前の予報にも付与できる）。ただし辞書（product-categories.json）進化により発行時点と厳密一致しない場合がある旨を note に記す。",
+          "additionalProperties": false,
+          "required": ["recomputed", "aggregate_at_threshold", "ranked_cases"],
+          "properties": {
+            "recomputed": { "type": "boolean" },
+            "note": { "type": "string" },
+            "threshold_for_aggregate": { "type": "number", "description": "aggregate_at_threshold を算出した類似度閾値（既定 0.5・現行の本番閾値）。" },
+            "params": { "type": "object", "additionalProperties": true },
+            "aggregate_at_threshold": {
+              "type": "object",
+              "description": "threshold_for_aggregate 以上の事例に絞った集計（現行閾値での retrieval が発行時に見たであろう値の再現）。",
+              "additionalProperties": true
+            },
+            "ranked_cases": {
+              "type": "array",
+              "description": "類似度0以上の全候補事例を降順で列挙（閾値較正のため閾値未満も含む・上限50件）。各事例の similarity・その事例自身の実績 outcome・一致要素 matched_on を持つ。",
+              "items": {
+                "type": "object",
+                "additionalProperties": true,
+                "required": ["forecast_id", "similarity", "outcome"],
+                "properties": {
+                  "forecast_id": { "type": ["string", "null"] },
+                  "similarity": { "type": "number" },
+                  "outcome": { "type": "string" },
+                  "matched_on": { "type": "array", "items": { "type": "string" } }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

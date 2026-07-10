@@ -42,7 +42,9 @@ forecaster/verification/                 ← 予報 × 実績の突合記録（�
 forecaster/prompts/01〜04.md             ← 4ステージ（正規化・ベースライン・予報・検証）のプロンプト
 forecaster/case-based-retrieval-design.md ← 類似過去事例検索（Case-Based Retrieval）設計書
 scripts/retrieve_similar_cases.py        ← 予報 Step C'' 類似過去事例検索器（内部実績・読み取り専用）
+scripts/record_retrieval_calibration.py  ← 検証時に retrieval 較正データを収集（design §8・検証ステージのみ書込）
 forecaster/knowledge/product-categories.json ← Step C'' 用 CVE/製品→カテゴリ辞書（自動書き換え禁止）
+forecaster/verification/retrieval-calibration.json ← retrieval 閾値/重み較正の一次データ（検証時に増分追記）
 
 # 観測データ供給：日次収集ルール
 pipeline-1-cve.md                        ← Step 1: CVE調査ルール（トラックA/B排他的決定木含む・製品リストなし）

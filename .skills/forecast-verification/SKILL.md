@@ -24,6 +24,8 @@ pipeline-forecast-verification.md を正典として参照し、本ファイル�
 
 - `forecaster/verification/YYYY-MM.json`（月次ファイルへの追記・確定更新）
 - `forecaster/verification/YYYY-MM-DD-verification.md`（週次検証レポート・実行日付）
+- `forecaster/verification/retrieval-calibration.json`（retrieval 較正データの増分追記・
+  04-verify.md 手順8c・design §8）
 - `forecaster/observations/` 配下の対象 observations の `verified_outcome` /
   `related_forecast_id` **の2フィールドのみ**
 
@@ -36,6 +38,7 @@ pipeline-forecast-verification.md を正典として参照し、本ファイル�
 2. 変更ファイル: Step 2 で確認した範囲のみ
    （`forecaster/verification/YYYY-MM.json` /
    `forecaster/verification/YYYY-MM-DD-verification.md` /
+   `forecaster/verification/retrieval-calibration.json` /
    対象 observations の `verified_outcome`・`related_forecast_id`）
 3. コミットメッセージ: `"forecast verification: YYYY-MM-DD"`
 4. main へのPRを発行する
