@@ -138,7 +138,25 @@
 | CVE-2026-48277 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48281 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48316 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |
-| CVE-2026-48282 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | active_exploitation | 2026-07-07 | YES | CVSS10.0・事前認証RCE（任意ファイル書き込み）・参考B採用（APSB26-68内の複合脆弱性）／KEVIntel創業者がハニーポットで実悪用を確認（BleepingComputer 2026-07-06）・exploitation_stageをnone→active_exploitationへ更新・KEV未登録・攻撃予報1（T1/E1/fast_72h/確度低・期限2026-07-10）起点・参考B再採用 |
+| CVE-2026-48282 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | active_exploitation | 2026-07-09 | YES | CVSS10.0・事前認証RCE（任意ファイル書き込み）・参考B採用（APSB26-68内の複合脆弱性）／KEVIntel創業者がハニーポットで実悪用を確認（BleepingComputer 2026-07-06）・exploitation_stageをnone→active_exploitationへ更新・KEV未登録・攻撃予報1（T1/E1/fast_72h/確度低・期限2026-07-10）起点・参考B再採用／CISAが2026-07-07付でKEVへ新規追加（The Hacker News 2026-07-08報道）・FCEB期限2026-07-10・公開直後の悪用でインド所在IPからの攻撃試行を確認・EPSSパーセンタイル97.9（2026-07-09時点）・本編再採用 |
+| CVE-2026-56290 | Joomla Page Builder（サードパーティ拡張、3.6.0未満） | 2026-07-09 | active_exploitation | 2026-07-09 | YES | CVSS10.0・不適切なアクセス制御による未認証任意ファイルアップロード→RCE・CISA KEV登録（2026-07-07・The Hacker News 2026-07-08報道）・FCEB期限2026-07-10・2026-06-27時点でWebシェル設置確認・国内報道なし・参考B採用 |
+| CVE-2026-48908 | JoomShaper SP Page Builder（6.6.2未満） | 2026-07-09 | active_exploitation | 2026-07-09 | YES | CVSS10.0・無制限ファイルアップロードによるPHPコード実行・ゼロデイとして悪用されシェル設置確認・CISA KEV登録（2026-07-07・The Hacker News 2026-07-08報道）・FCEB期限2026-07-10・国内報道なし・参考B採用 |
+| CVE-2026-55255 | Langflow | 2026-07-09 | active_exploitation | 2026-07-09 | YES | CVSS6.1・ユーザー制御キー経由の認可バイパス・単一オペレータがCVE-2026-33017と併用し2026-06-22〜25にLLM/AWS認証情報を標的に悪用・CISA KEV登録（2026-07-07）・軸1=6点・軸2=1点で本編/参考いずれの閾値にも未達のため除外・継続監視対象 |
+| CVE-2026-50746 | Ubiquiti UniFi Connect（3.4.16以前） | 2026-07-09 | none | 2026-07-09 | YES | CVSS10.0・不適切なアクセス制御によるホストデバイス上のコマンドインジェクション・3.4.20で修正・実悪用/PoC未確認・JPCERT Weekly Report掲載・参考A採用（UniFi Talk/Access/Protect/OS複合脆弱性群の代表格） |
+| CVE-2026-50747 | Ubiquiti UniFi Talk（5.1.2以前） | 2026-07-09 | none | 2026-07-09 | YES | CVSS9.9・認証済みSQLi経由権限昇格・5.2.2で修正・CVE-2026-50746と同一発表内の複合脆弱性・参考A採用 |
+| CVE-2026-50748 | Ubiquiti UniFi Access（4.2.28以前） | 2026-07-09 | none | 2026-07-09 | YES | CVSS9.9・不適切な入力検証によるコマンドインジェクション・4.2.29で修正・同一発表内複合脆弱性・参考A採用 |
+| CVE-2026-54400 | Ubiquiti UniFi Access（4.2.28以前） | 2026-07-09 | none | 2026-07-09 | YES | CVSS9.1・不適切なアクセス制御による権限昇格・4.2.29で修正・同一発表内複合脆弱性・参考A採用 |
+| CVE-2026-55115 | Ubiquiti UniFi Protect（7.1.77以前） | 2026-07-09 | none | 2026-07-09 | YES | CVSS9.9・SSRF経由権限昇格・7.1.83で修正・同一発表内複合脆弱性・参考A採用 |
+| CVE-2026-54402 | Ubiquiti UniFi OS（5.1.15以前） | 2026-07-09 | none | 2026-07-09 | YES | CVSS9.9・不適切な入力検証によるコマンドインジェクション・5.1.19で修正・同一発表内複合脆弱性・参考A採用 |
+| CVE-2026-55116 | Ubiquiti UniFi OS（5.1.15以前） | 2026-07-09 | none | 2026-07-09 | YES | CVSS9.0・不適切なアクセス制御による不正なデバイス変更・5.1.19で修正・同一発表内複合脆弱性・参考A採用 |
+| CVE-2026-56843 | Plesk（ホスティング管理パネル、18.0.79未満） | 2026-07-09 | none | 2026-07-09 | YES | CVSS9.9・XML API処理の不備で低権限ユーザーが他テナントFTP認証情報を取得しRCEに繋がる恐れ・18.0.79で修正・Security NEXT国内報道・参考A採用 |
+| CVE-2026-48614 | Plesk（ホスティング管理パネル、18.0.79未満） | 2026-07-09 | none | 2026-07-09 | YES | CVSS9.9・認可処理不備で認証済みユーザーがroot権限のファイル書き込み可能・18.0.79で完全修正・CVE-2026-56843と同一記事内複合脆弱性・参考A採用 |
+| CVE-2026-53481 | Dell PowerProtect Data Domain | 2026-07-09 | none | 2026-07-09 | YES | CVSSv3.1 9.8・パストラバーサル・143件の複合脆弱性アドバイザリの代表格（うち製品固有26件）・2026-07-02公開・修正済みアップデート提供済み・Security NEXT国内報道・参考A採用 |
+| CVE-2026-53483 | Dell PowerProtect Data Domain | 2026-07-09 | none | 2026-07-09 | YES | CVSSv3.1 9.8・認証不備・CVE-2026-53481と同一アドバイザリ内複合脆弱性・参考A採用 |
+| CVE-2026-56437 | 富士電機製Pupsmanインストーラ（3.9.0未満） | 2026-07-09 | none | 2026-07-09 | YES | CVSSv3 7.8/v4 8.4・ファイル検索パスの制御不備（CWE-427）・SYSTEM権限任意コード実行・JVN発行・参考A採用 |
+| CVE-2026-57895 | 富士電機製Pupsmanインストーラ（3.9.0未満） | 2026-07-09 | none | 2026-07-09 | YES | CVSSv3 7.8/v4 8.5・インストール時不適切ファイルアクセス権設定（CWE-276）・SYSTEM権限任意コード実行・JVN発行・同一JVN内複合脆弱性・参考A採用 |
+| CVE-2026-13753 | HP DeskJet 2800シリーズ プリンタ | 2026-07-09 | none | 2026-07-09 | YES | CVSS7.5・認可欠如（Missing Authorization）によるWi-Fi Direct SSID/パスフレーズ等の窃取・パッチ未提供（CERT/CC調整未了）・Security NEXT国内報道・参考A採用 |
+| CVE-2026-43499 | Linux kernel（futex優先度継承・GhostLock、主要ディストリ全般） | 2026-07-09 | poc_public | 2026-07-09 | YES | CVSS7.8・use-after-free・PoC公開済み（97%再現率）・2026年4月にパッチマージ済みだがディストリ展開に濃淡あり・KEV未登録・実悪用未確認・軸1=5点のため除外・継続監視対象 |
 | CVE-2026-48283 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS10.0・ファイル/権限関連・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48313 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS9.3・任意ファイル読み取り・参考B採用（APSB26-68内の複合脆弱性） |
 | CVE-2026-48307 | Adobe ColdFusion（2025 Update 10未満 / 2023 Update 21未満） | 2026-07-03 | none | 2026-07-03 | YES | CVSS8.8・事前認証RCE・参考B採用（APSB26-68内の複合脆弱性） |

@@ -1,0 +1,122 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-09 07:48 JST
+調査期間: 2026-07-08 07:00 〜 2026-07-09 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Microsoft Entraパスキー登録を騙るビッシング(音声フィッシング)キャンペーン拡大
+観点: ゼロデイ関連
+採用契機: δ, α
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft Entra ID / Microsoft 365
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-09] 恐喝グループ「Pink」（O-UNC-066）が電話で従業員にEntraパスキー登録を持ちかけ、偽の登録ポータルへ誘導してMFA応答ごと認証情報を窃取するビッシングキャンペーンを食品/飲料・技術・医療・航空等の複数業種で展開していると報道。
+
+【概要】
+恐喝グループがヘルプデスク/従業員に電話をかけ、セキュリティ向上を名目にMicrosoft Entraパスキー登録を持ちかけ、偽の登録ポータルでMFA応答（TOTP・プッシュ通知・SMS）を含む認証情報をリアルタイムで窃取した上で、攻撃者側が制御するパスキーを実際に登録させる手口が確認された。奪取したアカウントからSharePoint/OneDriveのデータを短時間で持ち出し、恐喝サイトで公開する運用が確認されている。単一ベンダー報告かつ国内被害は未確認だが、パスキー/MFA登録フローを悪用する新しい手口であり波及に注意。
+
+【推奨アクション】
+・ヘルプデスク・IT部門への予期しないパスキー/MFA登録依頼電話に対する本人確認プロトコルを整備する
+・Entra IDの管理コンソールで、通常と異なる場所・デバイスからのパスキー新規登録イベントを監視する
+・従業員向けに「パスキー登録は自発的操作のみで行い、電話越しの指示には従わない」旨を周知する
+・[Entra ID監査ログのパスキー登録・MFA方式変更イベントを監視する]
+Splunk SPL: index=azuread sourcetype=azure:aad:signin OR sourcetype=azure:aad:audit operationName="Register security info" | stats count by userPrincipalName, location | where count > 0
+→ 登録元の地理的位置が普段の勤務地と異なる場合は即座に該当アカウントを確認・一時停止する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/entra-passkey-enrollment-vishing-targets-microsoft-365-users
+
+------------------------------------------------------------
+2. 偽Paysafe/Skrill/Neteller決済SDKによるnpm/PyPIサプライチェーン攻撃
+観点: ゼロデイ関連
+採用契機: β, γ
+------------------------------------------------------------
+
+優先度: 中
+対象: npm / PyPI（決済SDK統合パッケージ）
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-09] Socketの分析により、Paysafe/Skrill/Neteller決済SDKを装うnpm 13パッケージ・PyPI 4パッケージ（計17パッケージ）が確認され、決済API鍵・AWS鍵・GitHub/npmトークンを窃取していたと報道。
+
+【概要】
+決済プロバイダPaysafe/Skrill/Netellerの正規SDKを装うnpm・PyPI上のパッケージ（paysafe-checkout、paysafe-vault、skrill-sdk等17種）が、決済API鍵に加えAWS鍵・GitHubトークン・npmトークン等の開発者認証情報をAWSホスト型C2へ送信していたことが判明した。決済SDK統合を行う開発者・CI環境が標的。
+
+【推奨アクション】
+・npm/PyPIの依存関係に該当17パッケージ（paysafe-checkout・paysafe-vault・neteller・skrill-payments等）が含まれていないか棚卸しする
+・CI/CDのシークレットスキャンでPAYSAFE_API_KEY等の環境変数漏洩痕跡を確認する
+・該当パッケージを使用していた場合はAWSキー・GitHub/npmトークンを即座にローテーションする
+・[CI/CD実行ログでの外部（AWS上のC2）への予期しない通信を監視する]
+Splunk SPL: index=ci_cd sourcetype=build_log "PAYSAFE_API_KEY" OR "paysafe-" OR "skrill-sdk" | stats count by pipeline_name, repo
+→ ビルドログに該当パッケージ名またはAPIキー環境変数名が出現した場合は該当リポジトリの依存関係を即時確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/fake-paysafe-skrill-sdks-on-npm-and-pypi-steal-credentials
+
+------------------------------------------------------------
+3. AIコーディングエージェント(Claude Code/Cursor/Codex)の正常動作がEDR検知ルールを誤トリガー
+観点: AI攻撃関連
+採用契機: γ, ε
+------------------------------------------------------------
+
+優先度: 中
+対象: EDR/エンドポイントセキュリティ製品全般
+
+【24時間以内の変化】
+[The Hacker News 2026-07-09] Sophosが2026年6月分のエンドポイントテレメトリを分析し、Claude Code/Cursor/OpenAI Codex等のAIコーディングエージェントの正常な開発作業（DPAPI経由のブラウザ資格情報復号・cmdkey /list・certutil/bitsadmin利用・スタートアップフォルダへのスクリプト書き込み等）が攻撃者の行動と同一の検知ルールを誤トリガーしていると報告。ブロックの56.2%がCredential Access関連、28.8%がExecution関連。
+
+【概要】
+Sophosの分析により、AIコーディングエージェントが実施する正規の開発支援作業（保存済みブラウザ資格情報の復号、Windows認証情報マネージャの列挙、certutil/bitsadmin等LOLBinを用いたダウンロード、スタートアップフォルダへの永続化スクリプト書き込み等）が、攻撃者の資格情報窃取・環境寄生型(LotL)手口と技術的に酷似しているためEDRの検知ルールを誤トリガーしている実態が明らかになった。攻撃ではなく検知精度の課題だが、SOCの判断基準（親プロセス・ワークスペースパス・ダウンロード評判によるスコープ絞り込み）の見直しが必要。
+
+【推奨アクション】
+・EDR検知ルールを親プロセス（claude.exe/cursor.exe/codex.exe等）・ワークスペースパスでスコープ分離する
+・Claude Codeの --dangerously-skip-permissions フラグ使用や資格情報アクセスは引き続き厳格に制限・監視する
+・AIコーディングエージェント利用状況をSOCのアラート運用（ベースライン化）に反映する
+・[AIコーディングエージェントのプロセスからの資格情報アクセス・LOLBin実行を監視する]
+Splunk SPL: index=edr (Image="*claude.exe" OR Image="*cursor.exe" OR Image="*codex.exe") (CommandLine="*cmdkey*" OR CommandLine="*certutil*" OR CommandLine="*bitsadmin*") | table _time, host, Image, CommandLine
+→ 開発者の通常業務範囲（既知ワークスペースパス）外での実行や--dangerously-skip-permissions相当のフラグ使用は個別に確認する
+
+【参照】
+https://thehackernews.com/2026/07/ai-coding-agents-found-triggering.html
+
+------------------------------------------------------------
+4. GitHub署名済み(Verified)コミットのハッシュ書き換えでハッシュベースのブロックリストを回避可能
+観点: ゼロデイ関連
+採用契機: γ, η
+------------------------------------------------------------
+
+優先度: 中
+対象: Git / GitHub（GPG・S/MIME署名検証全般）
+
+【24時間以内の変化】
+[The Hacker News 2026-07-09] 研究者Jacob Ginesin氏が、署名の可鍛性(malleability)によりECDSA/RSA・EdDSA/S/MIMEいずれの署名方式でも、GitHubの「Verified」表示を維持したまま同一コミットを別ハッシュへ書き換え可能であると報告。CVE未採番・GitHub/Git側の修正は未実施。
+
+【概要】
+GitHubの署名検証は署名を正規化(canonicalize)せずに検証するため、ECDSA署名のs値反転、RSA/EdDSAの未ハッシュ領域へのフィールド追加、S/MIME DERエンコーディングの長さフィールド書き換えのいずれかにより、同一内容のコミットが「Verified」表示を保持したまま別のコミットハッシュへ書き換え可能であることが判明した。コミットハッシュに基づくブロックリスト・重複排除・来歴記録に依存する仕組みは回避され得る一方、pinされたフルコミットハッシュでの取得は引き続き安全。
+
+【推奨アクション】
+・サプライチェーン検証・CI/CDのコミット来歴チェックをハッシュのみに依存させず、内容ハッシュ+署名者検証を組み合わせる
+・依存関係固定はタグではなく完全なコミットハッシュのpinを継続する（本問題でも安全性は維持される）
+・GitHub/Gitからの署名正規化対応の公式アップデートを注視する
+
+【参照】
+https://thehackernews.com/2026/07/github-verified-commits-can-be.html
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+本日の集計:
+SOC推奨情報 — 高1件 / 中3件 / 低0件 / 除外0件

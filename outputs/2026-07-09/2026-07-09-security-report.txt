@@ -1,0 +1,495 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-09 07:48 JST
+調査期間: 2026-07-08 07:00 〜 2026-07-09 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-07-08 〜 2026-07-09
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Sygnia報告: 単独攻撃者がAIを駆使しAWSクラウド環境を72時間で侵害・金銭恐喝
+カテゴリ: A（A4） / 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: A-Q
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: other / global
+被害規模: 被害組織名非公開（「グローバル企業」とのみ言及）・金銭恐喝が発生したが金額は非公開
+
+【24時間以内（または期間内）の変化】
+[Dark Reading 2026-07-09] Sygniaの侵害調査に基づき、単独の攻撃者がAIを駆使しアプリケーションサービス・AWSリソース・ソースコードリポジトリ・CI/CDパイプライン・ランタイムコンポーネント・データストアを横断的に連鎖侵害し、通常数週間かかる攻撃を72時間で完了・金銭恐喝に至ったと報道。
+
+【概要】
+セキュリティ企業Sygniaの侵害調査により、単独の脅威アクターがAIを駆使して大規模なAWS環境を72時間という短期間で侵害し、金銭恐喝に至った実インシデントが明らかになった。攻撃は単一の設定不備の悪用ではなく、アプリケーションサービス・AWSリソース・ソースコードリポジトリ・CI/CDパイプライン・ランタイムコンポーネント・データストアを横断する複数の弱点を連鎖させたもので、認証情報探索・シークレット収集・クラウド列挙・デプロイパイプライン悪用・ランタイム改ざん・データベースアクセス・運用妨害を高速に実行した。攻撃者は新規マルウェアやゼロデイを用いず、既知の手法をAIで高速化・大規模化した点が特徴。
+
+攻撃の流れ:
+1. アプリケーションサービス・ソースコードリポジトリの弱点を起点に侵入
+2. AIを用いて認証情報探索・シークレット収集・クラウド環境列挙を高速に自動実行
+3. CI/CDパイプライン悪用・ランタイム改ざんにより環境全体へ横展開し、データストアへアクセス・運用妨害の上で金銭恐喝
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: 短時間（分単位）での大量クラウドAPI呼び出し・認証情報探索の連続実行
+
+【監視・対策ポイント】
+・[AWS CloudTrail上の異常なAPI呼び出し速度・認証情報探索パターンを監視する]
+Splunk SPL: index=aws sourcetype=aws:cloudtrail eventName IN (GetSecretValue,ListAccessKeys,AssumeRole) | bucket _time span=1m | stats dc(eventName) as distinct_calls by userIdentity.arn, _time | where distinct_calls > 10
+→ 人間の操作速度では通常発生しない短時間・高頻度のAPI呼び出し連鎖を検知した場合は、該当IAMロール・アクセスキーを即座に無効化する
+
+【参照】
+https://www.darkreading.com/cloud-security/lone-attacker-ai-breach-aws-cloud-environment
+https://www.sygnia.co/press-release/sygnia-investigation-into-ai-accelerated-attack/
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はSygniaの調査により、単独攻撃者がAIを駆使してAWSクラウド環境を72時間で侵害し金銭恐喝に至った実インシデントが本編採用となった。バースト検出閾値超過（6ソース以上）で報道が集中している。HalluSquatting（AIハルシネーション悪用パッケージ乗っ取り）やGitHub Copilotのワークフロー内ジェイルブレイク研究等は単一ソース・実被害未確認のため除外に留まる。
+
+本日の集計:
+AI攻撃 — 本編1件 / 参考A0件 / 参考B0件 / 除外4件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）0件 / C（インフラ）0件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当事案なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-48282 / Adobe ColdFusion
+対象: 2025 Update 10未満 / 2023 Update 21未満（APSB26-68内の複合脆弱性群の一つ）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[The Hacker News 2026-07-08] CISAが本CVEを含む4件をKEVカタログへ新規追加（dateAdded 2026-07-07・FCEB期限2026-07-10）。パストラバーサル経由の任意コード実行で、公開直後の悪用が確認されインドのIPからの攻撃試行が記録された。
+[Security NEXT 2026-07-08] 米当局（CISA）によるColdFusion/Langflow脆弱性の悪用注意喚起を国内メディアが報道。
+
+【概要】
+Adobe ColdFusionのパストラバーサル脆弱性CVE-2026-48282(CVSS10.0)について、既報の実悪用確認（2026-07-03初報・以降参考B継続採用）に続き、CISAが2026-07-07付でKEVカタログへ新規追加したことが本日確認された。公開直後の悪用でインド所在IPからの攻撃試行が記録されており、FCEB機関への対応期限は2026-07-10。
+
+攻撃の流れ:
+1. パストラバーサルにより認証不要でファイルシステムへアクセス
+2. 任意ファイル書き込み・配置により任意コード実行
+3. Webシェル設置等による持続的アクセス確保（既報時点で確認）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ColdFusionサーバのアクセスログ・ファイル書き込みイベントを監視する]
+Splunk SPL: index=web sourcetype=coldfusion_access uri_path="*..%2f*" OR uri_path="*..\\*" | stats count by clientip, uri_path
+→ 正規運用でのパストラバーサル文字列を含むリクエストは稀であるため、検知時は即時遮断・フォレンジック調査を優先する
+
+【参照】
+https://thehackernews.com/2026/07/cisa-adds-4-actively-exploited-adobe.html
+https://www.securityweek.com/cisa-urges-immediate-patching-of-exploited-coldfusion-langflow-joomla-flaws/
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-50746 / Ubiquiti UniFi Connect / Talk / Access / Protect / OS（複合脆弱性群）
+CVSS: 10.0 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[The Hacker News 2026-07-08] Ubiquitiが複数UniFi製品にまたがる7件の脆弱性を修正。うちCVE-2026-50746(UniFi Connect、CVSS10.0)は不適切なアクセス制御によるホストデバイス上のコマンドインジェクション。他CVE-2026-50747(UniFi Talk、CVSS9.9・SQLi経由権限昇格)、CVE-2026-50748(UniFi Access、CVSS9.9・コマンドインジェクション)、CVE-2026-54400(UniFi Access、CVSS9.1・権限昇格)、CVE-2026-55115(UniFi Protect、CVSS9.9・SSRF経由権限昇格)、CVE-2026-54402(UniFi OS、CVSS9.9・コマンドインジェクション)、CVE-2026-55116(UniFi OS、CVSS9.0・不正なデバイス変更)。
+[JPCERT/CC 2026-07-08] JPCERT/CC Weekly Reportが複数Ubiquiti製品の脆弱性を掲載。
+[BleepingComputer 2026-07-08] 「Ubiquiti warns of new max severity UniFi OS vulnerability」として報道。
+
+【概要】
+Ubiquitiが2026-07-08、UniFi Connect/Talk/Access/Protect/OSにまたがる最大深刻度CVSS10.0を含む7件の脆弱性を修正した。代表格のCVE-2026-50746(UniFi Connect)は不適切なアクセス制御によりホストデバイス上でコマンドインジェクションが可能。現時点で実悪用・PoC公開の報告はないが、過去にUniFi OS関連CVE(CVE-2026-34908/34909/34910)がCISA KEVで武器化された実績があり、早期パッチ適用が推奨される。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[UniFi Networkコントローラ・UniFi OSデバイスの管理APIアクセスログを監視する]
+Splunk SPL: index=network sourcetype=unifi_audit action=api_call | stats count by src_ip, uri_path, user | where count > 50
+→ パッチ未適用機器からの異常な管理API呼び出し急増を確認した場合は隔離・ファームウェア更新を優先する
+
+【参照】
+https://thehackernews.com/2026/07/ubiquiti-patches-critical-unifi-flaws.html
+https://www.bleepingcomputer.com/news/security/ubiquiti-warns-of-new-max-severity-unifi-os-vulnerability
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [Weekly Report: 複数のUbiquiti製品に脆弱性] https://www.jpcert.or.jp/wr/
+
+・CVE-2026-56843 / Plesk（ホスティング管理パネル）
+CVSS: 9.9 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[Security NEXT 2026-07-08] PleskのXML API処理に関する脆弱性2件を報道。CVE-2026-56843は低権限ユーザーが他テナントのFTP認証情報を取得しリモートコード実行につながる恐れ。
+
+【概要】
+共用ホスティング管理パネルPleskのXML API処理に関する脆弱性CVE-2026-56843(CVSS9.9)。低権限ユーザーが他テナントのFTP認証情報を取得可能で、リモートからのコード実行につながる恐れがある。18.0.79で修正済み。実悪用は本日時点で確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Plesk XML APIへのテナント横断リクエスト・FTP認証イベントを監視する]
+Splunk SPL: index=plesk sourcetype=plesk_xml_api | stats count by src_ip, requested_domain, auth_user | where count > 20
+→ テナント契約と異なるドメインへのFTP認証情報要求が確認された場合は当該APIキーを即座に無効化する
+
+【参照】
+https://www.security-next.com/187008
+
+・CVE-2026-48614 / Plesk（ホスティング管理パネル）
+CVSS: 9.9 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[Security NEXT 2026-07-08] 認可処理の不備により認証済みユーザーがroot権限でファイル書き込み可能な脆弱性を報道（CVE-2026-56843と同一記事内の複合脆弱性）。
+
+【概要】
+Plesk管理パネルの認可処理不備CVE-2026-48614(CVSS9.9)。認証済みユーザーがroot権限でファイル書き込みを行える恐れがあり、サーバ権限取得につながる。18.0.79以降で完全修正済み。CVE-2026-56843と同一Security NEXT記事内の複合脆弱性。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Pleskの認証済みファイル書き込みAPI呼び出しを監視する]
+Splunk SPL: index=plesk sourcetype=plesk_xml_api method=fileWrite | stats count by auth_user, target_path | where like(target_path, "%root%")
+→ 低権限アカウントによるroot配下へのファイル書き込み要求は即座に隔離・調査する
+
+【参照】
+https://www.security-next.com/187008
+
+・CVE-2026-53481 / Dell PowerProtect Data Domain（143件の複合脆弱性の代表格）
+CVSS: 9.8 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[Security NEXT 2026-07-08] Dell PowerProtect Data Domainに143件の脆弱性が確認されたと報道。うちCVE-2026-53481(パストラバーサル)・CVE-2026-53483(認証不備)はCVSSv3.1 9.8。アドバイザリ重要度は4段階中最高の「クリティカル」。
+
+【概要】
+Dell PowerProtect Data Domainのセキュリティアドバイザリで143件の脆弱性が公表された（うち製品固有26件）。代表格のCVE-2026-53481(パストラバーサル)・CVE-2026-53483(認証不備、CVE-2026-53483は別記事参照)はいずれもCVSSv3.1 9.8で、リモートアクセス可能な場合は認証不要でシステム制御を奪われる恐れがある。2026-07-02にアドバイザリ公開・修正済みアップデート提供済み。実悪用は本日時点で確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Data Domainバックアップアプライアンスの管理インタフェースへの認証イベント・ファイルアクセスを監視する]
+Splunk SPL: index=storage sourcetype=data_domain_audit | stats count by src_ip, action | where action="unauth_access_attempt"
+→ バックアップアプライアンス管理面はインターネット非露出が原則のため、外部IPからのアクセス試行は即時遮断・調査する
+
+【参照】
+https://www.security-next.com/186965
+
+・CVE-2026-56437 / 富士電機製Pupsmanインストーラ
+CVSS: 7.8 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[JVN 2026-07-08] JVNがCVE-2026-56437を新規公開。ファイル検索パスの制御不備。SYSTEM権限での任意コード実行につながる恐れ。
+
+【概要】
+富士電機製Pupsmanインストーラ（3.9.0より前の全バージョン）にファイル検索パスの制御不備SYSTEM権限での任意コード実行につながる恐れという脆弱性CVE-2026-56437(CVSSv3 7.8/CVSSv4 8.4)がJVNで公開された。3.9.0以降へのアップデートが推奨されている。実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Pupsmanインストーラ実行ログ・SYSTEM権限プロセス生成を監視する]
+Splunk SPL: index=endpoint sourcetype=sysmon EventCode=1 ParentImage="*pupsman*" | table _time, host, Image, CommandLine
+→ インストーラ実行後に想定外の子プロセスがSYSTEM権限で生成されていないか確認する
+
+【参照】
+https://jvn.jp/jp/JVN62347140
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [JVN#62347140: 富士電機製Pupsmanのインストーラにおける複数の脆弱性] https://jvn.jp/jp/JVN62347140
+
+・CVE-2026-57895 / 富士電機製Pupsmanインストーラ
+CVSS: 7.8 状態: 実悪用・PoC未確認
+
+【24時間以内の変化】
+[JVN 2026-07-08] JVNがCVE-2026-57895を新規公開。インストール時の不適切なファイルアクセス権設定。SYSTEM権限での任意コード実行につながる恐れ。
+
+【概要】
+富士電機製Pupsmanインストーラ（3.9.0より前の全バージョン）にインストール時の不適切なファイルアクセス権設定SYSTEM権限での任意コード実行につながる恐れという脆弱性CVE-2026-57895(CVSSv3 7.8/CVSSv4 8.5)がJVNで公開された。3.9.0以降へのアップデートが推奨されている。実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Pupsmanインストーラ実行ログ・SYSTEM権限プロセス生成を監視する]
+Splunk SPL: index=endpoint sourcetype=sysmon EventCode=1 ParentImage="*pupsman*" | table _time, host, Image, CommandLine
+→ インストーラ実行後に想定外の子プロセスがSYSTEM権限で生成されていないか確認する
+
+【参照】
+https://jvn.jp/jp/JVN62347140
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [JVN#62347140: 富士電機製Pupsmanのインストーラにおける複数の脆弱性] https://jvn.jp/jp/JVN62347140
+
+・CVE-2026-13753 / HP DeskJet 2800シリーズ プリンタ
+CVSS: 7.5 状態: ゼロデイ
+
+【24時間以内の変化】
+[Security NEXT 2026-07-08] HP DeskJet 2800シリーズに認可欠如の脆弱性が確認されたと報道。ネットワーク経由でAPIへ直接リクエストすることで認証なしに設定情報を取得可能。
+
+【概要】
+HP DeskJet 2800シリーズプリンタに認可欠如(Missing Authorization)の脆弱性CVE-2026-13753(CVSS7.5)。ネットワーク経由でAPIへ直接リクエストすることで、認証なしにWi-Fi DirectのSSID・パスフレーズや管理構成データを取得される恐れがある。修正プログラムは提供されておらずCERT/CCとHPの連絡調整も未了。信頼できるネットワークセグメントへの配置等の緩和策が推奨される。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[プリンタ管理APIへの未認証アクセス試行をネットワーク監視する]
+Splunk SPL: index=network sourcetype=firewall dest_port=80 OR dest_port=443 dest_category="printer" | stats count by src_ip, dest_ip | where count > 30
+→ 管理VLAN外からのプリンタAPI直接アクセスを検知した場合はセグメンテーションを見直す
+
+【参照】
+https://www.security-next.com/186984
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-56290 / Joomla Page Builder
+CVSS: 10.0
+Joomla向けサードパーティ拡張機能「Page Builder」の不適切なアクセス制御脆弱性CVE-2026-56290(CVSS10.0)。未認証での任意ファイルアップロードによりRCEが可能で、CISAが2026-07-07にKEVへ追加。2026-06-27時点でWebシェル設置が確認されている。国内報道・JPCERT/IPA注意喚起は本日時点で確認されず。
+IoC: 確認されず
+
+監視: [Joomla拡張機能アップロードディレクトリへの新規PHPファイル書き込みを監視する]
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/pagebuilder/*" method=POST status=200 | stats count by src_ip, uri_path
+→ アップロードディレクトリ配下への新規.phpファイル生成をファイル整合性監視(FIM)で検知した場合は即時隔離する
+
+参照: https://thehackernews.com/2026/07/cisa-adds-4-actively-exploited-adobe.html
+
+・CVE-2026-48908 / JoomShaper SP Page Builder
+CVSS: 10.0
+JoomShaper製「SP Page Builder」の無制限ファイルアップロード脆弱性CVE-2026-48908(CVSS10.0)。修正版公開前からゼロデイとして悪用されPHPシェルの設置が確認され、CISAが2026-07-07にKEVへ追加。国内報道・JPCERT/IPA注意喚起は本日時点で確認されず。
+IoC: 確認されず
+
+監視: [SP Page Builderのファイルアップロードエンドポイントへのリクエストを監視する]
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/sppagebuilder/*upload*" method=POST | stats count by src_ip
+→ アップロード後に新規.phpファイルが生成されていないかWebルート配下のFIMで確認する
+
+参照: https://thehackernews.com/2026/07/cisa-adds-4-actively-exploited-adobe.html
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] Accenture、ハッカーによるデータ販売を受け不正アクセスを確認
+ハンドル名「888」を名乗る脅威アクターがダークウェブフォーラムでAccentureから窃取したとする約35GBのデータ（ソースコード・RSA/SSH鍵・Azure個人アクセストークン・Azureストレージアクセスキー・構成ファイル等）の販売を開始し、Accentureは事案を認めた上で「原因は特定・対処済みで事業への影響はない」と発表した。侵入経路・帰属は未特定。
+参照: https://www.bleepingcomputer.com/news/security/accenture-confirms-breach-after-hacker-offers-stolen-data-for-sale
+参照: https://www.securityweek.com/accenture-confirms-data-breach-after-hacker-claims-source-code-theft/
+
+・[トレンド記事] Vidar Infostealerがマルバタイジング経由で中小企業を標的に拡大
+Unit 42の技術分析により、Vidar Infostealerがコードサイニング悪用・Go言語製ローダー・ファイル肥大化によるアンチウイルス回避技術を用いて中小企業を標的にしたマルバタイジングキャンペーンを拡大していることが確認された。
+参照: https://unit42.paloaltonetworks.com/vidar-stealer-code-signing-go-loaders/
+参照: https://www.darkreading.com/
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定）（KDDI-2026-EmailSystemBreach）: KDDIのISP事業者向けメールシステムへの不正アクセス事案（2026-05-16のサードパーティ製ソフトウェアのゼロデイ脆弱性悪用に起因）について、被害件数の内訳が本日確定した。メールアドレスのみの漏えいが1,223万3,087件、パスワード等を含む漏えいが761万6,173件（一部はハッシュ化・暗号化済み）で、傘下の複数ISP（CPI・BIGLOBE・@nifty・STNet・中部テレコミュニケーション等）に影響が及んでいる。総務省がKDDIに対し報告を求めており、個人情報保護委員会にも通知済み。攻撃者・侵入経路の詳細な帰属は未確定。 採用契機: 継続観測。帰属信頼度: unconfirmed。
+推奨アクション: 傘下ISP（CPI・BIGLOBE・@nifty・STNet・中部テレコミュニケーション等）の利用者に対するパスワード変更の周知徹底、漏えいメールアドレスを起点としたフィッシング・クレデンシャルスタッフィング試行の監視強化を行う。
+参照: https://www.bleepingcomputer.com/news/security/japanese-telecom-giant-kddi-says-data-breach-affects-12-million-people
+参照: https://www.scan-netsecurity.ne.jp/
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日は観測可能性ゲート（M1）を満たす予報候補なし。
+
+Step A'（KEV登録+実確認イベント起点）: 本日KEVへ新規追加されたCVE-2026-48282(Adobe ColdFusion)・CVE-2026-56290(Joomla Page Builder)・CVE-2026-48908(JoomShaper SP Page Builder)・CVE-2026-55255(Langflow)はいずれもKEV追加イベント自体が本日確認された事象であり、『KEV単体の場合は予報を生成しない』という規定（KEV登録に加えて新規スキャン増加・新規IOC・PoC公開後48時間以内の攻撃加速のいずれかの実確認が必要）に照らし、本日時点で追加の実確認事象が得られていないため予報候補としない。
+
+Step C'（認証情報・トークン連鎖）: Accenture不正アクセス事案ではRSA/SSH鍵・Azure個人アクセストークン・ストレージアクセスキー等が窃取されたが、的中判定条件を『クレデンシャルスタッフィング攻撃増加・別組織での不正ログイン観測』等に設定すると観測出口クラスE1〜E4に一次・二値で紐付けられずM1発行前チェックリスト2項に抵触するため発行を見送る（2026-07-08分レポートのDEBULL評価と同様の判断）。
+
+上記の理由により、確度・Tierの別を問わず観測出口クラスE1〜E4に紐づく一次・二値の的中判定条件を構成できる予報候補が本日は存在しない。件数を無理に埋めるより絞り込みを優先する（pipeline-forecast-verification.md 絞り込みルール・教訓4）。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Microsoft Entraパスキー登録を騙るビッシング(音声フィッシング)キャンペーン拡大
+観点: ゼロデイ関連
+採用契機: δ, α
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft Entra ID / Microsoft 365
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-09] 恐喝グループ「Pink」（O-UNC-066）が電話で従業員にEntraパスキー登録を持ちかけ、偽の登録ポータルへ誘導してMFA応答ごと認証情報を窃取するビッシングキャンペーンを食品/飲料・技術・医療・航空等の複数業種で展開していると報道。
+
+【概要】
+恐喝グループがヘルプデスク/従業員に電話をかけ、セキュリティ向上を名目にMicrosoft Entraパスキー登録を持ちかけ、偽の登録ポータルでMFA応答（TOTP・プッシュ通知・SMS）を含む認証情報をリアルタイムで窃取した上で、攻撃者側が制御するパスキーを実際に登録させる手口が確認された。奪取したアカウントからSharePoint/OneDriveのデータを短時間で持ち出し、恐喝サイトで公開する運用が確認されている。単一ベンダー報告かつ国内被害は未確認だが、パスキー/MFA登録フローを悪用する新しい手口であり波及に注意。
+
+【推奨アクション】
+・ヘルプデスク・IT部門への予期しないパスキー/MFA登録依頼電話に対する本人確認プロトコルを整備する
+・Entra IDの管理コンソールで、通常と異なる場所・デバイスからのパスキー新規登録イベントを監視する
+・従業員向けに「パスキー登録は自発的操作のみで行い、電話越しの指示には従わない」旨を周知する
+・[Entra ID監査ログのパスキー登録・MFA方式変更イベントを監視する]
+Splunk SPL: index=azuread sourcetype=azure:aad:signin OR sourcetype=azure:aad:audit operationName="Register security info" | stats count by userPrincipalName, location | where count > 0
+→ 登録元の地理的位置が普段の勤務地と異なる場合は即座に該当アカウントを確認・一時停止する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/entra-passkey-enrollment-vishing-targets-microsoft-365-users
+
+------------------------------------------------------------
+2. 偽Paysafe/Skrill/Neteller決済SDKによるnpm/PyPIサプライチェーン攻撃
+観点: ゼロデイ関連
+採用契機: β, γ
+------------------------------------------------------------
+
+優先度: 中
+対象: npm / PyPI（決済SDK統合パッケージ）
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-09] Socketの分析により、Paysafe/Skrill/Neteller決済SDKを装うnpm 13パッケージ・PyPI 4パッケージ（計17パッケージ）が確認され、決済API鍵・AWS鍵・GitHub/npmトークンを窃取していたと報道。
+
+【概要】
+決済プロバイダPaysafe/Skrill/Netellerの正規SDKを装うnpm・PyPI上のパッケージ（paysafe-checkout、paysafe-vault、skrill-sdk等17種）が、決済API鍵に加えAWS鍵・GitHubトークン・npmトークン等の開発者認証情報をAWSホスト型C2へ送信していたことが判明した。決済SDK統合を行う開発者・CI環境が標的。
+
+【推奨アクション】
+・npm/PyPIの依存関係に該当17パッケージ（paysafe-checkout・paysafe-vault・neteller・skrill-payments等）が含まれていないか棚卸しする
+・CI/CDのシークレットスキャンでPAYSAFE_API_KEY等の環境変数漏洩痕跡を確認する
+・該当パッケージを使用していた場合はAWSキー・GitHub/npmトークンを即座にローテーションする
+・[CI/CD実行ログでの外部（AWS上のC2）への予期しない通信を監視する]
+Splunk SPL: index=ci_cd sourcetype=build_log "PAYSAFE_API_KEY" OR "paysafe-" OR "skrill-sdk" | stats count by pipeline_name, repo
+→ ビルドログに該当パッケージ名またはAPIキー環境変数名が出現した場合は該当リポジトリの依存関係を即時確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/fake-paysafe-skrill-sdks-on-npm-and-pypi-steal-credentials
+
+------------------------------------------------------------
+3. AIコーディングエージェント(Claude Code/Cursor/Codex)の正常動作がEDR検知ルールを誤トリガー
+観点: AI攻撃関連
+採用契機: γ, ε
+------------------------------------------------------------
+
+優先度: 中
+対象: EDR/エンドポイントセキュリティ製品全般
+
+【24時間以内の変化】
+[The Hacker News 2026-07-09] Sophosが2026年6月分のエンドポイントテレメトリを分析し、Claude Code/Cursor/OpenAI Codex等のAIコーディングエージェントの正常な開発作業（DPAPI経由のブラウザ資格情報復号・cmdkey /list・certutil/bitsadmin利用・スタートアップフォルダへのスクリプト書き込み等）が攻撃者の行動と同一の検知ルールを誤トリガーしていると報告。ブロックの56.2%がCredential Access関連、28.8%がExecution関連。
+
+【概要】
+Sophosの分析により、AIコーディングエージェントが実施する正規の開発支援作業（保存済みブラウザ資格情報の復号、Windows認証情報マネージャの列挙、certutil/bitsadmin等LOLBinを用いたダウンロード、スタートアップフォルダへの永続化スクリプト書き込み等）が、攻撃者の資格情報窃取・環境寄生型(LotL)手口と技術的に酷似しているためEDRの検知ルールを誤トリガーしている実態が明らかになった。攻撃ではなく検知精度の課題だが、SOCの判断基準（親プロセス・ワークスペースパス・ダウンロード評判によるスコープ絞り込み）の見直しが必要。
+
+【推奨アクション】
+・EDR検知ルールを親プロセス（claude.exe/cursor.exe/codex.exe等）・ワークスペースパスでスコープ分離する
+・Claude Codeの --dangerously-skip-permissions フラグ使用や資格情報アクセスは引き続き厳格に制限・監視する
+・AIコーディングエージェント利用状況をSOCのアラート運用（ベースライン化）に反映する
+・[AIコーディングエージェントのプロセスからの資格情報アクセス・LOLBin実行を監視する]
+Splunk SPL: index=edr (Image="*claude.exe" OR Image="*cursor.exe" OR Image="*codex.exe") (CommandLine="*cmdkey*" OR CommandLine="*certutil*" OR CommandLine="*bitsadmin*") | table _time, host, Image, CommandLine
+→ 開発者の通常業務範囲（既知ワークスペースパス）外での実行や--dangerously-skip-permissions相当のフラグ使用は個別に確認する
+
+【参照】
+https://thehackernews.com/2026/07/ai-coding-agents-found-triggering.html
+
+------------------------------------------------------------
+4. GitHub署名済み(Verified)コミットのハッシュ書き換えでハッシュベースのブロックリストを回避可能
+観点: ゼロデイ関連
+採用契機: γ, η
+------------------------------------------------------------
+
+優先度: 中
+対象: Git / GitHub（GPG・S/MIME署名検証全般）
+
+【24時間以内の変化】
+[The Hacker News 2026-07-09] 研究者Jacob Ginesin氏が、署名の可鍛性(malleability)によりECDSA/RSA・EdDSA/S/MIMEいずれの署名方式でも、GitHubの「Verified」表示を維持したまま同一コミットを別ハッシュへ書き換え可能であると報告。CVE未採番・GitHub/Git側の修正は未実施。
+
+【概要】
+GitHubの署名検証は署名を正規化(canonicalize)せずに検証するため、ECDSA署名のs値反転、RSA/EdDSAの未ハッシュ領域へのフィールド追加、S/MIME DERエンコーディングの長さフィールド書き換えのいずれかにより、同一内容のコミットが「Verified」表示を保持したまま別のコミットハッシュへ書き換え可能であることが判明した。コミットハッシュに基づくブロックリスト・重複排除・来歴記録に依存する仕組みは回避され得る一方、pinされたフルコミットハッシュでの取得は引き続き安全。
+
+【推奨アクション】
+・サプライチェーン検証・CI/CDのコミット来歴チェックをハッシュのみに依存させず、内容ハッシュ+署名者検証を組み合わせる
+・依存関係固定はタグではなく完全なコミットハッシュのpinを継続する（本問題でも安全性は維持される）
+・GitHub/Gitからの署名正規化対応の公式アップデートを注視する
+
+【参照】
+https://thehackernews.com/2026/07/github-verified-commits-can-be.html
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-43499 (Linux kernel（futex優先度継承・GhostLock）) → CVSS7.8・PoC公開済みだがKEV未登録・実悪用未確認・国内報道/JPCERT言及なし。軸1=5点・軸2=0点（参考A昇格トリガーなし）のため除外。広範なOSSスコープを踏まえ継続監視対象とする。
+・CVE-2026-55255 (Langflow) → CISAが2026-07-07にKEV追加したが、CVSS6.1・限定的な悪用（単一オペレータによる認可バイパス）に留まり軸1=6点・軸2=1点で本編/参考いずれの閾値にも未達のため除外。継続監視対象とする。
+
+[APT]
+・UAT-7810 / UAT7810-2026-LONGLEASH-ORBNetwork → 2026-07-08初報から変化なし。本日はThe Hacker News/SecurityWeekによる同一内容の後追い報道のみ。
+・O-UNC-066（Pink恐喝グループ） / （未登録・O-UNC-066/Pink Entraパスキービッシング） → BleepingComputer単一ソースの報道のみで、政府機関公式帰属・複数ベンダー独立確認・国内組織被害確認のいずれも無く軸P=6点(単一ベンダー帰属+3・新規TTP+3)で判定順1〜3のいずれも不成立のためAPTセクションでは除外。Section 4 SOC推奨情報(SOC-2026-07-09-001)へ振り替えて採用。
+
+[AI攻撃]
+・HalluSquatting: AIハルシネーションを悪用したパッケージ乗っ取り攻撃 → 単一ソース・軸X/軸Y閾値未達のため除外
+・GitHub Copilotのワークフロー内ジェイルブレイク（チャット拒否・コード内では実行） → 単一ソース・軸X/軸Y閾値未達のため除外
+・GitLost: GitHub Agentic Workflowsのプロンプトインジェクション（SecurityWeek報道） → 既報・変化なし
+・Rogue Agent: Google Dialogflow CXハイジャック（SecurityWeek報道） → 既報・変化なし
+
+本日の集計:
+CVE — 本編1件 / 参考A7件 / 参考B2件 / 除外2件
+APT — 本編0件 / 注目動向1件 / 除外2件
+AI攻撃 — 本編1件 / 参考A0件 / 参考B0件 / 除外4件
+SOC推奨情報 — 高1件 / 中3件 / 低0件 / 除外0件
+
+========================================
