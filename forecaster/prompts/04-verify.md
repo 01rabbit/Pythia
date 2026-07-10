@@ -334,6 +334,15 @@ pipeline-forecast-verification.md の「チャット表示形式」に準拠し�
    算出する（「確度キャリブレーション算出」参照）。
 8. 前月の `verification/YYYY-MM.json` と比較し、同一確度の2ヶ月連続乖離を検出した場合、
    `bias_analysis` に確度較正見直し提案を起票する（発行済み予報の再採点は禁止）。
+8b. **retrieval 乖離チェック（Case-Based Retrieval 還流・design §5.3）**: 予報サイドカーに
+    `retrieval`（Step C'' の類似過去事例集計）が記録されている場合、その `empirical_hit_rate`
+    （発行時点の類似事例の経験的的中率）と当該予報の実際の `outcome` を突合する。
+    `observed_gate_passed=true` かつ `empirical_hit_rate=0.0`（類似事例が全滅）だったにもかかわらず
+    確度=中以上で発行され今回 miss した予報が複数あれば、系統的過信の候補として `bias_analysis` に
+    記録する（例:「E2追随IOC型は retrieval で経験的的中率0%だが確度=中で発行され miss。教訓14の
+    再発防止ゲートが機能したか要確認」）。これは教訓14型の系統的バイアスをデータ駆動で自動再発見する
+    経路である。**この突合は将来発行予報の入口条件（Step C'' の降格運用）にのみ反映し、発行済み予報の
+    再採点・hit_criteria 変更には使わない**（原則D・入口可/出口固定）。
 9. 対象 observations の `verified_outcome` と `related_forecast_id` を更新する（この2フィールドのみ）。
 10. バイアス分析と補正提案を更新し、週次検証レポート
     `forecaster/verification/YYYY-MM-DD-verification.md` を作成する（キャリブレーション表に

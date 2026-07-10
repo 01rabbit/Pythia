@@ -82,7 +82,21 @@ ALLOWED_FORECAST_KEYS = set(REQUIRED_FORECAST_KEYS) | {
     "related_group",
     "estimated_portion",
     "verified_outcome",
+    "retrieval",
 }
+
+ALLOWED_RETRIEVAL_KEYS = {
+    "n_cases",
+    "n_hit",
+    "n_partial",
+    "n_miss",
+    "empirical_hit_rate",
+    "observed_gate_passed",
+    "matched_forecast_ids",
+    "external_cases",
+}
+ALLOWED_EXTERNAL_CASE_KEYS = {"source_name", "source_url", "published_date", "relevance"}
+REQUIRED_EXTERNAL_CASE_KEYS = {"source_name", "source_url", "relevance"}
 
 ALLOWED_KEV_SNAPSHOT_KEYS = {"cve", "date_added", "ransomware_flag", "reference_set_hash"}
 ALLOWED_ANCHOR_KEYS = {
@@ -106,6 +120,7 @@ ENUM_VERIFIED_OUTCOME = {"hit", "partial", "miss", "unverifiable", None}
 
 # パターン定義
 RE_FORECAST_ID = re.compile(r"^fc-(\d{8})-(\d+)$")
+RE_FORECAST_ID_FULL = re.compile(r"^fc-\d{8}-\d+$")
 RE_CVE = re.compile(r"^CVE-\d{4}-\d{4,}$")
 RE_OBSERVATION_ID = re.compile(r"^obs-\d{4}-\d{4}-\d{3}$")
 RE_FILENAME_DATE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})\.json$")
@@ -230,6 +245,73 @@ def check_anchor(rep, fname, fc_id, anchor):
             fname, fc_id, "anchor.automatable",
             f"enum 違反: {anchor['automatable']!r}（許可値: ['yes', 'no', null]）",
         )
+
+
+def _check_nonneg_int(rep, fname, fc_id, obj, key):
+    if key in obj:
+        v = obj[key]
+        if not (isinstance(v, int) and not isinstance(v, bool) and v >= 0):
+            rep.add(fname, fc_id, f"retrieval.{key}", f"0以上の整数ではない: {v!r}")
+
+
+def check_retrieval(rep, fname, fc_id, retrieval):
+    """retrieval（類似過去事例検索の集計・監査証跡）を検査する（任意フィールド）。"""
+    if retrieval is None:
+        return
+    if not isinstance(retrieval, dict):
+        rep.add(fname, fc_id, "retrieval", f"オブジェクトまたは null ではない: {type(retrieval).__name__}")
+        return
+    for key in retrieval:
+        if key not in ALLOWED_RETRIEVAL_KEYS:
+            rep.add(fname, fc_id, f"retrieval.{key}", "スキーマに定義されていないフィールド")
+
+    for key in ("n_cases", "n_hit", "n_partial", "n_miss"):
+        _check_nonneg_int(rep, fname, fc_id, retrieval, key)
+
+    # 内訳の整合: n_hit + n_partial + n_miss == n_cases（全キー揃う場合のみ）
+    if all(
+        isinstance(retrieval.get(k), int) and not isinstance(retrieval.get(k), bool)
+        for k in ("n_cases", "n_hit", "n_partial", "n_miss")
+    ):
+        if retrieval["n_hit"] + retrieval["n_partial"] + retrieval["n_miss"] != retrieval["n_cases"]:
+            rep.add(
+                fname, fc_id, "retrieval",
+                f"内訳合計が n_cases と不一致: hit+partial+miss="
+                f"{retrieval['n_hit'] + retrieval['n_partial'] + retrieval['n_miss']} / n_cases={retrieval['n_cases']}",
+            )
+
+    if "empirical_hit_rate" in retrieval:
+        v = retrieval["empirical_hit_rate"]
+        if v is not None and not (isinstance(v, (int, float)) and not isinstance(v, bool) and 0 <= v <= 1):
+            rep.add(fname, fc_id, "retrieval.empirical_hit_rate", f"0〜1 の数値または null ではない: {v!r}")
+
+    if "observed_gate_passed" in retrieval and not isinstance(retrieval["observed_gate_passed"], bool):
+        rep.add(
+            fname, fc_id, "retrieval.observed_gate_passed",
+            f"boolean ではない: {retrieval['observed_gate_passed']!r}",
+        )
+
+    if "matched_forecast_ids" in retrieval:
+        check_string_array(
+            rep, fname, fc_id, retrieval, "matched_forecast_ids",
+            pattern=RE_FORECAST_ID_FULL, pattern_desc="^fc-\\d{8}-\\d+$",
+        )
+
+    if "external_cases" in retrieval:
+        ext = retrieval["external_cases"]
+        if not isinstance(ext, list):
+            rep.add(fname, fc_id, "retrieval.external_cases", f"配列ではない: {type(ext).__name__}")
+        else:
+            for i, case in enumerate(ext):
+                if not isinstance(case, dict):
+                    rep.add(fname, fc_id, f"retrieval.external_cases[{i}]", f"オブジェクトではない: {case!r}")
+                    continue
+                for k in case:
+                    if k not in ALLOWED_EXTERNAL_CASE_KEYS:
+                        rep.add(fname, fc_id, f"retrieval.external_cases[{i}].{k}", "スキーマに定義されていないフィールド")
+                for k in REQUIRED_EXTERNAL_CASE_KEYS:
+                    if k not in case:
+                        rep.add(fname, fc_id, f"retrieval.external_cases[{i}].{k}", "必須フィールドが欠落（原則1: 一次ソース出典必須）")
 
 
 # E2追随IOC除外（03-forecast.md「E2追随IOC除外（全Tier）」・教訓14）の勧告検知に使う語句。
@@ -445,6 +527,10 @@ def check_forecast(rep, fname, forecast, seen_ids, file_date, day_count):
             fname, fc_id, "verified_outcome",
             f"enum 違反: {forecast['verified_outcome']!r}（許可値: ['hit', 'partial', 'miss', 'unverifiable', null]）",
         )
+
+    # retrieval（類似過去事例検索の集計・監査証跡・任意）
+    if "retrieval" in forecast:
+        check_retrieval(rep, fname, fc_id, forecast["retrieval"])
 
     # E2追随IOC除外の勧告検知（非致命・Issue #42）
     check_e2_followup_advisory(rep, fname, fc_id, forecast)
