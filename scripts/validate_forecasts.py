@@ -19,6 +19,13 @@ forecaster/schema/forecast.schema.json（v1.0 wrapper 形式）に照らして�
 - deadline_date が発行日（ファイル名日付）以降であること
 - base_rate_estimate が 0〜1 の範囲であること
 
+勧告（非致命・exit codeに影響しない・stderr表示のみ・Issue #42）:
+- fast_72h × E2 で hit_criteria が追随IOC公開期待型の語句を含む予報を検知し、
+  03-forecast.md「E2追随IOC除外（全Tier）」・教訓14 に照らした人間レビューを促す。
+  一次ソース自身の続報（帰属・エコシステム・C2の3点一致）という正当な残置ケースを
+  機械的にブロックしないため、violation ではなく advisory とする（発行済み予報の
+  的中判定基準は緩めない・原則D）。
+
 使い方:
     python3 scripts/validate_forecasts.py
     python3 scripts/validate_forecasts.py --date 2026-07-02
@@ -105,17 +112,29 @@ RE_FILENAME_DATE = re.compile(r"^(\d{4})-(\d{2})-(\d{2})\.json$")
 
 
 class Reporter:
-    """違反を「ファイル:forecast_id:項目: 内容」形式で蓄積する。"""
+    """違反（exit 1 対象）と勧告（非致命・人間レビュー喚起）を分けて蓄積する。"""
 
     def __init__(self):
         self.violations = []
+        self.advisories = []
 
     def add(self, filename, fc_id, item, message):
         self.violations.append(f"{filename}:{fc_id}:{item}: {message}")
 
+    def advise(self, filename, fc_id, item, message):
+        """非致命の勧告。exit code には影響させず stderr に警告表示のみ行う。
+        E2追随IOC除外のような『入口（母集団選別）の運用ルール』の見落としを
+        機械的に検知して人間レビューを促すために使う。的中判定基準（hit_criteria）を
+        機械判定で緩める・厳しくする操作ではない（原則D・M3の出口尺度には触れない）。"""
+        self.advisories.append(f"{filename}:{fc_id}:{item}: {message}")
+
     @property
     def count(self):
         return len(self.violations)
+
+    @property
+    def advisory_count(self):
+        return len(self.advisories)
 
 
 def is_valid_date(value):
@@ -211,6 +230,51 @@ def check_anchor(rep, fname, fc_id, anchor):
             fname, fc_id, "anchor.automatable",
             f"enum 違反: {anchor['automatable']!r}（許可値: ['yes', 'no', null]）",
         )
+
+
+# E2追随IOC除外（03-forecast.md「E2追随IOC除外（全Tier）」・教訓14）の勧告検知に使う語句。
+# fast_72h × E2 で hit_criteria がこれらを含む予報は、追随IOC公開期待型の可能性が高いため
+# 人間レビューを促す（非致命。一次ソース自身の同一キャンペーン続報＝帰属/エコシステム/C2の
+# 3点一致を満たす正当な残置ケースを機械的にブロックしないため、violation ではなく advisory）。
+E2_FOLLOWUP_HINT_TERMS = (
+    "追随IOC",
+    "追随",
+    "新規IOC",
+    "72時間以内",
+    "72h以内",
+    "72時間内",
+    "追加IOC",
+    "追加ドメイン",
+    "侵害指標",
+)
+# 正当な残置（一次ソース自身の続報）を示す3点一致語句。hit_criteria がこれらを明示していれば
+# 勧告を抑制する（03-forecast.md 対応2: 帰属・対象エコシステム・C2インフラの3点一致を要求）。
+E2_CARVEOUT_TERMS = ("帰属", "エコシステム", "C2")
+
+
+def check_e2_followup_advisory(rep, fname, fc_id, forecast):
+    """fast_72h × E2 の追随IOC公開期待型を非致命の勧告として検知する（Issue #42・教訓14）。"""
+    if forecast.get("forecast_class") != "fast_72h" or forecast.get("outcome_channel") != "E2":
+        return
+    hit_criteria = forecast.get("hit_criteria")
+    if not isinstance(hit_criteria, str):
+        return
+    if not any(term in hit_criteria for term in E2_FOLLOWUP_HINT_TERMS):
+        return
+    # 一次ソース自身の続報カーブアウト（帰属・エコシステム・C2の3点一致）を明示していれば抑制しない
+    # 代わりに、3点一致が揃っているかを勧告メッセージに含めて人間レビューの判断材料にする。
+    carveout_hits = [t for t in E2_CARVEOUT_TERMS if t in hit_criteria]
+    carveout_note = (
+        f"（一次ソース続報カーブアウトの3点一致語句 {carveout_hits} を検出。"
+        "帰属・エコシステム・C2の3点一致が hit_criteria に揃っているか確認）"
+        if carveout_hits
+        else "（一次ソース続報カーブアウトの3点一致〈帰属・エコシステム・C2〉が hit_criteria に不在）"
+    )
+    rep.advise(
+        fname, fc_id, "hit_criteria",
+        "fast_72h × E2 で追随IOC公開期待型の可能性。03-forecast.md「E2追随IOC除外（全Tier）」"
+        f"・教訓14（8/8=0%で正式除外）に照らして発行可否を人間レビューで確認すること{carveout_note}",
+    )
 
 
 def check_forecast(rep, fname, forecast, seen_ids, file_date, day_count):
@@ -382,6 +446,9 @@ def check_forecast(rep, fname, forecast, seen_ids, file_date, day_count):
             f"enum 違反: {forecast['verified_outcome']!r}（許可値: ['hit', 'partial', 'miss', 'unverifiable', null]）",
         )
 
+    # E2追随IOC除外の勧告検知（非致命・Issue #42）
+    check_e2_followup_advisory(rep, fname, fc_id, forecast)
+
 
 def check_file(rep, path, seen_ids):
     """forecast サイドカー JSON ファイル1件を検査する。"""
@@ -492,13 +559,24 @@ def main():
     for path in files:
         check_file(rep, path, seen_ids)
 
+    # 勧告（非致命）は違反の有無に関わらず stderr に表示する（exit code には影響しない）
+    if rep.advisories:
+        print("\n[勧告・人間レビュー喚起（非致命・exit codeに影響しない）]", file=sys.stderr)
+        for line in rep.advisories:
+            print(f"  ⚠ {line}", file=sys.stderr)
+
     if rep.violations:
         for line in rep.violations:
             print(line)
-        print(f"\nNG: {len(files)} ファイル中に違反 {rep.count} 件。", file=sys.stderr)
+        print(
+            f"\nNG: {len(files)} ファイル中に違反 {rep.count} 件"
+            f"（別途 勧告 {rep.advisory_count} 件）。",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
-    print(f"OK: {len(files)} ファイル・違反 0 件。")
+    suffix = f"・勧告 {rep.advisory_count} 件（stderr参照）" if rep.advisories else ""
+    print(f"OK: {len(files)} ファイル・違反 0 件{suffix}。")
     sys.exit(0)
 
 
