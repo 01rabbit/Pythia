@@ -1,0 +1,99 @@
+========================================
+セキュリティインテリジェンス日報 — Section 2: ゼロデイ・セキュリティトレンド
+調査日時: 2026-07-12 07:00 JST
+調査期間: 2026-07-11 07:00 〜 2026-07-12 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. The Gentlemen（別名: 旧Spikey Scorpius / 国家帰属: なし（金銭目的犯罪組織） / 帰属信頼度: 中）
+活動タイプ: TTP更新 / マルウェア発見 / 継続キャンペーン
+------------------------------------------------------------
+
+採用契機: R, S
+標的: 製造業を中心に複数セクター / グローバル（77カ国）
+マルウェア: 未命名Go製カスタムバックドア, GentleKiller（BYOVDフレームワーク・8バリアント）
+
+【24時間以内の変化】
+[Unit 42 (Palo Alto Networks) 2026-07-10] The Gentlemenの新規カスタムGo製バックドア採用を報告。EDR検知システムを無効化するための未特定ゼロデイ脆弱性利用の疑いを新たに指摘。累計580件（77カ国、2026-07-07時点）に被害統計を更新、2026年上半期だけで約390件（前期比6倍超増）、製造業が最多103件。
+
+【概要】
+既報キャンペーン（初報2026-06-21・ESET技術分析ベース）に対しUnit 42が2026-07-10付で続報を公開した。新たにGo製カスタムバックドアの採用と、EDR無効化のための未特定ゼロデイ脆弱性利用の疑いを報告し、被害件数・国数も既報（478組織・70カ国以上）から580件・77カ国へ拡大した。2025年9月にQilin RaaSアフィリエイトから独立RaaS運営に転換、業界標準70-80%を上回るアフィリエイト取り分90%を提示している。ESET・Unit42の複数独立ベンダーが確認する高信頼度のRaaSグループ。
+
+攻撃の流れ（判明分）:
+1. 既知脆弱性群（Fortinet FortiOS/FortiProxy CVE-2024-55591・Erlang/OTP SSHサーバCVE-2025-32433・Windows SMBクライアントCVE-2025-33073・React2Shell CVE-2025-55182・ThrottleStop.sysドライバCVE-2025-7771等）経由の侵入が疑われる（Gentlemen自身による武器化の明示的確認はソース中になし・推定）
+2. GentleKillerフレームワーク（8バリアントBYOVD）およびカスタムGo製バックドアによるEDR無効化・持続化
+3. 未特定ゼロデイ脆弱性を用いた検知システム無効化の疑い（推定）
+4. 暗号化・二重恐喝、アフィリエイトへ90%の取り分を提示するRaaSモデルで運営
+
+【新規TTP】
+・[T1562.001] Impair Defenses: Disable or Modify Tools — GentleKillerフレームワークによるBYOVD/EDRキラー動作、および未特定ゼロデイによる検知システム無効化の疑い（Unit42 2026-07-10）
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・CVE-2024-55591（Fortinet）・CVE-2025-32433（Erlang/OTP）・CVE-2025-33073（Windows SMBクライアント）・CVE-2025-55182（React2Shell）・CVE-2025-7771（ThrottleStop.sysドライバ）の緊急パッチ適用
+・EDRタンパー防御（Tamper Protection）の有効化、未知ドライバのロード・BYOVDパターンの行動検知強化
+Splunk SPL: sourcetype=sysmon EventCode=6 | search (driver_signed=false OR ImageLoaded IN (*.sys)) | stats count by ComputerName, ImageLoaded
+→ 未署名または既知悪用ドライバの新規ロードを確認、正規保守作業との誤検知を除外する
+
+【参照】
+https://unit42.paloaltonetworks.com/the-gentlemen-ransomware
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向相当のAPT活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[参考A相当（国内影響あり）] CVE未採番 / 複数CMSプラットフォーム横断のWebシェル設置キャンペーン（WordPress複数プラグイン・Craft CMS・MaxSite CMS・MetInfo CMS・Joomla JCE等）
+状態: 実悪用確認
+オーストラリア・サイバーセキュリティセンター(ACSC)が、複数CMS・プラグインの既知脆弱性を悪用しウェブシェルを設置するグローバルなキャンペーンについて公式勧告を発行した。オーストラリア国内の中小企業に実害が確認されているほか、対象製品（WordPress・Joomla等）は国内でも広範に利用されており波及リスクがある（推測）。特定の脅威アクターへの帰属情報はない。
+IoC: 確認されず
+参照: https://www.cyber.gov.au/about-us/view-all-content/alerts-and-advisories/large-scale-exploitation-campaign-targeting-website-content-management-systems-cms
+参照: https://www.bleepingcomputer.com/news/security/australia-warns-of-global-campaign-targeting-vulnerable-cms-platforms/
+
+・[トレンド記事] 休眠GitHubアカウント（Ghost Accounts）を悪用した組織横断API偵察キャンペーン
+Datadog Security Labsが、作成から2〜5年経過した休眠GitHubアカウント50件以上および漏えいOAuth/個人アクセストークンを用い、GraphQL API等を通じて企業のGitHub組織構成・メンバー・リポジトリを網羅的に収集する複数の重複キャンペーンを観測したと公表、本日主要メディアで報道が拡大した。一部事例では非公開リポジトリのクローンによるデータ持ち出しにまで発展している。
+参照: https://securitylabs.datadoghq.com/articles/coordinated-github-api-enumeration/
+参照: https://www.securityweek.com/ghost-accounts-abuse-github-api-in-mass-recon-campaign/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日は発行可能な予報なし。Section3本編相当CVEが0件、Section2トラックB（CMSキャンペーン）は複数脆弱性・複数製品にまたがり単一のE1〜E4観測出口に紐付けられないため見送り。The Gentlemen続報は被害統計の更新のみでEvidence上「今日新たに武器化を確認した」特定CVEがなく、M1観測可能性ゲート（E1〜E4の一次イベント紐付け）を満たす具体的な的中条件を構成できないため発行を見送った（原則1: Evidence起点の義務化）。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・不明 / RIS-2026-JscramblerNpm-RustStealer → 軸P=3点/軸Q=5点、参考A昇格トリガーなし。正規npmパッケージjscrambler 8.14.0侵害・Rust製インフォスティーラー混入、継続監視対象
+・不明 / RIS-2026-BalochistanPoliceCMS → 既報・期間内に質的変化なし
+・Silver Fox APT / SilverFox-MODBEACON → 既報・単一ベンダー帰属のため軸P/軸Q低評価、変化なし
+
+本日の集計:
+APT — 本編1件 / 注目動向0件 / 除外3件
+
+========================================
