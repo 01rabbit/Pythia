@@ -45,6 +45,10 @@ scripts/retrieve_similar_cases.py        ← 予報 Step C'' 類似過去事例�
 scripts/record_retrieval_calibration.py  ← 検証時に retrieval 較正データを収集（design §8・検証ステージのみ書込）
 scripts/backfill_observations.py         ← 過去日付の観測を CISA KEV から機械バックフィル（観測のみ・ベースライン統計対象外・予報は遡及生成しない）
 scripts/build_attack_group_history.py    ← 追跡対象グループの過去事例知識を MITRE ATT&CK から抽出（PR提案+人間レビュー経由でのみ再生成）
+scripts/build_kev_leadtime_stats.py      ← KEV全件の「NVD公開→KEV追加」ラグ実測分布を算出（E1検証窓・base_rate参考・PR経由でのみ再生成）
+scripts/build_epss_kev_calibration.py    ← KEV追加前日のEPSS%ile実測（M3確度アンカー較正・PR経由でのみ再生成）
+forecaster/knowledge/kev-leadtime-stats.json ← KEVリードタイム実測統計（生存バイアス等の限界を_limitationsに明記・hit_criteria変更には使用禁止）
+forecaster/knowledge/epss-kev-calibration.json ← EPSS×KEV較正統計（M3のEPSS条件の感度実測・P(KEV|EPSS高)の根拠には使用禁止）
 forecaster/knowledge/attack-group-history.json ← ATT&CK 由来のグループ過去事例（出典付き・観測への Technique/帰属付与根拠には使用禁止）
 forecaster/knowledge/product-categories.json ← Step C'' 用 CVE/製品→カテゴリ辞書（自動書き換え禁止）
 forecaster/verification/retrieval-calibration.json ← retrieval 閾値/重み較正の一次データ（検証時に増分追記）

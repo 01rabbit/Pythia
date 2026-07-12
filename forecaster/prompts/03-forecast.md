@@ -29,6 +29,10 @@
 9. `forecaster/knowledge/product-categories.json`（Step C'' 類似過去事例検索の CVE→製品カテゴリ抽象化辞書）
 10. 検証済み過去予報ストア（Step C'' が `scripts/retrieve_similar_cases.py` 経由で読む）:
     `forecaster/verification/YYYY-MM.json`・`forecaster/forecasts/daily/*.json`・`forecaster/observations/`
+11. `forecaster/knowledge/kev-leadtime-stats.json`（KEVリードタイム実測分布・
+    E1 検証窓と base_rate_estimate の実測参考。`_limitations` 厳守）
+12. `forecaster/knowledge/epss-kev-calibration.json`（KEV追加前日の EPSS%ile 実測・
+    M3 EPSS 条件の感度検証用。`_limitations` 厳守）
 
 ---
 
@@ -294,7 +298,7 @@ Step C'' の**内部実績**に加えて、**インターネット上の類似�
 
 **M1 観測可能性ゲート（発行前必須）**: 各予報の的中条件を観測出口クラス E1〜E4（KEV初回追加 / 新規IOC公開 / CERT初回勧告 / PoC公開）の一次・二値イベントに紐付ける。「国内被害報道」「KEV再登録」「悪用拡大（曖昧）」を的にする予報は発行せず注意点1行へ格下げ。
 
-**M3 EPSS+SSVC 確度アンカー**: 確度=高は「KEV登録 AND EPSS percentile≥0.95 AND SSVC=Act/Attend」を満たす場合のみ。SSVC `Automatable=no`（ASLR回避・認証・多段要）は確度=高から自動降格。EPSSは確度裏取りのみに使い72h的中条件に流用しない。
+**M3 EPSS+SSVC 確度アンカー**: 確度=高は「KEV登録 AND EPSS percentile≥0.95 AND SSVC=Act/Attend」を満たす場合のみ。SSVC `Automatable=no`（ASLR回避・認証・多段要）は確度=高から自動降格。EPSSは確度裏取りのみに使い72h的中条件に流用しない。EPSS 条件（%ile≥0.95）の感度実測は `epss-kev-calibration.json` を参照する（現行運用の較正には v4 層を優先。閾値の変更は同ファイルの実測を根拠に**人間レビュー経由でのみ**行い、予報生成時に独自判断で緩めない）。
 
 **確度: 低の扱い**: 確度「高」「中」の適用条件（A〜D）をいずれも満たさないが、M1 観測可能性ゲート（下記）の発行前チェックリストを通過する予報には確度「低」を適用してよい。「低」は発行を見送るべき曖昧な予報ではなく、精度は保証できないが防御行動として発行価値がある予報という積極的な分類である。適用条件・目標的中率帯の正式定義は `pipeline-forecast-verification.md` の「確度: 低」適用条件を参照する（本書では重複定義しない）。「低」を適用する場合も的中判定条件（hit_criteria）の記載義務は変わらない。
 
@@ -344,7 +348,11 @@ apt_geographic_spillover（中央値21日）など、外部可視化までの中
   事象であることに留意し、根拠なく低い値（例: 0.05未満）に倒さない。一方、KEV登録済みCVEの
   「再登録」を誤って的中条件にしないよう M4 の非的中判別を優先する（本フィールドとは別軸）。
   Evidenceが強い（実悪用試行が既に観測されている等）T1予報ほどベースレートは相対的に高くなる
-  （0.2〜0.4程度を目安とし、個別の状況に応じて調整する）。
+  （0.2〜0.4程度を目安とし、個別の状況に応じて調整する）。実測参考として
+  `kev-leadtime-stats.json` の `era_2023_plus_recommended`（KEV追加が確定した集合で
+  NVD公開から72時間以内に追加された割合）と製品カテゴリ別層を参照してよい。
+  ただし同ファイル `_limitations` を厳守する（生存バイアスがあるため上限側の参考値であり、
+  「NVD公開→KEV追加」ラグは「実悪用確認→KEV追加」ラグとは意味論が異なる）。
 - **E2〜E4（新規IOC公開・CERT初回勧告・PoC公開）を的中条件とする予報**: 発行時点で既にPoC公開や
   ベンダー分析が進行中であればベースレートは相対的に高い（0.3〜0.5程度）。逆に新規性の低い
   観測（単発の脆弱性報告のみ）から発行する予報はベースレートを低め（0.1未満）に見積もる。
