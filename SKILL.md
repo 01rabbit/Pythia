@@ -168,7 +168,10 @@ Section 4: SOC推奨情報
   5. `YYYY-MM-DD-security-report-ai.txt` — Section 1: AI攻撃動向
   6. `YYYY-MM-DD-security-report-soc.txt` — Section 4: SOC推奨情報
 - コミット直前に `python3 scripts/check_reported.py`・`python3 scripts/validate_observations.py`・
-  `python3 scripts/validate_forecasts.py` を実行し、違反があれば修正してからコミットする
+  `python3 scripts/validate_forecasts.py`・`python3 scripts/check_knowledge_untouched.py` を
+  実行し、違反があれば修正してからコミットする
+  （check_knowledge_untouched は knowledge/ の無変更を機械的に確認する。失敗した場合は
+  knowledge/ の変更を revert してからコミットし、意図した補正は Issue/PR として提案する）
 - 変更ファイル（reported-*.md / outputs/YYYY-MM-DD/ / forecaster/ の Step 3.5 成果物）を
   git add → git commit → git push する。コミットメッセージ: `daily report: YYYY-MM-DD`
 - 保存完了後、`security-report.txt`（全セクション完全版）の全文をチャットに表示する

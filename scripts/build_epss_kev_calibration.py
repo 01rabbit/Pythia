@@ -10,13 +10,7 @@
   ★これは M3 が運用上参照する「KEV 登録後の EPSS 値」の充足率とは別の量である
   （EPSS v3+ は KEV 収載自体を特徴量に含むため登録後の値は事後的に押し上がる）。
   前日感度の低さを根拠に閾値を引き下げるのはカテゴリエラーであり禁止。
-
-本統計が測るもの・測らないもの（誤用防止・厳守）:
-  - 測るもの: P(EPSS%ile ≥ τ | 翌日 KEV 追加) — 実際に KEV 追加された CVE のうち、
-    追加前日に EPSS 条件を満たしていた割合（M3 の EPSS 条件の「感度」）。
-  - 測らないもの: P(KEV 追加 | EPSS%ile ≥ τ) — パーセンタイルの定義上、任意時点で
-    全 CVE の約5%が %ile≥0.95 に存在する。その大多数は KEV に追加されない。
-    本統計を「EPSS が高ければ KEV 追加される」という予測精度の根拠にしないこと。
+  正確な定義・限界は出力 JSON の _limitations が正。
 
 測定日を dateAdded の前日とする理由:
   EPSS（v3 以降）は CISA KEV 収載を入力特徴の一つとして使用するため、追加当日以降の
@@ -26,19 +20,23 @@
 設計原則:
   - 出力は forecaster/knowledge/ の機械生成ファイル。自動書き換え禁止ルールに従い、
     再生成は日次ルーチンからは行わず PR 提案+人間レビュー経由のみ。
-  - 全エントリの実測値を entries[] に監査証跡として残す。
-  - EPSS モデル版（v1/v2/v3/v4）でパーセンタイルの意味が変わるため版別に層別する。
+  - サマリー統計は epss-kev-calibration.json（日次予報ステージが読む・小サイズ）、
+    全件の実測値（監査証跡）は epss-kev-calibration-entries.json に分離する。
+  - EPSS モデル版（v1/v2/v3/v4）と鮮度（NVD公開→KEV追加ラグ）で層別する。
+    鮮度層は必須（NVD データは --nvd-file 省略時ネット取得）。
 
 入力:
   - CISA KEV catalog（--kev-file 指定またはネット取得）
+  - NVD API hasKev 一括照会（--nvd-file 指定またはネット取得。鮮度層に必須）
   - FIRST EPSS API（https://api.first.org/data/v1/epss・日付指定履歴照会）
 
 出力:
-  forecaster/knowledge/epss-kev-calibration.json
+  forecaster/knowledge/epss-kev-calibration.json（サマリー）
+  forecaster/knowledge/epss-kev-calibration-entries.json（全件監査証跡）
 
 使い方:
-    python3 scripts/build_epss_kev_calibration.py --kev-file kev.json \
-        --cache /path/to/epss-cache.jsonl
+    python3 scripts/build_epss_kev_calibration.py \
+        --kev-file kev.json --nvd-file nvd-kev.json --cache /path/to/epss-cache.jsonl
 """
 
 import argparse
@@ -49,21 +47,24 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import date, timedelta
+
+from kev_data_sources import fetch_json, load_kev, load_nvd_kev_vulnerabilities, percentile
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_PATH = os.path.join(
     REPO_ROOT, "forecaster", "knowledge", "epss-kev-calibration.json"
 )
-
-KEV_FEED_URL = (
-    "https://www.cisa.gov/sites/default/files/feeds/"
-    "known_exploited_vulnerabilities.json"
+ENTRIES_OUT_PATH = os.path.join(
+    REPO_ROOT, "forecaster", "knowledge", "epss-kev-calibration-entries.json"
 )
+
 EPSS_API = "https://api.first.org/data/v1/epss"
 
-# EPSS モデル版の適用開始日（FIRST 公表のモデル切替日）
+# EPSS モデル版の適用開始日（FIRST 公表のモデル切替日）。
+# 層別は測定日（query_date = dateAdded の前日）で行う: 測定値を生成したモデルで
+# 分類するのが正であり、dateAdded 基準とは境界が1日ずれる（_limitations 参照）。
 MODEL_ERAS = [
     ("2025-03-17", "v4"),
     ("2023-03-07", "v3"),
@@ -74,6 +75,8 @@ MODEL_ERAS = [
 THRESHOLDS = [0.95, 0.90, 0.75, 0.50]
 REQUEST_INTERVAL_SEC = 0.6
 MAX_RETRIES = 4
+MIN_SAMPLE_PER_STRATUM = 10
+FRESH_LAG_MAX_DAYS = 30
 
 
 def model_era(query_date):
@@ -83,19 +86,17 @@ def model_era(query_date):
     return "pre_epss"
 
 
-def fetch_json(url, timeout=60):
-    req = urllib.request.Request(url, headers={"User-Agent": "pythia-epss-cal/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.load(resp)
-
-
 def fetch_epss_batch(cves, query_date):
-    """指定日の EPSS を複数 CVE 一括照会する。{cve: {epss, percentile}}"""
+    """指定日の EPSS を複数 CVE 一括照会する。
+
+    戻り値: {cve: {epss, percentile}}（応答に無い CVE はキー欠落）。
+    HTTP 422（No records available）の場合は None を返す — 呼び出し元は
+    そのバッチ全体を no_score_reason: http_422 として記録すること。"""
     params = urllib.parse.urlencode({"cve": ",".join(cves), "date": query_date})
     url = f"{EPSS_API}?{params}"
     for attempt in range(MAX_RETRIES):
         try:
-            data = fetch_json(url)
+            data = fetch_json(url, timeout=60, user_agent="pythia-epss-cal/1.0")
             return {
                 d["cve"]: {
                     "epss": float(d["epss"]),
@@ -105,13 +106,12 @@ def fetch_epss_batch(cves, query_date):
             }
         except urllib.error.HTTPError as e:
             # 422 は実測上「照会した全CVEがその日に未収録」（NVD収録前にKEV追加
-            # されたゼロデイ等）で返るが、公式に文書化された仕様ではない。
-            # 無警告で握りつぶさず、警告ログを残した上で「スコアなし」として扱う
-            # （呼び出し元が no_score_reason: http_422 を記録する）。
+            # されたゼロデイ等）で返るが、公式に文書化された仕様ではないため
+            # 警告ログを残し、恒久キャッシュはしない（再実行時に再照会される）。
             if e.code == 422:
                 print(
                     f"[warn] EPSS 422 No records: date={query_date} "
-                    f"cves={len(cves)}件（全件 no_score 扱い・要因は http_422 として記録）"
+                    f"cves={len(cves)}件（no_score_reason: http_422 として記録）"
                 )
                 return None
             wait = 2 ** (attempt + 1)
@@ -134,29 +134,34 @@ def load_cache(path):
     return cache
 
 
-def percentile_of(sorted_vals, p):
-    if not sorted_vals:
-        return None
-    k = (len(sorted_vals) - 1) * p / 100.0
-    f = int(k)
-    c = min(f + 1, len(sorted_vals) - 1)
-    if f == c:
-        return round(float(sorted_vals[f]), 4)
-    return round(sorted_vals[f] + (sorted_vals[c] - sorted_vals[f]) * (k - f), 4)
-
-
-def summarize(percentiles, n_no_score):
+def summarize(percentiles, n_no_score, flag_insufficient=False):
     n = len(percentiles)
     out = {"n_measured": n, "n_no_score": n_no_score}
     if n == 0:
         return out
     s = sorted(percentiles)
-    out["median_percentile"] = percentile_of(s, 50)
-    out["p25_percentile"] = percentile_of(s, 25)
+    out["median_percentile"] = percentile(s, 50, ndigits=4)
+    out["p25_percentile"] = percentile(s, 25, ndigits=4)
     for t in THRESHOLDS:
         # キー名を2桁固定（pct_ge_0.90）にする。f"{0.90}" は "0.9" になり
         # 下流が pct_ge_0.90 を期待すると None を踏むため。
         out[f"pct_ge_{t:.2f}"] = round(sum(1 for x in s if x >= t) / n, 3)
+    if flag_insufficient and n < MIN_SAMPLE_PER_STRATUM:
+        out["insufficient_sample"] = True
+        out["note"] = (
+            f"n_measured<{MIN_SAMPLE_PER_STRATUM} のため参考値。単独で判断根拠にしない。"
+        )
+    return out
+
+
+def group_stats(records_by_key):
+    """{key: [record]} から {key: summarize(...)} を作る（層別は不足フラグ付き）。"""
+    out = {}
+    for key in sorted(records_by_key, key=str):
+        recs = records_by_key[key]
+        vals = [r["percentile"] for r in recs if r["percentile"] is not None]
+        miss = sum(1 for r in recs if r["percentile"] is None)
+        out[str(key)] = summarize(vals, miss, flag_insufficient=True)
     return out
 
 
@@ -168,54 +173,70 @@ def main():
     ap.add_argument("--cache", help="実測値キャッシュ（JSONL・レジューム用）")
     ap.add_argument(
         "--nvd-file",
-        help=(
-            "NVD hasKev 応答 JSON のローカルパス（任意）。指定時は NVD 公開日から"
-            "鮮度層（公開→KEV追加ラグ別）の感度クロス集計を追加する"
-        ),
+        help="NVD hasKev 応答 JSON のローカルパス（省略時はネット取得。鮮度層に必須のため常に読み込む）",
     )
     ap.add_argument("--out", default=OUT_PATH, help=f"出力先（既定: {OUT_PATH}）")
+    ap.add_argument(
+        "--entries-out",
+        default=ENTRIES_OUT_PATH,
+        help=f"全件監査証跡の出力先（既定: {ENTRIES_OUT_PATH}）",
+    )
     args = ap.parse_args()
 
-    if args.kev_file:
-        kev = json.load(open(args.kev_file))
-    else:
-        print(f"[fetch] CISA KEV: {KEV_FEED_URL}")
-        kev = fetch_json(KEV_FEED_URL, timeout=120)
+    kev = load_kev(args.kev_file)
     catalog_version = kev.get("catalogVersion", "unknown")
+
+    # 鮮度層に使う NVD 公開日（必須入力: --nvd-file 省略時はネット取得）
+    published_of = {}
+    for v in load_nvd_kev_vulnerabilities(args.nvd_file):
+        cve_obj = v.get("cve", {})
+        pub = (cve_obj.get("published") or "")[:10]
+        if pub:
+            published_of[cve_obj.get("id")] = pub
 
     cache = load_cache(args.cache)
     cache_f = open(args.cache, "a") if args.cache else None
 
     # dateAdded ごとにまとめ、前日を照会日とする。
-    # キャッシュは (a) 現行カタログに存在し (b) date_added が一致し
-    # (c) 実測値が入っている場合のみ採用する（カタログ改訂・一時的な空応答の
-    # 恒久キャッシュ化を防ぐ。percentile=None は再照会し、422 なら再び None になる）。
+    # キャッシュは (a) 現行カタログに存在し (b) date_added が一致し、かつ
+    # (c) 実測値あり または 恒久欠測（not_scored_on_date）の場合に採用する。
+    # http_422 由来の欠測（API仕様が非公式・一時異常の可能性）のみ再照会する。
     by_query_date = defaultdict(list)
     date_added_of = {}
+    reused = 0
     for e in kev.get("vulnerabilities", []):
         cve, added = e.get("cveID"), e.get("dateAdded")
         if not cve or not added:
             continue
         date_added_of[cve] = added
         rec = cache.get(cve)
-        if rec and rec.get("date_added") == added and rec.get("percentile") is not None:
+        if (
+            rec
+            and rec.get("date_added") == added
+            and (
+                rec.get("percentile") is not None
+                or rec.get("no_score_reason") == "not_scored_on_date"
+            )
+        ):
+            reused += 1
             continue
         qd = (date.fromisoformat(added) - timedelta(days=1)).isoformat()
         by_query_date[qd].append(cve)
 
     total_dates = len(by_query_date)
-    print(f"[plan] 照会対象日数: {total_dates}（キャッシュ済み {len(cache)} 件を除く）")
+    print(f"[plan] 照会対象日数: {total_dates}（キャッシュ再利用 {reused} 件）")
 
     for i, qd in enumerate(sorted(by_query_date), 1):
         cves = by_query_date[qd]
         scores = {}
-        got_422 = False
+        cves_in_422_batch = set()  # 422 はバッチ単位で帰属させる（日単位にしない）
         for j in range(0, len(cves), 100):
-            batch = fetch_epss_batch(cves[j : j + 100], qd)
-            if batch is None:
-                got_422 = True
+            batch = cves[j : j + 100]
+            result = fetch_epss_batch(batch, qd)
+            if result is None:
+                cves_in_422_batch.update(batch)
             else:
-                scores.update(batch)
+                scores.update(result)
             time.sleep(REQUEST_INTERVAL_SEC)
         for cve in cves:
             hit = scores.get(cve)
@@ -229,41 +250,26 @@ def main():
             }
             if hit is None:
                 rec["no_score_reason"] = (
-                    "http_422" if got_422 else "not_scored_on_date"
+                    "http_422" if cve in cves_in_422_batch else "not_scored_on_date"
                 )
             cache[cve] = rec
             if cache_f:
                 cache_f.write(json.dumps(rec) + "\n")
-                cache_f.flush()
+        if cache_f:
+            cache_f.flush()
         if i % 25 == 0 or i == total_dates:
             print(f"[progress] {i}/{total_dates} 日分照会済み")
 
     if cache_f:
         cache_f.close()
 
-    # 集計は現行カタログに存在する CVE のみ（KEV から削除されたエントリの
-    # 古いキャッシュを母集団に混入させない）
+    # 集計は現行カタログに存在する CVE のみ（削除エントリの古いキャッシュを除外）
     entries = sorted(
-        (
-            cache[c]
-            for c in date_added_of
-            if c in cache and cache[c].get("date_added") == date_added_of[c]
-        ),
+        (cache[c] for c in date_added_of if c in cache),
         key=lambda r: (r["date_added"], r["cve"]),
     )
     measured = [r for r in entries if r["percentile"] is not None]
     no_score = [r for r in entries if r["percentile"] is None]
-
-    # 鮮度層: NVD 公開→KEV追加ラグで層別（遡及登録された古い CVE は前日 EPSS が
-    # 高くて当然であり、感度を上振れさせる。M3 が実際に適用される「新規公開直後の
-    # CVE への予報」に近いのは fresh 層である）
-    published_of = {}
-    if args.nvd_file:
-        for v in json.load(open(args.nvd_file)).get("vulnerabilities", []):
-            cve_obj = v.get("cve", {})
-            pub = (cve_obj.get("published") or "")[:10]
-            if pub:
-                published_of[cve_obj.get("id")] = pub
 
     def freshness(r):
         pub = published_of.get(r["cve"])
@@ -272,34 +278,32 @@ def main():
         lag = (date.fromisoformat(r["date_added"]) - date.fromisoformat(pub)).days
         if lag < 0:
             return "negative_lag_zero_day_type"
-        if lag <= 30:
+        if lag <= FRESH_LAG_MAX_DAYS:
             return "fresh_lag_le_30d"
         if lag <= 365:
             return "lag_31_365d"
         return "lag_gt_365d"
 
-    by_era = defaultdict(lambda: ([], 0))
-    by_year = defaultdict(lambda: ([], 0))
-    by_fresh = defaultdict(lambda: ([], 0))
+    by_era = defaultdict(list)
+    by_year = defaultdict(list)
+    by_fresh = defaultdict(list)
+    by_fresh_v4 = defaultdict(list)  # 鮮度×v4測定のクロス（M3 主参照層）
     for r in entries:
-        buckets = [(r["model_era"], by_era), (r["date_added"][:4], by_year)]
-        if published_of:
-            buckets.append((freshness(r), by_fresh))
-        for key, bucket in buckets:
-            vals, miss = bucket[key]
-            if r["percentile"] is None:
-                bucket[key] = (vals, miss + 1)
-            else:
-                vals.append(r["percentile"])
-                bucket[key] = (vals, miss)
+        by_era[r["model_era"]].append(r)
+        by_year[r["date_added"][:4]].append(r)
+        fr = freshness(r)
+        by_fresh[fr].append(r)
+        if r["model_era"] == "v4":
+            by_fresh_v4[fr].append(r)
 
     out = {
         "_comment": (
             "KEV 追加前日時点の EPSS パーセンタイル実測分布（M3 確度アンカー較正データ）。"
             "測っているのは P(EPSS%ile≥τ | 翌日KEV追加)＝M3 の EPSS 条件の感度であり、"
             "P(KEV追加 | EPSS%ile≥τ) ではない。下記 _limitations 厳守。"
+            "全件の実測値（監査証跡）は epss-kev-calibration-entries.json に分離。"
         ),
-        "_schema_version": "1.0",
+        "_schema_version": "1.1",
         "_machine_generated": True,
         "_generator": "scripts/build_epss_kev_calibration.py",
         "_generated_on": date.today().isoformat(),
@@ -307,6 +311,7 @@ def main():
             "kev_catalog_version": catalog_version,
             "epss_api": EPSS_API,
             "measurement": "dateAdded の前日時点の EPSS（履歴照会）",
+            "entries_file": "forecaster/knowledge/epss-kev-calibration-entries.json",
         },
         "_governance": (
             "knowledge/ の自動書き換え禁止ルールに従い、再生成は日次ルーチンからは"
@@ -330,12 +335,15 @@ def main():
             "上振れ推定: E1 予報は追加の72時間以上前に発行されうる。EPSS は悪用証拠に"
             "日次で反応するため、追加前日の値は予報発行時点で観測できた値の上振れ側の"
             "推定である。",
-            "遡及登録の混合: 公開から年単位で悪用されてきた CVE の前日 EPSS が高いのは"
-            "自明であり、全体感度を上振れさせる。M3 が実際に適用される『新規公開直後の"
-            "CVE への予報』の較正には by_freshness の fresh_lag_le_30d 層を主参照とする。",
-            "モデル版差: EPSS モデル切替（v1/v2/v3/v4）で順位付けに使う特徴量とスコア"
-            "モデルが変わるため by_model_era で層別した。現行運用には v4（2025-03-17以降）"
-            "層を優先参照する（n が小さい場合はその旨を明記して扱う）。",
+            "遡及登録の混合と主参照層: 公開から年単位で悪用されてきた CVE の前日 EPSS が"
+            "高いのは自明であり、全体感度を上振れさせる。較正の主参照は "
+            "by_freshness_v4_era.fresh_lag_le_30d（現行モデル v4 での測定×新規公開30日"
+            "以内）。同層が insufficient_sample の場合は by_freshness.fresh_lag_le_30d"
+            "（全期間・モデル版混合）と by_model_era.v4 を併読し、限界を明記して使う。",
+            "モデル版の層別基準: by_model_era は測定日（query_date = dateAdded の前日）が"
+            "属するモデル版で層別した（測定値を生成したモデルで分類するのが正）。"
+            "dateAdded 基準の解釈とは各切替日で1日ずれる（例: dateAdded=2025-03-17 の"
+            "エントリの測定日は 2025-03-16 で v3 層に入る）。",
             "no_score: 照会日に EPSS スコアが存在しない CVE。大半は NVD 収録前に KEV "
             "追加されたゼロデイ型で、この欠測は無作為ではなく『公開前に悪用された事例』に"
             "偏るため、感度の分母からの除外はやや楽観方向のバイアスを持つ。"
@@ -350,44 +358,57 @@ def main():
             "aggregated": len(entries),
             "measured": len(measured),
             "no_score": len(no_score),
-            "no_score_reasons": {
-                reason: sum(
-                    1 for r in no_score if r.get("no_score_reason", "unknown") == reason
+            "no_score_reasons": dict(
+                sorted(
+                    Counter(
+                        r.get("no_score_reason", "unknown") for r in no_score
+                    ).items()
                 )
-                for reason in sorted(
-                    {r.get("no_score_reason", "unknown") for r in no_score}
-                )
-            },
+            ),
         },
         "overall": summarize([r["percentile"] for r in measured], len(no_score)),
-        "by_freshness": (
-            {
-                k: summarize(vals, miss)
-                for k, (vals, miss) in sorted(by_fresh.items())
-            }
-            if published_of
-            else {
-                "_note": "--nvd-file 未指定のため鮮度層クロスなし。M3 較正には鮮度層が必須。"
-            }
+        "by_freshness_v4_era": {
+            "_note": (
+                "M3 較正の主参照層: 測定日が EPSS v4 期（2025-03-17以降）×鮮度別。"
+                "insufficient_sample の層は by_freshness / by_model_era.v4 を併読。"
+            ),
+            **group_stats(by_fresh_v4),
+        },
+        "by_freshness": group_stats(by_fresh),
+        "by_model_era": group_stats(by_era),
+        "by_year_added": group_stats(by_year),
+    }
+    entries_out = {
+        "_comment": (
+            "epss-kev-calibration.json の全件実測値（監査証跡）。"
+            "サマリー統計の再検証・監査専用であり、日次予報ステージの入力ではない。"
         ),
-        "by_model_era": {
-            era: summarize(vals, miss)
-            for era, (vals, miss) in sorted(by_era.items())
-        },
-        "by_year_added": {
-            y: summarize(vals, miss) for y, (vals, miss) in sorted(by_year.items())
-        },
+        "_schema_version": "1.1",
+        "_machine_generated": True,
+        "_generator": "scripts/build_epss_kev_calibration.py",
+        "_generated_on": date.today().isoformat(),
+        "_summary_file": "forecaster/knowledge/epss-kev-calibration.json",
+        "_governance": (
+            "knowledge/ の自動書き換え禁止ルールに従い、再生成は PR 提案+人間レビュー経由のみ。"
+        ),
         "entries": entries,
     }
     with open(args.out, "w") as f:
         json.dump(out, f, ensure_ascii=False, indent=2)
         f.write("\n")
-    rel = os.path.relpath(args.out, REPO_ROOT)
+    with open(args.entries_out, "w") as f:
+        json.dump(entries_out, f, ensure_ascii=False, indent=2)
+        f.write("\n")
     o = out["overall"]
-    print(f"[done] {rel}: measured={len(measured)} no_score={len(no_score)}")
+    print(
+        f"[done] {os.path.relpath(args.out, REPO_ROOT)}: "
+        f"measured={len(measured)} no_score={len(no_score)}"
+    )
+    fresh_v4 = out["by_freshness_v4_era"].get("fresh_lag_le_30d", {})
     print(
         f"[overall] median%ile={o.get('median_percentile')} "
-        f"ge0.95={o.get('pct_ge_0.95')} ge0.90={o.get('pct_ge_0.90')}"
+        f"ge0.95={o.get('pct_ge_0.95')} ge0.90={o.get('pct_ge_0.90')} | "
+        f"v4×fresh: n={fresh_v4.get('n_measured')} ge0.95={fresh_v4.get('pct_ge_0.95')}"
     )
     return 0
 

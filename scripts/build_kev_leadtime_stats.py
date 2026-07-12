@@ -6,15 +6,13 @@
   base_rate_estimate 記入の参考統計を、n=1（kev-initial-add-timelines.json の
   現状）から KEV 全母集団規模の実測分布に引き上げる。
 
-本統計が測るもの・測らないもの（誤用防止・厳守）:
+本統計の使い方（正確な定義・限界は出力 JSON の _limitations が正）:
   - 測るもの: 「最終的に KEV に追加された CVE が、NVD 公開から KEV 追加まで
-    に要した日数」の条件付き分布（KEV 追加が確定した集合の中でのラグ分布）。
-  - 測らないもの:
-    (1) P(KEV追加 | CVE公開) — 生存バイアス: KEV に追加されなかった大多数の
-        CVE は母集団に含まれない。E1 予報の base_rate そのものではない。
-    (2) 「実悪用確認→KEV追加」ラグ — kev-initial-add-timelines.json が
-        測っているものとは意味論が異なる（NVD 公開時点で悪用が始まっている
-        とは限らない）。両ファイルは補完関係であり代替関係ではない。
+    に要した日数」の条件付き分布。
+  - 測らないもの: P(KEV追加|公開)・「実悪用確認→KEV追加」ラグ
+    （kev-initial-add-timelines.json の対象）・予報発行起点のハザード率。
+    時間原点が NVD 公開である点で E1 予報の base rate とは条件付けが異なり、
+    方向未定の参考値である（_limitations「時間原点の不一致」参照）。
   - 用途は fast_72h / slow_7d の窓設定・base_rate_estimate 記入時の参考に
     限定し、的中判定基準（hit_criteria）の変更には使わない。
 
@@ -22,12 +20,12 @@
   - 日付スタンプ付き一次データのみ使用（KEV dateAdded / NVD published）。
   - 出力は forecaster/knowledge/ の機械生成ファイル。knowledge/ の自動書き換え
     禁止ルールに従い、再生成は日次ルーチンからは行わず PR 提案+人間レビュー経由のみ。
-  - 平均値はロングテール（数年越しの KEV 追加）に引きずられるため、
-    中央値・パーセンタイル・閾値内割合を主とし mean は参考値とする。
+  - 平均値はロングテールに引きずられるため、中央値・パーセンタイル・閾値内割合を
+    主とし mean は参考値とする。
 
 入力:
   - CISA KEV catalog（--kev-file 指定またはネット取得）
-  - NVD API hasKev 一括照会（--nvd-file 指定またはネット取得。published 日付と CVSS）
+  - NVD API hasKev 一括照会（--nvd-file 指定またはネット取得。published と CVSS）
   - forecaster/knowledge/product-categories.json（製品カテゴリ層別・読み取りのみ）
 
 出力:
@@ -43,9 +41,16 @@ import json
 import os
 import re
 import sys
-import urllib.request
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date
+
+from kev_data_sources import (
+    KEV_FEED_URL,
+    load_kev,
+    load_nvd_kev_vulnerabilities,
+    percentile,
+    primary_cvss_score,
+)
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_PATH = os.path.join(REPO_ROOT, "forecaster", "knowledge", "kev-leadtime-stats.json")
@@ -53,72 +58,26 @@ PRODUCT_CATEGORIES_PATH = os.path.join(
     REPO_ROOT, "forecaster", "knowledge", "product-categories.json"
 )
 
-KEV_FEED_URL = (
-    "https://www.cisa.gov/sites/default/files/feeds/"
-    "known_exploited_vulnerabilities.json"
-)
-NVD_KEV_URL = (
-    "https://services.nvd.nist.gov/rest/json/cves/2.0"
-    "?hasKev&resultsPerPage=2000&startIndex={start_index}"
-)
-
 MIN_SAMPLE_PER_STRATUM = 10  # 層別統計の最小サンプル数（下回る層は insufficient 扱い）
 ERA_STABLE_START_YEAR = "2023"  # KEV遡及一括登録期（2021-2022）を除いた推奨参照層の開始年
+FRESH_LAG_MAX_DAYS = 90  # 「新規公開の即応追加」近似の部分集合の上限ラグ
 
 
-def fetch_json(url, timeout=180):
-    req = urllib.request.Request(url, headers={"User-Agent": "pythia-leadtime/1.0"})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return json.load(resp)
-
-
-def load_kev(kev_file):
-    if kev_file:
-        with open(kev_file) as f:
-            return json.load(f)
-    print(f"[fetch] CISA KEV: {KEV_FEED_URL}")
-    return fetch_json(KEV_FEED_URL)
-
-
-def load_nvd(nvd_file):
-    """NVD hasKev 一括照会から {CVE-ID: {published, cvss}} を作る。"""
-    vulns = []
-    if nvd_file:
-        with open(nvd_file) as f:
-            vulns = json.load(f).get("vulnerabilities", [])
-    else:
-        start_index = 0
-        while True:
-            print(f"[fetch] NVD hasKev: startIndex={start_index}")
-            data = fetch_json(NVD_KEV_URL.format(start_index=start_index))
-            vulns.extend(data.get("vulnerabilities", []))
-            start_index += len(data.get("vulnerabilities", []))
-            if start_index >= data.get("totalResults", 0) or not data.get(
-                "vulnerabilities"
-            ):
-                break
-
-    preference = ["cvssMetricV40", "cvssMetricV31", "cvssMetricV30", "cvssMetricV2"]
+def load_nvd_meta(nvd_file):
+    """NVD hasKev 照会から {CVE-ID: {published, cvss}} を作る。"""
     result = {}
-    for v in vulns:
-        cve = v.get("cve", {})
-        cve_id = cve.get("id")
-        published = (cve.get("published") or "")[:10]
-        score = None
-        for key in preference:
-            entries = cve.get("metrics", {}).get(key) or []
-            if entries:
-                primary = next(
-                    (e for e in entries if e.get("type") == "Primary"), entries[0]
-                )
-                score = primary.get("cvssData", {}).get("baseScore")
-                break
-        result[cve_id] = {"published": published or None, "cvss": score}
+    for v in load_nvd_kev_vulnerabilities(nvd_file):
+        cve_obj = v.get("cve", {})
+        result[cve_obj.get("id")] = {
+            "published": (cve_obj.get("published") or "")[:10] or None,
+            "cvss": primary_cvss_score(cve_obj),
+        }
     return result
 
 
 def build_category_resolver():
-    """product-categories.json の cve_overrides + product_keyword_map を使う。
+    """product-categories.json の cve_overrides + product_keyword_map から
+    (resolver, schema_version) を返す。
 
     辞書は retrieve_similar_cases.py と同一だが、マッチングは意図的に厳格化
     している: 単純部分一致では nsd→nsDOMSVGZoomEvent（Firefox）、
@@ -131,9 +90,7 @@ def build_category_resolver():
     }
     compiled = [
         (
-            re.compile(
-                r"(?<![a-z0-9])" + re.escape(kw.lower()) + r"(?![a-z0-9])"
-            ),
+            re.compile(r"(?<![a-z0-9])" + re.escape(kw.lower()) + r"(?![a-z0-9])"),
             cat,
         )
         for kw, cat in data.get("product_keyword_map", {}).items()
@@ -146,19 +103,7 @@ def build_category_resolver():
         hay = (text or "").lower()
         return {cat for pat, cat in compiled if pat.search(hay)}
 
-    return resolver
-
-
-def percentile(sorted_vals, p):
-    """線形補間パーセンタイル（0 <= p <= 100）。"""
-    if not sorted_vals:
-        return None
-    k = (len(sorted_vals) - 1) * p / 100.0
-    f = int(k)
-    c = min(f + 1, len(sorted_vals) - 1)
-    if f == c:
-        return float(sorted_vals[f])
-    return round(sorted_vals[f] + (sorted_vals[c] - sorted_vals[f]) * (k - f), 1)
+    return resolver, data.get("_schema_version")
 
 
 def summarize(lags):
@@ -170,10 +115,10 @@ def summarize(lags):
     within = lambda d: round(sum(1 for x in s if x <= d) / n, 3)
     return {
         "n": n,
-        "median_days": percentile(s, 50),
-        "p25_days": percentile(s, 25),
-        "p75_days": percentile(s, 75),
-        "p90_days": percentile(s, 90),
+        "median_days": percentile(s, 50, ndigits=1),
+        "p25_days": percentile(s, 25, ndigits=1),
+        "p75_days": percentile(s, 75, ndigits=1),
+        "p90_days": percentile(s, 90, ndigits=1),
         "mean_days_reference_only": round(sum(s) / n, 1),
         "pct_same_day": within(0),
         "pct_within_3d": within(3),
@@ -207,6 +152,39 @@ def cvss_band(score):
     return "below_7.0"
 
 
+def era_recommended_block(era, era_neg):
+    """推奨参照層（2023年以降）の統計ブロックを組み立てる。"""
+    block = {
+        "_note": (
+            f"dateAdded が {ERA_STABLE_START_YEAR} 年以降のエントリのみの合算。"
+            "BOD 22-01 初期の遡及一括登録（2021-2022）を除いた参照層だが、"
+            "本層も公開後1年超の遅延追加を含む二峰混合分布である"
+            "（fresh_subset_lag_le_90d と negative_lag クランプ値を併読）。"
+        ),
+        **summarize([r["lag"] for r in era]),
+        "fresh_subset_lag_le_90d": {
+            "_note": (
+                f"公開後{FRESH_LAG_MAX_DAYS}日以内に追加された部分集合（遡及登録を"
+                "除いた『新規公開CVEの即応追加』母集団の近似）。"
+                f"P(lag≤3|lag≤{FRESH_LAG_MAX_DAYS}) 等の条件付き割合であり、"
+                "さらに強い条件付けが入る点に注意。"
+            ),
+            **summarize([r["lag"] for r in era if r["lag"] <= FRESH_LAG_MAX_DAYS]),
+        },
+    }
+    total = len(era) + len(era_neg)
+    block["pct_within_3d_negative_clamped"] = (
+        round((sum(1 for r in era if r["lag"] <= 3) + len(era_neg)) / total, 3)
+        if total
+        else None
+    )
+    block["_clamp_note"] = (
+        "negative_lag（ゼロデイ型）を lag=0 として含めた場合の pct_within_3d"
+        "（感度上限の参考値）。"
+    )
+    return block
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="KEV 全件から NVD公開→KEV追加リードタイム分布を算出する。"
@@ -218,12 +196,12 @@ def main():
 
     kev = load_kev(args.kev_file)
     catalog_version = kev.get("catalogVersion", "unknown")
-    nvd = load_nvd(args.nvd_file)
-    resolver = build_category_resolver()
+    nvd = load_nvd_meta(args.nvd_file)
+    resolver, categories_schema_version = build_category_resolver()
 
     entries = []
     n_missing_nvd = 0
-    negative = []  # KEV追加がNVD公開より先（収録遅延・非公開悪用の痕跡）
+    negative = []  # KEV追加がNVD公開より先（ゼロデイ型・NVD収録遅延）
     for e in kev.get("vulnerabilities", []):
         cve_id = e.get("cveID")
         date_added = e.get("dateAdded")
@@ -255,10 +233,7 @@ def main():
             "cvss_band": cvss_band(meta["cvss"]),
             "categories": cats,
         }
-        if lag < 0:
-            negative.append(rec)
-        else:
-            entries.append(rec)
+        (negative if lag < 0 else entries).append(rec)
 
     lags = [r["lag"] for r in entries]
     by_year = defaultdict(list)
@@ -272,6 +247,9 @@ def main():
         for c in r["categories"]:
             by_cat[c].append(r["lag"])
 
+    era = [r for r in entries if r["year_added"] >= ERA_STABLE_START_YEAR]
+    era_neg = [r for r in negative if r["year_added"] >= ERA_STABLE_START_YEAR]
+
     n_all = len(entries) + len(negative)
     out = {
         "_comment": (
@@ -281,7 +259,7 @@ def main():
             "P(KEV追加|公開) でも『実悪用確認→KEV追加』ラグ"
             "（kev-initial-add-timelines.json の対象）でもない。下記 _limitations 厳守。"
         ),
-        "_schema_version": "1.0",
+        "_schema_version": "1.1",
         "_machine_generated": True,
         "_generator": "scripts/build_kev_leadtime_stats.py",
         "_generated_on": date.today().isoformat(),
@@ -289,9 +267,7 @@ def main():
             "kev_catalog_version": catalog_version,
             "kev_feed": KEV_FEED_URL,
             "nvd_api": "https://services.nvd.nist.gov/rest/json/cves/2.0?hasKev",
-            "product_categories_schema_version": json.load(
-                open(PRODUCT_CATEGORIES_PATH)
-            ).get("_schema_version"),
+            "product_categories_schema_version": categories_schema_version,
         },
         "_governance": (
             "knowledge/ の自動書き換え禁止ルールに従い、再生成は日次ルーチンからは"
@@ -332,7 +308,7 @@ def main():
             "hit_criteria（的中判定基準）の変更・緩和には使わない。",
         ],
         "population": {
-            "kev_total": len(kev.get("vulnerabilities", [])),
+            "kev_catalog_total": len(kev.get("vulnerabilities", [])),
             "with_nvd_published": n_all,
             "missing_nvd_data": n_missing_nvd,
             "negative_lag_count": len(negative),
@@ -341,41 +317,7 @@ def main():
             "uncategorized_count": sum(1 for r in entries if not r["categories"]),
         },
         "overall": summarize(lags),
-        "era_2023_plus_recommended": (lambda era, era_neg: {
-            "_note": (
-                f"dateAdded が {ERA_STABLE_START_YEAR} 年以降のエントリのみの合算。"
-                "BOD 22-01 初期の遡及一括登録（2021-2022）を除いた参照層だが、"
-                "本層も公開後1年超の遅延追加を含む二峰混合分布である"
-                "（fresh_subset_lag_le_90d と negative_lag クランプ値を併読）。"
-            ),
-            **summarize([r["lag"] for r in era]),
-            "fresh_subset_lag_le_90d": {
-                "_note": (
-                    "公開後90日以内に追加された部分集合（遡及登録を除いた"
-                    "『新規公開CVEの即応追加』母集団の近似）。P(lag≤3|lag≤90) 等の"
-                    "条件付き割合であり、さらに強い条件付けが入る点に注意。"
-                ),
-                **summarize([r["lag"] for r in era if r["lag"] <= 90]),
-            },
-            "pct_within_3d_negative_clamped": (
-                round(
-                    (
-                        sum(1 for r in era if r["lag"] <= 3) + len(era_neg)
-                    )
-                    / (len(era) + len(era_neg)),
-                    3,
-                )
-                if era or era_neg
-                else None
-            ),
-            "_clamp_note": (
-                "negative_lag（ゼロデイ型）を lag=0 として含めた場合の pct_within_3d"
-                "（感度上限の参考値）。"
-            ),
-        })(
-            [r for r in entries if r["year_added"] >= ERA_STABLE_START_YEAR],
-            [r for r in negative if r["year_added"] >= ERA_STABLE_START_YEAR],
-        ),
+        "era_2023_plus_recommended": era_recommended_block(era, era_neg),
         "by_year_added": stratum_stats(by_year),
         "by_ransomware_use": stratum_stats(by_ransom),
         "by_cvss_band": stratum_stats(by_band),

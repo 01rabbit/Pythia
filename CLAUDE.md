@@ -48,7 +48,8 @@ scripts/build_attack_group_history.py    ← 追跡対象グループの過去�
 scripts/build_kev_leadtime_stats.py      ← KEV全件の「NVD公開→KEV追加」ラグ実測分布を算出（E1検証窓・base_rate参考・PR経由でのみ再生成）
 scripts/build_epss_kev_calibration.py    ← KEV追加前日のEPSS%ile実測（M3確度アンカー較正・PR経由でのみ再生成）
 forecaster/knowledge/kev-leadtime-stats.json ← KEVリードタイム実測統計（生存バイアス等の限界を_limitationsに明記・hit_criteria変更には使用禁止）
-forecaster/knowledge/epss-kev-calibration.json ← EPSS×KEV較正統計（M3のEPSS条件の感度実測・P(KEV|EPSS高)の根拠には使用禁止）
+forecaster/knowledge/epss-kev-calibration.json ← EPSS×KEV較正統計（M3のEPSS条件の感度実測・P(KEV|EPSS高)の根拠には使用禁止。全件監査証跡は epss-kev-calibration-entries.json に分離）
+scripts/check_knowledge_untouched.py     ← 日次コミット前の knowledge/ 無変更チェック（行動原則5の機械的ガード・SKILL.md Step 4 で実行）
 forecaster/knowledge/attack-group-history.json ← ATT&CK 由来のグループ過去事例（出典付き・観測への Technique/帰属付与根拠には使用禁止）
 forecaster/knowledge/product-categories.json ← Step C'' 用 CVE/製品→カテゴリ辞書（自動書き換え禁止）
 forecaster/verification/retrieval-calibration.json ← retrieval 閾値/重み較正の一次データ（検証時に増分追記）

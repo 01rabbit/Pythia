@@ -133,9 +133,11 @@ def build_observation(entry, seq, ingested_date, cvss_map):
     cvss = cvss_map.get(cve_id)
     cvss_text = cvss if cvss else "非公開"
 
+    # CVSS は実行時点の NVD 値（事後改訂を含みうる）のため取得時点を明記する
     summary = (
         f"{vendor} {product} の脆弱性 {cve_id} が CISA KEV に追加された"
-        f"（実悪用確認に基づく）。CVSS {cvss_text}。種別: {vuln_name}。"
+        f"（実悪用確認に基づく）。CVSS {cvss_text}（{ingested_date}時点のNVD値）。"
+        f"種別: {vuln_name}。"
     )
 
     tags = ["backfill", "kev"]
