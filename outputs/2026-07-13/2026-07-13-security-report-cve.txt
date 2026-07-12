@@ -1,0 +1,150 @@
+========================================
+セキュリティインテリジェンス日報 — Section 3: 製品別CVE
+調査日時: 2026-07-13 07:00 JST
+調査期間: 2026-07-12 07:00 〜 2026-07-13 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に新規ゼロデイ・新規KEV初回追加の一次報道なし）
+
+【関連続報・注意点として記録】
+CVE-2026-20896（Gitea Docker images、既報・参考B継続）について、The Hacker News 2026-07-12付続報の実悪用進展表現に既報（2026-07-10付BleepingComputer報道）との差異がある（「実悪用を確認」→「プロービング観測のみ・攻撃進展は未確認」）。既報のexploitation_stage（active_exploitation）は本記事単独では引き下げないが、次回検証ステージでの記録を推奨する。詳細は参考情報B参照。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-56271 / FlowiseAI/Flowise
+対象: 3.0.13以前
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: PoC未公開・実悪用未確認（パッチ提供済み）
+
+【24時間以内の変化】
+[NVD 2026-07-12] CVE-2026-56271がNVDに公開。enterprise passport認証ミドルウェアでJWT_AUTH_TOKEN_SECRET等の環境変数未設定時に公開既知のデフォルト値へフォールバックし、任意ユーザー（管理者含む）へのなりすましJWT偽造が可能なことが判明
+
+【概要】
+FlowiseAI/Flowise（AIエージェント/LLMワークフロー構築プラットフォーム、3.0.13以前）のenterprise passport認証ミドルウェアにおいて、JWT_AUTH_TOKEN_SECRET等の環境変数が未設定の場合に公開既知のデフォルト値へフォールバックする実装不備が2026-07-12にNVD公開された（GHSA-cc4f-hjpj-g9p8）。既知のデフォルトシークレットを用いることで管理者を含む任意ユーザーへのなりすましJWTを偽造でき認証をバイパスできる。実悪用・PoC公開は本日時点で確認されていない。NVD側CVSSは9.8（Critical）だが、関連する別件アドバイザリ（GHSA-m7mq-85xj-9x33）ではCVSS5.6と評価されており出典間でスコアに差異がある点に留意が必要（事実として両者のスコア差を記録・原因は不明）。本編優先配置理由: CVSS9.0以上のCritical脆弱性としてD2高インパクト条件に該当するため軸1×軸2の閾値によらず本編へ優先配置した。同カテゴリのAIオーケストレーションツールLangflowはランサムウェアの侵入起点として実悪用が継続しており、AIエージェント基盤特有の攻撃対象領域として注視が必要（推測）。
+
+攻撃の流れ:
+1. 環境変数（JWT_AUTH_TOKEN_SECRET等）が未設定の状態で稼働しているFlowiseインスタンスを特定
+2. 公開されている既知のデフォルトシークレット値を用いて、管理者を含む任意ユーザーになりすましたJWTを偽造
+3. 偽造JWTでAPIへ認証済みリクエストを送信し、管理者権限でワークフロー・API鍵・接続情報等へアクセス
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[アプリケーションログ / SIEM] JWT認証イベントにおける既知デフォルトシークレットの使用兆候、環境変数未設定時のフォールバック動作を監視
+Splunk SPL: index=app_logs sourcetype=flowise (event="jwt_issue" OR event="jwt_validate") | stats count by src_ip, user_id, role
+→ JWT_AUTH_TOKEN_SECRET等の環境変数が実際に設定されているか資産棚卸しで確認し未設定インスタンスを最優先で是正する。正規ログインとの誤検知除外には直前のログイン履歴が存在しない管理者アクションの急発生を判断材料とする
+
+【参照】
+https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-cc4f-hjpj-g9p8
+https://www.vulncheck.com/advisories/flowise-weak-default-jwt-secrets-in-authentication-middleware
+
+------------------------------------------------------------
+2. CVE-2026-56260 / Crawl4AI Docker API Server
+対象: 0.8.7未満
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.1 (Critical)
+状態: PoC未公開・実悪用未確認（パッチ提供済み・0.8.7）
+
+【24時間以内の変化】
+[NVD 2026-07-12] CVE-2026-56260がNVDに公開。/screenshot・/pdfエンドポイントのoutput_pathパラメータが未検証でパストラバーサル可能、任意ファイル書き込み（サーバファイル上書き・DoS）が判明
+
+【概要】
+Crawl4AI Docker API Server（LLM向けWebクロール/スクレイピングツール、0.8.7未満）において、/screenshot・/pdfエンドポイントのoutput_pathパラメータへの入力検証が欠如しておりパストラバーサルによる任意ファイル書き込みが可能な脆弱性が2026-07-12にNVD公開された（GHSA-365w-hqf6-vxfg）。認証不要でサーバファイルシステムの任意パスへ書き込み可能なため、既存ファイルの上書きによるDoSやさらなる侵害の足掛かりとなり得る。実悪用・PoC公開は本日時点で確認されていない。同日同一開示バッチ内に関連CVE（CVE-2026-56259・認証情報窃取）も公開されている。本編優先配置理由: CVSS9.0以上のCritical脆弱性としてD2高インパクト条件に該当するため軸1×軸2の閾値によらず本編へ優先配置した。AI/LLM関連ツールのDocker API露出パターンとして継続監視が必要（推測）。
+
+攻撃の流れ:
+1. 認証不要で公開されたDocker API Serverの/screenshotまたは/pdfエンドポイントへリクエスト送信
+2. output_pathパラメータに../等のパストラバーサル文字列を指定
+3. サーバファイルシステム上の任意パスへファイルを書き込み、既存ファイルの上書き・DoS・さらなる侵害の足掛かりを作る
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[アプリケーションログ / SIEM] /screenshot・/pdfエンドポイントへのoutput_pathパラメータ経由パストラバーサル試行を監視
+Splunk SPL: index=app_logs sourcetype=crawl4ai_docker uri_path IN ("*/screenshot*", "*/pdf*") | regex form_data="\.\.\/" | stats count by src_ip, uri_path
+→ output_pathパラメータに../等の相対パス指定が含まれるリクエストを異常とみなす。正規利用では出力先が固定ディレクトリ配下に限定されるため上位ディレクトリへの逸脱パスは全て要確認とする
+
+【参照】
+https://github.com/unclecode/crawl4ai/security/advisories/GHSA-365w-hqf6-vxfg
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考情報A相当CVEなし。国内ソース確認記載のあるCVEは本日の材料になし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-20896 / Gitea Docker images（既報・継続）
+CVSS: 9.8
+既報のGitea Docker images（1.26.2以前）X-WEBAUTH-USERヘッダ偽装による認証バイパス（CVSS9.8）についてThe Hacker Newsが2026-07-12付で続報を報じた。Sysdig（Michael Clark氏）によれば初回の悪用試行はProtonVPN経由のIP（159.26.98.241）から観測されたプロービングであり「これまでのところ悪用・攻撃の進展には至っていない」とされる。露出インスタンス数は約6,200台。既報（2026-07-10付BleepingComputer報道）はより踏み込んだ表現（実悪用を確認）を用いており本日の続報とは確度表現に差異がある（事実と推測の区別: 本日確認できた事実は「プロービング観測・攻撃進展は未確認」のみ。既報のactive_exploitation判定を裏付ける新事実ではないが、本記事単独では既報判定を引き下げる根拠にもならないため現状のexploitation_stageは維持する）。KEV登録は本日時点でなし。対処: パッチ提供済み（1.26.2以前が対象）。
+IoC: IP: 159.26.98.241
+
+監視: [Webプロキシ / SIEM] Gitea Docker公開インスタンスへのX-WEBAUTH-USERヘッダ偽装によるプロービング・侵入試行を監視
+Splunk SPL: index=web_proxy sourcetype=nginx_access (uri_path="*/user/login*" OR http_header="X-WEBAUTH-USER") | stats count by src_ip, http_header_value
+→ 確認済みプロービング送信元（159.26.98.241、ProtonVPN出口ノード）への一致に加え、正規リバースプロキシ以外からのX-WEBAUTH-USERヘッダ付与済みリクエストを検知対象とする
+
+参照: https://thehackernews.com/2026/07/threat-actors-probe-gitea-docker-flaw.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-59260 (OpenWrt luci-app-samba4) → 軸1=6点/軸2=0点、参考A昇格トリガーなし。認証済み委任ユーザーによるSamba globalオプション注入でroot権限smbdコマンド実行可能だがKEV/PoC/実悪用未確認
+・CVE-2026-61875 (OpenWrt luci-app-upnp) → 軸1=6点/軸2=0点。UPnP AddPortMapping経由の未認証格納型XSS、KEV/PoC/実悪用未確認
+・CVE-2026-61876 (OpenWrt LuCI DHCPv6リース表示) → 軸1=6点/軸2=0点。DHCPv6 Client FQDN未エンコード表示による隣接ネットワーク起点の格納型XSS
+・CVE-2026-58596 (Microsoft Edge) → 軸1=3点/軸2=0点。MSRC単一ソース・詳細非公開の権限昇格
+・CVE-2026-56259 (Crawl4AI Docker API Server) → 軸1=3点/軸2=0点。base_url改ざんによるAPIキー・JWT SECRET_KEY窃取、KEV/PoC/実悪用未確認
+・CVE-2026-56241 (Capgo) → 軸1=2点/軸2=0点。ロールバインディング削除時の権限残存
+・CVE-2026-56313 (Capgo SSO Prelink) → 軸1=2点/軸2=0点。クロス組織アカウント妨害
+・CVE-2026-10666 (Zephyr RTOS parse_ipv4) → 軸1=3点/軸2=0点。スタックバッファオーバーフロー
+・CVE-2026-10667 (Zephyr RTOS SMP+userspace) → 軸1=3点/軸2=0点。use-after-free
+・CVE-2026-56238 (Capgo Supabase global_stats) → 軸1=2点/軸2=0点。低優先度フラグ該当（情報漏洩のみ・CVSS8.0未満）
+・CVE-2026-56308 (Capgo メールアドレス変更) → 軸1=0点/軸2=0点。CVSS7.3で閾値未達
+・CVE-2026-10665 (Zephyr WireGuard) → 軸1=1点/軸2=0点。CVSS7.4で閾値未達
+・CVE-2026-15480 (Trendnet TEW-635BRM) → 軸1=2点/軸2=0点。VulDB系自動収集、EPSS percentile 33.8%
+・CVE-2026-15481 (Trendnet TEW-635BRM) → 軸1=2点/軸2=0点。VulDB系自動収集、EPSS percentile 34.6%
+・CVE-2026-15483 (TRENDnet TEW-821DAP) → 軸1=2点/軸2=0点。VulDB系自動収集、EPSS percentile 33.8%
+・CVE-2026-15484 (TRENDnet TEW-821DAP) → 軸1=2点/軸2=0点。VulDB系自動収集、EPSS percentile 33.8%
+・CVE-2026-15479 (H3C NX15) → 軸1=0点/軸2=0点。VulDB系自動収集、EPSS percentile 19.7%
+・CVE-2026-15482 (Aster Telecom Azcall) → 軸1=0点/軸2=0点。VulDB系自動収集、EPSS percentile 22.3%
+・CVE-2026-15488 (hcr707305003 shiroiAdmin) → 軸1=0点/軸2=0点。VulDB系自動収集、低知名度プロジェクト
+・CVE-2026-15489 (RafyMrX TOKO-ONLINE-ROTI) → 軸1=0点/軸2=0点。開発版コミットハッシュ指定のみ
+・CVE-2026-15490 (RafyMrX TOKO-ONLINE-ROTI) → 軸1=0点/軸2=0点。開発版コミットハッシュ指定のみ
+・CVE-2026-15491 (RafyMrX TOKO-ONLINE-ROTI) → 軸1=0点/軸2=0点。開発版コミットハッシュ指定のみ
+・CVE-2026-15497 (SonicCloudOrg sonic-agent) → 軸1=0点/軸2=0点。詳細不明瞭
+・CVE-2026-15498 (sergomanov SmartHomeAdatum) → 軸1=0点/軸2=0点。詳細不明瞭
+・CVE-2026-56252 (Capgo) → 軸1=0点/軸2=0点。CVSS5.4、低優先度規則該当
+・CVE-2026-56281 (Capgo) → 軸1=0点/軸2=0点。CVSS3.8、低優先度規則該当
+・CVE-2026-56336 (Capgo) → 軸1=0点/軸2=0点。CVSS5.3、情報漏洩のみ
+・CVE-2026-61874 (filebrowser) → 軸1=0点/軸2=0点。CVSS3.1、低優先度規則該当
+・CVE-2026-10663 (Zephyr USBホストスタック) → 軸1=1点/軸2=0点。CVSS6.1、物理アクセス要
+・CVE-2026-10664 (Zephyr nRF70 Wi-Fiドライバ) → 軸1=1点/軸2=0点。CVSS5.0
+・CVE-2026-10668 (Zephyr Nuvoton HSUSBD) → 軸1=1点/軸2=0点。CVSS2.4、DoSのみ
+・CVE-2026-15492〜CVE-2026-15505 (各種小規模OSSプロジェクト・14件集約) → 軸1=0点/軸2=0点（全件）。CVSS3.1〜4.7、低優先度規則該当
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編2件 / 参考A0件 / 参考B1件 / 除外32件
+
+========================================

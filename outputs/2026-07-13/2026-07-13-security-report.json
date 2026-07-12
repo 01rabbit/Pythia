@@ -1,0 +1,423 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-07-13",
+    "generated_at": "2026-07-13T07:00:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-07-12T07:00:00+09:00",
+      "to": "2026-07-13T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [
+    {
+      "cve_id": "CVE-2026-56271",
+      "product": "FlowiseAI/Flowise",
+      "vendor": "FlowiseAI",
+      "affected_versions": "3.0.13以前",
+      "priority": "critical",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": ["CWE-798"],
+      "epss": { "score": null, "percentile": null, "model_date": null },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": { "available": true, "version": null, "eta": null },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 7,
+      "axis2_score": 1,
+      "jpcert_ipa": { "issued": false, "entries": [] },
+      "changes_24h": [
+        {
+          "source": "NVD",
+          "date": "2026-07-12T21:16:00+09:00",
+          "description": "CVE-2026-56271がNVDに公開。enterprise passport認証ミドルウェアでJWT_AUTH_TOKEN_SECRET等の環境変数未設定時に公開既知のデフォルト値へフォールバックし、任意ユーザー（管理者含む）へのなりすましJWT偽造が可能なことが判明"
+        }
+      ],
+      "overview": "FlowiseAI/Flowise（AIエージェント/LLMワークフロー構築プラットフォーム、3.0.13以前）のenterprise passport認証ミドルウェアにおいて、JWT_AUTH_TOKEN_SECRET等の環境変数が未設定の場合に公開既知のデフォルト値へフォールバックする実装不備が2026-07-12にNVD公開された（GHSA-cc4f-hjpj-g9p8）。既知のデフォルトシークレットを用いることで管理者を含む任意ユーザーへのなりすましJWTを偽造でき認証をバイパスできる。実悪用・PoC公開は本日時点で確認されていない。NVD側CVSSは9.8（Critical）だが、関連する別件アドバイザリ（GHSA-m7mq-85xj-9x33）ではCVSS5.6と評価されており出典間でスコアに差異がある点に留意が必要（事実として両者のスコア差を記録・原因は不明）。本編優先配置理由: CVSS9.0以上のCritical脆弱性としてpipeline-1-cve.md D2高インパクト条件に該当するため軸1×軸2の閾値（軸1=7点で本来は8点未満）によらず本編へ優先配置した。同カテゴリのAIオーケストレーションツールLangflow（既報CVE-2025-3248・CVE-2026-5027）はJadePuffer等ランサムウェアの侵入起点として実悪用が継続しており、AIエージェント基盤特有の攻撃対象領域として注視が必要（推測）。",
+      "attack_flow": [
+        { "step": 1, "description": "環境変数（JWT_AUTH_TOKEN_SECRET等）が未設定の状態で稼働しているFlowiseインスタンスを特定" },
+        { "step": 2, "description": "公開されている既知のデフォルトシークレット値を用いて、管理者を含む任意ユーザーになりすましたJWTを偽造" },
+        { "step": 3, "description": "偽造JWTでAPIへ認証済みリクエストを送信し、管理者権限でワークフロー・API鍵・接続情報等へアクセス" }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "FlowiseAI GHSA-cc4f-hjpj-g9p8: JWT_AUTH_TOKEN_SECRET等未設定時に既知デフォルト値へフォールバックし認証バイパスが可能（2026-07-12公開）"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": { "confirmed": false, "ips": [], "domains": [], "hashes": [], "urls": [], "filenames": [] },
+      "monitoring": {
+        "description": "JWT認証イベントにおける既知デフォルトシークレットの使用兆候、および環境変数未設定時のフォールバック動作を監視",
+        "splunk_spl": [
+          "index=app_logs sourcetype=flowise (event=\"jwt_issue\" OR event=\"jwt_validate\") | stats count by src_ip, user_id, role",
+          "index=app_logs sourcetype=flowise env_var=\"JWT_AUTH_TOKEN_SECRET\" status=\"unset\" | stats count by host"
+        ],
+        "detection_notes": "JWT_AUTH_TOKEN_SECRET等の環境変数が実際に設定されているか資産棚卸しで確認し未設定インスタンスを最優先で是正する。正規ログインとの誤検知除外には、直前のログイン履歴が存在しない管理者アクションの急発生を判断材料とする。"
+      },
+      "references": [
+        { "url": "https://github.com/FlowiseAI/Flowise/security/advisories/GHSA-cc4f-hjpj-g9p8", "title": null, "language": "en", "source": "GitHub Security Advisory" },
+        { "url": "https://www.vulncheck.com/advisories/flowise-weak-default-jwt-secrets-in-authentication-middleware", "title": null, "language": "en", "source": "VulnCheck" }
+      ],
+      "sector_impact": ["it"],
+      "region_impact": ["global"],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260713-CVEP-731a5a96"
+    },
+    {
+      "cve_id": "CVE-2026-56260",
+      "product": "Crawl4AI Docker API Server",
+      "vendor": "unclecode (Crawl4AI Project)",
+      "affected_versions": "0.8.7未満",
+      "priority": "critical",
+      "cvss_v3": 9.1,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": ["CWE-22"],
+      "epss": { "score": null, "percentile": null, "model_date": null },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": { "available": true, "version": "0.8.7", "eta": null },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 4,
+      "axis2_score": 0,
+      "jpcert_ipa": { "issued": false, "entries": [] },
+      "changes_24h": [
+        {
+          "source": "NVD",
+          "date": "2026-07-12T21:16:00+09:00",
+          "description": "CVE-2026-56260がNVDに公開。/screenshot・/pdfエンドポイントのoutput_pathパラメータが未検証でパストラバーサル可能、任意ファイル書き込み（サーバファイル上書き・DoS）が判明"
+        }
+      ],
+      "overview": "Crawl4AI Docker API Server（LLM向けWebクロール/スクレイピングツール、0.8.7未満）において、/screenshot・/pdfエンドポイントのoutput_pathパラメータへの入力検証が欠如しておりパストラバーサルによる任意ファイル書き込みが可能な脆弱性が2026-07-12にNVD公開された（GHSA-365w-hqf6-vxfg）。認証不要でサーバファイルシステムの任意パスへ書き込み可能なため、既存ファイルの上書きによるDoSやさらなる侵害の足掛かりとなり得る。実悪用・PoC公開は本日時点で確認されていない。同日同一開示バッチ内に関連CVE（CVE-2026-56259・認証情報窃取）も公開されている。本編優先配置理由: CVSS9.0以上のCritical脆弱性としてpipeline-1-cve.md D2高インパクト条件に該当するため軸1×軸2の閾値（軸1=4点で本来は8点未満）によらず本編へ優先配置した。AI/LLM関連ツールのDocker API露出パターンとして継続監視が必要（推測）。",
+      "attack_flow": [
+        { "step": 1, "description": "認証不要で公開されたDocker API Serverの/screenshotまたは/pdfエンドポイントへリクエスト送信" },
+        { "step": 2, "description": "output_pathパラメータに../等のパストラバーサル文字列を指定" },
+        { "step": 3, "description": "サーバファイルシステム上の任意パスへファイルを書き込み、既存ファイルの上書き・DoS・さらなる侵害の足掛かりを作る" }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "Crawl4AI GHSA-365w-hqf6-vxfg: /screenshot・/pdfエンドポイントのoutput_path未検証によるパストラバーサル・任意ファイル書き込み（2026-07-12公開）"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": { "confirmed": false, "ips": [], "domains": [], "hashes": [], "urls": [], "filenames": [] },
+      "monitoring": {
+        "description": "Crawl4AI Docker API Serverの/screenshot・/pdfエンドポイントへのoutput_pathパラメータ経由パストラバーサル試行を監視",
+        "splunk_spl": [
+          "index=app_logs sourcetype=crawl4ai_docker uri_path IN (\"*/screenshot*\", \"*/pdf*\") | regex form_data=\"\\.\\.\\/\" | stats count by src_ip, uri_path"
+        ],
+        "detection_notes": "output_pathパラメータに../等の相対パス指定が含まれるリクエストを異常とみなす。正規利用では出力先が固定ディレクトリ配下に限定されるため上位ディレクトリへの逸脱パスは全て要確認とする。"
+      },
+      "references": [
+        { "url": "https://github.com/unclecode/crawl4ai/security/advisories/GHSA-365w-hqf6-vxfg", "title": null, "language": "en", "source": "GitHub Security Advisory" }
+      ],
+      "sector_impact": ["it"],
+      "region_impact": ["global"],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260713-CVEP-606695a3"
+    }
+  ],
+  "reference_a": [],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-20896",
+      "product": "Gitea Docker images",
+      "vendor": "Gitea",
+      "affected_versions": "1.26.2以前",
+      "priority": "critical",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": ["CWE-290"],
+      "epss": { "score": 0.00783, "percentile": 0.517, "model_date": "2026-07-12" },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": { "available": true, "version": null, "eta": null },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 12,
+      "axis2_score": 3,
+      "jpcert_ipa": { "issued": false, "entries": [] },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-12T07:00:00+09:00",
+          "description": "Sysdig（Michael Clark氏）の観測として、開示（6/20）から13日後に悪用試行を検知したと報道。初回の悪用試行はProtonVPN経由のIP（159.26.98.241）からのプロービングであり、これまでのところ悪用・攻撃の進展には至っていないとの慎重な表現。露出インスタンス数は約6,200台"
+        }
+      ],
+      "overview": "既報のGitea Docker images（1.26.2以前）X-WEBAUTH-USERヘッダ偽装による認証バイパス（CVE-2026-20896、CVSS9.8）についてThe Hacker Newsが2026-07-12付で続報を報じた。Sysdig（Michael Clark氏）によれば初回の悪用試行はProtonVPN経由のIP（159.26.98.241）から観測されたプロービングであり「これまでのところ悪用・攻撃の進展には至っていない」とされる。露出インスタンス数は約6,200台。既報（2026-07-10付BleepingComputer報道、Sysdig・シンガポールCSAによる「実悪用を確認」との報道）はより踏み込んだ表現を用いており本日の続報とは確度表現に差異がある（事実と推測の区別: 本日確認できた事実は「プロービング観測・攻撃進展は未確認」のみであり既報のactive_exploitation判定を裏付ける新事実ではない。ただし本記事単独では既報のactive_exploitation判定を引き下げる根拠にもならないため現状のexploitation_stageは維持する。この表現差異は次回検証ステージでの記録を推奨）。KEV登録は本日時点でなし。EPSSは0.00783（percentile 51.7%、2026-07-12時点）とCVSS9.8の深刻度に対して低水準。",
+      "attack_flow": [
+        { "step": 1, "description": "露出したGitea Dockerインスタンス（約6,200台）に対しX-WEBAUTH-USERヘッダを偽装したリクエストを送信" },
+        { "step": 2, "description": "ヘッダ偽装による認証バイパスで任意ユーザーへのなりすましを試行" },
+        { "step": 3, "description": "本日時点ではProtonVPN出口ノードからのプロービングが観測されたのみで、侵害・データ窃取等の進展は未確認" }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "The Hacker News 2026-07-12: X-WEBAUTH-USERヘッダ偽装による認証バイパスの悪用試行をSysdigが観測"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": { "confirmed": true, "ips": ["159.26.98.241"], "domains": [], "hashes": [], "urls": [], "filenames": [] },
+      "monitoring": {
+        "description": "Gitea Docker公開インスタンスへのX-WEBAUTH-USERヘッダ偽装によるプロービング・侵入試行を監視",
+        "splunk_spl": [
+          "index=web_proxy sourcetype=nginx_access (uri_path=\"*/user/login*\" OR http_header=\"X-WEBAUTH-USER\") | stats count by src_ip, http_header_value"
+        ],
+        "detection_notes": "確認済みプロービング送信元（159.26.98.241、ProtonVPN出口ノード）への一致に加え、正規リバースプロキシ以外からのX-WEBAUTH-USERヘッダ付与済みリクエストを検知対象とする。"
+      },
+      "references": [
+        { "url": "https://thehackernews.com/2026/07/threat-actors-probe-gitea-docker-flaw.html", "title": "Threat Actors Probe Gitea Docker Flaw CVE-2026-20896 13 Days After Disclosure", "language": "en", "source": "The Hacker News" }
+      ],
+      "sector_impact": ["it"],
+      "region_impact": ["global"],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260713-CVEP-7b8ffb57"
+    }
+  ],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": []
+  },
+  "apt_main": [],
+  "apt_notable": [
+    {
+      "group_name": "不明（帰属未確定・単一npmメンテナーアカウント侵害）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-JscramblerNpm-RustStealer",
+      "activity_type": ["new_malware", "ttp_update", "ioc_release"],
+      "motivation": "financial",
+      "first_seen": "2026-07-11",
+      "last_seen": "2026-07-12",
+      "targets": {
+        "sectors": ["it"],
+        "regions": ["global"],
+        "countries": []
+      },
+      "malware": [
+        {
+          "name": "未命名Rust製インフォスティーラー",
+          "type": "infostealer",
+          "language": "Rust",
+          "delivery": ["supply_chain"],
+          "persistence": [],
+          "c2_protocol": []
+        }
+      ],
+      "axis_p_score": 8,
+      "axis_q_score": 2,
+      "changes_24h": [
+        {
+          "source": "Socket.dev",
+          "date": "2026-07-12T07:00:00+09:00",
+          "description": "侵害バージョンが5件（8.14.0, 8.16.0, 8.17.0, 8.18.0, 8.20.0）に拡大していたと判明（8.22.0はクリーン）。攻撃手法がバージョンごとに進化し、8.18.0/8.20.0ではrequire()時自己実行注入への切替により--ignore-scriptsによるスキャナ回避を突破する新規手口が確認された。新規SHA-256ハッシュ5件判明"
+        }
+      ],
+      "overview": "既報（2026-07-11初報、The Hacker News/Socket）の正規npmパッケージjscrambler侵害・Rust製インフォスティーラー配布事案について、Socket.devの技術分析（2026-07-11公開・期間内に情報拡散継続）により技術詳細が拡充された。侵害バージョンが5件（8.14.0, 8.16.0, 8.17.0, 8.18.0, 8.20.0）に拡大し、8.14.0〜8.17.0はpreinstallフック、8.18.0/8.20.0はrequire()時自己実行注入へ攻撃手法が進化し--ignore-scriptsによるスキャナ回避を突破する新規TTPが確認された。ペイロード対象も暗号資産ウォレットに加えAIコーディングツール認証情報・クラウド認証情報等へ拡大確認された。帰属は依然未確定（npm公開用クレデンシャルの侵害のみ確認、国家関与の言及なし）。",
+      "attack_flow": [
+        { "step": 1, "description": "侵害されたnpmメンテナーアカウントから正規パッケージjscrambler（8.14.0〜8.20.0）を公開" },
+        { "step": 2, "description": "preinstallフック（8.14.0〜8.17.0）またはrequire()時自己実行注入（8.18.0/8.20.0、--ignore-scriptsバイパス）によりRust製インフォスティーラーを実行" },
+        { "step": 3, "description": "暗号資産ウォレット・クラウド認証情報・AIコーディングツール認証情報・各種サービスセッション情報を窃取しC2（37.27.122.124, 57.128.246.79）へ送信" }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1195.002",
+          "name": "Compromise Software Supply Chain",
+          "implementation": "正規npmパッケージjscrambler（8.14.0-8.20.0）のメンテナーアカウント侵害を通じた悪意コード混入"
+        },
+        {
+          "mitre_id": "T1027",
+          "name": "Obfuscated Files or Information",
+          "implementation": "Rust製クロスプラットフォームインフォスティーラーの難読化バイナリ配布、Linux環境ではeBPFプログラムを直接カーネルへロード"
+        }
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": ["37.27.122.124", "57.128.246.79"],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "jscrambler 8.14.0〜8.20.0導入環境の即時8.22.0以降への更新、IOC（37.27.122.124, 57.128.246.79）への通信有無の確認、npm install実行時のrequire()フック挙動監視（--ignore-scriptsのみに依存しないサプライチェーン検査の導入）。",
+      "splunk_spl": [
+        "index=network_traffic dest_ip IN (\"37.27.122.124\",\"57.128.246.79\") | stats count by src_ip, dest_ip, dest_port",
+        "index=npm_audit sourcetype=package_install package_name=\"jscrambler\" version IN (\"8.14.0\",\"8.16.0\",\"8.17.0\",\"8.18.0\",\"8.20.0\") | stats count by host"
+      ],
+      "detection_notes": "8.22.0はクリーンと確認済みのため導入バージョンの棚卸しを最優先で実施する。正規のjscrambler更新通信との誤検知除外には既知IOC（IP）への一致を判断材料とする。新規SHA-256ハッシュ5件は原典（Socket.dev）で確認可能だが本レポート時点で値は未転記。",
+      "references": [
+        { "url": "https://thehackernews.com/2026/07/compromised-jscrambler-8140-npm-release.html", "title": null, "language": "en", "source": "The Hacker News" },
+        { "url": "https://socket.dev/blog/jscrambler-supply-chain-attack", "title": null, "language": "en", "source": "Socket.dev" },
+        { "url": "https://safedep.io/jscrambler-npm-supply-chain-compromise/", "title": null, "language": "en", "source": "SafeDep" }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260713-APTC-b3d09d0f"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-07-13-001",
+      "title": "RedHook Androidマルウェア: Wireless ADB (無線デバッグ) 悪用による新型シェルアクセス手口",
+      "perspective": "zeroday",
+      "adoption_triggers": ["ε", "β", "δ"],
+      "priority": "medium",
+      "product_or_service": "Android端末全般（RedHook RAT感染端末）",
+      "targets": {
+        "sectors": ["finance", "government"],
+        "regions": ["global"]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-07-12T23:27:00+09:00",
+          "description": "RedHook（Android RAT、画面ストリーミング・キーロギング・UI自動操作・認証情報窃取機能を保持）の新バージョンが、PC接続やroot化を必要とせずにシェルレベル権限（UID 2000）を取得する新手口を実装したと報告された"
+        }
+      ],
+      "overview": "RedHookはAccessibility Service権限をユーザーに騙し取った後、端末設定を自動操作して開発者向けオプションとWireless Debugging（無線ADB）を有効化し、画面表示されるペアリングコードを自ら読み取ってループバックインターフェース（127.0.0.1）経由でADBサービスに接続、シェル権限（root未満だが一般アプリ権限より強力）を獲得する。さらにShizukuフレームワークを展開してユーザーダイアログなしに特権コマンドを実行できるようにする。現行バージョンはアプリの追加削除・端末ロック・連絡先窃取・SMS傍受・カメラ起動・オーバーレイ表示など53種のサーバコマンドをサポートし、政府機関や金融機関を装った偽Google Playサイトへの誘導によるソーシャルエンジニアリングで配布されている。root化を前提としない新しい権限昇格経路であり、モバイル脅威対策の検知ロジックが「root化検知」中心の場合は見逃すリスクがある点でSOCが把握すべき事案。単一情報源（BleepingComputer）のみで他ソースによる独立裏付けは本ウィンドウ内で確認できず、国内標的化の有無は不明（推測）。",
+      "recommended_actions": [
+        "今週中: モバイル端末管理（MDM/EMM）で「開発者向けオプション」「USB/Wirelessデバッグ」の遠隔有効化イベントを収集できるか確認し、可能であれば監視項目に追加する",
+        "今週中: 金融系・業務系Androidアプリの改ざん検知/root検知機構が「シェル権限昇格（非root）」も検知対象に含んでいるかベンダーに確認する",
+        "把握のみ: 従業員向け注意喚起として、公式Google Playストア以外からのAPKインストール禁止・Accessibility Service許可要求への警戒を周知する"
+      ],
+      "monitoring": {
+        "description": "MDM/EMMログでの開発者向けオプション・無線デバッグ有効化イベントの監視",
+        "splunk_spl": [
+          "index=mdm_logs sourcetype=android_mdm (event_type=\"developer_options_enabled\" OR event_type=\"wireless_debugging_enabled\") | stats count by device_id, enabled_by"
+        ],
+        "detection_notes": "業務上必要のない開発者向けオプション有効化イベントを異常とみなし、直後のAccessibility Service許可要求と組み合わせて発生した場合は要調査とする。"
+      },
+      "references": [
+        { "url": "https://www.bleepingcomputer.com/news/security/redhook-android-malware-now-uses-wireless-adb-for-shell-access/", "title": null, "language": "en", "source": "BleepingComputer" }
+      ],
+      "info_id": "20260713-SOCR-05e6d684"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      { "cve_id": "CVE-2026-59260", "product": "OpenWrt luci-app-samba4", "reason": "low_score", "reason_detail": "軸1=6点（CVSS7.5-8.9域+2・境界機器/ルータファームウェア+3・広く使われるOSS+1）/軸2=0点（GHSA単一ソースのみ、国内・海外複数報道未確認）。参考A昇格トリガーなし。認証済み委任ユーザーによるSamba globalオプション注入でroot権限smbdプロセス上コマンド実行可能だが、KEV/PoC/実悪用いずれも未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-61875", "product": "OpenWrt luci-app-upnp", "reason": "low_score", "reason_detail": "軸1=6点（CVSS7.5-8.9域+2・境界機器+3・広く使われるOSS+1）/軸2=0点。UPnP IGD AddPortMapping経由の未認証格納型XSS（RAN内攻撃者起点）。KEV/PoC/実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-61876", "product": "OpenWrt LuCI（DHCPv6リース表示）", "reason": "low_score", "reason_detail": "軸1=6点（CVSS7.5-8.9域+2・境界機器+3・広く使われるOSS+1）/軸2=0点。DHCPv6 Client FQDN未エンコード表示による隣接ネットワーク起点の格納型XSS。KEV/PoC/実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-58596", "product": "Microsoft Edge（Chromiumベース）", "reason": "low_score", "reason_detail": "軸1=3点（CVSS7.5-8.9域+2・広く使われる製品+1）/軸2=0点（MSRC単一ソース、詳細非公開）。未信頼ポインタ参照による権限昇格、機序詳細非公開のためconfidence低。KEV/PoC/実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-56259", "product": "Crawl4AI Docker API Server", "reason": "low_score", "reason_detail": "軸1=3点（CVSS7.5-8.9域+2・広く使われるOSS+1）/軸2=0点。未認証エンドポイントでbase_url改ざん＋api_token=env参照によりLLM API呼び出し先を攻撃者制御サーバへリダイレクトし環境変数（APIキー・JWT SECRET_KEY等）窃取可能。KEV/PoC/実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-56241", "product": "Capgo（Capacitor OTAアップデートプラットフォーム）", "reason": "low_score", "reason_detail": "軸1=2点（CVSS7.5-8.9域+2のみ、ニッチ製品につきOSS加点なし）/軸2=0点。降格されたsuper_adminのロールバインディング削除時に権限が残存し組織バンドル削除RPCを無期限実行可能。KEV/PoC/実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-56313", "product": "Capgo（SSO Prelinkエンドポイント）", "reason": "low_score", "reason_detail": "軸1=2点/軸2=0点。org.update_settings権限を持つ管理者が他組織ユーザーのパスワード認証情報を強制削除できるクロス組織アカウント妨害。KEV/PoC/実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-10666", "product": "Zephyr RTOS（parse_ipv4・net/ip/utils.c）", "reason": "low_score", "reason_detail": "軸1=3点（CVSS7.5-8.9域+2・広く使われるOSS(組込みRTOS)+1）/軸2=0点。固定17バイトのスタックバッファへ未検証長コピーによるスタックバッファオーバーフロー。KEV/PoC/実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-10667", "product": "Zephyr RTOS（SMP+userspace カーネルオブジェクト管理）", "reason": "low_score", "reason_detail": "軸1=3点（CVSS7.5-8.9域+2・広く使われるOSS+1）/軸2=0点。SMP環境でのuse-after-free、非特権ユーザースレッドからシステムコール経由で到達可能。KEV/PoC/実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-56238", "product": "Capgo（Supabase PostgREST global_stats エンドポイント）", "reason": "low_score", "reason_detail": "軸1=2点（CVSS7.5-8.9域+2のみ）/軸2=0点。低優先度フラグ該当（情報漏洩のみ・CVSS8.0未満）。未認証で公開apikeyのみでMRR等機微指標を取得可能だがKEV/PoC/実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-56308", "product": "Capgo（メールアドレス変更エンドポイント）", "reason": "low_score", "reason_detail": "軸1=0点（CVSS7.3で7.5未満のため加点なし）/軸2=0点。パスワード再認証・既存メール検証なしでメールアドレス変更が可能。KEV/PoC/実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-10665", "product": "Zephyr RTOS（WireGuardサブシステム・wg_crypto.c）", "reason": "low_score", "reason_detail": "軸1=1点（CVSS7.4で7.5未満のため加点なし・広く使われるOSS+1のみ）/軸2=0点。Poly1305認証チェック前の固定長バッファコピーによる境界外書き込み。KEV/PoC/実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15480", "product": "Trendnet TEW-635BRM ≤1.00.03", "reason": "low_score", "reason_detail": "軸1=2点（CVSS8.8域+2、低知名度製品のためOSS加点なし）/軸2=0点。VulDB系自動収集エントリ、EPSS percentile 33.8%と低水準。/sbin/rc start_httpd経由コマンドインジェクション。ベンダー公式アドバイザリ・PoC・実悪用いずれも未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15481", "product": "Trendnet TEW-635BRM ≤1.00.03", "reason": "low_score", "reason_detail": "軸1=2点/軸2=0点。VulDB系自動収集エントリ、EPSS percentile 34.6%。ipoa_test経由コマンドインジェクション（同一ファーム内複合脆弱性）。ベンダー公式アドバイザリ・PoC・実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15483", "product": "TRENDnet TEW-821DAP 1.12B01", "reason": "low_score", "reason_detail": "軸1=2点/軸2=0点。VulDB系自動収集エントリ、EPSS percentile 33.8%。/goform/tools_nslookup sub_41EC14経由。ベンダー公式アドバイザリ・PoC・実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15484", "product": "TRENDnet TEW-821DAP 1.12B01", "reason": "low_score", "reason_detail": "軸1=2点/軸2=0点。VulDB系自動収集エントリ、EPSS percentile 33.8%（同一ファーム内複合脆弱性）。ベンダー公式アドバイザリ・PoC・実悪用未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15479", "product": "H3C NX15 V100R017", "reason": "low_score", "reason_detail": "軸1=0点（CVSS7.3で7.5未満のため加点なし）/軸2=0点。VulDB系自動収集エントリ、EPSS percentile 19.7%。change_passwd機能の認証不備。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15482", "product": "Aster Telecom Azcall 10/11", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点。VulDB系自動収集エントリ、EPSS percentile 22.3%。sis.php経由。低知名度製品。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15488", "product": "hcr707305003 shiroiAdmin 1.1/1.3", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点。VulDB系自動収集エントリ、EPSS percentile 20.9%。FileController::upload、低知名度GitHubプロジェクト。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15489", "product": "RafyMrX TOKO-ONLINE-ROTI（開発版）", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点。VulDB系自動収集エントリ、EPSS percentile 20〜36%台。未認証操作（詳細不明瞭）、開発版コミットハッシュ指定のみ。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15490", "product": "RafyMrX TOKO-ONLINE-ROTI（開発版）", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点。VulDB系自動収集エントリ（同一リポジトリ内複合脆弱性）、開発版コミットハッシュ指定のみ。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15491", "product": "RafyMrX TOKO-ONLINE-ROTI（開発版）", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点。VulDB系自動収集エントリ（同一リポジトリ内複合脆弱性）、開発版コミットハッシュ指定のみ。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15497", "product": "SonicCloudOrg sonic-agent ≤2.7.2", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点。VulDB系自動収集エントリ、EPSS未取得。sonic-server-controller関連、詳細不明瞭。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15498", "product": "sergomanov SmartHomeAdatum（開発版）", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点。VulDB系自動収集エントリ、EPSS未取得。未認証機能、詳細不明瞭。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-56252", "product": "Capgo", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点。CVSS5.4・スコープ分離不備（webhook）、低優先度規則該当（CVSS7.0未満）。KEV/PoC未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-56281", "product": "Capgo", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点。CVSS3.8・SQLi（要admin権限）、低優先度規則該当（CVSS7.0未満）。KEV/PoC未確認。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-56336", "product": "Capgo", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点。CVSS5.3・情報漏洩（org_id/provider_id）、低優先度規則該当（情報漏洩のみ・CVSS8.0未満）。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-61874", "product": "filebrowser（<2.63.17）", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点。CVSS3.1・認証済みユーザーによる古い共有URL残存、低優先度規則該当（CVSS7.0未満）。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-10663", "product": "Zephyr RTOS USBホストスタック", "reason": "low_score", "reason_detail": "軸1=1点（広く使われるOSS+1のみ）/軸2=0点。CVSS6.1・UAF/double-free（物理アクセス要）、低優先度規則該当（CVSS7.0未満）。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-10664", "product": "Zephyr nRF70 Wi-Fiドライバ", "reason": "low_score", "reason_detail": "軸1=1点（広く使われるOSS+1のみ）/軸2=0点。CVSS5.0・スタック境界外書込（コプロセッサ起点）、低優先度規則該当（CVSS7.0未満）。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-10668", "product": "Zephyr Nuvoton HSUSBD USBドライバ", "reason": "low_score", "reason_detail": "軸1=1点（広く使われるOSS+1のみ）/軸2=0点。CVSS2.4・制御エンドポイントDoS（物理要）、低優先度規則該当（DoSのみ・CVSS8.0未満）。", "reported_date": "2026-07-13" },
+      { "cve_id": "CVE-2026-15492〜CVE-2026-15505", "product": "各種小規模OSSプロジェクト（VulDB自動収集エントリ・14件集約）", "reason": "low_score", "reason_detail": "軸1=0点/軸2=0点（全件）。CVSS3.1〜4.7のXSS/DoS等、低優先度規則該当（CVSS7.0未満）。KEV/PoC/実悪用いずれも未確認、ベンダー公式アドバイザリへの言及なし。", "reported_date": "2026-07-13" }
+    ],
+    "apt": [],
+    "ai_attacks": [
+      { "attack_id": null, "title": "Claude Fable 5 stays free for paid users until July 19", "reason": "insufficient_evidence", "reason_detail": "製品価格施策の記事であり攻撃・脆弱性情報ではない（カテゴリA〜C該当性なし）。", "reported_date": "2026-07-13" }
+    ],
+    "soc_recommendations": [
+      { "rec_id": null, "title": "SANS ISC Comment stuffing記事", "reason": "out_of_window", "reason_detail": "2026-07-10公開、24時間調査窓外。", "reported_date": "2026-07-13" },
+      { "rec_id": null, "title": "Wireshark 4.6.7リリース", "reason": "out_of_window", "reason_detail": "2026-07-11公開、24時間調査窓外。", "reported_date": "2026-07-13" },
+      { "rec_id": null, "title": "device code phishing急増記事", "reason": "insufficient_evidence", "reason_detail": "一次裏付けが取れず不採用。", "reported_date": "2026-07-13" },
+      { "rec_id": null, "title": "GhostLock CVE-2026-43499", "reason": "out_of_window", "reason_detail": "2026-07-07公開、24時間調査窓外。", "reported_date": "2026-07-13" }
+    ]
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 2,
+      "reference_a": 0,
+      "reference_b": 1,
+      "excluded": 32,
+      "total_processed": 35
+    },
+    "apt": {
+      "main": 0,
+      "notable": 1,
+      "excluded": 0,
+      "total_processed": 1
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 1,
+      "total_processed": 1,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 0,
+      "medium": 1,
+      "low": 0,
+      "excluded": 4,
+      "total_processed": 5,
+      "perspective_breakdown": {
+        "cve": 0,
+        "zeroday": 1,
+        "ai_attack": 0
+      }
+    }
+  }
+}
