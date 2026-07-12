@@ -43,6 +43,9 @@ forecaster/prompts/01〜04.md             ← 4ステージ（正規化・ベー
 forecaster/case-based-retrieval-design.md ← 類似過去事例検索（Case-Based Retrieval）設計書
 scripts/retrieve_similar_cases.py        ← 予報 Step C'' 類似過去事例検索器（内部実績・読み取り専用）
 scripts/record_retrieval_calibration.py  ← 検証時に retrieval 較正データを収集（design §8・検証ステージのみ書込）
+scripts/backfill_observations.py         ← 過去日付の観測を CISA KEV から機械バックフィル（観測のみ・ベースライン統計対象外・予報は遡及生成しない）
+scripts/build_attack_group_history.py    ← 追跡対象グループの過去事例知識を MITRE ATT&CK から抽出（PR提案+人間レビュー経由でのみ再生成）
+forecaster/knowledge/attack-group-history.json ← ATT&CK 由来のグループ過去事例（出典付き・観測への Technique/帰属付与根拠には使用禁止）
 forecaster/knowledge/product-categories.json ← Step C'' 用 CVE/製品→カテゴリ辞書（自動書き換え禁止）
 forecaster/verification/retrieval-calibration.json ← retrieval 閾値/重み較正の一次データ（検証時に増分追記）
 

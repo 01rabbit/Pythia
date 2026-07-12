@@ -49,6 +49,36 @@ forecaster/
 | 03 予報生成 | 日次（02 完了後） | forecasts/daily/YYYY-MM-DD.md |
 | 04 検証 | 週2回（火・木 12:00 JST） | verification/YYYY-MM.json |
 
+## 過去事象のバックフィル（machine_backfill）
+
+日次ルーチン開始（2026-06-15）より前の実悪用確認イベントは
+`scripts/backfill_observations.py` で CISA KEV の `dateAdded`（日付スタンプ付き一次記録）から
+observations/ へ遡及取り込みできる。
+
+- **対象は観測（observations/）のみ**。予報・検証の遡及生成は結果を知った上で書く
+  後知恵バイアスとなり検証ループを汚染するため行わない
+- 生成ファイルは `_normalization_mode: "machine_backfill_kev"` でマーキングされ、
+  ベースライン統計（`scripts/regen_baseline.py`）からは**除外**される
+  （日次収集と観測密度が異なるため、混ぜると σ 逸脱スコアが歪む）
+- 用途: 過去事象の掌握・類似過去事例検索（`scripts/retrieve_similar_cases.py`）の母集団拡充
+- Technique / actor_group の推測付与はしない（`techniques: []` 固定・人間レビューなしでの付与禁止）
+- `reported-*.md` / `outputs/` には触れない（レポートしていないものを既報扱いにしない）
+
+### APT の過去事例学習（knowledge 経路）
+
+APT 活動は KEV のような日付付きイベント列を持たないため、観測バックフィルではなく
+**知識ベースへの蒸留**で過去事例を取り込む。
+
+- `scripts/build_attack_group_history.py` が MITRE ATT&CK の Groups / Campaigns から
+  `group-aliases.json` 記載の追跡対象グループの既知 TTP・過去キャンペーン
+  （first_seen / last_seen 付き）を抽出し、
+  `knowledge/attack-group-history.json` に出典付き（cited 相当）で書き出す
+- knowledge/ の自動書き換え禁止ルールに従い、再生成は日次ルーチンからは行わず
+  **必ず PR 提案 + 人間レビュー**を経る
+- 用途は予報生成時の事前知識・過去事例の掌握。**日次正規化（01-normalize.md R3/R4）で
+  観測に Technique / 帰属を付与する根拠には使用禁止**（既知 TTP からの類推付与は禁止のまま）
+- 手書きキュレーションの `attack-groups.json` / `group-aliases.json` には触れない
+
 ## Phase ロードマップ
 
 - **Phase 0（Week 1）**: ディレクトリ・スキーマ確定 ✓ 完了（2026-06-26）
