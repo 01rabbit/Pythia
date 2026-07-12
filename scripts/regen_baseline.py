@@ -24,11 +24,21 @@ TODAY = date(2026, 7, 8)  # currentDate context
 obs_files = sorted(glob.glob(f"{REPO}/forecaster/observations/**/*.json", recursive=True))
 
 all_observations = []  # list of (observed_date: date, obs dict)
+backfill_skipped = []  # machine_backfill_* ファイル（ベースライン統計から除外）
 for f in obs_files:
     d = json.load(open(f))
+    # 機械バックフィル産の観測（scripts/backfill_observations.py）は日次ルーチンと
+    # 収集レジームが異なり観測密度が別物のため、混ぜると mean/stddev が歪む。除外する。
+    if str(d.get("_normalization_mode", "")).startswith("machine_backfill"):
+        backfill_skipped.append(os.path.basename(f))
+        continue
     for o in d.get("observations", []):
         odate = date.fromisoformat(o["observed_date"])
         all_observations.append((odate, o))
+
+if backfill_skipped:
+    print(f"[backfill] machine_backfill ファイル {len(backfill_skipped)} 件を"
+          f"ベースライン統計から除外 ({backfill_skipped[0]} .. {backfill_skipped[-1]})")
 
 observed_dates_present = sorted({d for d, _ in all_observations})
 period_start = observed_dates_present[0]

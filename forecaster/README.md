@@ -49,6 +49,21 @@ forecaster/
 | 03 予報生成 | 日次（02 完了後） | forecasts/daily/YYYY-MM-DD.md |
 | 04 検証 | 週2回（火・木 12:00 JST） | verification/YYYY-MM.json |
 
+## 過去事象のバックフィル（machine_backfill）
+
+日次ルーチン開始（2026-06-15）より前の実悪用確認イベントは
+`scripts/backfill_observations.py` で CISA KEV の `dateAdded`（日付スタンプ付き一次記録）から
+observations/ へ遡及取り込みできる。
+
+- **対象は観測（observations/）のみ**。予報・検証の遡及生成は結果を知った上で書く
+  後知恵バイアスとなり検証ループを汚染するため行わない
+- 生成ファイルは `_normalization_mode: "machine_backfill_kev"` でマーキングされ、
+  ベースライン統計（`scripts/regen_baseline.py`）からは**除外**される
+  （日次収集と観測密度が異なるため、混ぜると σ 逸脱スコアが歪む）
+- 用途: 過去事象の掌握・類似過去事例検索（`scripts/retrieve_similar_cases.py`）の母集団拡充
+- Technique / actor_group の推測付与はしない（`techniques: []` 固定・人間レビューなしでの付与禁止）
+- `reported-*.md` / `outputs/` には触れない（レポートしていないものを既報扱いにしない）
+
 ## Phase ロードマップ
 
 - **Phase 0（Week 1）**: ディレクトリ・スキーマ確定 ✓ 完了（2026-06-26）
