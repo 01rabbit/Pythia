@@ -60,11 +60,23 @@ def attack_ext(obj):
     return None, None
 
 
+# STIX の tactic 語彙 → observation.schema.json の enum への正規化。
+# 使用する ATT&CK STIX（v19系）は defense-evasion を stealth / defense-impairment に
+# 改称・分割しているため、システム全体で一貫した tactic 語彙にするためスキーマの
+# defense-evasion へ写像する（backfill_cisa_advisories.py と同一方針）。
+STIX_TACTIC_TO_SCHEMA = {
+    "stealth": "defense-evasion",
+    "defense-impairment": "defense-evasion",
+}
+
+
 def tactics_of(pattern):
     return sorted(
-        ph["phase_name"]
-        for ph in pattern.get("kill_chain_phases", [])
-        if ph.get("kill_chain_name") == "mitre-attack"
+        {
+            STIX_TACTIC_TO_SCHEMA.get(ph["phase_name"], ph["phase_name"])
+            for ph in pattern.get("kill_chain_phases", [])
+            if ph.get("kill_chain_name") == "mitre-attack"
+        }
     )
 
 
