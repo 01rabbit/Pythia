@@ -1,0 +1,230 @@
+{
+  "_comment": "KEV 追加前日時点の EPSS パーセンタイル実測分布（M3 確度アンカー較正データ）。測っているのは P(EPSS%ile≥τ | 翌日KEV追加)＝M3 の EPSS 条件の感度であり、P(KEV追加 | EPSS%ile≥τ) ではない。下記 _limitations 厳守。全件の実測値（監査証跡）は epss-kev-calibration-entries.json に分離。",
+  "_schema_version": "1.1",
+  "_machine_generated": true,
+  "_generator": "scripts/build_epss_kev_calibration.py",
+  "_generated_on": "2026-07-12",
+  "_source": {
+    "kev_catalog_version": "2026.07.10",
+    "epss_api": "https://api.first.org/data/v1/epss",
+    "measurement": "dateAdded の前日時点の EPSS（履歴照会）",
+    "entries_file": "forecaster/knowledge/epss-kev-calibration-entries.json"
+  },
+  "_governance": "knowledge/ の自動書き換え禁止ルールに従い、再生成は日次ルーチンからは行わず、必ず PR として提案し人間レビューを経てコミットする。",
+  "_limitations": [
+    "方向性: 本統計は M3 の EPSS 条件の感度（KEV追加されたCVEのうち事前に条件を満たしていた割合）である。パーセンタイルの定義上、任意時点で全CVEの約5%が%ile≥0.95 に存在し、その大多数は KEV に追加されない。P(KEV|EPSS高) の根拠に使わない。",
+    "pre/post の別（最重要）: 本統計は KEV 追加前日の値＝『追加の事前予見可能性』の感度である。M3 が運用上参照するのは KEV 登録後の EPSS 値であり、EPSS v3+ はKEV 収載自体を特徴量に含むため登録後の値は事後的に押し上がる。運用条件の充足率は本統計より高く、前日感度の低さを根拠に閾値 0.95 を引き下げるのはカテゴリエラーであり単独根拠として使用禁止。",
+    "前日測定: 前日値の採用は EPSS の KEV 特徴量反応（as-of 汚染）の回避が目的。ただし前日値にも KEV 追加の引き金となった悪用証拠自体は反映されうる（それは意図した測定である）。また CISA が KEV 追加に先立ち同一 CVE のアラートを出す場合、EPSS の『リスト掲載・言及』特徴が先に反応する部分循環が残る（頻度は低い）。",
+    "上振れ推定: E1 予報は追加の72時間以上前に発行されうる。EPSS は悪用証拠に日次で反応するため、追加前日の値は予報発行時点で観測できた値の上振れ側の推定である。",
+    "遡及登録の混合と主参照層: 公開から年単位で悪用されてきた CVE の前日 EPSS が高いのは自明であり、全体感度を上振れさせる。較正の主参照は by_freshness_v4_era.fresh_lag_le_30d（現行モデル v4 での測定×新規公開30日以内）。同層が insufficient_sample の場合は by_freshness.fresh_lag_le_30d（全期間・モデル版混合）と by_model_era.v4 を併読し、限界を明記して使う。",
+    "モデル版の層別基準: by_model_era は測定日（query_date = dateAdded の前日）が属するモデル版で層別した（測定値を生成したモデルで分類するのが正）。dateAdded 基準の解釈とは各切替日で1日ずれる（例: dateAdded=2025-03-17 のエントリの測定日は 2025-03-16 で v3 層に入る）。",
+    "no_score: 照会日に EPSS スコアが存在しない CVE。大半は NVD 収録前に KEV 追加されたゼロデイ型で、この欠測は無作為ではなく『公開前に悪用された事例』に偏るため、感度の分母からの除外はやや楽観方向のバイアスを持つ。no_score_reason（http_422 / not_scored_on_date）の内訳を population に併記。",
+    "KEV 削除エントリ: 集計は現行カタログ収載分のみ。過去に収載後削除されたエントリ（誤収載等）は母集団から欠落する。",
+    "用途制限: M3 の EPSS 条件の感度実測・base_rate_estimate の参考に限る。hit_criteria の変更・確度の引き上げ根拠には使わない。"
+  ],
+  "population": {
+    "kev_catalog_total": 1637,
+    "aggregated": 1637,
+    "measured": 1352,
+    "no_score": 285,
+    "no_score_reasons": {
+      "http_422": 8,
+      "not_scored_on_date": 277
+    }
+  },
+  "overall": {
+    "n_measured": 1352,
+    "n_no_score": 285,
+    "median_percentile": 0.8454,
+    "p25_percentile": 0.4178,
+    "pct_ge_0.95": 0.365,
+    "pct_ge_0.90": 0.436,
+    "pct_ge_0.75": 0.571,
+    "pct_ge_0.50": 0.706
+  },
+  "by_freshness_v4_era": {
+    "_note": "M3 較正の主参照層: 測定日が EPSS v4 期（2025-03-17以降）×鮮度別。insufficient_sample の層は by_freshness / by_model_era.v4 を併読。",
+    "fresh_lag_le_30d": {
+      "n_measured": 98,
+      "n_no_score": 70,
+      "median_percentile": 0.3389,
+      "p25_percentile": 0.135,
+      "pct_ge_0.95": 0.082,
+      "pct_ge_0.90": 0.143,
+      "pct_ge_0.75": 0.204,
+      "pct_ge_0.50": 0.388
+    },
+    "lag_31_365d": {
+      "n_measured": 83,
+      "n_no_score": 0,
+      "median_percentile": 0.6351,
+      "p25_percentile": 0.2284,
+      "pct_ge_0.95": 0.181,
+      "pct_ge_0.90": 0.325,
+      "pct_ge_0.75": 0.446,
+      "pct_ge_0.50": 0.554
+    },
+    "lag_gt_365d": {
+      "n_measured": 77,
+      "n_no_score": 0,
+      "median_percentile": 0.9758,
+      "p25_percentile": 0.8145,
+      "pct_ge_0.95": 0.597,
+      "pct_ge_0.90": 0.675,
+      "pct_ge_0.75": 0.831,
+      "pct_ge_0.50": 0.909
+    },
+    "negative_lag_zero_day_type": {
+      "n_measured": 0,
+      "n_no_score": 7
+    }
+  },
+  "by_freshness": {
+    "fresh_lag_le_30d": {
+      "n_measured": 236,
+      "n_no_score": 195,
+      "median_percentile": 0.2953,
+      "p25_percentile": 0.1416,
+      "pct_ge_0.95": 0.11,
+      "pct_ge_0.90": 0.144,
+      "pct_ge_0.75": 0.229,
+      "pct_ge_0.50": 0.347
+    },
+    "lag_31_365d": {
+      "n_measured": 369,
+      "n_no_score": 1,
+      "median_percentile": 0.7307,
+      "p25_percentile": 0.3282,
+      "pct_ge_0.95": 0.228,
+      "pct_ge_0.90": 0.312,
+      "pct_ge_0.75": 0.488,
+      "pct_ge_0.50": 0.631
+    },
+    "lag_gt_365d": {
+      "n_measured": 746,
+      "n_no_score": 28,
+      "median_percentile": 0.956,
+      "p25_percentile": 0.7127,
+      "pct_ge_0.95": 0.515,
+      "pct_ge_0.90": 0.59,
+      "pct_ge_0.75": 0.721,
+      "pct_ge_0.50": 0.858
+    },
+    "negative_lag_zero_day_type": {
+      "n_measured": 1,
+      "n_no_score": 61,
+      "median_percentile": 0.0842,
+      "p25_percentile": 0.0842,
+      "pct_ge_0.95": 0.0,
+      "pct_ge_0.90": 0.0,
+      "pct_ge_0.75": 0.0,
+      "pct_ge_0.50": 0.0,
+      "insufficient_sample": true,
+      "note": "n_measured<10 のため参考値。単独で判断根拠にしない。"
+    }
+  },
+  "by_model_era": {
+    "v1": {
+      "n_measured": 319,
+      "n_no_score": 33,
+      "median_percentile": 0.9135,
+      "p25_percentile": 0.6483,
+      "pct_ge_0.95": 0.436,
+      "pct_ge_0.90": 0.514,
+      "pct_ge_0.75": 0.69,
+      "pct_ge_0.50": 0.799
+    },
+    "v2": {
+      "n_measured": 492,
+      "n_no_score": 44,
+      "median_percentile": 0.9131,
+      "p25_percentile": 0.6517,
+      "pct_ge_0.95": 0.453,
+      "pct_ge_0.90": 0.518,
+      "pct_ge_0.75": 0.665,
+      "pct_ge_0.50": 0.833
+    },
+    "v3": {
+      "n_measured": 283,
+      "n_no_score": 131,
+      "median_percentile": 0.4308,
+      "p25_percentile": 0.1817,
+      "pct_ge_0.95": 0.223,
+      "pct_ge_0.90": 0.272,
+      "pct_ge_0.75": 0.367,
+      "pct_ge_0.50": 0.481
+    },
+    "v4": {
+      "n_measured": 258,
+      "n_no_score": 77,
+      "median_percentile": 0.6776,
+      "p25_percentile": 0.2562,
+      "pct_ge_0.95": 0.267,
+      "pct_ge_0.90": 0.36,
+      "pct_ge_0.75": 0.469,
+      "pct_ge_0.50": 0.597
+    }
+  },
+  "by_year_added": {
+    "2021": {
+      "n_measured": 287,
+      "n_no_score": 24,
+      "median_percentile": 0.9267,
+      "p25_percentile": 0.6155,
+      "pct_ge_0.95": 0.456,
+      "pct_ge_0.90": 0.54,
+      "pct_ge_0.75": 0.697,
+      "pct_ge_0.50": 0.787
+    },
+    "2022": {
+      "n_measured": 507,
+      "n_no_score": 48,
+      "median_percentile": 0.9004,
+      "p25_percentile": 0.6542,
+      "pct_ge_0.95": 0.436,
+      "pct_ge_0.90": 0.501,
+      "pct_ge_0.75": 0.659,
+      "pct_ge_0.50": 0.84
+    },
+    "2023": {
+      "n_measured": 120,
+      "n_no_score": 67,
+      "median_percentile": 0.4291,
+      "p25_percentile": 0.2348,
+      "pct_ge_0.95": 0.258,
+      "pct_ge_0.90": 0.283,
+      "pct_ge_0.75": 0.392,
+      "pct_ge_0.50": 0.483
+    },
+    "2024": {
+      "n_measured": 136,
+      "n_no_score": 50,
+      "median_percentile": 0.5915,
+      "p25_percentile": 0.1722,
+      "pct_ge_0.95": 0.272,
+      "pct_ge_0.90": 0.331,
+      "pct_ge_0.75": 0.426,
+      "pct_ge_0.50": 0.544
+    },
+    "2025": {
+      "n_measured": 184,
+      "n_no_score": 61,
+      "median_percentile": 0.5786,
+      "p25_percentile": 0.2367,
+      "pct_ge_0.95": 0.239,
+      "pct_ge_0.90": 0.321,
+      "pct_ge_0.75": 0.424,
+      "pct_ge_0.50": 0.549
+    },
+    "2026": {
+      "n_measured": 118,
+      "n_no_score": 35,
+      "median_percentile": 0.6626,
+      "p25_percentile": 0.2503,
+      "pct_ge_0.95": 0.254,
+      "pct_ge_0.90": 0.356,
+      "pct_ge_0.75": 0.466,
+      "pct_ge_0.50": 0.593
+    }
+  }
+}

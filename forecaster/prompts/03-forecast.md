@@ -29,6 +29,13 @@
 9. `forecaster/knowledge/product-categories.json`（Step C'' 類似過去事例検索の CVE→製品カテゴリ抽象化辞書）
 10. 検証済み過去予報ストア（Step C'' が `scripts/retrieve_similar_cases.py` 経由で読む）:
     `forecaster/verification/YYYY-MM.json`・`forecaster/forecasts/daily/*.json`・`forecaster/observations/`
+11. `forecaster/knowledge/kev-leadtime-stats.json`（KEVリードタイム実測分布・
+    E1 検証窓と base_rate_estimate の実測参考。`_limitations` 厳守。
+    起点は NVD 公開日であり、起点=実悪用確認の実測は kev-initial-add-timelines.json が
+    正（両者は補完関係・混用しない）。ファイルが存在しない場合は参照せずスキップする）
+12. `forecaster/knowledge/epss-kev-calibration.json`（KEV追加**前日**の EPSS%ile 実測・
+    M3 EPSS 条件の感度検証用。`_limitations` 厳守。運用上の登録後 EPSS 値の充足率とは
+    別の量である点に注意。ファイルが存在しない場合は参照せずスキップする）
 
 ---
 
@@ -294,7 +301,7 @@ Step C'' の**内部実績**に加えて、**インターネット上の類似�
 
 **M1 観測可能性ゲート（発行前必須）**: 各予報の的中条件を観測出口クラス E1〜E4（KEV初回追加 / 新規IOC公開 / CERT初回勧告 / PoC公開）の一次・二値イベントに紐付ける。「国内被害報道」「KEV再登録」「悪用拡大（曖昧）」を的にする予報は発行せず注意点1行へ格下げ。
 
-**M3 EPSS+SSVC 確度アンカー**: 確度=高は「KEV登録 AND EPSS percentile≥0.95 AND SSVC=Act/Attend」を満たす場合のみ。SSVC `Automatable=no`（ASLR回避・認証・多段要）は確度=高から自動降格。EPSSは確度裏取りのみに使い72h的中条件に流用しない。
+**M3 EPSS+SSVC 確度アンカー**: 確度=高は「KEV登録 AND EPSS percentile≥0.95 AND SSVC=Act/Attend」を満たす場合のみ。SSVC `Automatable=no`（ASLR回避・認証・多段要）は確度=高から自動降格。EPSSは確度裏取りのみに使い72h的中条件に流用しない。EPSS 条件（%ile≥0.95）の**事前予見可能性（感度）**の実測は `epss-kev-calibration.json` を参照する。同ファイルは KEV 追加**前日**の値を測っており、M3 が運用上参照する登録後 EPSS 値（EPSS v3+ は KEV 収載を特徴量に含むため事後に押し上がる）の充足率とは別の量である。前日感度の低さを根拠に閾値を引き下げるのはカテゴリエラーであり禁止。新規公開直後の CVE の較正には `by_freshness_v4_era.fresh_lag_le_30d`（現行モデル v4 での測定×公開30日以内）を主参照とし、同層が `insufficient_sample` の場合は `by_freshness.fresh_lag_le_30d`（モデル版混合）と `by_model_era.v4` を併読して限界を明記する。参照キーが存在しない場合はファイル不在時と同様に参照せずスキップする。閾値の変更は `pipeline-forecast-verification.md` 定量ゲートDの改定手続き（ホールドアウト窓での見直し）に従い**人間レビュー経由でのみ**行い、予報生成時に独自判断で緩めない。
 
 **確度: 低の扱い**: 確度「高」「中」の適用条件（A〜D）をいずれも満たさないが、M1 観測可能性ゲート（下記）の発行前チェックリストを通過する予報には確度「低」を適用してよい。「低」は発行を見送るべき曖昧な予報ではなく、精度は保証できないが防御行動として発行価値がある予報という積極的な分類である。適用条件・目標的中率帯の正式定義は `pipeline-forecast-verification.md` の「確度: 低」適用条件を参照する（本書では重複定義しない）。「低」を適用する場合も的中判定条件（hit_criteria）の記載義務は変わらない。
 
@@ -344,7 +351,18 @@ apt_geographic_spillover（中央値21日）など、外部可視化までの中
   事象であることに留意し、根拠なく低い値（例: 0.05未満）に倒さない。一方、KEV登録済みCVEの
   「再登録」を誤って的中条件にしないよう M4 の非的中判別を優先する（本フィールドとは別軸）。
   Evidenceが強い（実悪用試行が既に観測されている等）T1予報ほどベースレートは相対的に高くなる
-  （0.2〜0.4程度を目安とし、個別の状況に応じて調整する）。
+  （0.2〜0.4程度を目安とし、個別の状況に応じて調整する）。実測参考として
+  `kev-leadtime-stats.json` の `era_2023_plus_recommended.pct_within_3d`（KEV追加が
+  確定した集合で NVD公開から lag≤3日＝fast_72h の+3日窓相当で追加された割合）と
+  `fresh_subset_lag_le_90d` を参照してよい。ただし以下を厳守する:
+  - 同ファイル `_limitations` 参照。この値は**方向未定の参考値**であり、0.2〜0.4 目安の
+    代替アンカーにしない（生存バイアスは上振れ要因だが、時間原点の不一致〔起点=NVD公開
+    であり予報発行=実悪用観測ではない〕と negative_lag 群〔ゼロデイ型・最速層〕の除外は
+    下振れ要因で、方向が混在する）。ゼロデイ型の予報ではこの分布より速い。
+  - Step C''（内部検証実績）が `observed_gate_passed=true` の較正値を出せる場合は
+    **内部実績を優先**し、本統計は内部実績が無い型の参考に限る。
+  - 「実悪用確認→KEV追加」の実測は `kev-initial-add-timelines.json`（起点が異なる
+    補完ファイル）を参照する。
 - **E2〜E4（新規IOC公開・CERT初回勧告・PoC公開）を的中条件とする予報**: 発行時点で既にPoC公開や
   ベンダー分析が進行中であればベースレートは相対的に高い（0.3〜0.5程度）。逆に新規性の低い
   観測（単発の脆弱性報告のみ）から発行する予報はベースレートを低め（0.1未満）に見積もる。

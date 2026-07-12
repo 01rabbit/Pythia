@@ -85,6 +85,22 @@ APT 活動は KEV のような日付付きイベント列を持たないため�
   頻度・遷移確率の数値ゲート（placeholder 使用禁止）は不変で、
   Tier 昇格・確度引き上げの根拠には使わない
 
+### 較正統計（過去実測からの学習）
+
+予報の「確度そのもの」を過去実測で較正するための機械生成統計。いずれも knowledge/ の
+自動書き換え禁止ルールに従い、再生成は PR 提案+人間レビュー経由のみ。
+
+- `knowledge/kev-leadtime-stats.json`（`scripts/build_kev_leadtime_stats.py`）:
+  KEV 全件の「NVD公開→KEV追加」ラグ実測分布（年別・製品カテゴリ別・ランサム別）。
+  E1 予報の検証窓（fast_72h/slow_7d）設定と base_rate_estimate 記入の参考。
+  ★測っているのは「KEV追加が確定した集合の条件付きラグ分布」であり
+  P(KEV追加|公開) ではない（生存バイアス）。`_limitations` を厳守する
+- `knowledge/epss-kev-calibration.json`（`scripts/build_epss_kev_calibration.py`）:
+  KEV 追加**前日**時点の EPSS パーセンタイル実測分布（EPSS は KEV 収載を入力特徴に
+  含むため前日値で as-of 汚染を防止）。M3 確度アンカー「EPSS%ile≥0.95」の感度検証用。
+  ★測っているのは P(EPSS高|KEV追加) であり P(KEV追加|EPSS高) ではない
+- どちらも hit_criteria（的中判定基準）の変更・確度引き上げの根拠には使用禁止
+
 ## Phase ロードマップ
 
 - **Phase 0（Week 1）**: ディレクトリ・スキーマ確定 ✓ 完了（2026-06-26）
