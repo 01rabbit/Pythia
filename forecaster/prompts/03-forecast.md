@@ -20,6 +20,8 @@
 3. `forecaster/baseline/group-activity.json`
 4. `forecaster/knowledge/attack-groups.json`
 4b. `forecaster/knowledge/group-aliases.json`（グループ名寄せマップ・Step B/C の照合に使用）
+4c. `forecaster/knowledge/attack-group-history.json`（ATT&CK 由来のグループ過去事例・cited・
+    Step C のレパートリー照合と Step C''' の一次出典付き過去事案参照に使用）
 5. `forecaster/knowledge/technique-chains.json`
 6. `forecaster/knowledge/poc-exploitation-criteria.json`（T3採用のPoC難易度足切り）
 7. `forecaster/knowledge/incident-visibility-timelines.json`（M2 検証窓割当の根拠）
@@ -128,13 +130,38 @@ parent_group "Lazarus Group" のプロファイルを参照してよい。その
 
 この推定は「（推測）」として必ず明記すること。
 
+**レパートリー照合（attack-group-history.json・cited 出典付き）**: Step C で言及する次段階
+Technique 候補は、`attack-group-history.json` の当該グループ（名寄せ後 canonical / parent_group）の
+`techniques` に含まれるか必ず照合する。
+
+- **含まれる場合**: 「（推測）」表記は維持したまま、根拠欄に ATT&CK 出典を併記してよい
+  （例: `既知レパートリー内: G0032 T1190（MITRE ATT&CK v19.1, https://attack.mitre.org/groups/G0032）（cited）`。
+  バージョンは同ファイルの `_attack_version` を記載する）。これは言及の質を高める定性的裏付けであり、
+  **Tier 昇格・確度引き上げ・σ代替の根拠にはしない**（発動根拠は従来どおり
+  Step A'/A/B/C' の観測事実のみ）。
+- **含まれない場合**: 「既知レパートリー外（ATT&CK v[_attack_version] 時点）」と明記し、
+  当該 Technique の言及を見送るか注意点1行へ格下げする。**照合は降格方向を優先する非対称運用**
+  とする（Step C'' の類似事例検索と同じ思想）。
+- `attack-group-history.json` のみに登録があり `attack-groups.json` に未登録のグループ
+  （例: Turla / APT28 / Mustang Panda / Gamaredon Group / Velvet Ant 等）は
+  `typical_tactics_order` を持たないため次段階「予測」は行わない。既知レパートリーの
+  定性的言及（cited 出典付き・「（推測）」明記）のみ可とする。
+- ★この照合は予報文の品質管理専用である。日次正規化（01-normalize.md R3/R4）で観測に
+  Technique / 帰属を付与する根拠には使用禁止（既知TTPからの類推付与禁止は不変）。
+
 **evidence_basis ゲート（placeholder値の使用禁止）**: `technique-chains.json` の遷移確率・
 `attack-groups.json` の `frequency` には `evidence_basis`（区分は `_evidence_basis_legend` 参照:
 `placeholder` = 出典のない初期推定値 / `observed` = observations 実データから較正済み /
 `cited` = 外部一次情報に出典明示）が付与されている。**`evidence_basis.type` が `observed` の
 値のみ** Step C の遷移確率判定・予報の直接根拠として使用してよい。`placeholder` および
-`cited` は現時点では発動根拠に使用禁止とする（`cited` は将来的な拡張区分であり、本ゲートの
-対象緩和は人間レビューを経てから行う）。
+`cited` は現時点では発動根拠に使用禁止とする（`cited` の**数値**をゲート対象から緩和する場合は
+人間レビューを経てから行う）。
+
+なお `attack-group-history.json`（ATT&CK 由来・cited 相当）は**頻度・遷移確率を含まない
+「在/不在」のみの過去事例データ**であり、本ゲートの対象（数値の発動根拠化）には該当しない。
+その許容用途は上記「レパートリー照合」（定性・降格方向優先）と Step C'''（一次出典付き
+過去事案の参照）に限定する。`frequency` / `transition_matrix` の数値ゲートは
+本ファイル導入後も**不変**である（レパートリー照合の導入は PR レビュー＝人間承認を経て有効化）。
 
 - `attack-groups.json`: `common_techniques[].evidence_basis.type` を個別エントリごとに確認する。
 - `technique-chains.json`: `transition_matrix` の遷移確率は個別付与ではなく、トップレベルの
@@ -242,6 +269,12 @@ Step C'' の**内部実績**に加えて、**インターネット上の類似�
    別軸・較正されていない）。用途は「推奨アクション」「先回り監視」欄の具体化と、防御行動フレーミング
    （原則2）の補強に限る。
 4. 外部事案を根拠に攻撃者帰属を新規に作らない（原則3）。TTP 類似のみで断定しない。
+
+`attack-group-history.json` の `campaigns`（C番号・first_seen / last_seen・ATT&CK URL 付き）は
+一次出典要件（ゲート1）を満たす**事前審査済みの過去事案**として参照してよい。参照時は
+`external_cases` に `source_name: "MITRE ATT&CK Campaign C0022（Operation Dream Job）"` の形式で
+出典URL（ATT&CK キャンペーンページ）とともに記録し、`relevance` に first_seen / last_seen と
+当該予報との類似点を書く（推測は「（推測）」明記・ゲート2〜4 は通常どおり適用）。
 
 外部事案が原則1のゲートを満たせない（一次出典を示せない）場合は、**参照しない**（記憶からの
 それらしい事案の捏造を絶対にしない）。該当なしの場合 `retrieval.external_cases` は省略または空配列とする。
@@ -469,7 +502,12 @@ Step C'' の検索を実施しなかった予報では `retrieval` を省略ま�
 
 - 事実（observations）と推測（次段階予測）を絶対に混在させない。
 - `attack-groups.json` に登録されていないグループの次段階予測は行わない
-  （登録の有無は `group-aliases.json` による名寄せ後の canonical / parent_group で判定する）。
+  （登録の有無は `group-aliases.json` による名寄せ後の canonical / parent_group で判定する。
+  `attack-group-history.json` のみに登録があるグループは次段階予測の対象外のまま、
+  既知レパートリーの定性的言及（cited 出典付き）のみ可とする）。
+- `attack-group-history.json` は確度の引き上げ・Tier 昇格の根拠に使わない
+  （レパートリー照合は降格方向優先・定性的裏付けのみ）。観測への Technique / 帰属付与の
+  根拠にも使用禁止（01-normalize.md R3/R4 不変）。
 - 地政学シグナル単体での予報生成は禁止する。
   `geopolitical_signal` を含む observation に加え、同日の独立した技術的観測
   （IOC公開 / 新規TTP報告 / CERT勧告のいずれか）が揃った場合のみ予報候補とする。
