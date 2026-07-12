@@ -101,6 +101,22 @@ APT 活動は KEV のような日付付きイベント列を持たないため�
   ★測っているのは P(EPSS高|KEV追加) であり P(KEV追加|EPSS高) ではない
 - どちらも hit_criteria（的中判定基準）の変更・確度引き上げの根拠には使用禁止
 
+### ゼロデイ過去分布・CISA勧告バックフィル（過去事象の掌握）
+
+- `knowledge/zeroday-itw-priors.json`（`scripts/build_zeroday_itw_priors.py`）:
+  Google Project Zero「0-day In the Wild」由来のゼロデイ過去分布（cited）。
+  ベンダー別・製品カテゴリ別・脆弱性種別別・年次。Section 2 ゼロデイ特報の
+  文脈付けと Step C''' の過去事案参照に使う。★検知・公表された集合の条件付き
+  分布であり真の発生率ではない（検知バイアス）。予測確率の直接根拠・確度引き上げ・
+  hit_criteria 変更には使わない
+- CISA AA 勧告バックフィル（`scripts/backfill_cisa_advisories.py`）:
+  CISA の AA 勧告は「発行日・明示 ATT&CK テーブル・明示帰属」を備えた数少ない
+  一次ソース。Wayback Machine 経由で取得し、日次ルーチン開始（2026-06-15）より前の
+  APT 事象を observations へ機械バックフィルする（`machine_backfill_cisa_advisory` /
+  KEV バックフィルと同日なら `machine_backfill_mixed`）。Technique はリンク明示分のみ・
+  actor はタイトル明示分のみ（R3/R4 厳守・推測付与なし）。ベースライン統計からは除外。
+  Technique も帰属も抽出できない勧告は観測を生成しない
+
 ## Phase ロードマップ
 
 - **Phase 0（Week 1）**: ディレクトリ・スキーマ確定 ✓ 完了（2026-06-26）
