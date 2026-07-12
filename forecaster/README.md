@@ -78,6 +78,12 @@ APT 活動は KEV のような日付付きイベント列を持たないため�
 - 用途は予報生成時の事前知識・過去事例の掌握。**日次正規化（01-normalize.md R3/R4）で
   観測に Technique / 帰属を付与する根拠には使用禁止**（既知 TTP からの類推付与は禁止のまま）
 - 手書きキュレーションの `attack-groups.json` / `group-aliases.json` には触れない
+- 予報ロジックへの接続（03-forecast.md）: Step C の**レパートリー照合**（次段階 Technique 候補が
+  当該グループの ATT&CK 既知レパートリーに含まれるかを照合。含まれれば cited 出典を併記、
+  含まれなければ格下げ＝降格方向優先の非対称運用）と、Step C''' の**一次出典付き過去事案**
+  （campaigns の C番号・first_seen/last_seen・ATT&CK URL）として参照される。
+  頻度・遷移確率の数値ゲート（placeholder 使用禁止）は不変で、
+  Tier 昇格・確度引き上げの根拠には使わない
 
 ## Phase ロードマップ
 
