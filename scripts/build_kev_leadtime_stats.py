@@ -39,7 +39,6 @@
 import argparse
 import json
 import os
-import re
 import sys
 from collections import defaultdict
 from datetime import date
@@ -51,6 +50,7 @@ from kev_data_sources import (
     percentile,
     primary_cvss_score,
 )
+from product_categories import build_resolver
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_PATH = os.path.join(REPO_ROOT, "forecaster", "knowledge", "kev-leadtime-stats.json")
@@ -76,34 +76,18 @@ def load_nvd_meta(nvd_file):
 
 
 def build_category_resolver():
-    """product-categories.json の cve_overrides + product_keyword_map から
-    (resolver, schema_version) を返す。
+    """product-categories.json から (resolver, schema_version) を返す。
 
-    辞書は retrieve_similar_cases.py と同一だが、マッチングは意図的に厳格化
-    している: 単純部分一致では nsd→nsDOMSVGZoomEvent（Firefox）、
-    sap→WhatsApp、unifi→Cisco Unified 等の偽陽性が KEV 英文コーパスで実際に
-    発生するため、単語境界付き一致とする。このため同一 CVE でも Step C''
-    （日本語観測サマリ対象・部分一致）とはカテゴリが異なりうる。"""
-    data = json.load(open(PRODUCT_CATEGORIES_PATH))
-    cve_overrides = {
-        k: v for k, v in data.get("cve_overrides", {}).items() if not k.startswith("_")
-    }
-    compiled = [
-        (
-            re.compile(r"(?<![a-z0-9])" + re.escape(kw.lower()) + r"(?![a-z0-9])"),
-            cat,
+    照合ロジックは scripts/product_categories.py に集約（retrieve_similar_cases.py
+    と共通）。resolver(cve, text) の引数順を保つ薄いラッパである。
+    辞書が読めない場合は fail-fast（無言で全カテゴリ空のファイルを生成しない）。"""
+    match, schema_version = build_resolver(PRODUCT_CATEGORIES_PATH)
+    if schema_version is None:
+        raise SystemExit(
+            f"[fatal] {PRODUCT_CATEGORIES_PATH} を読み込めません。"
+            "カテゴリ層別が全て空になるため中断します。"
         )
-        for kw, cat in data.get("product_keyword_map", {}).items()
-        if not kw.startswith("_")
-    ]
-
-    def resolver(cve, text):
-        if cve in cve_overrides:
-            return {cve_overrides[cve]}
-        hay = (text or "").lower()
-        return {cat for pat, cat in compiled if pat.search(hay)}
-
-    return resolver, data.get("_schema_version")
+    return (lambda cve, text: match(text, cve=cve)), schema_version
 
 
 def summarize(lags):
