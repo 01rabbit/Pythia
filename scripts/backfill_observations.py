@@ -9,6 +9,8 @@
 設計原則（forecaster/README.md・CLAUDE.md の運用ルールに準拠）:
   - 日付スタンプ付きソースのみ使用する。KEV の dateAdded は「その日に
     実悪用確認と判定された」ことを示す一次記録であり、as-of 汚染がない。
+    ただし summary に補完する CVSS は実行時点の NVD 値（事後付与・事後改訂を
+    含みうる付随情報）である点に注意（敵対的レビュー 2026-07-12 指摘）。
   - Technique / actor_group の推測付与は行わない（techniques: [] 固定・
     ハルシネーション厳禁）。付与する場合は人間レビューを経ること。
   - 予報（forecasts/）・検証（verification/）は生成しない。過去日付の

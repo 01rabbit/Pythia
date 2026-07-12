@@ -41,6 +41,7 @@
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.request
 from collections import defaultdict
@@ -117,23 +118,33 @@ def load_nvd(nvd_file):
 
 
 def build_category_resolver():
-    """product-categories.json の cve_overrides + product_keyword_map を使う
-    （retrieve_similar_cases.py の resolver と同一ロジック）。"""
+    """product-categories.json の cve_overrides + product_keyword_map を使う。
+
+    辞書は retrieve_similar_cases.py と同一だが、マッチングは意図的に厳格化
+    している: 単純部分一致では nsd→nsDOMSVGZoomEvent（Firefox）、
+    sap→WhatsApp、unifi→Cisco Unified 等の偽陽性が KEV 英文コーパスで実際に
+    発生するため、単語境界付き一致とする。このため同一 CVE でも Step C''
+    （日本語観測サマリ対象・部分一致）とはカテゴリが異なりうる。"""
     data = json.load(open(PRODUCT_CATEGORIES_PATH))
     cve_overrides = {
         k: v for k, v in data.get("cve_overrides", {}).items() if not k.startswith("_")
     }
-    keyword_map = {
-        k: v
-        for k, v in data.get("product_keyword_map", {}).items()
-        if not k.startswith("_")
-    }
+    compiled = [
+        (
+            re.compile(
+                r"(?<![a-z0-9])" + re.escape(kw.lower()) + r"(?![a-z0-9])"
+            ),
+            cat,
+        )
+        for kw, cat in data.get("product_keyword_map", {}).items()
+        if not kw.startswith("_")
+    ]
 
     def resolver(cve, text):
         if cve in cve_overrides:
             return {cve_overrides[cve]}
         hay = (text or "").lower()
-        return {cat for kw, cat in keyword_map.items() if kw in hay}
+        return {cat for pat, cat in compiled if pat.search(hay)}
 
     return resolver
 
@@ -223,6 +234,8 @@ def main():
         lag = (
             date.fromisoformat(date_added) - date.fromisoformat(meta["published"])
         ).days
+        # カテゴリ判定は製品を指すフィールドに限定する（shortDescription を
+        # 含めると sapi/cgi→sap 等の本文由来の偽陽性が発生するため除外）
         cats = resolver(
             cve_id,
             " ".join(
@@ -230,13 +243,13 @@ def main():
                     e.get("vendorProject") or "",
                     e.get("product") or "",
                     e.get("vulnerabilityName") or "",
-                    e.get("shortDescription") or "",
                 ]
             ),
         )
         rec = {
             "cve": cve_id,
             "lag": lag,
+            "date_added": date_added,
             "year_added": date_added[:4],
             "ransomware": e.get("knownRansomwareCampaignUse") == "Known",
             "cvss_band": cvss_band(meta["cvss"]),
@@ -276,6 +289,9 @@ def main():
             "kev_catalog_version": catalog_version,
             "kev_feed": KEV_FEED_URL,
             "nvd_api": "https://services.nvd.nist.gov/rest/json/cves/2.0?hasKev",
+            "product_categories_schema_version": json.load(
+                open(PRODUCT_CATEGORIES_PATH)
+            ).get("_schema_version"),
         },
         "_governance": (
             "knowledge/ の自動書き換え禁止ルールに従い、再生成は日次ルーチンからは"
@@ -283,15 +299,35 @@ def main():
         ),
         "_limitations": [
             "生存バイアス: 母集団は KEV に追加された CVE のみ。KEV に追加されない大多数の"
-            "CVE を含まないため、P(KEV追加|公開) や E1 予報の base_rate そのものではない。",
+            "CVE を含まないため、P(KEV追加|公開) や E1 予報の base_rate そのものではない。"
+            "また過去に収載後削除されたエントリ（誤収載等）も現行カタログから欠落する。",
+            "時間原点の不一致（最重要）: 本分布の時計は NVD 公開で始まる。E1 予報の時計は"
+            "予報発行時（実悪用観測時・公開から任意日数後）で始まり、必要なのは経過時間で"
+            "条件付けたハザード率である。公開起点の CDF はこれを推定できない。生存バイアス"
+            "（上振れ要因）と negative_lag 除外・時間原点差（下振れ要因）が混在するため、"
+            "本統計は方向未定の参考値であり base_rate の代替アンカーにしない。",
             "意味論: NVD published は NVD 収録日であり、実悪用確認日・脆弱性公表日と"
-            "乖離しうる。「実悪用確認→KEV追加」ラグは kev-initial-add-timelines.json を参照。",
+            "乖離しうる（REJECT→再収録時の published の挙動は非保証）。"
+            "「実悪用確認→KEV追加」ラグは kev-initial-add-timelines.json を参照。",
             "ロングテール: 公開から数年後に KEV 追加される事例が mean を大きく歪めるため、"
             "mean_days_reference_only は参考値。判断には median / percentile / 閾値内割合を使う。",
-            "運用変化: KEV は BOD 22-01（2021-11）開始。初期の一括登録年（2021-2022）は"
-            "過去 CVE の遡及登録を大量に含みラグが構造的に長い。直近年の層を優先参照する。",
-            "negative_lag: KEV 追加が NVD 公開より先の事例（NVD 収録遅延・ゼロデイ等）は"
-            "本分布から分離して集計した。",
+            "運用変化と残存混合: KEV は BOD 22-01（2021-11）開始。初期の一括登録年"
+            "（2021-2022）は遡及登録が支配的。era_2023_plus 推奨層でも公開後1年超の遅延"
+            "追加が約25%残る二峰混合分布であり、fresh_subset_lag_le_90d を併読する。",
+            "negative_lag: KEV 追加が NVD 公開より先の事例（ゼロデイ型・NVD 収録遅延）は"
+            "本分布から分離した。この群は『最速で KEV 入りする型』であり、除外は"
+            "pct_within_3d を過小方向に歪める（era 層でクランプ感度値を併記）。"
+            "ゼロデイ型の予報ではこの分布より速い。",
+            "日付粒度: KEV dateAdded（米東部基準の暦日）と NVD published（タイムスタンプ"
+            "先頭10文字）の差は ±1日の系統誤差を含む。pct_within_3d は連続時間で最大約96"
+            "時間に相当し、fast_72h の『+3日固定』慣行とは整合するが厳密な72時間ではない。",
+            "事後値層別: cvss_band は現在の NVD 値（事後付与・事後改訂・v2/v3/v4/CNA 混合）、"
+            "ransomware フラグも追加後に更新される値による層別であり、予報発行時に観測"
+            "可能な層別ではない。参考情報に留める。",
+            "カテゴリ被覆: 製品カテゴリ辞書は自観測由来（現在の関心領域の選択バイアス）で、"
+            "本統計でのマッチは単語境界付き・製品フィールド限定（Step C'' の部分一致とは"
+            "異なり同一 CVE で別カテゴリになりうる）。未分類が大半を占めるため "
+            "population のカテゴリ被覆率を必ず併読する。",
             "用途制限: fast_72h/slow_7d の窓設定・base_rate_estimate の参考に限る。"
             "hit_criteria（的中判定基準）の変更・緩和には使わない。",
         ],
@@ -301,23 +337,58 @@ def main():
             "missing_nvd_data": n_missing_nvd,
             "negative_lag_count": len(negative),
             "nonnegative_lag_count": len(entries),
+            "categorized_count": sum(1 for r in entries if r["categories"]),
+            "uncategorized_count": sum(1 for r in entries if not r["categories"]),
         },
         "overall": summarize(lags),
-        "era_2023_plus_recommended": {
+        "era_2023_plus_recommended": (lambda era, era_neg: {
             "_note": (
                 f"dateAdded が {ERA_STABLE_START_YEAR} 年以降のエントリのみの合算。"
-                "BOD 22-01 初期の遡及一括登録（2021-2022）を除いた推奨参照層。"
+                "BOD 22-01 初期の遡及一括登録（2021-2022）を除いた参照層だが、"
+                "本層も公開後1年超の遅延追加を含む二峰混合分布である"
+                "（fresh_subset_lag_le_90d と negative_lag クランプ値を併読）。"
             ),
-            **summarize(
-                [r["lag"] for r in entries if r["year_added"] >= ERA_STABLE_START_YEAR]
+            **summarize([r["lag"] for r in era]),
+            "fresh_subset_lag_le_90d": {
+                "_note": (
+                    "公開後90日以内に追加された部分集合（遡及登録を除いた"
+                    "『新規公開CVEの即応追加』母集団の近似）。P(lag≤3|lag≤90) 等の"
+                    "条件付き割合であり、さらに強い条件付けが入る点に注意。"
+                ),
+                **summarize([r["lag"] for r in era if r["lag"] <= 90]),
+            },
+            "pct_within_3d_negative_clamped": (
+                round(
+                    (
+                        sum(1 for r in era if r["lag"] <= 3) + len(era_neg)
+                    )
+                    / (len(era) + len(era_neg)),
+                    3,
+                )
+                if era or era_neg
+                else None
             ),
-        },
+            "_clamp_note": (
+                "negative_lag（ゼロデイ型）を lag=0 として含めた場合の pct_within_3d"
+                "（感度上限の参考値）。"
+            ),
+        })(
+            [r for r in entries if r["year_added"] >= ERA_STABLE_START_YEAR],
+            [r for r in negative if r["year_added"] >= ERA_STABLE_START_YEAR],
+        ),
         "by_year_added": stratum_stats(by_year),
         "by_ransomware_use": stratum_stats(by_ransom),
         "by_cvss_band": stratum_stats(by_band),
         "by_product_category": stratum_stats(by_cat),
         "negative_lag_cves": sorted(
-            ({"cve": r["cve"], "lag_days": r["lag"]} for r in negative),
+            (
+                {
+                    "cve": r["cve"],
+                    "lag_days": r["lag"],
+                    "date_added": r["date_added"],
+                }
+                for r in negative
+            ),
             key=lambda x: x["lag_days"],
         ),
     }
@@ -330,10 +401,11 @@ def main():
         f"missing_nvd={n_missing_nvd})"
     )
     o = out["overall"]
-    print(
-        f"[overall] median={o['median_days']}d p75={o['p75_days']}d "
-        f"within3d={o['pct_within_3d']:.1%} within7d={o['pct_within_7d']:.1%}"
-    )
+    if o.get("n"):
+        print(
+            f"[overall] median={o['median_days']}d p75={o['p75_days']}d "
+            f"within3d={o['pct_within_3d']:.1%} within7d={o['pct_within_7d']:.1%}"
+        )
     return 0
 
 
