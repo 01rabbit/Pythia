@@ -37,6 +37,9 @@ import os
 import sys
 from datetime import datetime
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from product_categories import build_resolver
+
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FORECASTER = os.path.join(REPO_ROOT, "forecaster")
 VERIFICATION_DIR = os.path.join(FORECASTER, "verification")
@@ -128,30 +131,12 @@ def normalize_actor(raw, alias_to_canonical, canonical_to_parent):
 
 def build_product_category_resolver(path):
     """product-categories.json から CVE→カテゴリ集合を解決する関数を返す。
-    resolver(cve, summary_text) -> set[str]。"""
-    if os.path.isfile(path):
-        data = load_json(path)
-    else:
-        data = {}
-    cve_overrides = {
-        k: v for k, v in data.get("cve_overrides", {}).items() if not k.startswith("_")
-    }
-    keyword_map = {
-        k: v for k, v in data.get("product_keyword_map", {}).items() if not k.startswith("_")
-    }
+    resolver(cve, summary_text) -> set[str]。
 
-    def resolver(cve, summary_text):
-        cats = set()
-        if cve and cve in cve_overrides:
-            cats.add(cve_overrides[cve])
-            return cats
-        hay = (summary_text or "").lower()
-        for kw, cat in keyword_map.items():
-            if kw in hay:
-                cats.add(cat)
-        return cats
-
-    return resolver
+    照合ロジックは scripts/product_categories.py に集約（単語境界一致）。
+    本関数は従来の (cve, summary_text) 引数順を保つ薄いラッパである。"""
+    match, _schema_version = build_resolver(path)
+    return lambda cve, summary_text: match(summary_text, cve=cve)
 
 
 # ---------------------------------------------------------------------------

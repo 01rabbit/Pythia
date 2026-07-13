@@ -3,7 +3,8 @@
   "_created": "2026-07-10",
   "_governance": "自動書き換え禁止・変更は PR 経由で人間レビュー（CLAUDE.md 行動原則5）。scripts/retrieve_similar_cases.py が読み取り専用で参照する。",
   "_comment": "類似過去事例検索（Case-Based Retrieval・forecaster/case-based-retrieval-design.md §4.3）が、CVE/製品を抽象化した『製品カテゴリ』へ正規化するための辞書。CVE番号そのものの再来はほぼないため、カテゴリで抽象化して初めて『似た事案』の照合が成立する。ハルシネーション防止のため、カテゴリは人手で付与し自動推論しない（原則1）。",
-  "_usage": "解決手順: (1) 対象CVEが cve_overrides にあればそのカテゴリを採用（最優先）。(2) なければ、そのCVEを含む observation の summary / source 文字列に対して product_keyword_map のキーワードを部分一致で走査し、一致したキーワードのカテゴリを採用（複数一致は全採用＝集合）。(3) いずれも一致しなければカテゴリ空集合（この要素の類似度スコアは0）。キーワード照合は大文字小文字を無視する。",
+  "_usage": "解決手順: (1) 対象CVEが cve_overrides にあればそのカテゴリを採用（最優先）。(2) なければ、そのCVEを含む observation の summary / source 文字列に対して product_keyword_map のキーワードをエッジ条件付き境界一致で走査し、一致したキーワードのカテゴリを採用（複数一致は全採用＝集合）。(3) いずれも一致しなければカテゴリ空集合（この要素の類似度スコアは0）。キーワード照合は大文字小文字を無視する。照合は scripts/product_categories.py に一元実装する（retrieve_similar_cases.py / build_kev_leadtime_stats.py / build_zeroday_itw_priors.py が共有）。",
+  "_matching_note": "エッジ条件付き境界一致を用いる（2026-07 に単純部分一致から変更）。境界アサーションはキーワードの当該エッジ文字が ASCII 英数のときだけ適用する: 先頭が ASCII英数なら左境界、末尾が ASCII英数なら右境界を付ける。単純部分一致は英語混じり文で偽陽性を生む（sap→WhatsApp/Sapphire Sleet、unifi→Cisco Unified、nsd→Firefox nsDocShell）。逆に両端一律の ASCII 境界は日本語キーワード＋ASCII接尾辞で正当一致を落とす（rpgツクールMV→rpgツクール が不一致）。エッジ条件付きにより両問題を解消する。実測（全observation summary）: 単純部分一致に対し偽陽性6件（Cisco Unified×4・Sapphire Sleet×2）を排除、正当な一致の喪失0件・カテゴリの誤増加0件。既知の限界: 末尾がASCII英字のキーワードは直後に数字が連結するバージョン表記（FortiOS7.4 等）に一致しない（空白区切りは一致）。現行コーパスでは実害0。",
   "_scope_note": "初期収録は observations/ に既出の製品カテゴリのみ（design §4.3）。未収録CVE/製品はカテゴリ空で扱い、キーワードを機械推論で増やさない。新規製品カテゴリの追加は観測に出現した実績にもとづき PR で追記する。",
   "categories": {
     "vpn_remote_access_gateway": "SSL-VPN・リモートアクセスGW・SSO認証ゲートウェイ（インターネット直接露出・初期侵入の主経路）",

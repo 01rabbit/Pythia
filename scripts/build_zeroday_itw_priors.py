@@ -41,7 +41,7 @@ import urllib.request
 from collections import Counter, defaultdict
 from datetime import date
 
-from kev_data_sources import fetch_json  # noqa: F401  (共有UA・方針の整合のため参照)
+from product_categories import build_resolver
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT_PATH = os.path.join(REPO_ROOT, "forecaster", "knowledge", "zeroday-itw-priors.json")
@@ -107,23 +107,16 @@ def cell_value(cell):
 
 
 def build_category_resolver():
-    """product-categories.json から単語境界マッチの resolver を返す
-    （build_kev_leadtime_stats.py と同方針・偽陽性対策）。"""
-    data = json.load(open(PRODUCT_CATEGORIES_PATH))
-    compiled = [
-        (
-            re.compile(r"(?<![a-z0-9])" + re.escape(kw.lower()) + r"(?![a-z0-9])"),
-            cat,
+    """product-categories.json から resolver を返す（cve なしの text 照合）。
+    照合ロジックは scripts/product_categories.py に集約。
+    辞書が読めない場合は fail-fast（無言で全カテゴリ空のファイルを生成しない）。"""
+    match, schema_version = build_resolver(PRODUCT_CATEGORIES_PATH)
+    if schema_version is None:
+        raise SystemExit(
+            f"[fatal] {PRODUCT_CATEGORIES_PATH} を読み込めません。"
+            "カテゴリ分布が全て空になるため中断します。"
         )
-        for kw, cat in data.get("product_keyword_map", {}).items()
-        if not kw.startswith("_")
-    ]
-
-    def resolver(text):
-        hay = (text or "").lower()
-        return {cat for pat, cat in compiled if pat.search(hay)}
-
-    return resolver, data.get("_schema_version")
+    return (lambda text: match(text)), schema_version
 
 
 def main():
