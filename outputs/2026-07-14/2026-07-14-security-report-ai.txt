@@ -1,0 +1,123 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-14 07:00 JST
+調査期間: 2026-07-13 07:00 〜 2026-07-14 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-07-13 〜 2026-07-14
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Jscrambler npmパッケージ侵害によるAIコーディングツール認証情報・MCPコンフィグ窃取
+カテゴリ: C3 / 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: A-Q
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: LLM03
+対象: it / global
+被害規模: 侵害版(8.14.0/8.16.0/8.17.0/8.18.0/8.20.0)が公開後1,479回ダウンロード（正規週間DL数約15,800の一部）
+
+【24時間以内（または期間内）の変化】
+[BleepingComputer 2026-07-13] 侵害バージョンが8.14/8.16/8.17/8.20の4版と確定、AIコーディングツール対象がClaude・Cursor・Windsurf・VS Code・Zedの5製品と特定、npm公開クレデンシャル侵害が根本原因と判明
+バースト検出閾値超過（6件以上の独立ソース確認）
+
+【概要】
+正規npmパッケージjscrambler（JS難読化ツール、週間DL約15,800）のメンテナーアカウントが侵害され、8.14.0〜8.20.0の5バージョンにRust製クロスプラットフォーム・インフォスティーラーが混入し、preinstallフックまたはrequire()時自己実行（--ignore-scriptsバイパス）で起動、暗号資産ウォレット・クラウド認証情報に加えClaude・Cursor・Windsurf・VS Code・ZedといったAIコーディングツール／MCPコンフィグを標的に窃取した。この事案は攻撃者・侵害インフラの観点からAPTパイプライン側でも継続追跡（campaign_id: RIS-2026-JscramblerNpm-RustStealer）しているが、本エントリはAIコーディングツール認証情報・MCPコンフィグ窃取という観点でSection 1として評価する。
+
+攻撃の流れ:
+1. npmメンテナー公開クレデンシャルの侵害
+2. 侵害版パッケージの公開・preinstallフック/require()注入
+3. AIコーディングツール設定・MCPコンフィグ・クラウド/暗号資産認証情報の窃取とC2送信
+4. Jscrambler社が約2時間で検知・撤去、クレデンシャル失効
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: npm install時のrequire()フック異常挙動, jscrambler 8.14.0-8.20.0導入の有無
+
+【監視・対策ポイント】
+・[npm監査ログ/ネットワークログを対象に監視する]
+Splunk SPL: index=network_traffic dest_ip IN ("37.27.122.124","57.128.246.79") | stats count by src_ip,dest_ip
+Splunk SPL: index=npm_audit package_name="jscrambler" version IN ("8.14.0","8.16.0","8.17.0","8.18.0","8.20.0")
+→ いずれかヒットで即座に該当端末を隔離し全シークレットをローテーションする
+
+【参照】
+https://thehackernews.com/2026/07/compromised-jscrambler-8140-npm-release.html
+https://www.bleepingcomputer.com/news/security/hackers-backdoor-jscrambler-npm-package-with-infostealer-malware/
+https://socket.dev/blog/jscrambler-supply-chain-attack
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[MemGhost: 単一メールによるAIエージェント永続メモリへの偽記憶注入]
+カテゴリ: B1 採用契機: A-P
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: LLM01, ASI06
+研究者が「MemGhost」という攻撃フレームワークを開発し、1通のメールでAIパーソナルエージェントの永続メモリに偽の事実を注入し、ユーザーへの返信では変化を隠蔽したまま後続セッションの回答を誘導できることを実証した（108ケースのWhisperBenchベンチマークで評価）。OpenClaw(GPT-5.4)で87.5%、Claude Code SDK(Sonnet 4.6)で71.4%の成功率を確認、既存の入力フィルタは9割以上見逃す。研究室内実証でありOpenClawへの責任開示を予定、実被害は未確認。
+対策: 参照URLの推奨事項を確認のうえ実施。
+
+監視: [AIエージェントのメモリ書き込み監査ログを対象に監視する] 検知SPL: index=agent_memory_audit action="write" source_type="external_email" | stats count by agent_id,user
+→ 外部メール由来のメモリ書き込みが頻発する場合は精査対象とする
+
+参照: https://thehackernews.com/2026/07/new-memghost-attack-plants-persistent.html
+参照: https://arxiv.org/html/2607.05189v1
+
+・[AI生成疑いPowerShellスクリプトによるActive Directory偵察（Huntress確認）]
+カテゴリ: A3 採用契機: A-P
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+2026年6月3日、攻撃者が侵害済み認証情報でRDP経由ドメイン参加Windows Serverへアクセスし、AI生成が疑われるPowerShellスクリプト（ファイル名Untitled1.ps1、タイトル「100% Working AD Information Gathering Script - FULLY FIXED」）を実行してActive Directoryのユーザー・コンピュータ・ドメイン情報を収集した。Huntress社は、未編集のプレースホルダーホスト名「Server1.HR.local」の残存、冗長なドメインコントローラ探索ロジック、過剰な色分けコンソール出力といった複数の状況証拠からAI生成の可能性が高いと分析しているが、断定的な証拠ではなく状況証拠に基づく推定である点をHuntress自身も明記している。s5cmdやSharpSharesも併用され偵察・データ持ち出しが行われた。
+対策: 参照URLの推奨事項を確認のうえ実施。
+
+監視: [Windows PowerShell Operational Log(Event ID 4104)を対象に監視する] 検知SPL: index=windows EventCode=4104 ScriptBlockText="*Server1.HR.local*" OR ScriptBlockText="*AD_Report.html*"
+→ AD列挙目的の未承認スクリプト実行として要精査
+
+参照: https://www.huntress.com/blog/ai-coded-malware-vibe-coding-active-directory
+参照: https://thehackernews.com/2026/07/attacker-uses-suspected-ai-generated.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[Forg365 PhaaS: AI生成メール機能搭載Microsoft 365標的フィッシングプラットフォーム]
+カテゴリ: A1 採用契機: A-P
+Telegramで販売される新型フィッシングキット「Forg365」は、Microsoftのデバイスコード認証フローを悪用した偽Microsoft認証画面によるセッション窃取、AitM（Adversary-in-the-Middle）によるVPN検知型の誘導振り分け、セッションCookieを保持させる拡張機能「ForgCookie」、そしてダッシュボード上でのAIによるフィッシングメール文面生成支援機能を統合したプラットフォームである。AI生成メールの具体的な出力例や生成品質の詳細は確認できず、AIは補助的機能の一つとして明示されているに留まる。国内での直接被害は本ウィンドウ内で確認されていないが、Microsoft 365は国内でも広範に利用されており備えが必要。
+対策: 参照URLの推奨事項を確認のうえ実施。
+参照: https://thehackernews.com/2026/07/forg365-phaas-targets-microsoft-365.html
+参照: https://www.bleepingcomputer.com/news/security/new-forg365-phishing-platform-uses-ai-to-target-microsoft-365-accounts/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はAIコーディングツール（Claude/Cursor/Windsurf/VS Code/Zed）の認証情報・MCPコンフィグを狙うJscrambler npmサプライチェーン侵害が本編採用となり、AI開発環境を狙うサプライチェーン攻撃が継続する傾向を示した。参考Bでは研究実証としてAIエージェントの永続メモリへの偽記憶注入（MemGhost）とAI生成疑いPowerShellスクリプトによるAD偵察が確認され、参考AではAI生成メール機能を持つM365標的PhaaS基盤Forg365が採用された。バースト検出閾値超過（6件以上）はJscrambler npn侵害・AI生成PowerShellスクリプトの2トピックで確認された。
+
+本日の集計:
+AI攻撃 — 本編1件 / 参考A1件 / 参考B2件 / 除外5件
+カテゴリ内訳: A（武器化）2件 / B（攻撃対象）1件 / C（インフラ）1件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（AI攻撃）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CrashStealer（notarized dropper型macOSインフォスティーラー） → AI生成・AIツール利用の言及なし。標準的なmacOSマルウェアのためAIパイプライン対象外。Section 2トレンド記事として別途採用
+・ModHeader Chrome拡張機能の休眠型データ収集機能発覚 → AI要素なし。ブラウザ拡張機能サプライチェーン事案としてSection 4 SOC推奨情報で別途採用
+・GigaWiper破壊的バックドア → AI生成・AI標的の言及なし。初出2026-07-09・活動開始2025年10月であり24時間窓内の新規性もない
+・Thinking Fast and Slow in the SOC（論説記事） → 実インシデント・新規調査データを含まないベンダー視点の論説記事。理論的リスク提起のみのため除外
+・MCPサーバ／AI開発者クレデンシャル大規模スキャンキャンペーン（SANS ISC） → 独立ソース2件のみでburst_count=2(below_threshold)。実害・確認済み被害者なしの偵察活動のみ。Section 4 SOC推奨情報で別途採用
+========================================
