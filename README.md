@@ -111,7 +111,8 @@ Pythia の予報精度は観測データの質に依存する。
 Step 0    時刻確認・調査期間確定（前日 07:00 JST 〜 当日 07:00 JST）
 
 Step 0.5  機械収集データの読み込み（一次入力）
-           └─ security-intel-collector/data/raw/ の RSS・NVD 収集済み JSON を調査起点にする
+           └─ security-intel-collector/data/raw/ の機械収集済み JSON を調査起点にする
+              news-*.json（RSS記事）/ cves-*.json（記事から抽出したCVE言及）
               （Web 検索は不足分の補完のみ — 再現性確保のため）
 
 Step 1    情報収集（3トラック並行）
@@ -212,7 +213,7 @@ GitHub Actions は外部 API キー不要の補助タスクのみを担当する
 
 | ワークフロー | タイミング | 役割 |
 |---|---|---|
-| `.github/workflows/daily-pipeline.yml` | 06:00 JST（Routines の1時間前） | RSS・NVD CVE 機械収集（`security-intel-collector/`）→ `data/raw/` へコミット |
+| `.github/workflows/daily-pipeline.yml` | 06:00 JST（Routines の1時間前・日次1回） | RSS 機械収集 + 記事からの CVE 言及抽出（`security-intel-collector/watcher.py`）→ `data/raw/` へコミット |
 | `.github/workflows/weekly-verify.yml` | 火・木 11:55 JST | 検証タスクの Issue 作成（リマインド） |
 
 `GITHUB_TOKEN`（自動付与）のみで動作する。`NVD_API_KEY` は任意（レート制限緩和用）。
@@ -250,8 +251,8 @@ scripts/                            ← 機械処理スクリプト
               build_attack_group_history.py / build_kev_leadtime_stats.py /
               build_epss_kev_calibration.py / build_zeroday_itw_priors.py（すべて PR 経由でのみ実行）
 
-security-intel-collector/           ← RSS・NVD CVE 機械収集（Python・GitHub Actions が毎朝実行）
-  watcher.py / cve_watcher.py / feeds.json / data/raw/
+security-intel-collector/           ← RSS 機械収集・CVE言及抽出（GitHub Actions が毎朝 06:00 JST に watcher.py を実行）
+  watcher.py / feeds.json / data/raw/（cve_watcher.py は NVD API 収集器・本リポジトリでは未スケジュール）
 
 収集ルール（観測データ供給）:
   pipeline-1-cve.md                 ← CVE調査（トラックA/B排他的決定木・固定の製品リストなし）

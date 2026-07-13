@@ -58,12 +58,12 @@ Section 4: SOC推奨情報
 ### Step 0.5: 機械収集データの読み込み（一次入力）
 - `security-intel-collector/data/raw/` の当日・前日分 JSON（`news-YYYY-MM-DD.json` / `cves-YYYY-MM-DD.json`、
   無ければ `news-latest.json` / `cves-latest.json`）を読み込み、`items[]` を Step 1〜2 の調査起点とする
-- GitHub Actions が3時間おきに自動収集しているため、当日 07:00 JST 時点で複数回分が蓄積されている
+- GitHub Actions（`daily-pipeline.yml`）が毎日 06:00 JST に1回自動収集するため、当日 07:00 JST 時点で当日分が蓄積されている
 - Web 検索は data/raw に無い情報の補完としてのみ使用する（再現性確保のため）
 - data/raw が取得できない・空の場合はその旨をレポート meta に記録し、Web 検索へフォールバックする
 
 ### Step 1: CVE調査（pipeline-1-cve.md に従う）
-- 一次入力: Step 0.5 の `cves-*.json`（NVD API 機械収集済み）。Web 検索は補完のみ
+- 一次入力: Step 0.5 の `cves-*.json`（RSS 収集記事から機械抽出した CVE 言及。CVSS/EPSS 等の詳細は NVD/Web 照会で補完する）
 - トラックA/B の定義・帰属判定は pipeline-1-cve.md の「トラックA/B 排他的決定木」に従う
   （本ファイルでは重複定義しない）
 - 期間内に採用条件 A〜H の変化が確認できるCVEを収集。`reported-cves.md` と照合し既報除外
