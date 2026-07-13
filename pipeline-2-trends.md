@@ -2,7 +2,7 @@
 
 ## 情報収集の原則
 
-一次入力は `security-intel-collector/data/raw/` の当日・前日分（GitHub Actions が3時間おきに機械収集済み）とする。
+一次入力は `security-intel-collector/data/raw/` の当日・前日分（GitHub Actions が毎日 06:00 JST に機械収集済み）とする。
 Web 検索は data/raw に無い情報を補完する場合にのみ使用する。
 
 ## このステップの区分
