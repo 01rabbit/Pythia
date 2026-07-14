@@ -1,0 +1,168 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-14 07:00 JST
+調査期間: 2026-07-13 07:00 〜 2026-07-14 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Dragonfly（別名: Berserk Bear/Energetic Bear/Crouching Yeti/Ghost Blizzard/Static Tundra / 国家帰属: RU / 帰属信頼度: high）
+活動タイプ: 公式帰属 / 活動継続 / インフラ変更
+------------------------------------------------------------
+
+標的: defense/telecom/energy/finance/government/healthcare / US/AU/GB/CA/NZ/EE/FI/FR/IT
+マルウェア: 判明分なし
+
+【24時間以内の変化】
+[CISA (AA26-194A) 2026-07-13] CISA/FBI/NSA+同盟国機関共著の合同勧告「Improve Router Hygiene to Protect Against Russian State-Sponsored Targeting」公開。FSB第16センター配下の実行部隊（Dragonfly/Berserk Bear/Static Tundra等）による脆弱ルーター悪用の重要インフラ侵害を正式警告
+[BleepingComputer 2026-07-13] 同勧告を報道。防衛産業基盤/通信/エネルギー/金融/政府/医療の各セクターの米国内外ネットワークが実際に影響を受けたと明記
+
+【概要】
+CISA・FBI・NSAおよび英国・豪州・カナダ・ニュージーランド等の同盟国機関が2026年7月13日、ロシアFSB第16センター配下で活動する脅威アクター（Berserk Bear/Energetic Bear/Dragonfly/Static Tundra等の名称で追跡）による重要インフラ標的化を警告する合同勧告を公開し、デフォルトまたは推測可能なSNMP認証情報を持つインターネット接続ルーターをスキャンし、送信元IPを偽装したコマンドでデバイス設定ファイルを窃取してTFTP経由で持ち出す手口と、CVE-2018-0171（Cisco IOS/IOS XE Smart Install機能の脆弱性、2021年11月以降悪用継続・KEV登録済み）の武器化を明記しており、防衛産業基盤・通信・エネルギー・金融・政府機関・医療の各セクターの米国内外ネットワークが実際に影響を受けたことを確認している。
+
+攻撃の流れ（判明分）:
+1. インターネット接続ルーター群に対しデフォルト/共通SNMP認証文字列を持つ機器を特定するスキャンを実施する
+2. 送信元IPアドレスを偽装したコマンドでデバイス設定ファイルをTFTP経由で攻撃者管理サーバへ持ち出す
+3. Cisco Smart Install機能（CVE-2018-0171）等の脆弱性を悪用しネットワーク機器の制御を奪取する
+4. 窃取した設定・認証情報を足がかりに重要インフラ内ネットワークへ横展開する
+
+【新規TTP】
+・[T1595] Active Scanning — インターネット接続ルーターに対しSNMP経由でデフォルト/共通認証文字列を持つ機器を広域スキャン（CISA AA26-194A明記）
+・[T1110] Brute Force — デフォルト/推測可能なSNMPコミュニティ文字列を用いた認証試行
+・[T1190] Exploit Public-Facing Application — CVE-2018-0171（Cisco IOS/IOS XE Smart Install機能）の悪用、2021年11月以降継続悪用
+・[T1048] Exfiltration Over Alternative Protocol — TFTPプロトコルでデバイス設定ファイルを攻撃者管理サーバへ持ち出し
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・SNMPv3への移行とデフォルト/共通コミュニティ文字列の廃止、不要なCisco Smart Install機能の無効化、境界ファイアウォールでのTFTP(UDP/69)・SNMP(UDP/161)の外部遮断、ルーター/スイッチのファームウェア最新化とEoL機器の更新、ローカル管理アカウントの認証情報を強固なものへ変更し使用状況を監視すること。
+Splunk SPL: index=network (dest_port=69 OR dest_port=161) NOT [| inputlookup known_nms_servers.csv | fields src_ip] | stats count by src_ip dest_ip dest_port | where count > 5
+Splunk SPL: index=network dest_port=4786 | stats count by src_ip dest_ip _time
+Splunk SPL: index=network sourcetype=cisco:ios "config" "tftp" | stats count by src_ip dest_ip user
+→ TFTP/SNMPは正規のネットワーク管理トラフィックとしても広く使われるため、既知の監視サーバ(NMS)・パッチ配布サーバのIPをアローリストから除外し、外部始点または未登録内部ホストからのアクセスに絞って検知する。設定変更のタイムスタンプと突合し、計画外メンテナンスウィンドウ外の変更を優先的に確認する。
+
+【参照】
+https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-194a
+https://www.bleepingcomputer.com/news/security/us-and-allies-share-defense-tips-against-russian-hackers-targeting-critical-infrastructure/
+https://www.cyberscoop.com/russian-fsb-cisco-joint-cybersecurity-advisory/
+
+------------------------------------------------------------
+2. Turla（Venomous Bear / Snake / IRON HUNTER / JOVIAL SERPENT / Waterbug / Krypton / UNC4210）（別名: Venomous Bear/Snake/IRON HUNTER/JOVIAL SERPENT/Waterbug/Krypton/UNC4210 / 国家帰属: RU / 帰属信頼度: high）
+活動タイプ: 公式帰属
+------------------------------------------------------------
+
+標的: government/critical_infrastructure/energy / FR/DE/PL/CY/NL/AT/SK/RO/FI
+マルウェア: 判明分なし
+
+【24時間以内の変化】
+[France24 / BleepingComputer 2026-07-13] EU理事会がFSB第16センターをTurla等複数グループの統制組織として公式に名指しし、9名・4団体に制裁（資産凍結・渡航禁止）。英国も24名・団体に制裁
+[SecurityWeek 2026-07-13] 制裁対象の詳細と、少なくとも9カ国への標的化・2010年以降の重要インフラへのサイバー破壊工作（サボタージュ）への非難を報道
+
+【概要】
+EU理事会および英国政府が2026年7月13日、ロシアFSB第16センターを複数のサイバー脅威グループ（Turlaを含む）を統制する組織として公式に名指しし、9名・4団体（EU）および24名・団体（英国）に制裁（資産凍結・渡航禁止）を科した。EU声明はFSB第16センターによる標的国としてフランス・ドイツ・ポーランド・キプロス・オランダ・オーストリア・スロバキア・ルーマニア・フィンランドの9カ国を挙げ、2010年以降の暖房・電力施設等重要インフラへのサイバー破壊工作を非難している。既報のSTOCKSTAYキャンペーン本体（新規.NETバックドア・WebSocket C2）自体への技術的更新はなく、今回の変化は政府による公式帰属の確認・制裁という補強情報である。
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・既存のTurla対策（STOCKSTAYバックドアのIOC監視・.NETベースの不審な永続化機構の検知）を継続する。制裁対象組織「Impuls」等との取引関係がないか確認する。
+→ 本更新は外交的措置であり技術的IOCの追加はない。既存監視体制の継続が妥当。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/eu-and-uk-hit-russia-with-first-joint-cyber-sanctions-package/
+https://www.securityweek.com/eu-targets-russian-intelligence-officers-accused-of-running-a-yearslong-cyber-spying-campaign/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向該当APTなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[参考B相当（国際先行）] CVE未採番 / ShareFile Storage Zone Controller
+CVSS: 該当なし 状態: 特記事項なし
+Progress社は、ShareFile Storage Zone Controllerを稼働させる全顧客に対し、信頼性のある外部脅威を理由としたサーバーの手動シャットダウンを要請した。同社はクラウドサービス側のアカウントアクセスを一時無効化した後2026-07-12に復旧させたが、Storage Zone Controller自体は調査完了まで稼働停止を継続するよう指示している。不正アクセスの証拠は現時点で確認されていないとしているが、脅威の性質・影響範囲・パッチ提供時期は非公開であり、CVE番号も本日時点で未採番である。（推測）特定CVEに未だ紐付いていない進行中インシデントであり、ゼロデイと断定はできないが、ベンダー自身が本番システムの全面停止という異例の対応を取っている点は重大インパクト事象として注視が必要。
+IoC: 確認されず
+参照: https://www.securityweek.com/progress-prompts-sharefile-storage-zone-controller-shutdown-amid-security-concerns/
+参照: https://www.bleepingcomputer.com/news/security/progress-urges-sharefile-customers-to-shut-down-servers-over-credible-threat/
+
+・[トレンド記事] 日本交通、サイバー攻撃でタクシー配車・予約システム停止
+国内最大手タクシー事業者の日本交通は2026-07-13未明、外部からの不正アクセスによるマルウェア感染を検知し、タクシー配車システム・電話配車・Web予約/カーハイヤー予約・妊婦向け陣痛タクシー等の一部サービスを停止した。同社は外部専門家と連携し調査中で、現時点で個人情報等の流出は確認されていないとしているが可能性は否定していない（推測）。ランサムウェアの犯行声明・攻撃者の帰属は本ウィンドウ内で確認されていない。
+参照: https://www.bleepingcomputer.com/news/security/japans-largest-taxi-operator-shuts-systems-after-cyberattack
+
+・[トレンド記事] テレビ朝日メディアプレックスに不正アクセス、個人情報流出の可能性
+テレビ朝日子会社でデジタルコンテンツ制作を手掛けるテレビ朝日メディアプレックスは、2026-04-28に不正アクセスを受け、2026-06-19付で個人情報を含む情報の一部が漏えいした可能性があると判明した。関係サーバの停止・外部ネットワーク遮断等の対応を実施し、外部専門機関と原因・影響範囲を調査中。7月13日時点でも流出範囲の特定には至っていない。
+参照: https://scan.netsecurity.ne.jp/article/2026/07/13/55688.html
+参照: https://www.security-next.com/187218
+
+・[トレンド記事] 朝日放送テレビグループ会社（アイネックス）に不正アクセス
+朝日放送テレビ（ABCテレビ）のグループ会社である株式会社アイネックスで、2026-06-17に従業員1名のメールアカウントへの不正ログインおよび連携クラウドサービスへの不正アクセスが発生した。6月24日に不審メール送信を発見しパスワード変更・強制ログアウトを実施、朝日放送テレビとの受託業務関連情報を含む個人情報が閲覧された可能性を否定できないとして調査中。現時点で情報の不正利用は確認されていない。テレビ朝日メディアプレックス事案とは別法人・別事案である。
+参照: https://scan.netsecurity.ne.jp/article/2026/07/13/55687.html
+
+・[トレンド記事] フラウ・インターナショナル、委託先サーバから個人情報流出の可能性
+韓流エンタメ関連事業を手掛けるフラウ・インターナショナルは、メール問い合わせ対応管理に利用する外部委託サービスの運営会社サーバが第三者からアクセスされたことにより、顧客の氏名・電話番号・メールアドレス等が流出した可能性があると公表した（サーバ侵害は2026-06-30報告）。二次被害・不正利用は現時点で確認されておらず、個人情報保護委員会への報告済み。サプライチェーン（委託先経由）型の情報流出事例。
+参照: https://www.security-next.com/186971
+
+・[トレンド記事] 加賀ソルネット「アカデミコナビ」不正アクセス、影響大学が新たに判明（既報07-08続報）
+2026-07-08分レポートで既報の加賀ソルネット運営「アカデミコナビ」不正アクセス事案（最大約17万件の個人情報流出の可能性、2021年10月〜2026年4月）について、本日新たに城西国際大学（大学推奨PC購入先として同ECサイトを紹介）および京都芸術大学（PC・ソフトウェア斡旋販売で同サービスを利用）の2大学が影響対象として判明・報道された。同一委託先プラットフォームを複数教育機関が共用していたサプライチェーン型事案。
+参照: https://scan.netsecurity.ne.jp/article/2026/07/13/55685.html
+参照: https://scan.netsecurity.ne.jp/article/2026/07/13/55686.html
+参照: https://scan.netsecurity.ne.jp/article/2026/07/13/55684.html
+
+・[トレンド記事] Lidl、サービス提供元侵害を受けオンラインショップ利用者情報の流出を公表
+独小売大手Lidlは、外部委託サービス提供元への不正アクセスにより、ドイツ・ベルギー・オランダの顧客について氏名・電話番号・メールアドレス・生年月日・顧客番号が流出した可能性があると公表した。パスワード・決済情報・請求先/配送先住所・銀行情報は対象外で、オンラインショップ本体システムへの影響はないとしている。現時点で悪用の具体的証拠はないが、フィッシング悪用への注意喚起を実施。第三者委託先経由のサプライチェーン型情報流出。
+参照: https://www.bleepingcomputer.com/news/security/lidl-discloses-online-shop-breach-after-service-provider-hack/
+
+・[トレンド記事] 米医療検査機関Centers Laboratory、54万人規模のデータ侵害（WorldLeaks恐喝グループ関与）
+米ニュージャージー州の医療検査・診断サービス提供企業Centers Laboratoryは、2025年8月9日〜14日に発生した侵入により氏名・生年月日・社会保障番号・運転免許証番号・パスポート番号・医療保険/診療情報を含む個人情報が窃取されたことを確認したと公表した。攻撃者は720GB・160万ファイルを窃取したとされ、恐喝グループWorldLeaks（Hunters International解散後に台頭、暗号化を伴わないデータ窃取・恐喝型）が2025年10月に同社を被害者として公開していた。発見までに約1年を要しており、医療セクターへの恐喝型攻撃の継続傾向を示す事例。
+参照: https://www.securityweek.com/centers-laboratory-data-breach-affects-540000-individuals/
+
+・[トレンド記事] UK NCA、「Russian Coms」通話偽装プラットフォーム関係者5名を起訴
+英国家犯罪対策庁(NCA)は、2020年から運用され17万人以上・数千万ポンド規模の被害をもたらしたとされる発信者番号偽装サービス「Russian Coms」に関与したとして、ロンドン在住の5名を詐欺共謀・犯罪収益の移転/転換等の容疑で起訴したと発表した。5名は8月14日にウェストミンスター治安判事裁判所に出廷予定。法執行・摘発情報のためAPTパイプラインの対象外としトレンド記事として記録する。
+参照: https://www.bleepingcomputer.com/news/security/uk-charges-suspects-linked-to-russian-coms-call-spoofing-platform/
+
+・[トレンド記事] CrashStealer: notarized dropperでGatekeeperを回避するmacOSインフォスティーラー
+Appleのクラッシュレポートツールを偽装する新型macOSマルウェア「CrashStealer」が確認された。notarized（Apple公証済み）ドロッパーを用いてGatekeeperのチェックを回避する手口が特徴で、認証情報・ブラウザデータ等を標的とする標準的なインフォスティーラー機能を持つ。AI生成・AIツール利用の言及は確認されていない。
+参照: https://www.bleepingcomputer.com/news/security/new-crashstealer-malware-poses-as-apple-crash-reporting-tool/
+参照: https://thehackernews.com/2026/07/crashstealer-macos-malware-uses.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日は予報なし。
+理由: 観測可能性ゲート（M1）の発行前チェックリストを満たす候補が本日は確認できなかった。
+Dragonfly/Berserk Bear関連CISA合同勧告（AA26-194A）は重要な観測だが、新規IOC・新規KEV追加を伴わず、追随勧告や追随IOC公開を的中条件とする予報はE2追随IOC除外ルール（教訓14）に抵触するため見送った。
+注意点（本編・参考A格下げ・無採点）:
+・BeyondTrust Remote Support/PRA（CVE-2026-40139等）は境界機器の未認証認証バイパスであり、PoC公開の有無を今後72時間注視すべき。
+・NVIDIA AIStore Framework（CVE-2026-24270）はAI基盤への認証バイパスであり、AI学習データ資産を保有する組織はパッチ適用（4.5）を優先すべき。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（APT）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・GRU Unit 29155 / Impuls → EU/UK制裁で政府公式帰属(Q条件)は満たすが、具体的マルウェア名・TTP・被害組織が不明の断片的活動報告のため軸P=5点のみ、軸Q未達で除外。技術詳細判明次第再検討
+・UK NCA - Russian Coms摘発 → 法執行・摘発情報のためpipeline-1b-apt.mdの規定により日次APT収集の対象外（週次検証へ移管）。Section 2トレンド記事として別途採用
+・Dark Reading「Weak Security Continues to Fuel Russian Cyberattacks」 → EU/UK制裁ニュース（Dragonfly/Turlaエントリと同一事象）の論評記事で新規の技術的観測なし
+
+本日の集計:
+APT — 本編2件 / 注目動向0件 / 除外3件
+========================================

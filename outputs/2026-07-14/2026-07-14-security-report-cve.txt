@@ -1,0 +1,124 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-14 07:00 JST
+調査期間: 2026-07-13 07:00 〜 2026-07-14 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1≥8かつ軸2≥4の該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-15146 / GNU Wget
+CVSS: 5.9 状態: 特記事項なし
+
+【24時間以内の変化】
+[JVN 2026-07-13] JVNVU#94203999として新規公開。CERT/CC VU#564823を参照
+
+【概要】
+GNU WgetはFTPパッシブモード利用時にPASV応答で提示されたIPアドレスを検証せずに接続するため、悪意あるFTPサーバまたはFTPへリダイレクトするHTTPサーバがWgetのデータ接続を任意の内部アドレスへ誘導しSSRFを引き起こす可能性がある。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[wgetを利用する自動化スクリプト・CI環境でのFTP接続先異常を監視する]
+Splunk SPL: index=proxy sourcetype=ftp_logs OR sourcetype=zeek_ftp dest_ip!=expected_range | stats count by src, dest_ip, dest_port
+→ 正規のCDN/ミラー以外へのPASV接続を異常として抽出する。内部IP帯へのPASVリダイレクトは特に注意
+
+【参照】
+https://jvn.jp/vu/JVNVU94203999/
+https://kb.cert.org/vuls/id/564823
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [GNU Wgetにおけるサーバサイドリクエストフォージェリの脆弱性] https://jvn.jp/vu/JVNVU94203999/
+
+・CVE-2026-24270 / NVIDIA AIStore Framework
+CVSS: 9.8 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-13] 分散ストレージ基盤「NVIDIA AIStore Framework」の認証バイパス脆弱性を国内向けに報道
+
+【概要】
+AI向け分散ストレージ基盤NVIDIA AIStore Frameworkに認証バイパスの脆弱性が確認され、4.4以前のバージョンが影響を受ける。CVSS9.8のCritical評価であり、修正版4.5が提供されている。実悪用・PoC公開は本日時点で確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[AIStore APIエンドポイントへの未認証アクセス試行を監視する]
+Splunk SPL: index=aistore_logs status=200 auth_header="" | stats count by src_ip, api_path
+→ 通常は認証ヘッダ必須のAPIパスへ未認証アクセスが成立しているケースを抽出する
+
+【参照】
+https://www.security-next.com/
+
+・CVE-2026-3861 / LINE for iOS
+CVSS: 6.5 状態: 特記事項なし
+
+【24時間以内の変化】
+[JVN 2026-07-13] JVNVU#94039788として新規公開
+
+【概要】
+iOS版LINEアプリのアプリ内ブラウザに、細工されたコンテンツによりサービス運用妨害（DoS）が発生する脆弱性が確認された。CVSS6.5（v4: 7.1）。修正版26.3.0が提供されており、悪用に高度な技術は不要だが実害はDoSにとどまる。低優先度規則（DoSのみ・CVSS8.0未満）に該当するが、JVN公開により参考情報Aへ採用する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[モバイル端末管理(MDM)側でのLINEアプリバージョン管理を推奨]
+→ サーバサイド監視の対象外（クライアントアプリのDoS）。MDMでのバージョン強制更新を優先する
+
+【参照】
+https://jvn.jp/vu/JVNVU94039788/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [iOS版LINEにおけるサービス運用妨害（DoS）につながる脆弱性] https://jvn.jp/vu/JVNVU94039788/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-40139 / BeyondTrust Remote Support / Privileged Remote Access (PRA)
+CVSS: 9.8
+リモートアクセス管理製品BeyondTrust Remote Support / Privileged Remote Accessに未認証の認証バイパス脆弱性が確認された。CVSS9.8（Critical）、既報CVE-2026-40138と同一アドバイザリBT26-03内の複合脆弱性であり、境界越えリモートアクセスゲートウェイという製品特性から重大なリスクとなる。クラウド版は2026-04-21に修正済み、自己ホスト型はRS 25.3.3で修正されている。実悪用・PoC公開は本日時点で確認されていない。 対処: RS 25.3.3以降（クラウドは2026-04-21適用済み）
+IoC: 確認されず
+
+監視: [BeyondTrust管理コンソールへの異常な認証試行を監視する]
+Splunk SPL: index=beyondtrust sourcetype=bt:audit event=login_failed OR event=admin_console_access | stats count by src_ip, user
+→ 同一IPからの短時間大量認証試行、または通常と異なるソースIPからの管理コンソールアクセスを優先確認する
+
+参照: https://www.beyondtrust.com/trust-center/security-advisories/bt26-03
+参照: https://thehackernews.com/2026/07/beyondtrust-patches-critical-auth.html
+参照: https://www.bleepingcomputer.com/news/security/beyondtrust-warns-of-critical-flaws-in-remote-access-software/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-48939 (iCagenda (Joomla拡張)) → 2026-07-10 KEV登録・2026-07-11既報。本日はFCEB期限到来（2026-07-13）に伴う報道拡大のみで新規事実なし
+・CVE-2026-56291 (Balbooa Forms (Joomla拡張)) → 同上・同一KEVバッチ
+・CVE-2026-56437 (富士電機製Pupsmanインストーラ) → 2026-07-09既報・本日新規事実なし
+・CVE-2026-57895 (富士電機製Pupsmanインストーラ) → 2026-07-09既報・本日新規事実なし
+・CVE-2026-40140 (BeyondTrust Remote Support / PRA) → DoSのみ・CVSS7.5・axis1=5点（境界機器+3のみ、8点未満）・axis2トリガーなし。BT26-03内複合脆弱性
+・CVE-2026-40141 (BeyondTrust Remote Support / PRA) → 認証済み限定の認可不備・axis1=6点（8点未満）・axis2トリガーなし。BT26-03内複合脆弱性
+・CVE-2026-57219 (RabbitMQ Server) → OAuth secret露出・axis1=2点/axis2=1点（国内ソース未確認）。8点未満かつ参考A昇格トリガーなし
+・CVE-2026-57221 (RabbitMQ Server) → CVSS5.0・低優先度規則該当・同一アドバイザリ内複合脆弱性
+・CVE未採番 (Zimbra ZCS Classic Web Client (Stored XSS)) → 2026-07-12既報・継続監視対象。本日GTIG発見者クレジット判明のみで新規事実僅少なため据え置き
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A3件 / 参考B1件 / 除外9件
+========================================
