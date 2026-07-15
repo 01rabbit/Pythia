@@ -1,0 +1,218 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-15 07:45 JST
+調査期間: 2026-07-14 07:00 〜 2026-07-15 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-15409 / SonicWall SMA1000 Appliances（Work Place インターフェース）
+対象: モデル 6210/7210/8200v。platform-hotfix 12.4.3-03245/03387/03434、12.5.0-02283/02624/02800 等が影響
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-14] SonicWallがSMA1000のSSRF脆弱性CVE-2026-15409実悪用を確認する緊急アドバイザリを公開
+[CISA KEV 2026-07-14] CISAがCVE-2026-15409をKEVカタログへ新規追加（FCEB期限2026-07-17）
+
+【概要】
+SonicWall SMA1000 AppliancesのWork Placeインターフェースに存在するSSRF脆弱性CVE-2026-15409（CVSS10.0）は未認証のリモート攻撃者がアプライアンスに意図しない宛先へのリクエストを行わせることが可能であり、SonicWallは複数のインシデント調査の結果、本脆弱性がCVE-2026-15410（コードインジェクション）と組み合わせた形で実際の攻撃で悪用されていることを確認した。パッチは提供済みだが回避策は存在しないため即時のアップグレードが必須である。
+
+攻撃の流れ:
+1. 未認証でWork PlaceインターフェースのSSRF脆弱性(CVE-2026-15409)を悪用し内部リクエストを強制
+2. 取得した内部アクセスを足がかりにCVE-2026-15410（コードインジェクション、要管理者認証）を連鎖させ任意OSコマンドを実行
+3. アプライアンス上での永続化・内部ネットワークへの横展開
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] SonicWall SMA1000のWork Placeインターフェースへの異常なリクエスト・管理コンソールへの認証後コマンド実行痕跡を監視する
+Splunk SPL: index=sonicwall sourcetype=sma1000 uri_path="*workplace*" | stats count by src_ip, uri_path
+Splunk SPL: index=sonicwall sourcetype=sma1000_admin action="command_execution" | table _time, user, command
+→ 外部公開されたSMA1000管理インターフェースへの探索的アクセスと、直後の管理コンソール操作の連続性を確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-sma1000-flaws-exploited-in-zero-day-attacks-patch-now/
+https://thehackernews.com/2026/07/two-sonicwall-sma-1000-zero-days.html
+https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0008
+
+------------------------------------------------------------
+2. CVE-2026-15410 / SonicWall SMA1000 Appliances（Appliance Management Console）
+対象: モデル 6210/7210/8200v。CVE-2026-15409と同一hotfixラインで影響
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 7.2 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-14] SonicWallがAppliance Management Consoleのコードインジェクション脆弱性CVE-2026-15410の実悪用を確認
+[CISA KEV 2026-07-14] CISAがCVE-2026-15410をKEVカタログへ新規追加（FCEB期限2026-07-17）
+
+【概要】
+SonicWall SMA1000 Appliance Management Consoleに存在するポスト認証のコードインジェクション脆弱性CVE-2026-15410（CVSS7.2）は、リモートの認証済み管理者権限を持つ攻撃者が特定条件下で任意のOSコマンドを実行できるもので、SonicWallはCVE-2026-15409と組み合わせた連鎖攻撃として実際の侵害インシデントで悪用を確認した。
+
+攻撃の流れ:
+1. CVE-2026-15409（SSRF）等で取得した管理者相当のアクセスを用いてAppliance Management Consoleへアクセス
+2. コードインジェクション脆弱性を通じ任意のOSコマンドを実行
+3. アプライアンス上でのバックドア設置・永続化
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] SMA1000管理コンソールでの異常なコマンド実行・設定変更の監視
+Splunk SPL: index=sonicwall sourcetype=sma1000_admin | search command=* | stats count by user, command, src_ip
+→ 正規運用担当者以外による管理コンソール経由のコマンド実行を確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-sma1000-flaws-exploited-in-zero-day-attacks-patch-now/
+https://www.helpnetsecurity.com/2026/07/14/sonicwall-sma-attacks-via-cve-2026-15409-cve-2026-15410/
+
+------------------------------------------------------------
+3. CVE-2026-56155 / Microsoft Active Directory Federation Services (AD FS)
+対象: AD FSを実行するWindows Server（2026年7月更新プログラム未適用環境）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 7.8 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[Microsoft 2026-07-14] Microsoftが2026年7月Patch Tuesdayで実悪用確認済みゼロデイCVE-2026-56155（AD FS権限昇格）を修正
+[CISA KEV 2026-07-14] CISAがCVE-2026-56155をKEVカタログへ新規追加（FCEB期限2026-07-28）
+
+【概要】
+Active Directory Federation Services (AD FS) のアクセス制御の粒度不足による権限昇格脆弱性CVE-2026-56155は、Microsoftの検知対応チーム(DART)が実際の攻撃調査の過程で悪用を発見したとみられ、認可された攻撃者がローカルでSYSTEM相当まで権限を昇格できる。AD FSはドメイン全体のトークン署名を担うため「ローカル」表記であってもフェデレーション基盤全体への影響度が高く、MicrosoftはAD FS分散鍵管理コンテナのACL強化も同時に発表した。
+
+攻撃の流れ:
+1. AD FSサーバへの初期アクセス（別経路の侵害を前提）
+2. アクセス制御の粒度不足を突きSYSTEM/管理者権限へ昇格
+3. フェデレーショントークン署名鍵への接近・組織全体の認証基盤侵害
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] AD FSサーバでの異常な権限昇格・分散鍵管理コンテナへのアクセスを監視
+Splunk SPL: index=wineventlog EventCode=4672 host=*ADFS* | stats count by Account_Name
+Splunk SPL: index=wineventlog EventCode=4663 ObjectName="*DKM*" | table _time, Account_Name, ObjectName
+→ AD FSサーバでの特権付与イベントおよび分散鍵管理コンテナへの想定外アクセスを重点確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/microsoft/microsoft-july-2026-patch-tuesday-fixes-massive-570-flaws-3-zero-days/
+https://www.helpnetsecurity.com/2026/07/15/microsoft-patch-tuesday-sharepoint-cve-2026-56164/
+
+------------------------------------------------------------
+4. CVE-2026-56164 / Microsoft SharePoint Server（オンプレミス）
+対象: SharePoint Server Subscription Edition / SharePoint Server 2019 / SharePoint Enterprise Server 2016
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[CISA 2026-07-14] CISAが本脆弱性の実悪用を確認しKEVへ新規追加（FCEB期限3日間の異例の短期設定・2026-07-17）
+[The Hacker News 2026-07-15] Patch Tuesday公開数時間後に別の研究者が新規Windowsゼロデイ関連PoCを公開したと報道（本脆弱性とは別件の可能性・継続監視）
+
+【概要】
+オンプレミスのMicrosoft SharePoint Serverにおける重要機能の認証欠如の脆弱性CVE-2026-56164は、資格情報を持たない攻撃者がネットワーク経由で特権を昇格できるもので、CISAはリモートコード実行の確立とIISマシンキー窃取・デシリアライゼーション技術を用いた永続化・追加マルウェア展開を伴う実悪用を確認したとして、FCEB機関に異例の3日間という短い対応期限（2026-07-17）を設定した。NVDはCVSS9.8（Critical）と評価しているが、Microsoft自身は5.3（Moderate）と評価しており評価の乖離が指摘されている（本レポートはpipeline-1-cve.mdの規定によりNVDのスコアを正として採用）。
+
+攻撃の流れ:
+1. 未認証で重要機能への認証欠如を突きネットワーク経由でアクセス
+2. リモートコード実行を確立しIISマシンキーを窃取
+3. 窃取したマシンキーを用いたデシリアライゼーション技術で永続化・追加マルウェア展開
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] SharePoint Serverへの未認証アクセス試行・IISマシンキー関連の異常操作を監視
+Splunk SPL: index=iis sourcetype=iis cs_uri_stem="*_layouts*" sc_status=200 | stats count by c_ip, cs_uri_stem
+Splunk SPL: index=wineventlog EventCode=4688 CommandLine="*w3wp.exe*" | table _time, CommandLine, User
+→ 外部公開SharePoint環境でのIISワーカープロセスからの異常な子プロセス生成・機密ページへの未認証アクセスを確認する
+
+【参照】
+https://www.securityweek.com/cisa-urges-immediate-patching-of-exploited-sharepoint-vulnerabilities/
+https://www.bleepingcomputer.com/news/security/cisa-warns-admins-to-patch-actively-exploited-sharepoint-flaws/
+https://thehackernews.com/2026/07/sharepoint-rce-cve-2026-45659-added-to.html
+
+━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1≥8点かつ軸2≥4点のCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT 2026-07-14 報道
+
+・CVE-2026-14934 / Google Cloud BigQuery / Dataform / Colab Enterprise（リポジトリ作成機能）
+CVSS: 不明 状態: 状態情報なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-14] 「GCPに他テナントのリポジトリを乗っ取れる脆弱性 - 5月に修正」として国内向けに初報道
+
+【概要】
+Google Cloud BigQuery・Dataform・Colab Enterpriseのリポジトリ作成機能に認可不備（CVE-2026-14934）が存在し、認証済み攻撃者が権限を昇格させテナントをまたいだリポジトリの乗っ取り（クロステナント）が可能な状態だった。Googleは2026年5月10日付で既に修正済みであり顧客側の対応は不要だが、Security NEXTが本脆弱性を2026-07-14に国内向けへ初めて報道したため参考情報Aとして採用する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] GCP監査ログでのリポジトリ作成・アクセス権限変更の異常を監視（本脆弱性はGoogle側で修正済みのため過去ログの異常確認が主目的）
+Splunk SPL: index=gcp_audit sourcetype=google:gcp:audit protoPayload.methodName="*repository*Create*" | stats count by resource.labels.project_id, principalEmail
+→ 2025年10月〜2026年5月10日の期間に該当機能を利用していた場合、異常なクロステナントアクセスの形跡がなかったか監査ログを遡及確認する
+
+【参照】
+https://scan.netsecurity.ne.jp/article/2026/07/14/55696.html
+https://github.com/advisories/ghsa-c9x2-6hqc-cm9v
+
+━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-47865 / VMware Avi Load Balancer（Avi Control Plane）
+CVSS: 9.8
+ネットワーク境界でトラフィックを処理するアプリケーション配信コントローラであるVMware Avi Load BalancerのAvi Control Planeに認証バイパスの脆弱性CVE-2026-47865（CVSS9.8）が存在し、ネットワークアクセスを持つ悪意あるユーザーが認証を回避してコントロールプレーンにアクセスできる。同時にリモートコード実行（CVE-2026-47867、CVSS8.7）・追加の認証バイパス（CVE-2026-47866、CVSS8.3）・ローカル権限昇格（CVE-2026-47868、CVSS7.8）等計7件が修正されており、実悪用は現時点で確認されていないが境界機器としての露出面の広さから早期のアップグレードが推奨される。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] Avi Control Planeへの管理インターフェースアクセスログ・認証イベントを監視
+Splunk SPL: index=vmware sourcetype=avi_controller | search event="login" OR event="auth_failure" | stats count by src_ip, user
+→ 通常運用者以外からのAvi Controllerへの管理アクセス試行を確認する
+
+参照: https://www.securityweek.com/7-severe-vulnerabilities-patched-in-vmware-avi-load-balancer/
+参照: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/37926
+
+━━━━━━━━━━━━━━━━━━━━
+【除外サマリー・製品別CVE】
+━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-44747 (SAP NetWeaver AS ABAP（Approuter CVE-2026-27690・Commerce Cloud CVE-2026-44761等16件のノート含む）) → high_impact=true（CVSS9.9・7月パッチデー筆頭）だが認証済み攻撃者前提でaxis1=4（CVSS9+のみ）、axis2=1（英語ソースのみ・国内報道未確認）で判定順4（除外）に帰属。KEV/PoC/実悪用いずれも未確認。SOC推奨情報（SOC-2026-07-15-001）でβトリガーにより別途注意喚起
+・CVE-2026-48318 (Adobe ColdFusion 2025/2023（APSB26-82、CVSS9.9含む13件のCVE）) → high_impact=true（CVSS9.9）だがAdobeは実悪用未確認と明記・認証要否不明のため未認証RCE加点を保留、axis1=4、axis2=1（国内報道未確認）で除外。直近のAPSB26-68（CVE-2026-48282）は既にKEV登録・本編既報。SOC推奨情報（SOC-2026-07-15-002）で別途注意喚起
+・CVE-2026-57219 (RabbitMQ（未認証OAuth秘密情報漏洩・CVE-2026-57221クロステナント情報露出も同時修正）) → axis1=6（CVSS7.5-8.9域+2・未認証+3・広く使われるOSS+1）、axis2=1（国内報道未確認）で判定順4（除外）に帰属。KEV/実悪用未確認。SOC推奨情報（SOC-2026-07-15-003）で別途注意喚起
+・CVE未採番 (Progress ShareFile Storage Zone Controller（Storage Zone緊急停止の背景となったゼロデイ脆弱性・CVE予約済み未公開）) → CVE未採番（トラックB判定対象）。認証済み管理者前提の情報読み取り/書き込みでaxis1=5（ゼロデイ報道+4・広く使われる製品+1）、axis2=1（国内報道未確認）となり参考情報Bの閾値（axis1≥8）に未達。修正版5.12.5/6.0.2は既にリリース済み。MOVEit級の大規模波及ではないがファイル転送製品の継続的標的化を踏まえSOC推奨情報（SOC-2026-07-15-005）で高優先度の注意喚起として別途採用
+・CVE-2026-50661 (Windows BitLocker) → 公開済みゼロデイだが実悪用未確認・物理アクセス必須・CVSS6.1（NVD）でEPSS percentile 0.30。axis1=1程度（広く使われる製品のみ）、axis2=1で除外。Microsoft 2026年7月Patch Tuesdayの一部としてSOC推奨情報（SOC-2026-07-15-004）内で言及
+・CVE-2026-15146 (GNU Wget) → 2026-07-14既報・期間内に変化なし
+・CVE-2026-24270 (NVIDIA AIStore Framework) → 2026-07-14既報・期間内に変化なし
+・CVE-2026-3861 (LINE for iOS) → 2026-07-14既報・期間内に変化なし
+・CVE-2026-40139 (BeyondTrust Remote Support / PRA) → 2026-07-14既報・期間内に変化なし
+
+本日の集計:
+CVE — ゼロデイ特報4件 / 本編0件 / 参考A1件 / 参考B1件 / 除外9件
+========================================

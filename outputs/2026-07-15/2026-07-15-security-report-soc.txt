@@ -1,0 +1,288 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-15 07:45 JST
+調査期間: 2026-07-14 07:00 〜 2026-07-15 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. SAP 2026年7月パッチデー: CVSS9.9 NetWeaver ABAPメモリ破損含む16件の新規セキュリティノート
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 高
+対象: SAP NetWeaver AS ABAP / Approuter / Commerce Cloud
+
+【24時間以内の変化】
+[The Hacker News 2026-07-14] SAPが2026年7月パッチデーで16件の新規セキュリティノートを公開。筆頭はCVSS9.9のNetWeaver ABAPメモリ破損CVE-2026-44747
+
+【概要】
+SAPは2026年7月14日のセキュリティパッチデーで16件の新規セキュリティノート・1件のGitHubアドバイザリ・3件の既存ノート更新を公開した。筆頭はNetWeaver AS ABAP（カーネルライン7.22〜9.20）のメモリ破損脆弱性CVE-2026-44747（CVSS9.9、認証済み攻撃者によるデータ窃取・改ざん・システム停止の可能性）で、暫定回避策としてSICFトランザクションでの該当ICFノード無効化が案内されている。同日、Approuterのnode.js実装に影響するHTTPリクエストスマグリングCVE-2026-27690（CVSS9.1）、Commerce Cloudのサンプル認証情報起因の脆弱性CVE-2026-44761（CVSS9.1）、NetWeaver AS Java Web ContainerのディレクトリトラバーサルCVE-2026-40128（CVSS9.0）等も修正された。本日時点で実悪用・PoC公開は確認されていないが（軸1判定では未認証RCE・KEV登録等の加点要件を満たさず本編・参考情報の閾値には未達）、国内含め広範な企業で稼働する基幹ERP基盤であるため計画的な適用が推奨される。
+
+【推奨アクション】
+・SAP Security Note 3747367（NetWeaver ABAP）を優先適用し、適用までの間はSICFトランザクションで該当ICFノードを無効化する暫定策を検討する
+・Approuter・Commerce Cloudを利用する組織はSAP Security Patch Day July 2026の全体一覧を確認し優先度順にパッチ適用計画を立てる
+・[SIEM] SAP GUIアクセスログ・NetWeaverアプリケーションログで異常なメモリ関連エラー・想定外のICFノードアクセスを監視する
+Splunk SPL: index=sap sourcetype=sap_netweaver_log | search event_type="memory_error" OR event_type="abap_dump" | stats count by user, transaction
+→ パッチ適用前は異常なABAPダンプ・メモリエラーの急増を優先確認する
+
+【参照】
+https://thehackernews.com/2026/07/sap-patches-cvss-99-netweaver-abap-flaw.html
+https://www.securityweek.com/sap-patches-critical-vulnerabilities-in-netweaver-approuter-commerce-cloud/
+
+------------------------------------------------------------
+2. Adobe ColdFusion APSB26-82: CVSS9.9含む13件のCVEを含む2026年7月セキュリティ更新（Priority Rating 1）
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 高
+対象: Adobe ColdFusion 2025 / 2023
+
+【24時間以内の変化】
+[Adobe 2026-07-14] AdobeがAPSB26-82にてColdFusion 2025 Update 11・2023 Update 22を公開。13件のCVE（うち最大CVSS9.9のパストラバーサルCVE-2026-48318を含む9件がCritical）を修正
+
+【概要】
+Adobeは2026年7月14日、ColdFusion向けセキュリティ速報APSB26-82を公開し、ColdFusion 2025 Update 11・2023 Update 22で13件の脆弱性（パストラバーサル・コードインジェクション・入力検証不備・認可不備・認証欠如・SQLインジェクション・反射型XSS・SSRF等、CVSS最大9.9）を修正した。優先度Priority Rating 1（Adobe基準で72時間以内のパッチ適用推奨）が付与されている一方、Adobeは本日時点で実悪用は確認されていないとしている。同社は2026年7月3日にも同種のAPSB26-68（CVSS10.0事前認証RCE群、うちCVE-2026-48282はその後実悪用確認・CISA KEV登録済み）を公開しており、ColdFusionは短期間に重大な脆弱性が連続している状況にある。
+
+【推奨アクション】
+・ColdFusion 2025/2023環境をUpdate 11/22へ速やかに更新する（Adobe推奨: 公開後72時間以内）
+・直前のAPSB26-68（CVE-2026-48282等）のパッチ適用状況も未確認の場合はあわせて確認する
+・[SIEM] ColdFusionサーバのアクセスログで異常なファイルアップロード・パストラバーサルパターンを監視する
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/CFIDE/*" OR uri_path="*..%2f*" | stats count by src_ip, uri_path
+→ パッチ未適用のColdFusionサーバへの想定外のCFIDEパス・パストラバーサルパターンのアクセスを優先確認する
+
+【参照】
+https://helpx.adobe.com/security/products/coldfusion/apsb26-82.html
+https://www.bleepingcomputer.com/news/security/adobe-patches-seven-max-severity-coldfusion-campaign-flaws/
+
+------------------------------------------------------------
+3. Progress ShareFile: Storage Zone Controller緊急停止の背景にゼロデイ脆弱性（CVE予約済・未公開）
+観点: ゼロデイ関連
+採用契機: δ・β
+------------------------------------------------------------
+
+優先度: 高
+対象: Progress ShareFile Storage Zone Controller（5.x/6.x）
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-14] ProgressがStorage Zone Controllerの緊急停止措置の背景にあった脆弱性の詳細を確認したと報道。修正版5.12.5/6.0.2をリリース
+
+【概要】
+Progress Softwareは信頼性の高い外部脅威情報を受け、2026年7月10日にShareFile Storage Zone Controller利用組織へサーバの緊急停止を要請していたが、7月14日にその背景が5.x/6.x系に影響する高深刻度のパストラバーサル脆弱性であったことを確認した。認証済み管理ユーザーがアプリケーションのサービスアカウントがアクセス可能な任意ファイルを読み取り、攻撃者制御下のコンテンツを任意ディレクトリへ書き込み、サーバファイルシステム構成を列挙できる内容。CVE番号は予約済みで約2週間後に正式公開予定。修正版5.12.5・6.0.2が既にリリースされ停止措置は解除されている。ShareFileは2023年のMOVEit大規模侵害（Clopグループによる2,700組織超への影響）と同じProgress傘下製品であり、ファイル転送製品群の標的化トレンドが継続している点に留意が必要。
+
+【推奨アクション】
+・ShareFile Storage Zone Controller利用組織は5.12.5（5.x系）または6.0.2（6.x系）へ即時更新する
+・7月10日の停止措置期間中の予期しないアクセス・ファイル変更の痕跡がないか事後確認する
+・MOVEit以来のファイル転送製品への継続的な標的化を踏まえ、インターネット公開MFT/ファイル共有製品全般の棚卸しを行う
+Splunk SPL: index=sharefile sourcetype=szc_log event="file_read" OR event="file_write" | stats count by user, path
+→ アプリケーションのサービスアカウント権限を超えるファイルアクセス・想定外ディレクトリへの書き込みを優先確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/progress-confirms-sharefile-zero-day-flaw-behind-storage-zone-shutdown/
+https://thehackernews.com/2026/07/urgent-progress-tells-sharefile.html
+
+------------------------------------------------------------
+4. OAuth Client ID Spoofingによるステルス型Microsoft Entra ID認証情報検証キャンペーン（数百万アカウント規模）
+観点: CVE関連
+採用契機: ε・δ
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft Entra ID
+
+【24時間以内の変化】
+[The Hacker News 2026-07-14] Proofpointが少なくとも2つの独立した脅威アクターがOAuth Client ID Spoofing手法でMicrosoft Entra IDの窃取済み認証情報を検証していると報告
+
+【概要】
+Proofpointは、OAuth 2.0のResource Owner Password Credentials (ROPC) フローに対し登録されていない偽のOAuthクライアントIDを付与してPOSTリクエストを送ることで、成功したサインインイベントを一切生成せずにユーザー名・パスワードの正当性を検証できる手法「OAuth Client ID Spoofing」が、少なくとも2つの独立した脅威アクターにより数千テナント・最大200万超のアカウントを対象に悪用されていることを確認した。偽クライアントIDは登録アプリと紐付かないためアプリケーション名が空欄でサインインログに記録され、特定の登録アプリ名を監視対象とする既存の検知ルールをすり抜けやすい。
+
+【推奨アクション】
+・Entra IDのサインインログでアプリケーション名が空欄のROPCフロー試行を監視・アラート化する
+・可能な環境ではROPCフロー自体を無効化し、より安全な認証フロー（Authorization CodeフローやPKCE等）へ移行する
+・[SIEM] Entra IDサインインログ（signInLogs）でapplicationDisplayNameが空・resultTypeが特定パターンのイベントを抽出する
+Splunk SPL: index=azuread sourcetype=azure:aad:signin AppDisplayName="" | stats count by UserPrincipalName, IPAddress, ResultType
+→ 同一IP/UserAgentから短時間に多数のUPNに対しROPC試行が行われるパターンを特に優先確認する
+
+【参照】
+https://thehackernews.com/2026/07/oauth-client-id-spoofing-lets-attackers.html
+https://www.proofpoint.com/us/blog/threat-insight/oauth-client-id-spoofing-why-fake-client-ids-are-gaining-traction-stealthy
+
+------------------------------------------------------------
+5. RabbitMQ: 未認証OAuth秘密情報漏洩(CVE-2026-57219)とクロステナントキュー情報露出(CVE-2026-57221)
+観点: CVE関連
+採用契機: β・η
+------------------------------------------------------------
+
+優先度: 中
+対象: RabbitMQ（メッセージブローカー）
+
+【24時間以内の変化】
+[The Hacker News 2026-07-14] RabbitMQの管理Web APIに残存する廃止済みエンドポイントGET /api/authが未認証でOAuth 2設定を開示する脆弱性CVE-2026-57219（CVSSv4 8.7）等が報告された
+
+【概要】
+コンテナ環境の約8%で利用されるとされるメッセージブローカーRabbitMQに、アクセス制御に関する2件の脆弱性が確認された。CVE-2026-57219は管理Web APIに残存する廃止済みエンドポイントGET /api/authが未認証でブローカーの機密OAuth2設定（秘密情報含む）を開示するもので、当該秘密情報を利用する構成ではブローカーの完全な乗っ取りに直結しうる。CVE-2026-57221はパッシブなキュー・エクスチェンジ宣言操作における認可バイパスで、権限を割り当てられていないアカウントでも認証情報さえあればキュー・エクスチェンジの存在有無やメッセージ数・アクティブコンシューマ数等のメタデータを取得できる。いずれも2024年初頭から3.13.0以降のリリースラインに存在していたとされ、4.3.0/4.2.6/4.1.11/4.0.20/3.13.15で修正済み。
+
+【推奨アクション】
+・RabbitMQを4.3.0/4.2.6/4.1.11/4.0.20/3.13.15のいずれかへ更新する
+・OAuth2設定を利用している場合は念のため秘密情報をローテーションする
+・[SIEM] RabbitMQ管理APIへの /api/auth への外部アクセスログを確認する
+Splunk SPL: index=rabbitmq sourcetype=rabbitmq_management uri="*/api/auth*" | stats count by src_ip, status
+→ パッチ適用前に/api/authへの外部からのアクセス実績がないか過去ログを遡及確認する
+
+【参照】
+https://thehackernews.com/2026/07/rabbitmq-flaws-could-leak-oauth-secrets.html
+https://www.csoonline.com/article/4196093/rabbitmq-flaws-expose-oauth-secrets-risk-complete-takeover-of-the-broker.html
+
+------------------------------------------------------------
+6. Microsoft 2026年7月Patch Tuesday: 過去最大570件（ZDI集計622件）のCVEを一括修正
+観点: CVE関連
+採用契機: γ・ζ
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft Windows / Windows Server 他
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-14] Microsoftが単月として過去最大となる570件の脆弱性（Zero Day Initiative集計では622件）を含む2026年7月Patch Tuesdayを公開したと報道
+
+【概要】
+Microsoftの2026年7月Patch Tuesdayは単月として過去最大となる570件（Zero Day Initiativeの独自集計では622件）の脆弱性を修正し、実悪用確認済みゼロデイ2件（CVE-2026-56155 AD FS EoP・CVE-2026-56164 SharePoint EoP、いずれも本レポートのゼロデイ特報で別掲）と、公開済みだが実悪用未確認のBitLockerバイパスCVE-2026-50661（CVSS6.1、物理アクセス要・ローカル攻撃者がBitLocker保護を回避可能）を含む。件数の規模自体がパッチ管理サイクルにおけるトリアージ負荷増大要因となるため、優先度付けの見直しが推奨される。
+
+【推奨アクション】
+・ゼロデイ特報掲載のCVE-2026-56155・CVE-2026-56164を最優先で適用する
+・物理アクセスリスクが高い端末（紛失・盗難対象となりうるノートPC等）はCVE-2026-50661対応の更新プログラムも優先適用する
+・件数が膨大なため、インターネット公開資産・特権昇格系・RCE系を優先するトリアージ基準を明確化する
+
+【参照】
+https://www.bleepingcomputer.com/news/microsoft/microsoft-july-2026-patch-tuesday-fixes-massive-570-flaws-3-zero-days/
+
+------------------------------------------------------------
+7. VMware Avi Load Balancer: VMSA-2026-0005で認証バイパス（CVSS9.8）含む7件の深刻な脆弱性
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: VMware (Broadcom) Avi Load Balancer
+
+【24時間以内の変化】
+[SecurityWeek 2026-07-14] 本CVEはSection3参考情報Bに掲載（CVE-2026-47865）。ここでは関連する運用上の対応事項を補足する
+
+【概要】
+VMware Avi Load Balancerの認証バイパス脆弱性（CVE-2026-47865、詳細はSection3参考情報B参照）を含むVMSA-2026-0005の7件の脆弱性について、境界機器としての露出面を踏まえパッチ適用計画を優先的に検討する必要がある。
+
+【推奨アクション】
+・22.1.x系を30.2.7以降へアップグレードする
+・Avi Control Planeの管理インターフェースへのアクセスを信頼済みネットワークに限定する
+
+【参照】
+https://www.securityweek.com/7-severe-vulnerabilities-patched-in-vmware-avi-load-balancer/
+
+------------------------------------------------------------
+8. ESET発見: 11年物のMicrosoft署名UEFIシムがSecure Bootバイパスに悪用可能（未失効環境）
+観点: CVE関連
+採用契機: η・ζ
+------------------------------------------------------------
+
+優先度: 中
+対象: UEFI Secure Boot（Microsoft Corporation UEFI CA 2011信頼下の全端末）
+
+【24時間以内の変化】
+[The Hacker News 2026-07-14] ESETが11個のMicrosoft署名済みLinux UEFIシム(CVE-2026-8863・CVE-2026-10797)がSecure Bootバイパスに悪用可能であると報告
+
+【概要】
+ESETは、Microsoft Corporation UEFI CA 2011証明書を信頼する大多数のUEFI搭載端末（OS問わず）において、既に失効済みのはずの11個の署名済みUEFIシムバイナリが失効データベース(dbx)未更新環境では依然として信頼されたままであり、新たな脆弱性なしにSecure Bootをバイパスできる状態にあると報告した。Microsoftは2026年6月9日のPatch Tuesdayで当該11バイナリのPE Authenticodeハッシュをdbxへ追加し失効させたが、当該更新を適用していない端末は影響を受け続ける。悪用されればBootkitty・HybridPetya・BlackLotus等のUEFIブートキット展開の足がかりとなりうる。
+
+【推奨アクション】
+・2026年6月9日のWindows Updateを適用しdbx失効リストを更新する
+・UEFIファームウェア設定でSecure Bootの証明書信頼設定・dbx適用状況を棚卸しする
+・資産管理システムでdbx未更新端末を特定し優先的に更新を展開する
+
+【参照】
+https://thehackernews.com/2026/07/11-old-microsoft-signed-linux-uefi.html
+https://www.welivesecurity.com/en/eset-research/forgotten-uefi-shims-undermining-secure-boot/
+
+------------------------------------------------------------
+9. 新型フィッシングキットがMicrosoft 365アカウントを標的にMFAを回避 / LastPass・Bitwardenを装う偽セキュリティ警告
+観点: CVE関連
+採用契機: δ
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft 365 / LastPass / Bitwarden利用者
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-14] 新型フィッシングキットがMicrosoft 365アカウントを標的にMFAを回避する手口が報告された
+[BleepingComputer 2026-07-14] LastPass・Bitwardenユーザーを標的にした偽セキュリティ警告フィッシングが報告された
+
+【概要】
+Microsoft 365アカウントを標的とする新型フィッシングキットがMFA（多要素認証）を回避する手口で確認されたほか、別件でLastPass・Bitwardenの利用者を標的に偽のセキュリティ警告メールでログイン情報を窃取しようとするフィッシングキャンペーンが報告された。いずれも認証情報管理・アカウント保護の最終防衛線を狙う手口であり、パスワードマネージャー利用者・M365利用組織双方への注意喚起が必要。
+
+【推奨アクション】
+・M365環境でConditional Access・フィッシング耐性の高い認証方式（FIDO2セキュリティキー等）への移行を検討する
+・パスワードマネージャー利用者向けに、公式アプリ内通知以外のメール経由セキュリティ警告への注意喚起を行う
+・[SIEM] M365サインインログでのMFA疲労攻撃・異常なトークン再利用パターンを監視する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/new-phishing-kits-target-microsoft-365-accounts-evade-mfa/
+https://www.bleepingcomputer.com/news/security/lastpass-bitwarden-users-targeted-with-fake-security-alerts/
+
+------------------------------------------------------------
+10. 約300件のGitHubリポジトリが正規ソフトウェアを装いマルウェアを配布
+観点: CVE関連
+採用契機: δ
+------------------------------------------------------------
+
+優先度: 低
+対象: GitHub（ソフトウェア配布全般）
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-14] 約300件のGitHubリポジトリが正規ソフトウェアを装いマルウェアを配布していると報告された
+
+【概要】
+約300件のGitHubリポジトリが人気の正規ソフトウェアを装ってマルウェアを配布していることが確認された。ソフトウェア調達をGitHub検索経由で行う開発者・一般利用者が標的になりやすく、SEOポイズニングやスター数の水増し等で信頼性を偽装する手口が併用される傾向がある。
+
+【推奨アクション】
+・ソフトウェア調達は公式サイト・パッケージレジストリからのみ行うようガイドラインを周知する
+・開発環境でのダウンロード実行ファイルに対するEDR検知を有効化する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/nearly-300-github-repos-pose-as-legit-software-to-push-malware/
+
+------------------------------------------------------------
+11. 米財務省がランサムウェア支援VPNサービス「First VPN Service」と暗号化ツール販売者を制裁
+観点: CVE関連
+採用契機: ζ
+------------------------------------------------------------
+
+優先度: 低
+
+【24時間以内の変化】
+[The Hacker News 2026-07-14] 米財務省OFACがランサムウェア支援VPNサービス「First VPN Service (1VPNS)」運営者とBelarus国籍のcryptor販売者に制裁を発表
+
+【概要】
+米財務省OFACは、ログを保持せず法執行機関に非協力を謳ってランサムウェアグループ等サイバー犯罪者へVPNサービスを提供してきた「First VPN Service (1VPNS)」の運営者Dmytro Rashevskyi、およびマルウェアをセキュリティ製品から隠蔽する「cryptor」ツールの販売者Yegeniy Vladimirovich Silayev（ベラルーシ国籍）を制裁対象に指定した。1VPNSのインフラは2026年5月に仏蘭当局とFBIボストン支局による「Operation Saffron」で摘発済みであり、本制裁はその追加措置。摘発・制裁は攻撃基盤へのリスク低減要素だが、他の同種サービスへの乗り換えによりリスクが完全に消滅するわけではない点に留意する。
+
+【推奨アクション】
+・既知の1VPNS関連インフラ・IOCへの過去の通信履歴を遡及確認する（脅威インテル部門）
+・同種の匿名VPN・cryptorサービスを悪用する攻撃者の代替インフラへの乗り換えを念頭に監視を継続する
+
+【参照】
+https://home.treasury.gov/news/press-releases/sb0559
+https://thehackernews.com/2026/07/us-sanctions-first-vpn-service-and.html
+
+━━━━━━━━━━━━━━━━━━━━
+【除外サマリー・SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━
+
+・農林中央金庫、JAさっぽろ利用者3,176件の個人情報誤提供（システム改修テストでの本番データ混入） → 2026-06-30に金庫が公式発表済みの人為的ミスによる誤提供事案の続報。α〜η いずれの採用条件にも該当せず、攻撃者・脆弱性起因の事象でもないため対象外
+
+本日の集計:
+SOC推奨情報 — 高4件 / 中5件 / 低2件 / 除外1件
+========================================

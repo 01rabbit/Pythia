@@ -1,0 +1,248 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-15 07:45 JST
+調査期間: 2026-07-14 07:00 〜 2026-07-15 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-15409 / SonicWall SMA1000 Appliances（Work Place インターフェース）
+対象: モデル 6210/7210/8200v。platform-hotfix 12.4.3-03245/03387/03434、12.5.0-02283/02624/02800 等が影響
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-14] SonicWallがSMA1000のSSRF脆弱性CVE-2026-15409実悪用を確認する緊急アドバイザリを公開
+[CISA KEV 2026-07-14] CISAがCVE-2026-15409をKEVカタログへ新規追加（FCEB期限2026-07-17）
+
+【概要】
+SonicWall SMA1000 AppliancesのWork Placeインターフェースに存在するSSRF脆弱性CVE-2026-15409（CVSS10.0）は未認証のリモート攻撃者がアプライアンスに意図しない宛先へのリクエストを行わせることが可能であり、SonicWallは複数のインシデント調査の結果、本脆弱性がCVE-2026-15410（コードインジェクション）と組み合わせた形で実際の攻撃で悪用されていることを確認した。パッチは提供済みだが回避策は存在しないため即時のアップグレードが必須である。
+
+攻撃の流れ:
+1. 未認証でWork PlaceインターフェースのSSRF脆弱性(CVE-2026-15409)を悪用し内部リクエストを強制
+2. 取得した内部アクセスを足がかりにCVE-2026-15410（コードインジェクション、要管理者認証）を連鎖させ任意OSコマンドを実行
+3. アプライアンス上での永続化・内部ネットワークへの横展開
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] SonicWall SMA1000のWork Placeインターフェースへの異常なリクエスト・管理コンソールへの認証後コマンド実行痕跡を監視する
+Splunk SPL: index=sonicwall sourcetype=sma1000 uri_path="*workplace*" | stats count by src_ip, uri_path
+Splunk SPL: index=sonicwall sourcetype=sma1000_admin action="command_execution" | table _time, user, command
+→ 外部公開されたSMA1000管理インターフェースへの探索的アクセスと、直後の管理コンソール操作の連続性を確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-sma1000-flaws-exploited-in-zero-day-attacks-patch-now/
+https://thehackernews.com/2026/07/two-sonicwall-sma-1000-zero-days.html
+https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0008
+
+------------------------------------------------------------
+2. CVE-2026-15410 / SonicWall SMA1000 Appliances（Appliance Management Console）
+対象: モデル 6210/7210/8200v。CVE-2026-15409と同一hotfixラインで影響
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 7.2 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-14] SonicWallがAppliance Management Consoleのコードインジェクション脆弱性CVE-2026-15410の実悪用を確認
+[CISA KEV 2026-07-14] CISAがCVE-2026-15410をKEVカタログへ新規追加（FCEB期限2026-07-17）
+
+【概要】
+SonicWall SMA1000 Appliance Management Consoleに存在するポスト認証のコードインジェクション脆弱性CVE-2026-15410（CVSS7.2）は、リモートの認証済み管理者権限を持つ攻撃者が特定条件下で任意のOSコマンドを実行できるもので、SonicWallはCVE-2026-15409と組み合わせた連鎖攻撃として実際の侵害インシデントで悪用を確認した。
+
+攻撃の流れ:
+1. CVE-2026-15409（SSRF）等で取得した管理者相当のアクセスを用いてAppliance Management Consoleへアクセス
+2. コードインジェクション脆弱性を通じ任意のOSコマンドを実行
+3. アプライアンス上でのバックドア設置・永続化
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] SMA1000管理コンソールでの異常なコマンド実行・設定変更の監視
+Splunk SPL: index=sonicwall sourcetype=sma1000_admin | search command=* | stats count by user, command, src_ip
+→ 正規運用担当者以外による管理コンソール経由のコマンド実行を確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-sma1000-flaws-exploited-in-zero-day-attacks-patch-now/
+https://www.helpnetsecurity.com/2026/07/14/sonicwall-sma-attacks-via-cve-2026-15409-cve-2026-15410/
+
+------------------------------------------------------------
+3. CVE-2026-56155 / Microsoft Active Directory Federation Services (AD FS)
+対象: AD FSを実行するWindows Server（2026年7月更新プログラム未適用環境）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 7.8 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[Microsoft 2026-07-14] Microsoftが2026年7月Patch Tuesdayで実悪用確認済みゼロデイCVE-2026-56155（AD FS権限昇格）を修正
+[CISA KEV 2026-07-14] CISAがCVE-2026-56155をKEVカタログへ新規追加（FCEB期限2026-07-28）
+
+【概要】
+Active Directory Federation Services (AD FS) のアクセス制御の粒度不足による権限昇格脆弱性CVE-2026-56155は、Microsoftの検知対応チーム(DART)が実際の攻撃調査の過程で悪用を発見したとみられ、認可された攻撃者がローカルでSYSTEM相当まで権限を昇格できる。AD FSはドメイン全体のトークン署名を担うため「ローカル」表記であってもフェデレーション基盤全体への影響度が高く、MicrosoftはAD FS分散鍵管理コンテナのACL強化も同時に発表した。
+
+攻撃の流れ:
+1. AD FSサーバへの初期アクセス（別経路の侵害を前提）
+2. アクセス制御の粒度不足を突きSYSTEM/管理者権限へ昇格
+3. フェデレーショントークン署名鍵への接近・組織全体の認証基盤侵害
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] AD FSサーバでの異常な権限昇格・分散鍵管理コンテナへのアクセスを監視
+Splunk SPL: index=wineventlog EventCode=4672 host=*ADFS* | stats count by Account_Name
+Splunk SPL: index=wineventlog EventCode=4663 ObjectName="*DKM*" | table _time, Account_Name, ObjectName
+→ AD FSサーバでの特権付与イベントおよび分散鍵管理コンテナへの想定外アクセスを重点確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/microsoft/microsoft-july-2026-patch-tuesday-fixes-massive-570-flaws-3-zero-days/
+https://www.helpnetsecurity.com/2026/07/15/microsoft-patch-tuesday-sharepoint-cve-2026-56164/
+
+------------------------------------------------------------
+4. CVE-2026-56164 / Microsoft SharePoint Server（オンプレミス）
+対象: SharePoint Server Subscription Edition / SharePoint Server 2019 / SharePoint Enterprise Server 2016
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[CISA 2026-07-14] CISAが本脆弱性の実悪用を確認しKEVへ新規追加（FCEB期限3日間の異例の短期設定・2026-07-17）
+[The Hacker News 2026-07-15] Patch Tuesday公開数時間後に別の研究者が新規Windowsゼロデイ関連PoCを公開したと報道（本脆弱性とは別件の可能性・継続監視）
+
+【概要】
+オンプレミスのMicrosoft SharePoint Serverにおける重要機能の認証欠如の脆弱性CVE-2026-56164は、資格情報を持たない攻撃者がネットワーク経由で特権を昇格できるもので、CISAはリモートコード実行の確立とIISマシンキー窃取・デシリアライゼーション技術を用いた永続化・追加マルウェア展開を伴う実悪用を確認したとして、FCEB機関に異例の3日間という短い対応期限（2026-07-17）を設定した。NVDはCVSS9.8（Critical）と評価しているが、Microsoft自身は5.3（Moderate）と評価しており評価の乖離が指摘されている（本レポートはpipeline-1-cve.mdの規定によりNVDのスコアを正として採用）。
+
+攻撃の流れ:
+1. 未認証で重要機能への認証欠如を突きネットワーク経由でアクセス
+2. リモートコード実行を確立しIISマシンキーを窃取
+3. 窃取したマシンキーを用いたデシリアライゼーション技術で永続化・追加マルウェア展開
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] SharePoint Serverへの未認証アクセス試行・IISマシンキー関連の異常操作を監視
+Splunk SPL: index=iis sourcetype=iis cs_uri_stem="*_layouts*" sc_status=200 | stats count by c_ip, cs_uri_stem
+Splunk SPL: index=wineventlog EventCode=4688 CommandLine="*w3wp.exe*" | table _time, CommandLine, User
+→ 外部公開SharePoint環境でのIISワーカープロセスからの異常な子プロセス生成・機密ページへの未認証アクセスを確認する
+
+【参照】
+https://www.securityweek.com/cisa-urges-immediate-patching-of-exploited-sharepoint-vulnerabilities/
+https://www.bleepingcomputer.com/news/security/cisa-warns-admins-to-patch-actively-exploited-sharepoint-flaws/
+https://thehackernews.com/2026/07/sharepoint-rce-cve-2026-45659-added-to.html
+
+━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸P≥8点かつ軸Q≥4点のAPT活動なし）
+
+━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定・攻撃者/侵入手口とも未特定）（活動ID: RIS-2026-Nichirei-LogisticsSystemOutage）帰属信頼度: 不明
+ニチレイグループのシステムに2026年7月13日午前6時50分ごろ不正アクセスによる障害が検知され、ニチレイロジグループ各社が担う冷蔵倉庫の入出庫業務と、ニチレイフーズが担う冷凍食品の出荷業務に影響が生じている。障害範囲は国内に限定されており海外拠点への影響は確認されていない。個人情報・顧客データの社外流出は現時点で確認されていないが調査は継続中であり、侵入経路・攻撃手法・特定の攻撃者/ランサムウェアグループの関与有無はいずれも公表されていない。物流は国内の重要インフラ14分野の一つであり、ニチレイロジグループの低温物流を利用する顧客は年間約5,000社（グループ外売上比率92%）に上るため、障害の長期化は他社の食品供給網にも波及しうる。
+推奨アクション: 低温物流・食品製造業のBCP担当者はニチレイからの取引先向け影響通知を注視し、代替物流経路の確保を検討する。同社と直接取引がある組織はシステム復旧状況・出荷スケジュールの公式アナウンスを継続的に確認する。
+参照: https://www.nikkei.com/article/DGXZQOUC1383Z0T10C26A7000000/
+参照: https://rocket-boys.co.jp/security-measures-lab/nichirei-unauthorized-access-system-failure/
+
+・不明（帰属未確定・第三者製ソフトウェアのゼロデイ脆弱性悪用と既報）（活動ID: KDDI-2026-EmailSystemBreach）帰属信頼度: 不明
+KDDIのISP事業者向けメールシステムへの不正アクセス事案について、既報のCPI・BIGLOBE・@nifty・STNet・中部テレコミュニケーション5社に加え、JCOMの顧客2,593,076名分のメールアドレスも漏えいしていたことが本日新たに確認された。第三者製ソフトウェアのゼロデイ脆弱性を悪用した攻撃は2026年5月16日から行われていたと既に確認されており、影響を受けるISP事業者数・利用者数の全容確認が継続している。
+推奨アクション: JCOM含む影響ISP利用者はパスワード変更・フィッシング詐欺への警戒を継続する。企業のセキュリティ担当者は自社ドメインが影響ISPのメールサービスを利用していないか確認する。
+参照: https://scan.netsecurity.ne.jp/
+
+・不明（帰属未確定）（活動ID: Aflac-2026-JapanCustomerDataBreach）帰属信頼度: 不明
+アフラック生命保険の顧客専用サイトへの不正アクセス事案について、侵害発覚の端緒がサーバのCPU高負荷という異常検知であったことがFAQ公開により新たに判明した。また契約者情報を保有する関係団体（日本理学療法士協会等）が自団体の会員情報への影響有無の確認を進めていることも報じられ、影響範囲確認の裾野が広がっている。
+推奨アクション: アフラックと契約者データを共有する関係団体は自団体保有データへの影響有無を確認する。CPU高負荷等の異常検知を侵害の早期兆候として監視するプラクティスを他組織も参考にすべき。
+参照: https://scan.netsecurity.ne.jp/
+
+━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックB CVE なし）
+
+・[トレンド記事] LabubaRAT: NVIDIA公式ツールを偽装するRust製新規RATファミリー
+Blackpoint Adversary Pursuit Groupが、NVIDIA Container Runtime Monitor/Container Toolkitを偽装する未署名実行ファイル「nvidia-sysruntime.exe」を起点とするRust製の新規RAT「LabubaRAT」を報告した。ホスト種別・セキュリティ製品（Chrome/Firefox/Edge/Defender/CrowdStrike/SentinelOne/Carbon Black/Sophos等）の探索、画面キャプチャ、ファイル操作、HTTPS/WebView2/DNSトンネリングを含む複数経路でのC2通信を備え、マルウェアアズアサービス（MaaS）形態で提供されている兆候がある。攻撃者・帰属は現時点で不明。
+参照: https://thehackernews.com/2026/07/labubarat-masquerades-as-nvidia.html
+参照: https://blackpointcyber.com/blog/labubarat-a-rust-based-remote-access-tool-masquerading-as-nvidia-software/
+
+・[トレンド記事] Lucide Proxy: 学生向けWi-Fi回避を装った148件のnpmパッケージがDDoSボットネット化
+JFrogの調査により、学生の校内フィルタ回避用プロキシを装う148件のnpmパッケージ（charlie-kirk・ilovefemboys・miguelphonk等の名称、Riverbend/Northstar Tutoringブランド）が2026年3月から配布され、5月16日にリモートコードローダーが、翌日にWispプロキシプロトコル準拠のWebSocketフラッド生成機能が追加され、5月30日には米イリノイ州の看護学校ドメイン（cdn.caan.edu）等へのHTTPフラッド攻撃が実戦投入されていたことが判明した。5月31日、公開報道の直後に運営者がリモートローダーとWispモジュールを撤去し通常の広告付きプロキシへ復帰しており、キャンペーン自体は既に終息している。攻撃者・帰属は不明。
+参照: https://thehackernews.com/2026/07/148-npm-packages-disguised-as-student.html
+参照: https://research.jfrog.com/post/lucide-proxy-npm-malware-campaign/
+
+・[トレンド記事] Microsoft、ShinyHuntersによる約1年間のSalesforce OAuth悪用を3経路に整理して報告
+Microsoftはセキュリティブログで、恐喝グループShinyHuntersが2025年半ばから約1年間にわたり展開したSalesforce環境侵害の手口を3経路に整理して公表した。（1）2025年半ば以降のビッシング（音声フィッシング）でSalesforceのOAuth同意画面を悪用しData Loaderを装った不正コネクテッドアプリを承認させる手口、（2）2025年8月のSalesloft Drift侵害に代表される、Salesforceアクセス権を持つサードパーティベンダーを侵害しOAuthトークンを窃取して複数顧客環境から一括でデータを窃取するサプライチェーン型、（3）ゲストアクセスの設定不備を悪用する手口。いずれも正規ユーザーや信頼済み連携からのトラフィックに見えるためサインイン監視をすり抜けやすい。国内組織への直接的な侵害報告は本日時点で確認されていない。
+参照: https://www.microsoft.com/en-us/security/blog/2026/07/13/defending-saas-based-applications-against-shinyhunters-oauth-abuse/
+参照: https://thehackernews.com/2026/07/microsoft-maps-year-long-shinyhunters.html
+
+・[トレンド記事] ホテルチェックインシステム「Tabiq」のS3設定不備で106万人分の本人確認書類が露出
+電子チェックインシステム「Tabiq（タビック）」を提供する国内事業者のAmazon S3バケット設定不備により、2020年1月〜2026年5月14日にかけて収集された顔写真・署名・パスポート/運転免許証画像等、延べ1,060,338人分の本人確識別書類画像が外部からアクセス可能な状態になっていたことが判明した。海外セキュリティ研究者が発見しTechCrunch経由でJPCERT/CCへ通報、2026年5月に既にバケットは非公開化・是正済みで二次被害は確認されていないが、Security NEXT等国内メディアが2026-07-14に改めて詳報した。
+参照: https://scan.netsecurity.ne.jp/article/2026/07/14/55694.html
+参照: https://techcrunch.com/2026/05/15/a-hotel-check-in-system-left-a-million-passports-and-drivers-licenses-open-for-anyone-to-see/
+
+━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━
+
+・予報1: SharePoint Server環境はCVE-2026-56164の侵害有無確認とIISマシンキーのローテーションを最優先すべき
+Tier: 1
+確度: 中
+観測出口クラス: E3
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [CISA 2026-07-14] SharePoint Serverの認証欠如脆弱性CVE-2026-56164（NVD評価CVSS9.8）の実悪用を確認し、IISマシンキー窃取・デシリアライゼーションによる永続化・追加マルウェア展開を伴う侵害活動を明記。FCEB機関に異例の3日間対応期限（2026-07-17）を設定。
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py検索・n_cases=0）（過去実績）
+  脅威情報: CISAはSharePoint Serverの実悪用を確認し3日間の異例の短期対応期限を設定。Microsoft自身も622件のCVE中2件のActive Exploitationを認めている
+  確度アンカー: EPSSパーセンタイル0.93465（算出日2026-07-15） / KEV登録: あり / SSVC: Act / Automatable: yes
+推定部分: （推定）JPCERT/CCは過去にMicrosoft製品の重大な実悪用確認済み脆弱性について概ね数日以内に注意喚起を発行する傾向があるが、本CVE固有の発行タイミングは確認できていない。
+先回り監視: 自組織のSharePoint Serverアクセスログでの想定外のIISワーカープロセス子プロセス生成、_layouts配下への未認証アクセス試行、IISマシンキーの想定外の使用痕跡
+的中判定: JPCERT/CCまたはIPAがCVE-2026-56164に関する新規の注意喚起を72時間以内（2026-07-18まで）に発行した場合
+  除外条件: 他機関リストへの追加・既存エントリ更新・再登録は非的中
+
+・予報2: SonicWall SMA1000環境はCVE-2026-15409/CVE-2026-15410の侵害有無確認とパッチ未適用機器の即時洗い出しを優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E3
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [BleepingComputer/SonicWall PSIRT 2026-07-14] SonicWall SMA1000のSSRF脆弱性CVE-2026-15409（未認証・CVSS10.0）とコードインジェクション脆弱性CVE-2026-15410（ポスト認証・CVSS7.2）が連鎖する形で複数インシデントにおいて実悪用された。CISAが両CVEを2026-07-14付でKEVへ新規追加。
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py検索・n_cases=0）（過去実績）
+  脅威情報: SonicWall PSIRTは複数のインシデント調査を通じ両脆弱性の連鎖悪用を確認済み
+  確度アンカー: EPSSパーセンタイル0.6983（算出日2026-07-15） / KEV登録: あり / SSVC: Attend / Automatable: no
+推定部分: （推定）境界機器の実悪用確認は過去のFortiBleed等の事例で国内JPCERT/CC・ベンダー日本法人からの注意喚起につながるパターンがあるが、本件固有の発行有無は確認できていない。
+先回り監視: SMA1000管理コンソールへの想定外のログイン試行・コマンド実行イベント、Work Placeインターフェースへの異常なリクエストパターン
+的中判定: JPCERT/CCまたはIPAがCVE-2026-15409またはCVE-2026-15410に関する新規の注意喚起を72時間以内（2026-07-18まで）に発行した場合
+  除外条件: 他機関リストへの追加・既存エントリ更新・再登録は非的中
+
+━━━━━━━━━━━━━━━━━━━━
+【除外サマリー・APT活動】
+━━━━━━━━━━━━━━━━━━━━
+
+・Dragonfly / Dragonfly-2026-RouterHygiene-CriticalInfra → SecurityWeek「US, Allies Warn of Russian Cyberattacks」は2026-07-13付CISA AA26-194Aの追随報道のみで新規の技術的観測なし
+・不明（帰属未確定） / RIS-2026-JscramblerNpm-RustStealer → SecurityWeek「Multiple Jscrambler Packages Impacted by Supply Chain Attack」は既報内容（Socket.dev分析等）の再報道のみで新規技術情報なし
+
+本日の集計:
+APT — 本編0件 / 注目動向3件 / 除外2件
+========================================
