@@ -1,0 +1,155 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-18 07:55 JST
+調査期間: 2026-07-17 07:00 〜 2026-07-18 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に新規ゼロデイ特報なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-58644 / Microsoft SharePoint Server（オンプレミス）
+対象: SharePoint Server Subscription Edition / 2019 / 2016（オンプレミス版全て）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[The Hacker News 2026-07-17 15:42] CISAが新規のSharePoint RCEゼロデイCVE-2026-58644をKEVカタログへ新規追加。既存の関連CVE（CVE-2026-32201/45659/56164）と合わせた悪用チェーンとして警告
+[Security NEXT 2026-07-17 19:11] SharePoint Serverの複数脆弱性悪用について米当局が対策を呼びかけたと国内向けに報道
+
+【概要】
+Microsoft SharePoint Serverのオンプレミス版（Subscription Edition/2019/2016）に、未認証リモートコード実行を許すデシリアライゼーションの重大な脆弱性CVE-2026-58644（CVSS9.8）が確認され、2026年7月Patch Tuesdayでの修正公開の前後に実悪用が確認されたためCISAが2026-07-16付でKEVカタログへ新規追加し連邦機関に2026-07-19までの対応を命じた。攻撃者は既存の関連SharePoint脆弱性（CVE-2026-32201・CVE-2026-45659・CVE-2026-56164）と組み合わせた悪用チェーンによりRCEを確立し、IISマシンキーを窃取したうえでデシリアライゼーションを悪用した永続化・追加マルウェア展開を行っているとみられる（推測: 具体的な単体攻撃手順は非公開のため複数CVE併用が前提かは断定できない）。
+
+攻撃の流れ:
+1. 関連するSharePoint脆弱性群を組み合わせた認証バイパス・RCE確立
+2. IISマシンキーの窃取
+3. デシリアライゼーションを悪用した永続化・追加マルウェア展開
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・SharePoint認証イベント・IIS/ASP.NETログにおける異常なデシリアライゼーション呼び出し・不審なmachineKey使用を監視
+Splunk SPL: index=iis sourcetype=iis cs_uri_stem=*_layouts* sc_status=200 | stats count by cs_username, c_ip
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage=*w3wp.exe* | stats count by NewProcessName, ParentImage
+→ w3wp.exeプロセスからの不審な子プロセス起動やmachineKey設定への異常アクセスを優先確認。正規のSharePointメンテナンスジョブとの誤検知に注意。
+
+【参照】
+https://thehackernews.com/2026/07/cisa-adds-exploited-sharepoint-rce-zero.html
+https://www.securityweek.com/fresh-sharepoint-vulnerability-exploited-soon-after-disclosure/
+https://www.cisa.gov/news-events/alerts/2026/07/16/cisa-adds-three-known-exploited-vulnerabilities-catalog
+https://www.security-next.com/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-56688 / Dell PowerFlex Software
+CVSS: 9.1 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-17 13:09] Dell PowerFlexに深刻な脆弱性が確認され6月の更新で修正済みと国内向けに報道
+
+【概要】
+Dell PowerFlex Software（DSA-2026-066、2026-06-15公開・2026-07-10更新）にOSコマンドインジェクションの重大な脆弱性CVE-2026-56688（CVSS9.1）が確認された。高権限を持つ遠隔攻撃者がroot権限で任意コマンドを実行しアプライアンスを完全掌握できるおそれがある。同一アドバイザリ内にはCVE-2026-35065（認証欠如）・CVE-2026-56690（SQLi）等の複合脆弱性も含まれる。5.1.0.1／4.5.5.2で修正済みで実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PowerFlex管理APIへの異常なコマンドパターン・管理コンソールログインを監視
+Splunk SPL: index=powerflex sourcetype=powerflex:audit action=command | stats count by user, src_ip
+→ 通常運用にない管理コマンド実行パターンを優先確認。
+
+【参照】
+https://www.dell.com/support/kbdoc/en-us/000477538/dsa-2026-066-security-update-for-powerflex-software-multiple-vulnerabilities
+https://www.security-next.com/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-56688 — 24時間窓内に発行確認されず
+
+・CVE-2026-42936 / HYPER SBI 2（SBI証券 株式売買ツール）インストーラ
+CVSS: 7.8 状態: 特記事項なし
+
+【24時間以内の変化】
+[JVN 2026-07-17 07:00] JVN#59875262としてDLL検索パス問題（DLLサイドローディング）の脆弱性を新規公開
+
+【概要】
+SBI証券が提供する株式売買ツール「HYPER SBI 2」のインストーラに、信頼できないDLLを同一ディレクトリから読み込んでしまう脆弱性CVE-2026-42936（JVN#59875262・CVSSv3 7.8/v4 8.4）が確認された。攻撃者が悪意あるDLLをインストーラと同じフォルダに配置した場合、インストーラの権限で任意コード実行につながるおそれがある。ver.3.20.0で修正済みで実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・HYPER SBI 2インストーラ実行時の不審なDLL読み込みを監視
+Splunk SPL: index=wineventlog EventCode=7 ImageLoaded=*.dll Image=*HYPERSBI2*installer* | stats count by ImageLoaded
+→ インストーラと同一ディレクトリに配置された未署名DLLの読み込みを優先確認。
+
+【参照】
+https://jvn.jp/jp/JVN59875262/
+https://scan.netsecurity.ne.jp/article/2026/07/17/55723.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [JVN#59875262 HYPER SBI 2のインストーラにおけるDLL読み込みに関する脆弱性] https://jvn.jp/jp/JVN59875262/
+
+・CVE未採番 / Ivanti Xtraction（データ分析可視化製品・詳細CVE番号未確認）
+CVSS: 非公表 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-17 15:29] データ分析可視化製品「Ivanti Xtraction」の複数脆弱性を国内向けに報道
+
+【概要】
+データ分析可視化製品「Ivanti Xtraction」に複数の脆弱性が公開された（Security NEXT 2026-07-17報道）。今回のSecurity NEXT記事本文の直接取得ができなかったため、具体的なCVE番号は確定できていない（推測: 2026年7月のIvanti月例更新に含まれるオープンリダイレクトCVE-2026-14902・パストラバーサルCVE-2026-14903、または2026年5月公表のパストラバーサル+ファイル名外部制御CVE-2026-8043のいずれかに対応する可能性があるが、本記事との一致は未確認）。実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Ivanti Xtraction管理コンソールへの不審なアクセス・パストラバーサル的リクエストパターンを監視
+Splunk SPL: index=web sourcetype=access_combined uri_path=*Xtraction* (uri_path=*..%2f* OR uri_path=*redirect*) | stats count by src_ip
+→ CVE番号未確定のため一般的なパストラバーサル・オープンリダイレクトパターンの監視に留める。
+
+【参照】
+https://www.security-next.com/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE未採番 — 24時間窓内に発行確認されず
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-25089 / Fortinet FortiSandbox（アプライアンス / Cloud / PaaS）
+CVSS: 9.1
+Fortinet FortiSandboxのOSコマンドインジェクション脆弱性CVE-2026-25089（CVSS9.1）がCISAにより2026-07-16付でKEVカタログへ新規追加された。未認証の攻撃者が細工したHTTPリクエストによりFortiSandboxアプライアンスに加えFortiSandbox Cloud／PaaSでも任意コマンドを実行できる。既報のCVE-2026-39808（同種OSコマンドインジェクション、2026-06-17に参考B採用済み）も同日のKEVカタログ更新で正式にKEV登録が確認され、CISAは3件のKEV追加（本CVE含む）をまとめて発表した。連邦機関の対応期限は2026-07-19。EPSSパーセンタイルはCVE-2026-39808が0.9967と極めて高い。
+IoC: 確認されず
+
+監視: FortiSandbox管理インタフェースへの異常なHTTPリクエスト・コマンド実行痕跡を監視
+Splunk SPL: index=fortinet sourcetype=fortisandbox uri_path=*jrpc* | stats count by src_ip, uri_path
+→ JRPC API等への未認証アクセス・異常なパラメータを優先確認。
+
+参照: https://www.bleepingcomputer.com/news/security/cisa-warns-feds-to-patch-exploited-fortinet-fortisandbox-flaws-by-sunday/
+参照: https://www.security-next.com/
+参照: https://fortiguard.fortinet.com/psirt/FG-IR-26-112
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE未採番 (HTTP/2フロー制御DoS（複数実装、JVN・具体的CVE番号未確認）) → insufficient_evidence: JVN記事は確認したがフロー制御起因DoSに対応する具体的なCVE番号・対象実装を確定できず、ハルシネーション回避のため掲載を見送った。
+・CVE-2026-56164 (Microsoft SharePoint Server（オンプレミス）) → already_reported: 2026-07-15にゼロデイ特報採用済み。本日は新規のCVE-2026-58644側で関連文脈として言及。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編1件 / 参考A3件 / 参考B1件 / 除外2件
+========================================
