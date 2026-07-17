@@ -1,0 +1,277 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-17 07:30 JST
+調査期間: 2026-07-16 07:00 〜 2026-07-17 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━
+
+
+該当なし（24時間窓内にゼロデイ特報基準を満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━
+
+
+------------------------------------------------------------
+1. CVE-2026-46817 / Oracle E-Business Suite (EBS) Payments / File Transmission
+対象: 12.2.3〜12.2.15
+------------------------------------------------------------
+
+優先度: critical
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-16] CISAが本CVEをKEVへ新規追加（2026-07-15付）し、連邦機関に7/18(土)までのパッチ適用を命令したと報道。
+[Security NEXT 2026-07-16] CISAがOracle EBSおよびビル設備向けKNXプロトコルの脆弱性悪用について国内向けに注意喚起（日本語報道）。
+
+【概要】
+Oracle E-Business SuiteのPayments/File Transmissionコンポーネントに存在する未認証RCE級の脆弱性で、HTTPネットワークアクセスのみで低難易度の攻撃が可能。脅威インテリジェンス企業Defusedが2026-06-29からハニーポットに対する実悪用を確認しており、世界に1,000台超（過半数が米国）のインターネット露出インスタンスが存在する。CISAは2026-07-15付でCISA KEVカタログへ新規追加し、連邦機関に対し2026-07-18(土)までの緊急パッチ適用を命じた。既報時点（2026-06-29〜07-01）から継続する実悪用に、今回のKEV初回登録という新たな一次イベントが加わった形。
+
+攻撃の流れ:
+1. 未認証の攻撃者がHTTP経由でPayments/File Transmissionエンドポイントへアクセス
+2. 低難易度の攻撃手順でシステムを奪取（詳細な技術的手口は非公開）
+3. 財務・ERPデータへのアクセスや横展開に利用
+
+【IoC】
+IP: 45.84.137.125
+
+【監視ポイント】
+・[Oracle EBS Payments/File Transmissionへのアクセスログ・異常なHTTPリクエストパターンを監視する。]
+Splunk SPL: index=oracle_ebs sourcetype=oracle:ebs:access uri_path="*FndFileUploadServlet*" OR uri_path="*Payments*" | stats count by src_ip, uri_path, status | where count > 5
+Splunk SPL: index=firewall dest_ip=<EBS公開IP> src_ip=45.84.137.125 | table _time src_ip dest_ip action
+→ 正規の統合連携（EDI/決済処理バッチ）からのアクセスと誤検知されやすいため、送信元IPのレピュテーションと時間帯外アクセスを組み合わせて判断する。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/cisa-orders-feds-to-patch-actively-exploited-oracle-flaw-by-saturday
+https://www.security-next.com/187455
+
+
+━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━
+
+
+・CVE-2026-53412 / Zoom Workplace / Workplace VDI Client for Windows
+CVSS: 9.8 (Critical) 状態: 特筆すべき状態確認なし
+
+【24時間以内の変化】
+[The Hacker News 2026-07-16] Zoomが不適切な入力検証に起因するアカウント乗っ取りの重大な脆弱性（CVSS9.8）を含むセキュリティアップデートを公開したと報道。
+[Security NEXT 2026-07-16] Windows版Zoomの深刻な脆弱性について国内向けに報道（最新版で修正済み）。
+
+【概要】
+Zoom Desktop Client for Windows・VDI Client・Meeting SDKに不適切な入力検証の脆弱性（CVE-2026-53412、CVSS9.8）が存在し、ネットワークアクセスのみで未認証のアカウント乗っ取りにつながる可能性がある。同時にVDI Plugin（CVE-2026-53411、CVSS7.8）・複数Windowsクライアントに影響するTOCTOU競合状態（CVE-2026-53410、CVSS7.0）・Zoom Roomsの権限管理不備（CVE-2026-53409、CVSS7.8）も修正されている。現時点で実悪用・PoC公開の報告はない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Zoomクライアントのバージョン管理・異常な認証セッション再発行を監視する。]
+Splunk SPL: index=endpoint sourcetype=software_inventory product="Zoom*" | stats latest(version) by host | where version < "最新版"
+→ 資産管理台帳でZoom Windows版クライアントのバージョンを棚卸しし、未更新端末を優先パッチ対象とする。
+
+【参照】
+https://thehackernews.com/2026/07/zoom-patches-critical-windows-flaw-that.html
+https://www.security-next.com/
+
+・CVE-2026-42533 / NGINX Open Source / NGINX Plus
+CVSS: 9.2 CVSSv4 (Critical) 状態: 特筆すべき状態確認なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-16] nginx開発チームがCritical含む複数脆弱性へ対処したセキュリティアップデートを公開したと国内向けに報道。
+[SecurityWeek 2026-07-16] F5がNGINX Plus/Open Source・BIG-IPの複数脆弱性を修正したと報道（heap buffer overflow、CVSS9.2）。
+
+【概要】
+NGINX Plus/Open Sourceのmapディレクティブが正規表現マッチングと特定の変数参照を組み合わせた構成でヒープバッファオーバーフロー（CVE-2026-42533、CVSSv4 9.2 Critical）が発生する。未認証のリクエストでワーカープロセスのクラッシュを誘発でき、ASLRが無効な環境ではコード実行に至る可能性がある。同時に、ngx_http_slice_moduleのメモリ開示（CVE-2026-60005）とngx_http_ssi_moduleのuse-after-free（CVE-2026-56434）も修正された。現時点で実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[NGINXワーカープロセスの異常再起動・クラッシュログを監視する。]
+Splunk SPL: index=nginx sourcetype=nginx:error "worker process" ("exited on signal" OR "segmentation fault") | stats count by host
+→ 通常運用でもワーカー再起動は発生しうるため、短時間での多発や特定送信元からの集中を切り分け基準とする。
+
+【参照】
+https://www.security-next.com/187478
+https://www.securityweek.com/f5-patches-multiple-nginx-big-ip-vulnerabilities/
+
+・CVE-2026-59083 / Apache Tomcat
+CVSS: 非公表 状態: 特筆すべき状態確認なし
+
+【24時間以内の変化】
+[JVN 2026-07-16] JVNVU#95286373として、RewriteValveのURLデコード不備によるセキュリティ制御バイパス（CVE-2026-59083）とEncryptInterceptorの要件記載不備（CVE-2026-59084）が公表された。
+
+【概要】
+Apache TomcatのRewriteValveにおけるURLデコードの不備により、意図しないセキュリティ制御バイパスが発生しうる（CVE-2026-59083）。あわせてクラスタ通信のEncryptInterceptorに関する要件記載不備（CVE-2026-59084）も修正された。既報のJVNVU#93304382（2026-07-02公表分）とは別の新規アドバイザリ。CVSSスコアは原典未公表。実悪用・PoC公開は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[TomcatのRewriteValve設定と異常なURLパターンでのアクセスを監視する。]
+Splunk SPL: index=tomcat sourcetype=tomcat:access | regex uri="%[0-9a-fA-F]{2}.*%[0-9a-fA-F]{2}" | stats count by src_ip, uri
+→ 二重エンコード等の異常なURLエンコードパターンを検知の起点とする。
+
+【参照】
+https://jvn.jp/vu/JVNVU95286373
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [Apache Tomcatにおける複数の脆弱性(2026年7月14日)] https://jvn.jp/vu/JVNVU95286373
+
+・CVE-2026-58317 / Tera Term (TTSSH2プラグイン)
+CVSS: 6.3 (Medium) 状態: 特筆すべき状態確認なし
+
+【24時間以内の変化】
+[JVN 2026-07-16] JVN#65294474として、符号なし・符号付き整数変換誤り（CVE-2026-58317）と長さパラメータ不整合の不適切な処理（CVE-2026-60060）が公表された。
+
+【概要】
+国内で広く利用される端末エミュレータTera TermのSSH機能を提供するTTSSH2プラグインに、整数変換誤り（CVE-2026-58317、CVSSv3 6.3）と長さパラメータ不整合の不適切な処理（CVE-2026-60060、CVSSv3 6.3）が存在する。攻撃者が制御するSSHサーバへ接続した際に境界外メモリの読み取り・限定的な書き込みが発生しうる。TTSSH2 3.6.2で修正済み。実悪用・PoC公開は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[社内利用端末のTera Termバージョン棚卸しとアップデート状況を監視する。]
+Splunk SPL: index=endpoint sourcetype=software_inventory product="Tera Term*" | stats latest(version) by host
+→ ネットワーク機器の保守作業で日常的に使われるツールのため、資産管理台帳との突合を優先する。
+
+【参照】
+https://jvn.jp/jp/JVN65294474
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [Tera TermのTTSSH2プラグインにおける複数の脆弱性] https://jvn.jp/jp/JVN65294474
+
+・CVE-2026-14961 / Pegatron製 Windows Driver Model (WDM) ドライバ「Tdelo64.sys」
+CVSS: 非公表 状態: ゼロデイ
+
+【24時間以内の変化】
+[JVN 2026-07-16] CERT/CC VU#529388を受け、JVNVU#90340653としてPegatron製tdeio64.sysの2件のカーネル権限昇格脆弱性が公表された。ベンダー未対応・パッチ未提供。
+
+【概要】
+Pegatron製のWDMドライバtdeio64.sysが公開する\\.\TdeIoデバイスインタフェースが、権限のないIOCTLリクエストに対して適切なアクセス制御・メモリアドレス検証を行っていない。CVE-2026-14961は任意のカーネルメモリ読み書きにより現在のプロセストークンをSYSTEMトークンへ上書きし特権昇格が可能。CVE-2026-14960はハードウェアI/Oポートへの無認可読み書きを許す。いずれもローカル攻撃者が前提で、ベンダーからの修正提供は本レポート時点で確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[tdeio64.sysのロードイベントと\\.\TdeIoへの異常なIOCTLアクセスを監視する。]
+Splunk SPL: index=wineventlog EventCode=7045 ServiceFileName="*tdeio64.sys*" | stats count by ComputerName
+→ Pegatron製OEM機器（一部ノートPC等）での存在有無を資産棚卸しで確認した上で監視対象を絞り込む。
+
+【参照】
+https://jvn.jp/vu/JVNVU90340653
+https://kb.cert.org/vuls/id/529388
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [Pegatron製Windows Driver Model (WDM) ドライバー「Tdelo64.sys」における複数の脆弱性] https://jvn.jp/vu/JVNVU90340653
+
+・CVE-2026-33894 / JavaScriptライブラリ「Forge」(node-forge)
+CVSS: 非公表 状態: PoC公開
+
+【24時間以内の変化】
+[JVN 2026-07-16] CERT/CC VU#725167を受け、JVNVU#98998987として週間2,100万DL超のnode-forgeにおけるRSA-PKCS#1 v1.5およびEd25519の署名偽造脆弱性が国内向けに公表された（修正自体は2026-04-05リリースの1.4.0で既に提供済み）。
+
+【概要】
+広く使われるJavaScript暗号ライブラリForge（node-forge）の署名検証処理が、非正規のASN.1エンコーディングや非正規Ed25519スカラーを許容してしまい、RSA-PKCS#1 v1.5署名の偽造・Ed25519署名の改変が可能（CVE-2026-33894/CVE-2026-33895）。CERT/CCは低指数RSA鍵でのフォージェリやEd25519スカラー操作のPoCが公開済みでネットワーク越しに悪用可能としている。修正は1.4.0（2026-04-05提供）で既に完了しているが、本レポート期間内にJVNが国内向けに新規公表した。node-jose等のJOSEライブラリやAdobe/Expoの証明書ツールなど広範なエコシステムに影響しうる。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[依存関係管理でnode-forgeのバージョンを棚卸しし1.4.0未満を特定する。]
+Splunk SPL: index=sca sourcetype=dependency_scan package="node-forge" | eval vulnerable=if(version<"1.4.0", "yes", "no") | stats count by app, version, vulnerable
+→ node-forgeを署名検証の唯一の手段として使うワークフロー（JOSE実装・PKI連携等）を優先的に洗い出す。
+
+【参照】
+https://jvn.jp/vu/JVNVU98998987
+https://kb.cert.org/vuls/id/725167
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [JavaScriptライブラリ「Forge」における複数の署名検証不備の脆弱性] https://jvn.jp/vu/JVNVU98998987
+
+・CVE-2026-27944 / Nginx UI（サーバ管理パネル）
+CVSS: 9.8 (Critical) 状態: 特筆すべき状態確認なし
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-16] Nginx UIの/api/backupエンドポイントが未認証でバックアップ取得可能で、暗号鍵もレスポンスヘッダで漏洩する脆弱性が国内向けに報道された。
+
+【概要】
+サーバ管理パネルNginx UIの/api/backupエンドポイントが認証なしで全システムバックアップの取得を許してしまい、さらにAES-256暗号鍵とIVがX-Backup-SecurityレスポンスヘッダでそのままExposeされるため、取得したバックアップを即座に復号できる（CVE-2026-27944、CVSS9.8）。バックアップには管理者資格情報・セッショントークン・SSL秘密鍵・DB資格情報が含まれうる。2.3.3で修正済み。実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Nginx UIの/api/backupへの未認証アクセスを監視する。]
+Splunk SPL: index=web_proxy uri_path="/api/backup" | search NOT authenticated=true | stats count by src_ip, uri_path
+→ 認証済みセッション無しでの/api/backupアクセスは高確度で悪用試行とみなせる。
+
+【参照】
+https://scan.netsecurity.ne.jp/
+
+・CVE未採番 / Veeam Updater（Linuxベースアプライアンス）
+CVSS: 8.4 CVSSv4 (High) 状態: 特筆すべき状態確認なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-16] Veeam SoftwareがLinuxベースアプライアンスで利用する「Veeam Updater」の権限昇格脆弱性を公表し、利用者に注意を呼びかけたと国内向けに報道（CVEはまだ採番されていない）。
+
+【概要】
+Veeam Software Appliance・Veeam Infrastructure Appliance等のLinuxベースアプライアンスが利用する「Veeam Updater」コンポーネントに権限昇格の脆弱性（CVSSv4 8.4 High）が確認された。ローカルユーザーがこの脆弱性を悪用することでroot権限を取得できる可能性がある。Windows版のVeeam Backup & Replicationバックアップサーバは本脆弱性の影響を受けない。Veeam Updater 12.3.0.65で修正済みで自動配信中。実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Veeam UpdaterのバージョンとLinuxアプライアンスへのローカルログインを監視する。]
+Splunk SPL: index=linux_auth sourcetype=linux_secure "session opened" host=veeam* | stats count by user, host
+→ Veeam管理者以外のアカウントによるアプライアンスへのローカルログインを重点確認する。
+
+【参照】
+https://www.security-next.com/187449
+
+・CVE-2026-44747 / SAP NetWeaver Application Server ABAP
+CVSS: 9.9 (Critical) 状態: 特筆すべき状態確認なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-16] SAPの2026年7月月例更新（16件、うち3件Critical）について国内向けに報道。既報2026-07-15分（英語ソースのみで軸2未達のため除外）に国内メディア報道が追加された状態変化。
+
+【概要】
+SAPが2026-07-14付で16件の新規セキュリティアドバイザリ（Critical3件・High6件・Medium8件・Low2件）を公開し、SAP NetWeaver Application Server ABAPのメモリ破損（CVE-2026-44747、CVSS9.9）、SAP Approuterのnode.jsパッケージにおけるHTTPリクエストスマグリング（CVE-2026-27690、CVSS9.1、20.10.0未満）、SAP Commerce Cloudの安全でないサンプル資格情報（CVE-2026-44761、CVSS9.1）が含まれる。2026-07-15分レポートでは英語ソースのみで軸2条件未達のため除外・SOC推奨情報のみで扱っていたが、本日Security NEXTが国内向けに報道したため参考A昇格トリガーが成立した。実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SAP NetWeaver ABAPカーネルのバージョンとSAPセキュリティノート適用状況を監視する。]
+Splunk SPL: index=sap sourcetype=sap:security_audit | stats latest(kernel_patch_level) by system_id
+→ 本番稼働中のSAPシステムはメンテナンスウィンドウ調整が必要なため、まず適用計画の優先順位付けから着手する。
+
+【参照】
+https://www.security-next.com/187482
+
+
+━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━
+
+
+該当なし（24時間窓内に参考情報B基準を満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━
+【除外サマリー・製品別CVE】
+━━━━━━━━━━━━━━━━━━━━
+
+
+[CVE]
+・CVE-2026-20296 (Splunk Enterprise (Deployment Server)) → 軸1=3点（CVSS8.3域+2・広く使われる製品+1、KEV/PoC/実悪用未確認）/軸2=0点（国内報道未確認）のため除外。SOC推奨情報で別途注意喚起（自組織SIEM製品のため）。あわせてCVE-2026-20297（パストラバーサル、CVSS7.2）・CVE-2026-20298（情報漏洩、Medium）も同一パッチサイクル内。
+・CVE-2026-59208 (n8n（Enterprise・複数トークン発行者構成時）) → 軸1=1点（CVSSv3 6.8・Enterprise限定機能でスコープ狭小）/軸2=0点のため除外。SOC推奨情報で別途言及。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編1件 / 参考A9件 / 参考B0件 / 除外2件
+
+========================================

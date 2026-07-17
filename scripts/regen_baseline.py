@@ -16,7 +16,7 @@ from collections import defaultdict, Counter
 from datetime import date, timedelta
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TODAY = date(2026, 7, 15)  # currentDate context
+TODAY = date(2026, 7, 17)  # currentDate context
 
 # ---------------------------------------------------------------------------
 # 1. 観測データ読み込み
