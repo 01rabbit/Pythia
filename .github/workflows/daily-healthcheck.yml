@@ -1,0 +1,106 @@
+name: Daily Pipeline Health Check
+
+on:
+  schedule:
+    # 09:00 JST = 00:00 UTC — Routines日次実行 (07:00 JST) の約2時間後に成果物の有無を確認する
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-daily-completion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get current date (JST)
+        id: date
+        run: echo "date=$(TZ=Asia/Tokyo date +%Y-%m-%d)" >> $GITHUB_OUTPUT
+
+      - name: Check daily deliverables exist
+        id: check
+        run: |
+          DATE='${{ steps.date.outputs.date }}'
+          YEAR=$(echo "$DATE" | cut -d- -f1)
+          MONTH=$(echo "$DATE" | cut -d- -f2)
+
+          # 日次パイプラインが正常完了していれば main に存在するはずの成果物
+          EXPECTED=(
+            "outputs/${DATE}/${DATE}-security-report.json"
+            "forecaster/observations/${YEAR}/${MONTH}/${DATE}.json"
+            "forecaster/forecasts/daily/${DATE}.json"
+          )
+
+          MISSING=""
+          for f in "${EXPECTED[@]}"; do
+            if [ ! -f "$f" ]; then
+              MISSING="${MISSING}- \`${f}\`\n"
+            fi
+          done
+
+          if [ -n "$MISSING" ]; then
+            echo "missing=true" >> "$GITHUB_OUTPUT"
+            {
+              echo "missing_files<<EOF"
+              echo -e "$MISSING"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          else
+            echo "missing=false" >> "$GITHUB_OUTPUT"
+            echo "All daily deliverables for ${DATE} are present."
+          fi
+
+      - name: Create alert issue if deliverables missing
+        if: steps.check.outputs.missing == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const date = '${{ steps.date.outputs.date }}';
+            const missing = `${{ steps.check.outputs.missing_files }}`;
+
+            // 当日すでに同種の未実行アラートが起票済みなら重複させない
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'pipeline-health',
+              state: 'open',
+              since: date + 'T00:00:00Z'
+            });
+            if (existing.data.some(i => i.title.includes(date))) {
+              core.info(`Alert issue for ${date} already exists. Skipping.`);
+              return;
+            }
+
+            const body = [
+              '## 日次パイプライン未完了アラート',
+              '',
+              `09:00 JST 時点で、${date} の日次パイプライン成果物が main に見つかりませんでした。`,
+              '07:00 JST の Routines 実行が起動しなかった、または途中で失敗した可能性があります。',
+              '',
+              '### 不足している成果物',
+              missing,
+              '### 確認・復旧手順',
+              '1. Routines 画面で当日の日次実行の起動状況・ログを確認する',
+              '2. 未実行なら Routines から手動で「Run」して当日分を生成する',
+              '3. 収集対象期間（前日07:00〜当日07:00 JST）を過ぎている場合:',
+              '   - 予報の遡及生成は行わない（CLAUDE.md 行動原則）',
+              '   - 観測のみ `scripts/backfill_observations.py` で機械バックフィル可（ベースライン統計対象外）',
+              '4. RSS 一次入力の有無は `security-intel-collector/data/raw/` を確認',
+              '   （収集は別ワークフロー `daily-pipeline.yml` が 06:00 JST に実行）',
+              '',
+              '_このIssueはGitHub Actions (`daily-healthcheck.yml`) により自動作成されました_'
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Alert] 日次パイプライン未実行 ${date}`,
+              body,
+              labels: ['pipeline-health']
+            });
