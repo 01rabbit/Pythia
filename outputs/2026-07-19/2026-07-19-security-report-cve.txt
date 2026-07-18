@@ -1,0 +1,74 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-19 07:00 JST
+調査期間: 2026-07-18 07:00 〜 2026-07-19 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考情報A該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-63030 / WordPress Core（"wp2shell" RCEチェーン）
+CVSS: 9.8
+WordPress core標準搭載のREST APIバッチエンドポイント（/wp-json/batch/v1）が並列サブリクエストを配列で追跡する際にインデックスがずれる実装不備（CWE-436）を悪用し、本来到達できないWP_Queryのauthor__not_inパラメータへ攻撃者入力を注入することで別CVE（CVE-2026-60137）のSQLインジェクションを誘発、最終的に未認証のリモートコード実行に至るチェーンで、永続オブジェクトキャッシュ非使用のデフォルト構成が対象となる。CNA評価は9.8 CriticalだがCISA-ADPは7.5 Highと評価しておりスコアに乖離がある。PoCコードはGitHub上に公開済みだが本稿時点で実環境での悪用確認・CISA KEV登録は確認されていない。
+IoC: 確認されず
+
+監視: [Webサーバログ / SIEM（Splunk等）] WordPressサイトのWebサーバアクセスログで、REST APIバッチエンドポイントへの不審なPOSTリクエストとauthor__not_inを狙ったSQLi試行パターンを監視する
+Splunk SPL: index=web sourcetype=access_combined (uri_path="/wp-json/batch/v1" OR uri_query="*rest_route=*batch/v1*") method=POST | stats count by clientip, uri_path, status | where count > 5
+Splunk SPL: index=web sourcetype=access_combined uri_query="*author__not_in*" | rex field=uri_query "author__not_in\[?\]?=(?<injval>[^&]+)" | search injval="*'*" OR injval="*UNION*" OR injval="*SELECT*"
+→ 正規プラグイン・テーマが/wp-json/batch/v1を利用するケースもあるため、author__not_inへの非配列（文字列）注入や短時間の連続大量リクエストを条件に誤検知を除外する
+
+参照: https://thehackernews.com/2026/07/new-wp2shell-wordpress-core-flaw-lets.html
+https://nvd.nist.gov/vuln/detail/CVE-2026-63030
+https://www.rapid7.com/blog/post/etr-cve-2026-63030-wp2shell-a-critical-remote-code-execution-vulnerability-in-wordpress-core/
+https://github.com/Senanfurkan/wordpress-cve-2026-63030
+・CVE-2026-60137 / WordPress Core（WP_Query author__not_in・wp2shellチェーン構成要素）
+CVSS: 9.1
+WP_Queryのauthor__not_inパラメータが配列型を前提として未サニタイズのままSQLクエリに組み込まれる不備。単体でもプラグイン・テーマが当該パラメータに信頼できない入力を渡す構成ではSQLインジェクションが成立し、CVE-2026-63030のREST APIバッチルート混同と連鎖することで未認証RCEに発展する。NVD上ではCNA評価5.9 Medium（単体評価）とCISA-ADP評価9.1 Critical（連鎖時の実質影響を反映）の間でスコアに大きな乖離があり、本チェーンの深刻度はCISA-ADP評価に基づき採用した。
+IoC: 確認されず
+
+監視: [Webサーバログ / SIEM（Splunk等）] CVE-2026-63030と同一監視方針（WP_Query author__not_in宛のSQLi試行パターン監視）を適用
+Splunk SPL: index=web sourcetype=access_combined uri_query="*author__not_in*" (uri_query="*'*" OR uri_query="*UNION*SELECT*")
+→ CVE-2026-63030の監視ポイントと合わせて運用する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-60137
+https://thehackernews.com/2026/07/new-wp2shell-wordpress-core-flaw-lets.html
+https://labs.beazley.security/advisories/BSL-A1193
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】（Section 3: 製品別CVE）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-14902 (Ivanti Xtraction) → 2026-07-14 July Patch TuesdayでOpen Redirect（Medium）として公表・2026.2.1で修正済み。実悪用・PoC未確認・軸1低のため除外。前回レポートの推測CVE番号を確定
+・CVE-2026-14903 (Ivanti Xtraction) → 2026-07-14 July Patch TuesdayでPath Traversal（CVSS7.7 High）として公表・2026.2.1で修正済み。軸1=3点/軸2=0点のため除外。前回レポートの推測CVE番号を確定
+・CVE-2026-58644 (Microsoft SharePoint Server) → FCEB期限当日（2026-07-19）だが本日調査期間内の新規進展（新規IOC・被害規模更新等）は確認されず
+・CVE-2026-25089 (Fortinet FortiSandbox) → FCEB期限当日（2026-07-19）だが本日調査期間内の新規進展は確認されず
+・CVE-2026-15409 (SonicWall SMA1000) → Dark Reading（2026-07-17）のInc Ransomware関連報道は既報。本日調査期間内の追加確認情報なし
+・CVE-2026-15410 (SonicWall SMA1000) → Dark Reading（2026-07-17）のInc Ransomware関連報道は既報。本日調査期間内の追加確認情報なし
+・CVE-2026-53412 (Zoom Workplace / Workplace VDI Client) → 本日調査期間内の新規進展なし
+・CVE-2026-44747 (SAP NetWeaver AS ABAP) → 本日調査期間内の新規進展なし
+・CVE-2026-15718 (Mozilla Firefox) → 2026-07-15公開・調査期間（2026-07-18 07:00〜07-19 07:00 JST）より前・本日新規動向なし
+・CVE-2026-15719 (Mozilla Firefox) → 2026-07-15公開・調査期間より前・本日新規動向なし
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B2件 / 除外10件
