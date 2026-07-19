@@ -59,10 +59,13 @@ jobs:
       - name: Create alert issue if deliverables missing
         if: steps.check.outputs.missing == 'true'
         uses: actions/github-script@v7
+        env:
+          ALERT_DATE: ${{ steps.date.outputs.date }}
+          MISSING_FILES: ${{ steps.check.outputs.missing_files }}
         with:
           script: |
-            const date = '${{ steps.date.outputs.date }}';
-            const missing = `${{ steps.check.outputs.missing_files }}`;
+            const date = process.env.ALERT_DATE;
+            const missing = process.env.MISSING_FILES;
 
             // 当日すでに同種の未実行アラートが起票済みなら重複させない
             const existing = await github.rest.issues.listForRepo({
