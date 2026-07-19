@@ -1,0 +1,50 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-19 07:00 JST
+調査期間: 2026-07-18 07:00 〜 2026-07-19 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. ACR Stealer（Amatera Stealer系）がClickFix+WebDAV/MSHTA配信で急増、MicrosoftがエンタープライズM365環境への侵入を警告
+観点: ゼロデイ関連
+採用契機: β/δ/ε
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft 365 / OneDrive / SharePoint（Windows端末上のブラウザ・資格情報窃取）
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-18] MicrosoftがACR Stealer（Amatera Stealerのリブランドとされる情報窃取マルウェア）によるエンタープライズ顧客への攻撃急増を確認したと報告。ClickFix+WebDAV（rundll32.exe経由でDLL実行）およびClickFix+MSHTA（ステガノグラフィJPEG画像に隠したペイロードをPowerShellでダウンロード）の2つの侵入チェーンを詳細公開
+
+【概要】
+ACR Stealerは2024年から流通するMaaS型情報窃取マルウェアで、Amatera Stealerのリブランドとみられる。攻撃者はClickFix（偽エラー画面でユーザーにコマンド実行を促す手口）を起点とし、WebDAV経由のDLLサイドロード（rundll32.exe）またはMSHTA経由の難読化PowerShellダウンローダー（ペイロードをステガノグラフィJPEGに隠蔽）の2系統で端末に侵入する。窃取対象はDPAPIで復号したブラウザのパスワード・Cookie・セッショントークン、Chromium系ブラウザDB、デスクトップ/ダウンロード/OneDrive/SharePoint配下のPDFやMicrosoft 365文書に及ぶ。Microsoftはエンタープライズ顧客への攻撃急増を公式に確認しており、CVEに紐付かないがSOCが直ちに検知強化すべき事象である。
+
+【推奨アクション】
+・エラー画面や偽認証プロンプトからのコマンド貼り付け・実行（ClickFix手口）についてエンドユーザー向け注意喚起を実施する
+・ユーザー書き込み可能パスからのPowerShell・mshta.exe・rundll32.exeの実行を制限するアプリケーションコントロールルールを適用する
+・低評判ドメインへのWebフィルタリング・ブロックを強化し、WebDAV経由の外部共有アクセスを監視する
+・OneDrive/SharePoint同期フォルダおよびブラウザ資格情報ストアへの異常アクセスを監視対象に追加する
+Splunk SPL: index=wineventlog EventCode=4688 (NewProcessName="*\\rundll32.exe" OR NewProcessName="*\\mshta.exe") ParentProcessName="*\\explorer.exe" | stats count by Computer,CommandLine
+Splunk SPL: index=wineventlog EventCode=4688 NewProcessName="*\\powershell.exe" CommandLine="*-enc*" | stats count by Computer,User,CommandLine
+→ explorer.exeを親プロセスとしてrundll32.exeやmshta.exeが起動し、直後にWebDAVや外部URLへの接続が続く場合は高確度でClickFix起点の侵害を疑う
+
+【参照】
+https://www.bleepingcomputer.com/news/security/microsoft-warns-of-surge-in-acr-stealer-attacks-on-customers
+https://thehackernews.com/2026/07/acr-stealer-uses-clickfix-lures-to.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】（Section 4: SOC推奨情報）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・The Future of Age Verification: Your Face Never Leaves Your Device → ベンダー（Incode）のスポンサードコンテンツ・製品紹介記事であり、新規の脅威データや実観測事象を含まないため除外
+・WordPress Core "wp2shell" RCE flaws get public exploits, patch now → 採番済みCVE（CVE-2026-63030/60137）としてトラックA判定でSection 3製品別CVEに帰属する事象であり、SOC推奨情報の対象外
+・Update now: 7-Zip fixes RCE flaw exploitable with malicious archives → 採番済みCVEとしてSection 3製品別CVEトラックで扱われる事象であり、SOC推奨情報の対象外
+
+本日の集計:
+SOC推奨情報 — 高1件 / 中0件 / 低0件 / 除外3件

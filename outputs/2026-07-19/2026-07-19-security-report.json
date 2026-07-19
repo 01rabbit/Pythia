@@ -1,0 +1,502 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-07-19",
+    "generated_at": "2026-07-19T08:01:30+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-07-18T07:00:00+09:00",
+      "to": "2026-07-19T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-63030",
+      "product": "WordPress Core（\"wp2shell\" RCEチェーン）",
+      "vendor": "WordPress Foundation",
+      "affected_versions": "6.9.0〜6.9.4 / 7.0.0〜7.0.1（フルRCEチェーン該当）。修正版: 6.9.5 / 7.0.2 / 7.1 beta2",
+      "priority": "high",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-436"
+      ],
+      "epss": {
+        "score": 0.0895,
+        "percentile": 0.9467,
+        "model_date": "2026-07-18"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "6.9.5 / 7.0.2 / 7.1 beta2",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 9,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-17T07:00:00+09:00",
+          "description": "WordPress本体のREST APIバッチルート混同（本CVE）とWP_QueryのSQLインジェクション（CVE-2026-60137）を連鎖させた未認証RCEチェーン「wp2shell」が公開。WordPress 6.9.5/7.0.2/6.8.6で緊急修正"
+        },
+        {
+          "source": "The Hacker News（記事更新）",
+          "date": "2026-07-18T07:00:00+09:00",
+          "description": "REST APIバッチエンドポイントの配列インデックスずれによる認証回避メカニズムの詳細と、GitHub上の動作するPoCコードが公開されたことを確認。CISA KEV登録・実悪用の確認情報は本稿時点でなし"
+        }
+      ],
+      "overview": "WordPress core標準搭載のREST APIバッチエンドポイント（/wp-json/batch/v1）が並列サブリクエストを配列で追跡する際にインデックスがずれる実装不備（CWE-436）を悪用し、本来到達できないWP_Queryのauthor__not_inパラメータへ攻撃者入力を注入することで別CVE（CVE-2026-60137）のSQLインジェクションを誘発、最終的に未認証のリモートコード実行に至るチェーンで、永続オブジェクトキャッシュ非使用のデフォルト構成が対象となる。CNA評価は9.8 CriticalだがCISA-ADPは7.5 Highと評価しておりスコアに乖離がある。PoCコードはGitHub上に公開済みだが本稿時点で実環境での悪用確認・CISA KEV登録は確認されていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証の攻撃者がREST APIバッチエンドポイントへ細工したサブリクエスト配列を送信し、内部の並列配列追跡にインデックスずれを発生させる（CVE-2026-63030）"
+        },
+        {
+          "step": 2,
+          "description": "インデックスずれにより攻撃者制御の文字列がWP_Queryのauthor__not_inパラメータに渡り、SQLインジェクションが成立する（CVE-2026-60137）"
+        },
+        {
+          "step": 3,
+          "description": "SQLインジェクションを足がかりに任意コード実行に至り、サイトおよび基盤データが完全に侵害される"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "WordPressサイトのWebサーバアクセスログで、REST APIバッチエンドポイントへの不審なPOSTリクエストとauthor__not_inを狙ったSQLi試行パターンを監視する",
+        "splunk_spl": [
+          "index=web sourcetype=access_combined (uri_path=\"/wp-json/batch/v1\" OR uri_query=\"*rest_route=*batch/v1*\") method=POST | stats count by clientip, uri_path, status | where count > 5",
+          "index=web sourcetype=access_combined uri_query=\"*author__not_in*\" | rex field=uri_query \"author__not_in\\[?\\]?=(?<injval>[^&]+)\" | search injval=\"*'*\" OR injval=\"*UNION*\" OR injval=\"*SELECT*\""
+        ],
+        "detection_notes": "正規プラグイン・テーマが/wp-json/batch/v1を利用するケースもあるため、author__not_inへの非配列（文字列）注入や短時間の連続大量リクエストを条件に誤検知を除外する"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/new-wp2shell-wordpress-core-flaw-lets.html",
+          "title": "New wp2shell WordPress Core Flaw Lets Unauthenticated Attackers Run Code",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-63030",
+          "title": null,
+          "language": "en",
+          "source": "NVD"
+        },
+        {
+          "url": "https://www.rapid7.com/blog/post/etr-cve-2026-63030-wp2shell-a-critical-remote-code-execution-vulnerability-in-wordpress-core/",
+          "title": "CVE-2026-63030: wp2shell",
+          "language": "en",
+          "source": "Rapid7"
+        },
+        {
+          "url": "https://github.com/Senanfurkan/wordpress-cve-2026-63030",
+          "title": "wordpress-cve-2026-63030 PoC",
+          "language": "en",
+          "source": "GitHub"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260719-CVEP-845fd5c1"
+    },
+    {
+      "cve_id": "CVE-2026-60137",
+      "product": "WordPress Core（WP_Query author__not_in・wp2shellチェーン構成要素）",
+      "vendor": "WordPress Foundation",
+      "affected_versions": "6.8.0〜6.8.5（SQLiのみ）/ 6.9.0〜6.9.4 / 7.0.0〜7.0.1（フルRCEチェーン該当）。修正版: 6.8.6 / 6.9.5 / 7.0.2",
+      "priority": "high",
+      "cvss_v3": 9.1,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-89"
+      ],
+      "epss": {
+        "score": 0.0403,
+        "percentile": 0.8945,
+        "model_date": "2026-07-18"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "6.8.6 / 6.9.5 / 7.0.2",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 9,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News（記事更新）",
+          "date": "2026-07-18T07:00:00+09:00",
+          "description": "CVE-2026-63030との連鎖RCEチェーンの一部として、SQLインジェクション（WP_Queryのauthor__not_inパラメータ未サニタイズ）の技術詳細とPoCがCVE-2026-63030の記事更新と同時に公開されたことを確認"
+        }
+      ],
+      "overview": "WP_Queryのauthor__not_inパラメータが配列型を前提として未サニタイズのままSQLクエリに組み込まれる不備。単体でもプラグイン・テーマが当該パラメータに信頼できない入力を渡す構成ではSQLインジェクションが成立し、CVE-2026-63030のREST APIバッチルート混同と連鎖することで未認証RCEに発展する。NVD上ではCNA評価5.9 Medium（単体評価）とCISA-ADP評価9.1 Critical（連鎖時の実質影響を反映）の間でスコアに大きな乖離があり、本チェーンの深刻度はCISA-ADP評価に基づき採用した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "CVE-2026-63030のバッチルート混同で攻撃者入力がauthor__not_inパラメータへ到達"
+        },
+        {
+          "step": 2,
+          "description": "未サニタイズのauthor__not_inがSQLクエリに直接組み込まれSQLインジェクションが成立"
+        },
+        {
+          "step": 3,
+          "description": "SQLi経由でRCEに発展し、サイト・データベースが完全侵害される（詳細はCVE-2026-63030参照）"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "CVE-2026-63030と同一監視方針（WP_Query author__not_in宛のSQLi試行パターン監視）を適用",
+        "splunk_spl": [
+          "index=web sourcetype=access_combined uri_query=\"*author__not_in*\" (uri_query=\"*'*\" OR uri_query=\"*UNION*SELECT*\")"
+        ],
+        "detection_notes": "CVE-2026-63030の監視ポイントと合わせて運用する"
+      },
+      "references": [
+        {
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-60137",
+          "title": null,
+          "language": "en",
+          "source": "NVD"
+        },
+        {
+          "url": "https://thehackernews.com/2026/07/new-wp2shell-wordpress-core-flaw-lets.html",
+          "title": "New wp2shell WordPress Core Flaw Lets Unauthenticated Attackers Run Code",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://labs.beazley.security/advisories/BSL-A1193",
+          "title": "\"WP2Shell\" Critical WordPress RCE Chain",
+          "language": "en",
+          "source": "Beazley Security Labs"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260719-CVEP-8d35831d"
+    }
+  ],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": []
+  },
+  "apt_main": [],
+  "apt_notable": [],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-07-19-001",
+      "title": "ACR Stealer（Amatera Stealer系）がClickFix+WebDAV/MSHTA配信で急増、MicrosoftがエンタープライズM365環境への侵入を警告",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "β",
+        "δ",
+        "ε"
+      ],
+      "priority": "high",
+      "product_or_service": "Microsoft 365 / OneDrive / SharePoint（Windows端末上のブラウザ・資格情報窃取）",
+      "targets": {
+        "sectors": [],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-07-18T23:17:19+09:00",
+          "description": "MicrosoftがACR Stealer（Amatera Stealerのリブランドとされる情報窃取マルウェア）によるエンタープライズ顧客への攻撃急増を確認したと報告。ClickFix+WebDAV（rundll32.exe経由でDLL実行）およびClickFix+MSHTA（ステガノグラフィJPEG画像に隠したペイロードをPowerShellでダウンロード）の2つの侵入チェーンを詳細公開"
+        }
+      ],
+      "overview": "ACR Stealerは2024年から流通するMaaS型情報窃取マルウェアで、Amatera Stealerのリブランドとみられる。攻撃者はClickFix（偽エラー画面でユーザーにコマンド実行を促す手口）を起点とし、WebDAV経由のDLLサイドロード（rundll32.exe）またはMSHTA経由の難読化PowerShellダウンローダー（ペイロードをステガノグラフィJPEGに隠蔽）の2系統で端末に侵入する。窃取対象はDPAPIで復号したブラウザのパスワード・Cookie・セッショントークン、Chromium系ブラウザDB、デスクトップ/ダウンロード/OneDrive/SharePoint配下のPDFやMicrosoft 365文書に及ぶ。Microsoftはエンタープライズ顧客への攻撃急増を公式に確認しており、CVEに紐付かないがSOCが直ちに検知強化すべき事象である。",
+      "recommended_actions": [
+        "エラー画面や偽認証プロンプトからのコマンド貼り付け・実行（ClickFix手口）についてエンドユーザー向け注意喚起を実施する",
+        "ユーザー書き込み可能パスからのPowerShell・mshta.exe・rundll32.exeの実行を制限するアプリケーションコントロールルールを適用する",
+        "低評判ドメインへのWebフィルタリング・ブロックを強化し、WebDAV経由の外部共有アクセスを監視する",
+        "OneDrive/SharePoint同期フォルダおよびブラウザ資格情報ストアへの異常アクセスを監視対象に追加する"
+      ],
+      "monitoring": {
+        "description": "Windows端末上でのClickFix起点コマンド実行（クリップボード貼り付け直後のRunダイアログ/PowerShell/mshta起動）、および外部WebDAV共有への接続を監視する",
+        "splunk_spl": [
+          "index=wineventlog EventCode=4688 (NewProcessName=\"*\\\\rundll32.exe\" OR NewProcessName=\"*\\\\mshta.exe\") ParentProcessName=\"*\\\\explorer.exe\" | stats count by Computer,CommandLine",
+          "index=wineventlog EventCode=4688 NewProcessName=\"*\\\\powershell.exe\" CommandLine=\"*-enc*\" | stats count by Computer,User,CommandLine"
+        ],
+        "detection_notes": "explorer.exeを親プロセスとしてrundll32.exeやmshta.exeが起動し、直後にWebDAVや外部URLへの接続が続く場合は高確度でClickFix起点の侵害を疑う"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/microsoft-warns-of-surge-in-acr-stealer-attacks-on-customers",
+          "title": "Microsoft warns of surge in ACR Stealer attacks on customers",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://thehackernews.com/2026/07/acr-stealer-uses-clickfix-lures-to.html",
+          "title": "ACR Stealer Uses ClickFix Lures to Steal Browser Tokens and Microsoft 365 Files",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20260719-SOCR-b8288f36"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-14902",
+        "product": "Ivanti Xtraction",
+        "reason": "low_score",
+        "reason_detail": "2026-07-14 July Patch TuesdayでOpen Redirect（Medium）として公表・2026.2.1で修正済み。実悪用・PoC未確認・軸1低のため除外。前回レポートの推測CVE番号を確定",
+        "reported_date": "2026-07-18"
+      },
+      {
+        "cve_id": "CVE-2026-14903",
+        "product": "Ivanti Xtraction",
+        "reason": "low_score",
+        "reason_detail": "2026-07-14 July Patch TuesdayでPath Traversal（CVSS7.7 High）として公表・2026.2.1で修正済み。軸1=3点/軸2=0点のため除外。前回レポートの推測CVE番号を確定",
+        "reported_date": "2026-07-18"
+      },
+      {
+        "cve_id": "CVE-2026-58644",
+        "product": "Microsoft SharePoint Server",
+        "reason": "already_reported",
+        "reason_detail": "FCEB期限当日（2026-07-19）だが本日調査期間内の新規進展（新規IOC・被害規模更新等）は確認されず",
+        "reported_date": "2026-07-18"
+      },
+      {
+        "cve_id": "CVE-2026-25089",
+        "product": "Fortinet FortiSandbox",
+        "reason": "already_reported",
+        "reason_detail": "FCEB期限当日（2026-07-19）だが本日調査期間内の新規進展は確認されず",
+        "reported_date": "2026-07-18"
+      },
+      {
+        "cve_id": "CVE-2026-15409",
+        "product": "SonicWall SMA1000",
+        "reason": "already_reported",
+        "reason_detail": "Dark Reading（2026-07-17）のInc Ransomware関連報道は既報。本日調査期間内の追加確認情報なし",
+        "reported_date": "2026-07-15"
+      },
+      {
+        "cve_id": "CVE-2026-15410",
+        "product": "SonicWall SMA1000",
+        "reason": "already_reported",
+        "reason_detail": "Dark Reading（2026-07-17）のInc Ransomware関連報道は既報。本日調査期間内の追加確認情報なし",
+        "reported_date": "2026-07-15"
+      },
+      {
+        "cve_id": "CVE-2026-53412",
+        "product": "Zoom Workplace / Workplace VDI Client",
+        "reason": "already_reported",
+        "reason_detail": "本日調査期間内の新規進展なし",
+        "reported_date": "2026-07-17"
+      },
+      {
+        "cve_id": "CVE-2026-44747",
+        "product": "SAP NetWeaver AS ABAP",
+        "reason": "already_reported",
+        "reason_detail": "本日調査期間内の新規進展なし",
+        "reported_date": "2026-07-15"
+      },
+      {
+        "cve_id": "CVE-2026-15718",
+        "product": "Mozilla Firefox",
+        "reason": "out_of_window",
+        "reason_detail": "2026-07-15公開・調査期間（2026-07-18 07:00〜07-19 07:00 JST）より前・本日新規動向なし",
+        "reported_date": "2026-07-15"
+      },
+      {
+        "cve_id": "CVE-2026-15719",
+        "product": "Mozilla Firefox",
+        "reason": "out_of_window",
+        "reason_detail": "2026-07-15公開・調査期間より前・本日新規動向なし",
+        "reported_date": "2026-07-15"
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "ContagiousInterview-2026-PolinRider-SupplyChain",
+        "group_name": "Contagious Interview（DPRK / Famous Chollima）",
+        "reason": "already_reported",
+        "reason_detail": "Elastic Security LabsのSVGステガノグラフィOtterCookieキャンペーン（REF9403）は前日2026-07-18分レポートで既に捕捉済み・本日調査期間内の新規進展なし",
+        "reported_date": "2026-07-18"
+      },
+      {
+        "campaign_id": null,
+        "group_name": "OkoBot（帰属未確定・Russian-speaking疑い）",
+        "reason": "out_of_window",
+        "reason_detail": "Kaspersky Securelist初報2026-07-15・The Hacker News同日報道、調査期間（2026-07-18 07:00〜07-19 07:00 JST）より前で新規進展なし",
+        "reported_date": null
+      }
+    ],
+    "ai_attacks": [
+      {
+        "attack_id": null,
+        "title": "NadMesh Botnet: 露出AIサービス狙い撃ちでクラウド鍵・Kubernetesトークン窃取",
+        "reason": "already_reported",
+        "reported_date": "2026-07-18"
+      },
+      {
+        "attack_id": null,
+        "title": "SGLang Pickleデシリアライゼーション脆弱性群による未認証RCE",
+        "reason": "already_reported",
+        "reported_date": "2026-07-18"
+      },
+      {
+        "attack_id": null,
+        "title": "Hugging Face: 自律型AIエージェント駆動によるデータ処理パイプライン侵害・内部クラスタ横展開",
+        "reason": "out_of_window",
+        "reported_date": "2026-07-16"
+      },
+      {
+        "attack_id": null,
+        "title": "GitHub Copilot ワークフローレベル・ジェイルブレイク",
+        "reason": "out_of_window",
+        "reported_date": "2026-07-08"
+      },
+      {
+        "attack_id": null,
+        "title": "HalluSquatting: LLMハルシネーション名を悪用したAIコーディングアシスタント経由ボットネット感染",
+        "reason": "out_of_window",
+        "reported_date": "2026-07-08"
+      },
+      {
+        "attack_id": null,
+        "title": "Recorded Future報告: イラン系脅威アクターのAI活用サイバー作戦拡大",
+        "reason": "out_of_window",
+        "reported_date": "2026-07-16"
+      },
+      {
+        "attack_id": null,
+        "title": "Cato Networks: GPT-5.5攻撃的サイバー能力評価",
+        "reason": "out_of_window",
+        "reported_date": "2026-07-16"
+      }
+    ],
+    "soc_recommendations": [
+      {
+        "title": "The Future of Age Verification: Your Face Never Leaves Your Device",
+        "reason": "ベンダー（Incode）のスポンサードコンテンツ・製品紹介記事であり、新規の脅威データや実観測事象を含まないため除外",
+        "reported_date": "2026-07-18"
+      },
+      {
+        "title": "WordPress Core \"wp2shell\" RCE flaws get public exploits, patch now",
+        "reason": "採番済みCVE（CVE-2026-63030/60137）としてトラックA判定でSection 3製品別CVEに帰属する事象であり、SOC推奨情報の対象外",
+        "reported_date": "2026-07-18"
+      },
+      {
+        "title": "Update now: 7-Zip fixes RCE flaw exploitable with malicious archives",
+        "reason": "採番済みCVEとしてSection 3製品別CVEトラックで扱われる事象であり、SOC推奨情報の対象外",
+        "reported_date": "2026-07-18"
+      }
+    ]
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 2,
+      "excluded": 10,
+      "total_processed": 12
+    },
+    "apt": {
+      "main": 0,
+      "notable": 0,
+      "excluded": 2,
+      "total_processed": 2
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 7,
+      "total_processed": 7,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 1,
+      "medium": 0,
+      "low": 0,
+      "excluded": 3,
+      "total_processed": 4,
+      "perspective_breakdown": {
+        "cve": 0,
+        "zeroday": 1,
+        "ai_attack": 0
+      }
+    }
+  }
+}
