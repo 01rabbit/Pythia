@@ -1,0 +1,735 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-07-20",
+    "generated_at": "2026-07-20T07:45:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-07-19T07:00:00+09:00",
+      "to": "2026-07-20T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-15409",
+      "product": "SonicWall SMA1000 Appliances",
+      "vendor": "SonicWall",
+      "affected_versions": "Work Placeインターフェース有効化構成（既報 2026-07-15 と同一対象）",
+      "priority": "high",
+      "cvss_v3": 10.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-918"
+      ],
+      "epss": {
+        "score": 0.0127,
+        "percentile": 0.6648,
+        "model_date": "2026-07-19"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "platform-hotfix 12.4.3-03453 / 12.5.0-02835以降",
+        "eta": null
+      },
+      "fceb_deadline": "2026-07-17",
+      "kev_date_added": "2026-07-14",
+      "axis1_score": 12,
+      "axis2_score": 2,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Volexity調査引用）",
+          "date": "2026-07-19T22:18:56+09:00",
+          "description": "Volexityが新規脅威アクター「UTA0533」を特定し、2026-06-22（公開前）から実悪用が開始していたと確認。ROOTRUNというsetuidバイナリ(/usr/bin/xzfind)を起点にroot権限コマンド実行へ至る攻撃チェーンの技術詳細を公開"
+        }
+      ],
+      "overview": "SonicWall SMA1000のCVE-2026-15409（未認証SSRF・/wsproxyバイパスでローカルCouchDBへのWebSocketトンネル確立）とCVE-2026-15410（パストラバーサル・認証後コード注入）を連鎖させ、setuidバイナリ/usr/bin/xzfind（ROOTRUN）経由でroot権限コマンド実行に至る攻撃チェーンを、Volexityが新規脅威アクター「UTA0533」として追跡していることが判明した。公開前の2026-06-22から実悪用が開始しており、旧来の「Inc Ransomware」関連という単一未確認ソース報道（Dark Reading 07-17）はVolexityの本格調査により実質的に上書きされた。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "CVE-2026-15409（未認証SSRF・/wsproxyバイパス）でローカルCouchDBサービスへのWebSocketトンネルを確立"
+        },
+        {
+          "step": 2,
+          "description": "CVE-2026-15410（パストラバーサル・認証後コード注入）と組み合わせ、setuidバイナリ/usr/bin/xzfind（ROOTRUN）を悪用してroot権限コマンド実行を獲得"
+        },
+        {
+          "step": 3,
+          "description": "KNUCKLEBALL（deploy_new.py、JARアーカイブ注入）・Suo5（OSS HTTPプロキシ）・ORANGETAIL（Behinder類似の自作Java Webシェル）を展開し、/etc/init.d/workplace startupおよび/var/lib/unit/conf.jsonを改変して永続化"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": true,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [
+          "*/workplace/error.jsp",
+          "*/workplace/dialogs/errorDialog.jsp"
+        ],
+        "filenames": [
+          "/usr/bin/xzfind",
+          "/var/lib/unit/conf.json"
+        ]
+      },
+      "monitoring": {
+        "description": "SonicWall SMA1000アプライアンス上のファイル整合性監視とWebアクセスログで、ROOTRUNバイナリの存在・実行およびWebシェル設置痕跡を監視する",
+        "splunk_spl": [
+          "index=sonicwall sourcetype=sma_access (uri_path=\"*/workplace/error.jsp\" OR uri_path=\"*/workplace/dialogs/errorDialog.jsp\") | stats count by src_ip,uri_path",
+          "index=sonicwall sourcetype=sma_fim (file_path=\"/usr/bin/xzfind\" OR file_path=\"/var/lib/unit/conf.json\" OR file_path=\"/etc/init.d/workplace\") action=modified | table _time,file_path,user"
+        ],
+        "detection_notes": "正規の管理操作でも/etc/init.d/workplace等が更新される場合があるため、パッチ適用作業のタイムスタンプと突合し、非メンテナンス時間帯の変更を優先的に確認する"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/sonicwall-sma-zero-days-exploited.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "other"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [
+        "RIS-2026-UTA0533-SonicWallSMAZeroDay"
+      ],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260720-CVEP-bdf2b0bd"
+    },
+    {
+      "cve_id": "CVE-2026-15410",
+      "product": "SonicWall SMA1000 Appliances",
+      "vendor": "SonicWall",
+      "affected_versions": "Appliance Management Console（既報 2026-07-15 と同一対象）",
+      "priority": "high",
+      "cvss_v3": 7.2,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [
+        "CWE-22"
+      ],
+      "epss": {
+        "score": 0.0149,
+        "percentile": 0.7115,
+        "model_date": "2026-07-19"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "platform-hotfix 12.4.3-03453 / 12.5.0-02835以降",
+        "eta": null
+      },
+      "fceb_deadline": "2026-07-17",
+      "kev_date_added": "2026-07-14",
+      "axis1_score": 9,
+      "axis2_score": 2,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Volexity調査引用）",
+          "date": "2026-07-19T22:18:56+09:00",
+          "description": "CVE-2026-15409との連鎖チェーンの一部として、Volexityが新規脅威アクターUTA0533によるroot権限コマンド実行への悪用詳細を公開"
+        }
+      ],
+      "overview": "SonicWall SMA1000のパストラバーサル・認証後コード注入の脆弱性。CVE-2026-15409と連鎖することでroot権限コマンド実行に至る。Volexityの調査によりUTA0533の攻撃チェーンの構成要素であることが確認された。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "CVE-2026-15409で確立したWebSocketトンネル経由のアクセス権を前提に、パストラバーサルで管理コンソール内の制限領域へアクセス"
+        },
+        {
+          "step": 2,
+          "description": "認証後コード注入によりroot権限相当のコマンド実行を獲得"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": true,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": [
+          "/usr/bin/xzfind"
+        ]
+      },
+      "monitoring": {
+        "description": "CVE-2026-15409と同一の監視方針を適用する",
+        "splunk_spl": [
+          "index=sonicwall sourcetype=sma_access uri_path=\"*ctrl-service*\" | stats count by src_ip,uri_path,status"
+        ],
+        "detection_notes": "CVE-2026-15409の監視ポイントと合わせて運用する"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/sonicwall-sma-zero-days-exploited.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "other"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [
+        "RIS-2026-UTA0533-SonicWallSMAZeroDay"
+      ],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260720-CVEP-a1032241"
+    },
+    {
+      "cve_id": "CVE-2026-63030",
+      "product": "WordPress Core（\"wp2shell\" RCEチェーン）",
+      "vendor": "WordPress Foundation",
+      "affected_versions": "6.9.0〜6.9.4 / 7.0.0〜7.0.1（修正版: 6.9.5 / 7.0.2 / 7.1 beta2）",
+      "priority": "high",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-436"
+      ],
+      "epss": {
+        "score": 0.0895,
+        "percentile": 0.9467,
+        "model_date": "2026-07-19"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "6.9.5 / 7.0.2 / 7.1 beta2",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 9,
+      "axis2_score": 2,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "watchTowr Labs",
+          "date": "2026-07-19T12:00:00+09:00",
+          "description": "PoC公開の拡大（GitHub上に独立した公開PoCが少なくとも3件: Icex0/wp2shell-poc, mverschu/CVE-2026-63030, 0xsha/wp2shell）に続き、watchTowrが実環境での実悪用の兆候を初めて観測したと報告（単一ソース・裏取り未了）"
+        }
+      ],
+      "overview": "WordPress core標準搭載のREST APIバッチエンドポイントのインデックスずれ実装不備（CWE-436）を悪用し、WP_Queryのauthor__not_inパラメータへの入力注入経由でCVE-2026-60137のSQLインジェクションを誘発、最終的に未認証RCEへ至るチェーン。GitHub上でPoCが少なくとも3件独立に公開され、watchTowr Labsが実環境での実悪用の兆候を報告した（本稿時点で他ソースによる裏取りは未了のため確度中）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証の攻撃者がREST APIバッチエンドポイントへ細工したサブリクエスト配列を送信しインデックスずれを発生させる（CVE-2026-63030）"
+        },
+        {
+          "step": 2,
+          "description": "インデックスずれにより攻撃者制御の文字列がWP_Queryのauthor__not_inパラメータに渡りSQLインジェクションが成立する（CVE-2026-60137）"
+        },
+        {
+          "step": 3,
+          "description": "SQLインジェクションを足がかりに任意コード実行に至り、サイトおよび基盤データが完全に侵害される"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "WordPressサイトのWebサーバアクセスログで、REST APIバッチエンドポイントへの不審なPOSTリクエストとauthor__not_inを狙ったSQLi試行パターンを監視する",
+        "splunk_spl": [
+          "index=web sourcetype=access_combined (uri_path=\"/wp-json/batch/v1\" OR uri_query=\"*rest_route=*batch/v1*\") method=POST | stats count by clientip,uri_path,status | where count > 5"
+        ],
+        "detection_notes": "正規プラグイン・テーマが/wp-json/batch/v1を利用するケースもあるため、author__not_inへの非配列注入や短時間の連続大量リクエストを条件に誤検知を除外する"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/wordpress-core-wp2shell-rce-flaws-get-public-exploits-patch-now",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://github.com/Icex0/wp2shell-poc",
+          "title": null,
+          "language": "en",
+          "source": "GitHub"
+        },
+        {
+          "url": "https://github.com/0xsha/wp2shell",
+          "title": null,
+          "language": "en",
+          "source": "GitHub"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260720-CVEP-27018079"
+    },
+    {
+      "cve_id": "CVE-2026-60137",
+      "product": "WordPress Core（WP_Query author__not_in・wp2shellチェーン構成要素）",
+      "vendor": "WordPress Foundation",
+      "affected_versions": "6.8.0以降（修正版: 6.9.5 / 7.0.2 / 7.1 beta2）",
+      "priority": "high",
+      "cvss_v3": 9.1,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-89"
+      ],
+      "epss": {
+        "score": 0.0403,
+        "percentile": 0.8945,
+        "model_date": "2026-07-19"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "6.9.5 / 7.0.2 / 7.1 beta2",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 8,
+      "axis2_score": 2,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "watchTowr Labs",
+          "date": "2026-07-19T12:00:00+09:00",
+          "description": "CVE-2026-63030と同一のwp2shellチェーンの一部として、watchTowrが実環境での実悪用の兆候を報告（単一ソース・裏取り未了）"
+        }
+      ],
+      "overview": "WP_Queryのauthor__not_inパラメータが配列型を前提として未サニタイズのままSQLクエリに組み込まれる不備。CVE-2026-63030のREST APIバッチルート混同と連鎖することで未認証RCEに発展する。CISA-ADP評価9.1（CNA評価は5.9で乖離）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "CVE-2026-63030由来のインデックスずれでauthor__not_inパラメータに攻撃者制御文字列が渡る"
+        },
+        {
+          "step": 2,
+          "description": "未サニタイズのままSQLクエリに組み込まれSQLインジェクションが成立する"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "CVE-2026-63030と同一監視方針（WP_Query author__not_in宛のSQLi試行パターン監視）を適用",
+        "splunk_spl": [
+          "index=web sourcetype=access_combined uri_query=\"*author__not_in*\" (uri_query=\"*'*\" OR uri_query=\"*UNION*SELECT*\")"
+        ],
+        "detection_notes": "CVE-2026-63030の監視ポイントと合わせて運用する"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/wordpress-core-wp2shell-rce-flaws-get-public-exploits-patch-now",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260720-CVEP-c5a7e220"
+    }
+  ],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": []
+  },
+  "apt_main": [],
+  "apt_notable": [
+    {
+      "group_name": "UAC-0145",
+      "aliases": [
+        "Sandworm関連クラスタ（CERT-UA追跡番号）"
+      ],
+      "nation_state": "RU",
+      "attribution_confidence": "not_stated_by_source",
+      "campaign_id": "UAC0145-2026-ClickFixCaptcha",
+      "activity_type": [
+        "new_malware",
+        "active_campaign",
+        "ttp_update"
+      ],
+      "motivation": "espionage",
+      "first_seen": "2026-06-01",
+      "last_seen": "2026-07-19",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "Eastern Europe"
+        ],
+        "countries": [
+          "UA"
+        ]
+      },
+      "malware": [
+        {
+          "name": "GHETTOVIBE",
+          "type": "loader",
+          "language": "VBScript",
+          "delivery": [
+            "clickfix"
+          ],
+          "persistence": [],
+          "c2_protocol": []
+        },
+        {
+          "name": "SCOUTCURL",
+          "type": "other",
+          "language": "PowerShell",
+          "delivery": [
+            "clickfix"
+          ],
+          "persistence": [],
+          "c2_protocol": []
+        },
+        {
+          "name": "FLUIDLEECH",
+          "type": "loader",
+          "language": null,
+          "delivery": [
+            "clickfix"
+          ],
+          "persistence": [],
+          "c2_protocol": []
+        },
+        {
+          "name": "LOADLOOP",
+          "type": "loader",
+          "language": null,
+          "delivery": [],
+          "persistence": [],
+          "c2_protocol": []
+        },
+        {
+          "name": "FREAKYPOLL",
+          "type": "backdoor",
+          "language": "Python",
+          "delivery": [],
+          "persistence": [
+            "scheduled_task"
+          ],
+          "c2_protocol": [
+            "dns_over_smart_contract"
+          ]
+        },
+        {
+          "name": "COWARDDUCK",
+          "type": "backdoor",
+          "language": null,
+          "delivery": [
+            "phishing"
+          ],
+          "persistence": [],
+          "c2_protocol": []
+        }
+      ],
+      "axis_p_score": 8,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "The Hacker News（CERT-UA引用）",
+          "date": "2026-07-19T22:30:55+09:00",
+          "description": "CERT-UA追跡クラスタUAC-0145による偽CAPTCHAを起点としたClickFixキャンペーンの初報。6種の新規マルウェアファミリーとEtherHiding（Ethereumスマートコントラクト経由のC2先取得）という新規TTPを確認"
+        }
+      ],
+      "overview": "CERT-UAが追跡するUAC-0145は、侵害されたウクライナ国内の複数Webサイト（約10件）に偽CAPTCHAを設置し、被害者にPowerShell/VBSコマンドの実行を促すClickFix手口で侵入する。多段のローダーチェーンを経てPythonバックドア（デスクトップ）またはAndroidバックドア（モバイル、メッセージングアプリ経由の偽セキュリティアプリとして配布）を展開する。C2先の解決にEthereumスマートコントラクトを使うEtherHiding技術を採用している点が新規。CERT-UAはGRU（ロシア軍参謀本部情報総局）/Sandwormとの関連を指摘しているが、帰属確度は情報源が明示していない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "侵害済みWebサイト上の偽CAPTCHAでユーザーにコマンド実行を促す（ClickFix）"
+        },
+        {
+          "step": 2,
+          "description": "VBS/PowerShellローダーチェーン（FLUIDLEECH/LOADLOOP）を経てFREAKYPOLL（デスクトップ）またはCOWARDDUCK（Android）バックドアを展開"
+        },
+        {
+          "step": 3,
+          "description": "Dropbox API・steamcommunity[.]com・EtherHiding（Ethereumスマートコントラクト経由）をC2に悪用し、ファイル・連絡先・位置情報を窃取"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [
+          "steamcommunity[.]com（C2中継として悪用・正規サービスのため単純ブロック非推奨）"
+        ],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "ブラウザ上の偽CAPTCHA/偽エラー画面からのコマンド貼り付け・実行を行わないようエンドユーザーへ注意喚起する。ウクライナ拠点組織・関係組織はメッセージングアプリ経由で配布されるAPKのサイドロードを制限する。",
+      "splunk_spl": [
+        "index=wineventlog EventCode=4688 (NewProcessName=\"*\\\\powershell.exe\" OR NewProcessName=\"*\\\\wscript.exe\" OR NewProcessName=\"*\\\\cscript.exe\") ParentProcessName=\"*\\\\explorer.exe\" | stats count by Computer,CommandLine",
+        "index=proxy dest=\"steamcommunity.com\" NOT process_name=\"*steam*\" | stats count by src,process_name"
+      ],
+      "detection_notes": "explorer.exeを親プロセスとしたスクリプトエンジン起動直後に非ゲームプロセスからsteamcommunity.comへの接続が続く場合はClickFix起点の侵害を疑う",
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/uac-0145-uses-clickfix-captchas-to.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260720-APTC-8cf65888"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-07-20-001",
+      "title": "Hikvision Intelligent Security API（ISAPI）搭載ネットワークカメラへの偵察スキャン観測",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "γ",
+        "δ"
+      ],
+      "priority": "medium",
+      "product_or_service": "Hikvision製ネットワークカメラ・NVR（ISAPI実装機、2018年以降製品）",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SANS Internet Storm Center",
+          "date": "2026-07-20T00:00:38+09:00",
+          "description": "Johannes Ullrich氏がISCハニーポット網で「/ISAPI/System/status」エンドポイントへの偵察スキャンを観測したと報告。Hikvision機器のフィンガープリンティングを目的とした活動とみられる"
+        }
+      ],
+      "overview": "SANS ISCが、Hikvision製ネットワークカメラ・NVRのISAPI（Intelligent Security API）実装が持つ「/ISAPI/System/status」エンドポイントへの偵察目的スキャンを観測したと報告した。同エンドポイントは機器のシステム情報をXML/JSON形式で返し攻撃者の機器特定に利用され得る。ISAPIはBasic認証をTLSなしで使用した場合に認証情報が平文で漏洩する問題も指摘されている。CVE番号は特定されておらず、脆弱性そのものではなく偵察活動の観測であるためSOCが把握しておくべき事項として扱う。",
+      "recommended_actions": [
+        "自組織のHikvision製カメラ・NVRがインターネットに直接露出していないか棚卸しし、該当があれば直ちにVPN/ファイアウォール配下へ隔離する",
+        "ISAPIをHTTPS（有効な証明書）で運用し、平文HTTP上でのBasic認証を無効化する",
+        "外部からの「/ISAPI/*」パス宛リクエストをSIEM/WAFで監視・アラート対象に追加する"
+      ],
+      "monitoring": {
+        "description": "境界ファイアウォール・WAFログでISAPIパスへの外部アクセスを監視する",
+        "splunk_spl": [
+          "index=firewall OR index=waf dest_port=80 OR dest_port=443 uri_path=\"*/ISAPI/*\" | stats count by src_ip,uri_path,dest_ip"
+        ],
+        "detection_notes": "社内管理端末からの正規アクセスを除外した上で、インターネット側から/ISAPI/System/status等への到達がないか確認する"
+      },
+      "references": [
+        {
+          "url": "https://isc.sans.edu/diary/",
+          "title": "Scans for Hikvision Intelligent Security API",
+          "language": "en",
+          "source": "SANS Internet Storm Center"
+        }
+      ],
+      "info_id": "20260720-SOCR-51716f31"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-42533",
+        "product": "NGINX Open Source / NGINX Plus",
+        "reason": "already_reported",
+        "reason_detail": "既報（2026-07-17・参考A採用）。本日The Hacker Newsが研究者Stan Shaw氏によるF5公式の悪用可能性評価（ASLR無効環境限定）への異議（ASLR有効の標準Ubuntu 24.04でもRCE成立と主張）を報道したが、PoC非公開・ベンダー確認なしの単一未確認ソースの技術的主張に留まり、採用条件A-Hのいずれも明確には充足しないため状態変更は行わず除外に留めた（継続監視対象）",
+        "reported_date": "2026-07-19"
+      },
+      {
+        "cve_id": "CVE-2026-14266",
+        "product": "7-Zip",
+        "reason": "low_score",
+        "reason_detail": "ZDI-26-444（2026-07-15公開・報告者Landon Peng/Lunbun LLC）。XZ形式解凍処理のヒープバッファオーバーフロー。CVSS7.0（ローカル・ユーザー操作必須）・7-Zip 26.02で修正済み・実悪用未確認・PoC未公開。軸1=2点（広く使われる製品のみ該当）/軸2=0点のため除外・継続監視対象",
+        "reported_date": "2026-07-20"
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "RIS-2026-HelloNet-ViPNet",
+        "group_name": "不明（Chinese-speaking系の可能性を研究者が指摘・false flag疑いを自ら留保）",
+        "reason": "low_score",
+        "reason_detail": "Kaspersky初報（BleepingComputer 2026-07-19経由）。ロシア政府機関等を標的にViPNetのアップデート機構を悪用しHelloInjector/HelloProxy/HelloExecutor/HelloCleaner/HelloBackdoorの5種マルウェアを展開する多段侵害。帰属はKaspersky自身が中国語話者系の可能性を留保付きで指摘するのみで確証なし（sina.com文字列・中国科学技術大学でのミラーホスティングという弱い根拠、false flagの可能性も研究者自身が言及）。軸P6/軸Q3で参考A昇格トリガーもなく除外・継続監視対象",
+        "reported_date": "2026-07-20"
+      },
+      {
+        "campaign_id": "NightmareEclipse-2026-WindowsZeroDayDisclosure",
+        "group_name": "Nightmare Eclipse",
+        "reason": "out_of_window",
+        "reason_detail": "「LegacyHive」新規Windowsゼロデイ PoC公開報道（BleepingComputer）は2026-07-17付であり本日調査期間（2026-07-19 07:00〜07-20 07:00 JST）より前。本日新規の続報は確認されず",
+        "reported_date": "2026-07-20"
+      }
+    ],
+    "ai_attacks": [
+      {
+        "attack_id": null,
+        "title": "Microsoft ACR Stealer攻撃急増警告",
+        "reason": "insufficient_evidence",
+        "reason_detail": "ClickFix+WebDAV/MSHTA配信の情報窃取マルウェアキャンペーンだが、AI生成・AI悪用を示す記述は本文中に確認できず、AI攻撃トラック（カテゴリA〜C）の対象外と判断。Section 4 SOC推奨情報で別途評価",
+        "reported_date": "2026-07-20"
+      }
+    ],
+    "soc_recommendations": [
+      {
+        "title": "Microsoft warns of surge in ACR Stealer attacks on customers",
+        "reason": "already_reported",
+        "reason_detail": "2026-07-19分レポートでSection4 SOC推奨情報（高優先度）として既に採用済み。本日調査期間内（2026-07-19 07:00〜07-20 07:00 JST）に新規の続報・技術詳細の追加は確認されなかったため除外",
+        "reported_date": "2026-07-19"
+      },
+      {
+        "title": "The Future of Age Verification: Your Face Never Leaves Your Device",
+        "reason": "insufficient_evidence",
+        "reason_detail": "ベンダー（Incode）のスポンサードコンテンツ・製品紹介記事であり、新規の脅威データや実観測事象を含まないため除外",
+        "reported_date": "2026-07-20"
+      },
+      {
+        "title": "SonicWall SMA Zero-Days Exploited Before Disclosure to Gain Root Access",
+        "reason": "already_reported",
+        "reason_detail": "採番済みCVE（CVE-2026-15409/15410）としてトラックA判定でSection 3製品別CVE（参考情報B）に帰属する事象であり、SOC推奨情報の対象外",
+        "reported_date": "2026-07-20"
+      },
+      {
+        "title": "WordPress Core \"wp2shell\" RCE flaws get public exploits, patch now",
+        "reason": "already_reported",
+        "reason_detail": "採番済みCVE（CVE-2026-63030/60137）としてSection 3製品別CVEで扱われる事象であり、SOC推奨情報の対象外",
+        "reported_date": "2026-07-20"
+      },
+      {
+        "title": "Update now: 7-Zip fixes RCE flaw exploitable with malicious archives",
+        "reason": "already_reported",
+        "reason_detail": "採番済みCVE（CVE-2026-14266）としてSection 3製品別CVE（除外）で扱われる事象であり、SOC推奨情報の対象外",
+        "reported_date": "2026-07-20"
+      }
+    ]
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 4,
+      "excluded": 2,
+      "total_processed": 6
+    },
+    "apt": {
+      "main": 0,
+      "notable": 1,
+      "excluded": 2,
+      "total_processed": 3
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 1,
+      "total_processed": 1,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 0,
+      "medium": 1,
+      "low": 0,
+      "excluded": 5,
+      "total_processed": 6,
+      "perspective_breakdown": {
+        "cve": 0,
+        "zeroday": 1,
+        "ai_attack": 0
+      }
+    }
+  }
+}

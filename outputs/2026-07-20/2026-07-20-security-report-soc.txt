@@ -1,0 +1,55 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-20 07:45 JST
+調査期間: 2026-07-19 07:00 〜 2026-07-20 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Hikvision Intelligent Security API（ISAPI）搭載ネットワークカメラへの偵察スキャン観測
+観点: ゼロデイ関連
+採用契機: γ/δ
+------------------------------------------------------------
+
+優先度: 中
+対象: Hikvision製ネットワークカメラ・NVR（ISAPI実装機、2018年以降製品）
+
+【24時間以内の変化】
+[SANS Internet Storm Center 2026-07-20] Johannes Ullrich氏がISCハニーポット網で「/ISAPI/System/status」エンドポイントへの偵察スキャンを観測したと報告。Hikvision機器のフィンガープリンティングを目的とした活動とみられる
+
+【概要】
+SANS ISCが、Hikvision製ネットワークカメラ・NVRのISAPI（Intelligent Security API）実装が持つ「/ISAPI/System/status」エンドポイントへの偵察目的スキャンを観測したと報告した。同エンドポイントは機器のシステム情報をXML/JSON形式で返し攻撃者の機器特定に利用され得る。ISAPIはBasic認証をTLSなしで使用した場合に認証情報が平文で漏洩する問題も指摘されている。CVE番号は特定されておらず、脆弱性そのものではなく偵察活動の観測であるためSOCが把握しておくべき事項として扱う。
+
+【推奨アクション】
+・自組織のHikvision製カメラ・NVRがインターネットに直接露出していないか棚卸しし、該当があれば直ちにVPN/ファイアウォール配下へ隔離する
+・ISAPIをHTTPS（有効な証明書）で運用し、平文HTTP上でのBasic認証を無効化する
+・外部からの「/ISAPI/*」パス宛リクエストをSIEM/WAFで監視・アラート対象に追加する
+Splunk SPL: index=firewall OR index=waf dest_port=80 OR dest_port=443 uri_path="*/ISAPI/*" | stats count by src_ip,uri_path,dest_ip
+→ 社内管理端末からの正規アクセスを除外した上で、インターネット側から/ISAPI/System/status等への到達がないか確認する
+
+【参照】
+https://isc.sans.edu/diary/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】（Section 4: SOC推奨情報）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Microsoft warns of surge in ACR Stealer attacks on customers → 2026-07-19分レポートでSection4 SOC推奨情報（高優先度）として既に採用済み。本日調査期間内（2026-07-19 07:00〜07-20 07:00 JST）に新規の続報・技術詳細の追加は確認されなかったため除外
+・The Future of Age Verification: Your Face Never Leaves Your Device → ベンダー（Incode）のスポンサードコンテンツ・製品紹介記事であり、新規の脅威データや実観測事象を含まないため除外
+・SonicWall SMA Zero-Days Exploited Before Disclosure to Gain Root Access → 採番済みCVE（CVE-2026-15409/15410）としてトラックA判定でSection 3製品別CVE（参考情報B）に帰属する事象であり、SOC推奨情報の対象外
+・WordPress Core "wp2shell" RCE flaws get public exploits, patch now → 採番済みCVE（CVE-2026-63030/60137）としてSection 3製品別CVEで扱われる事象であり、SOC推奨情報の対象外
+・Update now: 7-Zip fixes RCE flaw exploitable with malicious archives → 採番済みCVE（CVE-2026-14266）としてSection 3製品別CVE（除外）で扱われる事象であり、SOC推奨情報の対象外
+
+本日の集計:
+SOC推奨情報 — 高0件 / 中1件 / 低0件 / 除外5件
+========================================
