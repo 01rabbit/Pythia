@@ -1,0 +1,91 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-20 07:00 JST
+調査期間: 2026-07-19 07:00 〜 2026-07-20 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 不明（Kaspersky命名・帰属信頼度: 低・Chinese-speaking APT疑いだが根拠は弱い）（別名: なし / 国家帰属: 不明 / 帰属信頼度: low）
+活動タイプ: new_malware / active_campaign
+------------------------------------------------------------
+
+採用契機: R・P
+標的: government・energy・education・critical_infrastructure / RU
+マルウェア: HelloBackdoor・HelloCleaner
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-19] Kaspersky調査に基づき、ViPNetアップデート機構を悪用した「HelloNet」キャンペーンが政府機関を含む複数セクターのロシア組織を侵害していると初報
+
+【概要】
+ロシアの政府機関等で採用される秘匿通信製品ViPNet（InfoTeCS製）の正規アップデート配信機構が侵害され、プロキシ兼ローダーとして機能する悪意あるペイロードが配布されるキャンペーン「HelloNet」が少なくとも2026年5月から活動していることをKasperskyが確認した。政府・エネルギー・運輸・教育・物流の各セクターの組織が影響を受けており、侵害後にはRust製バックドア「HelloBackdoor」が展開され、ログ消去ツール「HelloCleaner」でViPNetのログデータを削除し痕跡が隠蔽される。Kasperskyは中国語話者系APTの関与を示唆する痕跡（未使用のsina.com参照文字列、中国科学技術大学がホストするマルウェア配布ミラー）を確認したが、証拠は弱く帰属は低確度としている（推測: false flag作戦の可能性も排除できない）。
+
+攻撃の流れ（判明分）:
+1. ViPNetの正規アップデート配信機構を侵害し悪意あるペイロードを配布
+2. 配布されたペイロードがプロキシ・ローダーとして機能しRust製バックドアHelloBackdoorを展開
+3. HelloCleanerでViPNetのログデータを削除し痕跡を隠蔽、政府・エネルギー・運輸・教育・物流の各セクター組織に侵入し活動を継続
+
+【新規TTP】
+・[T1195] Supply Chain Compromise — ViPNetの正規アップデート配信機構を悪用し悪意あるペイロードを配布したとの報告に基づく（sub: Compromise Software Supply Chain）
+・[T1070] Indicator Removal — HelloCleanerでViPNetのログデータを消去し活動の痕跡を隠したとの報告に基づく
+・[T1090] Proxy — 配布されたペイロードがプロキシとして機能したとの報告に基づく
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・ViPNet運用組織はアップデート配信元の署名検証・整合性チェックを強化し、正規アップデートプロセス外からのファイル生成やログの選択的消去がないか監視する。ロシア国外の組織であっても、同種のセキュア通信製品のアップデート機構が同様の手口の対象になり得るため、サプライチェーン経由の配信整合性監視を推奨する。
+・[ログソース / SIEM（Splunk等）] 検知SPLクエリ:
+Splunk SPL: index=endpoint (Image="*vipnet*" OR ParentImage="*vipnet*update*") NOT Image IN ("*known_good_updater.exe") | stats count by Computer,Image,CommandLine
+・[ログソース / SIEM（Splunk等）] 検知SPLクエリ:
+Splunk SPL: index=endpoint EventCode=4688 (CommandLine="*log*clean*" OR CommandLine="*del*.log") | table _time,Computer,User,CommandLine
+→ 正規のViPNetアップデートプロセス以外から生成・実行されるアップデート関連ファイルや、セキュリティ/イベントログの選択的削除は要確認。定期メンテナンスによる正規ログローテーションとの誤検知を区別すること。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hackers-abuse-vipnet-software-to-target-russian-govt-agencies/
+https://www.scworld.com/brief/hellonet-campaign-abuses-vipnet-update-mechanism-to-target-russian-organizations
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・UAC-0145（Sandworm/APT44傘下クラスタ、CERT-UA追跡番号） / ウクライナのCERT-UAは、GRU（ロシア連邦軍参謀本部情報総局）系のSandworm（APT44）傘下クラスタUAC-0145が2026年春〜夏にかけてClickFix型の偽CAPTCHA検証ページを侵害済みウェブサイト上に設置し、被害者に自らPowerShellコマンドを実行させる手口で端末を感染させていると報告した。CERT-UAは2026年6月・7月だけで10件超の侵害済みウェブサイトを確認しており、正規サービスCloaking.Houseに加えカスタムマルウェア「SMARTAXE」を用いてページを動的改変している。SMARTAXEはEthereumスマートコントラクトのeth_call呼び出し経由でリモートの誘導先ドメインを取得する（推測: ブロックリストによる遮断への耐性を狙った手法とみられる）。展開されるマルウェアには偵察用PowerShellスクリプト「SCOUTCURL」と情報窃取型の「GHETTOVIBE」が含まれる。 採用契機: Q・S。帰属信頼度: high。
+推奨アクション: ブラウザ経由のCAPTCHA検証時にOS実行ダイアログ／ターミナルの起動を要求する挙動は正規サービスでは発生しないため、エンドユーザー教育とEDRでのクリップボード貼付経由PowerShell実行の監視を強化する。
+参照: https://thehackernews.com/2026/07/uac-0145-uses-clickfix-captchas-to.html
+
+・UTA0533（Volexity命名・帰属信頼度: 低、未特定脅威アクター） / セキュリティ企業Volexityは、既報のSonicWall SMA1000シリーズVPNアプライアンスのゼロデイ脆弱性（CVE-2026-15409／CVE-2026-15410、2026-07-14にCISA KEV登録済み）について、これまで確認されていなかった脅威アクター「UTA0533」が公開開示（2026-07-14）より前の2026年6月22日から悪用していたと報告した。攻撃はSMAアプライアンスに標準搭載されているCouchDB（localhost限定アクセス想定）を悪用する経路をたどり、CouchDBユーザー権限でproduct_uuidファイルを読み取ることで認証を回避していたとみられる（正確な手法は未解明・推測）。これによりroot権限でのアクセスを獲得し、独自のカスタムマルウェアを用いて数週間にわたり検知を回避していたとSecurityWeekが報じている。 採用契機: R・W。帰属信頼度: low。
+推奨アクション: SonicWall SMA1000シリーズ利用組織は2026-07-14提供のホットフィックス（platform-hotfix 12.4.3-03453/12.5.0-02835以降）へ至急アップデートし、侵害の事後確認（root権限プロセスの生成履歴、CouchDBへの不審アクセスログ）を実施する。
+参照: https://thehackernews.com/2026/07/sonicwall-sma-zero-days-exploited.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] DHSがHSIN（国土安全保障情報ネットワーク）への侵害を確認
+米国土安全保障省（DHS）は、連邦・州・地方・部族・準州・国際・民間パートナーが緊急対応調整や脅威情報共有に用いる非機密情報共有基盤HSIN（Homeland Security Information Network）への不正アクセスがあったことを正式に確認した。侵入は2026年5月末〜6月初旬の間に発生し、HSINサーバと機関間協働用SharePointシステムが標的となったが、機密（classified）システムへの影響はないとDHSは説明している。DHSは影響を受けたシステムを分離し脆弱性を緩和した上でフォレンジック調査を進めているが、攻撃者は特定されていない（推測: SharePoint関連の既知脆弱性チェーンとの関連が疑われるが情報源は明示していない）。
+参照: https://www.bleepingcomputer.com/news/security/dhs-confirms-hackers-breached-hsin-info-sharing-platform/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし — 本日確認したEvidence（ViPNet/HelloNet新規キャンペーン、UAC-0145のClickFix新規TTP、UTA0533のSonicWall SMA事前悪用の新規判明）はいずれも観測出口クラスE1〜E4の一次・二値イベントに未紐付けであった。SonicWall SMA（CVE-2026-15409/15410）は既にKEV登録済みのため新規E1は成立せず、追随IOC公開を的中条件とするE2型予報は教訓14により全Tier発行禁止のため見送った。APT活動3件はいずれも本日が初観測または新規TTP判明のみでベースライン確立済みの逸脱シグナルを伴わないため、M1観測可能性ゲートを満たす予報候補が成立しなかった（forecaster/forecasts/daily/2026-07-20.md 参照）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】（Section 2: APT活動）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（本日除外エントリなし）
+
+本日の集計:
+APT — 本編1件 / 注目動向2件 / 除外0件
+========================================
