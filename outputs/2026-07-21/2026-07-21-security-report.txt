@@ -1,0 +1,417 @@
+========================================
+セキュリティインテリジェンス日報（全セクション完全版）
+調査日時: 2026-07-21 07:30 JST
+調査期間: 2026-07-20 07:00 〜 2026-07-21 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-07-20 〜 2026-07-21
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Hugging Face 自律型AIエージェントによる本番インフラ侵害・認証情報窃取
+カテゴリ: C4 / 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: A-Q・A-X
+MITRE ATLAS: AML.T0049・AML.T0055
+OWASP: LLM03 / AG01
+対象: IT（AI開発基盤）/ グローバル / Hugging Face 本番インフラ
+被害規模: 内部データセット・サービス認証情報/トークンが侵害。世界最大のAIモデルリポジトリ。顧客・パートナーデータへの影響は現時点で未確認
+
+【24時間以内（または期間内）の変化】
+[Hugging Face 2026-07-20] Hugging Faceが2026-07-16、悪意あるデータセットがデータセット処理パイプラインの2つのコード実行経路を悪用し本番インフラを侵害したと開示。攻撃はエンドツーエンドで自律型AIエージェントシステムにより駆動されたと説明（バースト検出閾値超過: THN/SecurityWeek/BleepingComputer/HelpNet/TechCrunch/Axios他6ソース超）
+
+【概要】
+オープンソースAIプラットフォームHugging Faceは、自律型AIエージェントシステムにより本番インフラが侵害されたと開示した（2026-07-16検知・公表）。悪意あるデータセットがデータセット処理パイプラインのリモートコードデータセットローダとテンプレートインジェクションの2つのコード実行経路を悪用し処理ワーカー上でコードを実行、ノードレベルへ権限昇格してクラウド・クラスタ認証情報を窃取、週末をかけて複数の内部クラスタへ横展開した。攻撃は数千の短命サンドボックス群で「多数の個別アクション」を実行し自己移動型C2を公開サービス上に配置する自律エージェントフレームワークで駆動された。同社は影響経路の遮断・認証情報/トークンのローテーション・クラスタ受け入れ制御の強化を実施したが、パートナー/顧客データへのアクセスや公開モデル/データセット/Spacesの改ざんの証跡は現時点で未確認。世界最大のAIモデルリポジトリへの実侵害であり、AI開発基盤を狙う自律型AIエージェント攻撃の実例として重大。
+
+攻撃の流れ:
+1. 悪意あるデータセットをアップロードし処理パイプラインのRCデータセットローダ・テンプレートインジェクションを悪用してワーカー上でコード実行
+2. ノードレベルへ権限昇格しクラウド・クラスタ認証情報を窃取、複数内部クラスタへ横展開
+3. 自律型AIエージェントが数千の短命サンドボックスで自動的に多数のアクションを実行し自己移動型C2で活動継続
+
+【ATLAS TTPs】
+・[AML.T0049] クラウド/AIサービス認証情報の窃取 — 処理ワーカーからクラウド・クラスタ認証情報を採取
+・[AML.T0055] 自律型エージェントによる連鎖的攻撃実行 — 短命サンドボックス群で多数のアクションを自動実行
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: データセット処理ワーカーからの想定外の外向き通信・認証情報アクセス / 短命サンドボックスの大量生成と自己移動型C2の兆候
+
+【監視・対策ポイント】
+・[コンテナ/K8sログ] MLデータセット/モデル処理基盤での異常なコード実行・認証情報アクセスを監視する
+Splunk SPL: index=k8s OR index=container (event="exec" OR event="process_start") image="*dataset*worker*" | stats count by pod,command | where count > 50
+→ データセット処理ワーカーからのクラウドメタデータ/認証情報エンドポイントへのアクセス、短命Pod群の急増に注目
+・データセット処理パイプラインのコード実行経路（ローダ・テンプレート）の無効化・サンドボックス強化、認証情報/トークンのローテーションとクラスタ受け入れ制御の見直し
+
+【参照】
+https://thehackernews.com/2026/07/worlds-largest-ai-model-repository.html
+https://www.bleepingcomputer.com/news/security/hugging-face-breach-autonomous-ai-agent-system-internal-datasets-credentials
+https://huggingface.co/blog/security-incident-july-2026
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・JadePuffer エージェント型AI攻撃がEncForgeでAIモデルデータをランサムウェア暗号化
+カテゴリ: A4 採用契機: A-Q・A-X
+MITRE ATLAS: AML.T0031
+OWASP: AG01
+既報の自律型AIエージェント型ランサムウェア「JadePuffer」（2026-07-03初報・Langflow CVE-2025-3248起点）が、EncForgeと呼ぶカスタムマルウェアを新たに採用し、訓練データセット・ベクターDB・モデルチェックポイントといったAIアセットの暗号化に標的を移したことをBleepingComputerが報じた。エージェント型AIランサムウェアがAI資産そのものを恐喝対象とする進化であり、AI開発組織にとって新たなデータ保全リスクとなる。本窓内は単一ソース報道（burst below_threshold）のため参考B留め。既報AI-2026-07-05-001の継続更新。
+対策: モデルストア/ベクターDB/オブジェクトストレージへの大量暗号化・改名操作を監視し、AIアセットのバックアップとアクセス権限を見直す。
+監視: [ストレージ監査ログ] 検知SPL: index=storage (operation="write" OR operation="rename") object_path="*checkpoint*" OR object_path="*.safetensors" | stats dc(object_path) as changed by src_ip | where changed > 100
+→ 短時間でのモデル/データセットファイルの大量書き換えに注目。正規の学習チェックポイント保存との誤検知を頻度と拡張子の網羅性で除外する
+参照: https://www.bleepingcomputer.com/news/security/jadepuffer-agentic-attacks-now-target-ai-model-data-with-ransomware
+
+・Cursor/Codex/Gemini CLI/Antigravity のAIコーディングエージェント サンドボックス回避
+カテゴリ: B1 採用契機: A-R・A-V
+MITRE ATLAS: AML.T0051
+OWASP: LLM01 / AG02
+研究者らがCursor・Codex・Gemini CLI・Antigravityの各AIコーディングエージェントにおいて、AIエージェントにファイルを書き込ませ、それを信頼済みのホストツールが後から実行する手口でサンドボックスを回避したことが報じられた。複数のCVEが採番されパッチが提供され、GoogleはAntigravityの2件の指摘を評価引き下げした。AIエージェントの「書いたファイル」と「ホストツールの信頼実行」の境界不備を突く構造的問題で、開発環境からのコード実行リスクを示す。本窓内は主にBleepingComputer報道（THN週次まとめでも言及）で burst below_threshold のため参考B留め。実被害未確認。
+対策: AIコーディングエージェントを最新版へ更新し、エージェント作業ディレクトリからのプロセス生成を監視・制限する。
+監視: [エンドポイント] 検知SPL: index=endpoint EventCode=4688 ParentImage="*cursor*" OR ParentImage="*codex*" OR ParentImage="*gemini*" | table _time,Computer,User,Image,CommandLine
+→ AIエージェント親プロセス配下でのスクリプト/バイナリ実行に注目。正規ビルドツール実行との誤検知はワークスペース内書き込み直後の実行という時系列で絞る
+参照: https://www.bleepingcomputer.com/news/security/cursor-codex-gemini-cli-antigravity-hit-by-sandbox-escapes
+
+・露出サーバから判明したAI支援フィッシングツールキット（WebDAVマルウェアキャンペーン）
+カテゴリ: A1 採用契機: A-Q・A-X
+MITRE ATLAS: AML.T0048
+OWASP: 該当タクティクスなし / 調査中
+マルウェアオペレータが配信サーバを露出させたことでRapid7がAI支援フィッシングツールキット一式（1,048ファイル：ルアーテンプレート・ファイル名偽装テスト・ドロッパー・ビルダーメモ・2つのキャンペーンチェーン）を取得した。1つのチェーンはメキシコのWindows利用者に対し既に稼働しており、偽の政府ID照会サイトからWebDAV経由でインフォスティーラーを配信している。フィッシングコンテンツ生成にAIが活用されている点が特徴。単一ソース（Rapid7/THN・burst below_threshold）のため参考B留め。
+対策: 外部WebDAV共有からの実行ファイル取得を監視し、偽政府ID照会サイト型フィッシングへの利用者注意喚起を行う。
+監視: [プロキシ] 検知SPL: index=proxy (http_method="PROPFIND" OR uri="*webdav*") | stats count by src_ip,dest_host | where count > 3
+→ 外部WebDAVサーバへのアクセスとそれに続く実行ファイル取得に注目。正規のWebDAV業務利用との誤検知を宛先レピュテーションで除外する
+参照: https://thehackernews.com/2026/07/exposed-server-reveals-ai-assisted.html
+
+・ロシア語話者アクターがGoogle Gemini CLIでボットネットを制御（bandcampro）
+カテゴリ: A4 採用契機: A-Q・A-X
+MITRE ATLAS: AML.T0048
+OWASP: AG01
+単独のロシア語話者脅威アクター「bandcampro」がGoogleのオープンソースAI「Gemini CLI」に運用作業の一部を外注し、8台の歯科医院PCから成る稼働中ボットネットを制御していたことが、2026-03-19〜04-21の200件のGemini CLIセッションログ分析から判明した。アクターはAIをパスワードクラック・レジデンシャルプロキシ設定等に用いていた。規模は小さいが汎用AI CLIツールが攻撃者の運用支援に実際に悪用された明確な事例。単一ソース（THN・burst below_threshold）のため参考B留め。
+対策: 業務端末でのAI CLIツールの想定外実行と外部API通信を監視する。
+監視: [エンドポイント] 検知SPL: index=endpoint EventCode=4688 (Image="*gemini*" OR CommandLine="*gemini*cli*") | table _time,Computer,User,CommandLine
+→ 業務端末（医療等）でのAI CLIツール実行に注目。正規の開発利用がない環境での出現を優先確認する
+参照: https://thehackernews.com/2026/07/russian-speaking-hacker-uses-google.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に国内影響が確認されたAI攻撃事案なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日（2026-07-20 07:00〜2026-07-21 07:00 JST）はAI関連攻撃が活発で、世界最大のAIモデルリポジトリHugging Faceが自律型AIエージェントシステムにより本番インフラを侵害され内部データセット・認証情報を窃取された事案が最大の焦点（バースト検出閾値超過・本編採用）。参考Bとして、JadePufferがEncForgeでAIモデルデータをランサムウェア暗号化する進化、Cursor/Codex/Gemini CLI/Antigravityのサンドボックス回避、AI支援フィッシングツールキット（WebDAV配信）、Gemini CLIを悪用した小規模ボットネット制御の4件を確認した。攻撃側・防御側の双方でAIエージェントの自律実行が現実の運用に組み込まれつつある傾向が鮮明。
+
+本日の集計:
+AI攻撃 — 本編1件 / 参考A0件 / 参考B4件 / 除外0件
+カテゴリ内訳: A（武器化）3件 / B（攻撃対象）1件 / C（インフラ）1件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】（Section 1: AI攻撃）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（本日除外エントリなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当の新規事象なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 不明（ロシア情報機関・具体的な部隊名は本勧告で未特定）（別名: なし / 国家帰属: RU / 帰属信頼度: medium）
+活動タイプ: 新規キャンペーン / 公式帰属
+------------------------------------------------------------
+
+採用契機: Q・V
+標的: defense・critical_infrastructure・government / Europe・NATO・オランダ・ウクライナ
+マルウェア: （カスタムマルウェア不使用・露出機器の侵害と画像認識ソフトを使用）
+
+【24時間以内の変化】
+[The Hacker News 2026-07-20] オランダの民生・軍事情報機関AIVD/MIVDが2026-07-10に公開した合同勧告を報道。ロシア情報機関が露出IPカメラを侵害しNATO加盟国・ウクライナの軍事物流を監視していると確認
+
+【概要】
+オランダの情報機関AIVD（民生）およびMIVD（軍事）は2026-07-10、少なくとも1つのロシア情報機関がオランダ・EU/NATO加盟国・ウクライナのインターネット接続IPカメラを組織的に侵害し軍事的価値のある情報を収集していると合同勧告で確認した。攻撃者は露出機器をスキャンしブランドを指紋認識、デフォルトパスワード・旧ファームウェア・工場出荷設定のまま運用されているカメラに侵入し、画像認識ソフトで映像から軍用車両と積載貨物を自動検索する。ウクライナ向け武器輸送ルートや部隊位置の監視に加え、ウクライナではカメラアクセスが軍人の無力化・装備破壊の試みに用いられたと情報機関は述べている。作戦は継続中。帰属は「少なくとも1つのロシア情報機関」に留まり具体的部隊名は勧告で特定されていない。
+
+攻撃の流れ（判明分）:
+1. インターネット上の露出IPカメラをスキャンしブランドを指紋認識（偵察）
+2. デフォルトパスワード・旧ファームウェアのカメラへ侵入し映像フィードにアクセス
+3. 画像認識で軍用車両・貨物・部隊位置を自動抽出し軍事物流の監視・標的化に利用
+
+【新規TTP】
+・[T1595] Active Scanning — インターネット上の露出IPカメラをスキャンしブランド指紋認識で標的を選別
+・[T1078] Valid Accounts — デフォルトパスワード・工場出荷認証情報のまま運用されたカメラへログイン
+・[T1125] Video Capture — 侵害カメラの映像フィードを取得し画像認識で軍事物流を監視
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・IPカメラ・監視機器運用組織はデフォルトパスワードの変更・ファームウェア更新・インターネット直接露出の遮断を徹底する。特に軍事施設・防衛産業・重要インフラ周辺および輸送ルート沿いの民間カメラは第三者からの遠隔アクセス可否を点検する
+・[ネットワークログ / SIEM] 外部IPからカメラ管理/RTSPポートへの反復アクセスを監視する
+Splunk SPL: index=network (dest_category="ip_camera" OR dest_port IN (554,80,8000)) src_ip_is_external=true | stats count by src_ip,dest_ip | where count > 5
+→ 外部IPからカメラ管理/RTSPポートへの反復アクセスに注目。正規の遠隔監視サービスとの誤検知を除外する
+
+【参照】
+https://thehackernews.com/2026/07/russian-intelligence-hacks-ip-cameras.html
+https://therecord.media/russian-intelligence-compromising-cameras-nato-ukraine-netherlands
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Cavern Manticore（イラン情報安全保障省/MOIS帰属・Group-IB高確度・MuddyWater/Lyceumと重複） / Group-IBは2026-07-20、Windows向け新規バックドア「HollowGraph」を公開した。侵害M365メールボックスのカレンダーをC2として悪用し、2050年5月13日付のカレンダー予定にコマンドと窃取ファイル（添付形式）を秘匿してMicrosoft Graph API経由でやり取りする.NET NativeAOTコンパイル済みDLLである。RSA+AES-256-GCMのハイブリッド暗号で通信を保護し、DNS経由（AAAAレコード・cloudlanecdn[.]com）でEntra ID認証情報を更新（logAzure.txtに保存）する。Group-IBはコマンド構文・内部タスキングの一致から既報Cavern C2フレームワーク（イランMOIS系Cavern Manticoreに帰属）に高確度で紐付けた。指標はイスラエルの組織を標的とする諜報を示唆し、感染12システム・最古の通信は2026-06-03。既報CavernManticore-2026-SysAidC2Framework（2026-07-07注目動向採用）への新規ツール追加としてステータス更新。 採用契機: R・S。帰属信頼度: high。
+推奨アクション: M365/Entra ID環境でMicrosoft Graph API経由のカレンダー予定の異常作成（極端な未来日付・非対話的アプリからの操作）を監視し、OAuthアプリ登録・アプリシークレットの棚卸しを行う。cloudlanecdn[.]comへのDNS問い合わせ、logAzure.txtの生成を確認する。
+Splunk SPL: index=o365 OR sourcetype=o365:management:activity Operation="*CalendarItem*" | search ItemName="*2050*" | table _time,UserId,ClientAppId,Operation
+→ 2050年等の極端な未来日付を持つカレンダー予定の自動作成、非対話的アプリID経由のGraph操作に注目
+参照: https://www.group-ib.com/blog/hollowgraph-microsoft-365/
+https://thehackernews.com/2026/07/hollowgraph-malware-hides-c2-and-stolen.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+※ 注目CVE（トラックB・製品単位に紐付かない高インパクト事象）: 該当なし（本窓のCVEはいずれも製品特定可能なトラックA帰属でSection 3へ）
+
+・[トレンド記事] FakeGitキャンペーン: 7,600の偽GitHubリポジトリでSmartLoaderを配布（800超がAIスキル/MCPサーバを偽装）
+研究者が約7,600の悪意あるGitHubリポジトリを発見し、うち800超がAIスキルまたはModel Context Protocol（MCP）サーバを装ってSmartLoaderマルウェアを配布していると報告した（キャンペーン名FakeGit）。コピーしたプロジェクト・そっくりの開発者プロフィール・説得力あるREADME・悪意あるZIPを組み合わせて被害者を誘導する。AI関連の題材をルアーに使う大規模な配布インフラであり、開発者・AI利用者にとってサプライチェーン/ダウンロードリスクとなる。
+参照: https://thehackernews.com/2026/07/fakegit-campaign-uses-7600-github.html
+
+・[トレンド記事] Ernst & Young データ侵害: 第三者管理プラットフォーム経由で個人・金融情報が流出
+大手会計事務所Ernst & Young（EY）で、第三者の管理プラットフォームから氏名・住所・社会保障番号・クレジット/デビットカード番号等が窃取されたデータ侵害が公表された。攻撃者・侵入手口は本報道時点で明示されていない。専門サービス業大手のサードパーティ経由侵害事例としてSOC観点で把握対象。
+参照: https://www.securityweek.com/ernst-young-data-breach-affects-personal-financial-information
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: WP2Shell（CVE-2026-63030/CVE-2026-60137）未パッチWordPress環境は強制自動更新の適用確認とCISA KEV初回追加への備えを72時間内に優先すべき
+Tier: 1
+確度: 中
+観測出口クラス: E1（CISA KEV初回追加）
+検証窓: fast_72h
+検証期限: 2026-07-24
+Evidence: [SecurityWeek 2026-07-20/Dark Reading 2026-07-21] wp2shell（CVE-2026-63030+CVE-2026-60137）の実環境悪用が開示直後から開始され複数ベンダーが確認。開示3日で広範な悪用試行。WordPress.orgが強制自動更新を有効化
+過去パターン: 類似3件（outcome_channel=E1・製品カテゴリ=cms_plugin/T1190）中 的中1・部分0・外れ2（経験的的中率33%・observed_gate_passed=true）。（過去実績）
+確度アンカー: EPSS percentile 0.9467（0.95未満）/ KEV未登録 / SSVC=Act / Automatable=yes / EPSS算出日2026-07-20
+ベースレート見積もり: 0.35（実悪用複数ベンダー確認・大規模スキャン継続を反映。過去実績33%と整合）
+推定部分: （推測）実悪用が複数ベンダーで確認され大規模スキャンが継続していることからCISAが72時間以内にKEVへ初回追加する可能性が高いと推論する。ただしKEV未登録かつEPSSパーセンタイル0.9467<0.95のため確度=高の定量ゲートDを満たさず確度=中とする。
+先回り監視: 自組織WAF/WebサーバでのREST APIバッチエンドポイント（/wp-json/*batch*）への反復POST・author__not_inを含むクエリの急増、6.9.5/7.0.2未満バージョンからの応答
+的中判定: CISAがCVE-2026-63030またはCVE-2026-60137をKEVカタログへ初回追加した場合（dateAddedが2026-07-21以降と一致）
+除外条件: 他機関リストへの追加・既存エントリ更新・再登録は非的中（M4）。国内被害報道・悪用拡大の曖昧観測は的中とみなさない
+
+・予報2: ServiceNow AI Platform（CVE-2026-6875）未更新インスタンスは事前認証RCEの緊急更新とCISA KEV初回追加への備えを優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1（CISA KEV初回追加）
+検証窓: fast_72h
+検証期限: 2026-07-24
+Evidence: [BleepingComputer 2026-07-20] 脅威インテリジェンス企業DefusedがCVE-2026-6875の実環境悪用開始を確認（初回試行は金曜、週末に継続）。事前認証RCE・Fortune 500の85%が利用
+過去パターン: 類似3件（outcome_channel=E1・T1190）中 的中1・部分0・外れ2（経験的的中率33%・observed_gate_passed=true）。（過去実績）
+確度アンカー: EPSS percentile 0.4011 / KEV未登録 / SSVC=Attend / Automatable=yes / EPSS算出日2026-07-20
+ベースレート見積もり: 0.25（悪用確認は単一ソース・EPSS低のため予報1より低く見積もる）
+推定部分: （推測）事前認証RCEの実悪用が確認され製品が広範に使われることからKEV追加の可能性はあるが、悪用確認は単一ソース（Defused）でありEPSSパーセンタイルも0.40と低く、ServiceNow自身は自インスタンスへの悪用を把握していないとしている。確度=高/中の定量条件を満たさないため確度=低とする（M1は通過）。
+先回り監視: ServiceNowインスタンスの/assessment_thanks.do等事前認証エンドポイントへの反復アクセス・非対話的User-Agentの急増
+的中判定: CISAがCVE-2026-6875をKEVカタログへ初回追加した場合（dateAddedが2026-07-21以降と一致）
+除外条件: 他機関リストへの追加・既存エントリ更新・再登録は非的中（M4）。ベンダーによる翻訳・紹介のみは的中とみなさない
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】（Section 2: APT活動）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（本日除外エントリなし）
+
+本日の集計:
+APT — 本編1件 / 注目動向1件 / 除外0件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用CVEなし。国内報道・注意喚起が確認されず軸2が本編閾値に未達）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考情報A該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-6875 / ServiceNow AI Platform（旧 Now Platform）
+CVSS: 未公表 (Critical)
+何が起きているか。事前認証サンドボックス回避によるリモートコード実行。脅威インテリジェンス企業Defusedが2026-07-17（金）以降の実環境悪用を確認（初回試行は金曜、週末に継続）。攻撃はSearchlight Cyberが2026-04-01報告の事前認証シンク（/assessment_thanks.do）を突くが公開PoCと別ルートで同一コード実行プリミティブに到達。同プラットフォームはFortune 500の85%が利用し露出は極めて広い。国内波及経路: グローバルSaaS/自己ホスト型のため国内利用組織も対象。CISA KEV未登録。対処: 自己ホスト型は2026-07-13リリースの更新、ホスト型は2026年4月対応済みへの適用を確認する。
+IoC: 確認されず
+
+監視: [ServiceNowアプリログ] 事前認証エンドポイントへの異常アクセスを監視
+Splunk SPL: index=servicenow OR sourcetype=servicenow:* uri_path="*/assessment_thanks.do" | stats count by src_ip, http_user_agent | where count > 10
+→ 認証前エンドポイントへの反復アクセス・非対話的User-Agentに注目。正規の評価ワークフロー完了トラフィックとの誤検知を除外する
+
+参照: https://www.bleepingcomputer.com/news/security/critical-servicenow-code-execution-flaw-now-exploited-in-attacks
+
+・CVE-2026-63030 / WordPress Core（wp2shell RCEチェーン・REST APIバッチルート混同）
+CVSS: 9.8 (Critical)
+何が起きているか。既報のPoC公開段階（2026-07-19参考B採用）から状態が進み、CVE-2026-60137（SQLi）と連鎖する未認証RCEチェーン「wp2shell」の実環境悪用が開示直後から複数ベンダー（SecurityWeek/Dark Reading/VulnCheck/Rapid7/Tenable）により確認された。プラグインなしの素のWordPressでも悪用可能。WordPress.orgは強制自動更新を有効化。CNA（WPScan）CVSS9.8・CISA-ADP 7.5と乖離があるが高い方を正とする。CISA KEV未登録。EPSSパーセンタイル0.9467。国内波及経路: WordPressは国内でも広範に利用され攻撃対象面が大きい。対処: 6.9.5 / 7.0.2 への更新を確認する。
+IoC: 確認されず
+
+監視: [Webアクセスログ] REST APIバッチエンドポイントへの異常POSTを監視
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/wp-json/*batch*" method=POST | stats count by src_ip | where count > 20
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/wp-json/*" (uri_query="*author__not_in*") | table _time,src_ip,uri
+→ バッチルートへの反復POST・author__not_inを含むクエリに注目。正規プラグインのバッチ利用との誤検知を除外し、6.9.5/7.0.2未満のバージョン応答と併せて確認する
+
+参照: https://www.securityweek.com/wp2shell-wordpress-vulnerabilities-exploited-in-the-wild
+https://www.darkreading.com/cyberattacks-data-breaches/wp2shell-millions-wordpress-sites-remote-takeover
+
+・CVE-2026-60137 / WordPress Core（WP_Query author__not_in・wp2shellチェーン構成要素）
+CVSS: 9.1 (Critical)
+何が起きているか。WP_Query author__not_in未サニタイズSQLインジェクション。CVE-2026-63030（バッチルート混同）との連鎖で未認証RCEに拡大し、複数ベンダーが実悪用を確認。単体では境界のあるSQLiだが連鎖で危険度が上がる。CISA-ADP評価CVSS9.1（CNAは5.9）。CISA KEV未登録。EPSSパーセンタイル0.8947。対処: 6.9.5 / 7.0.2 への更新を確認する。
+IoC: 確認されず
+
+監視: [Webアクセスログ] CVE-2026-63030と同一（wp2shellチェーン）
+Splunk SPL: index=web sourcetype=access_combined uri_query="*author__not_in*" | stats count by src_ip,uri
+→ CVE-2026-63030のバッチルート監視と併せて評価する
+
+参照: https://www.securityweek.com/wp2shell-wordpress-vulnerabilities-exploited-in-the-wild
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】（Section 3: 製品別CVE）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-14266 (7-Zip) → 2026-07-20分レポートで既報（ZDI-26-444・26.02で修正済み）。THN 2026-07-20報道は同内容の再掲で新規の実悪用・KEV登録等の変化なし
+・CVE-2026-15409 (SonicWall SMA1000) → 2026-07-20分レポート（UTA0533/Volexity）で既報。SecurityWeek 2026-07-20報道は同一の事前悪用事案の再掲で新規事実なし
+・CVE-2026-15410 (SonicWall SMA1000) → CVE-2026-15409と同一事案（UTA0533）・既報・変化なし
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B3件 / 除外3件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Google Chrome 150 追加更新: 7件のメモリ安全性脆弱性（6件がuse-after-free）を修正
+観点: CVE関連
+採用契機: β/γ
+------------------------------------------------------------
+
+優先度: 中
+対象: Google Chrome（デスクトップ）
+
+【24時間以内の変化】
+[SecurityWeek 2026-07-20] Chrome 150追加更新が7件のメモリ安全性脆弱性を修正。CameraCapture/GPU/Networkの3件がcritical、Cast/Ozone/Auraの3件がhighのuse-after-free、V8のOOB読み書き1件（OpenAI Codex Security報告）。実悪用の証跡なし
+
+【概要】
+Googleが公開したChrome 150の追加更新は、CameraCapture・GPU・Networkのcritical級use-after-free3件、Cast・Ozone・Auraのhigh級use-after-free3件、およびV8 JavaScriptエンジンの境界外読み書き1件（OpenAI Codex Securityが報告）の計7件のメモリ安全性脆弱性を修正する。いずれも実悪用の証跡はないが、ブラウザは広く利用される攻撃対象面でありレンダラ侵害の起点となり得るため、組織のブラウザフリート更新を定期パッチサイクルで確実に適用すべきである。
+
+【推奨アクション】
+・Chromeを最新安定版へ更新し、企業管理ブラウザは強制更新ポリシーの適用状況を確認する
+・V8関連の境界外読み書きはサンドボックス脱出の起点となり得るため、優先的に展開する
+・[エンドポイント] Chromeバージョン分布の棚卸し
+Splunk SPL: index=endpoint sourcetype=software_inventory product="Google Chrome" | stats values(version) by Computer
+→ 旧バージョン残存端末を可視化し更新漏れを特定する
+
+【参照】
+https://www.securityweek.com/chrome-150-update-patches-severe-memory-safety-bugs
+
+------------------------------------------------------------
+2. OpenSSLが「HollowByte」DoS脆弱性をサイレント修正
+観点: CVE関連
+採用契機: γ/β
+------------------------------------------------------------
+
+優先度: 中
+対象: OpenSSL
+
+【24時間以内の変化】
+[SecurityWeek 2026-07-20] OpenSSLが「HollowByte」と呼ばれるDoS脆弱性を明示的な公表なしに修正。攻撃者が悪意あるペイロードを大量送信するとバッファ事前割当が解放されずサーバメモリを枯渇させ得る
+
+【概要】
+OpenSSLが「HollowByte」と呼ばれるサービス拒否（DoS）脆弱性をサイレント（明示的アドバイザリなし）に修正した。攻撃者が悪意あるペイロードを波状に送信するとバッファの事前割当が解放されずサーバメモリが枯渇し得る。OpenSSLは広範に組み込まれるため、依存製品のパッチ追随とTLS終端のリソース枯渇監視をSOCとして把握しておくべきである。
+
+【推奨アクション】
+・利用中のOpenSSLおよびそれを組み込む製品の更新状況を確認し、修正版への追随を計画する
+・TLS終端サーバのメモリ使用量の異常上昇を監視する
+・[インフラメトリクス] TLS終端サーバのメモリ枯渇兆候を監視
+Splunk SPL: index=infra sourcetype=metrics process="*ssl*" OR process="nginx" | timechart avg(mem_used_pct) by host | where avg(mem_used_pct) > 90
+→ 特定の接続波と相関するメモリ増加に注目。通常負荷変動との誤検知を接続数と相関させて除外する
+
+【参照】
+https://www.securityweek.com/openssl-silently-fixes-hollowbyte-dos-vulnerability
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】（Section 4: SOC推奨情報）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（本日除外エントリなし）
+
+本日の集計:
+SOC推奨情報 — 高0件 / 中2件 / 低0件 / 除外0件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本日の総合集計】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B3件 / 除外3件
+APT — 本編1件 / 注目動向1件 / 除外0件
+AI攻撃 — 本編1件 / 参考A0件 / 参考B4件 / 除外0件
+SOC推奨情報 — 高0件 / 中2件 / 低0件 / 除外0件
+攻撃予報 — 2件（予報1: WP2Shell KEV初回追加 T1/E1/fast_72h/確度中 / 予報2: ServiceNow KEV初回追加 T1/E1/fast_72h/確度低）
+
+========================================

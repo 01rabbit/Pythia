@@ -1,0 +1,70 @@
+========================================
+セキュリティインテリジェンス日報 — Section 4: SOC推奨情報
+調査日時: 2026-07-21 07:30 JST
+調査期間: 2026-07-20 07:00 〜 2026-07-21 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Google Chrome 150 追加更新: 7件のメモリ安全性脆弱性（6件がuse-after-free）を修正
+観点: CVE関連
+採用契機: β/γ
+------------------------------------------------------------
+
+優先度: 中
+対象: Google Chrome（デスクトップ）
+
+【24時間以内の変化】
+[SecurityWeek 2026-07-20] Chrome 150追加更新が7件のメモリ安全性脆弱性を修正。CameraCapture/GPU/Networkの3件がcritical、Cast/Ozone/Auraの3件がhighのuse-after-free、V8のOOB読み書き1件（OpenAI Codex Security報告）。実悪用の証跡なし
+
+【概要】
+Googleが公開したChrome 150の追加更新は、CameraCapture・GPU・Networkのcritical級use-after-free3件、Cast・Ozone・Auraのhigh級use-after-free3件、およびV8 JavaScriptエンジンの境界外読み書き1件（OpenAI Codex Securityが報告）の計7件のメモリ安全性脆弱性を修正する。いずれも実悪用の証跡はないが、ブラウザは広く利用される攻撃対象面でありレンダラ侵害の起点となり得るため、組織のブラウザフリート更新を定期パッチサイクルで確実に適用すべきである。
+
+【推奨アクション】
+・Chromeを最新安定版へ更新し、企業管理ブラウザは強制更新ポリシーの適用状況を確認する
+・V8関連の境界外読み書きはサンドボックス脱出の起点となり得るため、優先的に展開する
+・[エンドポイント] Chromeバージョン分布の棚卸し
+Splunk SPL: index=endpoint sourcetype=software_inventory product="Google Chrome" | stats values(version) by Computer
+→ 旧バージョン残存端末を可視化し更新漏れを特定する
+
+【参照】
+https://www.securityweek.com/chrome-150-update-patches-severe-memory-safety-bugs
+
+------------------------------------------------------------
+2. OpenSSLが「HollowByte」DoS脆弱性をサイレント修正
+観点: CVE関連
+採用契機: γ/β
+------------------------------------------------------------
+
+優先度: 中
+対象: OpenSSL
+
+【24時間以内の変化】
+[SecurityWeek 2026-07-20] OpenSSLが「HollowByte」と呼ばれるDoS脆弱性を明示的な公表なしに修正。攻撃者が悪意あるペイロードを大量送信するとバッファ事前割当が解放されずサーバメモリを枯渇させ得る
+
+【概要】
+OpenSSLが「HollowByte」と呼ばれるサービス拒否（DoS）脆弱性をサイレント（明示的アドバイザリなし）に修正した。攻撃者が悪意あるペイロードを波状に送信するとバッファの事前割当が解放されずサーバメモリが枯渇し得る。OpenSSLは広範に組み込まれるため、依存製品のパッチ追随とTLS終端のリソース枯渇監視をSOCとして把握しておくべきである。
+
+【推奨アクション】
+・利用中のOpenSSLおよびそれを組み込む製品の更新状況を確認し、修正版への追随を計画する
+・TLS終端サーバのメモリ使用量の異常上昇を監視する
+・[インフラメトリクス] TLS終端サーバのメモリ枯渇兆候を監視
+Splunk SPL: index=infra sourcetype=metrics process="*ssl*" OR process="nginx" | timechart avg(mem_used_pct) by host | where avg(mem_used_pct) > 90
+→ 特定の接続波と相関するメモリ増加に注目。通常負荷変動との誤検知を接続数と相関させて除外する
+
+【参照】
+https://www.securityweek.com/openssl-silently-fixes-hollowbyte-dos-vulnerability
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】（Section 4: SOC推奨情報）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（本日除外エントリなし）
+
+本日の集計:
+SOC推奨情報 — 高0件 / 中2件 / 低0件 / 除外0件

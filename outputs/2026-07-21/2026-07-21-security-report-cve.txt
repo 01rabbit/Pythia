@@ -1,0 +1,79 @@
+========================================
+セキュリティインテリジェンス日報 — Section 3: 製品別CVE
+調査日時: 2026-07-21 07:30 JST
+調査期間: 2026-07-20 07:00 〜 2026-07-21 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用CVEなし。国内報道・注意喚起が確認されず軸2が本編閾値に未達）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考情報A該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-6875 / ServiceNow AI Platform（旧 Now Platform）
+CVSS: 未公表 (Critical)
+何が起きているか。事前認証サンドボックス回避によるリモートコード実行。脅威インテリジェンス企業Defusedが2026-07-17（金）以降の実環境悪用を確認（初回試行は金曜、週末に継続）。攻撃はSearchlight Cyberが2026-04-01報告の事前認証シンク（/assessment_thanks.do）を突くが公開PoCと別ルートで同一コード実行プリミティブに到達。同プラットフォームはFortune 500の85%が利用し露出は極めて広い。国内波及経路: グローバルSaaS/自己ホスト型のため国内利用組織も対象。CISA KEV未登録。対処: 自己ホスト型は2026-07-13リリースの更新、ホスト型は2026年4月対応済みへの適用を確認する。
+IoC: 確認されず
+
+監視: [ServiceNowアプリログ] 事前認証エンドポイントへの異常アクセスを監視
+Splunk SPL: index=servicenow OR sourcetype=servicenow:* uri_path="*/assessment_thanks.do" | stats count by src_ip, http_user_agent | where count > 10
+→ 認証前エンドポイントへの反復アクセス・非対話的User-Agentに注目。正規の評価ワークフロー完了トラフィックとの誤検知を除外する
+
+参照: https://www.bleepingcomputer.com/news/security/critical-servicenow-code-execution-flaw-now-exploited-in-attacks
+
+・CVE-2026-63030 / WordPress Core（wp2shell RCEチェーン・REST APIバッチルート混同）
+CVSS: 9.8 (Critical)
+何が起きているか。既報のPoC公開段階（2026-07-19参考B採用）から状態が進み、CVE-2026-60137（SQLi）と連鎖する未認証RCEチェーン「wp2shell」の実環境悪用が開示直後から複数ベンダー（SecurityWeek/Dark Reading/VulnCheck/Rapid7/Tenable）により確認された。プラグインなしの素のWordPressでも悪用可能。WordPress.orgは強制自動更新を有効化。CNA（WPScan）CVSS9.8・CISA-ADP 7.5と乖離があるが高い方を正とする。CISA KEV未登録。EPSSパーセンタイル0.9467。国内波及経路: WordPressは国内でも広範に利用され攻撃対象面が大きい。対処: 6.9.5 / 7.0.2 への更新を確認する。
+IoC: 確認されず
+
+監視: [Webアクセスログ] REST APIバッチエンドポイントへの異常POSTを監視
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/wp-json/*batch*" method=POST | stats count by src_ip | where count > 20
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/wp-json/*" (uri_query="*author__not_in*") | table _time,src_ip,uri
+→ バッチルートへの反復POST・author__not_inを含むクエリに注目。正規プラグインのバッチ利用との誤検知を除外し、6.9.5/7.0.2未満のバージョン応答と併せて確認する
+
+参照: https://www.securityweek.com/wp2shell-wordpress-vulnerabilities-exploited-in-the-wild
+https://www.darkreading.com/cyberattacks-data-breaches/wp2shell-millions-wordpress-sites-remote-takeover
+
+・CVE-2026-60137 / WordPress Core（WP_Query author__not_in・wp2shellチェーン構成要素）
+CVSS: 9.1 (Critical)
+何が起きているか。WP_Query author__not_in未サニタイズSQLインジェクション。CVE-2026-63030（バッチルート混同）との連鎖で未認証RCEに拡大し、複数ベンダーが実悪用を確認。単体では境界のあるSQLiだが連鎖で危険度が上がる。CISA-ADP評価CVSS9.1（CNAは5.9）。CISA KEV未登録。EPSSパーセンタイル0.8947。対処: 6.9.5 / 7.0.2 への更新を確認する。
+IoC: 確認されず
+
+監視: [Webアクセスログ] CVE-2026-63030と同一（wp2shellチェーン）
+Splunk SPL: index=web sourcetype=access_combined uri_query="*author__not_in*" | stats count by src_ip,uri
+→ CVE-2026-63030のバッチルート監視と併せて評価する
+
+参照: https://www.securityweek.com/wp2shell-wordpress-vulnerabilities-exploited-in-the-wild
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】（Section 3: 製品別CVE）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-14266 (7-Zip) → 2026-07-20分レポートで既報（ZDI-26-444・26.02で修正済み）。THN 2026-07-20報道は同内容の再掲で新規の実悪用・KEV登録等の変化なし
+・CVE-2026-15409 (SonicWall SMA1000) → 2026-07-20分レポート（UTA0533/Volexity）で既報。SecurityWeek 2026-07-20報道は同一の事前悪用事案の再掲で新規事実なし
+・CVE-2026-15410 (SonicWall SMA1000) → CVE-2026-15409と同一事案（UTA0533）・既報・変化なし
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B3件 / 除外3件
