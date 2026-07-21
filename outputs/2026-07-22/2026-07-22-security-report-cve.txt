@@ -1,0 +1,115 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-22 07:30 JST
+調査期間: 2026-07-21 07:00 〜 2026-07-22 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1 8点以上かつ軸2 4点以上の該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Drupalプラグイン「AI Agents」における不正な認証の脆弱性
+
+・CVE-2026-13236 / Drupal「AI Agents」モジュール
+CVSS: v3 6.5/v4 7.1 状態: 実悪用・PoC・ゼロデイいずれも未確認
+
+【24時間以内の変化】
+[JVN iPedia 2026-07-21] JVNDB-2026-000101としてDrupal「AI Agents」モジュールの不適切なアクセス制御脆弱性を新規公開
+
+【概要】
+Drupalの「AI Agents」モジュール（1.1.4以前、1.2.0〜1.2.4、1.3.0）に不適切なアクセス制御（CWE-863）の脆弱性CVE-2026-13236が確認された。パスワードチェックの回避によるアカウント乗っ取りの可能性がある。CVSS v3は6.5（Medium）、CVSS v4は7.1（High）。JVN（JPCERT/CCとIPAの共同運営）が本日新規公開し、実悪用・PoC公開は確認されていない。EPSSパーセンタイルは4.2%と低水準。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース] Drupalサイトのアクセスログでの認証関連異常（パスワード検証をバイパスしたと疑われる連続ログイン試行等）監視
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/ai-agents/*" | stats count by clientip, status
+→ AI Agentsモジュールを導入しているDrupalサイトの棚卸しと最新版への更新を優先する
+
+【参照】
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-000101.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [Drupalプラグイン「AI Agents」における不正な認証の脆弱性] https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-000101.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-50522 / Microsoft SharePoint Server
+CVSS: v3 9.8
+Microsoft SharePoint Server（オンプレミス版）のデシリアライゼーション脆弱性CVE-2026-50522（CVSS9.8）が2026年7月Patch Tuesdayで修正された後、GitHub上の公開PoC（researcher Janggggg）を用いた未認証リモートコード実行の実環境悪用が確認された。攻撃者は/_trust/default.aspxエンドポイントへ細工したSecurityContextTokenクッキーを送り.NET BinaryFormatterペイロードをデシリアライズさせてコード実行に至り、さらにマシンキーを窃取することでパッチ適用後も偽造した認証トークンによる持続的アクセスを維持できる。DEVCORE研究者splitlineが脆弱性発見者。watchTowrのハニーポットとDefusedが独立して実環境侵害を確認した。CISA KEVへの登録は本レポート時点で未確認。
+IoC: 確認されず
+
+監視: [ログ] IIS/SharePointログでの/_trust/default.aspxへの異常POST、ASP.NETマシンキーのローテーション履歴、AMSI/EDRでのBinaryFormatterデシリアライゼーション検知
+Splunk SPL: index=iis sourcetype=iis uri_stem="*/_trust/default.aspx*" method=POST | stats count by clientip, cs_cookie | where count > 5
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*w3wp.exe*" | search CommandLine="*powershell*" OR CommandLine="*cmd.exe*"
+→ SharePoint関連の既存悪用チェーン（CVE-2026-58644/56164/45659）と同一手口（マシンキー窃取→トークン偽造）のため、パッチ適用済みでもマシンキーのローテーションを実施していない環境は引き続きリスクが残る点に注意
+
+参照: https://thehackernews.com/2026/07/critical-sharepoint-rce-cve-2026-50522.html
+参照: https://www.bleepingcomputer.com/news/security/critical-sharepoint-rce-flaw-exploited-to-steal-machine-keys
+・CVE-2026-0257 / PAN-OS（GlobalProtect Portal / Gateway）
+CVSS: v3 7.8
+Palo Alto Networks PAN-OSの認証バイパス脆弱性CVE-2026-0257（CVSS7.8）は認証オーバーライドCookieが有効かつ特定の証明書構成の環境で、未認証攻撃者が正規の認証情報なしにSSL VPNセッションを確立できる。Arctic Wolf Labsは2026年6月以降、Qilin RaaS傘下の複数アフィリエイトがこの脆弱性を悪用し初期アクセスを獲得したインシデントを確認したと公表した。攻撃者はC:\PerfLogs\にランサムウェアペイロードを配置し、PsExecで管理共有経由の横展開、Windows Defenderのリアルタイム保護無効化、イベントログの包括的な消去を実施した後、暗号化を行う。データ窃取を伴う二重恐喝型と暗号化のみの侵害の両方が確認されている。CISA KEVには2026-05-29から登録済み（既知ランサムウェアキャンペーン悪用フラグ=Known）。
+IoC: 確認されず
+
+監視: [ログ] PAN-OS GlobalProtectログでの異常な認証オーバーライドCookieセッション確立、Windows側でのDefender無効化イベント・イベントログクリアイベント・PsExec実行
+Splunk SPL: index=paloalto sourcetype=pan:globalprotect | search auth_method="cookie" | stats count by user, src_ip
+Splunk SPL: index=wineventlog EventCode=1102 OR (EventCode=7040 Service="WinDefend") | stats count by ComputerName
+→ イベントログクリア（EventCode 1102）とDefender停止イベントの近接発生はランサムウェア展開直前の強いシグナルであり、検知時は即座にホスト隔離を判断する
+
+参照: https://thehackernews.com/2026/07/qilin-ransomware-attackers-exploit-pan.html
+参照: https://www.bleepingcomputer.com/news/security/critical-palo-alto-vpn-bug-now-exploited-by-qilin-ransomware-gang
+・CVE-2026-63030 / WordPress Core（"wp2shell" RCEチェーン）
+CVSS: v3 9.8
+WordPress Coreの「wp2shell」RCEチェーンを構成するCVE-2026-63030（REST APIバッチルート混同による未認証アクセス、CWE-436）は、CVE-2026-60137とのチェーンで実環境悪用が既に複数ベンダーにより確認済みだったが、2026-07-21付でCISA KEVカタログへ新規追加された（FCEB期限2026-07-24・BOD 26-04適用）。侵害サイトでは_/wp-content/cache/配下にランダムファイル名かつURLパラメータをパスワードとして機能させるWebシェルが設置され、CMSmapという正規プラグインを偽装した機能豊富な難読化シェルも確認されている。Macnica調査によれば対象124,580サイト中81.6%は既にパッチ適用済みだが、残る環境への大規模スキャンが継続している。
+IoC: 確認されず
+
+監視: [ログ] WordPressアクセスログでのREST APIバッチエンドポイントへの反復POST、_/wp-content/cache/配下の不審なPHPファイル生成監視
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/wp-json/*batch*" method=POST | stats count by clientip | where count > 10
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/wp-content/cache/*.php" | stats count by uri_path, clientip
+→ CVE-2026-60137のauthor__not_inパラメータを含む異常クエリと組み合わせて検知精度を高める。7.0.2/6.9.5未満のバージョン表示があれば優先対応
+
+参照: https://thehackernews.com/2026/07/wordpress-wp2shell-exploitation-grows.html
+参照: https://www.bleepingcomputer.com/news/security/critical-wp2shell-wordpress-flaws-exploited-to-install-webshells
+・CVE-2026-60137 / WordPress Core（WP_Query author__not_in・wp2shellチェーン構成要素）
+CVSS: v3 9.1
+WordPress CoreのWP_Query author__not_inパラメータ未サニタイズによるSQLインジェクション（CVE-2026-60137）はCVE-2026-63030とチェーンして未認証RCEに至る「wp2shell」構成要素であり、CVE-2026-63030と同日（2026-07-21）にCISA KEVへ新規追加された（FCEB期限2026-08-04）。単独では低リスクだがチェーン全体としての深刻度が高い。
+IoC: 確認されず
+
+監視: [ログ] WP_Query author__not_inを含む異常クエリパラメータの監視（CVE-2026-63030と合わせて評価）
+Splunk SPL: index=web sourcetype=access_combined uri_query="*author__not_in*" | stats count by clientip
+→ CVE-2026-63030側のWebシェル設置ログと突合し同一送信元IPからの連続アクセスを優先確認する
+
+参照: https://thehackernews.com/2026/07/wordpress-wp2shell-exploitation-grows.html
+・CVE-2026-6875 / ServiceNow AI Platform（旧 Now Platform）
+CVSS: v3 9.5
+ServiceNow AI Platformの事前認証サンドボックス回避RCE CVE-2026-6875（CVSS9.5）について、脅威インテリジェンス企業Defusedが2026-07-17以降の実環境悪用開始を継続確認しており、本日新たにCVSSスコア9.5（Critical）が確定情報として報じられた。/assessment_thanks.doエンドポイントへのPOSTリクエストで未認証コード実行に至る。ServiceNowは自社がホストするインスタンスでは悪用の証跡を観測していないとしつつ、Brazil/Australia/Zurich/Yokohama各リリースでのパッチ適用を推奨している。CISA KEVには本レポート時点で未登録。
+IoC: 確認されず
+
+監視: [ログ] ServiceNowインスタンスの/assessment_thanks.do等事前認証エンドポイントへの異常アクセス監視
+Splunk SPL: index=servicenow_logs uri_path="*/assessment_thanks.do*" method=POST | stats count by src_ip
+→ 自己ホスト型・オンプレミス連携プロキシで悪用が確認されているため、SaaS版のみと過信せず接続先プロキシのログも点検する
+
+参照: https://thehackernews.com/2026/07/critical-servicenow-ai-platform-flaw.html
+参照: https://www.securityweek.com/exploitation-of-servicenow-vulnerability-seen-days-after-disclosure
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に除外CVEなし）
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A1件 / 参考B5件 / 除外0件
+
+
+========================================
