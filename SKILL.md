@@ -52,12 +52,22 @@ Section 4: SOC推奨情報
 ## 実行手順
 
 ### Step 0: 時刻確認・期間確定
-- 現在時刻（JST）を取得する
+- 現在時刻（JST）を取得する。**実行環境のシステム時計は UTC である**ため、
+  必ず `TZ='Asia/Tokyo' date '+%Y-%m-%d %H:%M'` を実行して JST を得ること
+- **レポート日付（実施日）= 上記コマンドが返す JST の日付**とする。
+  日次 Routine は 22:30 UTC 台（= 翌日 07:30 JST）に発火するため、UTC の日付を
+  そのまま使うと**前日日付の重複レポートを生成する事故になる**（2026-07-21 発生・Issue #81）
+- 既に `outputs/<レポート日付>/` が main に存在する場合は重複実行である。
+  上書き生成せず、その旨を報告して停止する
 - 調査対象期間: 実施日前日 07:00 JST 〜 実施日 07:00 JST（固定ウィンドウ）
 
 ### Step 0.5: 機械収集データの読み込み（一次入力）
 - `security-intel-collector/data/raw/` の当日・前日分 JSON（`news-YYYY-MM-DD.json` / `cves-YYYY-MM-DD.json`、
   無ければ `news-latest.json` / `cves-latest.json`）を読み込み、`items[]` を Step 1〜2 の調査起点とする
+- **注意: raw ファイル名の日付は UTC 日付である**（collector が `utc_today_str()` で命名）。
+  06:00 JST の収集は 21:00 UTC（前日）に走るため、JST 実施日 D の当日収集分は
+  `news-(D-1).json` / `cves-(D-1).json` に入っている。迷ったら `news-latest.json` /
+  `cves-latest.json`（最新収集分）を使うこと
 - GitHub Actions（`daily-pipeline.yml`）が毎日 06:00 JST に1回自動収集するため、当日 07:00 JST 時点で当日分が蓄積されている
 - Web 検索は data/raw に無い情報の補完としてのみ使用する（再現性確保のため）
 - data/raw が取得できない・空の場合はその旨をレポート meta に記録し、Web 検索へフォールバックする
