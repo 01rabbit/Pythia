@@ -2,7 +2,7 @@
   "_schema_version": "1.1",
   "_observation_date": "2026-07-20",
   "_normalization_mode": "source_explicit_all",
-  "_normalization_note": "Section 3 製品別CVEは0件（NGINX CVE-2026-42533は既報・変化なしのため除外）。Section 1 AI攻撃は0件。observationsはSection 2 APT活動3件（HelloNet/UAC-0145/UTA0533）のみ。",
+  "_normalization_note": "Section 2 APT活動3件（HelloNet/UAC-0145/UTA0533）に加え、同日重複実行分（PR #77・2026-07-20 07:50 JST生成）から突合統合した観測を収録: wp2shell RCEチェーン（CVE-2026-63030/CVE-2026-60137・Section3参考情報B帰属）のCVE観測2件を追加し、UTA0533観測（obs-003）へSonicWall SMA1000チェーンのTechnique詳細（T1548.001 ROOTRUN/T1505.003 ORANGETAIL/T1068）とファイルパス型IoCを、UAC-0145観測（obs-002）へT1102.002（EtherHiding/正規サービスC2）とIoCを追補した。SonicWall CVE単位の重複観測は採用せずUTA0533観測1件に集約（同一事案の二重計上回避）。Section 1 AI攻撃は0件。NGINX CVE-2026-42533は既報・状態変化なしのため観測化せず（研究者異議の続報はreported-cves.mdに記録）。",
   "observations": [
     {
       "observation_id": "obs-2026-0720-001",
@@ -36,8 +36,15 @@
         }
       ],
       "target": {
-        "sectors": ["government", "energy", "education", "critical_infrastructure"],
-        "geos": ["RU"]
+        "sectors": [
+          "government",
+          "energy",
+          "education",
+          "critical_infrastructure"
+        ],
+        "geos": [
+          "RU"
+        ]
       },
       "cve": [],
       "geopolitical_signal": null,
@@ -46,7 +53,10 @@
       "summary": "ロシアの政府機関を含む複数セクターの組織が、ViPNet（InfoTeCS製）の正規アップデート配信機構を悪用した「HelloNet」キャンペーンにより侵害されたことをKasperskyが確認した。Rust製バックドアHelloBackdoorとログ消去ツールHelloCleanerが展開され、少なくとも2026年5月から活動している。",
       "verified_outcome": null,
       "related_forecast_id": null,
-      "tags": ["supply-chain", "vipnet"]
+      "tags": [
+        "supply-chain",
+        "vipnet"
+      ]
     },
     {
       "observation_id": "obs-2026-0720-002",
@@ -58,7 +68,10 @@
         "type": "news"
       },
       "actor_group": "UAC-0145",
-      "actor_aliases": ["Sandworm", "APT44"],
+      "actor_aliases": [
+        "Sandworm",
+        "APT44"
+      ],
       "techniques": [
         {
           "technique_id": "T1204",
@@ -71,20 +84,39 @@
           "sub_technique_id": "T1059.001",
           "tactic": "execution",
           "evidence": "実行されたPowerShellコマンドがマルウェア（GHETTOVIBE/SCOUTCURL）の展開に用いられたとの報告"
+        },
+        {
+          "technique_id": "T1102",
+          "sub_technique_id": "T1102.002",
+          "tactic": "command-and-control",
+          "evidence": "「Dropbox API・steamcommunity[.]com・EtherHiding（Ethereumスマートコントラクト経由）をC2に悪用」という具体的な記述があるため T1102.002（Bidirectional Communication）を付与"
         }
       ],
       "target": {
         "sectors": [],
-        "geos": ["UA"]
+        "geos": [
+          "UA"
+        ]
       },
       "cve": [],
       "geopolitical_signal": "russia_nexus",
-      "iocs": [],
+      "iocs": [
+        {
+          "value": "steamcommunity[.]com",
+          "type": "domain",
+          "defanged": true,
+          "note": "正規サービスがC2中継として悪用されているため単純ブロック非推奨"
+        }
+      ],
       "confidence": "high",
       "summary": "ウクライナのCERT-UAは、ロシアGRU系Sandworm（APT44）傘下クラスタUAC-0145が2026年春以降、侵害済みウェブサイト上の偽CAPTCHA画面でウクライナの被害者にPowerShellコマンドを実行させるClickFix手口を用いていると報告した。2026年6月・7月だけで侵害済みウェブサイト10件超を確認している。",
       "verified_outcome": null,
       "related_forecast_id": null,
-      "tags": ["clickfix", "sandworm", "initial-access"]
+      "tags": [
+        "clickfix",
+        "sandworm",
+        "initial-access"
+      ]
     },
     {
       "observation_id": "obs-2026-0720-003",
@@ -103,21 +135,147 @@
           "sub_technique_id": null,
           "tactic": "initial-access",
           "evidence": "公開VPNアプライアンスSonicWall SMAのゼロデイ脆弱性を悪用しroot権限を取得したとVolexityが報告（The Hacker News 2026-07-19経由）"
+        },
+        {
+          "technique_id": "T1548",
+          "sub_technique_id": "T1548.001",
+          "tactic": "privilege-escalation",
+          "evidence": "「setuidバイナリ/usr/bin/xzfind（ROOTRUN）を悪用してroot権限コマンド実行を獲得」という具体的な手口の記述があるため T1548.001（Setuid and Setgid）を付与"
+        },
+        {
+          "technique_id": "T1505",
+          "sub_technique_id": "T1505.003",
+          "tactic": "persistence",
+          "evidence": "「ORANGETAIL（Behinder類似の自作Java Webシェル）を展開」という具体的な記述があるため T1505.003（Web Shell）を付与"
+        },
+        {
+          "technique_id": "T1068",
+          "sub_technique_id": null,
+          "tactic": "privilege-escalation",
+          "evidence": "「パストラバーサル・認証後コード注入によりroot権限相当のコマンド実行を獲得」という具体的な記述があるため T1068 を付与"
         }
       ],
       "target": {
         "sectors": [],
-        "geos": ["GLOBAL"]
+        "geos": [
+          "GLOBAL"
+        ]
       },
-      "cve": ["CVE-2026-15409", "CVE-2026-15410"],
+      "cve": [
+        "CVE-2026-15409",
+        "CVE-2026-15410"
+      ],
       "exploitation_stage": "active_exploitation",
       "geopolitical_signal": null,
-      "iocs": [],
+      "iocs": [
+        {
+          "value": "/usr/bin/xzfind",
+          "type": "url",
+          "defanged": false,
+          "note": "setuidバイナリのファイルパス（ROOTRUN）。IP/ドメインではなくファイルパス型IoC"
+        },
+        {
+          "value": "/var/lib/unit/conf.json",
+          "type": "url",
+          "defanged": false,
+          "note": "改変されたNGINX Unit設定ファイルパス"
+        }
+      ],
       "confidence": "medium",
       "summary": "未確認の脅威アクターUTA0533が、SonicWall SMA1000のゼロデイ脆弱性CVE-2026-15409/CVE-2026-15410を公開開示（2026-07-14）前の2026年6月22日から悪用し、CouchDBの悪用を経てroot権限アクセスを獲得していたとVolexityが報告した。",
       "verified_outcome": null,
       "related_forecast_id": null,
-      "tags": ["sonicwall", "zero-day", "vpn"]
+      "tags": [
+        "sonicwall",
+        "zero-day",
+        "vpn"
+      ]
+    },
+    {
+      "observation_id": "obs-2026-0720-004",
+      "observed_date": "2026-07-18",
+      "ingested_date": "2026-07-20",
+      "source": {
+        "name": "BleepingComputer",
+        "url": "https://www.bleepingcomputer.com/news/security/wordpress-core-wp2shell-rce-flaws-get-public-exploits-patch-now",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "「未認証の攻撃者がREST APIバッチエンドポイントへ細工したサブリクエスト配列を送信」という具体的な手口の記述があるため T1190 を付与"
+        }
+      ],
+      "target": {
+        "sectors": [
+          "it"
+        ],
+        "geos": [
+          "GLOBAL"
+        ]
+      },
+      "cve": [
+        "CVE-2026-63030"
+      ],
+      "exploitation_stage": "limited_exploitation",
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "medium",
+      "summary": "WordPress core「wp2shell」RCEチェーンのCVE-2026-63030についてwatchTowr Labsが実環境での実悪用の兆候を報告した（単一ソース・裏取り未了）。CVSS 9.8。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "wordpress",
+        "rce-chain",
+        "single-source-caution"
+      ]
+    },
+    {
+      "observation_id": "obs-2026-0720-005",
+      "observed_date": "2026-07-18",
+      "ingested_date": "2026-07-20",
+      "source": {
+        "name": "BleepingComputer",
+        "url": "https://www.bleepingcomputer.com/news/security/wordpress-core-wp2shell-rce-flaws-get-public-exploits-patch-now",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "「WP_Queryのauthor__not_inパラメータが未サニタイズのままSQLクエリに組み込まれる」という具体的なSQLインジェクション手口の記述があるため T1190 を付与"
+        }
+      ],
+      "target": {
+        "sectors": [
+          "it"
+        ],
+        "geos": [
+          "GLOBAL"
+        ]
+      },
+      "cve": [
+        "CVE-2026-60137"
+      ],
+      "exploitation_stage": "limited_exploitation",
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "medium",
+      "summary": "WordPress core「wp2shell」RCEチェーンの構成要素CVE-2026-60137（SQLインジェクション）についてwatchTowr Labsが実環境での実悪用の兆候を報告した（単一ソース・裏取り未了）。CVSS 9.1（CISA-ADP評価）。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "wordpress",
+        "rce-chain",
+        "single-source-caution"
+      ]
     }
   ]
 }
