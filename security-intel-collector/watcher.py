@@ -355,6 +355,12 @@ def process_feed(
     parsed = feedparser.parse(url)
     entries = list(getattr(parsed, "entries", []) or [])
 
+    # Optional per-feed cap for very large feeds (e.g. JVN iPedia returns
+    # ~500 entries per fetch); keeps data/raw/ and notifications bounded.
+    max_items = feed.get("max_items")
+    if isinstance(max_items, int) and max_items > 0:
+        entries = entries[:max_items]
+
     feed_key = url
     is_first_run = feed_key not in seen
     seen_keys = set(seen.get(feed_key, []))
@@ -371,9 +377,15 @@ def process_feed(
         all_items.append(item)
         entry_records.append((key, item))
 
+    # Optional per-feed first-run seed size; large feeds should seed all
+    # fetched entries so the second run does not flood notifications.
+    seed_count = feed.get("seed_count")
+    if not (isinstance(seed_count, int) and seed_count > 0):
+        seed_count = FIRST_RUN_SEED_COUNT
+
     if is_first_run:
         # Seed the latest N entries as seen; do not notify them.
-        seed_keys = [key for key, _ in entry_records[:FIRST_RUN_SEED_COUNT]]
+        seed_keys = [key for key, _ in entry_records[:seed_count]]
         seen[feed_key] = list(dict.fromkeys(seed_keys))
         print(f"[info] first run for '{name}': seeded {len(seed_keys)} entries")
 

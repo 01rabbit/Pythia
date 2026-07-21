@@ -44,6 +44,7 @@ pipeline-1-cve.md のトラック B から渡されたCVE（`section_route: tren
 | CISA Alerts | cisa.gov/news-events/alerts | 収録済み（"CISA Advisories"） |
 | Unit 42（Palo Alto Networks） | unit42.paloaltonetworks.com | 収録済み |
 | watchTowr Labs | labs.watchtowr.com | 収録済み |
+| SANS Internet Storm Center | isc.sans.edu | 収録済み（"SANS Internet Storm Center"・スキャン/悪用の実観測データ） |
 
 ## 必須ソース（日本語）
 | ソース | URL | 昇格トリガー | feeds.json |
@@ -53,6 +54,8 @@ pipeline-1-cve.md のトラック B から渡されたCVE（`section_route: tren
 | IPA 重要なセキュリティ情報 | ipa.go.jp/security/security-alert/ | 発行 → 参考A昇格 | 収録済み |
 | ScanNetSecurity | scan.netsecurity.ne.jp | 国内被害報道 → 参考A昇格 | 収録済み |
 | JVN（脆弱性対策情報） | jvn.jp | 発行 → 参考A昇格 | 収録済み |
+| JVN iPedia（脆弱性DB） | jvndb.jvn.jp | 国内製品の登録 → 参考A昇格 | 収録済み（"JVN iPedia 新着"・詳細照会は MyJVN API: jvndb.jvn.jp/apis/myjvn/） |
+| JPCERT/CC Eyes（技術ブログ） | blogs.jpcert.or.jp/ja/ | 国内標的の技術分析公開 → 参考A昇格 | 収録済み（"JPCERT/CC Eyes"） |
 | 警察庁サイバー警察局 | npa.go.jp/bureau/cyber/ | 公表 → 参考A昇格 | 未収録（RSS配信なし・確認済み。Web検索で補完） |
 | NISC（国家サイバー統括室） | cyber.go.jp | 公表 → 参考A昇格 | 未収録（RSS配信なし・確認済み。Web検索で補完） |
 

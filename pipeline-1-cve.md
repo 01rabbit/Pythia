@@ -77,11 +77,20 @@ pipeline-2-trends.md へ引き渡す。後日CVEが採番され製品に紐付�
 ## 調査ソース（優先順）
 1. CISA KEV: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
 2. NVD: https://nvd.nist.gov/
-3. GitHub Advisory Database
-4. ベンダーアドバイザリ（Fortinet / Palo Alto / Ivanti / Microsoft / Cisco / Oracle 等）
-5. BleepingComputer / The Hacker News / SecurityWeek
-6. PoC情報: GitHub / Exploit-DB / Packet Storm / watchTowr / ProjectDiscovery
-7. EPSS（Exploit Prediction Scoring System・FIRST.org）: https://api.first.org/data/v1/epss?cve=CVE-XXXX-XXXXX
+3. CVE Program（一次レコード）: https://www.cve.org/
+   - NVD の分析・スコアリング完了前のレコード確認に使用する（新規採番直後のCVEはNVDに反映が遅れる場合がある）。
+4. GitHub Advisory Database: https://github.com/advisories
+5. OSV（OSS脆弱性DB）: https://osv.dev/
+   - OSS はエコシステム・パッケージ・バージョン・コミット単位で照合できるため、
+     ライブラリ・依存関係系CVEの影響バージョン特定に優先使用する。API・機械可読データあり。
+6. JVN / JVN iPedia（国内製品・国内ベンダー照合）: https://jvn.jp/ / https://jvndb.jvn.jp/
+   - 国内製品・国内ベンダーに関わるCVEは JVN iPedia で日本語情報・国内アドバイザリの有無を照合する。
+   - プログラム照会には MyJVN API（https://jvndb.jvn.jp/apis/myjvn/index.html）を使用できる。
+   - JVN iPedia 新着は security-intel-collector/feeds.json で機械収集済み（data/raw/ を一次入力とする）。
+7. ベンダーアドバイザリ（Fortinet / Palo Alto / Ivanti / Microsoft / Cisco / Oracle 等）
+8. BleepingComputer / The Hacker News / SecurityWeek
+9. PoC情報: GitHub / Exploit-DB / Packet Storm / watchTowr / ProjectDiscovery
+10. EPSS（Exploit Prediction Scoring System・FIRST.org）: https://api.first.org/data/v1/epss?cve=CVE-XXXX-XXXXX
    - 各CVEの「今後30日以内に実悪用が観測される確率」スコア（0〜1）とパーセンタイル（全CVE中の相対順位）を返す較正済みモデル。
    - ★注意: EPSSは【30日窓・グローバル指標】であり、PYTHIAの予報窓（72時間）・国内スコープとは時間軸・地理軸が異なる。
      用途は【確度（高/中）の裏取りアンカー】に限定し、予報の的中判定条件（72h）には絶対に流用しない（M3・pipeline-forecast-verification.md 参照）。

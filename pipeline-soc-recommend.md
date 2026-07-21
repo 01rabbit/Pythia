@@ -90,7 +90,7 @@ Step 1 / Step 1b / Step 2 の調査中に見つけた情報を随時ストック
 | IPA 重要なセキュリティ情報 | ipa.go.jp/security/security-alert/ | α条件確認 |
 | Krebs on Security | krebsonsecurity.com | δ条件 / 実被害事例 |
 | Schneier on Security | schneier.com/blog | ε・ζ条件 |
-| SANS Internet Storm Center | isc.sans.edu/diary/ | γ・δ条件 / 実観測ログ |
+| SANS Internet Storm Center | isc.sans.edu/diary/ | γ・δ条件 / 実観測ログ（security-intel-collector/feeds.json で機械収集済み） |
 | Risky.biz Newsletter | risky.biz | δ・ε条件まとめ |
 | 警察庁サイバー警察局 | npa.go.jp/bureau/cyber/ | α・ζ条件 |
 | NISC | nisc.go.jp/news/ | ζ条件 |

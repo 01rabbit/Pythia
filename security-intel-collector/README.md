@@ -86,6 +86,18 @@ python cve_watcher.py
 Slack is optional: if `SLACK_WEBHOOK_URL` is unset, the collectors simply skip
 notification. The raw JSON in `data/raw/` is produced either way.
 
+### Feed options (feeds.json)
+
+Each feed entry supports, in addition to `name` / `url` / `enabled` / `tags`:
+
+- `max_items` (int, optional) — cap the number of entries taken from the feed
+  per run (newest first). Use for very large feeds (e.g. JVN iPedia returns
+  ~500 entries per fetch) to keep `data/raw/` and notifications bounded.
+- `seed_count` (int, optional, default 3) — how many entries are marked as
+  already seen (without notifying) on the first run of a feed. For large
+  feeds, set it equal to `max_items` so the second run does not flood
+  notifications with hundreds of "new" backfill items.
+
 ## 7. GitHub Actions
 
 Two bundled workflows live in `security-intel-collector/.github/workflows/`
@@ -173,5 +185,5 @@ pytest -q
 
 - NVD enforces API rate limits; set `NVD_API_KEY` to raise them.
 - VulDB RSS is used as best-effort signal enrichment only; it is not exhaustive.
-- The first run for a feed seeds 3 entries without notifying (to avoid backfill spam).
+- The first run for a feed seeds 3 entries (or `seed_count`) without notifying (to avoid backfill spam).
 - There is no external database; all state is kept in JSON files in the repo.
