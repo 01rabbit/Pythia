@@ -20,6 +20,12 @@
 | BSI（ドイツ） | bsi.bund.de/EN/Themen/Unternehmen-und-Organisationen/Cyber-Sicherheitslage |
 | NISC（日本） | nisc.go.jp/news/ |
 | 警察庁サイバー警察局 | npa.go.jp/bureau/cyber/ |
+| JPCERT/CC Eyes（技術ブログ） | blogs.jpcert.or.jp/ja/ |
+
+注記:
+- JPCERT/CC Eyes は日本を標的とするAPT・マルウェア・攻撃ツール・インターネット観測の
+  技術分析を扱う。国内標的キャンペーンの Technique / IOC の根拠ソースとして最優先で確認する
+  （security-intel-collector/feeds.json で機械収集済み・data/raw/ を一次入力とする）。
 
 ### 二次ソース（ベンダー脅威インテリジェンス）
 | ソース | URL |
@@ -37,6 +43,18 @@
 注記:
 - Europol / FBI IC3 の法執行・摘発情報は日次収集対象に含めない
 - 法執行チェックは週次検証ステージ（火・木）へ移し、継続影響の確認に使用する
+
+### IOC・マルウェア照合ソース（参照専用）
+
+| ソース | URL | 用途 |
+|--------|-----|------|
+| MalwareBazaar（abuse.ch） | bazaar.abuse.ch | 報告されたマルウェアファミリー名・ハッシュの実在照合、タグ・配布情報の確認 |
+| SANS Internet Storm Center | isc.sans.edu | スキャン活動・攻撃キャンペーン・悪用観測の実測データ照合 |
+
+注記:
+- これらは採用条件 T（IOC新規大量公開）・S（新規TTP）の裏取りに使用する参照ソースであり、
+  ここから独自に帰属・Technique を推定しない（行動原則1・3）。
+- 検体そのもののダウンロード・実行は行わない（ハッシュ・メタデータの照合のみ）。
 
 ---
 

@@ -121,6 +121,40 @@ def test_first_run_seeds_three_no_notify(env: pytest.MonkeyPatch) -> None:
     assert all("新着記事" not in (p["json"] or {}).get("text", "") for p in posts)
 
 
+def test_max_items_caps_entries_and_seed_count_overrides(env: pytest.MonkeyPatch) -> None:
+    posts = capture_slack(env)
+    entries = [make_entry(i) for i in range(20)]
+    set_parse(env, {"https://big.test/feed": FakeParsed(entries)})
+    write_feeds(
+        [
+            {
+                "name": "Big",
+                "url": "https://big.test/feed",
+                "enabled": True,
+                "tags": [],
+                "max_items": 10,
+                "seed_count": 10,
+            }
+        ]
+    )
+
+    watcher.main()
+
+    seen = json.loads(Path("seen.json").read_text("utf-8"))
+    # All fetched (capped) entries are seeded, so the next run does not flood.
+    assert seen["https://big.test/feed"] == [f"entry-{i}" for i in range(10)]
+    assert all("新着記事" not in (p["json"] or {}).get("text", "") for p in posts)
+
+    latest = json.loads(Path("data/raw/news-latest.json").read_text("utf-8"))
+    assert len(latest["items"]) == 10
+
+    # Second run: identical feed content -> nothing new despite entries 10-19
+    # never having been stored (they stay beyond the cap).
+    watcher.main()
+    latest = json.loads(Path("data/raw/news-latest.json").read_text("utf-8"))
+    assert latest["new_items"] == []
+
+
 def test_already_seen_not_notified(env: pytest.MonkeyPatch) -> None:
     posts = capture_slack(env)
     entries = [make_entry(0), make_entry(1)]
