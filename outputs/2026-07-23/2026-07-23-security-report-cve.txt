@@ -1,0 +1,183 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-23 07:30 JST
+調査期間: 2026-07-22 07:00 〜 2026-07-23 07:00 JST
+========================================
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-0770 / Langflow
+対象: v1.9.0未満
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[CISA 2026-07-21] CVE-2026-0770をKEVカタログへ初回登録（BOD 26-04対応期限2026-07-24）
+[BleepingComputer 2026-07-22] KEVIntelが2026-06-27以降64ユニークIPから220件超の悪用試行を観測したと報道
+[Security NEXT 2026-07-22] 米当局（CISA）によるWordPress・Langflow脆弱性悪用への警戒喚起を国内向けに報道
+
+【概要】
+Langflow（AIエージェント構築フレームワーク）のvalidateエンドポイントに渡されるexec_globalsパラメータの検証不備により、未認証の攻撃者がリモートでroot権限のコード実行に至る脆弱性。Trend Microの分析によれば攻撃者はマルウェア配備・AWS認証情報の窃取・環境変数やコンテナメタデータへのアクセス・偵察コマンド実行を試みており、KEVIntelは2026-06-27以降64のユニークIPから220件超の悪用試行を観測した。
+
+攻撃の流れ:
+1. 未認証で/api/v1/validate/codeエンドポイントへexec_globalsパラメータを細工したリクエストを送信
+2. サーバ側でexec_globalsが検証なく実行され、root権限でコマンド実行
+3. AWS認証情報・環境変数・コンテナメタデータを窃取し追加マルウェアを配備
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Langflowサーバのアクセスログ・APIリクエストログを監視し、/api/v1/validate/codeへの異常なexec_globalsパラメータを含むリクエストを検知する]
+Splunk SPL: index=web sourcetype=langflow* uri_path="*/api/v1/validate/code*" | stats count by src_ip, http_method | where count > 5
+Splunk SPL: index=aws sourcetype=aws:cloudtrail eventName=GetCallerIdentity OR eventName=AssumeRole | search src_ip=<Langflowホスト> | table _time, eventName, src_ip
+→ 正規のフロー検証呼び出しと悪用リクエストの区別にはexec_globals内のPythonコード片の有無を確認する。社内開発チームのCI/CD経由アクセスは除外する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/cisa-orders-feds-to-patch-actively-exploited-langflow-rce-flaw/
+https://www.security-next.com/187654
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+------------------------------------------------------------
+2. CVE-2026-63030 / WordPress Core
+対象: 6.9.0〜7.0.1（wp2shell RCEチェーン完全版）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[CISA 2026-07-21] CVE-2026-63030をKEVカタログへ初回登録（BOD 26-04対応期限2026-07-24）
+[Security NEXT 2026-07-22] 米当局によるWordPress脆弱性悪用への警戒喚起を国内向けに報道
+
+【概要】
+WordPress CoreのREST APIバッチルート混同（interpretation conflict）脆弱性。CVE-2026-60137（SQLインジェクション）と連鎖させることで、6.9.0〜7.0.1のデフォルトインストールに対し未認証のリモートコード実行「wp2shell」チェーンが成立する。開示から数時間以内に複数の公開PoCがGitHubへ登場し、Hexastrike・Patchstack等が開示直後からの実環境悪用を確認した。
+
+攻撃の流れ:
+1. REST APIバッチエンドポイントへ細工したサブリクエストを送信しルート解釈の混同を誘発
+2. CVE-2026-60137（WP_Query author__not_in SQLi）と連鎖しデータベースへ不正アクセス
+3. 未認証のままリモートコード実行に至りWebシェルを設置
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[WebサーバアクセスログでREST APIバッチエンドポイントへの異常リクエストを監視する]
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/wp-json/*batch*" | stats count by clientip, uri_query | where count > 3
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/wp-json/wp/v2/*" cs_method=POST | search uri_query="*author__not_in*"
+→ 正規プラグインのバッチAPI利用と区別するため、未認証（Cookie/Authorizationヘッダなし）でのバッチリクエストを優先的に確認する
+
+【参照】
+https://www.tenable.com/blog/wp2shell-cve-2026-63030-cve-2026-60137-frequently-asked-questions-about-remote-code-execution
+https://www.security-next.com/187654
+
+------------------------------------------------------------
+3. CVE-2026-60137 / WordPress Core
+対象: 6.8.0〜6.8.5（単独）／6.9.0〜7.0.1（RCEチェーン構成要素）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.1 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[CISA 2026-07-21] CVE-2026-60137をKEVカタログへ初回登録（BOD 26-04対応期限2026-08-04）
+[Security NEXT 2026-07-22] 米当局によるWordPress脆弱性悪用への警戒喚起を国内向けに報道
+
+【概要】
+WordPress CoreのWP_Query author__not_inパラメータが未サニタイズでSQLクエリへ組み込まれるSQLインジェクション脆弱性。CVSSはCNA評価では5.9だがCISA-ADPはCVE-2026-63030との連鎖によるRCE成立可能性を踏まえ9.1（Critical）と再評価した。単独でも6.8系に影響するが、6.9系以降ではCVE-2026-63030と連鎖しwp2shell RCEチェーンを構成する。
+
+攻撃の流れ:
+1. author__not_inパラメータへ未サニタイズのSQL構文を注入
+2. CVE-2026-63030のバッチルート混同と連鎖しデータベース内容を不正操作
+3. 6.9系以降ではRCEチェーンが完成し未認証コード実行に至る
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[WordPress管理画面・REST APIログでauthor__not_inパラメータを含む異常クエリを監視する]
+Splunk SPL: index=web sourcetype=access_combined uri_query="*author__not_in*" | stats count by clientip | where count > 3
+→ 正規のWP_Query利用（管理画面プラグイン等）との切り分けにはUser-Agent・認証状態を併用する
+
+【参照】
+https://www.tenable.com/blog/wp2shell-cve-2026-63030-cve-2026-60137-frequently-asked-questions-about-remote-code-execution
+https://www.security-next.com/187654
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-50522 / SharePoint Server
+CVSS: 9.8
+SharePoint Serverの逆シリアル化脆弱性。偽装したWS-Federation SecurityContextTokenのCookieに悪意ある.NET BinaryFormatterペイロードを載せ/_trust/default.aspxへ送信することで、未認証のままネットワーク経由でコード実行できる。watchTowr Labsは公開PoC登場後、攻撃者が単一リクエストでSharePointのマシンキーを窃取し、正規ユーザーになりすます認証トークンを偽造してパッチ適用後もアクセスを維持していると報告した。
+IoC: 確認されず
+
+監視: [IISログで/_trust/default.aspxへの異常POSTリクエスト・SharePoint監査ログでの想定外の認証トークン発行を監視する]
+Splunk SPL: index=iis sourcetype=iis uri_path="*/_trust/default.aspx*" cs_method=POST | stats count by c_ip, cs_username
+→ パッチ適用後もマシンキーが漏えい済みの場合は偽造トークンで正規アクセスに見えるため、パッチ適用と併せてマシンキーのローテーションが必須
+
+参照: https://www.helpnetsecurity.com/2026/07/22/sharepoint-cve-2026-50522-exploited/
+
+・CVE-2026-29059 / Windmill
+CVSS: 7.5
+開発者向け内部ツールプラットフォームWindmillのget_log_fileエンドポイント（/api/w/{workspace}/jobs_u/get_log_file/{filename}）で、filenameパラメータが未サニタイズで../シーケンスを許容するパストラバーサル脆弱性。未認証のまま/proc/1/environ経由でSUPERADMIN_SECRET環境変数を読み取り、これをBearerトークンとしてjob preview APIへ送ることでsuperadmin権限のコード実行に到達できる。GitHub上に完全なエクスプロイトチェーンPoC「Windfall」が公開されている。
+IoC: 確認されず
+
+監視: [Windmillアプリケーションログでget_log_fileエンドポイントへの異常なパストラバーサル試行・job preview APIへの非対話的アクセスを監視する]
+Splunk SPL: index=app sourcetype=windmill uri_path="*/jobs_u/get_log_file/*" | search filename="*..*"
+Splunk SPL: index=app sourcetype=windmill uri_path="*/jobs/run/preview*" | stats count by src_ip, authorization_hash
+→ SUPERADMIN_SECRETのBearerトークン利用は正規運用でも稀なため、job preview APIへの外部IPからのアクセスは優先的に精査する
+
+参照: https://thehackernews.com/2026/07/hackers-exploit-windmill-flaw-to-read.html
+
+・CVE-2026-16232 / SmartConsole
+CVSS: 9.1
+Check Point SmartConsoleの認証不備脆弱性。未認証のリモート攻撃者がアプリケーションログイントークンを取得し、これを用いてSmartConsoleへ完全な管理者権限でログインしセキュリティポリシー・設定を変更できる。悪用にはManagement ServerのIPへのインターネットアクセスとTrusted Clients（GUIクライアント）の未制限設定が必要。Check Point自身が「ごく少数の顧客」への実悪用を把握していると公表した。
+IoC: 確認されず
+
+監視: [SmartConsole管理ログでManagement Serverへの外部IPからの異常なログイントークン取得試行を監視する]
+Splunk SPL: index=network sourcetype=checkpoint:management | search event="Login" | stats count by src_ip, admin_name | where src_ip!=<内部レンジ>
+→ Trusted Clients設定でGUIクライアントの許可元を制限していない環境を優先的に点検する
+
+参照: https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-check-point-smartconsole-authentication-bypass-cve-2026-16232
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-8933 (Ubuntu snap-confine) → CVSS7.8だがローカル権限昇格（既存アクセス必要・リモート非該当）・KEV未登録・実悪用未確認のため軸1=3点。参考A昇格トリガーも該当なし。SOC推奨情報（観点1・CVE関連）へ採用
+・CVE-2026-48294 (Adobe Acrobat拡張機能（Chrome/HermeticReader）) → CVSS7.4・要ユーザー操作（UXSS連鎖）・KEV未登録・実悪用未確認のため軸1=1点。300M+インストールの広範な影響を踏まえSOC推奨情報（観点1・CVE関連）へ採用
+・CVE-2026-13446 (Langflow) → ハードコード認証情報の脆弱性（CVSS9.8・CWE-798）。2026-07-17公開でJVN iPediaへの登録が本日確認できたが、KEV未登録・EPSS 0.00213（低）・独立した実悪用報告なし。同一製品のCVE-2026-0770（本編採用）と重複するため個別の本編/参考採用は見送り
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編3件 / 参考A0件 / 参考B3件 / 除外3件
+
+
+========================================
