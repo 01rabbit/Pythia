@@ -1,0 +1,1556 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-07-24",
+    "generated_at": "2026-07-24T07:55:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-07-23T07:00:00+09:00",
+      "to": "2026-07-24T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [
+    {
+      "cve_id": "CVE-2026-16232",
+      "product": "SmartConsole（Security Management / Multi-Domain Security Management）",
+      "vendor": "Check Point Software Technologies",
+      "affected_versions": "R80〜R82.10（複数バージョン系列。Jumbo Hotfix Accumulator R82.10 Take36 / R82 Take118未満）",
+      "priority": "critical",
+      "cvss_v3": 9.1,
+      "cvss_v4": 9.3,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-287"
+      ],
+      "epss": {
+        "score": 0.0107,
+        "percentile": 0.6146,
+        "model_date": "2026-07-23"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": true,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "Jumbo Hotfix Accumulator R82.10 Take36 / R82 Take118",
+        "eta": null
+      },
+      "fceb_deadline": "2026-07-25",
+      "kev_date_added": "2026-07-22",
+      "axis1_score": 15,
+      "axis2_score": 6,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-23T09:47:35+09:00",
+          "description": "Check Point SmartConsole管理機能の脆弱性ですでに実悪用が確認されているとして侵害調査を呼びかける記事を国内向けに報道"
+        },
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-23T13:17:21+09:00",
+          "description": "米当局（CISA）がSharePoint CVE-2026-50522とあわせ本CVEの悪用について警告を発出したことを国内向けに報道"
+        },
+        {
+          "source": "BleepingComputer/The Hacker News/SecurityWeek",
+          "date": "2026-07-23T08:13:07+09:00",
+          "description": "Check Point公式が「ごく少数の顧客」への実悪用を確認し、Jumbo Hotfixを提供したと報道"
+        }
+      ],
+      "overview": "Check Point SmartConsoleのログインプロセスにおける認証不備（CWE-287）により、Trusted ClientsによるIP制限なしにインターネット公開されたManagement/Multi-Domain Security Serverに対し、未認証の遠隔攻撃者がアプリケーションログイントークンを取得し、完全な管理者権限でSmartConsoleへ認証できる脆弱性。Check Point公式が「ごく少数の顧客」への実悪用を確認し、2026-07-22にJumbo Hotfixを提供、同日CISAがKEVカタログへ初回登録した（FCEB期限2026-07-25）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Trusted Clients設定でIP制限のないインターネット公開Management/Multi-Domain Serverを特定"
+        },
+        {
+          "step": 2,
+          "description": "未認証でSmartConsoleログインプロセスへリクエストを送信しアプリケーションログイントークンを取得"
+        },
+        {
+          "step": 3,
+          "description": "取得したトークンで完全な管理者権限を持つSmartConsoleセッションを確立"
+        },
+        {
+          "step": 4,
+          "description": "セキュリティポリシー・構成を改ざん"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "BleepingComputer/The Hacker News（2026-07-23）が、未認証でSmartConsoleログインプロセスへリクエストを送りアプリケーショントークンを取得し管理者権限で認証する具体的な手口を記述"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": true,
+        "ips": [
+          "151.241.99.207",
+          "151.241.99.233",
+          "158.62.198.182",
+          "192.142.10.99",
+          "139.28.37.250",
+          "194.213.18.137"
+        ],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Check Point Management ServerのSmartConsole認証ログを監視し、事前の資格情報提示なしにアプリケーショントークンが発行されるイベントおよび上記IOC IPからのアクセスを検知する",
+        "splunk_spl": [
+          "index=security sourcetype=checkpoint* (src_ip=\"151.241.99.207\" OR src_ip=\"151.241.99.233\" OR src_ip=\"158.62.198.182\" OR src_ip=\"192.142.10.99\" OR src_ip=\"139.28.37.250\" OR src_ip=\"194.213.18.137\") | table _time, src_ip, user, action",
+          "index=security sourcetype=checkpoint* action=login product=SmartConsole | stats count by src_ip, user | where count > 3"
+        ],
+        "detection_notes": "正規運用端末からのアクセスと管理コンソール外部公開経路からのアクセスを区別し、Trusted Clients設定外のIPからのログインを優先確認する"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/check-point-patches-smartconsole-zero-day-exploited-in-attacks",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://thehackernews.com/2026/07/check-point-patches-exploited.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.securityweek.com/new-check-point-zero-day-vulnerability-exploited-in-the-wild",
+          "title": null,
+          "language": "en",
+          "source": "SecurityWeek"
+        },
+        {
+          "url": "https://www.security-next.com/187730",
+          "title": null,
+          "language": "ja",
+          "source": "Security NEXT"
+        },
+        {
+          "url": "https://www.security-next.com/187752",
+          "title": null,
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "sector_impact": [
+        "government",
+        "it"
+      ],
+      "region_impact": [
+        "global",
+        "US"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260724-CVEP-51fc6b17"
+    }
+  ],
+  "reference_a": [
+    {
+      "cve_id": "CVE-2026-63226",
+      "product": "リコー製プリンター・複合機（SSH通信機能搭載モデル）",
+      "vendor": "Ricoh Company, Ltd.",
+      "affected_versions": "SSH通信機能を実装した対象モデル（具体的な型番リストはベンダー広告ページ未取得のため不明）",
+      "priority": "medium",
+      "cvss_v3": 5.8,
+      "cvss_v4": 6.9,
+      "cvss_severity": "Medium",
+      "cwe_ids": [
+        "CWE-923"
+      ],
+      "epss": {
+        "score": 0.00383,
+        "percentile": 0.3084,
+        "model_date": "2026-07-23"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": null,
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 1,
+      "axis2_score": 0,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "JVN / JVN iPedia",
+          "date": "2026-07-23T14:10:00+09:00",
+          "description": "リコー製プリンター・複合機のSSH通信機能におけるアクセス制御不備の脆弱性（CVE-2026-63226）が新規公開された"
+        }
+      ],
+      "overview": "リコー製プリンター・複合機のSSH通信機能において、ポートフォワーディングの通信先が適切に制限されていないアクセス制御不備（CWE-923）があり、意図しない通信経路の確立を許す可能性がある。Pathfynder.ioの研究者（Brandon Roach・Bryan Clements）が発見し、リコーはファームウェア更新とポートフォワーディング機能を制限する構成変更を提供している。",
+      "attack_flow": [],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "対象プリンター・複合機のsyslog/SNMP転送を監視し、想定外の宛先へのSSHポートフォワード確立を検知する",
+        "splunk_spl": [
+          "index=network sourcetype=syslog host=*ricoh* \"port forward\" | table _time, host, dest_ip"
+        ],
+        "detection_notes": "実悪用未確認・CVSS Mediumのため優先度は低いが、SSH機能を有効化した対象モデルの外部露出有無を確認する"
+      },
+      "references": [
+        {
+          "url": "https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-000102.html",
+          "title": null,
+          "language": "ja",
+          "source": "JVN iPedia"
+        },
+        {
+          "url": "https://jvn.jp/jp/JVN32082029",
+          "title": null,
+          "language": "ja",
+          "source": "JVN"
+        }
+      ],
+      "sector_impact": [],
+      "region_impact": [
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a",
+      "info_id": "20260724-CVEP-6628536e"
+    }
+  ],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-07-24-001",
+        "title": "Notepad++プラグインを悪用したマルウェアのステルスインストール",
+        "summary": "BleepingComputerが、攻撃者がNotepad++のプラグイン機構を悪用し検知を回避しながらマルウェアをインストールする新たな手口を報道した。正規のプラグイン配布・更新経路を偽装または悪用する手法とみられ、開発者・エンジニア向け端末を標的とする可能性がある。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-07-23T16:32:35+00:00",
+            "description": "Notepad++プラグイン悪用によるマルウェアのステルスインストール手口を報道"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/hackers-abuse-notepad-plus-plus-plugins-to-stealthily-install-malware",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260724-TRND-fdba3fbe"
+      },
+      {
+        "topic_id": "TREND-2026-07-24-002",
+        "title": "GitHub Actionsランナーを悪用したcPanel/WHMサーバへの攻撃",
+        "summary": "The Hacker Newsが、攻撃者がGitHub Actionsのランナーを武器化しcPanel/WHMで管理されるホスティングサーバを標的とする手口を報道した。CI/CDインフラを踏み台とした横展開・偵察のリスクが指摘される。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-07-23T11:28:54+00:00",
+            "description": "GitHub Actionsランナーを悪用したcPanel/WHMサーバへの攻撃手口を報道"
+          }
+        ],
+        "sector_impact": [
+          "it",
+          "professional_services"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/07/attackers-weaponize-github-actions.html",
+            "title": null,
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260724-TRND-14cc3d70"
+      }
+    ]
+  },
+  "apt_main": [
+    {
+      "group_name": "LAUNDRY BEAR",
+      "aliases": [
+        "Void Blizzard（Microsoft）",
+        "CL-STA-1114（Unit42）",
+        "TA488/UNK_PitStop（Proofpoint、対応関係は未確定と留保あり）"
+      ],
+      "nation_state": "RU",
+      "attribution_confidence": "high",
+      "campaign_id": "LaundryBear-2026-ZimbraZeroClick",
+      "activity_type": [
+        "official_attribution",
+        "ttp_update",
+        "ioc_release"
+      ],
+      "motivation": "espionage",
+      "first_seen": "2025-07-01",
+      "last_seen": "2026-07-23",
+      "targets": {
+        "sectors": [
+          "government",
+          "defense",
+          "critical_infrastructure",
+          "finance",
+          "education",
+          "energy",
+          "media",
+          "it"
+        ],
+        "regions": [
+          "NATO加盟国",
+          "CIS",
+          "Africa"
+        ],
+        "countries": [
+          "UA",
+          "US"
+        ]
+      },
+      "malware": [
+        {
+          "name": "Flowerbed（C2/持出フレームワーク）",
+          "type": "other",
+          "language": null,
+          "delivery": [
+            "phishing"
+          ],
+          "persistence": [
+            "other"
+          ],
+          "c2_protocol": [
+            "https",
+            "dns"
+          ]
+        }
+      ],
+      "axis_p_score": 21,
+      "axis_q_score": 10,
+      "changes_24h": [
+        {
+          "source": "Unit 42",
+          "date": "2026-07-23T14:10:53+00:00",
+          "description": "「Russian Global Webmail Espionage」として本キャンペーンの技術分析を公開"
+        },
+        {
+          "source": "CISA/NSA",
+          "date": "2026-07-22T00:00:00+00:00",
+          "description": "合同勧告AA26-204Aを公表し、CVE-2025-66376の武器化とIOCを公式に確認"
+        },
+        {
+          "source": "The Hacker News / BleepingComputer / Dark Reading",
+          "date": "2026-07-23T18:36:08+00:00",
+          "description": "CISA/NSA勧告・Unit42・Proofpoint・Seqrite等の情報を統合し、米国・ウクライナ標的の実害を報道"
+        }
+      ],
+      "overview": "ロシア連邦nexusと高信頼度で帰属される脅威アクターLAUNDRY BEAR（別名Void Blizzard/CL-STA-1114）が、Zimbra Collaboration Suite Classic UIのゼロクリック脆弱性CVE-2025-66376（サニタイザ回避によるstored XSS）を武器化し、CSSの@importディレクティブとHTMLコメントでsvg onloadペイロードを断片化する「タグ分割」手法でメール閲覧のみでJavaScriptを自動実行させ、NATO加盟国・ウクライナ・CIS・アフリカ・米国の政府機関・防衛産業基盤・エネルギー・金融・教育・法執行機関等を標的に最大90日分のメールを窃取し、パスワードリセット後も残存しMFAを回避するアプリケーション専用認証情報を作成して持続的アクセスを確保した。CISA/NSAが合同勧告AA26-204A（2026-07-22）で公式に帰属・確認した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "ProtonMailアカウントや侵害済みメールサーバから偽装ニュースダイジェスト等のフィッシングメールを送信"
+        },
+        {
+          "step": 2,
+          "description": "CSS @importディレクティブとHTMLコメントでsvg onloadペイロードを断片化しサニタイザを回避（CVE-2025-66376）、メール閲覧のみでJavaScriptが自動実行"
+        },
+        {
+          "step": 3,
+          "description": "パスワードリセット後も残存しMFAを回避するアプリケーション専用IMAP/POP3/SMTP認証情報を作成し持続的アクセスを確保"
+        },
+        {
+          "step": 4,
+          "description": "最大90日分のメールをTGZアーカイブとして窃取し、DNS Aレコードクエリ経由で持出し"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1203",
+          "name": "Exploitation for Client Execution",
+          "implementation": "CVE-2025-66376のサニタイザ回避（タグ分割）によりメール閲覧のみでsvg onloadペイロードが自動実行される具体的手口をUnit42が記述"
+        },
+        {
+          "mitre_id": "T1566",
+          "name": "Phishing",
+          "implementation": "ProtonMailアカウント・侵害済みメールサーバから偽装ニュースダイジェスト等のHTMLメールを送信（サブテクニック不明のため親IDのみ付与）"
+        },
+        {
+          "mitre_id": "T1114",
+          "name": "Email Collection",
+          "implementation": "被害者メールボックスから最大90日分のメールをTGZアーカイブとして窃取"
+        },
+        {
+          "mitre_id": "T1098",
+          "name": "Account Manipulation",
+          "implementation": "パスワードリセット後も残存しMFAを回避するアプリケーション専用認証情報（ZimbraWeb名義）を作成する具体的手口が記述"
+        },
+        {
+          "mitre_id": "T1071",
+          "sub_technique_id": "T1071.004",
+          "name": "Application Layer Protocol: DNS",
+          "implementation": "DNS Aレコードクエリ（長いランダムサブドメイン）経由でのデータ持出しが明示的に記述"
+        }
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [
+          "37.120.247.228",
+          "64.226.124.190",
+          "104.248.134.194",
+          "185.86.79.95",
+          "193.238.152.66",
+          "194.156.103.193",
+          "216.252.238.18",
+          "216.252.238.64",
+          "216.252.238.104"
+        ],
+        "domains": [
+          "analyticemailmeter.com",
+          "emailanalytics.com.ua",
+          "istc-cloud.com",
+          "mailnalysis.com",
+          "synacorzimbra.nl",
+          "zimbra-metadata.com",
+          "zimbrastat.com",
+          "zimbrasoft.com.ua",
+          "zmailanalytics.com"
+        ],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "Zimbra Collaboration Suiteを10.0.18/10.1.13以降へ緊急パッチ適用する。既存のアプリケーション専用認証情報（IMAP/POP3/SMTP）を全数棚卸しし、不審なものを失効させる。パスワードリセット後もセッション・アプリトークンが残存するため、リセットと合わせ全トークンの明示的失効を行う。上記IOCドメイン・IPへの通信をブロックする。",
+      "splunk_spl": [
+        "index=mail sourcetype=zimbra* (dest_domain=\"analyticemailmeter.com\" OR dest_domain=\"emailanalytics.com.ua\" OR dest_domain=\"istc-cloud.com\" OR dest_domain=\"mailnalysis.com\" OR dest_domain=\"synacorzimbra.nl\" OR dest_domain=\"zimbra-metadata.com\" OR dest_domain=\"zimbrastat.com\" OR dest_domain=\"zimbrasoft.com.ua\" OR dest_domain=\"zmailanalytics.com\") | table _time, user, dest_domain",
+        "index=mail sourcetype=zimbra:audit action=app_specific_password_created | stats count by user, src_ip | where count > 0"
+      ],
+      "detection_notes": "正規のIMAP/POP3クライアント登録と攻撃者による不正なアプリケーション専用認証情報作成を区別するため、作成元IPの地理的異常・作成直後の大量メールアクセスの有無を確認する",
+      "references": [
+        {
+          "url": "https://unit42.paloaltonetworks.com/russian-webmail-espionage",
+          "title": null,
+          "language": "en",
+          "source": "Unit 42"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/russian-hackers-exploit-zimbra-zero-click-flaw-for-email-theft",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://thehackernews.com/2026/07/russian-espionage-group-exploited.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "related_cves": [
+        "CVE-2025-66376"
+      ],
+      "report_section": "apt_main",
+      "info_id": "20260724-APTC-05eb9d13"
+    },
+    {
+      "group_name": "JadeProx",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "low",
+      "campaign_id": "JadeProx-2026-TriBackLoader",
+      "activity_type": [
+        "new_malware",
+        "active_campaign"
+      ],
+      "motivation": "espionage",
+      "first_seen": "2026-02-01",
+      "last_seen": "2026-07-23",
+      "targets": {
+        "sectors": [
+          "government",
+          "healthcare",
+          "education"
+        ],
+        "regions": [
+          "Asia",
+          "Latin America"
+        ],
+        "countries": [
+          "VN",
+          "MY",
+          "HK",
+          "HN"
+        ]
+      },
+      "malware": [
+        {
+          "name": "TriBack Loader",
+          "type": "loader",
+          "language": null,
+          "delivery": [
+            "dll_sideloading",
+            "phishing"
+          ],
+          "persistence": [
+            "registry"
+          ],
+          "c2_protocol": []
+        }
+      ],
+      "axis_p_score": 19,
+      "axis_q_score": 10,
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Group-IB報告引用）",
+          "date": "2026-07-23T12:20:23+00:00",
+          "description": "China-nexusクラスタ「JadeProx」による新型ローダー「TriBack Loader」を用いた政府・医療機関標的攻撃を初報"
+        }
+      ],
+      "overview": "中国語圏エコシステムで確認されたクラスタ「JadeProx」（Group-IB追跡名・正式なAPTグループとしての帰属は留保）が、未文書化のWindowsローダー「TriBack Loader」（正規署名済みEXE＋悪意あるDLL＋暗号化ペイロードの三点構成、DLLサイドローディング方式）を用い、ベトナムの公立病院医療画像システム・マレーシア外務省・ホンジュラス国会等の政府・医療・教育機関を標的とした。4種の感染チェーンを確認、うち2種はオープンソース侵入後フレームワークAdaptixC2を、1種はDonutLoader経由でBeagleバックドア（Sophosが関連付け）を展開する。ClaudeブランドをかたるなりすましドメインClaude-pro.comを含む偽装インフラも確認された。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "スピアフィッシング（偽装文書・Claude/Anthropicブランドなりすまし含む）またはCVE-2018-11511等4件の既知脆弱性の悪用により初期アクセス"
+        },
+        {
+          "step": 2,
+          "description": "正規署名済みEXE＋悪意あるDLL＋暗号化ペイロードの三点構成でDLLサイドローディングを実行し、Windowsスタートアップフォルダへ永続化"
+        },
+        {
+          "step": 3,
+          "description": "InitOnceExecuteOnce・TimerQueueコールバック・未文書化のntdll関数EtwpCreateEtwThread等の非一般的APIを用いてEDR検知を回避"
+        },
+        {
+          "step": 4,
+          "description": "AdaptixC2またはDonutLoader経由Beagleバックドアを展開し侵入後活動を継続"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "CVE-2018-11511（ASUSTOR ADM）・CVE-2021-24139（10Web Photo Gallery）・CVE-2021-31755（Tenda AC11）・CVE-2021-32305（WebSVN）の4件を武器化したことが明示的に記述"
+        },
+        {
+          "mitre_id": "T1595",
+          "sub_technique_id": "T1595.002",
+          "name": "Active Scanning: Vulnerability Scanning",
+          "implementation": "Nuclei（重大度Criticalテンプレート）で香港教育セクターの14,653件のURLを走査したことが記述"
+        },
+        {
+          "mitre_id": "T1574",
+          "sub_technique_id": "T1574.002",
+          "name": "Hijack Execution Flow: DLL Side-Loading",
+          "implementation": "正規署名済みEXEと悪意あるDLLの組による具体的なサイドローディング手口が記述"
+        },
+        {
+          "mitre_id": "T1547",
+          "sub_technique_id": "T1547.001",
+          "name": "Boot or Logon Autostart Execution: Startup Folder",
+          "implementation": "MSIインストーラ経由でWindowsスタートアップフォルダへサイドローディングチェーンを配置する具体的手口が記述"
+        }
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [
+          "43.106.71.28"
+        ],
+        "domains": [
+          "claude-pro.com",
+          "license.claude-pro.com",
+          "sylverixstrategy.com",
+          "gouvvbo.top",
+          "vertextrust-advisors.com",
+          "update-trellix.com",
+          "update-crowdstrike.com",
+          "update-sentinelone.com"
+        ],
+        "hashes": [],
+        "urls": [],
+        "filenames": [
+          "hostfxr.dll",
+          "avk.dll",
+          "MpClient.dll"
+        ]
+      },
+      "recommended_actions": "上記なりすましドメイン（claude-pro.com等セキュリティベンダー偽装ドメイン含む）への通信を遮断する。政府・医療・教育機関はスピアフィッシングメールの添付・リンク開封時のDLLサイドローディング挙動を監視する。CVE-2018-11511・CVE-2021-24139・CVE-2021-31755・CVE-2021-32305の該当製品パッチ適用状況を再確認する。",
+      "splunk_spl": [
+        "index=proxy dest_domain IN (\"claude-pro.com\", \"license.claude-pro.com\", \"sylverixstrategy.com\", \"gouvvbo.top\", \"vertextrust-advisors.com\", \"update-trellix.com\", \"update-crowdstrike.com\", \"update-sentinelone.com\") | table _time, src_ip, dest_domain",
+        "index=wineventlog EventCode=7045 (ImageLoaded=\"*hostfxr.dll\" OR ImageLoaded=\"*avk.dll\" OR ImageLoaded=\"*MpClient.dll\") | stats count by ComputerName, ImageLoaded"
+      ],
+      "detection_notes": "update-crowdstrike.com等セキュリティベンダーを偽装したドメインは特に注意喚起価値が高く、EDR/AVベンダー名を含む未承認ドメインへの通信は即時調査対象とする",
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/china-nexus-jadeprox-uses-new-triback.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "related_cves": [
+        "CVE-2018-11511",
+        "CVE-2021-24139",
+        "CVE-2021-31755",
+        "CVE-2021-32305"
+      ],
+      "report_section": "apt_main",
+      "info_id": "20260724-APTC-91124429"
+    }
+  ],
+  "apt_notable": [
+    {
+      "group_name": "CyberAv3ngers",
+      "aliases": [
+        "Bauxite",
+        "Hydro Kitten",
+        "Shahid Kaveh Group",
+        "Soldiers of Solomon",
+        "Storm-0784",
+        "UNC5691"
+      ],
+      "nation_state": "IR",
+      "attribution_confidence": "high",
+      "campaign_id": "CyberAv3ngers-2026-ICSPivot",
+      "activity_type": [
+        "official_attribution",
+        "ttp_update"
+      ],
+      "motivation": "sabotage",
+      "first_seen": "2026-03-01",
+      "last_seen": "2026-07-22",
+      "targets": {
+        "sectors": [
+          "energy",
+          "government",
+          "critical_infrastructure"
+        ],
+        "regions": [],
+        "countries": [
+          "US"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 13,
+      "axis_q_score": 3,
+      "changes_24h": [
+        {
+          "source": "SecurityWeek（CISA/FBI/NSA/EPA/DOE/USCYBERCOM共著）",
+          "date": "2026-07-23T05:28:50+00:00",
+          "description": "6機関共著の合同勧告AA26-097Aを更新し、標的をSiemens/Schneider Electric製PLCへ拡大したイランIRGC-CEC帰属CyberAv3engersの活動を警告"
+        }
+      ],
+      "overview": "イランIRGC Cyber-Electronic Command（IRGC-CEC）に帰属されるCyberAv3ngers（別名Bauxite/Hydro Kitten等）が、従来標的としていたイスラエル製Unitronics機器から、Rockwell Automation・Siemens・Schneider Electric製PLCへ標的を拡大していることをCISA・FBI・NSA・EPA・DOE・米サイバー軍の6機関共著の合同勧告AA26-097A（2026-07-22更新）が確認した。インターネット露出したPLCへ侵入し、正規のラダーロジックを維持しつつ安全動作パラメータを上書きする悪意あるプロジェクトファイルを配置し、HMI/SCADA上の表示データを改ざんして運用者に偽の読み取り値を提示する手口が確認されている。",
+      "attack_flow": [],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "Rockwell/Siemens/Schneider製PLCのインターネット直接露出を排除し、プロジェクトファイルの変更管理・整合性検証を強化する。HMI/SCADA表示値と現場の物理計測値の定期照合を実施する。",
+      "splunk_spl": [],
+      "detection_notes": "ICS-ATT&CKのTechnique ID割当は一次情報未確認のため見送り（曖昧な帰属付与を避けるため）",
+      "references": [
+        {
+          "url": "https://www.securityweek.com/us-warns-of-iranian-hackers-targeting-siemens-schneider-and-rockwell-ics-devices",
+          "title": null,
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260724-APTC-80679fde"
+    },
+    {
+      "group_name": "APT-C-60",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "APTC60-2026-LegitInfraLNK",
+      "activity_type": [
+        "ttp_update",
+        "ioc_release"
+      ],
+      "motivation": "espionage",
+      "first_seen": "2026-01-01",
+      "last_seen": "2026-07-13",
+      "targets": {
+        "sectors": [],
+        "regions": [],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [
+        {
+          "name": "SpyGlace",
+          "type": "backdoor",
+          "language": null,
+          "delivery": [
+            "phishing"
+          ],
+          "persistence": [],
+          "c2_protocol": []
+        }
+      ],
+      "axis_p_score": 8,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "JPCERT/CC",
+          "date": "2026-07-23T00:22:00+09:00",
+          "description": "週次レポートでJPCERT/CC Eyes「APT-C-60による2026年の攻撃」（原文公開2026-07-13）を紹介し、日本国内組織を狙う最新TTPを共有"
+        }
+      ],
+      "overview": "JPCERT/CCが自組織の技術ブログ「JPCERT/CC Eyes」で、日本国内組織を標的とするAPT-C-60による2026年の攻撃活動を解説した。既知バックドアSpyGlaceの新バージョン（v3.1.15/v3.1.17/v3.1.18）を確認し、ProtonDriveリンク経由のスピアフィッシングでLNKファイルをダウンロードさせmshta.exe経由で埋め込みJavaScriptを実行、jsDelivr等の正規サービスから追加コンテンツを取得したのちgit.exeで後続ダウンロードを行う手口を確認した。2025年に用いていたGitHub/Bitbucketに加え、GitLab・jsDelivr・Codebergを新たにインフラへ組み込み、正規トラフィックへの紛れ込みを図っている。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "ProtonDriveリンクを含むスピアフィッシングメール（直接添付の亜種もあり）を送信"
+        },
+        {
+          "step": 2,
+          "description": "受信者がLNKファイルを実行すると自身を複製しmshta.exeを起動、埋め込みJavaScriptを実行"
+        },
+        {
+          "step": 3,
+          "description": "jsDelivr（新規追加のGitLab・Codebergも含む）から追加コンテンツをダウンロード・展開"
+        },
+        {
+          "step": 4,
+          "description": "git.exeを用いた後続のダウンローダ取得によりSpyGlaceバックドアを展開"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1204",
+          "sub_technique_id": "T1204.002",
+          "name": "User Execution: Malicious File",
+          "implementation": "受信者によるLNKファイル実行が起点と明記"
+        },
+        {
+          "mitre_id": "T1218",
+          "sub_technique_id": "T1218.005",
+          "name": "System Binary Proxy Execution: Mshta",
+          "implementation": "LNKがmshta.exeを起動し埋め込みJavaScriptを実行する具体的手口が記述"
+        },
+        {
+          "mitre_id": "T1566",
+          "sub_technique_id": "T1566.002",
+          "name": "Phishing: Spearphishing Link",
+          "implementation": "ProtonDriveリンクによる配信が明記（直接添付の亜種はT1566.001相当）"
+        },
+        {
+          "mitre_id": "T1102",
+          "name": "Web Service",
+          "implementation": "GitHub/Bitbucket/GitLab/jsDelivr/Codebergを正規サービスインフラとしてペイロード中継に利用したことが明記"
+        },
+        {
+          "mitre_id": "T1105",
+          "name": "Ingress Tool Transfer",
+          "implementation": "git.exeを用いた後続ダウンローダ取得が明記"
+        }
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [
+          "31.58.136.207",
+          "154.18.239.209"
+        ],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "国内組織はProtonDrive経由のリンク付きメールに対する警戒を強化し、LNKファイルの実行を制限する。jsDelivr/GitLab/Codeberg等正規クラウドサービスへの通信のうち、通常業務で使用実績のない宛先パスへのアクセスを監視する。",
+      "splunk_spl": [
+        "index=email sourcetype=mail attachment_type=lnk OR body=\"proton.me/drive\" | table _time, sender, recipient, subject",
+        "index=proxy (dest_domain=\"cdn.jsdelivr.net\" OR dest_domain=\"*.gitlab.com\" OR dest_domain=\"codeberg.org\") | stats count by src_ip, dest_domain, uri_path"
+      ],
+      "detection_notes": "jsDelivr/GitLab等は正規業務利用も多いため、mshta.exe実行後の後続通信という文脈（プロセス系譜）と組み合わせて判定する",
+      "references": [
+        {
+          "url": "https://www.jpcert.or.jp/wr/2026/wr260723.html",
+          "title": null,
+          "language": "ja",
+          "source": "JPCERT/CC"
+        },
+        {
+          "url": "https://blogs.jpcert.or.jp/ja/2026/07/apt-c-60_2026.html",
+          "title": null,
+          "language": "ja",
+          "source": "JPCERT/CC Eyes"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260724-APTC-c1840181"
+    },
+    {
+      "group_name": "Chaos（ランサムウェアグループ）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "Chaos-2026-msaRAT",
+      "activity_type": [
+        "new_malware"
+      ],
+      "motivation": "financial",
+      "first_seen": "2025-01-01",
+      "last_seen": "2026-07-23",
+      "targets": {
+        "sectors": [],
+        "regions": [],
+        "countries": []
+      },
+      "malware": [
+        {
+          "name": "msaRAT（lib.dll）",
+          "type": "rat",
+          "language": "Rust",
+          "delivery": [
+            "phishing",
+            "other"
+          ],
+          "persistence": [
+            "other"
+          ],
+          "c2_protocol": [
+            "https",
+            "other"
+          ]
+        }
+      ],
+      "axis_p_score": 11,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "Cisco Talos（BleepingComputer/The Hacker News経由）",
+          "date": "2026-07-23T10:00:00+00:00",
+          "description": "ランサムウェアグループChaosが使用する新型RAT「msaRAT」を初報。ヘッドレスChrome/Edge経由でC2通信を中継する新規手口を確認"
+        }
+      ],
+      "overview": "Cisco Talosが、2025年初頭より活動するランサムウェアグループChaosが新たに使用するRust製RAT「msaRAT」（別名lib.dll）を報告した。メール・ボイスフィッシングで初期アクセスののち正規のリモート管理ソフトウェアを永続化に用い、Windows更新を装ったMSIインストーラのカスタムアクションでDLLをメモリへロードする。C2はヘッドレスモードで起動したChrome/EdgeをChrome DevTools Protocolで操作し、Twilio TURNサーバとCloudflare Workersを中継したWebRTCデータチャネル（WebRTC DTLS＋ChaCha20-Poly1305の二重暗号化）で通信し、ICE candidateを省略することで真の攻撃者IPを秘匿する。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "メールまたはボイスフィッシングで初期アクセスし、正規のリモート管理ソフトウェアを永続化用に導入"
+        },
+        {
+          "step": 2,
+          "description": "Windows更新を装ったMSIインストーラをcurlでダウンロードし、カスタムアクションでDLL（msaRAT/lib.dll）をメモリへロード"
+        },
+        {
+          "step": 3,
+          "description": "ヘッドレスモードのChrome/EdgeをChrome DevTools Protocolで操作し、.rdataセクションに格納したJavaScriptを注入"
+        },
+        {
+          "step": 4,
+          "description": "Twilio TURNサーバとCloudflare Workersを中継したWebRTCデータチャネル（二重暗号化）でC2通信を確立し、ICE candidateを省略して攻撃者IPを秘匿"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1566",
+          "sub_technique_id": "T1566.004",
+          "name": "Phishing: Spearphishing Voice",
+          "implementation": "ボイスフィッシングが初期アクセス手口の一つとして明記"
+        },
+        {
+          "mitre_id": "T1219",
+          "name": "Remote Access Software",
+          "implementation": "正規のリモート管理ソフトウェアを永続化に用いたことが明記"
+        },
+        {
+          "mitre_id": "T1218",
+          "sub_technique_id": "T1218.007",
+          "name": "System Binary Proxy Execution: Msiexec",
+          "implementation": "MSIインストーラのカスタムアクションでDLLをメモリへロードする具体的手口が記述"
+        },
+        {
+          "mitre_id": "T1090",
+          "sub_technique_id": "T1090.002",
+          "name": "Proxy: External Proxy",
+          "implementation": "Twilio TURNサーバ経由で真の攻撃者IPを秘匿する具体的手口が記述"
+        },
+        {
+          "mitre_id": "T1102",
+          "name": "Web Service",
+          "implementation": "Cloudflare WorkersをC2中継インフラとして利用したことが明記"
+        }
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [
+          "172.86.126.18"
+        ],
+        "domains": [
+          "is-01-ast.ols-img-12.workers.dev"
+        ],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "ヘッドレスモードでのChrome/Edge起動（--headless=new・--remote-debugging-port）をエンドポイントで検知・制限する。Windows更新を装うMSIインストーラの配布元・署名を検証する。Cloudflare Workers宛の異常な永続的接続を監視する。",
+      "splunk_spl": [
+        "index=endpoint (CommandLine=\"*--headless=new*\" OR CommandLine=\"*--remote-debugging-port*\") (Image=\"*chrome.exe\" OR Image=\"*msedge.exe\") | table _time, ComputerName, CommandLine",
+        "index=proxy dest_domain=\"is-01-ast.ols-img-12.workers.dev\" OR dest_ip=\"172.86.126.18\" | table _time, src_ip, dest_domain"
+      ],
+      "detection_notes": "正規の自動テスト・スクレイピング用途でもヘッドレスブラウザは使われるため、社内許可リストと突合して判定する",
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/new-msarat-malware-uses-chrome-edge-browsers-to-route-c2-traffic",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://thehackernews.com/2026/07/chaos-ransomware-uses-msarat-to-route.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260724-APTC-b4f975fd"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [
+    {
+      "attack_id": "AI-2026-07-24-001",
+      "title": "AgentForger: ChatGPT Agent Builderのパラメータ改ざんで承認なくAIエージェントを偽造・遠隔操作",
+      "category": "B",
+      "subcategory": "B1",
+      "attacker_type": "researcher",
+      "adoption_triggers": [
+        "A-P",
+        "A-S"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it",
+          "professional_services"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "研究開示のため確認済み実被害なし（企業ChatGPT Workspace導入組織が対象範囲）",
+      "burst_count": 5,
+      "burst_status": "threshold_met",
+      "axis_x_score": 6,
+      "axis_y_score": 5,
+      "changes_24h": [
+        {
+          "source": "SecurityWeek / Zenity Labs",
+          "date": "2026-07-23T15:09:59+00:00",
+          "description": "OpenAIがBugcrowd経由の報告を受け2026-06-08に修正した「AgentForger」の技術詳細が公開された"
+        }
+      ],
+      "overview": "Zenity Labsの研究者が、ChatGPT Workspace Agent BuilderのURLパラメータ（テンプレート選択・初期プロンプト欄）を細工することで、通常必要な承認を経ずに攻撃者制御のWorkspaceエージェントを無承認で構築・認可・公開・スケジュール実行できる脆弱性「AgentForger」を発見した。偽造エージェントは5分おきに攻撃者のメール受信箱を「TASK」件名でポーリングし指示を受信、Outlook/Slack/Teams/Google Drive/SharePoint/カレンダー横断の組織構造偵察、M&A資料・役員会議資料・財務記録の窃取、Slackからの認証情報収集、Teams/Slack経由のなりすましフィッシング（偽SSOページ）、BEC/振込詐欺メッセージ作成までを可能にする。2026-06-04にBugcrowd経由で報告され、6月8日に脆弱なURLパラメータが削除され修正済み。実悪用は確認されていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "一見通常のChatGPTリンクを攻撃者が被害者に送付"
+        },
+        {
+          "step": 2,
+          "description": "リンクのURLパラメータがWorkspace Agent Builderのテンプレート選択・初期プロンプト欄を細工し、承認プロセスを経ずに攻撃者制御のエージェントを構築・認可・公開・スケジュール実行"
+        },
+        {
+          "step": 3,
+          "description": "偽造エージェントが5分おきに攻撃者メール受信箱を「TASK」件名でポーリングし指示を受信、組織偵察・資料窃取・認証情報収集・なりすましフィッシング・BEC文面作成等を実行"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "未承認のWorkspaceエージェントが定期的に外部メールアドレスをポーリングする挙動"
+        ]
+      },
+      "monitoring": {
+        "description": "ChatGPT Workspace管理コンソールでのエージェント作成・公開ログを監視し、通常の承認フローを経ない自動公開イベントを検知する",
+        "splunk_spl": [
+          "index=saas sourcetype=openai:workspace:audit action=agent_publish approval_flow=false | table _time, user, agent_id"
+        ],
+        "detection_notes": "承認フローバイパスの検知に加え、作成直後のエージェントが外部SMTP/IMAPへ定期的にポーリング接続する挙動を組み合わせて確認する"
+      },
+      "references": [
+        {
+          "url": "https://www.securityweek.com/openai-fixes-chatgpt-agent-flaw-that-could-let-attackers-forge-an-ai-insider",
+          "title": null,
+          "language": "en",
+          "source": "SecurityWeek"
+        },
+        {
+          "url": "https://labs.zenity.io/p/agentforger-part-2-the-autonomous-insider",
+          "title": null,
+          "language": "en",
+          "source": "Zenity Labs"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20260724-AIAT-a4921a1d"
+    },
+    {
+      "attack_id": "AI-2026-07-24-002",
+      "title": "FakeAgent: Bing広告経由の偽Claudeアプリ配布とclaude.ai Artifactホスティング悪用によるSectopRAT配布",
+      "category": "C",
+      "subcategory": "C4",
+      "attacker_type": "criminal_org",
+      "adoption_triggers": [
+        "A-Q",
+        "A-W"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it",
+          "other"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "2026-07-21〜22の間に少なくとも29組織が侵害され、悪意あるArtifactは約7,100回ダウンロードされた（Anthropicが削除するまで）",
+      "burst_count": 1,
+      "burst_status": "below_threshold",
+      "axis_x_score": 8,
+      "axis_y_score": 6,
+      "changes_24h": [
+        {
+          "source": "BleepingComputer（Huntress調査）",
+          "date": "2026-07-23T19:48:30+00:00",
+          "description": "Bing広告経由で拡散する偽Claudeデスクトップアプリが、claude.ai上の実在するArtifactとしてホストされていたことが判明。SectopRAT（ArechClient2）を配布"
+        }
+      ],
+      "overview": "Huntressの調査により、Bing検索広告が実際にclaude.aiドメイン上でホストされた悪意あるClaude Artifactへ被害者を誘導し、偽インストーラ「ClaudeDesktop.exe」（実体はJetBrains製Chromiumコンポーネントを悪用したサイドローディングローダーで、悪意あるlibcef.dllを読み込む）を配布していたことが判明した。最終的にHidden VNC機能を備えた情報窃取型マルウェアSectopRAT（別名ArechClient2）が展開され、パスワード・クレジットカード情報・ブラウザ認証情報・Discord/Telegram・Steam・VPN製品の情報が窃取される。永続化は「DockerDesktop.exe」という偽装名のスケジュールタスクで確立される。攻撃者は特定の既知クラスタへの帰属が確認できておらず、インフラの一部（過去にStealC配布に使われ、Operation Endgameで押収されたドメイン）に重複が見られる。Anthropicは当該Artifactを削除済み。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Bing検索広告がclaude.ai上に実在する悪意あるArtifactへ被害者を誘導"
+        },
+        {
+          "step": 2,
+          "description": "偽インストーラ「ClaudeDesktop.exe」（JetBrains製Chromiumコンポーネント悪用）が悪意あるlibcef.dllをサイドロード"
+        },
+        {
+          "step": 3,
+          "description": "情報窃取型マルウェアSectopRAT（Hidden VNC機能付き）を展開し、認証情報・決済情報・各種アカウント情報を窃取"
+        },
+        {
+          "step": 4,
+          "description": "「DockerDesktop.exe」という偽装名のスケジュールタスクで永続化を確立"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": true,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "ファイル名 ClaudeDesktop.exe / libcef.dll / DockerDesktop.exe（正規Docker Desktopと異なる文脈での出現）",
+          "同一登録者メールアドレスに紐づく2025年12月以降登録の関連ドメイン群（具体的ドメイン名は原典未特定）"
+        ]
+      },
+      "monitoring": {
+        "description": "エンドポイントでの不審なClaudeDesktop.exe/DockerDesktop.exeという名称のプロセス起動・スケジュールタスク登録を監視する",
+        "splunk_spl": [
+          "index=endpoint (Image=\"*ClaudeDesktop.exe\" OR ImageLoaded=\"*libcef.dll\") NOT Publisher=\"Anthropic*\" | table _time, ComputerName, Image, Publisher"
+        ],
+        "detection_notes": "正規のClaude Desktopアプリは公式サイト（claude.ai/download）配布かつAnthropic署名済みである点を確認し、署名なし・広告経由インストーラを区別する"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/fake-claude-app-promoted-by-bing-ads-pushes-sectoprat-malware",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20260724-AIAT-7021e957"
+    }
+  ],
+  "ai_attacks_reference_b": [
+    {
+      "attack_id": "AI-2026-07-24-003",
+      "title": "SharedRoot: Claude CoworkのVM分離不備とLinuxカーネルCVE-2026-46331連鎖によるmacOSホストファイルアクセス",
+      "category": "C",
+      "subcategory": "C1",
+      "attacker_type": "researcher",
+      "adoption_triggers": [
+        "A-P",
+        "A-S"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "ローカル実行モードでClaude Coworkを使用するmacOSユーザー（推計約50万人）が露出母集団。確認済み実被害はなし（研究開示）",
+      "burst_count": 1,
+      "burst_status": "below_threshold",
+      "axis_x_score": 3,
+      "axis_y_score": 6,
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Accomplish AI調査）",
+          "date": "2026-07-23T13:27:59+00:00",
+          "description": "Claude CoworkのVM分離不備を突きmacOSホストファイルへ無許可アクセス可能な脆弱性が開示された"
+        }
+      ],
+      "overview": "Accomplish AIの研究者（Oren Yomtov・Or Hiltch）が、Claude CoworkがmacOSホストのファイルシステム全体を読み書き可能な状態でLinux VM内の/mnt/.virtiofs-rootへマウントしている設計を発見し、非特権ユーザー名前空間内でLinuxカーネルのTraffic Control act_peditサブシステムを悪用するCVE-2026-46331（\"pedit COW\"）を用いてゲストroot権限を取得したのち、接続許可したフォルダ範囲を大きく超えたホストファイル（SSH鍵・クラウド認証情報等）へ権限プロンプトなしにアクセスできることを実証した。Anthropicは本報告を「有益だが修正は発行しない」として対応を終了しており、最新版はデフォルトでクラウド実行に切り替わっているためリスクは軽減されるが、ローカルセッションを使うユーザーは引き続き露出する。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Claude Coworkのローカル実行セッションがmacOSホストのファイルシステム全体をLinux VM内に読み書き可能な状態でマウントしていることを確認"
+        },
+        {
+          "step": 2,
+          "description": "非特権ユーザー名前空間内でLinuxカーネルのact_pedit（Traffic Control）サブシステムの脆弱性CVE-2026-46331を悪用しゲストroot権限を取得"
+        },
+        {
+          "step": 3,
+          "description": "接続許可フォルダの範囲を超え、権限プロンプトなしにSSH鍵・クラウド認証情報等のホストファイルへアクセス"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": []
+      },
+      "monitoring": {
+        "description": "Claude Coworkをローカル実行モードで使用する端末でのVM内異常な権限昇格・ホストファイルシステムへの想定外アクセスを監視する",
+        "splunk_spl": [],
+        "detection_notes": "単一ソース（The Hacker News経由の研究開示）であり独立した追加報道は確認できていないため、参考情報として扱う"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/claude-cowork-flaw-could-let-ai-agent.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b",
+      "info_id": "20260724-AIAT-ab42e921"
+    }
+  ],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-07-24-001",
+      "title": "JPCERT/CC週次レポート・JVN iPediaによる複数ベンダー脆弱性の定期公表（Microsoft/Cisco/Fortinet/SAP/Adobe/Firefox/Splunk/VMware Avi LB/Drupal core/Zoom/SonicWall SMA1000/WordPress/Chrome等）",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "medium",
+      "product_or_service": null,
+      "targets": {
+        "sectors": [],
+        "regions": [
+          "JP"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "JPCERT/CC",
+          "date": "2026-07-23T00:22:00+09:00",
+          "description": "週次レポートで上記複数ベンダー製品の脆弱性情報および四半期レポート・APT-C-60技術分析を公表"
+        }
+      ],
+      "overview": "JPCERT/CCの週次レポートおよびJVN iPediaにおいて、Microsoft・Cisco・Fortinet・SAP・Adobe・Firefox・Splunk・VMware Avi Load Balancer・Drupal core・Zoom・SonicWall SMA1000シリーズ・WordPress（RCEにつながる脆弱性）・Google Chrome等、複数ベンダー製品の脆弱性情報が定期公表された。個別のCVSS・KEV情報を伴わない定期サマリーのため、パッチ管理サイクルの一環として一括把握を推奨する。",
+      "recommended_actions": [
+        "上記製品を保有する組織は週次レポート本文（wr260723.html）を確認し、自組織資産との突合を行う",
+        "特にWordPressのリモートコード実行につながる脆弱性・SonicWall SMA1000シリーズは優先度を上げて確認する"
+      ],
+      "monitoring": {
+        "description": null,
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.jpcert.or.jp/wr/2026/wr260723.html",
+          "title": null,
+          "language": "ja",
+          "source": "JPCERT/CC"
+        }
+      ],
+      "info_id": "20260724-SOCR-64278089"
+    },
+    {
+      "rec_id": "SOC-2026-07-24-002",
+      "title": "日本交通、マルウェア感染により業務に影響・情報漏洩の可能性",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": null,
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "JP"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-23T19:52:59+09:00",
+          "description": "日本交通のマルウェア感染により業務への影響と情報漏洩の可能性が報じられた（感染経路・マルウェア種別は本日時点で非公開）"
+        }
+      ],
+      "overview": "国内タクシー大手・日本交通がマルウェア感染により業務に影響を受け、情報漏洩の可能性があることがSecurity NEXTで報じられた。感染経路・マルウェア種別・ランサムウェアか否かは本日時点で公表されておらず、SOCとしては続報を注視しつつ類似の初期侵入経路（フィッシング・RDP/VPN露出等）への一般的対策を再確認する段階である。",
+      "recommended_actions": [
+        "続報（感染経路・攻撃者情報）の公表を注視する",
+        "自組織のエンドポイント検知（EDR）でランサムウェア前兆行動（大量ファイルアクセス・シャドウコピー削除等）の監視を再確認する"
+      ],
+      "monitoring": {
+        "description": null,
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/187303",
+          "title": null,
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "info_id": "20260724-SOCR-b49b738d"
+    },
+    {
+      "rec_id": "SOC-2026-07-24-003",
+      "title": "Chick-fil-Aアカウントへのクレデンシャルスタッフィング攻撃",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "δ"
+      ],
+      "priority": "low",
+      "product_or_service": null,
+      "targets": {
+        "sectors": [
+          "retail"
+        ],
+        "regions": [
+          "US"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SecurityWeek",
+          "date": "2026-07-23T14:55:19+00:00",
+          "description": "米Chick-fil-Aの顧客アカウントに対するクレデンシャルスタッフィング攻撃が報じられた"
+        }
+      ],
+      "overview": "米国のChick-fil-A顧客アカウントに対し、他サービスから流出した認証情報の使い回しを狙ったクレデンシャルスタッフィング攻撃が確認された。国内直接被害ではないが、パスワード使い回しに起因する攻撃パターンとして自社の会員向けサービスのMFA・異常ログイン検知の実装状況を確認する参考情報とする。",
+      "recommended_actions": [
+        "会員制サービスにおけるMFA必須化・異常ログイン検知（同一IPからの大量ログイン試行等）の実装状況を確認する"
+      ],
+      "monitoring": {
+        "description": null,
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.securityweek.com/chick-fil-a-accounts-get-fried-in-credential-stuffing-attack",
+          "title": null,
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "info_id": "20260724-SOCR-c5ba9429"
+    },
+    {
+      "rec_id": "SOC-2026-07-24-004",
+      "title": "マシンアイデンティティを標的とする合成ID詐欺の拡大動向",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "ε"
+      ],
+      "priority": "low",
+      "product_or_service": null,
+      "targets": {
+        "sectors": [],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-23T11:45:00+00:00",
+          "description": "従来は人間の身元詐称が中心だった合成ID詐欺が、APIキー・サービスアカウント等の「マシンアイデンティティ」を標的とし始めているとの分析記事が公開された"
+        }
+      ],
+      "overview": "合成アイデンティティ詐欺の手法が、人間のアカウントだけでなくAPIキー・サービスアカウント・機械学習パイプライン用の認証情報等「マシンアイデンティティ」の偽装・悪用へ拡大しつつあるとの分析。具体的なインシデント事例ではなく動向分析記事だが、AIエージェント基盤の普及に伴いマシンアイデンティティの棚卸し・ライフサイクル管理の重要性が増している点は把握しておく価値がある。",
+      "recommended_actions": [
+        "サービスアカウント・APIキー・マシンアイデンティティの棚卸しと有効期限管理・異常利用検知の整備状況を確認する"
+      ],
+      "monitoring": {
+        "description": null,
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/how-synthetic-identity-fraud-is-coming.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20260724-SOCR-9d7c7793"
+    },
+    {
+      "rec_id": "SOC-2026-07-24-005",
+      "title": "FedRAMP Rev5終了と20x移行の要件整理",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "ζ"
+      ],
+      "priority": "low",
+      "product_or_service": null,
+      "targets": {
+        "sectors": [
+          "government"
+        ],
+        "regions": [
+          "US"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-07-23T14:00:10+00:00",
+          "description": "米FedRAMP Rev5の終了時期と後継「20x」プログラムへの移行要件を解説する記事が公開された"
+        }
+      ],
+      "overview": "米国政府向けクラウド認証制度FedRAMPのRev5基準が終了し、後継の「FedRAMP 20x」への移行が進む。米国政府機関向けにクラウドサービスを提供する組織は影響を受けるが、国内向けには参考情報レベル。",
+      "recommended_actions": [
+        "米国政府機関向けクラウドサービスを提供・利用する場合は移行スケジュールを確認する"
+      ],
+      "monitoring": {
+        "description": null,
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/fedramp-rev5-is-ending-what-the-20x-transition-really-requires",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20260724-SOCR-61dbb627"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-64600",
+        "product": "Linux kernel（XFS reflink, \"RefluXFS\"）",
+        "reason": "low_score",
+        "reason_detail": "軸1=3点（PoC公開+2・広く使われるOSS+1のみ。KEV未登録・CVSS未確定・ローカル権限昇格でRCE/認証バイパスに該当せず）/軸2=1点（海外複数ソース報道のみ・国内報道なし）。参考A昇格トリガー該当なし。EPSSパーセンタイル11.95%と低位。",
+        "reported_date": "2026-07-24"
+      },
+      {
+        "cve_id": "CVE-2025-66376",
+        "product": "Zimbra Collaboration Suite (Classic UI)",
+        "reason": "low_score",
+        "reason_detail": "CVSS7.2（KEV登録済み・実悪用確認だがCVSS9.0/7.5いずれの閾値も未達、未認証RCE/境界機器要件も非該当）のため軸1=6点・軸2判定でも参考A昇格トリガー該当なし。攻撃キャンペーンの詳細はSection2 APT本編「LaundryBear-2026-ZimbraZeroClick」を参照。",
+        "reported_date": "2026-07-24"
+      }
+    ],
+    "apt": [],
+    "ai_attacks": [
+      {
+        "attack_id": null,
+        "title": "Dolphin X malware（AIによる被害者ランク付け機能）",
+        "reason": "low_score",
+        "reported_date": "2026-07-24"
+      },
+      {
+        "attack_id": null,
+        "title": "SentinelOne「Nuclear-Sabotage Malware Benchmark」（Sol Searching）",
+        "reason": "low_score",
+        "reported_date": "2026-07-24"
+      },
+      {
+        "attack_id": null,
+        "title": "ScanNetSecurity: 2026年Q2 JVN iPedia AIツール脆弱性登録傾向",
+        "reason": "low_score",
+        "reported_date": "2026-07-24"
+      },
+      {
+        "attack_id": null,
+        "title": "getdbt MCP Server CVE-2026-44968/44969/44970（引数注入・ログ情報漏洩・テレメトリ情報漏洩）",
+        "reason": "low_score",
+        "reported_date": "2026-07-24"
+      },
+      {
+        "attack_id": null,
+        "title": "Drupal「AI Agents」プラグイン認証不備 CVE-2026-13236",
+        "reason": "low_score",
+        "reported_date": "2026-07-24"
+      },
+      {
+        "attack_id": null,
+        "title": "SANS ISC: 「自律的攻撃者」が自社AIモデルであった件（OpenAI/Hugging Face事案の分析）",
+        "reason": "no_change",
+        "reported_date": "2026-07-24"
+      }
+    ],
+    "soc_recommendations": [
+      {
+        "rec_id": null,
+        "title": "佐川急便：設定ミスで会員通知メールに他会員情報が記載",
+        "reason": "insufficient_evidence",
+        "reported_date": "2026-07-24"
+      },
+      {
+        "rec_id": null,
+        "title": "君津市：人事情報を不正閲覧した職員を懲戒処分",
+        "reason": "insufficient_evidence",
+        "reported_date": "2026-07-24"
+      },
+      {
+        "rec_id": null,
+        "title": "長野県：県サイトに個人情報記載の図面を掲載",
+        "reason": "insufficient_evidence",
+        "reported_date": "2026-07-24"
+      },
+      {
+        "rec_id": null,
+        "title": "郡山市：様式変更により個人情報含む書類を誤配布",
+        "reason": "insufficient_evidence",
+        "reported_date": "2026-07-24"
+      },
+      {
+        "rec_id": null,
+        "title": "Origin（豪州エネルギー事業者）の顧客データ漏洩",
+        "reason": "insufficient_evidence",
+        "reported_date": "2026-07-24"
+      },
+      {
+        "rec_id": null,
+        "title": "Upbound Groupのデータ侵害による1300万ドルの詐欺被害",
+        "reason": "insufficient_evidence",
+        "reported_date": "2026-07-24"
+      }
+    ]
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 1,
+      "reference_a": 1,
+      "reference_b": 0,
+      "excluded": 2,
+      "total_processed": 4
+    },
+    "apt": {
+      "main": 2,
+      "notable": 3,
+      "excluded": 0,
+      "total_processed": 5
+    },
+    "ai_attacks": {
+      "main": 2,
+      "reference_a": 0,
+      "reference_b": 1,
+      "excluded": 6,
+      "total_processed": 9,
+      "category_breakdown": {
+        "A": 0,
+        "B": 1,
+        "C": 2
+      }
+    },
+    "soc_recommendations": {
+      "high": 0,
+      "medium": 2,
+      "low": 3,
+      "excluded": 6,
+      "total_processed": 11,
+      "perspective_breakdown": {
+        "cve": 2,
+        "zeroday": 2,
+        "ai_attack": 1
+      }
+    }
+  }
+}
