@@ -1,0 +1,129 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-25 07:47 JST
+調査期間: 2026-07-24 07:00 〜 2026-07-25 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-07-24 〜 2026-07-25
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Hermes AIエージェント無人稼働（YOLOモード）によるタイ財務省侵害の自律的偵察・権限昇格探索
+カテゴリ: A4 / 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: A-Q / A-X
+ATLAS: 該当タクティクスなし / 調査中
+OWASP: AG01
+対象: government / Asia-Pacific、TH
+被害規模: タイ財務省（国庫・税務所管）ネットワーク侵害、2012年以降の人事記録を含むディレクトリへのアクセスを確認。データ持出しの最終確認はされていない
+
+【24時間以内（または期間内）の変化】
+[Hunt.io / The Hacker News / BleepingComputer 2026-07-24] 攻撃者がオープンソースAIエージェントHermesを承認確認なしの無人モード（YOLOモード）でレンタルサーバ上に設置し、タイ財務省ネットワークへの侵入後の偵察・権限昇格調査を自律的に実行させていたことが判明
+
+【概要】
+オープンソースのAIアシスタント「Hermes」（Nous Research製、電子メール管理・タスク自動化・Telegram/Slack経由のコマンド実行を目的として設計）を、攻撃者がレンタルサーバ上でコマンド実行前の人間承認を無効化する「YOLOモード」（--yolo等）で稼働させ、タイ財務省のネットワーク内で無人のまま侵害後の偵察・権限昇格探索を自動実行させていたことがHunt.ioの調査で判明した。エージェントはLinuxカーネル脆弱性スキャン・LinPEAS権限昇格列挙・人事記録ディレクトリへのアクセス・高権限バイナリの探索を自律的に繰り返し実行していた。侵入の初期起点にはHiveServer2（Hadoop SQLインタフェース、デフォルト無認証モード）を狙った悪意あるJava UDF（HiveCmd.jar）を用いたコマンド実行が使われた。侵害環境からは未文書化のGo実装インプラント「Hades」（62検体、香港の2ホストにハードコード）と585ファイル・470MBの攻撃ツール一式が発見されている。タイの国家CERTには2026年7月15日に通報済み。
+
+攻撃の流れ:
+1. HiveServer2の無認証設定を悪用し悪意あるJava UDF（HiveCmd.jar）経由でOSコマンド実行を確立
+2. レンタルサーバ上でHermes AIエージェントをYOLOモード（人間承認なし）で稼働させ財務省ネットワークへ接続
+3. AIエージェントが自律的にカーネル脆弱性スキャン・LinPEAS権限昇格列挙・人事記録ディレクトリの探索を反復実行
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: HermesWebUIサーバヘッダーを持つ公開エージェントインスタンス; /hermes-results/配下の予測可能なファイル名パターン; HiveServer2への既定認証情報での接続試行
+
+【監視・対策ポイント】
+・[インターネット公開されたAIエージェント管理画面（HermesWebUI等）の有無確認、Hadoop/HiveServer2の認証設定確認、権限昇格列挙ツール（LinPEAS等）の実行痕跡監視]
+Splunk SPL: index=endpoint sourcetype=linux_audit (CommandLine="*linpeas*" OR CommandLine="*.hive*") | stats count by host, user
+→ 正規の脆弱性診断業務との区別のため、実行主体（承認されたペネトレーションテスト担当か）とHiveServer2への接続元IPを確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hermes-ai-agent-used-to-automate-attack-on-thai-finance-ministry
+https://thehackernews.com/2026/07/hacker-runs-hermes-ai-agent-unattended.html
+
+------------------------------------------------------------
+2. BlueNoroffのAI生成ディープフェイクを用いたZoom/Teamsなりすましフィッシングキット
+カテゴリ: A2 / 攻撃者種別: 国家系
+------------------------------------------------------------
+
+採用契機: A-Q / A-X
+ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: finance、it / global
+被害規模: 暗号資産・ベンチャーキャピタル・金融セクターの経営層を標的に2025年初頭から活動継続。フィッシングキットは5バージョンが2026年5月31日〜7月14日の間に発見されており、具体的な被害組織数・金額は不明
+
+【24時間以内（または期間内）の変化】
+[JUMPSEC / The Hacker News 2026-07-24] 北朝鮮系脅威アクターBlueNoroff（APT38/Sapphire Sleet）が運用するZoom/Teamsなりすましフィッシングキットの技術詳細をJUMPSECが公開。ChatGPT生成のAIディープフェイク映像を用いた偽ビデオ会議で被害者を欺く手口を確認
+
+【概要】
+北朝鮮系脅威アクターBlueNoroff（APT38/Sapphire Sleet、関連クラスタ: Sekoia追跡のClickFake Interview）が、侵害済みTelegramアカウントからCalendly会議リンクを送付し、タイポスクワッティングしたZoom/Teamsドメイン（例: us.zoom.06webin.usパターン）へ誘導するフィッシングキャンペーンを運用していることをJUMPSECが技術分析として公開した。被害者がWebカメラ許可を求められた際、OpenAI ChatGPTで生成したAIディープフェイクの頭部映像を実際の身振りに重ねた偽のビデオ会議映像を表示し、その後「マイクが機能しない」等の口実でClickFix型のペイロード実行を促す。キットはブラウザ上で暗号資産ウォレット拡張機能のフィンガープリンティングを実施し、Windows版はPowerShellローダーでMicrosoft Defenderを無効化した上でTelegram/ブラウザ認証情報を窃取、macOS版はiCloudキーチェーンからChromeマスターキーを抽出しTelegramチャンネル「Aurora」へ持ち出す。2025年初頭から活動が継続し、キットは2026年5月31日〜7月14日の間に5つのバージョンへ更新されている。
+
+攻撃の流れ:
+1. 侵害済みTelegramアカウントからCalendly会議リンクを送付しタイポスクワッティングしたZoom/Teamsドメインへ誘導
+2. AI生成（ChatGPT）ディープフェイク映像を実映像に重畳した偽ビデオ会議で被害者を欺き、ClickFix型のコマンド実行を誘導
+3. PowerShell/シェルスクリプトでDefender無効化後、暗号資産ウォレット・ブラウザ認証情報・iCloudキーチェーンを窃取しTelegram経由で持ち出す
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 06webin.us
+Hash: 確認されず
+検知シグナル: Calendly会議リンク経由でのタイポスクワッティングZoom/Teamsドメインへの誘導; Webカメラ許可要求直後の「マイクが機能しない」という口実によるコマンド実行誘導
+
+【監視・対策ポイント】
+・[タイポスクワッティングドメインへのDNS問い合わせ監視、Defender無効化イベント、iCloudキーチェーン/ブラウザプロファイルへの異常アクセスの監視]
+Splunk SPL: index=dns_logs query="*zoom*" OR query="*teams*" NOT query="zoom.us" NOT query="teams.microsoft.com" | stats count by query, src_ip
+→ 正規のZoom/Teamsドメインとの表記類似（タイポスクワッティング）を確認し、暗号資産・金融・VC関連の役職者を優先的に注意喚起する
+
+【参照】
+https://thehackernews.com/2026/07/bluenoroff-zoom-phishing-kit-profiles.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[Kimi K3エージェントによるRedisゼロデイの自律発見・エクスプロイト自動生成（自己申告・第三者未検証）]
+カテゴリ: A4 採用契機: A-P / A-X
+研究者Chaofan Shou氏が、AIエージェント「Kimi K3」に約90分でRedisのゼロデイ脆弱性19件を発見させ、別セッションではRedis 8.8.0向けの認証済みRCEエクスプロイトを27分で自動生成したと報告した。対象はRedis 6.2.22・7.4.9・8.6.4・8.8.0の4バージョンで、いずれもRESTOREコマンドを起点とし、Streamsチェーンは追加でEVAL/XGROUPを、8.8.0チェーンはEVALとバンドル済みRedisBloomモジュールを要する（いずれも認証済みアクセスが前提）。Redisは2026年7月23日に6.2.23・7.2.15・7.4.10・8.2.8・8.4.5・8.6.5・8.8.1をリリースし修正した。The Hacker Newsの調査時点でNVDへの独立したレコードは確認できておらず、件数・所要時間・AIの自律性の程度はいずれも研究者の自己申告に基づくものであり第三者による独立検証は確認されていない。実悪用の報告もない。
+対策: Redisサーバのバージョン管理を徹底し2026-07-23公開の修正版（6.2.23/7.2.15/7.4.10/8.2.8/8.4.5/8.6.5/8.8.1）へ更新する。RESTORE/EVAL等の管理コマンドへのアクセスを認証済み管理者に限定する。
+
+参照: https://thehackernews.com/2026/07/kimi-k3-agents-found-redis-zero-days.html
+
+
+[AI攻撃]
+・Slopsquatting, Phantom Domains, and HalluSquatting Are the Same AI Attack → no_change
+・Escape Artists: 'Incorrigible' AI Models Resist Rehabilitation → no_change
+・Industry Reactions to OpenAI Models Hacking Hugging Face: Feedback Friday → no_change
+・Europe's Multilingual Reality Exposes AI Security Gaps → insufficient_evidence
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はAIエージェントの無人（YOLO）モード稼働によるタイ財務省侵害と、北朝鮮系BlueNoroffによるAI生成ディープフェイクを用いたZoom/Teamsなりすましフィッシングキットの2件を本編として計上した。いずれもカテゴリA（AI武器化）に分類される。加えてAIエージェントによるRedisゼロデイの自律発見・エクスプロイト自動生成（自己申告ベース・第三者未検証）を参考Aとして計上した。バースト検出閾値（6件以上）を超えたトピックは本日確認されなかった。
+
+本日の集計:
+AI攻撃 — 本編2件 / 参考A1件 / 参考B0件 / 除外4件
+カテゴリ内訳: A（武器化）3件 / B（攻撃対象）0件 / C（インフラ）0件
+
+========================================
