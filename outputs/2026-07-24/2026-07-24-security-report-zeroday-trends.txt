@@ -1,0 +1,178 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-24 07:30 JST
+調査期間: 2026-07-23 07:00 〜 2026-07-24 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. LAUNDRY BEAR（別名: Void Blizzard（Microsoft） / CL-STA-1114（Unit42） / TA488/UNK_PitStop（Proofpoint、対応関係は未確定と留保あり） / 国家帰属: RU / 帰属信頼度: 高）
+活動タイプ: 公式帰属 / TTP更新 / IOC公開
+------------------------------------------------------------
+
+標的: government・defense・critical_infrastructure・finance・education・energy・media・it / NATO加盟国・CIS・Africa・UA・US
+マルウェア: Flowerbed（C2/持出フレームワーク）
+
+【24時間以内の変化】
+[Unit 42 2026-07-23] 「Russian Global Webmail Espionage」として本キャンペーンの技術分析を公開
+[CISA/NSA 2026-07-22] 合同勧告AA26-204Aを公表し、CVE-2025-66376の武器化とIOCを公式に確認
+[The Hacker News / BleepingComputer / Dark Reading 2026-07-23] CISA/NSA勧告・Unit42・Proofpoint・Seqrite等の情報を統合し、米国・ウクライナ標的の実害を報道
+
+【概要】
+ロシア連邦nexusと高信頼度で帰属される脅威アクターLAUNDRY BEAR（別名Void Blizzard/CL-STA-1114）が、Zimbra Collaboration Suite Classic UIのゼロクリック脆弱性CVE-2025-66376（サニタイザ回避によるstored XSS）を武器化し、CSSの@importディレクティブとHTMLコメントでsvg onloadペイロードを断片化する「タグ分割」手法でメール閲覧のみでJavaScriptを自動実行させ、NATO加盟国・ウクライナ・CIS・アフリカ・米国の政府機関・防衛産業基盤・エネルギー・金融・教育・法執行機関等を標的に最大90日分のメールを窃取し、パスワードリセット後も残存しMFAを回避するアプリケーション専用認証情報を作成して持続的アクセスを確保した。CISA/NSAが合同勧告AA26-204A（2026-07-22）で公式に帰属・確認した。
+
+攻撃の流れ（判明分）:
+1. ProtonMailアカウントや侵害済みメールサーバから偽装ニュースダイジェスト等のフィッシングメールを送信
+2. CSS @importディレクティブとHTMLコメントでsvg onloadペイロードを断片化しサニタイザを回避（CVE-2025-66376）、メール閲覧のみでJavaScriptが自動実行
+3. パスワードリセット後も残存しMFAを回避するアプリケーション専用IMAP/POP3/SMTP認証情報を作成し持続的アクセスを確保
+4. 最大90日分のメールをTGZアーカイブとして窃取し、DNS Aレコードクエリ経由で持出し
+
+【新規TTP】
+・[T1203] Exploitation for Client Execution — CVE-2025-66376のサニタイザ回避（タグ分割）によりメール閲覧のみでsvg onloadペイロードが自動実行される具体的手口をUnit42が記述
+・[T1566] Phishing — ProtonMailアカウント・侵害済みメールサーバから偽装ニュースダイジェスト等のHTMLメールを送信（サブテクニック不明のため親IDのみ付与）
+・[T1114] Email Collection — 被害者メールボックスから最大90日分のメールをTGZアーカイブとして窃取
+・[T1098] Account Manipulation — パスワードリセット後も残存しMFAを回避するアプリケーション専用認証情報（ZimbraWeb名義）を作成する具体的手口が記述
+・[T1071.004] Application Layer Protocol: DNS — DNS Aレコードクエリ（長いランダムサブドメイン）経由でのデータ持出しが明示的に記述
+
+【IoC】
+IP: 37.120.247.228
+IP: 64.226.124.190
+IP: 104.248.134.194
+IP: 185.86.79.95
+IP: 193.238.152.66
+IP: 194.156.103.193
+IP: 216.252.238.18
+IP: 216.252.238.64
+IP: 216.252.238.104
+Domain: analyticemailmeter.com
+Domain: emailanalytics.com.ua
+Domain: istc-cloud.com
+Domain: mailnalysis.com
+Domain: synacorzimbra.nl
+Domain: zimbra-metadata.com
+Domain: zimbrastat.com
+Domain: zimbrasoft.com.ua
+Domain: zmailanalytics.com
+
+【推奨アクション】
+・Zimbra Collaboration Suiteを10.0.18/10.1.13以降へ緊急パッチ適用する。既存のアプリケーション専用認証情報（IMAP/POP3/SMTP）を全数棚卸しし、不審なものを失効させる。パスワードリセット後もセッション・アプリトークンが残存するため、リセットと合わせ全トークンの明示的失効を行う。上記IOCドメイン・IPへの通信をブロックする。
+Splunk SPL: index=mail sourcetype=zimbra* (dest_domain="analyticemailmeter.com" OR dest_domain="emailanalytics.com.ua" OR dest_domain="istc-cloud.com" OR dest_domain="mailnalysis.com" OR dest_domain="synacorzimbra.nl" OR dest_domain="zimbra-metadata.com" OR dest_domain="zimbrastat.com" OR dest_domain="zimbrasoft.com.ua" OR dest_domain="zmailanalytics.com") | table _time, user, dest_domain
+Splunk SPL: index=mail sourcetype=zimbra:audit action=app_specific_password_created | stats count by user, src_ip | where count > 0
+→ 正規のIMAP/POP3クライアント登録と攻撃者による不正なアプリケーション専用認証情報作成を区別するため、作成元IPの地理的異常・作成直後の大量メールアクセスの有無を確認する
+
+【参照】
+https://unit42.paloaltonetworks.com/russian-webmail-espionage
+https://www.bleepingcomputer.com/news/security/russian-hackers-exploit-zimbra-zero-click-flaw-for-email-theft
+https://thehackernews.com/2026/07/russian-espionage-group-exploited.html
+
+------------------------------------------------------------
+2. JadeProx（別名: なし / 国家帰属: 不明 / 帰属信頼度: 低）
+活動タイプ: マルウェア発見 / 新規キャンペーン
+------------------------------------------------------------
+
+標的: government・healthcare・education / Asia・Latin America・VN・MY・HK・HN
+マルウェア: TriBack Loader
+
+【24時間以内の変化】
+[The Hacker News（Group-IB報告引用） 2026-07-23] China-nexusクラスタ「JadeProx」による新型ローダー「TriBack Loader」を用いた政府・医療機関標的攻撃を初報
+
+【概要】
+中国語圏エコシステムで確認されたクラスタ「JadeProx」（Group-IB追跡名・正式なAPTグループとしての帰属は留保）が、未文書化のWindowsローダー「TriBack Loader」（正規署名済みEXE＋悪意あるDLL＋暗号化ペイロードの三点構成、DLLサイドローディング方式）を用い、ベトナムの公立病院医療画像システム・マレーシア外務省・ホンジュラス国会等の政府・医療・教育機関を標的とした。4種の感染チェーンを確認、うち2種はオープンソース侵入後フレームワークAdaptixC2を、1種はDonutLoader経由でBeagleバックドア（Sophosが関連付け）を展開する。ClaudeブランドをかたるなりすましドメインClaude-pro.comを含む偽装インフラも確認された。
+
+攻撃の流れ（判明分）:
+1. スピアフィッシング（偽装文書・Claude/Anthropicブランドなりすまし含む）またはCVE-2018-11511等4件の既知脆弱性の悪用により初期アクセス
+2. 正規署名済みEXE＋悪意あるDLL＋暗号化ペイロードの三点構成でDLLサイドローディングを実行し、Windowsスタートアップフォルダへ永続化
+3. InitOnceExecuteOnce・TimerQueueコールバック・未文書化のntdll関数EtwpCreateEtwThread等の非一般的APIを用いてEDR検知を回避
+4. AdaptixC2またはDonutLoader経由Beagleバックドアを展開し侵入後活動を継続
+
+【新規TTP】
+・[T1190] Exploit Public-Facing Application — CVE-2018-11511（ASUSTOR ADM）・CVE-2021-24139（10Web Photo Gallery）・CVE-2021-31755（Tenda AC11）・CVE-2021-32305（WebSVN）の4件を武器化したことが明示的に記述
+・[T1595.002] Active Scanning: Vulnerability Scanning — Nuclei（重大度Criticalテンプレート）で香港教育セクターの14,653件のURLを走査したことが記述
+・[T1574.002] Hijack Execution Flow: DLL Side-Loading — 正規署名済みEXEと悪意あるDLLの組による具体的なサイドローディング手口が記述
+・[T1547.001] Boot or Logon Autostart Execution: Startup Folder — MSIインストーラ経由でWindowsスタートアップフォルダへサイドローディングチェーンを配置する具体的手口が記述
+
+【IoC】
+IP: 43.106.71.28
+Domain: claude-pro.com
+Domain: license.claude-pro.com
+Domain: sylverixstrategy.com
+Domain: gouvvbo.top
+Domain: vertextrust-advisors.com
+Domain: update-trellix.com
+Domain: update-crowdstrike.com
+Domain: update-sentinelone.com
+Filename: hostfxr.dll
+Filename: avk.dll
+Filename: MpClient.dll
+
+【推奨アクション】
+・上記なりすましドメイン（claude-pro.com等セキュリティベンダー偽装ドメイン含む）への通信を遮断する。政府・医療・教育機関はスピアフィッシングメールの添付・リンク開封時のDLLサイドローディング挙動を監視する。CVE-2018-11511・CVE-2021-24139・CVE-2021-31755・CVE-2021-32305の該当製品パッチ適用状況を再確認する。
+Splunk SPL: index=proxy dest_domain IN ("claude-pro.com", "license.claude-pro.com", "sylverixstrategy.com", "gouvvbo.top", "vertextrust-advisors.com", "update-trellix.com", "update-crowdstrike.com", "update-sentinelone.com") | table _time, src_ip, dest_domain
+Splunk SPL: index=wineventlog EventCode=7045 (ImageLoaded="*hostfxr.dll" OR ImageLoaded="*avk.dll" OR ImageLoaded="*MpClient.dll") | stats count by ComputerName, ImageLoaded
+→ update-crowdstrike.com等セキュリティベンダーを偽装したドメインは特に注意喚起価値が高く、EDR/AVベンダー名を含む未承認ドメインへの通信は即時調査対象とする
+
+【参照】
+https://thehackernews.com/2026/07/china-nexus-jadeprox-uses-new-triback.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CyberAv3ngers / イランIRGC Cyber-Electronic Command（IRGC-CEC）に帰属されるCyberAv3ngers（別名Bauxite/Hydro Kitten等）が、従来標的としていたイスラエル製Unitronics機器から、Rockwell Automation・Siemens・Schneider Electric製PLCへ標的を拡大していることをCISA・FBI・NSA・EPA・DOE・米サイバー軍の6機関共著の合同勧告AA26-097A（2026-07-22更新）が確認した。インターネット露出したPLCへ侵入し、正規のラダーロジックを維持しつつ安全動作パラメータを上書きする悪意あるプロジェクトファイルを配置し、HMI/SCADA上の表示データを改ざんして運用者に偽の読み取り値を提示する手口が確認されている。
+帰属信頼度: 高
+推奨アクション: Rockwell/Siemens/Schneider製PLCのインターネット直接露出を排除し、プロジェクトファイルの変更管理・整合性検証を強化する。HMI/SCADA表示値と現場の物理計測値の定期照合を実施する。
+参照: https://www.securityweek.com/us-warns-of-iranian-hackers-targeting-siemens-schneider-and-rockwell-ics-devices
+
+・APT-C-60 / JPCERT/CCが自組織の技術ブログ「JPCERT/CC Eyes」で、日本国内組織を標的とするAPT-C-60による2026年の攻撃活動を解説した。既知バックドアSpyGlaceの新バージョン（v3.1.15/v3.1.17/v3.1.18）を確認し、ProtonDriveリンク経由のスピアフィッシングでLNKファイルをダウンロードさせmshta.exe経由で埋め込みJavaScriptを実行、jsDelivr等の正規サービスから追加コンテンツを取得したのちgit.exeで後続ダウンロードを行う手口を確認した。2025年に用いていたGitHub/Bitbucketに加え、GitLab・jsDelivr・Codebergを新たにインフラへ組み込み、正規トラフィックへの紛れ込みを図っている。
+帰属信頼度: 未確定
+推奨アクション: 国内組織はProtonDrive経由のリンク付きメールに対する警戒を強化し、LNKファイルの実行を制限する。jsDelivr/GitLab/Codeberg等正規クラウドサービスへの通信のうち、通常業務で使用実績のない宛先パスへのアクセスを監視する。
+参照: https://www.jpcert.or.jp/wr/2026/wr260723.html
+
+・Chaos（ランサムウェアグループ） / Cisco Talosが、2025年初頭より活動するランサムウェアグループChaosが新たに使用するRust製RAT「msaRAT」（別名lib.dll）を報告した。メール・ボイスフィッシングで初期アクセスののち正規のリモート管理ソフトウェアを永続化に用い、Windows更新を装ったMSIインストーラのカスタムアクションでDLLをメモリへロードする。C2はヘッドレスモードで起動したChrome/EdgeをChrome DevTools Protocolで操作し、Twilio TURNサーバとCloudflare Workersを中継したWebRTCデータチャネル（WebRTC DTLS＋ChaCha20-Poly1305の二重暗号化）で通信し、ICE candidateを省略することで真の攻撃者IPを秘匿する。
+帰属信頼度: 未確定
+推奨アクション: ヘッドレスモードでのChrome/Edge起動（--headless=new・--remote-debugging-port）をエンドポイントで検知・制限する。Windows更新を装うMSIインストーラの配布元・署名を検証する。Cloudflare Workers宛の異常な永続的接続を監視する。
+参照: https://www.bleepingcomputer.com/news/security/new-msarat-malware-uses-chrome-edge-browsers-to-route-c2-traffic
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] Notepad++プラグインを悪用したマルウェアのステルスインストール
+BleepingComputerが、攻撃者がNotepad++のプラグイン機構を悪用し検知を回避しながらマルウェアをインストールする新たな手口を報道した。正規のプラグイン配布・更新経路を偽装または悪用する手法とみられ、開発者・エンジニア向け端末を標的とする可能性がある。
+https://www.bleepingcomputer.com/news/security/hackers-abuse-notepad-plus-plus-plugins-to-stealthily-install-malware
+
+・[トレンド記事] GitHub Actionsランナーを悪用したcPanel/WHMサーバへの攻撃
+The Hacker Newsが、攻撃者がGitHub Actionsのランナーを武器化しcPanel/WHMで管理されるホスティングサーバを標的とする手口を報道した。CI/CDインフラを踏み台とした横展開・偵察のリスクが指摘される。
+https://thehackernews.com/2026/07/attackers-weaponize-github-actions.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし。理由: KEV初回追加・新規IOC公開は既に発生済みでM1（未観測のE1〜E4イベント）を新設できず、JPCERT/IPA注意喚起発行を的中条件とするE3型代替案もStep C''類似事例検索で過去2件とも外れ（経験的的中率0%）であったため発行を見送った（詳細は forecaster/forecasts/daily/2026-07-24.md 参照）。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+該当なし
+
+本日の集計:
+APT — 本編2件 / 注目動向3件 / 除外0件
+
+========================================

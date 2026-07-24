@@ -1,0 +1,128 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-24 07:30 JST
+調査期間: 2026-07-23 07:00 〜 2026-07-24 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. AgentForger: ChatGPT Agent Builderのパラメータ改ざんで承認なくAIエージェントを偽造・遠隔操作
+カテゴリ: B1 / 攻撃者種別: 研究者実証
+------------------------------------------------------------
+
+採用契機: A-P, A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: it・professional_services / global
+被害規模: 研究開示のため確認済み実被害なし（企業ChatGPT Workspace導入組織が対象範囲）
+
+【24時間以内（または期間内）の変化】
+[SecurityWeek / Zenity Labs 2026-07-23] OpenAIがBugcrowd経由の報告を受け2026-06-08に修正した「AgentForger」の技術詳細が公開された
+
+【概要】
+Zenity Labsの研究者が、ChatGPT Workspace Agent BuilderのURLパラメータ（テンプレート選択・初期プロンプト欄）を細工することで、通常必要な承認を経ずに攻撃者制御のWorkspaceエージェントを無承認で構築・認可・公開・スケジュール実行できる脆弱性「AgentForger」を発見した。偽造エージェントは5分おきに攻撃者のメール受信箱を「TASK」件名でポーリングし指示を受信、Outlook/Slack/Teams/Google Drive/SharePoint/カレンダー横断の組織構造偵察、M&A資料・役員会議資料・財務記録の窃取、Slackからの認証情報収集、Teams/Slack経由のなりすましフィッシング（偽SSOページ）、BEC/振込詐欺メッセージ作成までを可能にする。2026-06-04にBugcrowd経由で報告され、6月8日に脆弱なURLパラメータが削除され修正済み。実悪用は確認されていない。
+
+攻撃の流れ:
+1. 一見通常のChatGPTリンクを攻撃者が被害者に送付
+2. リンクのURLパラメータがWorkspace Agent Builderのテンプレート選択・初期プロンプト欄を細工し、承認プロセスを経ずに攻撃者制御のエージェントを構築・認可・公開・スケジュール実行
+3. 偽造エージェントが5分おきに攻撃者メール受信箱を「TASK」件名でポーリングし指示を受信、組織偵察・資料窃取・認証情報収集・なりすましフィッシング・BEC文面作成等を実行
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+検知シグナル: 未承認のWorkspaceエージェントが定期的に外部メールアドレスをポーリングする挙動
+
+【監視・対策ポイント】
+・ChatGPT Workspace管理コンソールでのエージェント作成・公開ログを監視し、通常の承認フローを経ない自動公開イベントを検知する
+Splunk SPL: index=saas sourcetype=openai:workspace:audit action=agent_publish approval_flow=false | table _time, user, agent_id
+→ 承認フローバイパスの検知に加え、作成直後のエージェントが外部SMTP/IMAPへ定期的にポーリング接続する挙動を組み合わせて確認する
+
+【参照】
+https://www.securityweek.com/openai-fixes-chatgpt-agent-flaw-that-could-let-attackers-forge-an-ai-insider
+https://labs.zenity.io/p/agentforger-part-2-the-autonomous-insider
+
+------------------------------------------------------------
+2. FakeAgent: Bing広告経由の偽Claudeアプリ配布とclaude.ai Artifactホスティング悪用によるSectopRAT配布
+カテゴリ: C4 / 攻撃者種別: 犯罪組織
+------------------------------------------------------------
+
+採用契機: A-Q, A-W
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: it・other / global
+被害規模: 2026-07-21〜22の間に少なくとも29組織が侵害され、悪意あるArtifactは約7,100回ダウンロードされた（Anthropicが削除するまで）
+
+【24時間以内（または期間内）の変化】
+[BleepingComputer（Huntress調査） 2026-07-23] Bing広告経由で拡散する偽Claudeデスクトップアプリが、claude.ai上の実在するArtifactとしてホストされていたことが判明。SectopRAT（ArechClient2）を配布
+
+【概要】
+Huntressの調査により、Bing検索広告が実際にclaude.aiドメイン上でホストされた悪意あるClaude Artifactへ被害者を誘導し、偽インストーラ「ClaudeDesktop.exe」（実体はJetBrains製Chromiumコンポーネントを悪用したサイドローディングローダーで、悪意あるlibcef.dllを読み込む）を配布していたことが判明した。最終的にHidden VNC機能を備えた情報窃取型マルウェアSectopRAT（別名ArechClient2）が展開され、パスワード・クレジットカード情報・ブラウザ認証情報・Discord/Telegram・Steam・VPN製品の情報が窃取される。永続化は「DockerDesktop.exe」という偽装名のスケジュールタスクで確立される。攻撃者は特定の既知クラスタへの帰属が確認できておらず、インフラの一部（過去にStealC配布に使われ、Operation Endgameで押収されたドメイン）に重複が見られる。Anthropicは当該Artifactを削除済み。
+
+攻撃の流れ:
+1. Bing検索広告がclaude.ai上に実在する悪意あるArtifactへ被害者を誘導
+2. 偽インストーラ「ClaudeDesktop.exe」（JetBrains製Chromiumコンポーネント悪用）が悪意あるlibcef.dllをサイドロード
+3. 情報窃取型マルウェアSectopRAT（Hidden VNC機能付き）を展開し、認証情報・決済情報・各種アカウント情報を窃取
+4. 「DockerDesktop.exe」という偽装名のスケジュールタスクで永続化を確立
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+検知シグナル: ファイル名 ClaudeDesktop.exe / libcef.dll / DockerDesktop.exe（正規Docker Desktopと異なる文脈での出現）
+検知シグナル: 同一登録者メールアドレスに紐づく2025年12月以降登録の関連ドメイン群（具体的ドメイン名は原典未特定）
+
+【監視・対策ポイント】
+・エンドポイントでの不審なClaudeDesktop.exe/DockerDesktop.exeという名称のプロセス起動・スケジュールタスク登録を監視する
+Splunk SPL: index=endpoint (Image="*ClaudeDesktop.exe" OR ImageLoaded="*libcef.dll") NOT Publisher="Anthropic*" | table _time, ComputerName, Image, Publisher
+→ 正規のClaude Desktopアプリは公式サイト（claude.ai/download）配布かつAnthropic署名済みである点を確認し、署名なし・広告経由インストーラを区別する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/fake-claude-app-promoted-by-bing-ads-pushes-sectoprat-malware
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・SharedRoot: Claude CoworkのVM分離不備とLinuxカーネルCVE-2026-46331連鎖によるmacOSホストファイルアクセス
+カテゴリ: C1 採用契機: A-P, A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+Accomplish AIの研究者（Oren Yomtov・Or Hiltch）が、Claude CoworkがmacOSホストのファイルシステム全体を読み書き可能な状態でLinux VM内の/mnt/.virtiofs-rootへマウントしている設計を発見し、非特権ユーザー名前空間内でLinuxカーネルのTraffic Control act_peditサブシステムを悪用するCVE-2026-46331（"pedit COW"）を用いてゲストroot権限を取得したのち、接続許可したフォルダ範囲を大きく超えたホストファイル（SSH鍵・クラウド認証情報等）へ権限プロンプトなしにアクセスできることを実証した。Anthropicは本報告を「有益だが修正は発行しない」として対応を終了しており、最新版はデフォルトでクラウド実行に切り替わっているためリスクは軽減されるが、ローカルセッションを使うユーザーは引き続き露出する。
+参照: https://thehackernews.com/2026/07/claude-cowork-flaw-could-let-ai-agent.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はOpenAI ChatGPT Agent Builderのパラメータ改ざん脆弱性「AgentForger」と、claude.ai上のArtifactホスティングを悪用したなりすましマルウェア配布キャンペーン「FakeAgent」の2件が本編採用となった。Claude Cowork のVM分離不備は単一ソースのため参考Bに留めた。バースト検出閾値を超えたトピックはなし。
+
+本日の集計:
+AI攻撃 — 本編2件 / 参考A0件 / 参考B1件 / 除外6件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）1件 / C（インフラ）2件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[AI攻撃]
+・（未採番/不明） (Dolphin X malware（AIによる被害者ランク付け機能）) → 重みづけスコア低
+・（未採番/不明） (SentinelOne「Nuclear-Sabotage Malware Benchmark」（Sol Searching）) → 重みづけスコア低
+・（未採番/不明） (ScanNetSecurity: 2026年Q2 JVN iPedia AIツール脆弱性登録傾向) → 重みづけスコア低
+・（未採番/不明） (getdbt MCP Server CVE-2026-44968/44969/44970（引数注入・ログ情報漏洩・テレメトリ情報漏洩）) → 重みづけスコア低
+・（未採番/不明） (Drupal「AI Agents」プラグイン認証不備 CVE-2026-13236) → 重みづけスコア低
+・（未採番/不明） (SANS ISC: 「自律的攻撃者」が自社AIモデルであった件（OpenAI/Hugging Face事案の分析）) → 既報・変化なし
+
+========================================
