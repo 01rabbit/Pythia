@@ -1,0 +1,238 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-25 07:47 JST
+調査期間: 2026-07-24 07:00 〜 2026-07-25 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当のCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1・軸2いずれも本編基準を満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT 2026-07-24 報道
+
+・CVE-2026-11331 / ISC BIND 9
+CVSS: 7.5 (High) 状態: 特記事項なし
+
+【24時間以内の変化】
+[ISC 2026-07-22] BIND 9のセキュリティアップデートを公開、9件の脆弱性を修正
+[Security NEXT 2026-07-24] BIND 9の複数脆弱性を国内向けに報道。日本レジストリサービス等が緊急対応を呼びかけ
+
+【概要】
+ISCが2026年7月22日に公開したBIND 9のセキュリティアップデートでは、RPZ（Response Policy Zone）のワイルドカードCNAMEポリシー使用時に異常に長いクエリ名でNAMETOOLONGエラーが発生しRPZルールのバイパスまたはプロセス異常終了につながるCVE-2026-11331を含む9件の脆弱性が修正されており、日本レジストリサービス（JPRS）等が緊急対応を呼びかけている。9件のうち7件がHigh相当と評価されており、今回はそのうち代表としてCVE-2026-11331を掲載する。他の8件（CVE-2026-10723・CVE-2026-10822・CVE-2026-11605・CVE-2026-11622・CVE-2026-12617・CVE-2026-13204・CVE-2026-13321）は同一ISCアドバイザリ内の複合脆弱性であり、NSEC3レコードの誤受理によるキャッシュ汚染（CVE-2026-10723）等を含む。ISCは「現時点で実悪用は確認されていない」としている。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[権威・キャッシュDNSサーバのBINDバージョンとRPZ設定の確認、異常終了ログの監視]
+Splunk SPL: index=dns_logs sourcetype=named source="/var/log/named/*" "NAMETOOLONG" OR "exiting" | stats count by host
+→ named.logへのクラッシュ/再起動イベントの急増を監視。通常の運用上のDNSクエリタイムアウトと区別するためエラー種別を確認する
+
+【参照】
+https://www.security-next.com/187829
+https://kb.isc.org/docs/cve-2026-11331
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-11331 — 24時間窓内に発行確認されず
+
+昇格理由: Security NEXT 2026-07-24 報道
+
+・CVE-2026-10723 / ISC BIND 9
+CVSS: 6.8 (Medium) 状態: 特記事項なし
+
+【24時間以内の変化】
+[ISC 2026-07-22] 子ゾーンのNSEC3レコード誤受理によるキャッシュ汚染の脆弱性を修正
+[Security NEXT 2026-07-24] BIND 9複数脆弱性の一つとして国内向けに報道
+
+【概要】
+BINDが子ゾーンの不正なNSEC3レコードを誤って有効と受理してしまうことで、攻撃者が認証済みNXDOMAIN応答を偽造しsibling zoneに対する否定応答（存在しないことの証明）を詐称できる可能性がある脆弱性。ISCは実悪用は確認していないとしている。CVE-2026-11331と同一アドバイザリ内の複合脆弱性。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[DNSキャッシュサーバのバージョンとNSEC3検証ログの確認]
+Splunk SPL: index=dns_logs sourcetype=named "NSEC3" | stats count by host, zone
+→ DNSSEC検証エラー率の異常な変化を監視する
+
+【参照】
+https://www.security-next.com/187829
+https://kb.isc.org/docs/cve-2026-10723
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-10723 — 24時間窓内に発行確認されず
+
+昇格理由: Security NEXT 2026-07-24 報道
+
+・CVE-2026-15981 / SAML Single Sign On（WordPress用miniOrange製プラグイン）
+CVSS: 9.8 (Critical) 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-24] miniOrange製WordPress向けSSOプラグイン「SAML Single Sign On」に認証回避の脆弱性が判明したと報道
+
+【概要】
+WordPress向けシングルサインオンプラグイン「SAML Single Sign On」（miniOrange製）に、SAMLレスポンスの署名検証をバイパスできる深刻な脆弱性が判明した。署名検証時にエラーが発生した場合、システムがそれを検証成功として誤って扱ってしまう実装不備に起因し、攻撃者が任意のユーザーとして認証をなりすませる可能性がある。5.4.5で修正済みであり、現時点で実悪用の報告はない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[WordPress管理画面への異常ログイン・SSO認証ログの監視]
+Splunk SPL: index=web_logs sourcetype=wp_access uri_path="*saml*" status=200 | stats count by src_ip, user
+→ 通常のSSOフロー外からのSAMLレスポンス受信や管理者アカウントへの新規ログイン元IPの変化を確認する
+
+【参照】
+https://www.security-next.com/187824
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-15981 — 24時間窓内に発行確認されず
+
+昇格理由: Security NEXT 2026-07-24 報道
+
+・CVE-2026-6516 / ManageEngine ADAudit Plus
+CVSS: 10.0 (Critical) 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-24] ZohoのAD監査ソリューション「ManageEngine ADAudit Plus」の深刻な脆弱性が国内向けに初めて報道（4月修正済み）
+
+【概要】
+Active Directory環境の監査ソリューション「ManageEngine ADAudit Plus」のエージェントAPIに認証バイパスとパストラバーサルを組み合わせた脆弱性が存在し、未認証の攻撃者がリモートからコードを実行できる可能性がある。2026年4月17日リリースのビルド8606で修正済みであり、Security NEXTが本日国内向けに初めて報道した。FIRST EPSSのパーセンタイルは90.9%（2026-07-24時点）とやや高めだが、実悪用の報告は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ADAudit Plusエージェントサーバへの異常なAPIリクエストの監視、ビルドバージョンの確認]
+Splunk SPL: index=web_logs sourcetype=adauditplus_access uri_path="*/agent*" | stats count by src_ip, uri_path
+→ パストラバーサルを示唆する ../ を含むリクエストパスの有無を確認する
+
+【参照】
+https://www.security-next.com/187840
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-6516 — 24時間窓内に発行確認されず
+
+昇格理由: Security NEXT 2026-07-23 報道
+
+・CVE-2026-16807 / Google Chrome
+CVSS: 非公表 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-23] Chromeの2026年7月5度目のセキュリティ更新を公開、4件の脆弱性（いずれもUse After Free、High相当）に対処と報道
+
+【概要】
+Googleは2026年7月23日、Chrome 150.0.7871.187（Windows/macOS）・150.0.7871.186（Linux）を公開し、コーデック（CVE-2026-16807）・WebMCP（CVE-2026-16806）・Blinkレンダリングエンジン（CVE-2026-16805）・入力処理（CVE-2026-16804）の4件のUse After Free脆弱性を修正した。いずれもGoogle社内評価でHigh相当（4段階中2番目）であり、2026年5月下旬〜6月中旬にかけて発見されたもの。実悪用の報告はない。CVE-2026-16807を代表として掲載し、他3件は同一アップデート内の複合脆弱性である。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Chromeのバージョン管理・強制更新ポリシーの適用状況確認]
+Splunk SPL: index=endpoint sourcetype=chrome_version | stats latest(version) by host | where version < "150.0.7871.187"
+→ 組織内でのChromeバージョン分布を確認し未更新端末を洗い出す
+
+【参照】
+https://www.security-next.com/187798
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-16807 — 24時間窓内に発行確認されず
+
+昇格理由: IPA 2026-07-22 報道 / ScanNetSecurity 2026-07-23 報道 / JPCERT/CC・IPA注意喚起
+
+・CVE未採番 / Oracle Java SE（2026年7月Critical Patch Update）
+CVSS: 非公表 状態: 特記事項なし
+
+【24時間以内の変化】
+[IPA 2026-07-22] Oracle Java SEの2026年7月Critical Patch Updateに関する注意喚起を発行
+[ScanNetSecurity 2026-07-23] Oracle Javaの脆弱性について国内向けに報道
+
+【概要】
+Oracleが2026年7月のCritical Patch Updateで複数のJava SEの脆弱性を修正した。IPAは悪用された場合アプリケーションのクラッシュや攻撃者による制御奪取等につながる可能性があるとして速やかな適用を呼びかけている。ScanNetSecurity記事では個別のCVE番号・CVSSスコアは示されておらず、詳細はOracle公式CPUドキュメントの確認が必要（本レポートでは未確認情報のCVE番号の断定は行わない）。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Java SEのバージョン管理・CPU適用状況の確認]
+Splunk SPL: index=endpoint sourcetype=java_version | stats latest(version) by host
+→ 資産管理台帳と突合し未適用端末を優先パッチする
+
+【参照】
+https://scan.netsecurity.ne.jp/article/2026/07/24/55771.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [Oracle Javaにおける複数の脆弱性について（IPA）] https://scan.netsecurity.ne.jp/article/2026/07/24/55771.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-12569 / PTC Windchill PDMLink / FlexPLM
+CVSS: 9.3 (Critical)
+既報（2026-06-26初報・KEV登録済み・CVSS9.3のCWE-502デシリアライゼーションRCE）のPTC Windchill/FlexPLM脆弱性CVE-2026-12569について、BleepingComputerがランサムウェアグループClop（Cl0p）による悪用と正式に紐付けて報道した。ClopはJSP Webシェルを介したリモートコマンド実行と製品データの窃取を行い、侵害済みの正規メールアカウントを使って対象組織の従業員数百名へ恐喝メールを一斉送付するという、Oracle E-Business Suiteキャンペーンと同様の手口を踏襲している。PTCは6月17日からパッチ提供、CISAは6月25日にKEV登録済み。
+IoC: 確認されず
+
+監視: [Windchill/FlexPLMサーバへの外部公開状況・JSPファイル新規作成・異常メール送信の監視]
+Splunk SPL: index=web_logs sourcetype=windchill_access uri_path="*.jsp" method=POST | stats count by src_ip, uri_path
+Splunk SPL: index=mail_logs sourcetype=exchange action=send | stats count by sender | where count > 50
+→ 既知パッチ未適用インスタンスの棚卸しを最優先し、webshell設置を示唆する新規jspファイル生成イベントを確認する
+
+参照: https://www.bleepingcomputer.com/news/security/clop-ransomware-targets-windchill-flexplm-in-data-theft-attacks
+
+・CVE-2026-32194 / Bing画像検索基盤（Microsoftサーバサイド）
+CVSS: 9.8 (Critical)
+自律型攻撃的セキュリティスタートアップXBOWが、Bing画像検索のサーバサイド画像処理パイプラインにおいてImageMagickのデリゲート機能がSVGファイル内のシェルメタ文字を含む画像参照を処理する際にコマンドインジェクションが発生する脆弱性（CVE-2026-32194、CWE-77）を発見しMicrosoftへ報告した。Windowsサーバ上ではNT AUTHORITY\SYSTEM、Linuxマシン上ではrootとして任意コマンドを実行可能だった。Microsoftは2026年3月19日に顧客対応不要のサーバサイド修正を完了させており、悪用は確認されていない。関連する2件目の脆弱性CVE-2026-32191（OS command injection、CWE-78、CVSS 9.8）も同時に修正済み。
+IoC: 確認されず
+
+監視: [自組織で類似のSVG/ImageMagickデリゲート機能を利用した画像処理パイプラインを運用している場合の設定確認]
+Splunk SPL: index=app_logs sourcetype=imagemagick_convert "delegate" | stats count by src_ip, file_type
+→ 本件自体はMicrosoft側で対応済みで自組織の対応は不要だが、同種のSVGデリゲート実行パターンを自社の画像処理基盤で確認する参考事例として監視ポイントを記載
+
+参照: https://thehackernews.com/2026/07/bing-images-flaws-let-crafted-svgs-run.html
+
+・CVE-2026-32191 / Bing画像検索基盤（Microsoftサーバサイド）
+CVSS: 9.8 (Critical)
+CVE-2026-32194と同じBing画像処理パイプラインで確認されたOSコマンドインジェクション（CWE-78）。詳細はCVE-2026-32194の項目を参照。Microsoftは2026年3月19日にサーバサイドで修正済みで顧客対応は不要、悪用は確認されていない。
+IoC: 確認されず
+
+監視: [CVE-2026-32194の項目を参照]
+Splunk SPL: index=app_logs sourcetype=imagemagick_convert "delegate" | stats count by src_ip, file_type
+→ CVE-2026-32194と同様の監視ポイントを参照
+
+参照: https://thehackernews.com/2026/07/bing-images-flaws-let-crafted-svgs-run.html
+
+
+[CVE]
+・CVE未採番 (SurrealDB（3.1.0/3.1.4/3.1.5/3.2.0未満・約20件の複合脆弱性）) → low_score（JVN iPedia新着で多数の脆弱性（認証回避・SSRF・DoS等）が掲載されたが、いずれもCVSS不明・KEV/PoC/実悪用未確認・国内製品ではないためJVN iPedia収録自体は参考A昇格トリガーに該当せず、軸1スコアが閾値未達）
+・CVE未採番 (DENX U-Boot（境界外読み取り・整数アンダーフロー・バッファオーバーフロー、2026.04-rc3まで）) → low_score（組込みブートローダのネットワークスタック脆弱性群。KEV/PoC/実悪用未確認、隣接ネットワーク前提が多く軸1スコアが閾値未達）
+・CVE未採番 (xrdp（ヒープバッファオーバーフロー・整数オーバーフロー・タイミングサイドチャネル、0.10.6以前）) → low_score（0.10.6.1で修正済み。KEV/PoC/実悪用未確認、軸1スコアが閾値未達）
+・CVE未採番 (Duplicati バックアップソフトウェア（不適切な権限割り当て、v2.3.0.1）) → low_score（CERT/CC VU#847406。KEV/PoC/実悪用未確認、軸1スコアが閾値未達）
+・CVE未採番 (Silverhand Logto（認証・認可の複数脆弱性）) → low_score（CERT/CCアドバイザリ経由でJVN掲載。詳細なCVSS・悪用状況が確認できず軸1スコアが閾値未達）
+・CVE未採番 (Microsoft Minecraft Bedrock Dedicated Server（ヒープベースバッファオーバーフロー）) → low_score（JVN iPedia掲載。CVSS・KEV/PoC/実悪用状況が確認できず軸1スコアが閾値未達）
+・CVE未採番 (Windows Remote Desktop Web Client等（個人情報漏えい）) → low_score（JVN iPedia掲載。CVSS・KEV/PoC/実悪用状況が確認できず軸1スコアが閾値未達）
+・CVE未採番 (Analog Way Picturall Quad Compact Mark II（ローカル権限昇格）) → low_score（CERT/CC VU#360868。ニッチ製品・ローカル権限昇格限定で軸1スコアが閾値未達）
+・CVE未採番 (Mozilla Firefox/Thunderbird 153（複数のメモリ安全性・情報漏えい脆弱性）) → low_score（MFSA 2026対応。JVN iPedia掲載だが実悪用未確認・修正版が即日提供済みのため軸1スコアが閾値未達、参考A昇格トリガーも国内メディア報道なしのため不成立）
+・CVE-2026-54121 (Active Directory Certificate Services（Certighost）) → low_score（軸1スコアが閾値未達のためCVEセクションでは除外。SOC推奨情報（SOC-2026-07-25-002）で個別掲載）
+・CVE未採番 (NodeBB（8件のAI発見脆弱性、4.14.0未満）) → insufficient_evidence（個別CVE番号が未採番（CVE-2026-58593以外）で軸1評価に必要な情報が不足。SOC推奨情報（SOC-2026-07-25-003）でAI駆動型脆弱性発見動向として言及）
+・CVE未採番 (Redis 6.2.22/7.4.9/8.6.4/8.8.0（Streams共有NACK等の認証済みRCE類）) → insufficient_evidence（2026-07-24時点でNVDへの独立CVEレコードが確認できず軸1評価に必要な情報が不足。AI攻撃セクション（AI-2026-07-25-003）でKimi K3による発見事例として掲載）
+・CVE-2026-60137 (WordPress Core) → already_reported（CISA KEV登録2026-07-21・実悪用確認は2026-07-23付で既報。調査窓内（2026-07-24 07:00〜2026-07-25 07:00 JST）の新規変化は確認されず）
+・CVE-2026-63030 (WordPress Core) → already_reported（CISA KEV登録2026-07-21・実悪用確認は2026-07-23付で既報。調査窓内の新規変化は確認されず）
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A6件 / 参考B3件 / 除外14件
+
+========================================
