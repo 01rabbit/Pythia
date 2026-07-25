@@ -1,0 +1,558 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-07-26",
+    "generated_at": "2026-07-26T07:45:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-07-25T07:00:00+09:00",
+      "to": "2026-07-26T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [
+    {
+      "cve_id": "CVE-2026-16723",
+      "product": "Fastjson 1.x（Alibaba製JSONライブラリ）",
+      "vendor": "Alibaba",
+      "affected_versions": "1.2.68〜1.2.83（Spring Boot実行可能fat-JAR構成・SafeMode無効時）",
+      "priority": "critical",
+      "cvss_v3": 9.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [],
+      "epss": {
+        "score": 0.00413,
+        "percentile": 0.33907,
+        "model_date": "2026-07-25"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": true,
+        "patch_available": false
+      },
+      "patch_info": {
+        "available": false,
+        "version": null,
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 13,
+      "axis2_score": 2,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-25T21:52:43+09:00",
+          "description": "ThreatBookとImpervaがAlibaba製Fastjson 1.x（CVSS9.0）の未パッチRCE脆弱性CVE-2026-16723について実悪用を確認したと報道。パッチは未提供"
+        }
+      ],
+      "overview": "Fastjson 1.2.68〜1.2.83においてSpring Bootの実行可能fat-JAR構成でSafeModeが既定の無効のまま稼働している場合、AutoType有効化やクラスパスガジェットを必要とせず、攻撃者が制御するJSONを送信するだけで認証なしにコード実行が可能な脆弱性が確認され、ThreatBookとImpervaが実環境での悪用（米国・シンガポール・カナダの金融・医療・IT・小売セクターを中心にブラウザなりすましトラフィックが多数）を確認したと報じられた。Alibabaは本日時点でFastjson 1.x系の修正版を提供しておらず、SafeModeの即時有効化とFastjson2への移行を推奨するのみである。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "SafeModeが無効なFastjson 1.x搭載Spring Bootアプリの、ネットワーク到達可能なJSON解析エンドポイントを特定"
+        },
+        {
+          "step": 2,
+          "description": "攻撃者が細工したJSONリクエストを送信し認証なしにコード実行"
+        },
+        {
+          "step": 3,
+          "description": "Javaプロセス権限でのコマンド実行・侵害拡大"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "The Hacker News（2026-07-25）が「ネットワーク到達可能なJSON解析エンドポイントへ攻撃者制御のJSONを送信するだけで認証なしにコード実行可能」と具体的手口を記述したためT1190を付与"
+        }
+      ],
+      "temp_mitigation": [
+        "SafeModeを直ちに有効化する（既定は無効）",
+        "Fastjson2への移行を計画する",
+        "境界のWAFでFastjson 1.x宛のJSONリクエストを検査・遮断する"
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Fastjson 1.xを利用するSpring Bootアプリの公開JSONエンドポイントへの異常リクエストを監視する",
+        "splunk_spl": [
+          "index=web_logs sourcetype=spring_boot_access method=POST | regex _raw=\"(?i)@type|fastjson\" | stats count by src_ip, uri_path",
+          "index=wineventlog OR index=linux_audit ParentImage=\"*java*\" | stats count by ParentImage, Image, CommandLine"
+        ],
+        "detection_notes": "SafeMode設定状況の棚卸しを最優先し、Javaプロセスからの不審な子プロセス起動（コマンド実行の兆候）を確認する"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/fastjson-1x-rce-vulnerability-targeted.html",
+          "title": "Fastjson 1.x RCE Vulnerability Targeted in Attacks With No Patched Available",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "sector_impact": [
+        "finance",
+        "healthcare",
+        "it",
+        "retail"
+      ],
+      "region_impact": [
+        "US",
+        "SG",
+        "CA"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "zero_day_special",
+      "info_id": "20260726-CVEP-3f1e0960"
+    }
+  ],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-12569",
+      "product": "PTC Windchill PDMLink / FlexPLM",
+      "vendor": "PTC",
+      "affected_versions": "11.0 M030未満",
+      "priority": "critical",
+      "cvss_v3": 9.3,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-502"
+      ],
+      "epss": {
+        "score": 0.02263,
+        "percentile": 0.81157,
+        "model_date": "2026-07-24"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "11.0 M030（2026-06-17提供開始）",
+        "eta": null
+      },
+      "fceb_deadline": "2026-06-28",
+      "kev_date_added": "2026-06-25",
+      "axis1_score": 11,
+      "axis2_score": 2,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-07-24T07:36:39+09:00",
+          "description": "Clopランサムウェア（Cl0p）が未パッチのインターネット公開Windchill/FlexPLMインスタンスに対しCVE-2026-12569を悪用したデータ窃取・恐喝キャンペーンを展開中と報道"
+        },
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-25T19:14:03+09:00",
+          "description": "Cl0p系脅威アクターがFlexPLM WSDLエンドポイントの事前認証情報漏洩とWindchillログインサーブレットの脆弱性を連鎖させた無認証RCEの攻撃チェーン詳細を新たに確認。/Windchill/login/配下へhex名JSP Webシェルを設置。新規侵害IP3件を追加確認（既報5.180.41.35に加え216.152.148.54・216.152.151.204・104.243.35.63）。製造業・自動車・航空宇宙・小売を標的に情報窃取後、内部侵害済みアカウントから恐喝メールを送付する二重恐喝を継続（帰属はReliaQuestが「未確認」と留保）"
+        }
+      ],
+      "overview": "既報（2026-06-26初報・KEV登録済み・CVSS9.3のCWE-502デシリアライゼーションRCE）のPTC Windchill/FlexPLM脆弱性CVE-2026-12569について、Cl0p（Chubby Scorpius/FIN11/Graceful Spider/Lace Tempest）系とみられる脅威アクターがFlexPLM WSDLエンドポイントの事前認証情報漏洩とWindchillログインサーブレットの脆弱性を連鎖させ認証なしにRCEへ至る攻撃チェーンの詳細が新たに判明した。/Windchill/login/配下へhex名のJSPウェブシェルを設置し、製造業・自動車・航空宇宙・小売の被害組織からエンジニアリングデータを窃取したうえ、侵害済みの正規メールアカウントを使って恐喝を行っている。ReliaQuestは本記事時点でCl0pへの帰属を「未確認」としている。PTCは6月17日からパッチ提供、CISAは6月25日にKEV登録済み。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "FlexPLM WSDLエンドポイントの事前認証情報漏洩を悪用し内部情報を取得"
+        },
+        {
+          "step": 2,
+          "description": "Windchillログインサーブレットの脆弱性と連鎖させ認証なしにRCEを達成、/Windchill/login/配下へhex名JSP Webシェルを設置"
+        },
+        {
+          "step": 3,
+          "description": "エンジニアリングデータ窃取後、侵害済み正規メールアカウントから従業員へ恐喝メールを一斉送付する二重恐喝"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": true,
+        "ips": [
+          "216.152.148.54",
+          "216.152.151.204",
+          "104.243.35.63",
+          "5.180.41.35"
+        ],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Windchill/FlexPLMサーバへの外部公開状況・/Windchill/login/配下のJSPファイル新規作成・異常メール送信の監視",
+        "splunk_spl": [
+          "index=web_logs sourcetype=windchill_access uri_path=\"*/Windchill/login/*.jsp\" method=POST | stats count by src_ip, uri_path",
+          "index=mail_logs sourcetype=exchange action=send | stats count by sender | where count > 50"
+        ],
+        "detection_notes": "既知パッチ未適用インスタンスの棚卸しを最優先し、/Windchill/login/配下への新規jspファイル生成イベント・IOC記載IPへの通信を確認する"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/clop-ransomware-targets-windchill-flexplm-in-data-theft-attacks",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://thehackernews.com/2026/07/cl0p-affiliates-target-internet-exposed.html",
+          "title": "Cl0p Affiliates Target Internet-Exposed PTC Windchill and FlexPLM with Unauthenticated RCE",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "sector_impact": [
+        "manufacturing",
+        "defense",
+        "retail"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260726-CVEP-29b9b17c"
+    }
+  ],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-07-26-001",
+        "title": "SourTrade: ブラウザ内マルウェア組み立て型マルバタイジングキャンペーン",
+        "summary": "Confiantが2026-07-23に詳報した「SourTrade」マルバタイジングキャンペーンについて、BleepingComputerとThe Hacker Newsが2026-07-25に報道した。Solana・Luno・TradingViewを装った偽サイトが正規のBunランタイムを悪用し、JavaScriptで最終的なWindows実行ファイルを被害者のブラウザメモリ内で組み立てさせる手口で、完全な悪性ファイルを固定URLから配信しない点が検知回避に寄与している。2024年後半から活動し個人投資家を標的としている。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-07-26T00:21:09+09:00",
+            "description": "偽Solana/Luno/TradingViewサイトがブラウザメモリ内でマルウェアを組み立てる手口を報道"
+          },
+          {
+            "source": "The Hacker News",
+            "date": "2026-07-26T03:48:44+09:00",
+            "description": "Confiant調査に基づき同一キャンペーン（SourTrade）の詳細技術分析を追加報道"
+          }
+        ],
+        "sector_impact": [
+          "finance"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/malicious-sites-use-javascript-to-build-malware-in-browser-memory",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://thehackernews.com/2026/07/malvertising-sends-malware-in-pieces.html",
+            "title": null,
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260726-TRND-37af558f"
+      },
+      {
+        "topic_id": "TREND-2026-07-26-002",
+        "title": "InsureOTPキット: 保険業界標的のリアルタイムMFA横取りフィッシング",
+        "summary": "CTM360の調査（The Hacker News 2026-07-25報道）により、保険業界を標的とする新種フィッシングキット「InsureOTPキット」が確認された。従来の認証情報収集型フィッシングと異なり、被害者のログイン操作にリアルタイムで同期し正規ポータルへ即座に認証を通すことでワンタイムパスワードによる多要素認証を横取りする手口。サウジアラビアを主軸に欧州・米国・インドでも観測され、Google広告経由でGitHub Pages/Netlify/Hostinger/Wix/Lovable上にホストされた使い捨てフィッシングサイトへ誘導する。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-07-25T19:14:21+09:00",
+            "description": "CTM360がリアルタイムMFA横取り型の保険業界標的フィッシングキット「InsureOTP」を新規報告"
+          }
+        ],
+        "sector_impact": [
+          "finance"
+        ],
+        "region_impact": [
+          "SA",
+          "IN",
+          "US",
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/07/ctm360-research-reveals-how-insurance.html",
+            "title": null,
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260726-TRND-768dfd08"
+      },
+      {
+        "topic_id": "TREND-2026-07-26-003",
+        "title": "ShinyHuntersの過去漏洩データを悪用した便乗セクストーション詐欺",
+        "summary": "BleepingComputer（2026-07-25報道）によると、ShinyHuntersが過去に漏洩させたAmtrak・Hallmark・Substack・Betterment等複数企業のメールアドレスを悪用し、無関係の第三者がビットコイン2,000ドルを要求するセクストーション（性的脅迫）メールを大量送信していることが確認された。ShinyHuntersは本キャンペーンへの関与を否定しており、実際に端末へ侵入した証跡はない。2026年4月から継続中。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-07-25T23:16:26+09:00",
+            "description": "ShinyHunters漏洩データを流用した便乗セクストーションメールキャンペーンを報告。当該グループは関与を否定"
+          }
+        ],
+        "sector_impact": [],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/shinyhunters-data-leaks-fuel-2-000-sextortion-email-scam",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260726-TRND-2bb8d6a5"
+      }
+    ]
+  },
+  "apt_main": [],
+  "apt_notable": [],
+  "forecasts": [
+    {
+      "forecast_number": 1,
+      "title": "Fastjson 1.x未パッチ環境（Spring Boot構成）は緊急のSafeMode有効化とKEV登録監視を優先すべき",
+      "tier": 1,
+      "confidence": "low",
+      "confidence_numeric": 0.3,
+      "framing": "defensive_action",
+      "outcome_channel": "E1",
+      "window_hours": 72,
+      "forecast_class": "fast_72h",
+      "forecast_class_rationale": "実悪用は既に確認済み・パッチ未提供の進行中事案であり、KEV初回追加という一次イベントは72h窓で外部可視化されうるためfast_72hに割当（M2）",
+      "root": {
+        "evidence": "[The Hacker News 2026-07-25] ThreatBookとImpervaが、Fastjson 1.x（CVSS9.0・Spring Boot fat-JAR構成でSafeMode無効時に悪用可能）の未パッチRCE脆弱性CVE-2026-16723について、米国・シンガポール・カナダの金融・医療・IT・小売セクターへの実悪用を確認したと報道。パッチは本日時点で未提供。",
+        "past_patterns": "広く使われるJavaライブラリの未パッチ状態での実悪用確認は、CISAによるKEV追加の候補となりやすい（推測: 過去の類似事案からの経験則であり本件固有の確証ではない）。",
+        "threat_intel": "Alibabaは本日時点でFastjson 1.x系の修正版を提供しておらず、SafeMode有効化とFastjson2への移行を推奨するのみ。CISA KEVカタログには本日時点で本CVEは未登録。"
+      },
+      "anchor": {
+        "epss_score": 0.00413,
+        "epss_percentile": 0.33907,
+        "epss_model_date": "2026-07-25",
+        "kev_registered": false,
+        "ssvc_decision": null,
+        "ssvc_automatable": null
+      },
+      "kev_snapshot": {
+        "date_added": null,
+        "ransomware_flag": null,
+        "reference_set": []
+      },
+      "estimated_part": "推定 — 実悪用が既に確認され広く使われるOSSであることから、CISAが72時間以内に本CVEをKEVへ追加する可能性は一定程度あると推定するが、CISAの追加判断の時期は個別事情に左右され確証はない。（推測）",
+      "early_warning_signals": "Spring Boot fat-JARでFastjson 1.x（1.2.68〜1.2.83）を使用している場合、SafeMode設定状況の確認、公開JSONエンドポイントへの異常なPOSTリクエスト急増、Javaプロセスからの不審な子プロセス起動（EDR）を監視する。",
+      "hit_criteria": "CISAがCVE-2026-16723を72時間以内（2026-07-29 07:00 JSTまで）にKEVカタログへ初回追加した場合を的中とする。使用可: KEV初回追加（E1・dateAddedが検証窓内であること）。使用不可: 「国内被害報道」「悪用拡大（曖昧）」。",
+      "deadline_date": "2026-07-29",
+      "related_cves": [
+        "CVE-2026-16723"
+      ],
+      "related_apt_campaigns": []
+    }
+  ],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-07-26-001",
+      "title": "Rockwell Arena Simulation Softwareの複数境界外書き込み脆弱性（CVE-2026-8085等4件）",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β",
+        "η"
+      ],
+      "priority": "medium",
+      "product_or_service": "Rockwell Automation Arena Simulation Software",
+      "targets": {
+        "sectors": [
+          "manufacturing",
+          "healthcare",
+          "defense"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SecurityWeek",
+          "date": "2026-07-25T17:30:00+09:00",
+          "description": "CISA ICSA-26-197-01・Rockwellが17.00.01でArena Simulation Softwareの4件の境界外書き込み脆弱性を修正したと報道"
+        }
+      ],
+      "overview": "サプライチェーン企業・病院・防衛関連企業で利用されるRockwell Arena Simulation Softwareに、悪意あるモデル/実験ファイルを開かせることでコード実行が可能な境界外書き込み脆弱性4件（CVE-2026-8085/8312/8313/8314、CVSSv3 7.8）が確認された。実悪用・PoCは未確認だが、対象ファイルは通常業務で日常的に開かれるためソーシャルエンジニアリングによる悪用が現実的である。",
+      "recommended_actions": [
+        "Arena Simulation Softwareを17.00.01へ次回パッチサイクルで更新する",
+        "外部から受領したArenaモデル/実験ファイルの開封を制限・サンドボックス化する",
+        "[EDR] expmt.exe（Siman）プロセスの異常なクラッシュ・子プロセス生成を監視する"
+      ],
+      "monitoring": {
+        "description": "expmt.exeプロセスの異常終了・子プロセス生成の監視",
+        "splunk_spl": [
+          "index=wineventlog EventCode=4688 ParentImage=\"*expmt.exe*\" | stats count by NewProcessName"
+        ],
+        "detection_notes": "通常はexpmt.exeから不審な子プロセスは生成されないため生成時は要確認"
+      },
+      "references": [
+        {
+          "url": "https://www.securityweek.com/rockwell-patches-code-execution-flaws-in-arena-simulation-software/",
+          "title": null,
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "info_id": "20260726-SOCR-c1041473"
+    },
+    {
+      "rec_id": "SOC-2026-07-26-002",
+      "title": "GitLab Ojジェム経由のJSON解析メモリ破損RCE PoC公開",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β",
+        "γ"
+      ],
+      "priority": "medium",
+      "product_or_service": "GitLab CE/EE（自己管理型）/ Ojジェム",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-25T19:14:26+09:00",
+          "description": "研究者depthfirstがGitLab自己管理型インスタンス（未パッチ）で動作するRCE PoCを公開したと報道"
+        }
+      ],
+      "overview": "GitLab CE/EE（18.11.4以前等）とOjジェム（3.17.1以前）に存在するJSON解析時のメモリ破損RCEについて、6/10のパッチ公開から6週間後の7/24に実証PoCが公開された。push権限を持つ認証済みユーザーが細工したJupyterノートブックのコミット差分からヒープポインタを漏洩させgitユーザー権限でコマンド実行する手口で、CVE番号は未採番のためパッチ未適用組織が見落としやすい。",
+      "recommended_actions": [
+        "自己管理型GitLabを18.10.8/18.11.5/19.0.2以降へ速やかに更新する（CVE番号未採番のため見落とし注意）",
+        "push権限保有者の棚卸しと最小権限化を確認する",
+        "[SIEM] Jupyterノートブック形式ファイルのコミット・差分表示に伴う異常なgitプロセス起動を監視する"
+      ],
+      "monitoring": {
+        "description": "GitLab上でのJupyterノートブックコミット・commit diff表示時の異常なgit子プロセスの監視",
+        "splunk_spl": [
+          "index=gitlab_logs sourcetype=git_exec CommandLine=\"*ipynb*\" | stats count by user, project"
+        ],
+        "detection_notes": "通常のdiff表示ではgitが不審な子プロセスを生成しないため注意"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/researcher-publishes-gitlab-rce-poc.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20260726-SOCR-86302a62"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": null,
+        "product": "GitLab CE/EE（Ojジェムを介したJSON解析メモリ破損RCE、Jupyterノートブック経由のPoC公開）",
+        "reason": "low_score",
+        "reason_detail": "軸1=3点（PoC公開+2・広く使われる製品+1）/軸2=0点（海外単一ソースのみ）。CVE番号未採番・2026-06-10に修正済み・push権限を持つ認証済みユーザー限定・実悪用未確認のため除外・継続監視対象（CVE採番後に再評価）",
+        "reported_date": "2026-07-26"
+      },
+      {
+        "cve_id": "CVE-2026-8085",
+        "product": "Rockwell Automation Arena Simulation Software（expmt.exe/Siman・境界外書き込み、17.00.00以前。CVE-2026-8312/8313/8314も同一アドバイザリ内複合脆弱性）",
+        "reason": "low_score",
+        "reason_detail": "軸1=2点（CVSS7.5-8.9域+2）/軸2=0点。CISA ICSA-26-197-01・CVSSv3 7.8/v4 7・ユーザーが悪意あるモデルファイルを開く必要がありKEV/PoC/実悪用未確認・17.00.01で修正済みのため除外・継続監視対象",
+        "reported_date": "2026-07-26"
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "DevMan-2026-FunkyMantisRaaSPortal",
+        "group_name": "DevMan（PRODAFT追跡名: Funky Mantis）",
+        "reason": "low_score",
+        "reason_detail": "軸P=3点（単一ベンダー報告のみ）/軸Q=3点（複数セクター・地域だが単一ソース）で本編・注目動向いずれの閾値にも未達。PRODAFTがRaaSポータルの技術分析を公開（184組織被害主張・米国中心）だが政府機関による確認・複数ベンダー確認なし。継続監視対象",
+        "reported_date": "2026-07-26"
+      }
+    ],
+    "ai_attacks": [],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 1,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 1,
+      "excluded": 2,
+      "total_processed": 4
+    },
+    "apt": {
+      "main": 0,
+      "notable": 0,
+      "excluded": 1,
+      "total_processed": 1
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 0,
+      "total_processed": 0,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 0,
+      "medium": 2,
+      "low": 0,
+      "excluded": 0,
+      "total_processed": 2,
+      "perspective_breakdown": {
+        "cve": 2,
+        "zeroday": 0,
+        "ai_attack": 0
+      }
+    }
+  }
+}

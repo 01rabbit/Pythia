@@ -1,0 +1,109 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-26 07:45 JST
+調査期間: 2026-07-25 07:00 〜 2026-07-26 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-16723 / Fastjson 1.x（Alibaba製JSONライブラリ）
+対象: 1.2.68〜1.2.83（Spring Boot実行可能fat-JAR構成・SafeMode無効時）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 9.0 (Critical)
+状態: 実悪用確認 / ゼロデイ
+パッチ提供: 未提供
+
+【24時間以内の変化】
+[The Hacker News 2026-07-25] ThreatBookとImpervaがAlibaba製Fastjson 1.x（CVSS9.0）の未パッチRCE脆弱性CVE-2026-16723について実悪用を確認したと報道。パッチは未提供
+
+【概要】
+Fastjson 1.2.68〜1.2.83においてSpring Bootの実行可能fat-JAR構成でSafeModeが既定の無効のまま稼働している場合、AutoType有効化やクラスパスガジェットを必要とせず、攻撃者が制御するJSONを送信するだけで認証なしにコード実行が可能な脆弱性が確認され、ThreatBookとImpervaが実環境での悪用（米国・シンガポール・カナダの金融・医療・IT・小売セクターを中心にブラウザなりすましトラフィックが多数）を確認したと報じられた。Alibabaは本日時点でFastjson 1.x系の修正版を提供しておらず、SafeModeの即時有効化とFastjson2への移行を推奨するのみである。
+
+攻撃の流れ:
+1. SafeModeが無効なFastjson 1.x搭載Spring Bootアプリの、ネットワーク到達可能なJSON解析エンドポイントを特定
+2. 攻撃者が細工したJSONリクエストを送信し認証なしにコード実行
+3. Javaプロセス権限でのコマンド実行・侵害拡大
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・SafeModeを直ちに有効化する（既定は無効）
+・Fastjson2への移行を計画する
+・境界のWAFでFastjson 1.x宛のJSONリクエストを検査・遮断する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Fastjson 1.xを利用するSpring Bootアプリの公開JSONエンドポイントへの異常リクエストを監視する]
+Splunk SPL: index=web_logs sourcetype=spring_boot_access method=POST | regex _raw="(?i)@type|fastjson" | stats count by src_ip, uri_path
+Splunk SPL: index=wineventlog OR index=linux_audit ParentImage="*java*" | stats count by ParentImage, Image, CommandLine
+→ SafeMode設定状況の棚卸しを最優先し、Javaプロセスからの不審な子プロセス起動（コマンド実行の兆候）を確認する
+
+【参照】
+https://thehackernews.com/2026/07/fastjson-1x-rce-vulnerability-targeted.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用APT活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向採用APT活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] SourTrade: ブラウザ内マルウェア組み立て型マルバタイジングキャンペーン
+Confiantが2026-07-23に詳報した「SourTrade」マルバタイジングキャンペーンについて、BleepingComputerとThe Hacker Newsが2026-07-25に報道した。Solana・Luno・TradingViewを装った偽サイトが正規のBunランタイムを悪用し、JavaScriptで最終的なWindows実行ファイルを被害者のブラウザメモリ内で組み立てさせる手口で、完全な悪性ファイルを固定URLから配信しない点が検知回避に寄与している。2024年後半から活動し個人投資家を標的としている。
+参照: https://www.bleepingcomputer.com/news/security/malicious-sites-use-javascript-to-build-malware-in-browser-memory
+
+・[トレンド記事] InsureOTPキット: 保険業界標的のリアルタイムMFA横取りフィッシング
+CTM360の調査（The Hacker News 2026-07-25報道）により、保険業界を標的とする新種フィッシングキット「InsureOTPキット」が確認された。従来の認証情報収集型フィッシングと異なり、被害者のログイン操作にリアルタイムで同期し正規ポータルへ即座に認証を通すことでワンタイムパスワードによる多要素認証を横取りする手口。サウジアラビアを主軸に欧州・米国・インドでも観測され、Google広告経由でGitHub Pages/Netlify/Hostinger/Wix/Lovable上にホストされた使い捨てフィッシングサイトへ誘導する。
+参照: https://thehackernews.com/2026/07/ctm360-research-reveals-how-insurance.html
+
+・[トレンド記事] ShinyHuntersの過去漏洩データを悪用した便乗セクストーション詐欺
+BleepingComputer（2026-07-25報道）によると、ShinyHuntersが過去に漏洩させたAmtrak・Hallmark・Substack・Betterment等複数企業のメールアドレスを悪用し、無関係の第三者がビットコイン2,000ドルを要求するセクストーション（性的脅迫）メールを大量送信していることが確認された。ShinyHuntersは本キャンペーンへの関与を否定しており、実際に端末へ侵入した証跡はない。2026年4月から継続中。
+参照: https://www.bleepingcomputer.com/news/security/shinyhunters-data-leaks-fuel-2-000-sextortion-email-scam
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Fastjson 1.x未パッチ環境（Spring Boot構成）は緊急のSafeMode有効化とKEV登録監視を優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1
+検証窓: fast_72h
+根拠:
+  Evidence: [The Hacker News 2026-07-25] ThreatBookとImpervaが、Fastjson 1.x（CVSS9.0・Spring Boot fat-JAR構成でSafeMode無効時に悪用可能）の未パッチRCE脆弱性CVE-2026-16723について、米国・シンガポール・カナダの金融・医療・IT・小売セクターへの実悪用を確認したと報道。パッチは本日時点で未提供。
+  過去パターン: 広く使われるJavaライブラリの未パッチ状態での実悪用確認は、CISAによるKEV追加の候補となりやすい（推測: 過去の類似事案からの経験則であり本件固有の確証ではない）。
+  脅威情報: Alibabaは本日時点でFastjson 1.x系の修正版を提供しておらず、SafeMode有効化とFastjson2への移行を推奨するのみ。CISA KEVカタログには本日時点で本CVEは未登録。
+  確度アンカー: EPSS percentile=0.33907 / KEV=未登録 / SSVC決定=該当なし / Automatable=該当なし / EPSS算出日=2026-07-25
+推定部分: 推定 — 実悪用が既に確認され広く使われるOSSであることから、CISAが72時間以内に本CVEをKEVへ追加する可能性は一定程度あると推定するが、CISAの追加判断の時期は個別事情に左右され確証はない。（推測）
+先回り監視: Spring Boot fat-JARでFastjson 1.x（1.2.68〜1.2.83）を使用している場合、SafeMode設定状況の確認、公開JSONエンドポイントへの異常なPOSTリクエスト急増、Javaプロセスからの不審な子プロセス起動（EDR）を監視する。
+的中判定: CISAがCVE-2026-16723を72時間以内（2026-07-29 07:00 JSTまで）にKEVカタログへ初回追加した場合を的中とする。使用可: KEV初回追加（E1・dateAddedが検証窓内であること）。使用不可: 「国内被害報道」「悪用拡大（曖昧）」。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（APT）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT除外]
+・DevMan（PRODAFT追跡名: Funky Mantis） / DevMan-2026-FunkyMantisRaaSPortal → 軸P=3点（単一ベンダー報告のみ）/軸Q=3点（複数セクター・地域だが単一ソース）で本編・注目動向いずれの閾値にも未達。PRODAFTがRaaSポータルの技術分析を公開（184組織被害主張・米国中心）だが政府機関による確認・複数ベンダー確認なし。継続監視対象
+
+本日の集計:
+APT — 本編0件 / 注目動向0件 / 除外1件
+========================================
