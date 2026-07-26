@@ -1,0 +1,95 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-26 07:45 JST
+調査期間: 2026-07-25 07:00 〜 2026-07-26 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-16723 / Fastjson 1.x（Alibaba製JSONライブラリ）
+対象: 1.2.68〜1.2.83（Spring Boot実行可能fat-JAR構成・SafeMode無効時）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 9.0 (Critical)
+状態: 実悪用確認 / ゼロデイ
+パッチ提供: 未提供
+
+【24時間以内の変化】
+[The Hacker News 2026-07-25] ThreatBookとImpervaがAlibaba製Fastjson 1.x（CVSS9.0）の未パッチRCE脆弱性CVE-2026-16723について実悪用を確認したと報道。パッチは未提供
+
+【概要】
+Fastjson 1.2.68〜1.2.83においてSpring Bootの実行可能fat-JAR構成でSafeModeが既定の無効のまま稼働している場合、AutoType有効化やクラスパスガジェットを必要とせず、攻撃者が制御するJSONを送信するだけで認証なしにコード実行が可能な脆弱性が確認され、ThreatBookとImpervaが実環境での悪用（米国・シンガポール・カナダの金融・医療・IT・小売セクターを中心にブラウザなりすましトラフィックが多数）を確認したと報じられた。Alibabaは本日時点でFastjson 1.x系の修正版を提供しておらず、SafeModeの即時有効化とFastjson2への移行を推奨するのみである。
+
+攻撃の流れ:
+1. SafeModeが無効なFastjson 1.x搭載Spring Bootアプリの、ネットワーク到達可能なJSON解析エンドポイントを特定
+2. 攻撃者が細工したJSONリクエストを送信し認証なしにコード実行
+3. Javaプロセス権限でのコマンド実行・侵害拡大
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・SafeModeを直ちに有効化する（既定は無効）
+・Fastjson2への移行を計画する
+・境界のWAFでFastjson 1.x宛のJSONリクエストを検査・遮断する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Fastjson 1.xを利用するSpring Bootアプリの公開JSONエンドポイントへの異常リクエストを監視する]
+Splunk SPL: index=web_logs sourcetype=spring_boot_access method=POST | regex _raw="(?i)@type|fastjson" | stats count by src_ip, uri_path
+Splunk SPL: index=wineventlog OR index=linux_audit ParentImage="*java*" | stats count by ParentImage, Image, CommandLine
+→ SafeMode設定状況の棚卸しを最優先し、Javaプロセスからの不審な子プロセス起動（コマンド実行の兆候）を確認する
+
+【参照】
+https://thehackernews.com/2026/07/fastjson-1x-rce-vulnerability-targeted.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-12569 / PTC Windchill PDMLink / FlexPLM
+CVSS: 9.3
+既報（2026-06-26初報・KEV登録済み・CVSS9.3のCWE-502デシリアライゼーションRCE）のPTC Windchill/FlexPLM脆弱性CVE-2026-12569について、Cl0p（Chubby Scorpius/FIN11/Graceful Spider/Lace Tempest）系とみられる脅威アクターがFlexPLM WSDLエンドポイントの事前認証情報漏洩とWindchillログインサーブレットの脆弱性を連鎖させ認証なしにRCEへ至る攻撃チェーンの詳細が新たに判明した。/Windchill/login/配下へhex名のJSPウェブシェルを設置し、製造業・自動車・航空宇宙・小売の被害組織からエンジニアリングデータを窃取したうえ、侵害済みの正規メールアカウントを使って恐喝を行っている。ReliaQuestは本記事時点でCl0pへの帰属を「未確認」としている。PTCは6月17日からパッチ提供、CISAは6月25日にKEV登録済み。
+IP: 216.152.148.54
+IP: 216.152.151.204
+IP: 104.243.35.63
+IP: 5.180.41.35
+
+監視: [Windchill/FlexPLMサーバへの外部公開状況・/Windchill/login/配下のJSPファイル新規作成・異常メール送信の監視]
+Splunk SPL: index=web_logs sourcetype=windchill_access uri_path="*/Windchill/login/*.jsp" method=POST | stats count by src_ip, uri_path
+Splunk SPL: index=mail_logs sourcetype=exchange action=send | stats count by sender | where count > 50
+→ 既知パッチ未適用インスタンスの棚卸しを最優先し、/Windchill/login/配下への新規jspファイル生成イベント・IOC記載IPへの通信を確認する
+
+参照: https://www.bleepingcomputer.com/news/security/clop-ransomware-targets-windchill-flexplm-in-data-theft-attacks
+https://thehackernews.com/2026/07/cl0p-affiliates-target-internet-exposed.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE除外]
+・CVE未採番 (GitLab CE/EE（Ojジェムを介したJSON解析メモリ破損RCE、Jupyterノートブック経由のPoC公開）) → 軸1=3点（PoC公開+2・広く使われる製品+1）/軸2=0点（海外単一ソースのみ）。CVE番号未採番・2026-06-10に修正済み・push権限を持つ認証済みユーザー限定・実悪用未確認のため除外・継続監視対象（CVE採番後に再評価）
+・CVE-2026-8085 (Rockwell Automation Arena Simulation Software（expmt.exe/Siman・境界外書き込み、17.00.00以前。CVE-2026-8312/8313/8314も同一アドバイザリ内複合脆弱性）) → 軸1=2点（CVSS7.5-8.9域+2）/軸2=0点。CISA ICSA-26-197-01・CVSSv3 7.8/v4 7・ユーザーが悪意あるモデルファイルを開く必要がありKEV/PoC/実悪用未確認・17.00.01で修正済みのため除外・継続監視対象
+
+本日の集計:
+CVE — ゼロデイ特報1件 / 本編0件 / 参考A0件 / 参考B1件 / 除外2件
+========================================
