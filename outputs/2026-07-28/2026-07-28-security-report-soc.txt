@@ -1,0 +1,136 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-28 07:52 JST
+調査期間: 2026-07-27 07:00 〜 2026-07-28 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Spring Boot Actuator「/actuator/heapdump」への大量スキャン観測
+観点: CVE関連
+採用契機: γ / δ
+------------------------------------------------------------
+
+優先度: 高
+対象: Spring Boot（Actuator heapdumpエンドポイント）
+
+【24時間以内の変化】
+[SANS Internet Storm Center 2026-07-27] /actuator/heapdumpへのインターネット規模のスキャンを観測。Basic認証がadmin:admin等の初期値のままの実装を自動化アクセスで狙っている
+
+【概要】
+Spring Boot Actuatorのheapdumpエンドポイントはアプリケーションのメモリダンプを返す診断機能で、公開設定・弱い認証情報のまま放置されるとAPIキーやDB接続情報などの機密情報が漏洩し得るため、これを狙った探索的スキャンがインターネット規模で継続的に行われていることがSANS ISCにより報告された。特定のCVEに紐づく新規脆弱性ではなく既知の設定不備クラスだが、直近24時間で新規の大量スキャン観測という変化があり、SOCとしては自社・グループ会社のSpring Boot稼働資産の公開状況を早期に確認すべき事案。
+
+【推奨アクション】
+・自社・子会社のインターネット公開資産で/actuator/heapdump等の危険なActuatorエンドポイントが到達可能か外部スキャンで棚卸しする（本日中）
+・到達可能な場合は直ちにWAF/リバースプロキシでのアクセス制限、management.endpoints.web.exposure.includeの見直し（heapdump/env等の除外）、Spring Securityによる認証必須化を実施する
+・Basic認証がadmin:admin等の初期値になっていないか設定確認する
+Splunk SPL: index=web_proxy OR index=waf uri_path="*/actuator/heapdump*" OR uri_path="*/admin-api/actuator/heapdump*" | stats count by src_ip, uri_path, http_user_agent, status
+→ 200応答かつレスポンスサイズが大きい通信、およびBasic認証ヘッダにadmin:admin相当のBase64値（YWRtaW46YWRtaW4=）が含まれる通信を優先確認する
+
+【参照】
+https://isc.sans.edu/diary/rss/33188
+
+------------------------------------------------------------
+2. GitHub Dependabotに3日間クールダウン機能追加（サプライチェーン汚染対策）
+観点: CVE関連
+採用契機: γ
+------------------------------------------------------------
+
+優先度: 中
+対象: GitHub Dependabot／参考: PyPI
+
+【24時間以内の変化】
+[The Hacker News 2026-07-27] GitHubがDependabotに3日間クールダウン機構を追加したと発表
+[SecurityWeek 2026-07-27] 新ポリシーの意義を解説
+
+【概要】
+悪意あるパッケージバージョンが公開直後にレジストリから取り除かれる前に自動的に取り込まれてしまうサプライチェーン攻撃を防ぐため、GitHubがDependabotの既定挙動を変更した。パッケージのリリースから既定で3日間、Dependabotによる自動プルリクエスト作成を遅延させる。セキュリティアップデートはこのクールダウンの対象外で即時反映される。PyPIも既に類似の対策（リリースから14日超経過後の新規ファイルアップロード拒否）を導入済みである。SOCとしては自社のCI/CDにおける依存関係更新運用がこの変更の影響を受けるか確認すべき。
+
+【推奨アクション】
+・自社リポジトリのdependabot.yml設定を確認し、cooldownオプションの既定値（3日間）で運用方針に問題ないか、セキュリティアップデートの自動即時反映が有効なままか確認する（今週中）
+・依存関係の自動マージ運用がある場合、poisoned package混入リスクを踏まえて承認フローを再点検する
+・[ログソース] CI/CDパイプラインログ、GitHub Actions/Dependabotアラートログを確認する
+
+【参照】
+https://thehackernews.com/2026/07/github-adds-3-day-dependabot-cooldown.html
+https://www.securityweek.com/new-github-pypi-policies-boost-supply-chain-security
+https://blog.pypi.org/posts/2026-07-22-releases-now-reject-new-files-after-14-days/
+
+------------------------------------------------------------
+3. Shadow AIエージェントの可視化・ガバナンスギャップ
+観点: AI攻撃関連
+採用契機: γ
+------------------------------------------------------------
+
+優先度: 中
+対象: Salesforce Agentforce、Microsoft Copilot Studio、ServiceNow、ChatGPT、Cursor自動化、Zapier Agents、Retool等のエージェント型AIプラットフォーム全般
+
+【24時間以内の変化】
+[BleepingComputer 2026-07-27] Nudge Securityの解説記事としてシャドーAIエージェントの発見・保護手法が公開された
+
+【概要】
+エージェント型AIはチャットボットと異なり永続的な権限を保持し企業システムに接続して自律的に行動するため、侵害された場合はビジネスシステムを直接改変され得るリスクがある。記事は、APIベースの監視（Copilot Studio・Agentforce等）とブラウザベースの観測（Cursor/Zapier/Retool等）を組み合わせた「デュアルチャネルdiscovery」を推奨しており、過剰権限・パブリック公開・ハードコードされた認証情報・休眠エージェントの継続的アクセス権を洗い出すべきとしている。記事内引用の各種統計は出典・調査時期が記事内で明示されておらず、一次調査そのものの検証はしていない（推測を含む）。
+
+【推奨アクション】
+・SaaS/クラウド管理コンソール（Copilot Studio、Agentforce、ServiceNow等）でAIエージェントの一覧・権限を棚卸しし、過剰スコープ・放置エージェントを洗い出す（今週中）
+・API非公開のオートメーションツール（Cursor、Zapier、Retool等）についてはCASB/ブラウザ監視での検知を検討する
+Splunk SPL: index=azuread OR index=o365 operation IN ("Add service principal","Consent to application","Add app role assignment") | stats count by app_display_name, requested_by, permission_scope
+→ 新規登録されたAIエージェント/サービスプリンシパルがMail.ReadWrite・Files.ReadWrite.All等の広範なスコープを要求していないか、正規の変更管理プロセスを経て承認されたものか確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/shadow-ai-agents-are-multiplying-heres-how-to-find-and-secure-them
+
+------------------------------------------------------------
+4. IPA「2026年第2四半期 脆弱性関連情報の届出状況」公表
+観点: CVE関連
+採用契機: α
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-27] IPAが2026年第2四半期の脆弱性関連情報届出状況を公表。四半期総届出件数247件（前四半期比+18.2%）、うちソフトウェア製品関連が182件（前四半期比+29.1%）と大きく増加
+
+【概要】
+IPAの情報セキュリティ早期警戒パートナーシップガイドラインに基づく四半期定期集計で、ソフトウェア製品関連の脆弱性届出が前四半期比+29.1%と顕著に増加している。個別の緊急対応を要する情報ではないが、パッチマネジメント体制のリソース配分検討材料としてSOC/脆弱性管理チームが把握しておくべきトレンド情報。
+
+【推奨アクション】
+・四半期トレンド（ソフトウェア製品届出+29.1%）を社内の脆弱性管理チームに共有し、パッチ適用体制のリソース計画の参考情報とする（把握のみ・緊急対応不要）
+
+【参照】
+https://www.security-next.com/187674
+
+------------------------------------------------------------
+5. NVIDIA主導「Open Secure AI Alliance」発足・OSSフレームワーク「NOOA」公開
+観点: AI攻撃関連
+採用契機: ζ
+------------------------------------------------------------
+
+優先度: 低
+対象: NOOAフレームワーク（AIエージェントのセキュリティ監査・ガバナンスツール全般）
+
+【24時間以内の変化】
+[The Hacker News 2026-07-27] NVIDIAがMicrosoft、Cisco、Cloudflare、CrowdStrike、Hugging Face、IBM、Palo Alto Networks、Red Hat、Linux Foundation等37組織と共に「Open Secure AI Alliance」発足、OSSフレームワーク「NOOA」公開を報道
+
+【概要】
+AIエージェントの安全性・監査性を高めるための業界横断オープンソース連合が発足し、NOOAフレームワークが公開された。ただし記事は「defense-in-depth controlsであり封じ込め境界ではない」という開発元の留意点も伝えており、実運用にはコンテナ/VM等のOSレベルの分離が別途必要とされる。連合としての統治・ロードマップ・憲章文書は発表時点で未公開。OpenAI・Google・Meta・Anthropicは参加していない。個別の脅威・脆弱性情報ではなくエコシステム動向のため優先度は低いが、将来的なAIエージェント監査ツールの選定候補として動向を継続的に把握する価値がある。
+
+【推奨アクション】
+・現時点で緊急対応は不要。AIエージェントのガバナンス・監査ツール選定を検討する際の候補としてNOOAの今後の成熟度（ガバナンス文書公開、実運用実績）を継続的にウォッチする（把握のみ）
+
+【参照】
+https://thehackernews.com/2026/07/nvidia-forms-37-member-open-secure-ai.html
+
+
+[SOC推奨情報]
+・該当なし
+
+本日の集計:
+SOC推奨情報 — 高1件 / 中2件 / 低2件 / 除外0件
+
+========================================

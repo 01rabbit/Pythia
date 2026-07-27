@@ -1,0 +1,178 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-28 07:52 JST
+調査期間: 2026-07-27 07:00 〜 2026-07-28 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当のCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1・軸2いずれも本編基準を満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT 2026-07-27 報道
+
+・CVE-2026-62379 / OpenAM（Open Identity Platform）
+CVSS: 9.8 (Critical) 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-07-27] OpenAM 16.1.2セキュリティアップデート公開を報道（記事#187871）。デフォルト設定稼働中の全OpenAMインスタンスが未認証RCEにより完全侵害されうる旨を報道
+
+【概要】
+OpenAMの認証エンドポイントにおいて、攻撃者が指定した任意のJavaクラス名を検証なくロード・実行できる脆弱性（CVE-2026-62379）と、認証フィルタのデシリアライゼーション不備による別経路の未認証RCE（CVE-2026-62263、CVSS9.2）が同時に修正された。いずれもデフォルト設定で未認証リモートコード実行が可能であり、企業のSSO/IAM基盤が直接侵害されるリスクがある。16.1.2で修正済み。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Webアクセスログ] /authserviceエンドポイントへのXML経由クラス指定パターンを検知
+Splunk SPL: index=web sourcetype=access_combined uri_path=*/authservice* | search http_method=POST | regex _raw="(?i)(java\.lang\.|ClassLoader|ProcessBuilder)"
+→ java.lang. ClassLoader ProcessBuilder等の文字列を含むPOSTボディを優先確認する
+
+【参照】
+https://www.security-next.com/187871
+https://github.com/OpenIdentityPlatform/OpenAM
+https://radar.offseq.com/threat/orgopenidentityplatform-openam-openam-core-openam-unauthenticated-remote-code-execution-via-classforname-7678e3fe5efb8e5c
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-62379 — 24時間窓内に発行確認されず
+
+昇格理由: JVNDB 2026-07-27 掲載（国内報道）
+
+・CVE-2026-47304 / .NET / .NET Framework
+CVSS: 9.8 (Critical) 状態: 特記事項なし
+
+【24時間以内の変化】
+[JVNDB 2026-07-27] 元は2026-07-14 Microsoft Patch Tuesdayで公開された.NET等の暗号署名検証不備（CVE-2026-47304、CVSS9.8）を含む複数脆弱性を日本語で新規掲載
+
+【概要】
+.NETにおける暗号署名検証の不備により、ネットワーク経由でセキュリティ境界を侵害されうる重大な脆弱性。抽象的な「署名検証バイパス」の記述のみで具体的な攻撃チェーンは一次資料に明記されていない。同一Microsoft公開分に.NET Framework系のスタックベースバッファオーバーフロー複数件・ASP.NET Core OData等のリソース割当制限欠如複数件（推定7件）が含まれるが時間的制約により個別番号は未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[エンドポイントプロセスログ] .NETプロセスの異常な子プロセス生成を監視（署名検証バイパス後の不正コード実行痕跡）
+Splunk SPL: index=wineventlog EventCode=4688 | search CommandLine="*dotnet*" | stats count by Account_Name, ParentImage
+→ 通常業務で使われない親子プロセス関係（dotnetプロセスからのcmd.exe/powershell.exe起動等）を優先確認する
+
+【参照】
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-025317.html
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-025318.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-47304 — 24時間窓内に発行確認されず
+
+昇格理由: ScanNetSecurity 2026-07-27 報道 / JVN発行
+
+・CVE-2026-13321 / ISC BIND 9
+CVSS: 8.6 (High) 状態: 特記事項なし
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-27] ISC BIND 9の複数脆弱性（9件）修正を国内向けに報道。JPRS（日本レジストリサービス）等が緊急対応を呼びかけ
+
+【概要】
+ISC BIND 9.20.26/9.21.24で9件の脆弱性が同時修正された。最も深刻なCVE-2026-13321（CVSS8.6）はDNSSEC検証のNSECネクストフィールド検証不備によるクロスゾーンキャッシュポイズニングで、リゾルバと権威サーバ間に位置する攻撃者が署名済み応答を偽造し正当なものとしてキャッシュ・配信させうる。同一アドバイザリ内で他8件（CVE-2026-10723・CVE-2026-10822・CVE-2026-11331・CVE-2026-11605・CVE-2026-11622・CVE-2026-11721・CVE-2026-12617・CVE-2026-13204）が同時修正されており、DoSクラッシュ系3件・リソース枯渇系2件・スプーフィング系2件に分類されている。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[DNSサーバログ] 異常なNSEC/NSEC3クエリパターン・BINDバージョン9.20.20未満の稼働有無を監視
+Splunk SPL: index=dns sourcetype=bind9 | stats count by src_ip, query_type | search query_type=NSEC OR query_type=NSEC3
+→ 資産棚卸しで9.20.20未満のBIND稼働有無を確認し、NSEC/NSEC3クエリの異常な集中を優先確認する
+
+【参照】
+https://scan.netsecurity.ne.jp/article/2026/07/27/55780.html
+https://jvn.jp/vu/JVNVU97496543
+https://www.securityweek.com/bind-updates-address-high-severity-cache-poisoning-flaws/
+https://lists.isc.org/pipermail/bind-announce/2026-July/001298.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-13321 — 24時間窓内に発行確認されず
+
+昇格理由: ScanNetSecurity 2026-07-27 報道 / JVN発行
+
+・CVE-2026-16157 / Duplicati（Windowsインストーラ）
+CVSS: 非公表 状態: 特記事項なし
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-27] Duplicati Windowsインストーラの権限割り当て不備を国内向けに報道（配信は2026-07-26 23:00 JST）
+
+【概要】
+DuplicatiのWindows版MSIインストーラが、既定の C:\Program Files\Duplicati 2\ 以外の場所にインストールされた場合、インストールディレクトリに適切なACLを適用しない。標準権限のローカルユーザーが同ディレクトリへの書き込み権限を持ちうる状態となり、LocalSystemサービスが読み込む悪意あるDLL等を配置され権限昇格・任意コード実行につながる。パッチ未提供、ベンダーからの正式声明も未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Windowsサービス/DLLロードログ] Duplicatiインストールディレクトリ配下での予期しないDLLロード・サービスインストールを監視
+Splunk SPL: index=wineventlog EventCode=7045 ImageLoaded=*Duplicati* | stats count by ComputerName, ImageLoaded
+→ 既知の正規Duplicati関連DLL一覧との差分を優先確認する
+
+【参照】
+https://scan.netsecurity.ne.jp/article/2026/07/27/55779.html
+https://jvn.jp/vu/JVNVU98636554
+https://kb.cert.org/vuls/id/847406
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-16157 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-16812 / VeloCloud Orchestrator（VCO）オンプレミス版
+CVSS: 10.0 (Critical) 状態: KEV登録済み / 実悪用確認
+本来内部利用限定のはずの機能にリモートから未認証でアクセスでき、OSコマンドインジェクションによりVCOホストを完全掌握される脆弱性。Arista社は外部から発見され実悪用が確認されていると明記している。SD-WANオーケストレータであるためエッジ拠点・支店ネットワーク全体への波及リスクが高い。2026-07-27にCISA KEVへ新規追加（FCEB期限2026-07-30）。対処: 5.2.3.14/6.1.3.4/6.4.2.4/7.0.0.1以降へ更新（パッチはArista社が同日提供済み）。
+IoC: 確認されず
+
+監視: [VCO管理インターフェースアクセスログ] VCO管理インターフェース宛の異常な内部API呼び出し・OSコマンド痕跡を監視
+Splunk SPL: index=network sourcetype=arista_vco (uri_path=*internal* OR uri_path=*flow* OR uri_path=*/api/*) | stats count by src_ip, uri_path, http_method
+→ パラメータに ; | ` $() 等のコマンド区切り文字を含む通信を優先確認する
+
+参照: https://www.arista.com/en/support/advisories-notices/security-advisory/24364-security-advisory-0144
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+・CVE-2025-68686 / FortiOS SSL-VPN
+CVSS: 5.9 (Medium) 状態: KEV登録済み
+過去のポストエクスプロイト時のシンボリックリンク永続化手口に対する修正をバイパスできる情報漏洩の脆弱性。単独の初期侵入経路ではなく、既に他の脆弱性でファイルシステムレベルの侵害を受けた環境が前提となる二次的な脆弱性。独立した実悪用報道は本日時点で未確認、KEV登録基準のみ充足。2026-07-27にCISA KEVへ新規追加（FCEB期限2026-08-10）。
+IoC: 確認されず
+
+監視: [SSL-VPNログ] SSL-VPNログにおける異常なシンボリックリンク操作・過去侵害端末からの継続アクセスを監視
+Splunk SPL: index=fortigate sourcetype=fortigate* (action=vpn OR subtype=vpn) | stats count by srcip, action, logdesc
+→ 過去に侵害歴のある端末・IPからの継続的なVPNアクセスを優先確認する
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+https://github.com/advisories/GHSA-839g-m33x-3w78
+https://ccb.belgium.be/advisories/warning-multiple-vulnerabilities-were-patched-fortinet-products-patch-immediately
+
+
+[CVE]
+・CVE-2026-16723 (Fastjson（Alibaba）) → 2026-07-26分レポートで既にゼロデイ特報採用済み。本日はSecurity NEXTによる日本語再掲のみで新規ファクトなし
+・CVE-2026-12569 (PTC Windchill PDMlink / FlexPLM) → 既知事実の再掲、一次記事403で新規性未確認
+・CVE-2026-27577 (n8n（旧・2026年2月修正済み）) → 一次データのCVE ID誤帰属を訂正。2026年2月修正済みの別件
+・CVE-2026-54121 (Certighost（Active Directory Certificate Services）) → axis1=5(PoC+2/CVSS7.5-8.9+2/OSS+1)・axis2=0、参考A昇格トリガーなし
+・CVE-2026-61511 (vBulletin（vB5_Template_Runtime::runMaths RCE）) → axis1=5(PoC+2/未認証RCE+3、NVD未スコアのためCVSS加点なし)・axis2=1、参考A昇格トリガーなし
+・CVE-2026-47037 (Oracle Access Manager（2026年7月CPUバッチ代表）) → 同一アドバイザリ内の未確認CVE約24件を含むバッチ。代表CVEのみ確認済みだが軸1=3・軸2=1相当で参考A昇格トリガーも弱いため今回は掲載見送り
+・CVE-2026-42955 (unbound（NLnet Labs、ゴーストドメイン変種）) → CVSS3.7・KEV非登録・PoC非公開の低優先度フラグ該当。同一アドバイザリ内のHigh severity 4件（CVE-2026-32665/40691/44690/55973）は本日JVN経由の新規報道か未確認のため次回追跡課題として残す
+・CVE未採番 (.NET/ASP.NET Core batch（未確認7件）) → 同一アドバイザリ内の未確認CVE。時間的制約により代表CVE-2026-47304以外は個別番号未確認
+・CVE未採番 (Oracle Enterprise Manager Base Platform batch（未確認約20件）) → 同一アドバイザリ内の未確認CVE。個別CVE番号・CVSS値未確認
+・CVE未採番 (Oracle Application Testing Suite batch（未確認4件）) → 同一アドバイザリ内の未確認CVE。個別CVE番号未確認
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A4件 / 参考B2件 / 除外10件
+
+========================================

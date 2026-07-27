@@ -1,0 +1,1450 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-07-28",
+    "generated_at": "2026-07-28T07:52:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-07-27T07:00:00+09:00",
+      "to": "2026-07-28T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [],
+  "reference_a": [
+    {
+      "cve_id": "CVE-2026-62379",
+      "product": "OpenAM（Open Identity Platform）",
+      "vendor": "Open Identity Platform（旧ForgeRock系OSS IAM）",
+      "affected_versions": "16.1.1以前（16.1.2で修正）。同時にCVE-2026-62263（CVSS9.2・認証フィルタのJavaデシリアライゼーション不備による未認証RCE）およびCVE-2026-62280（High・認可同意ページのXSS）を含む計18件のCVEが同時修正されたが、詳細未確認分は個別番号を記載しない",
+      "priority": "high",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-470",
+        "CWE-94"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "16.1.2",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 6,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-27T07:00:00+09:00",
+          "description": "OpenAM 16.1.2セキュリティアップデート公開を報道（記事#187871）。デフォルト設定稼働中の全OpenAMインスタンスが未認証RCEにより完全侵害されうる旨を報道。"
+        }
+      ],
+      "overview": "OpenAMの認証エンドポイントにおいて、攻撃者が指定した任意のJavaクラス名を検証なくロード・実行できる脆弱性（CVE-2026-62379）と、認証フィルタのデシリアライゼーション不備による別経路の未認証RCE（CVE-2026-62263、CVSS9.2）が同時に修正された。いずれもデフォルト設定で未認証リモートコード実行が可能であり、企業のSSO/IAM基盤が直接侵害されるリスクがある。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者が/authserviceエンドポイントへ細工したXML（任意Javaクラス指定）を送信する"
+        },
+        {
+          "step": 2,
+          "description": "サーバがクラスを検証なくロード・インスタンス化する"
+        },
+        {
+          "step": 3,
+          "description": "（推測含む）未認証のままリモートコード実行に至り、IAM基盤が完全掌握される"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "OpenAM公式アドバイザリ/Security NEXT #187871（2026-07-27）: /authserviceエンドポイントへ未認証で任意Javaクラスを指定しロード・実行できRCEに至ると記述"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "/authserviceエンドポイントへのXML経由クラス指定パターンを検知する",
+        "splunk_spl": [
+          "index=web sourcetype=access_combined uri_path=*/authservice* | search http_method=POST | regex _raw=\"(?i)(java\\\\.lang\\\\.|ClassLoader|ProcessBuilder)\""
+        ],
+        "detection_notes": "java.lang. ClassLoader ProcessBuilder 等の文字列を含むPOSTボディを優先確認する"
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/187871",
+          "title": null,
+          "language": "ja",
+          "source": "Security NEXT"
+        },
+        {
+          "url": "https://github.com/OpenIdentityPlatform/OpenAM",
+          "title": null,
+          "language": "en",
+          "source": "OpenIdentityPlatform"
+        },
+        {
+          "url": "https://radar.offseq.com/threat/orgopenidentityplatformopenam-openam-core-openam-unauthenticated-remote-code-execution-via-classforname-7678e3fe5efb8e5c",
+          "title": null,
+          "language": "en",
+          "source": "OffSeq"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a",
+      "info_id": "20260728-CVEP-d1b26bac"
+    },
+    {
+      "cve_id": "CVE-2026-47304",
+      "product": ".NET / .NET Framework",
+      "vendor": "Microsoft",
+      "affected_versions": ".NET 8.0.0-8.0.29／9.0.0-9.0.18／10.0.0-10.0.6、.NET Framework 3.5〜4.8.1、Visual Studio 2017/2019/2022。同一Microsoft公開分に.NET Framework系のスタックベースバッファオーバーフロー複数件・ASP.NET Core OData等のリソース割当制限欠如複数件（推定7件、JVNDB-2026-025303〜025318に分散）が含まれるが時間的制約により個別番号は未確認",
+      "priority": "high",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-345",
+        "CWE-347"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": null,
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 4,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "JVNDB",
+          "date": "2026-07-27T07:00:00+09:00",
+          "description": "元は2026-07-14 Microsoft Patch Tuesdayで公開された.NET等の暗号署名検証不備（CVE-2026-47304、CVSS9.8）を含む複数脆弱性を日本語で新規掲載。"
+        }
+      ],
+      "overview": ".NETにおける暗号署名検証の不備により、ネットワーク経由でセキュリティ境界を侵害されうる重大な脆弱性。抽象的な「署名検証バイパス」の記述のみで具体的な攻撃チェーンは一次資料に明記されていない。",
+      "attack_flow": [],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": ".NETプロセスの異常な子プロセス生成を監視する（署名検証バイパス後の不正コード実行痕跡）",
+        "splunk_spl": [
+          "index=wineventlog EventCode=4688 | search CommandLine=\"*dotnet*\" | stats count by Account_Name, ParentImage"
+        ],
+        "detection_notes": "通常業務で使われない親子プロセス関係（dotnetプロセスからのcmd.exe/powershell.exe起動等）を優先確認する"
+      },
+      "references": [
+        {
+          "url": "https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-025317.html",
+          "title": null,
+          "language": "ja",
+          "source": "JVNDB"
+        },
+        {
+          "url": "https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-025318.html",
+          "title": null,
+          "language": "ja",
+          "source": "JVNDB"
+        }
+      ],
+      "sector_impact": [],
+      "region_impact": [
+        "global",
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a",
+      "info_id": "20260728-CVEP-fe0d0f62"
+    },
+    {
+      "cve_id": "CVE-2026-13321",
+      "product": "ISC BIND 9",
+      "vendor": "Internet Systems Consortium（ISC）",
+      "affected_versions": "9.20.26／9.21.24未満の再帰リゾルバ・権威サーバ。同一2026-07-22アドバイザリ内で計9件のCVEが同時修正された（CVE-2026-10723／10822／11331／11605／11622／11721／12617／13204。CVE-2026-13321以外の8件は個別スコア未確認だがDoSクラッシュ系3件・リソース枯渇系2件・スプーフィング系2件に分類されている）",
+      "priority": "medium",
+      "cvss_v3": 8.6,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "9.20.26 / 9.21.24",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 3,
+      "axis2_score": 7,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-07-27T07:00:00+09:00",
+          "description": "ISC BIND 9の複数脆弱性（9件）修正を国内向けに報道。JPRS（日本レジストリサービス）等が緊急対応を呼びかけ。"
+        }
+      ],
+      "overview": "ISC BIND 9.20.26/9.21.24で9件の脆弱性が同時修正された。最も深刻なCVE-2026-13321（CVSS8.6）はDNSSEC検証のNSECネクストフィールド検証不備によるクロスゾーンキャッシュポイズニングで、リゾルバと権威サーバ間に位置する攻撃者が署名済み応答を偽造し正当なものとしてキャッシュ・配信させうる。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者がリゾルバ-権威サーバ間の通信経路に位置する"
+        },
+        {
+          "step": 2,
+          "description": "NSECネクストフィールドを細工したDNSSEC署名済み応答を偽造する"
+        },
+        {
+          "step": 3,
+          "description": "リゾルバが検証不備により偽造応答をキャッシュ・正当と誤認して配信する"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "異常なNSEC/NSEC3クエリパターン・BINDバージョン9.20.20未満の稼働有無を監視する",
+        "splunk_spl": [
+          "index=dns sourcetype=bind9 | stats count by src_ip, query_type | search query_type=NSEC OR query_type=NSEC3"
+        ],
+        "detection_notes": "資産棚卸しで9.20.20未満のBIND稼働有無を確認し、NSEC/NSEC3クエリの異常な集中を優先確認する"
+      },
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/article/2026/07/27/55780.html",
+          "title": null,
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        },
+        {
+          "url": "https://jvn.jp/vu/JVNVU97496543",
+          "title": null,
+          "language": "ja",
+          "source": "JVN"
+        },
+        {
+          "url": "https://www.securityweek.com/bind-updates-address-high-severity-cache-poisoning-flaws/",
+          "title": null,
+          "language": "en",
+          "source": "SecurityWeek"
+        },
+        {
+          "url": "https://lists.isc.org/pipermail/bind-announce/2026-July/001298.html",
+          "title": null,
+          "language": "en",
+          "source": "ISC"
+        }
+      ],
+      "sector_impact": [],
+      "region_impact": [
+        "global",
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a",
+      "info_id": "20260728-CVEP-28ce9574"
+    },
+    {
+      "cve_id": "CVE-2026-16157",
+      "product": "Duplicati（Windowsインストーラ）",
+      "vendor": "Duplicati",
+      "affected_versions": "v2.3.0.1（非デフォルトディレクトリへのインストール時）",
+      "priority": "medium",
+      "cvss_v3": null,
+      "cvss_v4": null,
+      "cvss_severity": null,
+      "cwe_ids": [
+        "CWE-732"
+      ],
+      "epss": {
+        "score": 0.00131,
+        "percentile": 0.0311,
+        "model_date": "2026-07-27"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": false
+      },
+      "patch_info": {
+        "available": false,
+        "version": null,
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 1,
+      "axis2_score": 7,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-07-27T07:00:00+09:00",
+          "description": "Duplicati Windowsインストーラの権限割り当て不備を国内向けに報道（配信は2026-07-26 23:00 JST）。"
+        }
+      ],
+      "overview": "DuplicatiのWindows版MSIインストーラが、既定の C:\\Program Files\\Duplicati 2\\ 以外の場所にインストールされた場合、インストールディレクトリに適切なACLを適用しない。標準権限のローカルユーザーが同ディレクトリへの書き込み権限を持ちうる状態となり、LocalSystemサービスが読み込む悪意あるDLL等を配置され権限昇格・任意コード実行につながる。パッチ未提供、ベンダーからの正式声明も未確認。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "標準権限のローカル攻撃者が非デフォルトディレクトリへインストールされたDuplicatiのフォルダへの書き込みアクセスを確認する"
+        },
+        {
+          "step": 2,
+          "description": "悪意あるDLL等を配置する"
+        },
+        {
+          "step": 3,
+          "description": "LocalSystem権限で動作するDuplicatiサービスが起動時に該当ファイルを読み込み、SYSTEM権限でコード実行される"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Duplicatiインストールディレクトリ配下での予期しないDLLロード・サービスインストールを監視する",
+        "splunk_spl": [
+          "index=wineventlog EventCode=7045 ImageLoaded=*Duplicati* | stats count by ComputerName, ImageLoaded"
+        ],
+        "detection_notes": "既知の正規Duplicati関連DLL一覧との差分を優先確認する"
+      },
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/article/2026/07/27/55779.html",
+          "title": null,
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        },
+        {
+          "url": "https://jvn.jp/vu/JVNVU98636554",
+          "title": null,
+          "language": "ja",
+          "source": "JVN"
+        },
+        {
+          "url": "https://kb.cert.org/vuls/id/847406",
+          "title": null,
+          "language": "en",
+          "source": "CERT/CC"
+        }
+      ],
+      "sector_impact": [],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a",
+      "info_id": "20260728-CVEP-1e10232c"
+    }
+  ],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-16812",
+      "product": "VeloCloud Orchestrator（VCO）オンプレミス版",
+      "vendor": "Arista Networks",
+      "affected_versions": "5.2.x（5.2.3.14未満）／6.1.x（6.1.3.4未満）／6.4.x（6.4.2.4未満）／7.0.x（7.0.0.1未満）。Hosted/Dedicated版は既に修正済み",
+      "priority": "high",
+      "cvss_v3": 10.0,
+      "cvss_v4": 10.0,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-78"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "5.2.3.14 / 6.1.3.4 / 6.4.2.4 / 7.0.0.1",
+        "eta": null
+      },
+      "fceb_deadline": "2026-07-30",
+      "kev_date_added": "2026-07-27",
+      "axis1_score": 11,
+      "axis2_score": 2,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "Arista",
+          "date": "2026-07-27T07:00:00+09:00",
+          "description": "Security Advisory 0144を公開。本来内部専用のはずの機能へリモートから未認証で到達可能なOSコマンドインジェクション脆弱性を公表し、外部発見・実悪用が確認されていると明記した。"
+        },
+        {
+          "source": "CISA",
+          "date": "2026-07-27T07:00:00+09:00",
+          "description": "KEVカタログへ新規追加（FCEB期限2026-07-30）。"
+        }
+      ],
+      "overview": "VeloCloud Orchestrator（VCO）オンプレミス版において、本来内部利用限定のはずの機能にリモートから未認証でアクセスでき、OSコマンドインジェクションによりVCOホストを完全掌握される脆弱性。Arista社は外部から発見され実悪用が確認されていると明記している。SD-WANオーケストレータであるためエッジ拠点・支店ネットワーク全体への波及リスクが高い。なお同日公開されたArista Security Advisory 0145（VCO flow metrics APIのSQLi/SSRF）は別CVEであり本エントリの対象外。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者がVCOオンプレミスインスタンスの内部専用APIエンドポイントへリモートから到達する"
+        },
+        {
+          "step": 2,
+          "description": "OSコマンドインジェクションによりVCOホスト上で任意コマンドを実行する"
+        },
+        {
+          "step": 3,
+          "description": "（推測）VCO管理下のSD-WANエッジデバイス群への波及・設定改竄・情報窃取のおそれがある"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "Arista Security Advisory 0144（2026-07-27）: 未認証のOSコマンドインジェクションにより本来内部専用のはずのエンドポイントがリモートから到達可能で、実悪用が確認されている"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "VCO管理インターフェース宛の異常な内部API呼び出し・OSコマンド痕跡を監視する",
+        "splunk_spl": [
+          "index=network sourcetype=arista_vco (uri_path=*internal* OR uri_path=*flow* OR uri_path=*/api/*) | stats count by src_ip, uri_path, http_method"
+        ],
+        "detection_notes": "パラメータに ; | ` $() 等のコマンド区切り文字を含む通信を優先確認する"
+      },
+      "references": [
+        {
+          "url": "https://www.arista.com/en/support/advisories-notices/security-advisory/24364-security-advisory-0144",
+          "title": null,
+          "language": "en",
+          "source": "Arista"
+        },
+        {
+          "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+          "title": null,
+          "language": "en",
+          "source": "CISA"
+        }
+      ],
+      "sector_impact": [],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260728-CVEP-0f1dd0c8"
+    },
+    {
+      "cve_id": "CVE-2025-68686",
+      "product": "FortiOS SSL-VPN",
+      "vendor": "Fortinet",
+      "affected_versions": "7.6.0〜7.6.1／7.4.0〜7.4.6／7.2全バージョン／7.0全バージョン／6.4全バージョン",
+      "priority": "high",
+      "cvss_v3": 5.9,
+      "cvss_v4": null,
+      "cvss_severity": "Medium",
+      "cwe_ids": [
+        "CWE-200"
+      ],
+      "epss": {
+        "score": 0.00477,
+        "percentile": 0.385,
+        "model_date": "2026-07-27"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": null,
+        "eta": null
+      },
+      "fceb_deadline": "2026-08-10",
+      "kev_date_added": "2026-07-27",
+      "axis1_score": 8,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "CISA",
+          "date": "2026-07-27T07:00:00+09:00",
+          "description": "KEVカタログへ新規追加（FCEB期限2026-08-10）。過去に修正されたシンボリックリンク永続化対策（FG-IR-25-934系）のバイパスであり、細工したHTTPリクエストにより既存の対策を回避できる。"
+        }
+      ],
+      "overview": "FortiOSのSSL-VPNにおいて、過去のポストエクスプロイト時のシンボリックリンク永続化手口に対する修正をバイパスできる情報漏洩の脆弱性。単独の初期侵入経路ではなく、既に他の脆弱性でファイルシステムレベルの侵害を受けた環境が前提となる二次的な脆弱性である。独立した実悪用報道は本日時点で未確認で、KEV登録基準を満たしたことのみ確認されている。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "（前提条件）攻撃者が別経路（既知の過去FortiOS脆弱性等）でファイルシステムへの書き込みアクセスを獲得する"
+        },
+        {
+          "step": 2,
+          "description": "細工したHTTPリクエストによりシンボリックリンク永続化対策をバイパスする"
+        },
+        {
+          "step": 3,
+          "description": "（推測）パッチ後も設定ファイル等への永続アクセスを維持する"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "SSL-VPNログにおける異常なシンボリックリンク操作・過去侵害端末からの継続アクセスを監視する",
+        "splunk_spl": [
+          "index=fortigate sourcetype=fortigate* (action=vpn OR subtype=vpn) | stats count by srcip, action, logdesc"
+        ],
+        "detection_notes": "過去に侵害歴のある端末・IPからの継続的なVPNアクセスを優先確認する"
+      },
+      "references": [
+        {
+          "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+          "title": null,
+          "language": "en",
+          "source": "CISA"
+        },
+        {
+          "url": "https://github.com/advisories/GHSA-839g-m33x-3w78",
+          "title": null,
+          "language": "en",
+          "source": "GitHub Advisory Database"
+        },
+        {
+          "url": "https://ccb.belgium.be/advisories/warning-multiple-vulnerabilities-were-patched-fortinet-products-patch-immediately",
+          "title": null,
+          "language": "en",
+          "source": "CCB Belgium"
+        }
+      ],
+      "sector_impact": [],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260728-CVEP-5f75a9df"
+    }
+  ],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-07-28-001",
+        "title": "GitHub / PyPI サプライチェーン防御策強化（Dependabotクールダウン・PyPI 14日制限）",
+        "summary": "GitHub Dependabotに、パッケージ公開後最低3日待ってからPRを作成する「クールダウン」機能が追加された。PyPIも既に公開から14日超経過したリリースへのファイルアップロードを拒否する新ポリシーを導入しており、悪意あるパッケージが公開直後に依存関係へ取り込まれるサプライチェーン汚染を防ぐ狙い。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-07-27T08:01:23+09:00",
+            "description": "GitHubがDependabotに3日間クールダウン機構を追加したと報道。"
+          },
+          {
+            "source": "SecurityWeek",
+            "date": "2026-07-27T14:26:00+09:00",
+            "description": "GitHub/PyPI両ポリシーの意義を解説。"
+          }
+        ],
+        "sector_impact": [],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/07/github-adds-3-day-dependabot-cooldown.html",
+            "title": null,
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.securityweek.com/new-github-pypi-policies-boost-supply-chain-security",
+            "title": null,
+            "language": "en",
+            "source": "SecurityWeek"
+          },
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/github-pypi-add-time-based-defenses-against-supply-chain-attacks",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260728-TRND-36def57e"
+      },
+      {
+        "topic_id": "TREND-2026-07-28-002",
+        "title": "Coca-Cola/Fairlife ランサムウェア攻撃によるデータ窃取確認",
+        "summary": "Coca-Cola社は、乳製品子会社Fairlifeが受けたランサムウェア攻撃でデータが窃取されたことを確認した。攻撃グループ名は要約文からは不明。",
+        "changes_24h": [
+          {
+            "source": "SecurityWeek",
+            "date": "2026-07-27T11:29:03+09:00",
+            "description": "Coca-Colaがデータ侵害を確認したと報道。"
+          },
+          {
+            "source": "BleepingComputer",
+            "date": "2026-07-27T15:39:51+09:00",
+            "description": "同事案のデータ窃取確認を報道。"
+          }
+        ],
+        "sector_impact": [
+          "other"
+        ],
+        "region_impact": [
+          "US"
+        ],
+        "references": [
+          {
+            "url": "https://www.securityweek.com/coca-cola-confirms-data-breach-after-fairlife-ransomware-attack",
+            "title": null,
+            "language": "en",
+            "source": "SecurityWeek"
+          },
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/coca-cola-confirms-data-theft-in-fairlife-ransomware-attack",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260728-TRND-78ede288"
+      },
+      {
+        "topic_id": "TREND-2026-07-28-003",
+        "title": "NVIDIA主導「Open Secure AI Alliance」設立・NOOAフレームワークOSS公開",
+        "summary": "NVIDIAがMicrosoft・Cisco・Cloudflare・CrowdStrike・Hugging Face・IBM・Palo Alto Networks・Red Hat・Linux Foundation等37組織と共に「Open Secure AI Alliance」を発足し、Apache 2.0ライセンスのOSS研究フレームワーク「NOOA」を公開した。攻撃事案ではなく業界のガバナンス・防御動向。",
+        "changes_24h": [
+          {
+            "source": "SecurityWeek",
+            "date": "2026-07-27T12:25:43+09:00",
+            "description": "NVIDIAとテック大手によるAIセキュリティアライアンス発足を報道。"
+          },
+          {
+            "source": "The Hacker News",
+            "date": "2026-07-27T18:10:05+09:00",
+            "description": "37組織参加のアライアンス発足とNOOAフレームワーク公開を報道。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.securityweek.com/nvidia-and-tech-giants-launch-ai-security-alliance",
+            "title": null,
+            "language": "en",
+            "source": "SecurityWeek"
+          },
+          {
+            "url": "https://thehackernews.com/2026/07/nvidia-forms-37-member-open-secure-ai.html",
+            "title": null,
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260728-TRND-8b60e9d9"
+      },
+      {
+        "topic_id": "TREND-2026-07-28-004",
+        "title": "「Confused Deputy」型脆弱性がGoogle Cloud/Microsoft Azureで継続",
+        "summary": "クラウドプロバイダのアクセス制御を回避し管理者権限を取得できる「Confused Deputy」型脆弱性のクラスがGoogle CloudおよびMicrosoft Azureで依然として存在すると指摘された。特定製品CVEへの紐付けは記事要約からは確認できない。",
+        "changes_24h": [
+          {
+            "source": "Dark Reading",
+            "date": "2026-07-27T20:57:26+09:00",
+            "description": "Confused Deputy型脆弱性クラスの継続を指摘。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.darkreading.com/cloud-security/confused-deputy-flaws-google-cloud-microsoft-azure",
+            "title": null,
+            "language": "en",
+            "source": "Dark Reading"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260728-TRND-1101b10c"
+      },
+      {
+        "topic_id": "TREND-2026-07-28-005",
+        "title": "FBI: LockBitテイクダウンにおけるアフィリエイト間信頼の破壊が奏功",
+        "summary": "FBI捜査官が、多国間法執行作戦「Operation Cronos」がランサムウェアグループLockBitのアフィリエイト間の信頼関係を崩すことで摘発を加速させた経緯を解説した回顧的分析記事。",
+        "changes_24h": [
+          {
+            "source": "Dark Reading",
+            "date": "2026-07-27T20:33:29+09:00",
+            "description": "LockBitテイクダウンの手法を解説。"
+          }
+        ],
+        "sector_impact": [],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.darkreading.com/cybersecurity-operations/fbi-breaking-affiliate-trust-lockbit-takedown",
+            "title": null,
+            "language": "en",
+            "source": "Dark Reading"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260728-TRND-fbef6b69"
+      },
+      {
+        "topic_id": "TREND-2026-07-28-006",
+        "title": "「ゼロデイは不要、攻撃者はプレイブックを読むだけ」— 自動化セキュリティツールへの信頼低下",
+        "summary": "自律型セキュリティツールへの信頼低下を背景に、攻撃者がゼロデイに頼らずとも防御側の対応手順を読むだけで侵入できるとする論説記事。具体的事案の記述はない。",
+        "changes_24h": [
+          {
+            "source": "Dark Reading",
+            "date": "2026-07-27T17:31:18+09:00",
+            "description": "自動化セキュリティツールへの信頼低下を論じる論説を公開。"
+          }
+        ],
+        "sector_impact": [],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.darkreading.com/threat-intelligence/adversaries-do-not-need-zero-day-they-read-your-rulebook",
+            "title": null,
+            "language": "en",
+            "source": "Dark Reading"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260728-TRND-4e571371"
+      },
+      {
+        "topic_id": "TREND-2026-07-28-007",
+        "title": "侵害された公共Wi-Fiゲートウェイによる企業認証情報窃取",
+        "summary": "何らかの脅威アクターが侵害した公共Wi-Fiアプライアンスを使い、出張中の企業従業員のMicrosoft 365アカウントを標的にしていることが報じられた。攻撃者名は不明。",
+        "changes_24h": [
+          {
+            "source": "SecurityWeek",
+            "date": "2026-07-27T10:50:19+09:00",
+            "description": "公共Wi-Fiゲートウェイ経由の企業認証情報窃取を報道。"
+          }
+        ],
+        "sector_impact": [],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.securityweek.com/hacked-public-wi-fi-gateways-used-to-harvest-corporate-credentials",
+            "title": null,
+            "language": "en",
+            "source": "SecurityWeek"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260728-TRND-e2901756"
+      },
+      {
+        "topic_id": "TREND-2026-07-28-008",
+        "title": "「7-Zip」を装った偽ソフトウェアの巨大不正プロキシ事業",
+        "summary": "圧縮ソフト7-Zipを装った偽ソフトウェアの配布により、大規模な不正プロキシ（プロキシウェア）事業が構築されている実態がScanNetSecurityにより報道された。国内被害の直接報道か海外事案紹介記事かは本文未確認。",
+        "changes_24h": [
+          {
+            "source": "ScanNetSecurity",
+            "date": "2026-07-26T23:00:13+09:00",
+            "description": "偽7-Zip配布による不正プロキシ事業の実態を報道。"
+          }
+        ],
+        "sector_impact": [],
+        "region_impact": [
+          "JP",
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://scan.netsecurity.ne.jp/article/2026/07/27/55781.html",
+            "title": null,
+            "language": "ja",
+            "source": "ScanNetSecurity"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260728-TRND-24d25a1e"
+      },
+      {
+        "topic_id": "TREND-2026-07-28-009",
+        "title": "国内不正アクセス・ランサムウェア被害報告の集中（ScanNetSecurity国内被害クラスタ）",
+        "summary": "窓内のScanNetSecurity/Security NEXTで、福岡大学の委託先ノストラムへの不正アクセス、日本テレネットへのランサムウェア型攻撃、リンドスポーツの12年前顧客情報3,075件流出可能性、ヴェレダ・ジャパン公式オンラインショップへの不正アクセス、ファブリカHD子会社のSMS配信システムへのサイバー攻撃、ファイブフォックスのランサム感染可能性の計6件の国内組織インシデントが同日報道された。個々の攻撃手法・攻撃者に技術的関連性があるかは各記事本文からは不明だが、件数として国内被害報道が同日に集中している点をトレンドとして記録する。",
+        "changes_24h": [
+          {
+            "source": "ScanNetSecurity",
+            "date": "2026-07-26T23:05:11+09:00",
+            "description": "福岡大学委託先ノストラムへの不正アクセスを報道。"
+          },
+          {
+            "source": "ScanNetSecurity",
+            "date": "2026-07-26T23:05:09+09:00",
+            "description": "日本テレネットへのランサムウェア型攻撃を報道。"
+          },
+          {
+            "source": "ScanNetSecurity",
+            "date": "2026-07-26T23:05:07+09:00",
+            "description": "リンドスポーツの顧客情報流出可能性を報道。"
+          },
+          {
+            "source": "ScanNetSecurity",
+            "date": "2026-07-26T23:05:03+09:00",
+            "description": "ヴェレダ・ジャパン公式オンラインショップへの不正アクセスを報道。"
+          },
+          {
+            "source": "Security NEXT",
+            "date": "2026-07-27T11:25:49+09:00",
+            "description": "ファブリカHD子会社のSMS配信システムへのサイバー攻撃を報道。"
+          },
+          {
+            "source": "Security NEXT",
+            "date": "2026-07-27T12:45:04+09:00",
+            "description": "ファイブフォックスのランサム感染可能性を報道。"
+          }
+        ],
+        "sector_impact": [
+          "education",
+          "it",
+          "retail",
+          "telecom"
+        ],
+        "region_impact": [
+          "JP"
+        ],
+        "references": [
+          {
+            "url": "https://scan.netsecurity.ne.jp/article/2026/07/27/55787.html",
+            "title": null,
+            "language": "ja",
+            "source": "ScanNetSecurity"
+          },
+          {
+            "url": "https://scan.netsecurity.ne.jp/article/2026/07/27/55786.html",
+            "title": null,
+            "language": "ja",
+            "source": "ScanNetSecurity"
+          },
+          {
+            "url": "https://scan.netsecurity.ne.jp/article/2026/07/27/55785.html",
+            "title": null,
+            "language": "ja",
+            "source": "ScanNetSecurity"
+          },
+          {
+            "url": "https://scan.netsecurity.ne.jp/article/2026/07/27/55784.html",
+            "title": null,
+            "language": "ja",
+            "source": "ScanNetSecurity"
+          },
+          {
+            "url": "https://www.security-next.com/187370",
+            "title": null,
+            "language": "ja",
+            "source": "Security NEXT"
+          },
+          {
+            "url": "https://www.security-next.com/187382",
+            "title": null,
+            "language": "ja",
+            "source": "Security NEXT"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260728-TRND-026de203"
+      },
+      {
+        "topic_id": "TREND-2026-07-28-010",
+        "title": "Cruciferra クリプターサービス — BYOVD・Process Ghostingで検知回避",
+        "summary": "インド納税者・税務専門家・企業財務部門を狙う所得税関連フィッシングルアーを使用してきた中国系サイバー犯罪グループが、複数の無関係な脅威クラスタへ様々なRATを配布するために利用される高度なクリプターサービス「Cruciferra」を使用していることをProofpointが報告した。BYOVDとプロセスゴースティングでWindowsマルウェアの検知を回避する。帰属はProofpointが明示する分析結果。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-07-27T10:51:45+09:00",
+            "description": "Proofpointの「Cruciferra」クリプターサービス報告を報道。"
+          }
+        ],
+        "sector_impact": [
+          "finance"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/07/cruciferra-crypter-uses-byovd-and.html",
+            "title": null,
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260728-TRND-a6a7a85d"
+      }
+    ]
+  },
+  "apt_main": [],
+  "apt_notable": [],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-07-28-001",
+      "title": "Spring Boot Actuator「/actuator/heapdump」への大量スキャン観測",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "γ",
+        "δ"
+      ],
+      "priority": "high",
+      "product_or_service": "Spring Boot（Actuator heapdumpエンドポイント）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global",
+          "JP"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SANS Internet Storm Center",
+          "date": "2026-07-27T10:04:51+09:00",
+          "description": "/actuator/heapdumpへのインターネット規模のスキャンを観測。Basic認証がadmin:admin等の初期値のままの実装を自動化アクセスで狙っている。"
+        }
+      ],
+      "overview": "Spring Boot Actuatorのheapdumpエンドポイントはアプリケーションのメモリダンプを返す診断機能で、公開設定・弱い認証情報のまま放置されるとAPIキーやDB接続情報などの機密情報が漏洩し得るため、これを狙った探索的スキャンがインターネット規模で継続的に行われていることがSANS ISCにより報告された。特定のCVEに紐づく新規脆弱性ではなく既知の設定不備クラスだが、直近24時間で新規の大量スキャン観測という変化があり、SOCとしては自社・グループ会社のSpring Boot稼働資産の公開状況を早期に確認すべき事案。",
+      "recommended_actions": [
+        "自社・子会社のインターネット公開資産で/actuator/heapdump等の危険なActuatorエンドポイントが到達可能か外部スキャンで棚卸しする（本日中）",
+        "到達可能な場合は直ちにWAF/リバースプロキシでのアクセス制限、management.endpoints.web.exposure.includeの見直し（heapdump/env等の除外）、Spring Securityによる認証必須化を実施する",
+        "Basic認証がadmin:admin等の初期値になっていないか設定確認する"
+      ],
+      "monitoring": {
+        "description": "WAF/リバースプロキシアクセスログ、Spring Boot Actuatorアクセスログを監視する",
+        "splunk_spl": [
+          "index=web_proxy OR index=waf uri_path=\"*/actuator/heapdump*\" OR uri_path=\"*/admin-api/actuator/heapdump*\" | stats count by src_ip, uri_path, http_user_agent, status"
+        ],
+        "detection_notes": "200応答かつレスポンスサイズが大きい通信、およびBasic認証ヘッダにadmin:admin相当のBase64値（YWRtaW46YWRtaW4=）が含まれる通信を優先確認する"
+      },
+      "references": [
+        {
+          "url": "https://isc.sans.edu/diary/rss/33188",
+          "title": null,
+          "language": "en",
+          "source": "SANS Internet Storm Center"
+        }
+      ],
+      "info_id": "20260728-SOCR-58025158"
+    },
+    {
+      "rec_id": "SOC-2026-07-28-002",
+      "title": "GitHub Dependabotに3日間クールダウン機能追加（サプライチェーン汚染対策）",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "γ"
+      ],
+      "priority": "medium",
+      "product_or_service": "GitHub Dependabot／参考: PyPI",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-27T08:01:23+09:00",
+          "description": "GitHubがDependabotに3日間クールダウン機構を追加したと発表。"
+        },
+        {
+          "source": "SecurityWeek",
+          "date": "2026-07-27T14:26:00+09:00",
+          "description": "新ポリシーの意義を解説。"
+        }
+      ],
+      "overview": "悪意あるパッケージバージョンが公開直後にレジストリから取り除かれる前に自動的に取り込まれてしまうサプライチェーン攻撃を防ぐため、GitHubがDependabotの既定挙動を変更した。パッケージのリリースから既定で3日間、Dependabotによる自動プルリクエスト作成を遅延させる。セキュリティアップデートはこのクールダウンの対象外で即時反映される。PyPIも既に類似の対策（リリースから14日超経過後の新規ファイルアップロード拒否）を導入済みである。SOCとしては自社のCI/CDにおける依存関係更新運用がこの変更の影響を受けるか確認すべき。",
+      "recommended_actions": [
+        "自社リポジトリのdependabot.yml設定を確認し、cooldownオプションの既定値（3日間）で運用方針に問題ないか、セキュリティアップデートの自動即時反映が有効なままか確認する（今週中）",
+        "依存関係の自動マージ運用がある場合、poisoned package混入リスクを踏まえて承認フローを再点検する"
+      ],
+      "monitoring": {
+        "description": "CI/CDパイプラインログ、GitHub Actions/Dependabotアラートログを確認する",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/github-adds-3-day-dependabot-cooldown.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.securityweek.com/new-github-pypi-policies-boost-supply-chain-security",
+          "title": null,
+          "language": "en",
+          "source": "SecurityWeek"
+        },
+        {
+          "url": "https://blog.pypi.org/posts/2026-07-22-releases-now-reject-new-files-after-14-days/",
+          "title": null,
+          "language": "en",
+          "source": "PyPI Blog"
+        }
+      ],
+      "info_id": "20260728-SOCR-310fad4b"
+    },
+    {
+      "rec_id": "SOC-2026-07-28-003",
+      "title": "Shadow AIエージェントの可視化・ガバナンスギャップ",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "γ"
+      ],
+      "priority": "medium",
+      "product_or_service": "Salesforce Agentforce、Microsoft Copilot Studio、ServiceNow、ChatGPT、Cursor自動化、Zapier Agents、Retool等のエージェント型AIプラットフォーム全般",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-07-27T14:01:11+09:00",
+          "description": "Nudge Securityの解説記事としてシャドーAIエージェントの発見・保護手法が公開された。"
+        }
+      ],
+      "overview": "エージェント型AIはチャットボットと異なり永続的な権限を保持し企業システムに接続して自律的に行動するため、侵害された場合はビジネスシステムを直接改変され得るリスクがある。記事は、APIベースの監視（Copilot Studio・Agentforce等）とブラウザベースの観測（Cursor/Zapier/Retool等）を組み合わせた「デュアルチャネルdiscovery」を推奨しており、過剰権限・パブリック公開・ハードコードされた認証情報・休眠エージェントの継続的アクセス権を洗い出すべきとしている。記事内引用の各種統計は出典・調査時期が記事内で明示されておらず、一次調査そのものの検証はしていない（推測を含む）。",
+      "recommended_actions": [
+        "SaaS/クラウド管理コンソール（Copilot Studio、Agentforce、ServiceNow等）でAIエージェントの一覧・権限を棚卸しし、過剰スコープ・放置エージェントを洗い出す（今週中）",
+        "API非公開のオートメーションツール（Cursor、Zapier、Retool等）についてはCASB/ブラウザ監視での検知を検討する"
+      ],
+      "monitoring": {
+        "description": "Entra ID/O365監査ログ、CASBログを確認する",
+        "splunk_spl": [
+          "index=azuread OR index=o365 operation IN (\"Add service principal\",\"Consent to application\",\"Add app role assignment\") | stats count by app_display_name, requested_by, permission_scope"
+        ],
+        "detection_notes": "新規登録されたAIエージェント/サービスプリンシパルがMail.ReadWrite・Files.ReadWrite.All等の広範なスコープを要求していないか、正規の変更管理プロセスを経て承認されたものか確認する"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/shadow-ai-agents-are-multiplying-heres-how-to-find-and-secure-them",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20260728-SOCR-ac7e6dee"
+    },
+    {
+      "rec_id": "SOC-2026-07-28-004",
+      "title": "IPA「2026年第2四半期 脆弱性関連情報の届出状況」公表",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "low",
+      "product_or_service": null,
+      "targets": {
+        "sectors": [],
+        "regions": [
+          "JP"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-07-27T06:20:33+09:00",
+          "description": "IPAが2026年第2四半期の脆弱性関連情報届出状況を公表。四半期総届出件数247件（前四半期比+18.2%）、うちソフトウェア製品関連が182件（前四半期比+29.1%）と大きく増加。"
+        }
+      ],
+      "overview": "IPAの情報セキュリティ早期警戒パートナーシップガイドラインに基づく四半期定期集計で、ソフトウェア製品関連の脆弱性届出が前四半期比+29.1%と顕著に増加している。個別の緊急対応を要する情報ではないが、パッチマネジメント体制のリソース配分検討材料としてSOC/脆弱性管理チームが把握しておくべきトレンド情報。",
+      "recommended_actions": [
+        "四半期トレンド（ソフトウェア製品届出+29.1%）を社内の脆弱性管理チームに共有し、パッチ適用体制のリソース計画の参考情報とする（把握のみ・緊急対応不要）"
+      ],
+      "monitoring": {
+        "description": null,
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/187674",
+          "title": null,
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "info_id": "20260728-SOCR-e62f1fd8"
+    },
+    {
+      "rec_id": "SOC-2026-07-28-005",
+      "title": "NVIDIA主導「Open Secure AI Alliance」発足・OSSフレームワーク「NOOA」公開",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "ζ"
+      ],
+      "priority": "low",
+      "product_or_service": "NOOAフレームワーク（AIエージェントのセキュリティ監査・ガバナンスツール全般）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-07-27T18:10:05+09:00",
+          "description": "NVIDIAがMicrosoft、Cisco、Cloudflare、CrowdStrike、Hugging Face、IBM、Palo Alto Networks、Red Hat、Linux Foundation等37組織と共に「Open Secure AI Alliance」発足、OSSフレームワーク「NOOA」公開を報道。"
+        }
+      ],
+      "overview": "AIエージェントの安全性・監査性を高めるための業界横断オープンソース連合が発足し、NOOAフレームワークが公開された。ただし記事は「defense-in-depth controlsであり封じ込め境界ではない」という開発元の留意点も伝えており、実運用にはコンテナ/VM等のOSレベルの分離が別途必要とされる。連合としての統治・ロードマップ・憲章文書は発表時点で未公開。OpenAI・Google・Meta・Anthropicは参加していない。個別の脅威・脆弱性情報ではなくエコシステム動向のため優先度は低いが、将来的なAIエージェント監査ツールの選定候補として動向を継続的に把握する価値がある。",
+      "recommended_actions": [
+        "現時点で緊急対応は不要。AIエージェントのガバナンス・監査ツール選定を検討する際の候補としてNOOAの今後の成熟度（ガバナンス文書公開、実運用実績）を継続的にウォッチする（把握のみ）"
+      ],
+      "monitoring": {
+        "description": null,
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/07/nvidia-forms-37-member-open-secure-ai.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20260728-SOCR-682c4b55"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-16723",
+        "product": "Fastjson（Alibaba）",
+        "reason": "already_reported",
+        "reason_detail": "2026-07-26付で既にゼロデイ特報採用済み（CVSS9.0・KEV未登録・実悪用確認）。本日はSecurity NEXTによる日本語再掲のみで新規ファクトなし",
+        "reported_date": "2026-07-26"
+      },
+      {
+        "cve_id": "CVE-2026-12569",
+        "product": "PTC Windchill PDMlink / FlexPLM",
+        "reason": "already_reported",
+        "reason_detail": "既知事実の再掲、一次記事403で新規性未確認",
+        "reported_date": "2026-06-26"
+      },
+      {
+        "cve_id": "CVE-2026-27577",
+        "product": "n8n（旧・2026年2月修正済み）",
+        "reason": "already_reported",
+        "reason_detail": "一次データのCVE ID誤帰属を訂正。2026年2月修正済みの別件",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-54121",
+        "product": "Certighost（Active Directory Certificate Services）",
+        "reason": "low_score",
+        "reason_detail": "axis1=5(PoC+2/CVSS7.5-8.9+2/OSS+1)・axis2=0、参考A昇格トリガーなし",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-61511",
+        "product": "vBulletin（vB5_Template_Runtime::runMaths RCE）",
+        "reason": "low_score",
+        "reason_detail": "axis1=5(PoC+2/未認証RCE+3、NVD未スコアのためCVSS加点なし)・axis2=1、参考A昇格トリガーなし",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-47037",
+        "product": "Oracle Access Manager（2026年7月CPUバッチ代表）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "同一アドバイザリ内の未確認CVE約24件を含むバッチ。代表CVEのみ確認済みだがaxis1=3・axis2=1相当で参考A昇格トリガーも弱いため今回は掲載見送り",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-42955",
+        "product": "unbound（NLnet Labs、ゴーストドメイン変種）",
+        "reason": "low_score",
+        "reason_detail": "CVSS3.7・KEV非登録・PoC非公開の低優先度フラグ該当。同一アドバイザリ内の4件のHigh severity CVE（CVE-2026-32665/40691/44690/55973）は本日JVN経由の新規報道か未確認のため次回追跡課題として残す",
+        "reported_date": null
+      },
+      {
+        "cve_id": null,
+        "product": ".NET/ASP.NET Core batch（未確認7件）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "JVNDB-2026-025303〜025309/025318に分散。スタックベースバッファオーバーフロー複数件・ASP.NET Core ODataのDoS系複数件。時間的制約により代表CVE-2026-47304以外は個別番号未確認",
+        "reported_date": null
+      },
+      {
+        "cve_id": null,
+        "product": "Oracle Enterprise Manager Base Platform batch（未確認約20件）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "JVNDB-2026-025320〜025339に分散。アクセス制御・オープンリダイレクト・CSRF・重要機能の認証欠如。個別CVE番号・CVSS値未確認",
+        "reported_date": null
+      },
+      {
+        "cve_id": null,
+        "product": "Oracle Application Testing Suite batch（未確認4件）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "JVNDB-2026-025340/025341/025349/025350。アクセス制御関連。個別CVE番号未確認",
+        "reported_date": null
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "RIS-2026-TELESHIM-MidEastGovEspionage",
+        "group_name": null,
+        "reason": "low_score",
+        "reason_detail": "axisP=6(新規マルウェア発見+3/単一ベンダー帰属+3)・axisQ=1(単一セクター/限定地域)、政府機関公式帰属・複数ベンダー確認・重要インフラ侵害確認のいずれもなし",
+        "reported_date": null
+      },
+      {
+        "campaign_id": "Cl0p-2026-WindchillFlexPLM-DataExtortion",
+        "group_name": "Cl0p",
+        "reason": "low_score",
+        "reason_detail": "axisP=5(単一ベンダー帰属+3/CVE武器化+2)・axisQ=5(グローバル複数セクター+3/複数メディア確認+2)、政府機関公式帰属・複数ベンダー独立確認・重要インフラ侵害確認のいずれもなし",
+        "reported_date": null
+      },
+      {
+        "campaign_id": "ShinyHunters-2026-JulyExtortionWave-EYDentaQuest",
+        "group_name": "ShinyHunters",
+        "reason": "low_score",
+        "reason_detail": "axisP=5(単一ベンダー帰属+3/IOC複数ソース検証+2)・axisQ=5(重要セクター集中+3/複数メディア確認+2)、EY事案は攻撃者主張のみで単一ソース未検証",
+        "reported_date": null
+      },
+      {
+        "campaign_id": "RIS-2026-Dysphoria-IoTBotnetBlockchainC2",
+        "group_name": null,
+        "reason": "low_score",
+        "reason_detail": "axisP=2(IOC断片的)・axisQ=3(グローバル展開)、犯罪目的ボットネットで国家関与・重要インフラ標的の言及なし",
+        "reported_date": null
+      },
+      {
+        "campaign_id": "RIS-2026-BlueDash-TeamsRMMPhishing",
+        "group_name": null,
+        "reason": "low_score",
+        "reason_detail": "axisP=3(単一ベンダー帰属)・axisQ=1(標的セクター/地域不明)、単一ソースのみ",
+        "reported_date": null
+      },
+      {
+        "campaign_id": "LaundryBear-2026-ZimbraZeroClick",
+        "group_name": "LAUNDRY BEAR",
+        "reason": "already_reported",
+        "reason_detail": "既報（初報2026-07-24）。本日はSecurity NEXTによる日本語二次報道のみで新規技術情報なし",
+        "reported_date": "2026-07-24"
+      }
+    ],
+    "ai_attacks": [
+      {
+        "attack_id": null,
+        "title": "n8n Expression Sandbox Escape (GHSA-gv7g-jm28-cr3m)",
+        "reason": "low_score",
+        "reason_detail": "axisX=3(研究者実証)・axisY=3(国内でも使われるツールへの影響)、いずれも閾値未達（X>=6/Y>=4）。CVE未採番・同日パッチ済みのためCVEトラックAにも非該当（D2/D3いずれも不成立）",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "Claude Opus 5 脆弱性発見/エクスプロイト生成ベンチマーク（Anthropicセーフティカード）",
+        "reason": "low_score",
+        "reason_detail": "axisX=2(業界データ定量化)・axisY=1(潜在的リスクのみ・実被害なし)、いずれも閾値未達。攻撃事例ではなく能力評価データのため",
+        "reported_date": null
+      }
+    ],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 0,
+      "reference_a": 4,
+      "reference_b": 2,
+      "excluded": 10,
+      "total_processed": 16
+    },
+    "apt": {
+      "main": 0,
+      "notable": 0,
+      "excluded": 6,
+      "total_processed": 6
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 2,
+      "total_processed": 2,
+      "category_breakdown": {
+        "A": 1,
+        "B": 0,
+        "C": 1
+      }
+    },
+    "soc_recommendations": {
+      "high": 1,
+      "medium": 2,
+      "low": 2,
+      "excluded": 0,
+      "total_processed": 5,
+      "perspective_breakdown": {
+        "cve": 3,
+        "zeroday": 0,
+        "ai_attack": 2
+      }
+    }
+  }
+}
