@@ -215,6 +215,7 @@ GitHub Actions は外部 API キー不要の補助タスクのみを担当する
 |---|---|---|
 | `.github/workflows/daily-pipeline.yml` | 06:00 JST（Routines の1時間前・日次1回） | RSS 機械収集 + 記事からの CVE 言及抽出（`security-intel-collector/watcher.py`）→ `data/raw/` へコミット |
 | `.github/workflows/weekly-verify.yml` | 火・木 11:55 JST | 検証タスクの Issue 作成（リマインド） |
+| `.github/workflows/daily-healthcheck.yml` | 09:00 JST（Routines の2時間後・日次1回） | 日次成果物（当日分・前日分）の有無を確認し、未実行なら Issue を起票。成果物が未マージ PR 上に存在する場合はマージ待ちとみなして起票せず翌日に再確認する。解決済みの `[Alert]` / `[Verify]` トラッキング Issue（bot 起票分のみ）は自動クローズする |
 
 `GITHUB_TOKEN`（自動付与）のみで動作する。`NVD_API_KEY` は任意（レート制限緩和用）。
 

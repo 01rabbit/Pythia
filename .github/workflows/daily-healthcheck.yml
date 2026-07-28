@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
   issues: write
+  pull-requests: read
 
 jobs:
   check-daily-completion:
@@ -21,89 +22,193 @@ jobs:
 
       - name: Get current date (JST)
         id: date
-        run: echo "date=$(TZ=Asia/Tokyo date +%Y-%m-%d)" >> $GITHUB_OUTPUT
-
-      - name: Check daily deliverables exist
-        id: check
         run: |
-          DATE='${{ steps.date.outputs.date }}'
-          YEAR=$(echo "$DATE" | cut -d- -f1)
-          MONTH=$(echo "$DATE" | cut -d- -f2)
+          echo "date=$(TZ=Asia/Tokyo date +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+          echo "prev=$(TZ=Asia/Tokyo date -d '1 day ago' +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
-          # 日次パイプラインが正常完了していれば main に存在するはずの成果物
-          EXPECTED=(
-            "outputs/${DATE}/${DATE}-security-report.json"
-            "forecaster/observations/${YEAR}/${MONTH}/${DATE}.json"
-            "forecaster/forecasts/daily/${DATE}.json"
-          )
-
-          MISSING=""
-          for f in "${EXPECTED[@]}"; do
-            if [ ! -f "$f" ]; then
-              MISSING="${MISSING}- \`${f}\`\n"
-            fi
-          done
-
-          if [ -n "$MISSING" ]; then
-            echo "missing=true" >> "$GITHUB_OUTPUT"
-            {
-              echo "missing_files<<EOF"
-              echo -e "$MISSING"
-              echo "EOF"
-            } >> "$GITHUB_OUTPUT"
-          else
-            echo "missing=false" >> "$GITHUB_OUTPUT"
-            echo "All daily deliverables for ${DATE} are present."
-          fi
-
-      - name: Create alert issue if deliverables missing
-        if: steps.check.outputs.missing == 'true'
+      # 当日分に加えて前日分も確認する。
+      # 当日分は「未マージPRに成果物あり」ならアラートを抑止するため、
+      # PRがマージされないまま放置された場合を翌日の再確認で拾えるようにする。
+      - name: Check deliverables and alert if genuinely missing
         uses: actions/github-script@v7
         env:
-          ALERT_DATE: ${{ steps.date.outputs.date }}
-          MISSING_FILES: ${{ steps.check.outputs.missing_files }}
+          TARGET_DATES: ${{ steps.date.outputs.date }} ${{ steps.date.outputs.prev }}
         with:
           script: |
-            const date = process.env.ALERT_DATE;
-            const missing = process.env.MISSING_FILES;
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            const dates = process.env.TARGET_DATES.split(' ').filter(Boolean);
 
-            // 当日すでに同種の未実行アラートが起票済みなら重複させない
-            const existing = await github.rest.issues.listForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              labels: 'pipeline-health',
-              state: 'open',
-              since: date + 'T00:00:00Z'
+            const deliverablesFor = (date) => {
+              const [year, month] = date.split('-');
+              return [
+                `outputs/${date}/${date}-security-report.json`,
+                `forecaster/observations/${year}/${month}/${date}.json`,
+                `forecaster/forecasts/daily/${date}.json`,
+              ];
+            };
+
+            const existsOnRef = async (path, ref) => {
+              try {
+                await github.rest.repos.getContent({ owner, repo, path, ref });
+                return true;
+              } catch (error) {
+                if (error.status === 404) return false;
+                throw error;
+              }
+            };
+
+            const openAlerts = await github.paginate(github.rest.issues.listForRepo, {
+              owner, repo, labels: 'pipeline-health', state: 'open', per_page: 50,
             });
-            if (existing.data.some(i => i.title.includes(date))) {
-              core.info(`Alert issue for ${date} already exists. Skipping.`);
-              return;
+            const openPRs = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', per_page: 50,
+            });
+
+            for (const date of dates) {
+              const missing = deliverablesFor(date).filter((path) => !fs.existsSync(path));
+              if (missing.length === 0) {
+                core.info(`${date}: all daily deliverables are present on main.`);
+                continue;
+              }
+
+              // 同一日付の未実行アラートが起票済みなら重複させない
+              if (openAlerts.some((issue) => issue.title.includes(date))) {
+                core.info(`${date}: alert issue already open. Skipping.`);
+                continue;
+              }
+
+              // main に無くても未マージPR上に生成済みなら「未実行」ではない（マージ待ち）。
+              // 誤検知を避けるためアラートせず、翌日の再確認に委ねる。
+              let pendingPR = null;
+              for (const pr of openPRs) {
+                for (const path of missing) {
+                  if (await existsOnRef(path, pr.head.sha)) {
+                    pendingPR = pr;
+                    break;
+                  }
+                }
+                if (pendingPR) break;
+              }
+              if (pendingPR) {
+                core.notice(
+                  `${date}: deliverables found on unmerged PR #${pendingPR.number} (${pendingPR.head.ref}). ` +
+                  'Pipeline ran but the PR is not merged yet — alert suppressed, will re-check tomorrow.'
+                );
+                continue;
+              }
+
+              const isToday = date === dates[0];
+              const body = [
+                '## 日次パイプライン未完了アラート',
+                '',
+                isToday
+                  ? `09:00 JST 時点で、${date} の日次パイプライン成果物が main に見つかりませんでした。`
+                  : `翌日 09:00 JST 時点でも、${date} の日次パイプライン成果物が main に見つかりませんでした。`,
+                '07:00 JST の Routines 実行が起動しなかった、または途中で失敗した可能性があります。',
+                '未マージPR上にも成果物は見つかりませんでした（マージ待ちではありません）。',
+                '',
+                '### 不足している成果物',
+                missing.map((path) => `- \`${path}\``).join('\n'),
+                '',
+                '### 確認・復旧手順',
+                '1. Routines 画面で当日の日次実行の起動状況・ログを確認する',
+                '2. 未実行なら Routines から手動で「Run」して当日分を生成する',
+                '3. 収集対象期間（前日07:00〜当日07:00 JST）を過ぎている場合:',
+                '   - 予報の遡及生成は行わない（CLAUDE.md 行動原則）',
+                '   - 観測のみ `scripts/backfill_observations.py` で機械バックフィル可（ベースライン統計対象外）',
+                '4. RSS 一次入力の有無は `security-intel-collector/data/raw/` を確認',
+                '   （収集は別ワークフロー `daily-pipeline.yml` が 06:00 JST に実行）',
+                '',
+                '_このIssueはGitHub Actions (`daily-healthcheck.yml`) により自動作成されました_',
+              ].join('\n');
+
+              const created = await github.rest.issues.create({
+                owner, repo,
+                title: `[Alert] 日次パイプライン未実行 ${date}`,
+                body,
+                labels: ['pipeline-health'],
+              });
+              openAlerts.push(created.data);
+              core.warning(`${date}: deliverables missing on main and on all open PRs. Opened issue #${created.data.number}.`);
             }
 
-            const body = [
-              '## 日次パイプライン未完了アラート',
-              '',
-              `09:00 JST 時点で、${date} の日次パイプライン成果物が main に見つかりませんでした。`,
-              '07:00 JST の Routines 実行が起動しなかった、または途中で失敗した可能性があります。',
-              '',
-              '### 不足している成果物',
-              missing,
-              '### 確認・復旧手順',
-              '1. Routines 画面で当日の日次実行の起動状況・ログを確認する',
-              '2. 未実行なら Routines から手動で「Run」して当日分を生成する',
-              '3. 収集対象期間（前日07:00〜当日07:00 JST）を過ぎている場合:',
-              '   - 予報の遡及生成は行わない（CLAUDE.md 行動原則）',
-              '   - 観測のみ `scripts/backfill_observations.py` で機械バックフィル可（ベースライン統計対象外）',
-              '4. RSS 一次入力の有無は `security-intel-collector/data/raw/` を確認',
-              '   （収集は別ワークフロー `daily-pipeline.yml` が 06:00 JST に実行）',
-              '',
-              '_このIssueはGitHub Actions (`daily-healthcheck.yml`) により自動作成されました_'
-            ].join('\n');
+      # 成果物がmainに揃った時点で、対応するトラッキングIssueを自動クローズする。
+      # 人手で起票されたIssueは対象外（bot起票かつ定型タイトルのもののみ）。
+      - name: Close resolved tracking issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo } = context.repo;
+            // Issue作成者がbotかどうか（REST/GraphQL で login が bot サフィックス有無の両方を取りうる）
+            const isBot = (user) =>
+              user?.type === 'Bot' || ['github-actions', 'github-actions[bot]'].includes(user?.login);
+            const dateOf = (title) => (title.match(/(\d{4}-\d{2}-\d{2})/) || [])[1] || null;
 
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `[Alert] 日次パイプライン未実行 ${date}`,
-              body,
-              labels: ['pipeline-health']
-            });
+            // 検証記録の最新日付。[Verify] の起票日より後に実行された検証もカバーする
+            // （例: 起票日に日次パイプラインが動かず翌日に検証を実行したケース）。
+            const verificationDates = fs
+              .readdirSync('forecaster/verification')
+              .map((name) => (name.match(/^(\d{4}-\d{2}-\d{2})-verification\.md$/) || [])[1])
+              .filter(Boolean)
+              .sort();
+            const latestVerification = verificationDates.length
+              ? verificationDates[verificationDates.length - 1]
+              : null;
+
+            const resolved = (issue) => {
+              const date = dateOf(issue.title);
+              if (!date) return null;
+
+              if (issue.title.startsWith('[Alert] ')) {
+                const [year, month] = date.split('-');
+                const deliverables = [
+                  `outputs/${date}/${date}-security-report.json`,
+                  `forecaster/observations/${year}/${month}/${date}.json`,
+                  `forecaster/forecasts/daily/${date}.json`,
+                ];
+                if (deliverables.some((path) => !fs.existsSync(path))) return null;
+                return [
+                  `${date} の日次パイプライン成果物が main に揃っていることを確認したため自動クローズします。`,
+                  '',
+                  ...deliverables.map((path) => `- \`${path}\``),
+                ].join('\n');
+              }
+
+              if (issue.title.startsWith('[Verify] ')) {
+                if (!latestVerification || latestVerification < date) return null;
+                return [
+                  `${date} 以降の検証記録が main に存在することを確認したため自動クローズします。`,
+                  '',
+                  `- \`forecaster/verification/${latestVerification}-verification.md\``,
+                  '- `forecaster/verification/YYYY-MM.json`（該当月の検証記録）',
+                ].join('\n');
+              }
+
+              return null;
+            };
+
+            for (const label of ['pipeline-health', 'verification']) {
+              const issues = await github.paginate(github.rest.issues.listForRepo, {
+                owner, repo, labels: label, state: 'open', per_page: 50,
+              });
+
+              for (const issue of issues) {
+                if (issue.pull_request) continue;
+                if (!isBot(issue.user)) continue; // 人手起票のIssueは自動クローズしない
+
+                const reason = resolved(issue);
+                if (!reason) continue;
+
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: issue.number,
+                  body: `${reason}\n\n_このコメントはGitHub Actions (\`daily-healthcheck.yml\`) により自動投稿されました_`,
+                });
+                await github.rest.issues.update({
+                  owner, repo, issue_number: issue.number,
+                  state: 'closed', state_reason: 'completed',
+                });
+                core.info(`Closed resolved issue #${issue.number} (${issue.title}).`);
+              }
+            }
