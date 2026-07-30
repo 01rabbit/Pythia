@@ -1,0 +1,166 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-31 07:55 JST
+調査期間: 2026-07-30 07:00 〜 2026-07-31 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報基準を満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-20316 / Cisco Secure Firewall Management Center (FMC)
+対象: FMC 7.0系/7.2系/7.4系/7.6系/7.7系/10.0系（Webインターフェース。Cloud-Delivered FMC・FDM・ASA/FTDソフトウェア・Security Cloud Controlは影響なし）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 5.3 (Medium)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[Security NEXT 2026-07-30] 国内メディアが本脆弱性の実悪用とCISA KEV追加を報道（CISA/Cisco公式発表の要約。独自の新規事実は含まず）
+[api.first.org (EPSS) 2026-07-30] EPSSスコア0.00788・パーセンタイル0.526を確認（実悪用確認済みだがEPSSは低水準というギャップに留意）
+
+【概要】
+Cisco Secure FMCのWebインターフェースに低権限アカウント向けのハードコード（静的）認証情報が存在し、未認証のリモート攻撃者がログインして機微情報にアクセスできる。単体のSecurity Impact RatingはHighで、他のFMC脆弱性と連鎖させた場合の権限昇格リスクをCiscoは重視している。Horizon3.aiのJimi Sebree氏が報告し、Ciscoは2026年7月に実悪用を確認、CISAは2026-07-29付でKEVカタログへ追加した（FCEB期限2026-08-01）。回避策は無く、ホットフィックス適用後は全ての認証情報・鍵・証明書のローテーションが推奨される。
+
+攻撃の流れ:
+1. 攻撃者がFMC管理インターフェースへネットワーク到達可能な経路を確保する
+2. ハードコードされた低権限アカウントの静的認証情報でログインする
+3. 取得したアクセス権限を足がかりに機微情報を取得、または他の脆弱性と連鎖させ権限昇格を試みる
+
+【IoC】
+Filename: /var/tmp/license.tmp
+
+【監視ポイント】
+・FMCシステムログ内のライセンス関連コマンド実行痕跡を確認する
+Splunk SPL: index=cisco_fmc sourcetype=syslog "license" | search "package_info.pl" OR "/var/tmp/license.tmp"
+→ 通常運用でのライセンス確認コマンドと悪用時の実行タイミング・実行元IPの乖離を確認する
+
+【参照】
+https://thehackernews.com/2026/07/cisco-fmc-zero-day-actively-exploited.html
+https://www.bleepingcomputer.com/news/security/cisco-warns-of-fmc-static-credential-flaw-exploited-in-zero-day-attacks/
+https://www.security-next.com/188041
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-20316
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報A】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+国内で影響・被害が確認されているもの（JVN発行等の国内トリガーを含む）
+
+・[CVE-2026-45709 / Mailpit（メールテスト用SMTPキャッチャー）]
+CVSS: 5.8 状態: 現時点で特記事項なし
+
+【概要】
+MailpitのHTMLチェックAPIがリモートCSSを取得する際のSSRF対策（サイズ・Content-Type検証）が、他コード箇所で使われているIPフィルタリング用ダイヤラを使っていなかったため、ループバック・RFC1918内部アドレス・クラウドメタデータ(169.254.169.254)への到達が可能だった。既存のSSRF修正（GHSA-6jxm-fv7w-rw5j）に対する不完全な修正として報告された。
+
+攻撃の流れ:
+1. HTMLメールのリモートCSS取得機能を悪用し内部/メタデータエンドポイントへリクエストを送出させる
+
+【IoC】
+IoC: 確認されず
+
+【参照】
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-025876.html
+https://github.com/axllent/mailpit/security/advisories/GHSA-j3fj-qppj-fmmc
+
+・[CVE-2026-48824 / Mailpit（メールテスト用SMTPキャッチャー）]
+CVSS: 5.3 状態: 現時点で特記事項なし
+
+【概要】
+既存のリソース枯渇DoS修正（CVE-2026-45710対応）が /api/v1/send のみを対象としていたため、未認証の4系統のJSON APIエンドポイント（メッセージ操作・タグ操作等）が無制限のJSONデコードを許容し続けていた。16MBの単一リクエストでメモリ使用量が約8MBから約450MBへ増大することが確認された（同一アドバイザリ内複合脆弱性・CVE-2026-45709と同時公開）。
+
+【IoC】
+IoC: 確認されず
+
+【参照】
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-025872.html
+https://github.com/axllent/mailpit/security/advisories/GHSA-28pq-6qxg-wg5r
+
+・[CVE-2026-56848 / Node.js]
+CVSS: 未確認 状態: 現時点で特記事項なし
+
+【概要】
+Node.js 2026年7月定例セキュリティリリース（7/29公開、7/27から2度延期）でHTTP/2実装の再入可能なsend処理にヒープUse-After-Freeが確認され、全3系列（Current/LTS/Maintenance LTS）に影響する。同リリースでは他にHTTP/2ヘッダ保持によるメモリ枯渇（CVE-2026-56846）・Permission Modelのパス照合不備による過剰なファイルシステムアクセス許可（CVE-2026-58043、Highに次ぐ重大）を含む計11件の脆弱性が修正された。国内ではSecurity NEXTが更新を報道。
+
+【IoC】
+IoC: 確認されず
+
+【参照】
+https://www.security-next.com/188052
+https://nodejs.org/en/blog/vulnerability/july-2026-security-releases
+
+・[CVE-2026-58043 / Node.js]
+CVSS: 未確認 状態: 現時点で特記事項なし
+
+【概要】
+Node.jsのPermission Model（--permissionフラグ）のパスマッチングロジックに不備があり、許可設定を超えてファイルシステムへアクセスできる。セキュリティ境界機能自体の失陥であるため個別に特筆する（同一2026年7月定例リリース内、CVE-2026-56848と同時修正・計11件中の1件）。
+
+【IoC】
+IoC: 確認されず
+
+【参照】
+https://www.security-next.com/188052
+https://nodejs.org/en/blog/vulnerability/july-2026-security-releases
+
+・[CVE-2026-50252 / Unbound（DNSキャッシュリゾルバ）]
+CVSS: 9.3 状態: 現時点で特記事項なし
+
+【概要】
+スレッドごとのUDP送信元ポート選択が予測可能でトランザクションIDのエントロピーが実質的に低下し、DNSキャッシュポイズニングが可能になる（Hebrew University、Inbal Schussheim・Amit Klein両氏が報告）。1.25.2では本件に加え、RRSIG.labelsとRFC 8198 aggressive NSEC処理を悪用したゾーン横断キャッシュポイズニング（CVE-2026-44690・Palo Alto Networks Qifan Zhang氏報告）等、計24件の脆弱性が修正された。Security NEXTが国内向けに報道。
+
+【IoC】
+IoC: 確認されず
+
+【参照】
+https://www.security-next.com/188066
+https://www.openwall.com/lists/oss-security/2026/07/22/7
+
+・[CVE-2026-13723 / Develar app-builder（electron-builderの依存コンポーネント）]
+CVSS: 未確認 状態: PoC公開 / ゼロデイ
+
+【概要】
+app-builderのZIP展開処理（zipx.Unzip）がmacOS/APFS特有のUnicode正規化衝突（例: ß↔ss）とシンボリックリンク追跡を組み合わせることで任意ファイル上書きを許す。CERT/CC（VU#293714）とJVN（JVNVU#91587639）が公開。CVSSスコアは第三者トラッカーのみに掲載され一次情報源（NVD/JVN）では未公表のため未確認として扱う。報告者が修正PRを提示しているが、ベンダーからの正式な対応表明は本稿執筆時点で確認できていない。
+
+【IoC】
+IoC: 確認されず
+
+【参照】
+https://www.kb.cert.org/vuls/id/293714
+https://jvn.jp/vu/JVNVU91587639/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報B】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+海外で先行・国内波及に注意
+
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-66299 (Apache Tomcat（WebSocket chatサンプル）) → already_reported: 2026-07-30分レポートで参考A採用済み・本日窓内に新規変化確認されず
+・CVE-2026-66066 (Ruby on Rails（Active Storage）) → already_reported: 2026-07-30分レポートでPoC公開反映済み（参考B）・本日窓内に新規変化確認されず
+・CVE-2026-63077 (JetBrains TeamCity On-Premises) → already_reported: 2026-07-29分レポートで軸1=7点(<8)によりSection3除外・SOC(高)採用済み・本日窓内に新規変化確認されず
+・CVE-2026-44387 (エレコム製Wi-Fi機器（XSS）) → already_reported: 2026-07-29分レポートで参考A採用済み（JVN#56870912複合脆弱性）・本日のSecurity NEXT報道は同一JVN内容の再掲で新規事実なし
+・CVE-2026-59764 (エレコム製Wi-Fiルーター（OSコマンドインジェクション）) → already_reported: 2026-07-29分レポートで参考A採用済み・本日変化なし
+・CVE-2026-61376 (エレコム製Wi-Fiルーター（設定復元機能OSコマンドインジェクション）) → already_reported: 2026-07-29分レポートで参考A採用済み・本日変化なし
+・CVE-2026-43456 (Linux kernel（net/bonding、19年潜伏の型混同脆弱性）) → out_of_window: ScanNetSecurityの回顧特集記事（連載企画）。修正コミットは2026年3月頃に適用済みでNVD公開も2026-05-08。今回の24時間調査窓内の新規事象・状態変化に該当せず（採用条件A〜Hいずれも非該当）。GMOサイバーセキュリティ byIerae所属研究者によるkernelCTFバウンティ実証（$80,000超）という国内リサーチャーの功績自体は注目に値するが、Section3の採用要件を満たさないため除外
+・CVE-2026-59309 (VMware vCenter Server（認証バイパス）) → low_score: VMSA-2026-0006。CVSS9.8だがKEV未登録・PoC非公開・実悪用未確認・国内報道未確認のため軸1=7点(<8)・参考A昇格トリガーなし
+・CVE-2026-59310 (VMware vCenter Server（Syslogディレクトリトラバーサル→RCE）) → low_score: VMSA-2026-0006・CVE-2026-59309と同一アドバイザリ。軸1=7点(<8)・参考A昇格トリガーなし
+・CVE-2026-47876 (VMware ESXi（VMXNET3、VMエスケープ）) → low_score: VMSA-2026-0006・CVSS9.3だがローカル管理者権限が前提でKEV/PoC/実悪用いずれも未確認のため軸1<8
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編1件 / 参考A6件 / 参考B0件 / 除外10件
+
+========================================
