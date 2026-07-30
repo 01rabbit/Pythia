@@ -1,0 +1,258 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-30 07:50 JST
+調査期間: 2026-07-29 07:00 〜 2026-07-30 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にパッチ未提供のゼロデイ特報事案なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-16232 / Check Point SmartConsole（Security Management Server / Multi-Domain Security Management）
+対象: SIC信頼済みクライアント制限が設定されていないSecurity Management Server / MDS全般（Jumbo Hotfix Accumulator未適用環境）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.1 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[The Hacker News 2026-07-29] Rapid7がSIC distinguished nameのなりすましによる認証バイパスを再現するPythonのPoCスクリプトと技術詳細解析を新規公開
+
+【概要】
+Check Point SmartConsoleの認証パスにおいて、Secure Internal Communication（SIC）の識別名（DN）を認証済みリモートピア証明書のDNに正しく紐付けず攻撃者が指定したDNを受理してしまう不備（CVE-2026-16232・CVSS9.1）があり、未認証の攻撃者が管理サーバのDNを再生してアプリケーションログイントークンとSSOチケットを偽造し、SmartConsoleへ完全な管理者権限でログインできる。Check Pointは開示時点で「ごく少数の顧客」が本脆弱性をゼロデイとして標的にされたことを確認しており、CISAは2026-07-22にKEVへ登録（FCEB期限2026-07-25）、Jumbo Hotfixは同日提供済み。本日はRapid7が認証バイパスを再現するPythonのPoCスクリプトを新規公開し、悪用の裾野が広がる懸念がある。EPSSパーセンタイルは99.3%と極めて高い。
+
+攻撃の流れ:
+1. 攻撃者がManagement Server/MDSへネットワーク到達可能な状態でSICのDNを偽装したリクエストを送信
+2. サーバがDNを認証済みピア証明書と照合せず受理し、偽造アプリケーションログイントークン・SSOチケットを発行
+3. 攻撃者がSmartConsoleへ完全な管理者権限でログインし、セキュリティポリシー・設定を改変可能になる
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Security Management Server / SmartConsoleへの認証ログ・SICのDN不整合を監視する]
+Splunk SPL: index=checkpoint sourcetype=cp_log product="SmartConsole" action=login | stats count by src_ip user_dn
+→ 通常運用で使われないDNや、証明書DNと申告DNが一致しないログイン試行がないか確認する。Trusted Clients設定によるアクセス制限の有無も併せて確認する
+
+【参照】
+https://thehackernews.com/2026/07/rapid7-releases-poc-for-exploited-check.html
+https://support.checkpoint.com/results/sk/sk185169/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: JVN発行 / Security NEXT国内報道（各エントリの24時間以内の変化欄を参照）
+
+・CVE-2026-64940 / てがろぐ -Fumy Otegaru Memo Logger-
+CVSS: 8.6 (v4: 8.8) (High) 状態: 実悪用・KEV登録・PoC公開いずれも確認されず
+
+【24時間以内の変化】
+[JVN 2026-07-29] JVN#99975039にて「てがろぐ」の制限が不十分な正規表現の脆弱性（CVE-2026-64940・CVSSv3 8.6/CVSSv4 8.8）を新規公開
+
+【概要】
+個人開発の簡易ブログツール「てがろぐ」に制限が不十分な正規表現を使用している脆弱性（CVE-2026-64940）があり、第三者が管理画面へログインし不正な管理操作を実行できる可能性がある。JVNが本日新規公開した。実悪用・PoC公開は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[てがろぐ管理画面へのログイン試行ログを監視する]
+→ 通常運用にない管理画面ログイン元IP・時間帯でのアクセスに注意する
+
+【参照】
+https://jvn.jp/jp/JVN99975039/
+
+・CVE-2026-66299 / Apache Tomcat（WebSocket chatサンプルアプリケーション）
+CVSS: 7.5 (High) 状態: 実悪用・KEV登録・PoC公開いずれも確認されず
+
+【24時間以内の変化】
+[JVN 2026-07-29] JVNVU#99139115にてApache TomcatのWebSocket chatサンプルのDoS脆弱性（CVE-2026-66299）を公開。examples削除または11.0.25/10.1.58/9.0.121（提供され次第）への更新を推奨
+
+【概要】
+Apache TomcatのWebSocket chatサンプルアプリケーションにリソース消費過多によるサービス運用妨害（DoS）の脆弱性（CVE-2026-66299）がある。セキュリティ推奨に従いexamplesアプリケーションを削除済みの環境は影響を受けない。JVNVUが本日公開。実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Tomcatのexamplesアプリケーション（WebSocket chatサンプル）へのアクセスログ・リソース使用率を監視する]
+→ examplesアプリケーションを削除済みであれば本脆弱性の影響はない。削除できない場合はリソース使用率の急増に注意する
+
+【参照】
+https://jvn.jp/vu/JVNVU99139115
+
+・CVE-2026-66713 / Apache Axis2/Java（Tribesクラスタリング機能）
+CVSS: 9.8 (Critical) 状態: 実悪用・KEV登録・PoC公開いずれも確認されず
+
+【24時間以内の変化】
+[Security NEXT 2026-07-29] 「Apache Axis2/Java」のクラスタリング機能に未認証RCEにつながるデシリアライゼーションの脆弱性（CVE-2026-66713）があると報道。開発元は開発者メーリングリストで2026-07-28に告知、2.0.1で機能自体を廃止
+
+【概要】
+Java製WebサービスエンジンApache Axis2/JavaのTribesベースのクラスタリング機能に、細工したオブジェクトを送信することで未認証のリモートコード実行が可能なデシリアライゼーションの脆弱性（CVE-2026-66713）がある。開発元は影響度を「Low」と自己評価しているが、CISA/NVDはCVSS9.8 Criticalと評価しており乖離がある。クラスタリング機能は2.0.1で廃止されており、当該バージョンへの更新が唯一の対策。Security NEXTが本日国内向けに報道した。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Axis2/Javaのクラスタリングポート（Tribes）への外部到達を監視する]
+Splunk SPL: index=app_logs sourcetype=axis2 dest_port=4000 | stats count by src_ip
+→ クラスタリング機能は原則無効化・内部ネットワークへ限定し、外部からの到達がないか確認する
+
+【参照】
+https://www.security-next.com/188001
+
+・CVE-2026-65094 / NVIDIA BlueField-3 DPU（VIRTIO-Net）
+CVSS: 9.0 (Critical) 状態: 実悪用・KEV登録・PoC公開いずれも確認されず
+
+【24時間以内の変化】
+[Security NEXT 2026-07-29] 「NVIDIA VIRTIO-Net」にVM利用者によるコード実行のおそれがある脆弱性（CVE-2026-65094・CVSS9.0）があると報道。修正版VIRTIO-Net提供済み
+
+【概要】
+NVIDIA BlueField-3 DPUのVIRTIO-Netコンポーネントに、VM利用者が細工したメッセージを送信することでVIRTIO-Netの実行スコープ内で任意コードを実行できるメモリ書き込みの脆弱性（CVE-2026-65094、旧CVE-2025-33209は撤回）がある。NVIDIA社内で発見され修正版が提供済み。データセンター向けDPU利用組織は限定的だが、VM分離境界に関わる脆弱性のためSecurity NEXTが本日国内向けに報道した。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[BlueField-3 DPU搭載ホストのファームウェア・ドライババージョンを棚卸しする]
+→ データセンター内でBlueField-3 DPUを運用するホストの台数・バージョンを確認し、修正版未適用の機体を優先的にパッチする
+
+【参照】
+https://www.security-next.com/187984
+
+・CVE-2026-52688 / PowerDNS Recursor（DNSSEC検証機能）
+CVSS: 7.5 (High) 状態: 実悪用・KEV登録・PoC公開いずれも確認されず
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-07-29] JPRSの告知を引用し「PowerDNS Recursorに複数の脆弱性（CVE-2026-52688・CVE-2026-52686）」と報道。7/22（CEST）に修正版が公開済みであることを紹介
+
+【概要】
+PowerDNS RecursorのDNSSEC検証機能において、ラベル数が不足したRRSIGを用いることでワイルドカードレコードの検証をバイパスできる脆弱性（CVE-2026-52688）がある。2026-07-22（欧州夏時間）に修正版とともに公開された。ScanNetSecurityが本日、JPRSの告知を引用し国内向けに報道した。実悪用は確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[DNSリゾルバのDNSSEC検証ログ・異常なワイルドカード応答を監視する]
+→ 修正版未適用のPowerDNS Recursorが社内DNSキャッシュサーバとして稼働していないか棚卸しする
+
+【参照】
+https://scan.netsecurity.ne.jp/article/2026/07/29/55803.html
+https://jvn.jp/vu/JVNVU90008749
+
+・CVE-2026-48395 / Adobe Bridge
+CVSS: 非公表 状態: 実悪用・KEV登録・PoC公開いずれも確認されず
+
+【24時間以内の変化】
+[Security NEXT 2026-07-29] 「Adobe Bridge」「Adobe Format Plugins」に脆弱性があるとして修正版を公開したと報道
+
+【概要】
+Adobe Bridgeにアンコントロールドサーチパス・認可処理不備・パストラバーサル・境界外書き込みの複数脆弱性（CVE-2026-48395等8件）があり、Adobeが本日までにCritical評価のセキュリティアップデートを公開した。実悪用は確認されていない。Security NEXTが本日国内向けに報道した。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Adobe Bridgeのアップデート適用状況をクリエイティブ部門端末で棚卸しする]
+→ 信頼できない配布元のファイルをBridgeで開かないよう周知し、セキュリティアップデートの適用を確認する
+
+【参照】
+https://www.security-next.com/187979
+
+・CVE-2026-48372 / Adobe Format Plugins
+CVSS: 非公表 状態: 実悪用・KEV登録・PoC公開いずれも確認されず
+
+【24時間以内の変化】
+[Security NEXT 2026-07-29] 「Adobe Format Plugins」にヒープベースのバッファオーバーフロー脆弱性（CVE-2026-48372）があるとして修正版を公開したと報道
+
+【概要】
+Adobe Format Pluginsにヒープベースのバッファオーバーフローによるコード実行のおそれがある脆弱性（CVE-2026-48372）があり、2026-07-28にセキュリティアップデートが公開された。実悪用は確認されていない。Adobe Bridge複合脆弱性と同一のSecurity NEXT記事内で報道された。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Adobe Format Pluginsのアップデート適用状況をクリエイティブ部門端末で棚卸しする]
+→ 細工されたメディアファイルを開くことでの悪用が想定されるため、信頼できないファイルの取り扱いに注意する
+
+【参照】
+https://www.security-next.com/187979
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-20316 / Cisco Secure Firewall Management Center (FMC)
+CVSS: 5.3 (High)
+Cisco Secure Firewall Management Center（FMC）ソフトウェアに低権限アカウントの静的（ハードコード）認証情報が埋め込まれており、未認証のリモート攻撃者がこれを用いてログインし機密データへアクセスできる脆弱性（CVE-2026-20316）が存在する。Ciscoは2026年7月に本脆弱性の実悪用を確認し、CVSSスコア自体は5.3（Medium）だが、他のFMC脆弱性と連鎖させ権限昇格に使える可能性があるためSecurity Impact RatingはHighと評価している。回避策はなく、パッチ適用が必須。CISAは2026-07-29にKEVへ新規追加した（FCEB期限2026-08-01）。国内メディアでの報道は本日時点で確認されていない。
+IoC: 確認されず
+
+監視: [FMCのログイン監査ログ・低権限アカウントによる異常操作を監視する]
+Splunk SPL: index=cisco_fmc sourcetype=fmc:audit | search action=login | stats count by user src_ip
+→ 既定の低権限アカウント名でのログインや、/var/log/messages中のpackage_info.plがroot権限で呼び出されている痕跡（/var/tmp/license.tmp参照）に注意する
+
+参照: https://www.bleepingcomputer.com/news/security/cisco-warns-of-fmc-static-credential-flaw-exploited-in-zero-day-attacks
+
+・CVE-2026-60004 / Gitea
+CVSS: 9.8 (Critical)
+自己ホスト型GitプラットフォームGiteaに、リポジトリへの書き込み権限を持つユーザーが悪意あるGitフックを注入しGiteaサービスアカウントとして任意のシェルコマンドを実行できるリモートコード実行の脆弱性（CVE-2026-60004・CVSS9.8）がある。POST /api/v1/repos/{owner}/{repo}/diffpatchエンドポイントで同一パッチを二重送信してadd/addの衝突を発生させ、three-wayフォールバックが--cachedにもかかわらずインデックス済みパスをチェックアウトしてしまう不備を突き、hooks/post-index-changeに実行可能ファイルを配置する手口。既定設定ではメール確認なしの登録が有効なため、外部攻撃者が事前の資格情報なしにアカウント・リポジトリを作成し攻撃を開始できる。研究者Shai Rod（NightRang3r）が発見。公開PoCが存在するが実悪用は本日時点で確認されていない。
+IoC: 確認されず
+
+監視: [Gitea APIへの異常なdiffpatchリクエスト・新規フックファイル作成を監視する]
+Splunk SPL: index=gitea_logs uri_path="*/diffpatch" | stats count by src_ip repo user
+→ 同一リクエストの短時間内二重送信や、hooks/post-index-change等の非標準フックファイル作成に注意する
+
+参照: https://thehackernews.com/2026/07/new-gitea-rce-lets-repository-writers.html
+
+・CVE-2026-10702 / Mozilla Firefox / Tor Browser（JavaScriptエンジンJIT）
+CVSS: 7.5 (High)
+Firefox JavaScriptエンジンのJITコンパイラにMObjectToIterator関数でskipRegistration=true時の操作を誤って「読み取り」として扱う不備（CVE-2026-10702）があり、実際には置換用dynamic-slotsバッファの確保・旧バッファの解放を伴うため、Global Value Numbering最適化が失効したポインタを保持しメモリ破損に至る。研究者グループNebula Securityが、ポインタリーク・Uint8Array破損による任意読み書き・WebAssembly関数リダイレクトでARM64シェルコードを実行する完全なエクスプロイトチェーンを実証しGitHubで公開した。悪意あるWebページを閲覧するだけでユーザー操作なしに成立する。Firefox ESR（Torプロジェクトが採用する系列）は影響を受けないとされる一方、当該研究はTor Browserへの適用可能性を主張しており、正確な対象Tor Browserバージョンは本日時点の記事からは確認できない（推測を含む報道のため要継続確認）。Firefox 151.0.3で修正済み、実悪用は確認されていない。
+IoC: 確認されず
+
+監視: [Tor Browser/Firefoxのバージョン管理・自動更新状況を確認する]
+→ 匿名性を要する利用者ほど151.0.3以降への即時更新を優先する。EPSSパーセンタイルは43%とKEV登録CVEと比べ低水準で、悪用切迫度は限定的と見られる（推測）
+
+参照: https://thehackernews.com/2026/07/researchers-show-single-malicious.html
+
+・CVE-2026-66066 / Ruby on Rails（Active Storage variant processing・libvips画像処理）
+CVSS: 9.5 (Critical)
+Active Storageがアップロード済みファイルからバリアントをlibvipsで生成する際、libvipsが「unfuzzed operations」として安全でないと明示している一部のファイル形式ハンドラを無効化していなかったため、未認証の攻撃者が細工したファイルをアップロードしバリアント生成をトリガーすることでサーバ上の任意ファイルを読み取れる（CVE-2026-66066）。読み取り可能な情報にはRailsのプロセス環境変数・secret_key_base・Railsマスターキー・データベースパスワード・クラウドストレージ認証情報が含まれ、これらを窃取した攻撃者はリモートコード実行に発展させられる可能性がある。国内セキュリティ企業Flatt Securityが「KindaRails2Shell」として日本語で独自の技術解説を公開。影響を受けるのはRails 7.0.0〜7.2.3.1・8.0.0〜8.0.5・8.1.0〜8.1.3（Active Storage有効かつlibvips利用がデフォルトの構成）で、6.0.0〜6.1.7.10はVipsを明示的に設定した非標準構成のみ影響する。対処: activestorageを7.2.3.2/8.0.5.1/8.1.3.1へ更新する。暫定策としてlibvips8.13以降であれば環境変数VIPS_BLOCK_UNTRUSTEDの設定でも緩和可能。2026-07-30、GitHub上でPoCコード（Zer0SumGam3/CVE-2026-66066-POC）が公開された。ローカルのDocker製使い捨てラボ環境（ループバック限定）を前提とした検証用実装だが、任意ファイル読み取りからOASTコールバックまでの攻撃チェーンを実演するものであり、実運用環境への転用リスクが高まっている。実悪用は本日時点で確認されていない。
+IoC: 確認されず
+
+監視: [Active Storageを利用するアプリケーションサーバのアップロード処理ログ・libvips関連プロセスの異常終了を監視する]
+Splunk SPL: index=app_logs sourcetype=rails source="*activestorage*" | stats count by src_ip status | where status>=400
+→ 通常想定しないファイル形式・サイズのアップロード試行や、バリアント生成処理での異常終了・タイムアウトの急増に注意する。GitHub公開PoCの派生・改変版の拡散にも注意する
+
+参照: https://blog.flatt.tech/entry/kindarails2shell_rails
+参照: https://thehackernews.com/2026/07/critical-rails-flaw-could-let.html
+参照: https://github.com/rails/rails/security/advisories/GHSA-xr9x-r78c-5hrm
+参照: https://github.com/Zer0SumGam3/CVE-2026-66066-POC
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-59309 (VMware vCenter Server（VMware Directory Service）) → 軸1=7点（未認証認証バイパス+3・CVSS9.0以上+3・広く使われる製品+1）。Broadcomは実悪用の証拠なしと明言・KEV未登録・PoC未公開のため軸1<8で除外。VMSA-2026-0006としてSection4 SOC推奨情報(高)で3件まとめて言及
+・CVE-2026-59310 (VMware vCenter Server（ディレクトリトラバーサル）) → 軸1=7点（未認証認証バイパス+3・CVSS9.0以上+3・広く使われる製品+1）。実悪用証拠なし・KEV未登録・PoC未公開のため軸1<8で除外。VMSA-2026-0006としてSection4 SOC推奨情報(高)で言及
+・CVE-2026-47876 (VMware ESXi（VMXNET3仮想ネットワークアダプタ）) → 軸1=4点（CVSS9.0以上+3・広く使われる製品+1）。VM上のローカル管理者権限が前提でありネットワーク到達のみでは悪用不可・実悪用証拠なし・KEV未登録のため軸1<8で除外。VMSA-2026-0006としてSection4 SOC推奨情報(高)で言及
+・CVE-2026-3949 (struktur AG libheif) → JVN公開が2026-07-28T18:11 JST（調査窓開始2026-07-29T07:00より前）のため調査窓外。翌日以降に国内メディアの新規報道等の変化があれば再評価する
+・CVE-2026-48827 (Apache Software Foundation mina sshd（パストラバーサル）) → JVN公開が2026-07-28T18:11 JST（調査窓開始2026-07-29T07:00より前）のため調査窓外。翌日以降に国内メディアの新規報道等の変化があれば再評価する
+
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編1件 / 参考A7件 / 参考B4件 / 除外5件

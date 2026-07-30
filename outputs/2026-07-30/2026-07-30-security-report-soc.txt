@@ -1,0 +1,133 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-07-30 07:50 JST
+調査期間: 2026-07-29 07:00 〜 2026-07-30 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+------------------------------------------------------------
+1. VMware vCenter/ESXi 3件の重大脆弱性（VMSA-2026-0006：認証バイパス・コード実行・VMエスケープ）
+観点: CVE関連
+採用契機: β, γ
+------------------------------------------------------------
+
+優先度: 高
+対象: VMware vCenter Server / VMware ESXi / Workstation / Fusion
+
+【24時間以内の変化】
+[SecurityWeek / The Hacker News 2026-07-29] BroadcomがVMSA-2026-0006として、vCenter Directory Serviceの認証バイパス（CVE-2026-59309・CVSS9.8）、vCenterのディレクトリトラバーサルによるコード実行（CVE-2026-59310・CVSS9.8）、ESXi VMXNET3アダプタのVMエスケープ（CVE-2026-47876・CVSS9.3）の3件を含む脆弱性群を公開したと報道
+
+【概要】
+仮想化基盤の中核であるvCenter Server/ESXiに、ネットワーク到達可能な攻撃者が認証を完全にバイパスして管理プレーンを掌握できる脆弱性（CVE-2026-59309）、ディレクトリトラバーサルによるコード実行（CVE-2026-59310）、VM内のローカル管理者がホスト側でコード実行に至るVMエスケープ（CVE-2026-47876）が確認された。Broadcomは実悪用の証拠はないとしているが、CVSS9.0以上でVMware製品は国内企業でも広く採用されているため、パッチ未適用環境は仮想化基盤全体の侵害につながるリスクがある。
+
+【推奨アクション】
+・vCenter Server / ESXi / Workstation / FusionをVMSA-2026-0006記載の修正版へ速やかに更新する
+・vCenter管理インターフェースへのネットワークアクセスを管理セグメントに限定する
+・VM管理者権限の付与範囲を棚卸しし、VMXNET3アダプタを使用するVMの権限分離を見直す
+Splunk SPL: index=vmware sourcetype=vpxd:audit | stats count by src_ip user result
+→ 通常運用にない管理コンソールログインパターンや、VMXNET3経由の異常なネットワークトラフィックに注意する
+
+【参照】
+https://www.securityweek.com/critical-vm-escape-vulnerability-patched-in-vmware-esxi/
+https://thehackernews.com/2026/07/three-critical-vmware-flaws-allow-auth.html
+
+------------------------------------------------------------
+2. ShinyHunters、Ernst & Youngのハッキングを主張し2026-07-31を最終期限に恐喝（Health-ISACはヘルスケア業界への攻撃増を警告）
+観点: CVE関連
+採用契機: δ, ε
+------------------------------------------------------------
+
+優先度: 高
+
+【24時間以内の変化】
+[BleepingComputer / SecurityWeek / SecurityAffairs 2026-07-29] ShinyHunters（UNC6240）がリークサイトでErnst & Young（EY）のハッキングを主張し2026-07-31を最終データ公開期限として通告。EYは2026-04-23に社内のITサービス管理プラットフォームで異常を検知しており、2026-03-28〜04-12の間に第三者がアクセスし多数のクライアント関連文書をダウンロードしていたことを確認済み。同時にHealth-ISACはヘルスケア業界向けにShinyHuntersによるデータ窃取攻撃の増加を警告した
+
+【概要】
+ShinyHunters（UNC6240）が大手会計・コンサルティングファームEYのハッキングを主張し、サードパーティのITサービス管理プラットフォーム経由での資格情報・機密ファイル窃取を訴えている。EYは同プラットフォームへの第三者アクセス（2026-03-28〜04-12）を確認済みで、税務関連クライアント業務に関わる文書がダウンロードされていた。ShinyHuntersは2026-07-31を最終期限として全データ公開を予告しており、同グループは直近でDentaQuest・University of Nottingham・7-Eleven・Medtronic・Wynn Resorts等の侵害実績を持つ。並行してHealth-ISACがヘルスケア業界向けに同グループによるデータ窃取攻撃の増加を警告している。
+
+【推奨アクション】
+・自組織が利用する会計・コンサルティングファームやITサービス管理プラットフォームのベンダーに対し、同種侵害の有無を照会する
+・サードパーティのITサービス管理プラットフォームへのアクセスログ・認証情報のローテーション状況を点検する
+・ヘルスケア関連組織はHealth-ISACの警告に基づき、ShinyHuntersのTTP（サードパーティ経由の認証情報窃取・データ恐喝）に対する監視を強化する
+
+【参照】
+https://www.securityweek.com/shinyhunters-claims-ernst-young-hack
+https://www.bleepingcomputer.com/news/security/health-isac-warns-of-rising-shinyhunters-data-theft-attacks-on-healthcare
+
+------------------------------------------------------------
+3. 北朝鮮関連npmサプライチェーン攻撃が継続、joyfillの2ベータ版パッケージ侵害でブロックチェーン型C2の新規TTPを確認
+観点: CVE関連
+採用契機: ε, δ
+------------------------------------------------------------
+
+優先度: 中
+対象: npm パッケージ（@joyfill/layouts, @joyfill/components）
+
+【24時間以内の変化】
+[Socket.dev 2026-07-29] Socket.devが@joyfill/layouts・@joyfill/componentsのbeta/rcバージョン2件の侵害を確認。Tron/Aptos/BNB Smart Chainのトランザクションを用いて第2段階ペイロードを取得する「tiered blockchain型C2」という新規TTPを特定。DEV#POPPERマルウェアファミリー・北朝鮮関連PolinRiderクラスタとの関連が指摘されている（既報キャンペーンの継続）
+
+【概要】
+北朝鮮関連の攻撃者が関与するとされるnpmサプライチェーン攻撃キャンペーン（PolinRider/Contagious Interview関連、既報）の一環として、joyfillパッケージの2つのベータ/リリース候補バージョンが侵害されNode.js RAT・Pythonインフォスティーラーが配布されていたことがSocket.devにより確認された。import時に実行される点（npmライフサイクルフック非依存）と、Tron/Aptos/BNB Smart Chainのブロックチェーン取引を使った階層型C2という新規の技術的特徴を持つ。開発ビルド環境（github-runner等のホスト名）では実行を回避する検知回避機能も備える。
+
+【推奨アクション】
+・package-lock.json/yarn.lockに@joyfill/layouts@0.1.2-2773.beta.0・@joyfill/components@4.0.0-rc24-2773-beta.4が含まれていないか確認する
+・該当パッケージが導入されていた場合はクレデンシャルローテーション（Git/GitHub設定・VSCodeストレージ含む）を実施する
+・C2 IP 23.27.13.43宛の通信を検知ルールに追加する
+Splunk SPL: index=proxy dest_ip="23.27.13.43" | stats count by src_ip user
+→ 開発マシンからのTron/Aptos/BSC向けRPC通信は通常稀であり、想定外の宛先への接続は精査する
+
+【参照】
+https://thehackernews.com/2026/07/two-compromised-joyfill-npm-packages.html
+
+------------------------------------------------------------
+4. Apple「macOS Tahoe 26.6」で155件の脆弱性を修正、7月の大規模パッチサイクル完了
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: macOS Tahoe / iOS / iPadOS等Apple製品全般
+
+【24時間以内の変化】
+[Security NEXT / SANS ISC 2026-07-29] AppleがmacOS Tahoe 26.6を公開し155件の脆弱性を修正したとSecurity NEXTが報道。SANS ISCも「Apple Patches Everything (July 2026)」として同月のApple全製品向け大規模パッチサイクル完了を報告
+
+【概要】
+Appleが2026年7月分の大規模セキュリティアップデートを公開し、macOS Tahoe 26.6だけで155件の脆弱性を修正した。個別脆弱性の深刻度内訳は本日の報道からは網羅的に確認できないが、業務利用のMac/iOSデバイスを保有する組織は速やかな適用が推奨される。
+
+【推奨アクション】
+・組織管理下のmacOS/iOS/iPadOSデバイスへ最新アップデートの適用状況をMDM等で確認する
+・個別脆弱性のCVE一覧・深刻度はApple公式セキュリティコンテンツページで確認し、優先度の高いものから対応する
+
+【参照】
+https://www.security-next.com/188015
+https://isc.sans.edu/diary/rss/33196
+
+------------------------------------------------------------
+5. Node.jsのセキュリティ更新公開が延期、7月29日以降を予定
+観点: CVE関連
+採用契機: γ
+------------------------------------------------------------
+
+優先度: 低
+対象: Node.js
+
+【24時間以内の変化】
+[Security NEXT 2026-07-29] Node.js公式が7月分のセキュリティ更新の公開を延期し、7月29日以降に改めて実施する予定であるとSecurity NEXTが報道
+
+【概要】
+Node.jsの定例セキュリティアップデートの公開が延期された。具体的な延期理由・対象脆弱性の詳細は本日時点で公表されていない。Node.jsを本番環境で稼働させている組織は、更新公開後の速やかな適用に備え事前準備を進めることが望ましい。
+
+【推奨アクション】
+・Node.js公式のセキュリティアドバイザリページを定期的に確認し、更新公開後は速やかに適用計画を立てる
+
+【参照】
+https://www.security-next.com/188010
+
+
+本日の集計:
+SOC推奨情報 — 高2件 / 中2件 / 低1件 / 除外0件
