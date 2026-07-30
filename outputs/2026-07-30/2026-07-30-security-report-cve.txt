@@ -190,28 +190,6 @@ IoC: 確認されず
 【参照】
 https://www.security-next.com/187979
 
-・CVE-2026-66066 / Ruby on Rails（Active Storage variant processing・libvips画像処理）
-CVSS: 9.5 (Critical) 状態: 実悪用・KEV登録・PoC公開いずれも確認されず
-
-【24時間以内の変化】
-[Flatt Security Blog 2026-07-30 00:10 JST / The Hacker News 2026-07-30 03:10 JST] 国内セキュリティ企業Flatt Securityが「KindaRails2Shell」として独自の技術解説を日本語で公開。Ruby on RailsがActive Storageの脆弱性（CVE-2026-66066・CVSS9.5）を修正した7.2.3.2/8.0.5.1/8.1.3.1を新規公開
-
-【概要】
-Active Storageがアップロード済みファイルからバリアントをlibvipsで生成する際、libvipsが「unfuzzed operations」として安全でないと明示している一部のファイル形式ハンドラを無効化していなかったため、未認証の攻撃者が細工したファイルをアップロードしバリアント生成をトリガーすることでサーバ上の任意ファイルを読み取れる（CVE-2026-66066）。読み取り可能な情報にはRailsのプロセス環境変数・secret_key_base・Railsマスターキー・データベースパスワード・クラウドストレージ認証情報が含まれ、これらを窃取した攻撃者はリモートコード実行に発展させられる可能性がある。影響を受けるのはRails 7.0.0〜7.2.3.1・8.0.0〜8.0.5・8.1.0〜8.1.3（Active Storage有効かつlibvips利用がデフォルトの構成）で、6.0.0〜6.1.7.10はVipsを明示的に設定した非標準構成のみ影響する。対処: activestorageを7.2.3.2/8.0.5.1/8.1.3.1へ更新する。暫定策としてlibvips8.13以降であれば環境変数VIPS_BLOCK_UNTRUSTEDの設定でも緩和可能。PoC・実悪用は本日時点で確認されていない。
-
-【IoC】
-IoC: 確認されず
-
-【監視ポイント】
-・[Active Storageを利用するアプリケーションサーバのアップロード処理ログ・libvips関連プロセスの異常終了を監視する]
-Splunk SPL: index=app_logs sourcetype=rails source="*activestorage*" | stats count by src_ip status | where status>=400
-→ 通常想定しないファイル形式・サイズのアップロード試行や、バリアント生成処理での異常終了・タイムアウトの急増に注意する
-
-【参照】
-https://blog.flatt.tech/entry/kindarails2shell_rails
-https://thehackernews.com/2026/07/critical-rails-flaw-could-let.html
-https://github.com/rails/rails/security/advisories/GHSA-xr9x-r78c-5hrm
-
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【参考情報 B】海外で先行・国内波及に注意
@@ -249,6 +227,20 @@ IoC: 確認されず
 
 参照: https://thehackernews.com/2026/07/researchers-show-single-malicious.html
 
+・CVE-2026-66066 / Ruby on Rails（Active Storage variant processing・libvips画像処理）
+CVSS: 9.5 (Critical)
+Active Storageがアップロード済みファイルからバリアントをlibvipsで生成する際、libvipsが「unfuzzed operations」として安全でないと明示している一部のファイル形式ハンドラを無効化していなかったため、未認証の攻撃者が細工したファイルをアップロードしバリアント生成をトリガーすることでサーバ上の任意ファイルを読み取れる（CVE-2026-66066）。読み取り可能な情報にはRailsのプロセス環境変数・secret_key_base・Railsマスターキー・データベースパスワード・クラウドストレージ認証情報が含まれ、これらを窃取した攻撃者はリモートコード実行に発展させられる可能性がある。国内セキュリティ企業Flatt Securityが「KindaRails2Shell」として日本語で独自の技術解説を公開。影響を受けるのはRails 7.0.0〜7.2.3.1・8.0.0〜8.0.5・8.1.0〜8.1.3（Active Storage有効かつlibvips利用がデフォルトの構成）で、6.0.0〜6.1.7.10はVipsを明示的に設定した非標準構成のみ影響する。対処: activestorageを7.2.3.2/8.0.5.1/8.1.3.1へ更新する。暫定策としてlibvips8.13以降であれば環境変数VIPS_BLOCK_UNTRUSTEDの設定でも緩和可能。2026-07-30、GitHub上でPoCコード（Zer0SumGam3/CVE-2026-66066-POC）が公開された。ローカルのDocker製使い捨てラボ環境（ループバック限定）を前提とした検証用実装だが、任意ファイル読み取りからOASTコールバックまでの攻撃チェーンを実演するものであり、実運用環境への転用リスクが高まっている。実悪用は本日時点で確認されていない。
+IoC: 確認されず
+
+監視: [Active Storageを利用するアプリケーションサーバのアップロード処理ログ・libvips関連プロセスの異常終了を監視する]
+Splunk SPL: index=app_logs sourcetype=rails source="*activestorage*" | stats count by src_ip status | where status>=400
+→ 通常想定しないファイル形式・サイズのアップロード試行や、バリアント生成処理での異常終了・タイムアウトの急増に注意する。GitHub公開PoCの派生・改変版の拡散にも注意する
+
+参照: https://blog.flatt.tech/entry/kindarails2shell_rails
+参照: https://thehackernews.com/2026/07/critical-rails-flaw-could-let.html
+参照: https://github.com/rails/rails/security/advisories/GHSA-xr9x-r78c-5hrm
+参照: https://github.com/Zer0SumGam3/CVE-2026-66066-POC
+
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 【除外サマリー】
@@ -263,4 +255,4 @@ IoC: 確認されず
 
 
 本日の集計:
-CVE — ゼロデイ特報0件 / 本編1件 / 参考A8件 / 参考B3件 / 除外5件
+CVE — ゼロデイ特報0件 / 本編1件 / 参考A7件 / 参考B4件 / 除外5件
