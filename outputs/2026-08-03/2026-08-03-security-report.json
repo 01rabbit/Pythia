@@ -1,0 +1,467 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-08-03",
+    "generated_at": "2026-08-03T07:53:09+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-08-02T07:00:00+09:00",
+      "to": "2026-08-03T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [],
+  "reference_a": [
+    {
+      "cve_id": "CVE-2026-43456",
+      "product": "Linux kernel（net/bonding）",
+      "vendor": "Linux (upstream community)",
+      "affected_versions": "Linux 2.6.24〜6.12.77（2007年導入の脆弱コードが2026年3月の修正コミットで修正されるまで約19年間存在）",
+      "priority": "中",
+      "cvss_v3": 7.8,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [
+        "CWE-908"
+      ],
+      "epss": {
+        "score": 0.0016,
+        "percentile": 0.05667,
+        "model_date": "2026-08-02"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "2026年3月上流修正コミット（950803f7254721c1c15858fbbfae3deaaeeecb11）以降・各ディストリビューションへ順次バックポート済み",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 5,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "GMOサイバーセキュリティ byイエラエ",
+          "date": "2026-07-29T00:00:00+09:00",
+          "description": "研究者がGoogle kernelCTFへの報告を通じ2007年から約19年間存在した型混同（Type Confusion）脆弱性（net/bondingサブシステム）の発見経緯を技術詳解として公開。kernelCTF規約上エクスプロイト手法の詳細開示が義務であり、成功率99%超・1秒以内に完了する権限昇格エクスプロイトの技術詳細が事実上公開された。"
+        },
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-07-30T00:00:00+09:00",
+          "description": "CSIRT支援室連載記事で本脆弱性の技術解説を日本語で紹介。"
+        }
+      ],
+      "overview": "Linuxカーネルのnet/bondingサブシステムに2007年に混入し19年近く見過ごされていた型混同（Type Confusion）の脆弱性（CWE-908、CVSSv3 7.8 High）で、CAP_NET_ADMIN権限を持つローカル攻撃者が特権昇格に悪用できる。2026年3月に上流で修正済みだが、発見者がGoogleのバグ報奨金プログラムkernelCTFへ報告した経緯と技術詳細をブログで公開し、同プログラムの規約上エクスプロイト手法の完全開示が要求されるため実質的にPoC相当の情報が公開されている。実環境での悪用報告は本日時点で確認されていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者がCAP_NET_ADMIN権限を持つローカルアカウント（コンテナ含む）を確保する"
+        },
+        {
+          "step": 2,
+          "description": "net/bondingサブシステムの型混同を誘発する細工した操作を実行する"
+        },
+        {
+          "step": 3,
+          "description": "カーネル内での権限昇格によりroot権限を奪取する（成功率99%超・1秒以内）"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "CAP_NET_ADMIN権限が付与されたプロセスによるnet/bonding関連の異常な操作・想定外のroot昇格をauditd/カーネルログで監視する。",
+        "splunk_spl": [
+          "sourcetype=linux:audit type=SYSCALL (comm=*bond* OR key=privilege_escalation) exit=0",
+          "sourcetype=auditd \"CAP_NET_ADMIN\" AND (unexpected_process OR unknown_binary)"
+        ],
+        "detection_notes": "コンテナ・仮想化ホストでCAP_NET_ADMINを付与している正規プロセス（ネットワーク管理ツール等）を事前に洗い出し、既知の正規動作との差分を監視する。誤検知除外にはプロセス系譜（parent process）の確認が有効。"
+      },
+      "references": [
+        {
+          "url": "https://gmo-cybersecurity.com/blog/19-years-hidden-80000-rewarded-reporting-a-linux-kernel-zero-day-for-google-kernelctf/",
+          "title": null,
+          "language": "en",
+          "source": "GMOサイバーセキュリティ byイエラエ"
+        },
+        {
+          "url": "https://scan.netsecurity.ne.jp/article/2026/07/30/55822.html",
+          "title": null,
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        },
+        {
+          "url": "https://thecybersecguru.com/exploits/cve-2026-43456-linux-kernel-zero-day/",
+          "title": null,
+          "language": "en",
+          "source": "The CyberSec Guru"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "other"
+      ],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a",
+      "info_id": "20260803-CVEP-880fd198"
+    }
+  ],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [
+      {
+        "cve_id": null,
+        "product": "COLDCARD ハードウェアウォレット（Coinkite製、Mk2/Mk3/Mk4/Mk5/Q全モデル）",
+        "vendor": "Coinkite",
+        "affected_versions": "Mk2/Mk3: firmware 4.0.1〜4.1.9、5.0.1-mk3、5.0.3-mk3 / Mk4/Mk5: 5.0.0-mk4〜5.5.x / Q: 1.4.x以前（2021-03のfirmware 4.0.1初出以降、約5年間）",
+        "priority": "必須",
+        "cvss_v3": null,
+        "cvss_v4": null,
+        "cvss_severity": null,
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": false,
+          "actively_exploited": true,
+          "zero_day": true,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "Mk3: firmware 4.2.0 / Mk4/Mk5: firmware 5.6.0 / Q: firmware 1.5.0Q（2026-07-31公開）。既存シードは救済されず、影響を受けたユーザーは新規シード生成・資金移動が必須。",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 9,
+        "axis2_score": 1,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-08-02T21:14:00+09:00",
+            "description": "2026-07-30の第1波（約1,082 BTC・約7000万ドル相当・41分で窃取）に続き、2026-08-02時点で被害が3波・約4,585アドレス・約1,367 BTC（約8,860万〜8,900万ドル相当）に拡大していることが判明。BleepingComputerが本脆弱性と一連の窃取の関連を報道。"
+          }
+        ],
+        "overview": "COLDCARDハードウェアウォレットのファームウェアに2021年3月（firmware 4.0.1）から約5年間存在した実装不備（CVE番号未採番）により、シード生成時に本来使用すべきSTM32ハードウェア乱数生成器（TRNG）が誤ったプリプロセッサ条件により無効化され、ソフトウェア疑似乱数生成器のみでシードが生成されていた。実効エントロピーがMk2/Mk3で約40ビット、Mk4/Mk5・Qで約72ビットまで低下し、外部から総当たりでシードを推測可能な状態となっていた。Coinkiteは2026-07-30に脆弱性を開示し同日中に修正ファームウェアを公開したが、修正は既存シードを救済せず、影響を受けた全ユーザーが新規シード生成と資金移動を行う必要がある。開示直後から攻撃者による実際の資金窃取が複数波にわたり観測されており、2026-08-02時点で被害総額は約8,860万〜8,900万ドル（約4,585アドレス、約1,367 BTC）に達している。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "攻撃者が事前にCOLDCARDファームウェアの実装不備（TRNG無効化）を発見・解析する"
+          },
+          {
+            "step": 2,
+            "description": "低下したエントロピー空間（Mk2/Mk3で約40ビット等）に対し総当たり探索を実施しシードを推測する"
+          },
+          {
+            "step": 3,
+            "description": "推測したシードから導出されるビットコインアドレスへの残高有無を大規模に照合する"
+          },
+          {
+            "step": 4,
+            "description": "残高のあるアドレスの秘密鍵を用いて短時間で資金を窃取用アドレスへ送金する（複数波で実施、2026-07-30〜2026-08-02時点で継続）"
+          }
+        ],
+        "techniques": [],
+        "temp_mitigation": [
+          "修正ファームウェア適用と併せ、既存シードで生成されたウォレットは信頼せず新規シードを生成し直す",
+          "資金は新規シードのアドレスへ速やかに移動する"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "本事象はハードウェアウォレットのファームウェア実装不備によるオンチェーン窃取であり、企業SOCの一般的なログソースでの直接検知対象ではない。暗号資産を保管する組織においてはCOLDCARD利用状況の棚卸しと影響ファームウェアバージョンの特定・シード移行を優先対応とする。",
+          "splunk_spl": [],
+          "detection_notes": null
+        },
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/coldcard-wallet-rng-flaw-likely-linked-to-88-million-bitcoin-theft",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://thehackernews.com/2026/08/coldcard-hardware-wallet-flaw-linked-to.html",
+            "title": null,
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.coindesk.com/tech/2026/08/02/bitcoin-cold-wallet-attack-spreads-to-4-500-addresses-as-losses-near-usd89-million",
+            "title": null,
+            "language": "en",
+            "source": "CoinDesk"
+          },
+          {
+            "url": "https://wizardsardine.com/blog/coldcard-rng-vulnerability/",
+            "title": null,
+            "language": "en",
+            "source": "Wizardsardine"
+          },
+          {
+            "url": "https://www.coindesk.com/tech/2026/07/31/major-bitcoin-wallet-flaw-drains-594-btc-in-25-minute-sweep",
+            "title": null,
+            "language": "en",
+            "source": "CoinDesk"
+          }
+        ],
+        "sector_impact": [
+          "finance",
+          "other"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": [],
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20260803-CVET-8157fff9"
+      }
+    ],
+    "trends_topic": []
+  },
+  "apt_main": [],
+  "apt_notable": [],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-08-03-001",
+      "title": "Atomic MacOS Stealer (AMOS) — 偽『macOS Toolkit』サイト経由のターミナルコマンド誘導型（ClickFix類似）感染チェーン",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "δ",
+        "ε"
+      ],
+      "priority": "medium",
+      "product_or_service": "macOS エンドポイント（企業BYOD・管理外デバイス含む）",
+      "targets": {
+        "sectors": [
+          "it",
+          "other"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SANS Internet Storm Center",
+          "date": "2026-08-02T13:05:00+09:00",
+          "description": "偽の『macOS Toolkit』紹介サイト（getmacouscloud[.]com）からユーザー自身にターミナルコマンドをコピー&ペーストで実行させ、多段難読化・多段ペイロードでAMOSインフォスティーラーを配信する感染チェーンの技術解説と、新規IOC（配信ドメイン4件・C2 IP・SHA256ハッシュ5件）が公開された。"
+        }
+      ],
+      "overview": "AMOSは2023年から追跡されている既知の商用macOSインフォスティーラーだが、本diaryは『トラブルシューティングのためターミナルにコマンドを貼り付けさせる』というClickFix類似のソーシャルエンジニアリング手法、Apple正規プロセスを偽装した永続化、認証情報・ブラウザデータ・暗号資産ウォレット情報を窃取する挙動を具体的なIOC付きで新規に示している。単一ソースかつ研究者によるラボ内自己生成サンプルの再現報告であり、実際の被害規模・攻撃者帰属は不明である（推測を含む）。",
+      "recommended_actions": [
+        "EDR/プロキシ/ファイアウォールで新規判明のIOC（macspheres[.]com, getmacouscloud[.]com, render65[.]com, grove-89[.]com、C2 188.166.78.138）をブロックリストに追加する",
+        "macOS利用者向けに『トラブルシューティングのためターミナルへコマンドを貼り付けてください』という誘導はほぼ確実に悪性である旨を今週中に周知・教育する",
+        "EDRで正規プロセス名（AccountsHelper・mdworker_shared等）を偽装したプロセス起動や不審な実行ファイル配置を監視する"
+      ],
+      "monitoring": {
+        "description": "AMOS配信インフラへの通信および偽装プロセス起動の監視",
+        "splunk_spl": [
+          "index=edr OR index=proxy (dest_ip=\"188.166.78.138\" OR dest_domain IN (\"macspheres.com\",\"getmacouscloud.com\",\"render65.com\",\"grove-89.com\")) | table _time src_ip user dest"
+        ],
+        "detection_notes": "SPLはログソース名を各社EDR/プロキシ製品の実装に合わせて要調整。"
+      },
+      "references": [
+        {
+          "url": "https://isc.sans.edu/diary/33208",
+          "title": null,
+          "language": "en",
+          "source": "SANS Internet Storm Center"
+        }
+      ],
+      "info_id": "20260803-SOCR-212fb3b1"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-48449",
+        "product": "Adobe Campaign Classic (ACC) v7",
+        "reason": "low_score",
+        "reason_detail": "軸1=6点（未認証RCE+3・CVSS9以上+3）・軸2=1点（海外複数ソース報道のみ）で数値判定基準未達（軸1<8かつ参考A昇格トリガーなし）。実悪用・PoC・KEV登録いずれも未確認。CVSS10.0だが対応済みかつ実悪用シグナルなし。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-48448",
+        "product": "Adobe Campaign Classic (ACC) v7",
+        "reason": "low_score",
+        "reason_detail": "軸1=2点（CVSS7.5-8.9のみ）・軸2=0〜1点で数値判定基準未達。CVE-2026-48449と同一アドバイザリ内の複合脆弱性。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-59309",
+        "product": "VMware vCenter Server",
+        "reason": "low_score",
+        "reason_detail": "軸1=7点（認証バイパス+3・CVSS9以上+3・広く使われる製品+1）・軸2=1点（海外複数ソース報道のみ）で軸1が8点に届かず数値判定基準未達。実悪用未確認・回避策なしだがパッチ提供済み。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-59310",
+        "product": "VMware vCenter Server",
+        "reason": "low_score",
+        "reason_detail": "軸1=7点（未認証RCE+3・CVSS9以上+3・広く使われる製品+1）・軸2=1点で数値判定基準未達。CVE-2026-59309と同一アドバイザリ内の複合脆弱性。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-47876",
+        "product": "VMware ESX",
+        "reason": "low_score",
+        "reason_detail": "軸1=4点（CVSS9以上+3・広く使われる製品+1、悪用にゲストVM内管理者権限が前提のため未認証RCE加点なし）・軸2=1点で数値判定基準未達。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-41703",
+        "product": "VMware ESX / Workstation / Fusion",
+        "reason": "low_score",
+        "reason_detail": "軸1=2点（CVSS7.5-8.9のみ、ベンダー値でNVD値未確認）・軸2最小で数値判定基準未達。",
+        "reported_date": null
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": null,
+        "group_name": null,
+        "reason": "insufficient_evidence",
+        "reason_detail": "COLDCARDハードウェアウォレットRNG欠陥によるBitcoin窃取（約$88.6M）。攻撃者は「自動化ツール」使用としか記述されず、グループ名・マルウェアファミリー・C2インフラいずれも情報源で特定されていない。採用条件P〜Wのいずれにも該当しない（消費者向け製品のファームウェア実装不備であり追跡対象アクターによる脆弱性武器化ではない）。CVEトラック側でSection2トレンドとして処理済み。",
+        "reported_date": null
+      },
+      {
+        "campaign_id": null,
+        "group_name": null,
+        "reason": "insufficient_evidence",
+        "reason_detail": "Google Chrome New Tabハイジャッカー拡張機能ブロック機能。Google側の防御的製品機能告知であり脅威アクターの活動報告ではない。",
+        "reported_date": null
+      },
+      {
+        "campaign_id": null,
+        "group_name": null,
+        "reason": "low_score",
+        "reason_detail": "SANS ISC 2026-08-02 Atomic MacOS Stealer (AMOS) 感染diary。著者が2026-07-31にラボ内で生成した既知の商用インフォスティーラー（2023年から追跡）の再現解説。新規マルウェアファミリー・新規TTP・大規模IOC公開のいずれにも該当せず単一ソースの断片的報告。帰属・被害規模とも不明。Section4 SOC推奨情報側で採用。",
+        "reported_date": null
+      }
+    ],
+    "ai_attacks": [
+      {
+        "attack_id": null,
+        "title": "Phishing Campaigns Targeting AI Solutions Providers (SANS ISC)",
+        "reason": "out_of_window",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "EU AI Act GPAI条項の本格執行開始・欧州委員会Brusselsに新設チーム",
+        "reason": "low_score",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "Anthropic Claude 3組織侵害事案の週次まとめ再掲（Help Net Security）",
+        "reason": "already_reported",
+        "reported_date": "2026-08-01"
+      }
+    ],
+    "soc_recommendations": [
+      {
+        "attack_id": null,
+        "title": "Google Chrome New Tabハイジャッカー拡張機能ブロック機能",
+        "reason": "low_score",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "EU AI Act GPAI条項の本格執行開始（欧州委員会Brusselsチーム新設）",
+        "reason": "out_of_window",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "COLDCARDハードウェアウォレットRNG欠陥・Bitcoin窃取",
+        "reason": "already_reported",
+        "reported_date": null
+      }
+    ]
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 0,
+      "reference_a": 1,
+      "reference_b": 0,
+      "excluded": 6,
+      "total_processed": 7
+    },
+    "apt": {
+      "main": 0,
+      "notable": 0,
+      "excluded": 3,
+      "total_processed": 3
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 3,
+      "total_processed": 3,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 0,
+      "medium": 1,
+      "low": 0,
+      "excluded": 3,
+      "total_processed": 4,
+      "perspective_breakdown": {
+        "cve": 0,
+        "zeroday": 1,
+        "ai_attack": 0
+      }
+    }
+  }
+}
