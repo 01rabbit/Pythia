@@ -1,0 +1,137 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-04 08:20 JST
+調査期間: 2026-08-03 07:00 〜 2026-08-04 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内にパッチ未提供のゼロデイ特報事案なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. INC Ransomware（別名: INC Ransom / 国家帰属: 不明 / 帰属信頼度: 高）
+活動タイプ: 活動継続
+------------------------------------------------------------
+
+採用契機: V・W
+標的: government・it・other / Oceania・North America・Middle East・South America・Europe
+マルウェア: KNUCKLEBALL・Suo5・ORANGETAIL
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-03 19:39] INC RansomwareがSonicWall SMA1000脆弱性(CVE-2026-15409/15410)を武器化しroot権限奪取・横展開を実施していると報道
+[The Hacker News 2026-08-04 01:15] Resecurity調査でINC Ransomwareが2026年8月以降活動を加速させ「dominant threat actor」となったと確認・KNUCKLEBALL/Suo5/ORANGETAILのツールチェーンとRapid7による戦術重複確認を報道
+
+【概要】
+SonicWall Secure Mobile Access（SMA）1000シリーズの2件の脆弱性（CVE-2026-15409/CVE-2026-15410）を連鎖悪用して任意コード実行を行い、ランサムウェアグループINC Ransomwareが2026年8月初頭から活動を加速させ豪州・米国・UAE・コロンビア・スイス等の政府機関・民間企業を侵害しリークサイトに複数被害を掲載していることをResecurityが報告し、SecurityWeekおよびThe Hacker Newsが2026-08-03〜04に報道した。既報のUTA0533によるゼロデイ悪用（公開前・帰属Volexity）とは実行主体が異なる可能性が高い別キャンペーンとして計上する。
+
+攻撃の流れ（判明分）:
+1. インターネット公開のSonicWall SMA1000アプライアンスに対しCVE-2026-15409/15410を連鎖悪用しroot権限を取得
+2. Pythonスクリプト KNUCKLEBALL を用いてSuo5（HTTPプロキシ）とORANGETAIL（Javaウェブシェル）を展開
+3. 高価値認証情報・アクティブセッションDB・TOTP MFAシード設定を窃取し永続アクセスを確立
+4. 横展開の上でランサムウェア展開・リークサイトへのデータ掲載による二重恐喝を実施
+
+【新規TTP】
+・[T1190] Exploit Public-Facing Application — 原典（The Hacker News）が『chained together for arbitrary command execution』と明示するSonicWall SMA1000のCVE-2026-15409/15410連鎖悪用
+・[T1505.003] Web Shell — 原典が『custom Java web shell similar to Behinder』と明示するORANGETAILの展開
+・[T1572] Protocol Tunneling — 原典が『open-source HTTP proxy』と明示するSuo5を用いたトンネリング
+
+【IoC】
+Domain: helprans.com
+
+【推奨アクション】
+・SonicWall SMA1000アプライアンスの露出状況を確認しCVE-2026-15409/15410の緩和策・パッチ適用状況を点検の上、KNUCKLEBALL/Suo5/ORANGETAILの痕跡を調査する。
+Splunk SPL: index=* (process_name=*suo5* OR process_name=*orangetail*) | table _time host process_name parent_process_name
+Splunk SPL: index=proxy dest_domain=helprans.com | stats count by src_ip
+→ SonicWall SMA1000管理インターフェースへの想定外のリモートログイン・新規Webシェル設置の兆候を確認する。
+
+【参照】
+https://www.securityweek.com/recent-sonicwall-vulnerabilities-exploited-in-ransomware-attacks/
+https://thehackernews.com/2026/08/inc-ransomware-emerges-as-dominant.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定） / RIS-2026-KanekoNoki-Ransomware: 農業機械メーカーの金子農機が2026-07-09未明にランサムウェアと推測される（推測）攻撃を受け、サーバに保存されていた各種業務データへの不正アクセスを確認し外部ネットワークを遮断・対策本部を設置したことをScanNetSecurityが2026-08-03に報道した。攻撃者名・侵入手口は非公開で、クラウドシステム「ミルもん」への不正アクセスは現時点確認されていない。軸P・軸Qは低いが国内組織への侵害確認により参考A昇格トリガー該当のため注目動向へ採用する。 採用契機: 国内組織侵害確認（参考A昇格トリガー）。帰属信頼度: 未確定。
+推奨アクション: クラウドシステム「ミルもん」等の関連サービスへの不正アクセス有無を確認し、バックアップからの復旧計画を確認する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/03/55845.html
+
+・不明（帰属未確定） / RIS-2026-NissanChemical-UnauthorizedAccess: 化学メーカーの日産化学が2026-07-01にシステム上の不審な活動を検知し不正アクセスの発覚に至ったことを2026-07-16に公表し、ScanNetSecurityが2026-08-03に報道した。個人情報流出および顧客・取引先への影響は現時点で確認されておらず、攻撃者名・侵入手口も非公開。軸P・軸Qは低いが国内組織への侵害確認により参考A昇格トリガー該当のため注目動向へ採用する。 採用契機: 国内組織侵害確認（参考A昇格トリガー）。帰属信頼度: 未確定。
+推奨アクション: 影響範囲（個人情報・取引先データ）の調査状況を継続確認する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/03/55847.html
+
+・不明（帰属未確定） / RIS-2026-SolidAdvance-MalwareInfection: CRMパッケージ「All Gather」の開発・提供を手がけるソリッドアドバンスが、外部クラウド基盤上の特定法人向け業務システムが2026-07-11未明に外部侵害を受けマルウェアに感染した疑いがあると公表し、Security NEXTが2026-08-03に報道した。CRMパッケージ利用顧客への被害はないと説明されている。攻撃者名・侵入手口は非公開。軸P・軸Qは低いが国内組織への侵害確認により参考A昇格トリガー該当のため注目動向へ採用する。 採用契機: 国内組織侵害確認（参考A昇格トリガー）。帰属信頼度: 未確定。
+推奨アクション: 自社が同クラウド基盤・関連サービスを利用している場合は影響有無を確認する。
+参照: https://www.security-next.com/187748
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] パスキー実装の脆弱性「Pass-the-Passkey」— WebAuthnのUser Verifiedフラグ検証不備を突く新攻撃手法
+Unit 42が、Windows上で通常ユーザー権限で動作するマルウェアが指紋・PIN等の追加認証なしにパスキー保護アカウントへサインインできる新攻撃手法「Pass-the-Passkey」を報告し、Google Chromeのクラウド認証機能（Google Password Manager）に対しPass-ta-key・Silver Pass-ta-key・Golden Pass-ta-key（マスターキーを標的とする最強手法）の3つの攻撃経路を実証、リライングパーティがUser Verifiedフラグを検証しない実装ギャップがMFAを実質的に単一要素へ低下させると指摘した。The Hacker Newsが2026-08-03に追随報道した（単発シグナル・独立ソース2件）。
+参照: https://unit42.paloaltonetworks.com/passwordless-authentication-security-risks/
+
+・[トレンド記事] Android向けBTMOB RATマルウェアの地下市場エコシステム化
+Flareの研究者が地下フォーラム上の投稿を分析し、Android向けリモートアクセス型マルウェア「BTMOB RAT」が単一の開発者から、リセラー・ソースコード販売者・カスタム版制作者・複数の競合販売チャネルからなる断片化したエコシステムへと進化した実態を明らかにし、BleepingComputerが2026-08-03に報道した（単発シグナル）。特定の被害組織や新規キャンペーンの言及はなく、犯罪マルウェア市場の構造分析に留まる。
+参照: https://www.bleepingcomputer.com/news/security/inside-the-underground-business-of-btmob-rat
+
+・[トレンド記事] 偽Roblox「Xeno Executor」スクリプトランチャーによるインフォスティーラー/RAT配布
+偽のXeno Executor（Robloxスクリプト実行ツール）インストーラーが、Robloxプレイヤーに対しリモートアクセスと機微情報窃取機能を持つマルウェアを感染させていることをBleepingComputerが2026-08-03に報道した（単発シグナル）。特定の脅威アクター名やAPT級の帰属はなく、ゲーマー層を狙った一般的ななりすましツール配布の事例。
+参照: https://www.bleepingcomputer.com/news/security/fake-roblox-xeno-script-launcher-pushes-infostealer-rat-malware
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: N-central運用組織はCloudflaredトンネル偽装による侵害有無の確認を72時間以内に完了すべき
+Tier: 1
+確度: 低
+観測出口クラス: E3
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: The Hacker News/BleepingComputer/SecurityWeek/Dark Reading 2026-08-03〜04がN-able N-central CVE-2026-18577の実悪用とCISAによるKEV初回追加(2026-08-03)を確認
+  過去パターン: 同様のRMM/管理コンソール認証バイパス事案（SimpleHelp CVE-2026-48558等）では、KEV登録前後にJPCERT/CC・IPAが国内利用組織向けに注意喚起を発行した実績がある
+  脅威情報: Huntressが単一パートナーアカウント配下9組織での限定的侵害を確認、Cloudflareトンネルを用いた永続化パターンが確立済み
+  確度アンカー: EPSS percentile 0.7132（2026-08-03算出）/ KEV登録: あり / SSVC決定: 不明 / Automatable: 不明
+推定部分: 推定 — Huntressの観測は単一パートナー配下9組織に限定されるが、CISAのKEV追加を契機にJPCERT/CC等が国内向け注意喚起を発行する可能性がある。ただし対象がRMM運用組織に限定されるため必ず発行されるとは限らない。
+先回り監視: N-central管理サーバ上でCloudflaredという名前のWindowsサービスが予期せず存在する場合、svchost.exeを偽装したプロセスの生成、またはMullvad/NordVPN等のVPN出口ノードからのN-central管理コンソールへの管理者ログインをEDR/SIEMで検知した場合は本予報が現実化している可能性が高い。
+的中判定: JPCERT/CCまたはIPAがCVE-2026-18577（N-able N-central認証バイパス）に関する注意喚起を72時間以内（2026-08-07 07:00 JSTまで）に新規発行した場合を的中とする。CISA KEVの再登録や『実悪用拡大』という報道のみでは的中としない。
+
+・予報2: SonicWall SMA1000運用組織はINC Ransomwareの侵害チェーン検知を72時間以内に強化すべき
+Tier: 1
+確度: 低
+観測出口クラス: E3
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: SecurityWeek/The Hacker News 2026-08-03〜04がINC RansomwareによるSonicWall SMA1000 CVE-2026-15409/15410の武器化と豪州・米国等への侵害を確認
+  過去パターン: 同様のエッジデバイス脆弱性の武器化キャンペーン（FortiBleed等）ではJPCERT/CCが国内利用組織向けに注意喚起を発行した実績がある
+  脅威情報: Resecurityの分析によりINC Ransomwareが2026年8月以降「dominant threat actor」化しKNUCKLEBALL/Suo5/ORANGETAILのツールチェーンを確立していることが確認されている
+  確度アンカー: EPSS percentile 不明 / KEV登録: あり（2026-07-14登録） / SSVC決定: 不明 / Automatable: 不明
+推定部分: 推定 — INC Ransomwareの活動加速はResecurityの報告に基づくが、JPCERT/CC等が国内向けに新規注意喚起を発行するかは対象製品の国内導入規模に依存し確認できていない。（推測）KEV登録済み脆弱性の武器化進展は過去パターンであり、個別環境での攻撃加速は確認されていない。
+先回り監視: SonicWall SMA1000管理インターフェースへの想定外の認証成功、KNUCKLEBALL/Suo5/ORANGETAILに一致するプロセス生成、またはhelprans.comへの通信をEDR/SIEMで検知した場合は本予報が現実化している可能性が高い。
+的中判定: JPCERT/CCまたはIPAがCVE-2026-15409/CVE-2026-15410（SonicWall SMA1000）またはINC Ransomwareによる悪用キャンペーンに関する新規注意喚起を72時間以内（2026-08-07 07:00 JSTまで）に発行した場合を的中とする。既存アドバイザリの更新のみで新規事実を伴わない場合、およびCISA KEVの再登録は的中としない。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外APTサマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・不明（Chinese-speaking、帰属信頼度: 低） / RIS-2026-GHOSTBLADE-DarkSwordiOS → 軸P6/軸Q5・国内昇格トリガー該当なしのため判定順4により除外
+・ExfilSquad（データ恐喝グループ） / ExfilSquad-2026-PNLDBreach → 軸P5/軸Q3・英国単一セクター限定で国内昇格トリガー該当なしのため判定順4により除外
+・不明（DOUBLECUP・ローダーアズアサービス運営者、ロシア系） / RIS-2026-DOUBLECUP-ClickFixLoaderService → 軸P6/軸Q3・国内昇格トリガー該当なしのため判定順4により除外
+・不明（Chinese-speaking、産業スパイ目的の疑い） / RIS-2026-AlibabaNpmSupplyChain → 軸P6/軸Q1・中国語話者環境の開発者に標的限定で国内昇格トリガー該当なしのため判定順4により除外
+・CyberAv3ngers（Bauxite/Hydro Kitten） / CyberAv3ngers-2026-ICSPivot → 本日SecurityWeekが具体的州名（ミシガン・サウスダコタ・ジョージア等）を明示したが既報「最大7州規模」の範囲内であり新規の技術的詳細・IOCの追加はない
+・Storm-2945（Midnight Blizzardサブクラスター） / Storm2945-2026-CaptiveCrunch → 本日SecurityWeekが親クラスター『Midnight Blizzard』名義で同一事案を再報道したのみで新規技術情報の追加なし
+
+本日の集計:
+APT — 本編1件 / 注目動向3件 / 除外6件
