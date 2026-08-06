@@ -1,0 +1,184 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-06 07:45 JST
+調査期間: 2026-08-05 07:00 〜 2026-08-06 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-9198 / Langflow
+対象: 1.10.1未満のデフォルト構成
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[既報（2026-08-05分レポート） 2026-08-05] CISA KEV登録・実悪用確認により参考B初報（国内報道未確認のため軸2=1点）
+[CISA KEV Catalog 2026-08-04] コード注入によるリモートコード実行の脆弱性がKEVカタログへ新規追加され実悪用が確認された
+[BleepingComputer 2026-08-06] CISAがLangflow/Apache Tomcat/N-central計3件の脆弱性の実悪用を警告と報道
+[Security NEXT 2026-08-05] 「Langflow」「Tomcat」など脆弱性3件の悪用について米当局の注意喚起を国内向けに報道
+
+【概要】
+オープンソースのAIアプリ開発プラットフォームLangflowのデフォルト構成に存在するコード注入の脆弱性で、未認証の遠隔攻撃者による任意コード実行を許す。CISAが2026-08-04付でKEVカタログへ追加し実悪用を確認（2026-08-05分レポートで参考B初報・国内報道未確認）。本日、Security NEXT記事（188342・前日レポート窓外のため未検知）を新規検知し、Langflow/Tomcat/N-central計3件の悪用について米当局の注意喚起が国内でも報道されていたことを確認。国内報道の確認により軸2が昇格し参考Bから本編へ再分類した。パッチはバージョン1.10.1で提供済みだが、デフォルト構成のまま外部露出させた環境が引き続き標的となっている。
+
+攻撃の流れ:
+1. インターネットに露出したLangflowインスタンスの検出
+2. 未認証のコード注入エンドポイントを悪用し任意コードを実行
+3. サーバ権限の奪取・後続マルウェア配置や横展開の起点化
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM/Splunk] Langflowサーバの外部公開有無とアクセスログ、コード実行を伴う異常プロセス生成を監視する
+Splunk SPL: index=web_proxy dest_port=7860 OR uri_path="*langflow*" | stats count by src_ip dest_ip uri_path
+Splunk SPL: index=wineventlog OR index=linux_secure EventCode=4688 OR syscall=execve ParentImage="*langflow*" | table _time ParentImage NewProcessName CommandLine
+→ Langflowの管理外・非パッチ済みインスタンスの外部露出有無を資産棚卸しで確認し、想定外の子プロセス生成を優先確認する
+
+【参照】
+https://www.security-next.com/188342
+https://www.bleepingcomputer.com/news/security/cisa-warns-of-hackers-exploiting-langflow-n-central-apache-tomcat-flaws
+https://thehackernews.com/2026/08/cisa-flags-langflow-rce-tomcat-and-n.html
+https://www.securityweek.com/cisa-warns-of-exploited-langflow-n-central-and-tomcat-vulnerabilities
+------------------------------------------------------------
+2. CVE-2026-34486 / Apache Tomcat
+対象: 11.0.21未満 / 10.1.54未満 / 9.0.117未満
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 7.5 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[既報（2026-08-05分レポート） 2026-08-05] CISA KEV登録・実悪用確認により参考B初報（国内報道未確認のため軸2=1点）
+[CISA KEV Catalog 2026-08-04] クラスタノード間通信のEncryptInterceptorを回避し機微データが平文化される脆弱性がKEVカタログへ追加
+[Unit 42 / The Hacker News 2026-08-05] 中国語話者系脅威アクター（knaithe/KnYuan、DeepSeek駆動の自律攻撃基盤運用で既報）が本CVEを含む複数CVEを武器化し460台超を標的化と関連付け
+[Security NEXT 2026-08-05] 「Langflow」「Tomcat」など脆弱性3件の悪用について米当局の注意喚起を国内向けに報道
+
+【概要】
+Apache Tomcatのクラスタノード間通信で機微データの暗号化（EncryptInterceptor）が意図せずバイパスされる脆弱性。CISAが2026-08-04付でKEVカタログへ追加し実悪用を確認（2026-08-05分レポートで参考B初報・国内報道未確認）。本日、Security NEXT記事（188342）による国内報道の確認に加え、既報の中国語話者系脅威アクター「knaithe/KnYuan」（DeepSeekを自律推論エンジンとするAI駆動攻撃基盤、reported-ai-attacks.md AI-2026-07-31-001既報）が本脆弱性を含む複数CVEを武器化し約460標的へ攻撃試行したことがUnit 42の分析で関連付けられたことを確認し、参考Bから本編へ再分類した。
+
+攻撃の流れ:
+1. クラスタ構成のTomcatノード間通信を対象にEncryptInterceptorの暗号化バイパスを実行
+2. 平文化された機微データ（設定情報等）を取得
+3. 取得情報を用いた後続の侵害・横展開
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM/Splunk] Tomcatクラスタ間通信（ChannelInterceptor）の暗号化設定状況とクラスタポートへの異常アクセスを監視する
+Splunk SPL: index=network dest_port IN (4000,45564,4001) | stats count by src_ip dest_ip | where count > 20
+Splunk SPL: index=app_logs sourcetype=tomcat "ChannelInterceptor" OR "EncryptInterceptor" | table _time host message
+→ クラスタ間通信ポートへの想定外送信元からのアクセスと、EncryptInterceptor設定の適用漏れがないかを優先確認する
+
+【参照】
+https://www.security-next.com/188342
+https://www.bleepingcomputer.com/news/security/cisa-warns-of-hackers-exploiting-langflow-n-central-apache-tomcat-flaws
+https://www.securityweek.com/cisa-warns-of-exploited-langflow-n-central-and-tomcat-vulnerabilities
+------------------------------------------------------------
+3. CVE-2026-18556 / N-able N-central
+対象: パッチ未適用の全バージョン（関連CVE-2026-18577は18556の不完全な修正に対する追加パッチ）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.2 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-08-04] 代替パスまたはチャネルを用いた認証回避の脆弱性がKEVカタログへ追加。顧客環境での侵害を契機に追加された
+[BleepingComputer 2026-08-06] N-centralを含む3件の脆弱性の実悪用をCISAが警告と報道。初回修正が不完全でCVE-2026-18577（追加パッチ）が発行されたことも判明
+[Security NEXT / JVN iPedia 2026-08-05] 国内向けにJVN iPediaへ本脆弱性が新着登録、Security NEXTが米当局注意喚起として報道
+
+【概要】
+RMM（遠隔監視管理）製品N-able N-centralの認証回避の脆弱性で、顧客環境への侵害を契機にCISAがKEVカタログへ追加し実悪用を確認（2026-08-05分レポートでSecurity NEXT記事188270/188277の国内報道確認により初報時点から本編採用）。初回の修正（本CVE-2026-18556）が不完全であったため、追加パッチとしてCVE-2026-18577（同CVSS8.2）が発行されている。本日はBleepingComputer/The Hacker Newsが本CVEを含む3件（Langflow/Tomcat/N-central）の実悪用をCISAが警告したと改めて報道したが、新規の技術的事実の追加はない（既報の枠内の継続報道）。MSP（マネージドサービスプロバイダ）が多数の顧客環境を一元管理する製品であるため、侵害時のサプライチェーン的波及リスクが高い。
+
+攻撃の流れ:
+1. 代替パスまたはチャネルを用いた認証チェックの回避
+2. N-central管理コンソールへの不正アクセス
+3. MSPが管理する複数顧客環境への波及リスク
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM/Splunk] N-central管理コンソールへの認証ログ・想定外の管理操作を監視する
+Splunk SPL: index=ncentral_logs (action=login OR action=admin_change) | stats count by src_ip user result | where result="success" AND src_ip!="known_admin_range"
+Splunk SPL: index=web_proxy uri_path="*n-central*" OR uri_path="*ncentral*" | stats count by src_ip uri_path status
+→ MSP管理コンソールへの深夜・休日帯の管理操作や未知の管理端末からのログインを優先確認する
+
+【参照】
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-026953.html
+https://www.security-next.com/188342
+https://www.bleepingcomputer.com/news/security/cisa-warns-of-hackers-exploiting-langflow-n-central-apache-tomcat-flaws
+https://thehackernews.com/2026/08/cisa-adds-exploited-n-able-n-central.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: JPCERT/CC注意喚起
+
+・CVE-2026-66066 / Ruby on Rails Active Storage
+CVSS: 9.5 状態: PoC公開
+
+【24時間以内の変化】
+[JPCERT/CC 2026-08-05] Weekly Reportで本脆弱性を継続告知。JPCERT/CC注意喚起（at260021）も更新版が公開中
+[ScanNetSecurity 2026-08-05] GMOサイバーセキュリティbyイエラエが「サイバー攻撃ネットde診断ASM」でRails利用検出顧客への個別案内を実施と報道
+[Rapid7 / Akamai 2026-08-05] 公開PoCが登場したことを受け技術解析・検知策を追加公開
+
+【概要】
+通称「KindaRails2Shell」。Ruby on RailsのActive Storageが画像処理にlibvipsを使う構成（Rails 7.0以降のデフォルト）で、未認証の攻撃者がサーバ上の任意ファイルを読み取れる脆弱性。読み取ったシークレット情報を用いてリモートコード実行や接続先システムへのアクセスに繋がる可能性がある。Railsは全世界で50万サイト超が稼働する広く使われるフレームワークであり、JPCERT/CCが注意喚起を発行、国内ベンダーも検出済み顧客への個別案内を行うなど、国内でも高い関心を集めている。公開PoCが既に出回っており実悪用確認は本日時点でないが、悪用容易性が高いため緊急対応が推奨される。 軸1スコアは6点（8点未満）だがJPCERT/CC注意喚起（参考A昇格トリガー）に該当するため参考Aへ分類する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM/Splunk] Active Storageの画像バリアントエンドポイントへの異常リクエストとRailsプロセスからの想定外ファイルアクセスを監視する
+Splunk SPL: index=web_access uri_path="*/rails/active_storage/*" (uri_path="*variant*" OR uri_path="*representation*") | stats count by src_ip uri_path status
+Splunk SPL: index=linux_secure OR index=app_logs process_name="vips*" OR process_name="ruby" | search (file_path="/etc/*" OR file_path="*.env" OR file_path="*secret*") | table _time host process_name file_path
+→ libvipsプロセスからの機密ファイルパスへのアクセス試行と、想定外パラメータを含む画像処理リクエストを優先確認する
+
+【参照】
+https://www.jpcert.or.jp/at/2026/at260021.html
+https://scan.netsecurity.ne.jp/article/2026/08/05/55860.html
+https://www.rapid7.com/blog/post/etr-kindarails2shell-cve-2026-66066-critical-arbitrary-file-read-and-possible-remote-code-execution-in-ruby-on-rails/
+https://www.akamai.com/blog/security-research/rails-active-storage-rce-cve-2026-66066
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [Ruby on RailsのActive Storageにおけるリモートコード実行につながる脆弱性（CVE-2026-66066）に関する注意喚起（更新）] https://www.jpcert.or.jp/at/2026/at260021.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-63077 / JetBrains TeamCity On-Premises
+CVSS: 9.8
+JetBrains TeamCity On-Premisesのエージェントポーリングプロトコルにおける信頼できないデータのデシリアライゼーションの脆弱性。未認証の遠隔攻撃者がTeamCityサーバプロセスの権限でOSコマンドを実行できる。パッチは2026-07-27に提供済みだが、CISAは本日（2026-08-05）付でKEVカタログへ新規追加し実悪用を確認した。CI/CDパイプラインの認証情報窃取・ビルド改ざんに直結するため優先度が高い。
+IoC: 確認されず
+
+監視: [SIEM/Splunk] TeamCityサーバへのエージェントポーリング関連エンドポイントへの未登録エージェントからのアクセスを監視する
+Splunk SPL: index=web_access uri_path="*/app/rest/agents*" OR uri_path="*XmlRpc*" | stats count by src_ip uri_path status | where status>=200
+Splunk SPL: index=wineventlog OR index=linux_secure EventCode=4688 OR syscall=execve ParentImage="*TeamCity*" | table _time ParentImage NewProcessName CommandLine
+→ 未登録のビルドエージェントIPからのポーリング通信や、TeamCityサーバプロセスからの想定外の子プロセス生成を優先確認する
+
+参照: https://thehackernews.com/2026/07/critical-teamcity-flaw-could-let.html
+参照: https://blog.jetbrains.com/teamcity/2026/07/cve-2026-63077/
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[CVE除外サマリー]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-59774 (Gitea) → CVSS9.8（Org-Mode markup経由の未認証任意ファイル読み取り）だが独立したPoC公開・実悪用報告・KEV登録のいずれも確認されず（軸1: 4点 / 軸2: 1点）。継続監視対象
+・CVE-2026-64531 (Linux Kernel (Open vSwitch / OVSwrap)) → CVSS7.8・公開PoCありだがローカル権限昇格（非特権ユーザ名前空間が必要）でリモート実悪用の報告なし（軸1: 5点 / 軸2: 1点）
+・CVE-2026-58073 (Veeam Service Provider Console) → CVSS9.5（未認証エージェント認証情報なりすまし）だがPoC公開・実悪用・KEV登録のいずれも未確認（軸1: 7点 / 軸2: 1点）。関連CVE-2026-58072(RCE)/58067/58071も同一パッチで対応済み
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編3件 / 参考A1件 / 参考B1件 / 除外3件
+
+========================================
