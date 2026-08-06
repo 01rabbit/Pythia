@@ -1,0 +1,195 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-05 07:33 JST
+調査期間: 2026-08-04 07:00 〜 2026-08-05 07:00 JST
+========================================
+
+
+Section 1: AI攻撃動向
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-08-04 07:00 〜 2026-08-05 07:00 JST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. ChainDrop / Keyv npmワームがAIコーディングツール（Claude Code・VS Code）のフック設定を悪用して開発者環境に永続化
+カテゴリ: C6（C6） / 攻撃者種別: criminal
+------------------------------------------------------------
+
+採用契機: A-Q / A-W
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: LLM03
+対象: it / Global / npm レジストリ / Claude Code (.claude/settings.json) / VS Code (.vscode/tasks.json) / GitHub Actions
+被害規模: 侵害パッケージ 868〜1,684バージョン（調査機関により異なる）／月間合計約20億ダウンロード／9組織の名前空間に波及
+バースト判定: 6件（burst_exceeded）
+
+【24時間以内（または期間内）の変化】
+[The Hacker News 2026-08-04] npmワームが侵害リポジトリ内の .claude/settings.json（Claude Code）および .vscode/tasks.json（VS Code）へフックを設置し、開発者がリポジトリを開いた時点でペイロードを実行させる経路を用意していることを確認
+[BleepingComputer 2026-08-05] 同キャンペーンを「ChainDrop」として報道。窃取対象にAI開発ワークフローで使われるクラウド・CI/CD認証情報が広く含まれることを確認
+
+【概要】
+2026-08-04に発生したnpmサプライチェーン攻撃（ChainDrop／Keyvワーム）は、従来型の認証情報窃取に加えて、AIコーディングエージェントの設定ファイルを永続化経路として悪用した点でAI攻撃の観点から重要である。マルウェアは侵害したリポジトリ内に .claude/settings.json（Claude Code）および .vscode/tasks.json（VS Code）のフックを設置し、開発者が当該リポジトリを開いた時点でペイロードが実行される経路を用意する。The Hacker Newsは、これらのフックが利用者側の信頼設定（workspace trust）に依存し、VS Codeは既定で非信頼ワークスペースの自動タスクをブロックし、Claude Codeも同様のワークスペース信頼制御を適用すると明記している。すなわち本手法は信頼済みワークスペースとして開かれた場合にのみ成立する条件付きの経路であり、無条件のゼロクリック実行ではない。窃取対象はGitHub PAT・npmトークン・AWS/Azure/GCP認証情報・Kubernetesシークレット・Vaultトークン等で、AI開発ワークフローが依存するクラウド資格情報が広く含まれる。攻撃者・国家帰属はいずれのソースからも提示されていない。
+
+攻撃の流れ:
+1. Keyvメンテナのアカウント侵害とGitHub Actionsワークフロー悪用により、汚染されたnpmパッケージが公開される
+2. 開発者が npm install を実行した時点でペイロードが起動し、開発・クラウド・CI/CDの各種認証情報を窃取する
+3. 侵害リポジトリに .claude/settings.json および .vscode/tasks.json のフックを設置し、AIコーディングエージェント／エディタがリポジトリを開いた際の再実行経路を確保する（ワークスペース信頼が付与されている場合に成立）
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+※ 本事案はAIモデル自体への攻撃ではなくAI開発ツールの設定ファイルを永続化に悪用するものであり、MITRE ATLASの既存テクニックへ確実に対応付けられる記述が情報源にないため、ATLAS IDの付与は見送った（ATLAS: 該当タクティクスなし／調査中）。
+
+【IoC / 検知シグナル】
+URL/Domain: npm-cache[.]com
+検知シグナル: リポジトリ内の .claude/settings.json・.vscode/tasks.json に対する想定外のフック追加、ビルド環境から npm-cache[.]com への外向き通信
+
+【監視・対策ポイント】
+・[ログソース / SIEM（Splunk等）] AIコーディングエージェントの設定ファイル改変と、開発端末からの想定外通信を監視する
+Splunk SPL: index=* sourcetype=github:audit action="git.push" file_path IN (".claude/settings.json",".vscode/tasks.json") | table _time repo actor file_path
+Splunk SPL: index=* sourcetype=edr:filemod file_path IN ("*/.claude/settings.json","*/.vscode/tasks.json") NOT process_name IN (code.exe,claude) | table _time host user process_name file_path
+→ 開発者本人による正規の設定変更と区別するため、変更を行ったプロセスがエディタ／エージェント本体かどうか、およびnpm installと時間的に近接しているかを確認する。
+・エディタ・AIエージェントのワークスペース信頼を既定で無効化し、外部から取得したリポジトリを信頼済みとして開かない運用にする
+・リポジトリ内フック設定ファイルをコードレビュー必須の対象に加える
+
+【参照】
+https://thehackernews.com/2026/08/keyv-linked-npm-worm-poisons-hundreds.html
+https://www.bleepingcomputer.com/news/security/massive-chaindrop-npm-supply-chain-attack-infects-hundreds-of-packages
+
+------------------------------------------------------------
+2. Unit 42「NOVA」による自律的ゼロデイ発見の工業化: 2か月でOSS 3,915プロジェクトから14,090件の未報告脆弱性を確認
+カテゴリ: A5（A5） / 攻撃者種別: researcher
+------------------------------------------------------------
+
+採用契機: A-P / A-U
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当項目なし
+対象: it / Global / Go・JavaScript/TypeScript・PHP・C/C++・Java/JVM 他のOSSエコシステム
+被害規模: 3,915 OSSプロジェクトから14,090件の確認済み脆弱性（うち99.4%が未報告・39.7%がCVSS 4.0でHigh以上）
+バースト判定: 1件（below_threshold）
+
+【24時間以内（または期間内）の変化】
+[Unit 42 (Palo Alto Networks) 2026-08-04] 自律型脆弱性発見システム「NOVA」により2か月で3,915のOSSプロジェクトを解析し14,090件の確認済み脆弱性を発見したと公表。うち既存公開情報と一致したのは85件のみで99.4%が未報告、39.7%がCVSS 4.0でHigh以上
+
+【概要】
+Palo Alto Networks Unit 42が2026-08-04、フロンティアAIを用いた自律型脆弱性発見システム「NOVA」の成果を公表した。NOVAはコードレビュー・脆弱性特定・PoC作成・クリーン環境での決定論的検証・パッチ生成・開示レポート作成までを、最終レビューまで人間の介在なしに実行するパイプラインである。2か月間で6つのエコシステムにまたがる3,915のOSSプロジェクトを解析し、14,090件の確認済み脆弱性を発見した（Go 3,281件／JavaScript・TypeScript 2,836件／PHP 2,740件／C/C++ 1,925件／Java・JVM 1,784件／その他1,524件）。既存の公開情報と一致したのは14,090件中85件のみで、99.4%が未報告のものであった。CVSS 4.0でHigh以上は39.7%。Unit 42は脆弱性クリアリングハウスのLightwellおよびAkritesと連携して開発者へ責任ある開示を行っているとしている。防御側にとっての含意としてUnit 42は「パッチ適用の猶予期間が消滅した（the patch window has collapsed）」と表現している。本件は研究側の成果公表であり攻撃キャンペーンではないが、同等の能力が攻撃側に渡った場合の脅威モデル変化を定量的に示すデータであるため、AI武器化（カテゴリA）として本編に採用する。なお「攻撃側が既にこの規模で運用している」という事実は本情報源からは確認できない（推測を含む記述は行わない）。
+
+攻撃の流れ:
+1. 対象OSSプロジェクトのコードを自律エージェントが解析し脆弱性候補を特定する
+2. PoCを自動生成し、クリーンな検証環境で決定論的に再現可否を判定する
+3. 再現した脆弱性についてパッチ案と開示レポートを自動生成し、人間の最終レビューを経て開示する
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+※ ATLAS: 該当タクティクスなし／調査中（研究側の脆弱性発見パイプラインであり、AIシステムへの攻撃テクニックには該当しない）
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+検知シグナル: 本件は研究成果の公表であり検知対象となるIoCは存在しない
+
+【監視・対策ポイント】
+・[ログソース / SIEM（Splunk等）] OSS依存関係のパッチ適用リードタイムを短縮するための体制確認
+Splunk SPL: index=* sourcetype=sca:scan severity IN (critical,high) | stats dc(component) as vulnerable_components by application | sort - vulnerable_components
+→ 検知というより、SCA（Software Composition Analysis）の実行頻度とパッチ適用SLAが「開示から数日」の想定に耐えるかを点検する用途で用いる。
+・OSS依存関係の棚卸しとSCAの実行頻度を見直し、パッチ適用SLAを短縮する
+・仮想パッチ・WAFシグネチャ等、正式パッチ提供前の暫定防御手段を整備する
+
+【参照】
+https://unit42.paloaltonetworks.com/frontier-ai-vulnerability-burst
+
+------------------------------------------------------------
+3. Google ADK: 公開GitHub Issue経由のプロンプトインジェクションで特権エージェントを起動しシークレットを露出（エージェント間ハンドオフ悪用）
+カテゴリ: B1（B1） / 攻撃者種別: researcher
+------------------------------------------------------------
+
+採用契機: A-P / A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: LLM01 / AG01
+対象: it / Global / Google Agent Development Kit (ADK) Python リポジトリ / GitHub Actions / Vertex AI
+被害規模: 露出しえた資格情報: adk-bot のPAT・Google APIキー・Vertex AIアクセス権を持つGoogle Cloudサービスアカウント。実悪用・侵害リリースは確認されていない
+バースト判定: 2件（below_threshold）
+
+【24時間以内（または期間内）の変化】
+[The Hacker News 2026-08-04] Pillar Securityの調査を受け、GoogleがADK Pythonリポジトリから3件のAIエージェントワークフロー（issue-analyze.yml・issue-fix.yml・pr-analyze.yml）を削除したと報道
+[SecurityWeek 2026-08-04] 低権限のADKエージェントへの細工プロンプトが、特権エージェントへ悪意あるハンドオフコメントを渡す経路になりうると報道
+
+【概要】
+Pillar Securityが、GoogleのAgent Development Kit（ADK）Pythonリポジトリに存在した3件のCI/CDワークフローが、信頼できない外部入力を過大な権限とともに処理していたことを発見した。攻撃連鎖は次のとおりである。公開GitHub Issueの本文にプロンプトインジェクションを仕込むと、Issueをトリアージする低権限エージェントが操作され、adk-bot アカウント名義で /adk-issue-fix コマンドをコメント投稿する。特権ワークフロー側の認可ゲートは「誰がコマンドを投稿したか」のみを検査し「その信頼済みアカウントが外部から操作された結果ではないか」を検査していなかったため、adk-bot が collaborator であることをもってゲートが通過してしまう。その結果、特権エージェントがペイロードを書き込みGitフック経由でコードを実行でき、CIランナーへの任意アクセスが成立する。露出しえた資格情報はadk-botのPAT、Google APIキー、Vertex AIアクセス権を持つGoogle Cloudサービスアカウントである。Googleは2026-06-09付のパッチで3件のワークフローをすべて削除し、2026-07-02に削除が確認され2026-07-21に正式に認知した。CVEは採番されていない。Pillar Security自身が、研究者による実証攻撃であり実環境での悪用やADKリリースの侵害は確認されていないと明記している。これは既報のGitLost（2026-07-08・公開Issue経由の非公開リポジトリ漏洩）と同型のconfused deputy構造がGoogle公式のエージェントフレームワークで成立した事例である。
+
+攻撃の流れ:
+1. 攻撃者が公開GitHub Issueの本文に、トリアージエージェント向けの隠蔽指示（プロンプトインジェクション）を混入させる
+2. 低権限のトリアージエージェントが操作され、信頼済みアカウント adk-bot 名義で /adk-issue-fix コマンドをコメント投稿する
+3. 特権ワークフローの認可ゲートが投稿者アカウントのみを検査するため通過し、特権のコード修正エージェントが起動する
+4. 特権エージェントがペイロードを書き込みGitフック経由でコードを実行、CIランナー上でadk-botのPAT・Google APIキー・Vertex AI権限付きサービスアカウント資格情報へアクセスしうる状態となる
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+※ ATLAS: 該当タクティクスなし／調査中（情報源が特定のATLASテクニックIDを明示していないため付与を見送った）
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+検知シグナル: 公開Issue本文に含まれるエージェント向け命令文（/adk-issue-fix 等のスラッシュコマンド文字列）、ボットアカウント名義での想定外のコマンドコメント投稿
+
+【監視・対策ポイント】
+・[ログソース / SIEM（Splunk等）] エージェント駆動のCI/CDワークフローにおけるボットアカウント名義のコマンド投稿を監視する
+Splunk SPL: index=* sourcetype=github:audit action="issue_comment.create" actor="*-bot" comment="/*" | table _time repo actor issue_number comment
+Splunk SPL: index=* sourcetype=github:actions workflow_name IN ("issue-fix","pr-analyze","issue-analyze") conclusion=success | stats count by repo triggering_actor
+→ ボットアカウントが投稿したスラッシュコマンドのうち、直前に外部コントリビュータのIssue/コメントが存在するものを優先確認する。メンテナが手動で投稿したコマンドとはactorの種別で切り分ける。
+・エージェント駆動ワークフローの認可ゲートを『投稿者アカウント』ではなく『元の入力の信頼性』で判定するよう再設計する
+・特権ワークフローへ渡すGITHUB_TOKEN・クラウドサービスアカウントの権限を最小化し、Vertex AI等の実行権限を分離する
+
+【参照】
+https://thehackernews.com/2026/08/google-deletes-3-adk-ai-workflows-after.html
+https://www.securityweek.com/gemini-agent-to-agent-attack-exposed-secrets-enabled-pull-request-tampering
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸X高・軸Y低の該当事象なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・AI議事録ツール tl;dv のFirebase設定不備で他利用者の会議情報を照会・通話参加が可能
+カテゴリ: C4（C4） 採用契機: A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当項目なし
+Dark Readingが2026-08-04、AI会議議事録ツール tl;dv においてGoogle Firebaseの設定不備が存在し、同サービスの利用者が他の任意の利用者の会議情報を照会でき、さらに通話へ参加しうる状態であったと報じた。対象には政府機関・企業のビデオ会議が含まれるとされる。AI議事録ツールは会議の音声・映像・文字起こしという極めて機微な情報を集約するうえ、業務部門が情報システム部門を経由せず個別に導入するシャドーIT化が起きやすいカテゴリであり、国内組織でも同種サービスの利用が広がっている。研究者による指摘段階であり実被害の確認はないため軸Xは3点にとどまるが、政府機関・企業への影響という軸Yの実害シグナルにより参考Aとして採用する。
+対策: AI議事録ツールの利用状況を棚卸しし、機微な会議での利用可否をポリシー化する 会議プラットフォーム側でボット参加の承認を必須化する
+
+監視: [ログソース / SIEM] AI議事録・文字起こしサービスへの業務端末からのアクセスを棚卸しする
+検知SPL: index=* sourcetype=proxy dest_host IN ("tldv.io","*.tldv.io") | stats count dc(user) as users by dest_host
+→ 利用実態の把握が目的であり、遮断の要否は業務部門と合意の上で判断する。会議URLの外部サービスへの自動連携設定も併せて確認する。
+
+参照: https://www.darkreading.com/application-security/ai-notetaker-spy-government-corporate-video-calls
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日のAI攻撃動向は、開発者環境とAIエージェント基盤という2つの攻撃面に集中した。npmサプライチェーン攻撃ChainDrop／KeyvワームはAIコーディングツール（Claude Code・VS Code）の設定フックを永続化経路として悪用し、同時にクラウド・CI/CD認証情報を広範に窃取している（バースト検出閾値超過・6ソース）。GoogleのAgent Development Kitでは公開GitHub Issue経由のプロンプトインジェクションから特権エージェントを起動しVertex AI権限付きサービスアカウント資格情報を露出しうる連鎖がPillar Securityにより実証され、Googleが該当ワークフロー3件を削除した。Unit 42は自律型脆弱性発見システムNOVAが2か月で14,090件の未報告脆弱性を確認したと公表し、防御側のパッチ適用猶予が構造的に縮小していることを定量的に示した。いずれも共通して「AIが組み込まれた開発ワークフローの信頼境界」が攻撃対象となっている点が本日の特徴である。
+
+本日の集計:
+AI攻撃 — 本編3件 / 参考A1件 / 参考B0件 / 除外2件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）1件 / C（インフラ）2件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外AI攻撃】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・電子メールAIアシスタントの武器化によるアカウント乗っ取り実証（SecurityWeek 2026-08-04） → 軸X=3点（研究者による再現実証+3）／軸Y=1点（潜在的リスクのみ・実被害および具体的な影響組織の記述なし+1）。軸X6点未満かつ軸Y4点未満のため除外・継続監視対象
+・When Vibe Hacking Turns AI into the Junior Hacker（The Hacker News 2026-08-04） → 攻撃者の高度化と技術的専門性の関係を論じた分析記事であり、新規の実証データ・インシデント・統計を含まない。pipeline-soc-recommend.md の除外ルール『一般的なセキュリティ啓発記事・調査レポートのプレスリリース（新データなし）』に該当するため除外
+
+========================================

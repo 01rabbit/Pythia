@@ -1,0 +1,337 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-05 07:33 JST
+調査期間: 2026-08-04 07:00 〜 2026-08-05 07:00 JST
+========================================
+
+
+Section 3: 製品別CVE
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に Section 3 帰属のゼロデイ事象なし。本日の実悪用確認CVEはいずれもパッチ提供済み）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-18556 / N-central（N-able）
+対象: N-central 2026.1 以前の全ビルド（NVD記載: through 2026.1）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: CVSSv4 8.2 / CVSSv3 7.4 (High)
+状態: KEV登録済み（追加日 2026-08-04） / 実悪用確認
+EPSS: score 0.00492 / percentile 0.39605（算出日 2026-08-05）
+FCEB対応期限: 2026-08-07
+CWE: CWE-288
+対処: 修正版 2026.3.1.7（2026.3 Hotfix 1） へ更新
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-08-04] CISA KEVへ新規追加（dateAdded=2026-08-04・FCEB期限2026-08-07・knownRansomwareCampaignUse=Unknown）。先行して2026-08-03に追加されたCVE-2026-18577に続き、その修正不備の原因となった本体側の脆弱性も実悪用確認済みとして収載された
+[Security NEXT 2026-08-04] 「N-central」の脆弱性とホットフィクス公開・すでに悪用ありと国内向けに報道（記事188270）
+[Security NEXT 2026-08-04] 米当局によるN-central脆弱性悪用への注意喚起を国内向けに報道し、CVE-2026-18556がCVE-2026-18577の修正不備の原因である旨を明記（記事188277）
+
+【概要】
+N-able N-centralの認証バイパス脆弱性CVE-2026-18556（CWE-288・別経路/別チャネルによる認証バイパス・CVSSv4 8.2／CVSSv3.1 7.4）が2026-08-04付でCISA KEVカタログへ新規追加されFCEB期限2026-08-07が設定された。本脆弱性は2026-08-03にKEV収載された CVE-2026-18577 の直接の前提であり、CVE-2026-18577 は本脆弱性に対する修正が不完全であったために成立した別経路である。CISAが両CVEを個別にKEV収載したことで、2026.1以前のビルドを運用したまま暫定緩和のみを行っていた環境も実悪用対象であることが確定した。N-ableは2026-08-02にホットフィックス2026.3.1.7を公開済みで、Security NEXTが2026-08-04に国内向けに2本の記事で報道した。
+
+攻撃の流れ:
+1. インターネット公開されたN-central管理コンソールに対し、CWE-288（別経路・別チャネルによる認証バイパス）を用いて未認証のまま認証機構を迂回する
+2. 管理者アカウントを乗っ取り、RMMプラットフォームとしての管理権限を取得する
+3. Take Control機能等を経由して配下の管理対象エンドポイントへ到達し、RMMの正規機能を用いた横展開の起点とする
+
+【関連ATT&CK】
+・[T1190] initial-access — CISA KEVおよびNVDが『Authentication bypass using an alternate path or channel vulnerability in N-able N-central allows Authentication Bypass』と公開アプリケーションに対する未認証の認証回避を明示しているためT1190を付与
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] N-central管理コンソールへの認証成功イベントのうち、通常の管理系送信元レンジ外・VPN出口ノード由来のものを抽出する
+Splunk SPL: index=* sourcetype=n-central:audit action=login status=success | iplocation src_ip | search NOT src_ip IN (10.0.0.0/8,172.16.0.0/12,192.168.0.0/16) | stats count values(user) by src_ip Country
+Splunk SPL: index=* sourcetype=n-central:audit (action=user_create OR action=role_change) | table _time user target_user src_ip action
+→ N-centralは運用上の管理アクセス元が限定されるため、送信元IPのホワイトリスト外からのログイン成功と、それに続く管理者アカウント作成・権限変更の連続を優先確認する。保守ベンダーの正規リモート保守作業とは作業予定表で突合し誤検知を除外する。
+
+【参照】
+https://www.security-next.com/188270
+https://www.security-next.com/188277
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+https://nvd.nist.gov/vuln/detail/CVE-2026-18556
+https://status.n-able.com/2026/08/02/n-central-2026-3-hotfix-1-mitigation-for-cve-2026-18577/
+
+------------------------------------------------------------
+2. CVE-2026-18577 / N-central（N-able）
+対象: N-central 2026.3.1.7 未満の全ビルド（CVE-2026-18556 の修正不備に起因）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: CVSSv4 8.2 (High)
+状態: KEV登録済み（追加日 2026-08-03） / 実悪用確認
+EPSS: score 0.04103 / percentile 0.8976（算出日 2026-08-05）
+FCEB対応期限: 2026-08-06
+CWE: CWE-288
+対処: 修正版 2026.3.1.7（2026.3 Hotfix 1） へ更新
+
+【24時間以内の変化】
+[The Hacker News 2026-08-04] CISAによるKEV追加を受けた続報で、実悪用に用いられたIoCを具体的に公開（IP 4件・ユーザ文書フォルダ内のsvchost.exe・サービス名Cloudflared・既定ユーザ名『MSP Support』の悪用）。N-ableは『限られた数の顧客』の侵害を認め、Huntressは複数組織での標的化を確認しつつ『広範な無差別キャンペーンではない』と評価
+[Security NEXT 2026-08-04] 国内向けに初報。すでに悪用が確認されIoCが公開されている旨を報道（記事188270）
+[Security NEXT 2026-08-04] 米当局（CISA）による悪用への注意喚起を国内向けに報道。KEV追加日2026-08-03・対応期限2026-08-06を明記（記事188277）
+[EPSS (FIRST.org) 2026-08-05] EPSSパーセンタイルが0.7132（2026-08-03時点）から0.8976へ上昇（score 0.04103・model_date 2026-08-05）
+
+【概要】
+既報（2026-08-04分レポート・参考B採用）のN-able N-central認証バイパス脆弱性CVE-2026-18577について、本調査窓（2026-08-04 07:00〜2026-08-05 07:00 JST）で2つの新たな変化が確認された。第一にSecurity NEXTが2本の記事で国内向けに報道し参考A昇格トリガーに該当したこと、第二にThe Hacker Newsが実悪用に用いられた具体的なIoC（Mullvad/NordVPN出口ノードを含むIP4件、ユーザのDocumentsフォルダ配下に設置されたsvchost.exe、Cloudflaredという名称で登録されたサービス、既定ユーザ名『MSP Support』の悪用）を公開したことである。侵害後の挙動としてドメインコントローラを狙った偵察・プロセス列挙・横展開が確認されている。攻撃者の帰属は既知グループへ紐付いていない。軸2が国内報道により3点加算され4点となったため、本日は参考Bから本編へ昇格して再採用する。
+
+攻撃の流れ:
+1. CVE-2026-18556 の不完全な修正を突く別経路（CVE-2026-18577）でN-central管理コンソールの認証を未認証のまま迂回し、管理者アカウントを乗っ取る
+2. 既定ユーザ名『MSP Support』等を悪用して管理権限を確立し、Take Control機能経由で管理対象エンドポイントへ到達する
+3. ユーザのDocumentsフォルダ配下にsvchost.exeを設置し、Cloudflaredという名称のサービスとして登録して常時外向きトンネルによる永続的アクセス経路を確保する
+4. ドメインコントローラを対象とした偵察・実行中プロセスの列挙を行い、被害環境内で横展開する
+
+【関連ATT&CK】
+・[T1190] initial-access — The Hacker News 2026-08-04が公開管理コンソールに対する認証バイパスによるアカウント乗っ取りを明示しているためT1190を付与
+・[T1036] defense-evasion — The Hacker News 2026-08-04がユーザのDocumentsフォルダ内に『svchost.exe』という正規プロセス名を騙るファイルを設置したことを明示しているためT1036を付与
+・[T1572] command-and-control — The Hacker News 2026-08-04が『Cloudflared』という名称のサービス登録によるトンネル確立を明示しているためT1572を付与
+・[T1057] discovery — The Hacker News 2026-08-04が侵害後の挙動としてプロセス列挙（process enumeration）を明示しているためT1057を付与
+
+【IoC】
+IP: 173.249.252[.]200
+IP: 87.249.138[.]34
+IP: 37.19.210[.]32
+IP: 68.235.46[.]214
+File: svchost.exe（ユーザDocumentsフォルダ配下・正規プロセス名を騙る）
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] Cloudflaredサービスの想定外登録と、正規パス外のsvchost.exe生成を検知する
+Splunk SPL: index=* sourcetype=WinEventLog:System EventCode=7045 ServiceName="Cloudflared" | stats count values(ImagePath) by ComputerName
+Splunk SPL: index=* sourcetype=WinEventLog:Security EventCode=4688 New_Process_Name="*\\svchost.exe" NOT New_Process_Name="C:\\Windows\\System32\\svchost.exe" | table _time ComputerName New_Process_Name Creator_Process_Name
+Splunk SPL: index=* src_ip IN (173.249.252.200,87.249.138.34,37.19.210.32,68.235.46.214) | stats count by src_ip dest_ip dest_port sourcetype
+→ 公開IPはMullvad/NordVPNの出口ノードを含むため、単純ブロックは正規のリモートワーク通信を巻き込む可能性がある。まずN-central管理サーバおよび管理対象エンドポイントに限定して照合し、Cloudflaredサービスが自組織のIT運用で意図的に導入されたものかを台帳と突合してから遮断判断を行う。
+
+【参照】
+https://www.security-next.com/188270
+https://www.security-next.com/188277
+https://thehackernews.com/2026/08/cisa-adds-exploited-n-able-n-central.html
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+https://nvd.nist.gov/vuln/detail/CVE-2026-18577
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-48331 / Adobe Campaign Classic (ACC)（Adobe）
+------------------------------------------------------------
+
+昇格理由: Security NEXT / ScanNetSecurity 等の国内メディア報道
+対象: オンプレミス版およびハイブリッド構成のオンプレミス側コンポーネント（Windows/Linux）。7.4.3 ビルド9398 を含む全バージョン
+CVSS: CVSSv4 10.0 (Critical)
+状態: 悪用・PoCとも未確認
+対処: 修正版 2026-08-03公開のアップデート（Security NEXT報道時点で具体的ビルド番号の記載なし） へ更新
+同一アドバイザリ内の関連CVE: CVE-2026-48323 / CVE-2026-48330
+
+【24時間以内の変化】
+[Security NEXT 2026-08-04] Adobeが2026-08-03に緊急アップデートを公開。7月29日にリリースされたばかりのビルド9398自体が新たに確認された別の脆弱性の影響を受けるため再更新が必要と報道。CVE-2026-48331（SSRF）・CVE-2026-48323（テンプレートエンジンの入力処理不備）・CVE-2026-48330（SQLインジェクション）の3件がCVSS最高値10.0、ほか4件を含む計7件（記事188299）
+
+【概要】
+Adobeが2026-08-03にAdobe Campaign Classic向けの緊急アップデートを公開した。前回2026-07-29のアップデート（既報CVE-2026-48449／CVE-2026-48448に対応するビルド9398）から日が浅いにもかかわらず、そのビルド9398自体が新たに確認された別の脆弱性群の影響を受けるため再度の更新が必要となった点が本件の要点である。CVSS最高値10.0と評価された3件はサーバサイドリクエストフォージェリ（CVE-2026-48331）、テンプレートエンジンの入力処理不備（CVE-2026-48323）、SQLインジェクション（CVE-2026-48330）で、ほか4件を含む計7件が対象。実悪用およびPoC公開は本調査窓時点で確認されていない。Security NEXTが国内向けに報道したため参考Aへ昇格する。
+
+※ Technique付与見送り: Security NEXT記事はSSRF・テンプレートエンジン入力処理不備・SQLインジェクションという脆弱性種別を示すのみで、実際の攻撃手口・悪用観測の記述がない。脆弱性種別の記載のみからT1190等を付与することは推測付与に当たるため見送った（01-normalize.md R3）。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] Campaign Classicアプリケーションサーバの外向き通信と異常なテンプレート処理を監視する
+Splunk SPL: index=* sourcetype=access_combined uri_path="/nl/jsp/*" (uri_query="*http%3A%2F%2F*" OR uri_query="*169.254.169.254*") | table _time src_ip uri_path uri_query status
+Splunk SPL: index=* sourcetype=adobe:campaign errorcode=* | stats count by errorcode host | where count > 50
+→ SSRFの試行はアプリケーションサーバからクラウドメタデータエンドポイント（169.254.169.254）や内部セグメントへの想定外の外向き/内向きリクエストとして現れる。運用上の外部連携先はホワイトリスト化して除外する。
+
+【参照】
+https://www.security-next.com/188299
+
+------------------------------------------------------------
+2. CVE-2026-4793 / Synology Assistant (Windows版)（Synology）
+------------------------------------------------------------
+
+昇格理由: Security NEXT / ScanNetSecurity 等の国内メディア報道
+対象: Synology Assistant 7.0.7-50095 未満（Windows版）
+CVSS: CVSSv3 7.3 (High)
+状態: 悪用・PoCとも未確認
+対処: 修正版 7.0.7-50095 以降 へ更新
+
+【24時間以内の変化】
+[Security NEXT 2026-08-04] Synologyが2026-08-03（現地時間）にSynology Assistant Windows版の脆弱性を公表し修正版を公開したと国内向けに報道。重要度は「重要（Important）」（記事188315）
+
+【概要】
+SynologyのNAS検出・接続支援ツール Synology Assistant のWindows版に、インストール時に設定される既定のアクセス権限に起因する脆弱性CVE-2026-4793（CWE-276・CVSSv3.1 7.3）が確認された。ローカル利用者が任意ファイルの読み取り・書き込みやサービス拒否を引き起こす可能性がある。攻撃元区分はローカル（AV:L）かつ利用者の操作を要する（UI:R）ため、リモートからの直接悪用はできない。実悪用・PoC公開は確認されていない。国内でもSynology製NASは中小規模の事業者・部門サーバ用途で広く使われており、Security NEXTが国内向けに報道したため参考Aとして採用する。
+
+※ Technique付与見送り: 情報源は既定アクセス権限の不備という脆弱性種別を示すのみで、実際の悪用手口・攻撃観測の記述がないためTechnique付与を見送った（01-normalize.md R3）。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] Synology Assistantのインストールディレクトリに対する非管理者ユーザからの書き込みを監視する
+Splunk SPL: index=* sourcetype=WinEventLog:Security EventCode=4663 Object_Name="*Synology Assistant*" Accesses="WriteData*" NOT Account_Name IN (SYSTEM,*$) | table _time ComputerName Account_Name Object_Name Accesses
+→ インストール直後の正規セットアッププロセスによる書き込みは除外し、インストール完了後に一般ユーザ権限で発生した書き込みのみを抽出する。
+
+【参照】
+https://www.security-next.com/188315
+https://nvd.nist.gov/vuln/detail/CVE-2026-4793
+
+------------------------------------------------------------
+3. CVE-2026-67243 / freo2（refirio）
+------------------------------------------------------------
+
+昇格理由: JPCERT/CC・IPA・JVN発行
+対象: freo2（JVN公表時点の全バージョン。詳細はJVN#52865575参照）
+CVSS: CVSSv4 8.6 / CVSSv3 7.2 (High)
+状態: 悪用・PoCとも未確認
+対処: 修正版 JVN掲載の開発者提供版を参照 へ更新
+
+【24時間以内の変化】
+[JVN 2026-08-04] 情報セキュリティ早期警戒パートナーシップに基づきIPAへ報告されJPCERT/CCが開発者と調整した脆弱性としてJVN#52865575／JVNDB-2026-000107を新規公開。報告者は三井物産セキュアディレクション株式会社 小澤和希氏
+
+【概要】
+PHP製の国産コンテンツ管理システム freo2（refirio提供）に、アップロードするファイルの検証が不十分な脆弱性CVE-2026-67243（CWE-434・CVSSv4 8.6／CVSSv3.0 7.2）が確認され、2026-08-04にJVNで公表された。製品の最上位管理者権限を持つ利用者が実行可能ファイルをアップロードし任意のOSコマンドを実行できる。悪用には最上位管理者権限が前提（PR:H）であるため、単独での外部からの侵入経路にはならないが、認証情報の窃取や内部不正と連鎖した場合にサーバ全体の掌握につながる。実悪用・PoC公開は確認されていない。国産CMSに対するJVN発行のため参考Aとして採用する。
+
+攻撃の流れ:
+1. 何らかの手段で freo2 の最上位管理者アカウントを取得する（本脆弱性の悪用前提）
+2. 管理画面のファイルアップロード機能から、検証を通過する形で実行可能ファイルを設置する
+3. 設置したファイルを実行し、Webサーバ権限で任意のOSコマンドを実行する
+
+【関連ATT&CK】
+・[T1505 / T1505.003] persistence — JVNが『実行可能ファイルをアップロードし任意のOSコマンドを実行できる』と、サーバ上へ設置したファイル経由でのコマンド実行を明示しているためT1505.003（Web Shell）を付与
+
+【暫定緩和策】
+・最上位管理者アカウントの棚卸しと多要素認証の適用
+・管理画面へのアクセス元IP制限
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] freo2のアップロードディレクトリに対するスクリプトファイル設置と、その後の実行アクセスを検知する
+Splunk SPL: index=* sourcetype=access_combined uri_path="*/upload*" method=POST status=200 | table _time src_ip uri_path status bytes
+Splunk SPL: index=* sourcetype=access_combined uri_path IN ("*/upload/*.php","*/files/*.php") | stats count by src_ip uri_path status
+→ アップロードディレクトリ配下の .php 等スクリプト拡張子に対するGETが発生した場合は設置済みWebシェルの実行を疑う。正規の管理者作業によるアップロードは送信元IPと作業時間帯で突合して除外する。
+
+【参照】
+https://jvn.jp/jp/JVN52865575
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-000107.html
+https://nvd.nist.gov/vuln/detail/CVE-2026-67243
+
+------------------------------------------------------------
+4. CVE-2026-13584 / MELSEC MX Controller MX-R/MX-F、マスタ/ローカルユニット、CC-Link IE TSN インタフェースボード、モーションユニット 他（三菱電機）
+------------------------------------------------------------
+
+昇格理由: JPCERT/CC・IPA・JVN発行
+対象: CC-Link IE TSN通信プロトコルを使用する三菱電機製複数製品（対象型番はJVNVU/ベンダーアドバイザリ参照）
+CVSS: CVSSv4 7.1 (High)
+状態: 悪用・PoCとも未確認
+対処: パッチ未提供（ベンダーアドバイザリの緩和策を参照）
+
+【24時間以内の変化】
+[JVN iPedia 2026-08-04] 製品利用者への周知を目的に開発者（三菱電機）がJPCERT/CCへ報告し調整のうえJVNDB-2026-026403として公開（JVN側は2026-08-03 12:30 JST公開）
+
+【概要】
+三菱電機製の複数の産業用制御製品が使用するCC-Link IE TSN通信プロトコルに、通信チャネルで送受信するメッセージの完全性検証が不十分な脆弱性CVE-2026-13584（CWE-924・CVSSv4 7.1）が確認され、2026-08-03〜04にJVN／JVN iPediaで公表された。攻撃元区分は隣接ネットワーク（AV:A）で、認証は不要（PR:N）だが、同一のCC-Link IE TSNネットワークセグメントへの到達が前提となる。影響は完全性（VI:H）および可用性の一部（VA:L）に限定され、機密性への影響はない。実悪用・PoC公開は確認されていない。国内ベンダーが自らJPCERT/CCへ報告し調整した国産FA機器の事案であり、製造業のOTネットワークに直結するため参考Aとして採用する。
+
+攻撃の流れ:
+1. 対象製品と同一のCC-Link IE TSNネットワークセグメントへ到達できる位置に立つ（隣接ネットワークからの攻撃が前提）
+2. 完全性検証が不十分な通信メッセージを改ざん・偽装して送信する
+3. 制御指令の改ざんにより機器の動作に影響を与える（完全性への影響が主・可用性への影響は限定的）
+
+※ Technique付与見送り: JVNは『通信チャネルで送受信するメッセージに対する完全性の検証不備』という脆弱性の性質を記述するのみで、実際に観測された攻撃手口の記述がない。ICS向けATT&CKのT0842等への機械的マッピングは可能に見えるが、Enterprise ATT&CKのTechniqueとして明示的に導ける記述がないため付与を見送った（01-normalize.md R3）。
+
+【暫定緩和策】
+・制御システムネットワークを業務ネットワークおよびインターネットから分離する
+・対象機器へのアクセスをファイアウォール等で信頼できる機器のみに制限する
+・物理的なアクセス制御の実施
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] OTセグメント境界でのCC-Link IE TSNトラフィックの異常送信元を監視する
+Splunk SPL: index=ot sourcetype=firewall (dest_port=55000 OR dest_port=55001 OR dest_port=55002) action=allowed | stats count values(dest_ip) by src_ip | where count > 100
+Splunk SPL: index=ot sourcetype=switch:portsecurity action=violation | table _time switch_name port mac_address
+→ CC-Link IE TSNは本来閉じた制御セグメント内で完結する通信であるため、セグメント外からの到達および新規MACアドレスのポート接続を優先的に確認する。定期保守での機器増設は変更管理記録と突合して除外する。
+
+【参照】
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-026403.html
+https://nvd.nist.gov/vuln/detail/CVE-2026-13584
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [JVN#52865575 freo2におけるアップロードするファイルの検証が不十分な脆弱性] https://jvn.jp/jp/JVN52865575
+発行あり: [三菱電機製複数製品で使用しているCC-Link IE TSN通信プロトコルにおける通信チャネルで送受信するメッセージに対する完全性の検証不備に起因する脆弱性] https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-026403.html
+未発行: CVE-2026-18556 — 24時間窓内に発行確認されず
+未発行: CVE-2026-18577 — 24時間窓内に発行確認されず
+未発行: CVE-2026-9198 — 24時間窓内に発行確認されず
+未発行: CVE-2026-34486 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-9198 / Langflow OSS（IBM）
+対象: IBM Langflow OSS 1.0.0 〜 1.10.0
+CVSS: CVSSv3 9.8 (Critical)
+状態: KEV登録済み（追加日 2026-08-04） / 実悪用確認
+EPSS: score 0.17053 / percentile 0.96771（算出日 2026-08-05）
+FCEB対応期限: 2026-08-07
+AIワークフロー構築プラットフォーム Langflow の未認証コード実行脆弱性CVE-2026-9198（CWE-94・CVSSv3.1 9.8 Critical）が2026-08-04付でCISA KEVカタログへ新規追加された（FCEB期限2026-08-07）。NVDの記述によれば、未認証の攻撃者が /api/v1/auto_login（ネットワーク到達可能な任意の呼び出し元にSUPERUSERトークンを発行する）と /api/v1/validate/code（exec() で利用者コードを実行する）を連鎖させることで、既定構成のLangflowデプロイに対して完全なリモートコード実行が可能となる。単一ステップ・無認証で到達できる典型的な攻撃面であり、EPSSパーセンタイルは0.96771と高い。Langflowは2025年5月にCVE-2025-3248（既報・自律型AIランサムウェアJadePufferの侵入起点）、2026年6月にCVE-2026-5027（既報）と、過去2回にわたり実悪用済みCVEを出しており、露出インスタンスが継続的に狙われている製品カテゴリである。本調査窓では国内ソースによる報道が確認できず軸2が1点にとどまるため参考Bとして採用する。
+対処: 修正版 IBMサポート文書 node/7278927 記載の修正版 へ更新
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] Langflowの認証バイパス系エンドポイントへのアクセスを検知する
+Splunk SPL: index=* sourcetype=access_combined uri_path="/api/v1/auto_login" | stats count values(status) by src_ip | sort - count
+Splunk SPL: index=* sourcetype=access_combined uri_path="/api/v1/validate/code" method=POST | table _time src_ip status bytes uri_path
+→ /api/v1/auto_login への外部セグメントからのアクセスは正規運用では発生しないため、1件でも観測されたら侵害調査を開始する。/api/v1/validate/code のPOSTはLangflow開発者による正規のフロー検証でも発生するため、送信元が管理セグメント内かどうかで切り分ける。
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-9198
+参照: https://www.ibm.com/support/pages/node/7278927
+
+・CVE-2026-34486 / Apache Tomcat（Apache Software Foundation）
+対象: Apache Tomcat 11.0.20 / 10.1.53 / 9.0.116（CVE-2026-29146 の修正に起因）
+CVSS: CVSSv3 9.8 (Critical)
+状態: KEV登録済み（追加日 2026-08-04） / 実悪用確認
+EPSS: score 0.8116 / percentile 0.99598（算出日 2026-08-05）
+FCEB対応期限: 2026-08-07
+Apache Tomcatのクラスタ通信を暗号化するEncryptInterceptorを迂回できる脆弱性CVE-2026-34486（CWE-311/CWE-807・CVSSv3.1 9.8 Critical・NVD公開2026-04-09）が2026-08-04付でCISA KEVカタログへ新規追加された（FCEB期限2026-08-07）。本脆弱性は先行するCVE-2026-29146の修正自体に起因して成立したもので、対象は Tomcat 11.0.20／10.1.53／9.0.116 の3ビルドに限定される。EncryptInterceptorはTomcatクラスタ間のセッションレプリケーション通信を保護する仕組みであり、これが迂回されるとクラスタ通信の機密性・完全性が失われる。EPSSパーセンタイルは0.99598と本日処理した全CVE中で最も高い。本調査窓では国内ソースによる報道および国内向け注意喚起が確認できず軸2が1点にとどまるため参考Bとして採用するが、Tomcatは国内の業務システムでも広範に利用されており、クラスタ構成を採る環境では優先的な確認が必要である。
+対処: 修正版 Apacheアナウンス（lists.apache.org スレッド 9510k5p5zdvt9pkkgtyp85mvwxo2qrly）記載の後継版 へ更新
+※ Technique付与見送り: CISA KEVおよびNVDは『EncryptInterceptorの迂回を許す機密データの暗号化不備』という脆弱性の性質を記述するのみで、実際に観測された攻撃手口・侵入経路の記述がない。KEV収載は実悪用を意味するが、悪用の具体的挙動が公開されていないため、T1190等の推測付与は行わない（01-normalize.md R3）。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] Tomcatクラスタ通信ポートへの想定外の接続元を検知する
+Splunk SPL: index=* sourcetype=linux_secure OR sourcetype=firewall dest_port IN (4000,4001,45564) | stats count values(dest_ip) by src_ip | where count > 10
+Splunk SPL: index=* sourcetype=tomcat:catalina ("EncryptInterceptor" OR "SimpleTcpCluster") | table _time host log_level message
+→ クラスタメンバー以外のIPからノード間通信ポート（既定4000番台・マルチキャスト45564）への接続試行は正規運用では発生しない。Tomcatのバージョンが11.0.20／10.1.53／9.0.116のいずれかであるかを資産管理台帳で先に確定し、該当しないノードは調査対象から除外する。
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-34486
+参照: https://lists.apache.org/thread/9510k5p5zdvt9pkkgtyp85mvwxo2qrly
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外CVE】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-58048 (cPanel & WHM / WP Squared) → 軸1=4点（CVSSv4 9.4で+3・広く使われる製品+1）／軸2=1点（海外複数ソース+1）。参考A昇格トリガー該当なしのため判定順4により除外。悪用には認証済みホスティングアカウントが必要で未認証RCEではない。Section 4 SOC推奨情報（中）で個別掲載
+・CVE-2025-9289 / CVE-2025-9292 / CVE-2025-15630 ほか（TP-Link Omada ZTP・計11件採番） (TP-Link Omada（ゲートウェイ・ルータ・スイッチ・無線AP）) → 軸1=7点（境界機器への影響+3・ハードコード鍵/証明書検証不備による認証バイパス+3・広く使われる製品+1）／軸2=1点（海外複数ソース+1）。軸1が8点未満かつ参考A昇格トリガー該当なしのため判定順4により除外。Section 4 SOC推奨情報（中）で個別掲載
+・CVE-2026-66403 ほか（DEEBOT PRO M1 / K1VAC・ECOVACS PROアプリ） (エコバックス製ロボット掃除機・スマートフォンアプリ) → 既報（2026-08-01分レポートで参考A採用・reported-cves.md掲載済み）。本調査窓のScanNetSecurity記事はJVN公表内容の国内二次報道であり、期間内の新規の状態変化なし → 既報・変化なしのため除外
+・SGLang 複数脆弱性（CVE-2026-7301 / 3059 / 3060 / 14890 等） (SGLang) → 既報（2026-07-18分レポートでAI攻撃本編AI-2026-07-18-002として採用済み）。本調査窓のScanNetSecurity記事はJVNVU#96879318の国内二次報道であり期間内の新規の状態変化なし → 既報・変化なしのため除外
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編2件 / 参考A4件 / 参考B2件 / 除外4件
+
+========================================

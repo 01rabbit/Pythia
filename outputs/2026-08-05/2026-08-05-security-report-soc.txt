@@ -1,0 +1,295 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-05 07:33 JST
+調査期間: 2026-08-04 07:00 〜 2026-08-05 07:00 JST
+========================================
+
+
+Section 4: SOC推奨情報
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+［高優先度］
+
+------------------------------------------------------------
+1. デバイスコードフィッシング急増に対するEntra ID側の設定確認
+観点: ゼロデイ関連
+採用契機: γ / δ / ε
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft Entra ID / Microsoft 365
+
+【24時間以内の変化】
+[Dark Reading・The Hacker News・BleepingComputer 2026-08-04] デバイスコードフィッシングが2026年に1,500%増、ビッシングは倍増したとの統計が公表され、同日に商用PhaaS「Greatness」がデバイスコードフィッシング機能を追加しRingCentralを偽装してMicrosoft 365を狙っていることが報じられた
+
+【概要】
+OAuth 2.0のデバイス認可グラントを悪用する手口は、利用者がフィッシングサイトへ認証情報を入力しないためAiTM検知やパスワードリセット中心の対策が効きにくく、正規のMicrosoftドメインでコード入力が完結する。既報のStorm-2945（CaptiveCrunch）・DEBULL・Forg365と同一の攻撃面であり、本調査窓では統計面（Dark Reading）とツール面（Greatness）の双方で拡大が確認された。SOCとしては検知よりも先に条件付きアクセスポリシーでデバイスコードフローを制限する構成変更が有効である。
+
+【推奨アクション】
+・Entra IDの条件付きアクセスで認証フロー（デバイスコードフロー）を既定でブロックし、必要な業務のみ例外許可する
+・サインインログでauthenticationProtocol=deviceCodeを抽出し、想定外の利用実態を洗い出す
+・出張者・会議参加者向けに、正規のサインインでデバイスコード入力を求められることは通常ないと周知する
+Splunk SPL: index=* sourcetype=azure:aad:signin authenticationProtocol=deviceCode | stats count values(appDisplayName) values(ipAddress) by userPrincipalName | sort - count
+Splunk SPL: index=* sourcetype=azure:aad:signin authenticationProtocol=deviceCode | iplocation ipAddress | search NOT Country="Japan" | table _time userPrincipalName ipAddress Country appDisplayName
+→ デバイスコードフローは会議室デバイス・IoT端末・CLIツールの正規サインインでも使われるため、まず正規利用の棚卸しを行ってから例外リストを確定する。国外IPからのデバイスコード認証は優先調査対象とする。
+
+【参照】
+https://www.darkreading.com/cybersecurity-analytics/device-code-phishing-vishing-doubles
+https://thehackernews.com/2026/08/greatness-phaas-adds-device-code.html
+https://www.bleepingcomputer.com/news/security/phishing-service-spoofs-ringcentral-to-steal-microsoft-365-accounts
+
+------------------------------------------------------------
+2. Open VSXマーケットプレイスの77拡張機能が開発環境情報を外部送信
+観点: ゼロデイ関連
+採用契機: δ / η
+------------------------------------------------------------
+
+優先度: 高
+対象: Open VSX（VS Code系エディタの拡張機能マーケットプレイス）
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-05] Open VSX上の77件の拡張機能が正規の開発ツールを装いながら、インストール先のシステムおよび開発環境に関する情報を外部送信していたことが判明したと報道
+
+【概要】
+Open VSXはVS Code系のオープンソースエディタ（VSCodium・Cursor・Windsurf等）が既定で参照する拡張機能マーケットプレイスであり、Microsoft公式マーケットプレイスより審査が緩い。開発端末は各種クラウド・リポジトリの認証情報を保持するため、環境情報の外部送信は後続の標的型攻撃の下準備となりうる。本日のChainDrop npmワーム（Section 2 APT本編）と合わせ、開発者環境そのものが継続的な攻撃対象になっている点をSOCとして認識すべきである。
+
+【推奨アクション】
+・開発端末にインストールされている拡張機能を棚卸しし、Open VSX由来のものを特定する
+・組織として許可する拡張機能のアローリストを整備し、非許可拡張のインストールを制限する
+・開発端末からの想定外の外向き通信をプロキシログで確認する
+Splunk SPL: index=* sourcetype=edr:process process_name IN (code.exe,codium.exe,cursor.exe) | search command_line="*--install-extension*" | table _time host user command_line
+Splunk SPL: index=* sourcetype=proxy user_agent="*VSCode*" | stats count dc(dest_host) as hosts by src_ip user | where hosts > 5
+→ 拡張機能のインストール自体は日常的な開発行為であるため、アローリスト外の拡張IDに絞って抽出する。テレメトリ送信は正規拡張でも行われるため、送信先ドメインが拡張の提供元と一致するかで切り分ける。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/77-open-vsx-extensions-found-harvesting-developer-info
+
+------------------------------------------------------------
+3. XCSSET新亜種（v40）が侵害済みXcodeプロジェクト経由でmacOS開発者を標的化
+観点: ゼロデイ関連
+採用契機: δ / ε
+------------------------------------------------------------
+
+優先度: 高
+対象: macOS / Xcode
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-05] Unit 42が報告したXCSSETの新バージョン（v40）が、侵害されたGitリポジトリのXcodeプロジェクトファイルにダウンローダを注入して伝播していると報道
+
+【概要】
+XCSSETはXcodeプロジェクトファイルへダウンローダを注入し、開発者がプロジェクトをビルドした時点で感染し、さらに当該端末上の他のXcodeプロジェクトへ伝播する自己増殖型のmacOSマルウェアである。新亜種v40ではローダの定期再コンパイル、通信ごとの個別暗号鍵、関数・変数の難読化といった回避機能が強化され、Chromeハイジャッカーおよびtelegramトロイ化の2モジュールが追加された。加えてXProtect・MRT・TCC・Rapid Security Responseというシステム保護機構の無効化を積極的に行う。窃取対象は認証情報・ブラウザCookie・MetaMask暗号資産取引・通信内容で、ファイルレスのリバースシェルによるアクセスも確立する。IoCおよび帰属は記事内で提示されていない。
+
+【推奨アクション】
+・自組織のmacOS開発端末で、外部から取得したXcodeプロジェクトをビルドする運用の有無を確認する
+・XProtect・TCC等のmacOS保護機構が無効化されていないかをMDMで点検する
+・開発端末のEDRでファイルレス実行・シェル起動の検知ルールが有効か確認する
+Splunk SPL: index=* sourcetype=osquery:macos table=xprotect_meta OR table=tcc_access | stats latest(version) by host
+Splunk SPL: index=* sourcetype=edr:process os=macos parent_process_name IN (xcodebuild,Xcode) child_process_name IN (osascript,curl,bash) | table _time host user parent_process_name child_process_name command_line
+→ xcodebuild配下からのosascript/curl/bash起動はビルドスクリプトの正規利用でも発生するため、プロジェクトのRun Script Phaseに当該コマンドが定義されているかをリポジトリ側で突合して切り分ける。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/new-xcsset-variant-targets-macos-devs-via-compromised-xcode-projects
+
+
+［中優先度］
+
+------------------------------------------------------------
+4. cPanel CVE-2026-58048（CVSSv4 9.4）: 共有ホスティング利用組織のパッチ確認
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: cPanel & WHM / WP Squared
+
+【24時間以内の変化】
+[The Hacker News 2026-08-04] cPanelが、認証済みのホスティング利用者がデータベースのroot権限コンテキストでSQLを実行できる脆弱性CVE-2026-58048（CVSSv4 9.4・CWE-89）を修正したと報道
+
+【概要】
+データベース名の変更処理でSQLモードが保持されずroot権限コンテキストでSQLが実行される問題で、cPanelアカウントとサーバの管理用データベースIDとの間の権限境界を越えられる。悪用には認証済みのホスティングアカウントが必要（PR:L）なため未認証RCEではないが、共有ホスティング環境では他テナントのデータへの到達につながる。同時に修正されたCVE-2026-58047（CVSS 5.6・cpsrvdでのHTTPリクエストスマグリングによる認証情報漏洩）およびEximの .forward ファイル経由の権限昇格も対象である。CISAの評価では悪用の確認はなく自動化可能性も否定されている。軸1=4点・軸2=1点でSection 3の数値判定基準に達しないためSOC推奨情報として掲載する。
+
+【推奨アクション】
+・自組織が利用する共有ホスティング事業者に対し、修正版（11.110.0.137 / 11.118.0.71 / 11.126.0.78 / 11.134.0.48 / 11.136.0.32 / WP Squared 138.1.6）の適用状況を確認する
+・自社運用のcPanelサーバがある場合は当該ビルドへ更新する
+Splunk SPL: index=* sourcetype=cpanel:access uri_path="*/sql/*" OR uri_path="*rename_database*" | table _time user src_ip uri_path status
+→ データベース名変更は正規の顧客操作でも発生するため、短時間での連続実行や通常利用のないアカウントからの実行を優先確認する。
+
+【参照】
+https://thehackernews.com/2026/08/new-cpanel-critical-flaw-could-let.html
+https://nvd.nist.gov/vuln/detail/CVE-2026-58048
+
+------------------------------------------------------------
+5. TP-Link Omada ZTPの15件の脆弱性: 拠点ネットワーク機器の一括侵害リスク
+観点: CVE関連
+採用契機: β / η
+------------------------------------------------------------
+
+優先度: 中
+対象: TP-Link Omada（ゲートウェイ・ルータ・スイッチ・無線AP）／Festa・VIGI・Tapo・Kasaの一部
+
+【24時間以内の変化】
+[SecurityWeek・BleepingComputer 2026-08-04] ForescoutがTP-Link Omadaのゼロタッチプロビジョニング（ZTP）機構に15件の脆弱性を発見し、既知の2件と連鎖させることで管理下デバイス群の一括侵害が可能であることをBlack Hat USA 2026で公表、TP-Linkが修正を提供したと報道
+
+【概要】
+OmadaコントローラがゲートウェイやAP等を自動設定するために用いる信頼関係の弱点で、ハードコードされた暗号鍵・証明書、デバイス／サイト認証情報の平文送信、中間者攻撃を許す不十分な証明書検証、クラウド経由デバイス採用時の競合状態、コントローラWeb UIのXSSが含まれる。15件中11件にCVEが採番され（CVE-2025-9289・CVE-2025-9292・CVE-2025-15630 等）、残り4件はTP-Linkが軽微として採番を見送った。既知のCVE-2025-7850・CVE-2025-7851と組み合わせることで具体的な侵害経路が成立する。Festa・VIGI・Tapo・Kasaの一部製品もプロトコルを共有し同一の脆弱性の影響を受ける。軸1=7点・軸2=1点でSection 3の数値判定基準に達しないためSOC推奨情報として掲載する。中小拠点・店舗ネットワークでの採用が多い製品群であり、資産棚卸しの契機として扱うべきである。
+
+【推奨アクション】
+・Omadaコントローラおよび配下機器のファームウェアを最新版へ更新する
+・Omadaコントローラの管理インタフェースがインターネットから到達可能でないか確認する
+・拠点ネットワークにOmada／Festa／VIGI／Tapo／Kasa製品が導入されていないか資産台帳で洗い出す
+Splunk SPL: index=* sourcetype=firewall dest_port IN (8043,8843,29810,29811,29812,29813,29814) action=allowed src_zone=untrust | stats count by src_ip dest_ip dest_port
+Splunk SPL: index=* sourcetype=omada:controller action="device_adopt" | table _time device_mac device_model src_ip result
+→ Omadaのデバイス採用（adopt）イベントは新規機器設置時のみ発生するのが正常であり、設置予定のない時間帯・拠点での採用イベントは成りすまし機器の混入を疑う。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/tp-link-patches-omada-ztp-flaws-allowing-hackers-to-breach-networks
+https://www.forescout.com/blog/new-tp-link-router-vulnerabilities-exploiting-zero-touch-provisioning/
+https://support.omadanetworks.com/us/document/130627/
+
+------------------------------------------------------------
+6. BMC（サーバ管理インタフェース）24,000台超の認証ハッシュ事前開示
+観点: ゼロデイ関連
+採用契機: γ / δ
+------------------------------------------------------------
+
+優先度: 中
+対象: BMC / IPMI（サーバ管理インタフェース全般）
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-04] インターネットから到達可能なサーバ管理インタフェース24,000台超が、ログイン成立前に認証ハッシュを開示している実態が報道された
+
+【概要】
+BMCはOSの外側でサーバの電源制御・仮想メディアマウント・リモートコンソールを行える管理面であり、掌握されればOS側のEDRやディスク暗号化を迂回した侵害が成立する。認証ハッシュの事前開示はオフラインでの総当たり解析に直結し、既定・共通パスワードを使い回している環境では実質的な認証バイパスとなる。個別ベンダーのCVEではなく設計・実装横断の露出であるため恒久的なパッチ提供が期待しにくく、ネットワーク到達性の遮断が主要な対策となる。
+
+【推奨アクション】
+・BMC／iLO／iDRAC／IPMI等の管理インタフェースがインターネットから到達可能でないか外部から確認する
+・管理インタフェースを専用の管理VLANへ隔離し、踏み台経由のアクセスのみ許可する
+・既定パスワード・共通パスワードの使い回しを廃止する
+Splunk SPL: index=* sourcetype=firewall dest_port IN (623,664,5900,5901) action=allowed src_zone=untrust | stats count values(dest_ip) by src_ip dest_port
+Splunk SPL: index=* sourcetype=bmc:log event=login_failed | stats count by dest_ip user | where count > 10
+→ IPMIのUDP/623はスキャンを受けやすいポートであり、外部ゾーンからの許可通信が1件でも存在する場合は構成の見直しを行う。管理セグメント内の正規監視システムからのポーリングは除外する。
+
+【参照】
+https://www.securityweek.com/decades-old-bmc-vulnerability-exposes-thousands-of-data-centers-to-attacks
+
+------------------------------------------------------------
+7. Pass-ta-key: 端末侵害を前提としたGoogle同期パスキーの悪用
+観点: ゼロデイ関連
+採用契機: ε
+------------------------------------------------------------
+
+優先度: 中
+対象: Google パスワードマネージャ / パスキー（Windows端末）
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-04] 既に侵害されたWindows端末上のマルウェアが、Googleパスワードマネージャの同期パスキーを悪用してアカウント乗っ取り・利用者検証の迂回・パスキー秘密鍵の抽出を行える3つの攻撃が公開された
+
+【概要】
+前提条件が「端末が既に侵害されていること」である点が重要で、パスキー方式そのものがフィッシング耐性を失ったことを意味しない。ただしパスキーを唯一の認証手段として全面移行し端末側の防御を相対的に軽視した構成では、端末侵害が即座にアカウント侵害へ直結する。SOCとしては、パスキー導入を理由としたEDR・端末管理の投資縮小が起きていないかを確認する契機として扱う。
+
+【推奨アクション】
+・パスキー運用端末のEDR導入状況とマルウェア検知体制を確認する
+・パスキーの同期先（Googleアカウント）自体の保護強度を点検する
+・重要システムではパスキーに加え端末の管理状態（コンプライアンス）を条件付きアクセスの条件に加える
+Splunk SPL: index=* sourcetype=edr:process process_name IN (chrome.exe,msedge.exe) child_process_name IN (rundll32.exe,powershell.exe) | table _time host user process_name child_process_name command_line
+→ ブラウザプロセスからの想定外の子プロセス起動は資格情報窃取型マルウェアの一般的な挙動であり、パスキー固有の検知ではなく端末侵害の一般検知として運用する。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/new-pass-ta-key-attacks-let-malware-hijack-google-synced-passkeys
+
+------------------------------------------------------------
+8. SMOKE#SCREEN: 偽Adobe/Zoom更新によるScreenConnect（RMM）常駐化キャンペーン
+観点: ゼロデイ関連
+採用契機: δ
+------------------------------------------------------------
+
+優先度: 中
+対象: ConnectWise ScreenConnect 等のRMMツール
+
+【24時間以内の変化】
+[The Hacker News・Dark Reading 2026-08-04] Securonixが、Adobe・Zoomのソフトウェア更新や業務文書レビュー・システム保守ユーティリティを装う多波状のソーシャルエンジニアリングでScreenConnectを密かに展開するキャンペーン「SMOKE#SCREEN」を報告
+
+【概要】
+正規のRMMツールを初期アクセスと永続化に用いる手口は、マルウェア署名ベースの検知を回避しつつ正規の管理通信に紛れる点が特徴で、既報のBlueDash（偽Teams更新→Level RMM/ScreenConnect）とも同型である。ペイロードをローテーションさせながら複数のルアーを併用しており、単一のIoCによる遮断が効きにくい。本日の N-able N-central 実悪用（Section 3 本編）と合わせ、RMMという製品カテゴリ全体が初期アクセス経路として狙われている状況を示す。軸P=3／軸Q=5でSection 2のAPT判定基準に達しないためSOC推奨情報として掲載する。
+
+【推奨アクション】
+・組織として認可していないRMMツール（ScreenConnect・AnyDesk・Level・Atera等）の実行をアプリケーション制御でブロックする
+・利用者に対し、ソフトウェア更新は正規の配布経路のみから行う旨を周知する
+・既存のRMM導入台帳と実際の稼働実態を突合する
+Splunk SPL: index=* sourcetype=edr:process process_name IN (ScreenConnect.ClientService.exe,ScreenConnect.WindowsClient.exe,AnyDesk.exe) | stats count values(host) as hosts by process_name | sort - count
+Splunk SPL: index=* sourcetype=WinEventLog:System EventCode=7045 ServiceName="ScreenConnect*" | table _time ComputerName ServiceName ImagePath
+→ 自組織の情報システム部門が正規に導入したRMMは台帳で除外し、台帳外ホストでのサービス新規登録のみをインシデント候補とする。
+
+【参照】
+https://thehackernews.com/2026/08/fake-adobe-and-zoom-updates-install.html
+https://www.darkreading.com/cyberattacks-data-breaches/latest-rmm-fueled-phishing-attack-exposes-threat-actor-playbook
+
+
+［低優先度］
+
+------------------------------------------------------------
+9. マルウェアC2の約半数がDNSを迂回してIP直接通信（Unit 42調査）
+観点: ゼロデイ関連
+採用契機: γ / ε
+------------------------------------------------------------
+
+優先度: 低
+対象: ネットワーク監視全般
+
+【24時間以内の変化】
+[Unit 42 2026-08-04] Unit 42が、C2通信を行うマルウェア検体のほぼ半数がDNSを使わずIPアドレスへ直接接続しているとの調査結果を公表
+
+【概要】
+DNSベースの脅威インテリジェンス（悪性ドメインのブロック・DNSシンクホール）のみに依存した検知では、マルウェアC2の約半数を取りこぼすことを示す定量データである。SOCの検知設計として、DNS解決を伴わない外向きセッションの可視化と、宛先IPレピュテーションによる評価を併用する必要性を裏付ける。
+
+【推奨アクション】
+・DNSクエリを伴わない外向きセッション（IP直接接続）を抽出できるログ相関を整備する
+・宛先IPレピュテーションによる評価をプロキシ・ファイアウォールに組み込む
+Splunk SPL: index=* sourcetype=firewall action=allowed direction=outbound | join type=left src_ip [search index=* sourcetype=dns | fields src_ip answer] | where isnull(answer) | stats count by src_ip dest_ip dest_port
+→ CDN・クラウドサービスへの正規接続、および長時間キャッシュされたDNS解決結果に基づく接続は誤検知となるため、時間窓を短く取った上で新規宛先に限定して評価する。
+
+【参照】
+https://unit42.paloaltonetworks.com/malware-bypass-dns-direct-to-ip
+
+------------------------------------------------------------
+10. CISA KEV 2026年7月追加26件・8割超が3日以内期限（BOD 26-04の運用実態）
+観点: CVE関連
+採用契機: α / ζ
+------------------------------------------------------------
+
+優先度: 低
+対象: 脆弱性管理プロセス全般
+
+【24時間以内の変化】
+[Security NEXT 2026-08-04] CISAが2026年7月にKEVカタログへ26件を追加し、その8割超に3日以内の対応期限が設定されたと国内向けに報道
+
+【概要】
+BOD 26-04の運用下でFCEB期限が3日へ短縮されている実態を示すデータである。本日新規収載されたCVE-2026-18556・CVE-2026-34486・CVE-2026-9198の3件もdateAdded=2026-08-04に対し期限2026-08-07（3日）が設定されている。国内組織にFCEB期限の法的拘束力はないが、KEV収載から実際の攻撃観測までの猶予が短い前提で緊急パッチ適用プロセスを設計する必要がある。
+
+【推奨アクション】
+・KEV収載を検知した際の緊急パッチ適用プロセスが3日以内に完了できる体制かを点検する
+・KEVカタログのJSONフィードを日次で自動取得し、自組織資産との突合を自動化する
+Splunk SPL: index=* sourcetype=vulnmgmt:scan kev_listed=true | stats count by cve_id asset_count days_since_kev_added | where days_since_kev_added > 3
+→ KEV収載CVEのうち自組織に該当資産が存在するものだけを抽出し、経過日数3日超を超過案件としてエスカレーションする。
+
+【参照】
+https://www.security-next.com/188282
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（収集した候補はすべて優先度タグ付きで採用）
+
+本日の集計:
+SOC推奨情報 — 高3件 / 中5件 / 低2件 / 除外0件
+観点内訳: CVE関連3件 / ゼロデイ関連7件 / AI攻撃関連0件
+
+========================================
