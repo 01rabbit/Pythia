@@ -1,0 +1,721 @@
+{
+  "_schema_version": "1.1",
+  "_observation_date": "2026-08-05",
+  "_normalization_mode": "source_explicit_all",
+  "_normalization_note": "2026-08-04 07:00 JST〜2026-08-05 07:00 JSTの調査窓。本編CVE2件（N-able N-central CVE-2026-18556 KEV初回追加／CVE-2026-18577 国内報道による本編昇格）・参考A 4件・参考B 2件（Apache Tomcat CVE-2026-34486／IBM Langflow CVE-2026-9198 のKEV初回追加）・APT本編1件（ChainDrop npmサプライチェーンワーム）・APT注目動向5件（国内組織侵害）・AI攻撃本編3件。CVE-2026-34486 と CVE-2026-9198 は 03-forecast.md Step A' の KEV単体規定により tags に kev_watch を付与し翌日以降の実確認イベントを待つ。trends_topic・ai_attacks_reference_a・SOC推奨情報は 01-normalize.md の処理対象フィールド外のため正規化対象外。",
+  "observations": [
+    {
+      "observation_id": "obs-2026-0805-001",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "CISA KEV",
+        "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        "type": "advisory"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "CISA KEVおよびNVDが公開アプリケーションに対する別経路・別チャネルによる未認証の認証バイパスを明示しているためT1190を付与"
+        }
+      ],
+      "target": {
+        "sectors": [
+          "it",
+          "professional_services"
+        ],
+        "geos": [
+          "GLOBAL"
+        ]
+      },
+      "cve": [
+        "CVE-2026-18556"
+      ],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "high",
+      "summary": "N-able N-centralの認証バイパス脆弱性CVE-2026-18556（CWE-288・CVSSv4 8.2／CVSSv3.1 7.4）が2026-08-04付でCISA KEVカタログへ新規追加された。FCEB対応期限は2026-08-07。本脆弱性の修正不備がCVE-2026-18577の成立要因である。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "kev_initial_add",
+        "rmm"
+      ],
+      "exploitation_stage": "kev_listed"
+    },
+    {
+      "observation_id": "obs-2026-0805-002",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "The Hacker News",
+        "url": "https://thehackernews.com/2026/08/cisa-adds-exploited-n-able-n-central.html",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "情報源が公開管理コンソールに対する認証バイパスによる管理者アカウント乗っ取りを明示しているためT1190を付与"
+        },
+        {
+          "technique_id": "T1036",
+          "sub_technique_id": null,
+          "tactic": "defense-evasion",
+          "evidence": "情報源がユーザのDocumentsフォルダ内に正規プロセス名svchost.exeを騙るファイルを設置したと明示しているためT1036を付与"
+        },
+        {
+          "technique_id": "T1572",
+          "sub_technique_id": null,
+          "tactic": "command-and-control",
+          "evidence": "情報源がCloudflaredという名称のサービス登録によるトンネル確立を明示しているためT1572を付与"
+        },
+        {
+          "technique_id": "T1057",
+          "sub_technique_id": null,
+          "tactic": "discovery",
+          "evidence": "情報源が侵害後の挙動として実行中プロセスの列挙を明示しているためT1057を付与"
+        }
+      ],
+      "target": {
+        "sectors": [
+          "it",
+          "professional_services"
+        ],
+        "geos": [
+          "GLOBAL"
+        ]
+      },
+      "cve": [
+        "CVE-2026-18577"
+      ],
+      "geopolitical_signal": null,
+      "iocs": [
+        {
+          "value": "173.249.252[.]200",
+          "type": "ip",
+          "defanged": true,
+          "note": "Mullvad VPN出口ノード。単純ブロックは正規のリモートワーク通信を巻き込む可能性があるため管理サーバ限定で照合すること"
+        },
+        {
+          "value": "87.249.138[.]34",
+          "type": "ip",
+          "defanged": true,
+          "note": "NordVPN出口ノード。単純ブロック非推奨"
+        },
+        {
+          "value": "37.19.210[.]32",
+          "type": "ip",
+          "defanged": true,
+          "note": "Mullvad VPN出口ノード。過去にも悪用記録あり。単純ブロック非推奨"
+        },
+        {
+          "value": "68.235.46[.]214",
+          "type": "ip",
+          "defanged": true
+        }
+      ],
+      "confidence": "high",
+      "summary": "N-able N-centralのCVE-2026-18577（CVSS 8.2・CWE-288）について実悪用に用いられたIoC（VPN出口ノードを含むIP4件・ユーザDocumentsフォルダ配下のsvchost.exe・Cloudflaredという名称のサービス・既定ユーザ名MSP Supportの悪用）が公開された。侵害後にドメインコントローラを狙った偵察とプロセス列挙が確認されている。攻撃者は既知グループへ帰属されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "rmm",
+        "ioc_published"
+      ],
+      "exploitation_stage": "active_exploitation"
+    },
+    {
+      "observation_id": "obs-2026-0805-003",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "Security NEXT",
+        "url": "https://www.security-next.com/188299",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [],
+      "target": {
+        "sectors": [
+          "other"
+        ],
+        "geos": [
+          "GLOBAL",
+          "JP"
+        ]
+      },
+      "cve": [
+        "CVE-2026-48331",
+        "CVE-2026-48323",
+        "CVE-2026-48330"
+      ],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "medium",
+      "summary": "Adobe Campaign Classicのオンプレミス版に対しAdobeが2026-08-03付で緊急アップデートを公開した。CVE-2026-48331（SSRF）・CVE-2026-48323（テンプレートエンジン入力処理不備）・CVE-2026-48330（SQLインジェクション）の3件がCVSS 10.0と評価され、2026-07-29公開のビルド9398自体が影響を受けるため再更新が必要となった。実悪用は確認されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "domestic_media"
+      ],
+      "exploitation_stage": "none",
+      "techniques_note": "情報源はSSRF・テンプレートエンジン入力処理不備・SQLインジェクションという脆弱性種別を示すのみで、実際の攻撃手口・悪用観測の記述がない。脆弱性種別のみからのTechnique付与は推測付与に当たるため見送った（R3）。"
+    },
+    {
+      "observation_id": "obs-2026-0805-004",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "Security NEXT",
+        "url": "https://www.security-next.com/188315",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [],
+      "target": {
+        "sectors": [
+          "other"
+        ],
+        "geos": [
+          "GLOBAL",
+          "JP"
+        ]
+      },
+      "cve": [
+        "CVE-2026-4793"
+      ],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "medium",
+      "summary": "Synology Assistant Windows版（7.0.7-50095未満）に既定アクセス権限の不備に起因する脆弱性CVE-2026-4793（CWE-276・CVSSv3.1 7.3）が確認され修正版が公開された。ローカル利用者による任意ファイルの読み書きおよびサービス拒否が可能。実悪用は確認されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "domestic_media"
+      ],
+      "exploitation_stage": "none",
+      "techniques_note": "情報源は既定アクセス権限の不備という脆弱性種別を示すのみで実際の悪用手口・攻撃観測の記述がないためTechnique付与を見送った（R3）。"
+    },
+    {
+      "observation_id": "obs-2026-0805-005",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "JVN",
+        "url": "https://jvn.jp/jp/JVN52865575",
+        "type": "advisory"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [
+        {
+          "technique_id": "T1505",
+          "sub_technique_id": "T1505.003",
+          "tactic": "persistence",
+          "evidence": "JVNが実行可能ファイルをアップロードし任意のOSコマンドを実行できると、サーバ上へ設置したファイル経由でのコマンド実行を明示しているためT1505.003（Web Shell）を付与"
+        }
+      ],
+      "target": {
+        "sectors": [
+          "other"
+        ],
+        "geos": [
+          "JP"
+        ]
+      },
+      "cve": [
+        "CVE-2026-67243"
+      ],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "high",
+      "summary": "国産CMS freo2（refirio提供）にアップロードファイルの検証不備の脆弱性CVE-2026-67243（CWE-434・CVSSv4 8.6／CVSSv3.0 7.2）が確認されJVNで公表された。最上位管理者権限を持つ利用者が実行可能ファイルをアップロードし任意のOSコマンドを実行できる。実悪用は確認されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "jvn",
+        "domestic_product"
+      ],
+      "exploitation_stage": "none"
+    },
+    {
+      "observation_id": "obs-2026-0805-006",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "JVN iPedia",
+        "url": "https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-026403.html",
+        "type": "advisory"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [],
+      "target": {
+        "sectors": [
+          "manufacturing",
+          "critical_infrastructure"
+        ],
+        "geos": [
+          "GLOBAL",
+          "JP"
+        ]
+      },
+      "cve": [
+        "CVE-2026-13584"
+      ],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "high",
+      "summary": "三菱電機製の複数の産業用制御製品が使用するCC-Link IE TSN通信プロトコルに、通信メッセージの完全性検証が不十分な脆弱性CVE-2026-13584（CWE-924・CVSSv4 7.1・攻撃元区分は隣接ネットワーク）が確認されJVNで公表された。実悪用は確認されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "jvn",
+        "ics",
+        "domestic_vendor"
+      ],
+      "exploitation_stage": "none",
+      "techniques_note": "情報源は通信メッセージの完全性検証不備という脆弱性の性質を記述するのみで、実際に観測された攻撃手口の記述がない。Enterprise ATT&CKのTechniqueとして明示的に導ける記述がないため付与を見送った（R3）。"
+    },
+    {
+      "observation_id": "obs-2026-0805-007",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "CISA KEV",
+        "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        "type": "advisory"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "NVDおよびCISA KEVが公開APIエンドポイントへの未認証アクセスから完全なリモートコード実行に至る旨を明示しているためT1190を付与"
+        }
+      ],
+      "target": {
+        "sectors": [
+          "it"
+        ],
+        "geos": [
+          "GLOBAL"
+        ]
+      },
+      "cve": [
+        "CVE-2026-9198"
+      ],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "high",
+      "summary": "IBM Langflow OSS 1.0.0〜1.10.0の未認証コード実行脆弱性CVE-2026-9198（CWE-94・CVSSv3.1 9.8）が2026-08-04付でCISA KEVカタログへ新規追加された。未認証の攻撃者が/api/v1/auto_loginでSUPERUSERトークンを取得し/api/v1/validate/codeのexec()を経由して既定構成のLangflowデプロイに対し完全なリモートコード実行を行える。FCEB対応期限は2026-08-07。EPSSパーセンタイルは0.96771。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "kev_initial_add",
+        "kev_watch",
+        "ai_platform"
+      ],
+      "exploitation_stage": "kev_listed"
+    },
+    {
+      "observation_id": "obs-2026-0805-008",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "CISA KEV",
+        "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+        "type": "advisory"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [],
+      "target": {
+        "sectors": [
+          "it",
+          "finance",
+          "government"
+        ],
+        "geos": [
+          "GLOBAL"
+        ]
+      },
+      "cve": [
+        "CVE-2026-34486"
+      ],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "high",
+      "summary": "Apache Tomcat 11.0.20／10.1.53／9.0.116のEncryptInterceptor迂回を許す脆弱性CVE-2026-34486（CWE-311/CWE-807・CVSSv3.1 9.8）が2026-08-04付でCISA KEVカタログへ新規追加された。先行するCVE-2026-29146の修正に起因して成立した。FCEB対応期限は2026-08-07。EPSSパーセンタイルは0.99598で本日処理した全CVE中で最高値。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "kev_initial_add",
+        "kev_watch"
+      ],
+      "exploitation_stage": "kev_listed",
+      "techniques_note": "CISA KEVおよびNVDはEncryptInterceptorの迂回を許す機密データの暗号化不備という脆弱性の性質を記述するのみで、実際に観測された攻撃手口・侵入経路の記述がない。KEV収載は実悪用を意味するが悪用の具体的挙動が非公開のためT1190等の推測付与は行わない（R3）。"
+    },
+    {
+      "observation_id": "obs-2026-0805-009",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "BleepingComputer",
+        "url": "https://www.bleepingcomputer.com/news/security/massive-chaindrop-npm-supply-chain-attack-infects-hundreds-of-packages",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [
+        {
+          "technique_id": "T1195",
+          "sub_technique_id": "T1195.002",
+          "tactic": "initial-access",
+          "evidence": "情報源が正規npmパッケージの汚染バージョン公開を通じて利用者環境でコードが実行される旨を明示しているためT1195.002（Compromise Software Supply Chain）を付与"
+        },
+        {
+          "technique_id": "T1552",
+          "sub_technique_id": null,
+          "tactic": "credential-access",
+          "evidence": "情報源がGitHub PAT・npmトークン・AWS認証情報およびSecrets Managerの値・Kubernetesシークレット・Vaultトークン等を収集すると具体的に列挙しているためT1552を付与"
+        },
+        {
+          "technique_id": "T1078",
+          "sub_technique_id": null,
+          "tactic": "defense-evasion",
+          "evidence": "情報源が窃取したnpmトークンを用いて他メンテナのパッケージへ悪性コードを公開する自己増殖動作を明示しているためT1078を付与"
+        },
+        {
+          "technique_id": "T1546",
+          "sub_technique_id": null,
+          "tactic": "persistence",
+          "evidence": "情報源がリポジトリ内の .claude/settings.json および .vscode/tasks.json にフックを設置し開発者がリポジトリを開いた際にペイロードを実行させると明示しているためT1546を付与"
+        }
+      ],
+      "target": {
+        "sectors": [
+          "it",
+          "retail",
+          "transportation",
+          "professional_services"
+        ],
+        "geos": [
+          "GLOBAL"
+        ]
+      },
+      "cve": [],
+      "geopolitical_signal": null,
+      "iocs": [
+        {
+          "value": "npm-cache[.]com",
+          "type": "domain",
+          "defanged": true,
+          "note": "窃取先として特定された。正規レジストリ registry.npmjs.org と紛らわしい名称であるためタイポスクワッティング照合を優先する"
+        }
+      ],
+      "confidence": "high",
+      "summary": "npmレジストリでkeyv@6.0.0を起点とする自己増殖型の認証情報窃取マルウェア（ChainDrop／Aikidoの分類ではShai-Huludファミリー）が拡散し、月間合計約20億ダウンロード規模の868〜1,684バージョンが侵害されたことが確認された。Keyvメンテナのアカウント侵害とGitHub Actionsワークフロー悪用を起点に、GitHub PAT・npmトークン・AWS/Azure/GCP認証情報・Kubernetesシークレット・Vaultトークン等を窃取し、窃取したトークンで他メンテナのパッケージへ横展開する。攻撃者の帰属は情報源から示されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "supply_chain",
+        "npm",
+        "self_propagating"
+      ]
+    },
+    {
+      "observation_id": "obs-2026-0805-010",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "ScanNetSecurity",
+        "url": "https://scan.netsecurity.ne.jp/article/2026/08/04/55857.html",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [],
+      "target": {
+        "sectors": [
+          "other"
+        ],
+        "geos": [
+          "JP"
+        ]
+      },
+      "cve": [],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "medium",
+      "summary": "アパレル企業ファイブフォックスのサーバがランサムウェアに感染した可能性があることが、通常のセキュリティ調査の過程で発覚したと報じられた。攻撃者・侵入手口は公表されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "domestic_incident"
+      ],
+      "techniques_note": "情報源は被害の発生事実と調査状況を報じるのみで、侵入経路・攻撃手口の具体的記述がないためTechnique付与を見送った（R3）。"
+    },
+    {
+      "observation_id": "obs-2026-0805-011",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "ScanNetSecurity",
+        "url": "https://scan.netsecurity.ne.jp/article/2026/08/04/55858.html",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [],
+      "target": {
+        "sectors": [
+          "other"
+        ],
+        "geos": [
+          "JP"
+        ]
+      },
+      "cve": [],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "medium",
+      "summary": "プレス機械メーカーのアイダエンジニアリングが不正アクセスを受け、アジア拠点における決算手続に遅延が生じていることが公表された。攻撃者・侵入手口は公表されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "domestic_incident"
+      ],
+      "techniques_note": "情報源は被害の発生事実と調査状況を報じるのみで、侵入経路・攻撃手口の具体的記述がないためTechnique付与を見送った（R3）。"
+    },
+    {
+      "observation_id": "obs-2026-0805-012",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "Security NEXT",
+        "url": "https://www.security-next.com/188284",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [],
+      "target": {
+        "sectors": [
+          "other"
+        ],
+        "geos": [
+          "JP"
+        ]
+      },
+      "cve": [],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "medium",
+      "summary": "講談社の従業員がフィッシング攻撃の被害に遭い、利用するメールアカウントへ不正アクセスがあり連絡先情報が流出したことが公表された。フィッシングキット・攻撃者の詳細は公表されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "domestic_incident"
+      ],
+      "techniques_note": "情報源は被害の発生事実と調査状況を報じるのみで、侵入経路・攻撃手口の具体的記述がないためTechnique付与を見送った（R3）。"
+    },
+    {
+      "observation_id": "obs-2026-0805-013",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "Security NEXT",
+        "url": "https://www.security-next.com/188200",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [],
+      "target": {
+        "sectors": [
+          "other"
+        ],
+        "geos": [
+          "JP"
+        ]
+      },
+      "cve": [],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "medium",
+      "summary": "杏林大学の教員がサポート詐欺の被害に遭い、第三者が遠隔からパソコンを操作できる状態に陥ったことが公表された。当該端末には個人情報が保存されていた。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "domestic_incident"
+      ],
+      "techniques_note": "情報源は被害の発生事実と調査状況を報じるのみで、侵入経路・攻撃手口の具体的記述がないためTechnique付与を見送った（R3）。"
+    },
+    {
+      "observation_id": "obs-2026-0805-014",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "Security NEXT",
+        "url": "https://www.security-next.com/187809",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [],
+      "target": {
+        "sectors": [
+          "other"
+        ],
+        "geos": [
+          "JP"
+        ]
+      },
+      "cve": [],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "medium",
+      "summary": "廃棄物処理事業者の環境開発工業がサイバー攻撃によりシステム障害が発生したことを公表した。廃油・産業廃棄物の回収業務は平常どおり継続している。攻撃者・侵入手口は公表されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "domestic_incident"
+      ],
+      "techniques_note": "情報源は被害の発生事実と調査状況を報じるのみで、侵入経路・攻撃手口の具体的記述がないためTechnique付与を見送った（R3）。"
+    },
+    {
+      "observation_id": "obs-2026-0805-015",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "The Hacker News",
+        "url": "https://thehackernews.com/2026/08/keyv-linked-npm-worm-poisons-hundreds.html",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [
+        {
+          "technique_id": "T1546",
+          "sub_technique_id": null,
+          "tactic": "persistence",
+          "evidence": "情報源がリポジトリ内のAIコーディングツール設定ファイルへフックを設置し、リポジトリを開く操作を契機にペイロードを実行させると明示しているためT1546を付与"
+        }
+      ],
+      "target": {
+        "sectors": [
+          "it"
+        ],
+        "geos": [
+          "GLOBAL"
+        ]
+      },
+      "cve": [],
+      "geopolitical_signal": null,
+      "iocs": [
+        {
+          "value": "npm-cache[.]com",
+          "type": "domain",
+          "defanged": true
+        }
+      ],
+      "confidence": "high",
+      "summary": "ChainDrop／Keyv npmワームが侵害リポジトリ内の .claude/settings.json（Claude Code）および .vscode/tasks.json（VS Code）へフックを設置し、開発者が当該リポジトリを信頼済みワークスペースとして開いた時点でペイロードを実行させる経路を用意していることが確認された。両ツールともワークスペース信頼制御が有効な場合は自動実行がブロックされる。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "ai_attack",
+        "category_C6",
+        "supply_chain"
+      ]
+    },
+    {
+      "observation_id": "obs-2026-0805-016",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "Unit 42 (Palo Alto Networks)",
+        "url": "https://unit42.paloaltonetworks.com/frontier-ai-vulnerability-burst",
+        "type": "vendor_report"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [],
+      "target": {
+        "sectors": [
+          "it"
+        ],
+        "geos": [
+          "GLOBAL"
+        ]
+      },
+      "cve": [],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "medium",
+      "summary": "Unit 42が自律型脆弱性発見システムNOVAにより2か月間で6エコシステムにまたがる3,915のOSSプロジェクトを解析し14,090件の確認済み脆弱性を発見したと公表した。既存の公開情報と一致したのは85件のみで99.4%が未報告、39.7%がCVSS 4.0でHigh以上であった。責任ある開示をクリアリングハウス経由で実施している。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "ai_attack",
+        "category_A5",
+        "research"
+      ],
+      "techniques_note": "研究側の脆弱性発見パイプラインの成果公表であり、攻撃者による具体的な手口・攻撃観測の記述がないためTechnique付与を見送った（R3）。"
+    },
+    {
+      "observation_id": "obs-2026-0805-017",
+      "observed_date": "2026-08-04",
+      "ingested_date": "2026-08-05",
+      "source": {
+        "name": "The Hacker News",
+        "url": "https://thehackernews.com/2026/08/google-deletes-3-adk-ai-workflows-after.html",
+        "type": "news"
+      },
+      "actor_group": null,
+      "actor_aliases": [],
+      "techniques": [
+        {
+          "technique_id": "T1195",
+          "sub_technique_id": "T1195.002",
+          "tactic": "initial-access",
+          "evidence": "情報源がリポジトリのCI/CDワークフローを介して外部からの入力によりCIランナー上で任意コードが実行されうる連鎖を具体的に記述しているためT1195.002を付与"
+        }
+      ],
+      "target": {
+        "sectors": [
+          "it"
+        ],
+        "geos": [
+          "GLOBAL"
+        ]
+      },
+      "cve": [],
+      "geopolitical_signal": null,
+      "iocs": [],
+      "confidence": "medium",
+      "summary": "Pillar SecurityがGoogle Agent Development Kit（ADK）Pythonリポジトリの3件のCI/CDワークフローについて、公開GitHub Issue経由のプロンプトインジェクションでトリアージエージェントを操作しadk-bot名義で特権ワークフローを起動できる連鎖を実証した。adk-botのPAT・Google APIキー・Vertex AIアクセス権を持つGoogle Cloudサービスアカウント資格情報が露出しうる。Googleは2026-06-09付で3件のワークフローを削除済み。実環境での悪用は確認されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": [
+        "ai_attack",
+        "category_B1",
+        "prompt_injection",
+        "poc_only"
+      ]
+    }
+  ]
+}

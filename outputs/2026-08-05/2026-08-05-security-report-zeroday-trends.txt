@@ -1,0 +1,196 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-05 07:33 JST
+調査期間: 2026-08-04 07:00 〜 2026-08-05 07:00 JST
+========================================
+
+
+Section 2: ゼロデイ・セキュリティトレンド
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報格の事象なし。本日CISA KEVへ新規追加された3件（CVE-2026-18556 / CVE-2026-34486 / CVE-2026-9198）はいずれもパッチ提供済みでありゼロデイに該当しない）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 不明（帰属未確定・Aikidoは既知のShai-Huludファミリーに分類）（別名: ChainDrop / Shai-Hulud（ファミリー名） / 国家帰属: 未確定 / 帰属信頼度: low）
+活動タイプ: supply_chain_attack / active_campaign
+------------------------------------------------------------
+
+採用契機: P / R / T
+標的: it / retail / transportation / professional_services — Global
+マルウェア: ChainDrop
+
+【24時間以内の変化】
+[The Hacker News 2026-08-04] keyv@6.0.0を起点とする認証情報窃取型npmワームがKeyv/Cacheableの名前空間を越えて9組織の数百パッケージへ拡散したと報道。SafeDepは当初79パッケージ名・353汚染バージョンを検証、その後420パッケージ名・1,684バージョンへ更新。Aikidoは868パッケージ・1,381バージョンとし、リポジトリ内の .claude/settings.json および .vscode/tasks.json へフックを設置する挙動を確認
+[BleepingComputer 2026-08-05] 自己増殖型マルウェア「ChainDrop」が月間合計20億ダウンロードを持つ1,300超のパッケージを侵害したと報道。Keyvメンテナのアカウント侵害を起点にGitHub Actionsワークフローを悪用して悪性コードを注入、窃取先ドメインとして npm-cache[.]com を特定。Wiz/StepSecurity/Aikido/Socket/Ox Securityがハッシュ・ネットワーク成果物を公開
+
+【概要】
+2026-08-04、npmレジストリ上でkeyv@6.0.0を起点とする自己増殖型の認証情報窃取マルウェアが大規模に拡散した。BleepingComputerは本キャンペーンを「ChainDrop」と呼び、月間合計20億ダウンロードを持つ1,300超のパッケージが侵害されたと報じ、The Hacker NewsはAikidoの分類に基づき既知のShai-Huludファミリーの再来と位置づけた。侵害規模は調査機関ごとに異なり、SafeDepが420パッケージ名・1,684汚染バージョン、Aikidoが868パッケージ・1,381バージョンを報告している。侵入起点はKeyvメンテナのGitHubアカウント侵害で、正規のGitHub Actionsワークフローを悪用して悪性コードが注入され、利用者が npm install を実行した時点でペイロードが自動実行される。窃取対象はGitHub PAT／ワークフロートークン、npmトークン、AWS認証情報およびSecrets Managerの値、Kubernetesシークレット、HashiCorp Vaultトークン、データベース／Stripe／Slack／Twilio／Azure／GCPの各認証情報と広範で、GitHub Actionsランナーのメモリ読み取りも行う。加えて侵害リポジトリ内に .claude/settings.json および .vscode/tasks.json のフックを設置し、開発者が当該リポジトリを開いた際にペイロードが実行される経路を用意する。ワークスペース信頼（workspace trust）が有効な場合は自動実行がブロックされるが、信頼済みワークスペースとして開かれた場合は成立する。影響先にはDeliveroo・Ornikar・OneReach・Picsart・Qlik・ServiceTitanの各組織に紐づくパッケージが含まれる。窃取先ドメインとして npm-cache[.]com が特定され、Wiz・StepSecurity・Aikido・Socket・Ox Securityの5社がハッシュおよびネットワーク成果物を公開している。攻撃者の国家帰属を示す情報は本調査窓時点でいずれのソースからも提示されていない。
+
+攻撃の流れ（判明分）:
+1. Keyvパッケージのメンテナが保有するGitHubアカウントを侵害する
+2. 当該リポジトリの正規GitHub Actionsワークフローを悪用して悪性コードを注入し、汚染バージョンをnpmへ公開する
+3. 利用者が npm install を実行した時点でペイロードが自動実行され、GitHub PAT・npmトークン・AWS/Azure/GCP認証情報・Kubernetesシークレット・Vaultトークン等を窃取する
+4. 窃取したnpmトークンを用いて、先行して侵害したパッケージを利用する他メンテナのパッケージへ横展開し、ワーム的に感染を拡大する
+5. 侵害リポジトリに .claude/settings.json・.vscode/tasks.json のフックを設置し、開発者が信頼済みワークスペースとしてリポジトリを開いた際の再実行経路を確保する
+
+【新規TTP】
+・[T1195 / T1195.002] initial-access — The Hacker News/BleepingComputer 2026-08-04が、正規npmパッケージの汚染バージョン公開を通じて利用者環境でコードが実行される旨を明示しているためT1195.002（Compromise Software Supply Chain）を付与
+・[T1552] credential-access — 両ソースが、GitHub PAT・npmトークン・AWS認証情報およびSecrets Managerの値・Kubernetesシークレット・Vaultトークン等を収集すると具体的に列挙しているためT1552（Unsecured Credentials）を付与
+・[T1078] defense-evasion — BleepingComputer 2026-08-04が、窃取したnpmトークンを用いて他メンテナのパッケージへ悪性コードを公開する自己増殖動作を明示しているためT1078（Valid Accounts）を付与
+・[T1546] persistence — The Hacker News 2026-08-04が、リポジトリ内の .claude/settings.json および .vscode/tasks.json にフックを設置し開発者がリポジトリを開いた際にペイロードを実行させると明示しているためT1546（Event Triggered Execution）を付与
+
+【IoC】
+Domain: npm-cache[.]com
+※ ハッシュ・ネットワーク成果物はWiz/StepSecurity/Aikido/Socket/Ox Securityが個別に公開しており、本レポートには具体値を転記していない。2026-08-04付で作成された『Shai-Hulud: Here We Go Again』という説明を持つ546件の公開GitHubリポジトリは、被害確定ではなく攻撃基盤の可能性がある成果物としてThe Hacker Newsが報告している。
+
+【推奨アクション】
+・2026-08-04以降にnpm install / npm ci を実行したビルド環境を洗い出し、汚染バージョンの取り込み有無をロックファイルで確認する
+・GitHub PAT・npmトークン・クラウド認証情報・Kubernetesシークレット・Vaultトークンをローテーションする
+・CI/CDランナーを再作成し、GitHub Actionsのワークフロー権限（permissions）を最小化する
+・リポジトリ内の .claude/settings.json・.vscode/tasks.json の想定外の変更をレビューし、ワークスペース信頼を既定で無効化する
+・[ログソース / SIEM（Splunk等）] ビルド環境からの想定外ドメインへの外向き通信と、リポジトリ内フックファイルの改変を検知する
+Splunk SPL: index=* sourcetype=proxy OR sourcetype=dns query="npm-cache.com" OR dest_host="npm-cache.com" | stats count by src_ip user dest_host
+Splunk SPL: index=* sourcetype=ci:audit (command="npm install*" OR command="npm ci*") earliest="08/04/2026:00:00:00" | stats count values(repo) by build_agent
+Splunk SPL: index=* sourcetype=github:audit action="git.push" | search file_path IN (".claude/settings.json",".vscode/tasks.json") | table _time repo actor file_path
+→ npm-cache[.]com は正規のnpmレジストリドメイン（registry.npmjs.org）と紛らわしい名称であるため、プロキシログでのタイポスクワッティング照合を優先する。CI/CDランナーからの新規外向き宛先は本来限定的であり、ビルド時間帯の新規宛先を洗い出すことで未公開の窃取先も検出できる。
+
+【参照】
+https://thehackernews.com/2026/08/keyv-linked-npm-worm-poisons-hundreds.html
+https://www.bleepingcomputer.com/news/security/massive-chaindrop-npm-supply-chain-attack-infects-hundreds-of-packages
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定・ランサムウェア感染の可能性） / RIS-2026-FiveFoxes-Ransomware
+ScanNetSecurity 2026-08-04報道。アパレル大手ファイブフォックスのサーバがランサムウェアに感染した可能性があることが、通常のセキュリティ調査の過程で発覚した。攻撃者・侵入手口は非公開。国内組織への侵害確認（参考A昇格トリガー）により注目動向として採用する。
+採用契機: V。帰属信頼度: low。軸P=2点 / 軸Q=1点（参考A昇格トリガー: 国内組織への侵害確認）。
+※ Technique付与見送り: 情報源は被害の発生事実と調査状況を報じるのみで、侵入経路・攻撃手口の具体的記述がないためTechnique付与を見送った（01-normalize.md R3）。
+推奨アクション: 同種の業種・システム構成を持つ組織は、公表された発覚契機と同様の兆候（異常なリソース消費・想定外の外部通信・業務システムの応答遅延）の有無を確認する
+参照: https://scan.netsecurity.ne.jp/article/2026/08/04/55857.html
+
+・不明（帰属未確定） / RIS-2026-AidaEngineering-UnauthorizedAccess
+ScanNetSecurity 2026-08-04報道。プレス機械メーカーのアイダエンジニアリングが不正アクセスを受け、アジア拠点における決算手続に遅延が生じていることを公表した。攻撃者・侵入手口は非公開。国内上場企業の海外拠点を含む業務影響が確認されており、注目動向として採用する。
+採用契機: V。帰属信頼度: low。軸P=2点 / 軸Q=1点（参考A昇格トリガー: 国内組織への侵害確認）。
+※ Technique付与見送り: 情報源は被害の発生事実と調査状況を報じるのみで、侵入経路・攻撃手口の具体的記述がないためTechnique付与を見送った（01-normalize.md R3）。
+推奨アクション: 同種の業種・システム構成を持つ組織は、公表された発覚契機と同様の兆候（異常なリソース消費・想定外の外部通信・業務システムの応答遅延）の有無を確認する
+参照: https://scan.netsecurity.ne.jp/article/2026/08/04/55858.html
+
+・不明（帰属未確定・フィッシング） / RIS-2026-Kodansha-PhishingBreach
+Security NEXT 2026-08-04報道。講談社は従業員がフィッシング攻撃の被害に遭い、利用するメールアカウントへ不正アクセスがあり連絡先情報が流出したことを明らかにした。攻撃者・フィッシングキットの詳細は非公開。国内組織への侵害確認により注目動向として採用する。
+採用契機: V。帰属信頼度: low。軸P=2点 / 軸Q=1点（参考A昇格トリガー: 国内組織への侵害確認）。
+※ Technique付与見送り: 情報源は被害の発生事実と調査状況を報じるのみで、侵入経路・攻撃手口の具体的記述がないためTechnique付与を見送った（01-normalize.md R3）。
+推奨アクション: 同種の業種・システム構成を持つ組織は、公表された発覚契機と同様の兆候（異常なリソース消費・想定外の外部通信・業務システムの応答遅延）の有無を確認する
+参照: https://www.security-next.com/188284
+
+・不明（帰属未確定・サポート詐欺） / RIS-2026-KyorinUniv-TechSupportScam
+Security NEXT 2026-08-04報道。杏林大学は教員がサポート詐欺の被害に遭い、第三者が遠隔からパソコンを操作できる状態に陥ったことを明らかにした。当該端末内部には個人情報が保存されていた。国内組織への侵害確認により注目動向として採用する。
+採用契機: V。帰属信頼度: low。軸P=1点 / 軸Q=1点（参考A昇格トリガー: 国内組織への侵害確認）。
+※ Technique付与見送り: 情報源は被害の発生事実と調査状況を報じるのみで、侵入経路・攻撃手口の具体的記述がないためTechnique付与を見送った（01-normalize.md R3）。
+推奨アクション: 同種の業種・システム構成を持つ組織は、公表された発覚契機と同様の兆候（異常なリソース消費・想定外の外部通信・業務システムの応答遅延）の有無を確認する
+参照: https://www.security-next.com/188200
+
+・不明（帰属未確定） / RIS-2026-KankyoKaihatsu-SystemOutage
+Security NEXT 2026-08-04報道。廃棄物処理を手がける環境開発工業はサイバー攻撃によりシステム障害が発生したことを明らかにした。廃油・産業廃棄物の回収などの業務は平常どおり提供している。攻撃者・侵入手口は非公開。国内の廃棄物処理事業者への侵害確認により注目動向として採用する。
+採用契機: V。帰属信頼度: low。軸P=2点 / 軸Q=1点（参考A昇格トリガー: 国内組織への侵害確認）。
+※ Technique付与見送り: 情報源は被害の発生事実と調査状況を報じるのみで、侵入経路・攻撃手口の具体的記述がないためTechnique付与を見送った（01-normalize.md R3）。
+推奨アクション: 同種の業種・システム構成を持つ組織は、公表された発覚契機と同様の兆候（異常なリソース消費・想定外の外部通信・業務システムの応答遅延）の有無を確認する
+参照: https://www.security-next.com/187809
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+トラックB CVE（section_route: trends）: 該当なし（24時間窓内に該当事象なし）
+
+・[トレンド記事] BMC（サーバ管理インタフェース）の数十年来の設計上の弱点で24,000台超が認証ハッシュを事前開示
+【24時間以内の変化】
+[SecurityWeek 2026-08-04] インターネットから到達可能なサーバ管理インタフェース24,000台超が、ログイン前に認証ハッシュを開示している実態を報道
+SecurityWeekが2026-08-04、データセンターのサーバ管理に用いられるBMC（Baseboard Management Controller）に長年存在する設計上の弱点により、インターネットからアクセス可能な24,000台超の管理インタフェースがログイン成立前に認証ハッシュを開示している実態を報じた。BMCはOSの外側でサーバの電源制御・仮想メディアマウント・コンソール操作を行える極めて強力な管理面であり、認証ハッシュの事前開示はオフラインでの総当たり解析に直結する。個別ベンダー製品のCVEではなくプロトコル・実装横断の露出であるため、pipeline-1-cve.md の決定木D3に基づきトレンドとして扱う。
+IoC: 確認されず
+参照: https://www.securityweek.com/decades-old-bmc-vulnerability-exposes-thousands-of-data-centers-to-attacks
+
+・[トレンド記事] デバイスコードフィッシングが2026年に1,500%増・ビッシングは倍増、Greatness PhaaSも対応機能を追加
+【24時間以内の変化】
+[Dark Reading 2026-08-04] 2026年のデバイスコードフィッシングが1,500%増、ビッシングが倍増したとの統計を報道。既存のセキュリティ統制を迂回し痕跡を残しにくい点を指摘
+[The Hacker News 2026-08-05] 商用PhaaS「Greatness」がOAuth 2.0デバイス認可グラントを悪用するデバイスコードフィッシングに対応しMFA迂回とトークン窃取を可能にしたと報道
+[BleepingComputer 2026-08-05] 同じくGreatnessがRingCentralを偽装しMicrosoft 365アカウントを狙うAiTM／デバイスコードフィッシングへ機能拡張したと報道
+OAuth 2.0のデバイス認可グラント（デバイスコードフロー）を悪用してMFAを迂回しトークンを窃取する手口が、2026年に入って統計・ツール双方の面で急拡大していることが本調査窓で複数ソースから確認された。Dark Readingは2026年のデバイスコードフィッシングが1,500%増、ビッシングが倍増したと報じ、同日The Hacker NewsとBleepingComputerは商用フィッシングサービス「Greatness」がデバイスコードフィッシングとAiTM機能を新たに搭載しRingCentralを偽装してMicrosoft 365アカウントを狙っていると報じた。デバイスコードフローの悪用はフィッシングサイトへの認証情報入力を伴わないためAiTM検知・パスワードリセット中心の対策が効きにくく、既報のStorm-2945（CaptiveCrunch）やDEBULL・Forg365と同一の攻撃面である。
+IoC: 確認されず
+参照: https://www.darkreading.com/cybersecurity-analytics/device-code-phishing-vishing-doubles
+参照: https://thehackernews.com/2026/08/greatness-phaas-adds-device-code.html
+参照: https://www.bleepingcomputer.com/news/security/phishing-service-spoofs-ringcentral-to-steal-microsoft-365-accounts
+
+・[トレンド記事] Pass-ta-key: 侵害済みWindows端末上のマルウェアがGoogle同期パスキーを乗っ取る3手法
+【24時間以内の変化】
+[BleepingComputer 2026-08-04] 研究者が、既に侵害されたWindows端末上のマルウェアがGoogleパスワードマネージャの同期パスキーを悪用してアカウント乗っ取り・利用者検証の迂回・パスキー秘密鍵の抽出を行える3つの攻撃を公開
+BleepingComputerが2026-08-04、研究者が「Pass-ta-key」と総称される3つの攻撃を発見したと報じた。既に侵害されたWindows端末上で動作するマルウェアが、Googleパスワードマネージャで同期されるパスキーを悪用し、アカウントの乗っ取り・利用者検証（user verification）の迂回・パスキー秘密鍵の抽出を行える。前提条件が「端末が既に侵害されていること」である点は重要で、パスキー方式そのものがフィッシング耐性を失ったことを意味しない。ただしパスキーを唯一の認証手段として全面移行した組織では、端末侵害が即座にアカウント侵害へ直結する経路が成立するため、端末側EDRの前提条件としての重要性が高まる。
+IoC: 確認されず
+参照: https://www.bleepingcomputer.com/news/security/new-pass-ta-key-attacks-let-malware-hijack-google-synced-passkeys
+
+・[トレンド記事] CISA KEV 2026年7月の追加は26件・8割超が3日以内の対応期限
+【24時間以内の変化】
+[Security NEXT 2026-08-04] CISAが2026年7月にKEVカタログへ26件を追加し、その8割超に3日以内の対応期限が設定されたと国内向けに報道（記事188282）
+Security NEXTが2026-08-04、CISAが2026年7月に「悪用が確認された脆弱性カタログ（KEV）」へ26件を追加し、その8割超に3日以内の対応期限が設定されたと報じた。BOD 26-04の運用下でFCEB期限が従来の2週間前後から3日へ大幅に短縮されている実態を示すデータであり、本日新規収載されたCVE-2026-18556／CVE-2026-34486／CVE-2026-9198の3件もいずれもdateAdded=2026-08-04に対して期限2026-08-07（3日）が設定されている。国内組織にFCEB期限の法的拘束力はないが、KEV収載から実際の攻撃観測までの猶予が短い前提で運用を組む必要がある。
+IoC: 確認されず
+参照: https://www.security-next.com/188282
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: npm依存を持つ開発・CI/CD環境はChainDrop汚染バージョンの取り込み有無の確認と開発者トークンのローテーションを72時間以内に完了すべき
+forecast_id: fc-20260805-1
+Tier: 1
+確度: 低
+観測出口クラス: E3
+検証窓: fast_72h（割当根拠: 2026-08-04当日に進行中の自己増殖型サプライチェーン攻撃であり、国内CSIRTによる注意喚起は過去の同種npm大規模汚染事案でも数日以内に発行されているため72h窓で外部可視化される主題としてfast_72hに割当）
+検証期限: 2026-08-08
+根拠:
+  Evidence: [The Hacker News 2026-08-04] keyv@6.0.0起点の認証情報窃取型npmワームが9組織の数百パッケージへ拡散、SafeDep検証で420パッケージ名・1,684汚染バージョン、Aikido報告で868パッケージ・1,381バージョンを確認 / [BleepingComputer 2026-08-04] 自己増殖型マルウェア「ChainDrop」が月間合計20億ダウンロードの1,300超パッケージを侵害、窃取先ドメイン npm-cache[.]com を特定
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py による検索結果 n_cases=0）。（過去実績）
+  脅威情報: 2026-08-04当日に進行中の自己増殖型npmサプライチェーン侵害。侵害パッケージは調査機関により868〜1,684バージョン、月間合計約20億ダウンロード規模
+  確度アンカー: EPSS該当なし（CVE非採番事案） / KEV未登録 / SSVC決定なし / Automatable判定なし。定量ゲートDを満たさないため確度=高・中の適用条件をいずれも満たさず、M1発行前チェックリスト通過により確度=低を適用
+ベースレート見積もり: 0.3
+推定部分: 推定 — 侵害規模（月間20億ダウンロード相当のパッケージ群・国内でも利用が多いKeyv/Cacheable系ユーティリティ）から、国内CSIRTが注意喚起を発行する水準に達すると推測するが、JPCERT/CCは過去のnpmサプライチェーン事案で個別注意喚起ではなくWeekly Reportでの言及に留めた例もあり、必ず新規発行されるとは限らない。（推測）また、本予報の的中可否は攻撃の実際の拡大有無とは独立であり、注意喚起が発行されないことは被害が小さいことを意味しない。
+先回り監視: ビルドサーバ・CIランナーから npm-cache[.]com への名前解決およびHTTPS接続、2026-08-04以降のnpm install実行ログ、リポジトリ内 .claude/settings.json・.vscode/tasks.json の想定外変更、GitHub PAT・npmトークンの想定外の発行・使用
+的中判定: JPCERT/CCまたはIPAが、npmレジストリにおける本件サプライチェーン侵害（ChainDrop / keyv・Cacheable系パッケージの汚染、またはShai-Hulud系npmワーム）に関する注意喚起・注意情報を2026-08-08 07:00 JSTまでに新規発行した場合を的中とする。
+除外条件: JPCERT/CCの定例Weekly Reportにおける他機関公表の転載のみ、および過去のShai-Hulud関連注意喚起の更新（新規発行でないもの）は的中としない。ベンダー・調査会社による追加IOC公開のみでは的中としない。
+KEVスナップショット: 該当なし（CVE非採番のサプライチェーン事案のためE1ではなくE3を出口クラスとする）
+
+※ 本日KEV初回追加された CVE-2026-34486（Apache Tomcat）および CVE-2026-9198（IBM Langflow）は、
+  03-forecast.md Step A' の「KEV単体では予報を生成しない」規定により予報化を見送り、
+  observation の tags に kev_watch を付与して翌日以降の実確認イベント（新規スキャン増加・新規IOC公開・
+  PoC公開後48時間以内の攻撃加速報告）を待つ。
+※ CVE-2026-18556 / CVE-2026-18577（N-able N-central）は 2026-08-04 発行の予報 fc-20260804-1（E3・期限2026-08-07）が
+  未確定のまま継続中であるため、同一主題・同一出口クラスの重複発行を避け本日は再発行しない。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外APT】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Storm-2945（Midnight Blizzardのサブクラスター） / Storm2945-2026-CaptiveCrunch → 既報（2026-08-02初報・2026-08-04更新）。本調査窓のBleepingComputer 2026-08-04記事はMicrosoft Threat Intelligenceの既報内容（CaptiveCrunch・CornFlake RAT・ChocoShell・デバイスコードフィッシング）の再報道であり、新規の技術情報・IOC追加なし → 既報・変化なしのため除外
+・不明（DOUBLECUP運営者・ロシア系） / RIS-2026-DOUBLECUP-ClickFixLoaderService → 既報（2026-08-04分レポートで軸P6/軸Q3により除外済み）。本調査窓のThe Hacker News 2026-08-04記事は同一のSOCRadar調査の再報道であり新規事実の追加なし → 既報・変化なしのため除外
+・不明（Securonix追跡・帰属未確定） / RIS-2026-SmokeScreen-ScreenConnectRMM → 軸P=3点（単一ベンダー帰属+3・新規マルウェアファミリーなし）／軸Q=5点（複数地域複数業種+3・複数メディア確認+2）。軸Pが8点未満かつ参考A昇格トリガー該当なしのため判定順4により除外。Section 4 SOC推奨情報（中）で個別掲載・継続監視対象
+・不明（帰属未確定・Unit 42追跡のXCSSETオペレータ） / RIS-2026-XCSSET-v40-XcodeSupplyChain → 軸P=6点（単一ベンダー帰属+3・既知マルウェアの新規TTP/新規モジュール+3）／軸Q=3点（複数地域のmacOS開発者+3）。軸Pが8点未満かつ参考A昇格トリガー該当なしのため判定順4により除外。Section 4 SOC推奨情報（高）で個別掲載・継続監視対象
+・不明（Greatness PhaaS運営者） / RIS-2026-Greatness-DeviceCodePhaaS → 軸P=6点（新規TTP追加+3・単一ベンダー帰属+3）／軸Q=5点（複数業種+3・複数メディア確認+2）。軸Pが8点未満かつ参考A昇格トリガー該当なしのため判定順4により除外。Section 2 トレンド記事およびSection 4 SOC推奨情報（高）で掲載
+・不明（帰属未確定・Open VSX悪性拡張の公開者） / RIS-2026-OpenVSX-77Extensions → 軸P=3点（単一ベンダー帰属+3）／軸Q=3点（開発者環境という限定的だが横断的な露出+3）。軸Pが8点未満かつ参考A昇格トリガー該当なしのため判定順4により除外。Section 4 SOC推奨情報（高）で個別掲載
+・対象外（サイバー攻撃ではない） / 宜野湾市 水道検針データ消失 → Security NEXT 2026-08-04報道の事案だが、原因は業務委託先における誤操作でありサイバー攻撃・不正アクセスではないため、採用条件P〜Wのいずれにも該当せず除外
+
+本日の集計:
+APT — 本編1件 / 注目動向5件 / 除外7件
+
+========================================
