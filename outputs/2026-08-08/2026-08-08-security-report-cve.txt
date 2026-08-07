@@ -1,0 +1,201 @@
+========================================
+セキュリティインテリジェンス日報 — Section 3: 製品別CVE
+調査日時: 2026-08-08 07:54 JST
+調査期間: 2026-08-07 07:00 〜 2026-08-08 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックA〔製品別CVE〕帰属のゼロデイCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1が8点以上かつ軸2が4点以上のCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT国内報道 / JVN発行（国内ベンダーアドバイザリ）
+
+------------------------------------------------------------
+1. CVE-2026-64638 / WordPress Core（ログイン画面）
+対象: 4.7〜7.0.2（7.0.3で修正・4.7系列までバックポート）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: v4 8.9 (High)
+状態: PoC公開
+
+【24時間以内の変化】
+[The Hacker News 2026-08-07] ログイン画面の認証前反射型XSSを起点に「XSS2Shell」手法でuser-profile.jsを悪用しREST API経由のPHPコード実行へ連鎖しうる手口が公開され、WordPress 7.0.3での修正が報じられた
+[Security NEXT 2026-08-07] WordPressログイン画面のXSS脆弱性と修正版公開を国内向けに報道
+
+【概要】
+WordPressのログイン失敗時のユーザー名表示処理に認証前反射型XSSが存在し、pwn.aiの実証により標準のuser-profile.jsスクリプトを悪用する「XSS2Shell」という手法でREST API経由の認証済みコンテキストを奪取し任意ファイルアップロードからPHPコード実行へ連鎖しうることが示された。攻撃者が用意した第三者サイトを管理者権限を持つ被害者が閲覧するなど攻撃者の制御が及ばない条件を要するため実際の悪用難度は一定あるが、XSS自体は無認証で成立する。WordPress 7.0.3で修正済み。実悪用は本日時点で確認されていない。
+
+攻撃の流れ:
+1. 細工したログイン失敗ユーザー名処理を悪用し認証前に反射型XSSを実行
+2. XSS2Shell手法でuser-profile.jsを悪用し認証済み管理者のREST APIコンテキストを奪取（被害者の閲覧・操作が必要）
+3. 任意ファイルアップロードAPI経由でPHPコードを設置しRCEへ発展する可能性
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・wp-login.php宛のXSSペイロードを含むリクエストおよびuser-profile.js経由の異常なREST APIコールを監視する
+Splunk SPL: index=web_logs sourcetype=access_combined uri_path="*/wp-login.php*" (uri_query="*%3Cscript%3E*" OR uri_query="*onerror=*" OR uri_query="*onload=*") | stats count by clientip, uri_query
+Splunk SPL: index=web_logs sourcetype=access_combined uri_path="*/wp-json/wp/v2/users/*" method=POST | stats count by clientip, uri_path, status
+→ 正規のログインエラーメッセージにHTML特殊文字が混入する誤検知を避けるため、scriptタグやイベントハンドラ属性を含むペイロードに限定して検知する
+
+【参照】
+https://www.security-next.com/188520
+https://thehackernews.com/2026/08/new-wordpress-pre-auth-xss-could-lead.html
+
+------------------------------------------------------------
+2. CVE-2026-54876 / OpenSSL（TLSクライアント、OCSPレスポンス検証有効時）
+対象: X509_V_FLAG_OCSP_RESP_CHECK系フラグを有効化しているOpenSSL TLSクライアント
+------------------------------------------------------------
+
+優先度: 中
+CVSS: 7.5 (High)
+状態: （実悪用・PoCとも未確認）
+
+【24時間以内の変化】
+[JVN 2026-08-07] OpenSSLのOCSPレスポンス検証におけるクライアント側メモリリーク脆弱性（CVE-2026-54876）をJVN（JVNVU#92139835）が国内向けに新規公開
+
+【概要】
+OCSPレスポンス検証を有効化したOpenSSL TLSクライアントに対し、悪意あるTLSサーバがSingleResponseエントリを含まない細工したOCSPレスポンスを送信すると、OCSP_response_get1_basic()で確保されたOCSP_BASICRESPが解放されずメモリリークが発生する。証明書フィールドへの偽証明書の詰め込みでリーク量を増幅可能であり、長時間接続を繰り返すクライアントではメモリ枯渇によるDoSに至り得る。詳細な対象バージョン・パッチ版番号は一次情報参照が必要で本日時点で未確認。実悪用・PoC公開いずれも確認されていない。
+
+攻撃の流れ:
+1. 悪意あるTLSサーバがクライアントのOCSPレスポンス検証を狙い接続を受け付ける
+2. SingleResponseエントリを含まない細工OCSPレスポンス（偽証明書を詰め込み増幅可能）を返送
+3. クライアント側でOCSP_BASICRESP構造体が解放されずメモリリークが蓄積し、長時間稼働クライアントでメモリ枯渇（DoS）に至る
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・TLSクライアントプロセスのメモリ使用量の異常増加、および同一送信元TLSサーバとの反復ハンドシェイクを監視する
+Splunk SPL: index=os_metrics sourcetype=perfmon:process process_name=*client* | timechart span=1h max(mem_used_mb) by process_name
+→ 通常のOCSPステープリング利用パターンと区別するため、同一リモートホストとの反復ハンドシェイク＋プロセスメモリの持続的増加を組み合わせて判断する
+
+【参照】
+https://jvn.jp/vu/JVNVU92139835
+
+------------------------------------------------------------
+3. CVE-2026-19137 / Google Chrome（151.0.7922.109未満、WebGL等）
+対象: 151.0.7922.109未満（CVE-2026-19149/19154/19157/19170/19172と同時修正）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: Critical（社内評価・数値未公表）
+状態: （実悪用未確認）
+
+【24時間以内の変化】
+[NVD 2026-08-07] Chrome 151.0.7922.109向けの追加セキュリティ修正としてCVE-2026-19137/19149/19154/19157/19170/19172（いずれもUse-After-Free/境界外書き込み、Chromium社内評価Critical）が新規公開された
+[Security NEXT 2026-08-07] 「Chrome」にクリティカル6件を含む脆弱性修正のセキュリティ更新を国内向けに報道
+[SecurityWeek 2026-08-07] Chrome 151アップデートで6件のCritical・35件のHigh脆弱性を修正、悪用報告なしと報道
+
+【概要】
+Google Chrome 151.0.7922.109において、WebGL・Aura・Skia・ANGLE・Viewsの各コンポーネントにUse-After-Free（一部境界外書き込み）が発見され、レンダラプロセス侵害後のサンドボックス脱出に悪用されうる6件のCritical脆弱性が修正された。あわせて35件のHigh脆弱性も修正されている（合計41件）。Googleは本更新時点でこれらの脆弱性が実環境で悪用されたとは述べていない。CVE-2026-19137はWebGL起因でAndroid版が対象。
+
+攻撃の流れ:
+1. 攻撃者が細工したHTMLページを被害者に閲覧させ、WebGL等の脆弱コンポーネントでレンダラプロセスを侵害
+2. Use-After-Freeを悪用しレンダラ内での任意コード実行の足がかりを得る
+3. サンドボックス脱出を試み、成功すればOSレベルでの追加悪用に発展しうる（本日時点で実悪用報告なし）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・エンドポイントでのChromeレンダラプロセスクラッシュ多発や、パッチ未適用端末の継続的な検出を監視する
+Splunk SPL: index=edr sourcetype=process_crash process_name="*chrome*" module_name IN ("*libwebgl*","*angle*","*skia*") | stats count by host, process_name
+Splunk SPL: index=inventory sourcetype=browser_version product="Chrome" | where version < "151.0.7922.109" | stats count by host
+→ 通常のレンダラクラッシュと区別するため、特定モジュール関連クラッシュの急増や同一ペイロード配信元への複数端末アクセスを併せて確認する
+
+【参照】
+https://www.security-next.com/188474
+https://www.securityweek.com/critical-vulnerabilities-patched-with-chrome-151-update/
+
+------------------------------------------------------------
+4. CVE-2026-8496 / Alinto SOGo（Webメール/グループウェア）
+対象: 5.12.7（5.12.8で修正）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 6.1 (Medium)
+状態: 実悪用確認
+
+【24時間以内の変化】
+[CERT/CC (VU#487613) 2026-08-07] 細工したICSカレンダー招待（description欄のSVG+onrepeatイベントハンドラ未サニタイズ）を介したXSS脆弱性がVirusTotalでの観測に基づき実環境で悪用されていることをCERT/CCが確認・公開
+[JVN 2026-08-07] 同脆弱性（JVNVU#96816564）を国内向けに新規公開
+
+【概要】
+Alinto SOGo 5.12.7において、ICSカレンダー招待ファイルのdescriptionフィールドに埋め込まれたSVGコンテンツがonrepeatイベントハンドラを含む場合に十分サニタイズされずWebメール画面で描画される反射型XSS脆弱性が存在する。攻撃者は細工したカレンダー招待を送付するだけで、閲覧した認証済み利用者のセッション内で任意のJavaScriptを実行させ、メールボックスアクセスやメール・連絡先窃取、セッションハイジャック等に悪用できる。CERT/CCはVirusTotalでの観測に基づき実環境での悪用を確認しており、CVSSはMedium（6.1）だが実悪用が確認されている点を重視する必要がある。5.12.8で修正済み。
+
+攻撃の流れ:
+1. 攻撃者がonrepeatイベントハンドラ付きSVGを埋め込んだ細工ICSカレンダー招待を作成
+2. 被害者（SOGo認証済み利用者）が招待を閲覧すると未サニタイズのSVGがレンダリングされJavaScriptが実行
+3. 認証済みセッション内でメールボックスアクセス・メール/連絡先窃取・セッションハイジャック等に悪用
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・SOGoへのICS招待の受信内容とWebメールセッション内での異常なJavaScript実行兆候を監視する
+Splunk SPL: index=mail_gateway sourcetype=smtp_content attachment_type="text/calendar" content="*onrepeat*" | stats count by sender, recipient
+Splunk SPL: index=web_logs sourcetype=access_combined uri_path="*/SOGo/*" (uri_query="*%3Csvg*" OR uri_query="*onrepeat*") | stats count by clientip
+→ 正規のICS招待にはonrepeat等のイベントハンドラ属性は通常含まれないため、当該属性を含むICS添付ファイルの受信自体を高優先度アラートとして扱う
+
+【参照】
+https://jvn.jp/vu/JVNVU96816564
+https://www.kb.cert.org/vuls/id/487613
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: JVNVU#92139835 OpenSSLのOCSPレスポンス検証におけるクライアント側のメモリリークの脆弱性 https://jvn.jp/vu/JVNVU92139835
+発行あり: JVNVU#96816564 Alinto SOGo v5.12.7における不正な形式のICSカレンダー招待を介したクロスサイトスクリプティングの脆弱性 https://jvn.jp/vu/JVNVU96816564
+未発行: CVE-2026-64638 / CVE-2026-19137 — 24時間窓内にJPCERT/CC・IPAの発行確認されず
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-8037 / Progress Kemp LoadMaster（ECS Connection Manager / Object Scale Connection Manager / MOVEit WAF含む）
+CVSS: 9.8
+既報（6/30初報）の未認証root権限OSコマンドインジェクション脆弱性について、CISAが本日付でKEVカタログへ新規追加した（FCEB期限2026-08-10）。watchTowr Labsによる詳細エクスプロイトチェーン公開とeSentireによる実悪用試行観測は既報済みで、独立した新規実悪用確認報道は本日時点で見つかっていない。EPSSパーセンタイルは99.7%と極めて高い。パッチは6月時点で提供済み。国内報道は本日時点で未確認。対処: GA 7.2.63.2 / LTSF 7.2.54.18 へのアップデート。
+IoC: 確認されず
+
+監視: [ネットワークアプライアンスログ] LoadMaster管理APIへの異常なコマンド注入パターンを含むリクエストを監視する
+Splunk SPL: index=network_appliance sourcetype=loadmaster_api (uri_path="*/accessv2*" OR uri_path="*/cmd*") (uri_query="*;*" OR uri_query="*|*" OR uri_query="*$(*") | stats count by clientip, uri_path
+→ 正規の設定変更APIコールとの誤検知を避けるため、シェルメタ文字を含むパラメータ値に限定して検知する
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-8037
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-63078 (Apache Traffic Server) → insufficient_evidence: CVE.org/NVDにレコード不存在（CVE_RECORD_DNE）を確認したためCVSS・対象バージョン未確認。継続監視対象
+・CVE-2026-64564 (Linux kernel SCTP "SCTPhantom") → out_of_window: 公開・パッチとも調査窓外。継続監視対象
+・CVE-2024-31867 (Apache Zeppelin) → out_of_window: JVNDB公開は前回窓内だが前回未検知
+・CVE-2026-20303 (Cisco Catalyst SD-WAN) → already_reported
+・CVE-2026-20304 (Cisco Catalyst SD-WAN) → already_reported
+・CVE-2026-20272 (Cisco IOS XE) → already_reported
+・CVE-2026-20310 (Cisco Catalyst SD-WAN) → out_of_window
+・CVE-2026-20267 (Cisco IOS XE) → out_of_window
+・CVE-2026-0516 (SonicWall SonicOS) → out_of_window
+・CVE-2026-15307 (Django、代表CVE) → out_of_window（SOC推奨情報として別途採用）
+・CVE-2026-63077 (JetBrains TeamCity) → already_reported
+・CVE-2026-64531 (Linux Kernel Open vSwitch) → already_reported
+・CVE-2026-59774 (Gitea) → already_reported
+・CVE-2026-9198 (IBM Langflow OSS) → already_reported
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A4件 / 参考B1件 / 除外14件
+
+========================================

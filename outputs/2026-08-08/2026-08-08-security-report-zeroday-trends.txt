@@ -1,0 +1,169 @@
+========================================
+セキュリティインテリジェンス日報 — Section 2: ゼロデイ・セキュリティトレンド
+調査日時: 2026-08-08 07:54 JST
+調査期間: 2026-08-07 07:00 〜 2026-08-08 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認（トラックA帰属のみ）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックA〔製品別CVE〕帰属のゼロデイCVEなし。Metabaseゼロデイはトラック B〔CVE未採番〕帰属のため下記【注目CVE（リスト外）】にゼロデイ特報格として掲載）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 不明（帰属未確定・Aikidoは既知のShai-Huludファミリーに分類）（国家帰属: 明示なし / 帰属信頼度: unconfirmed）
+活動タイプ: ttp_update / ioc_release / active_campaign
+------------------------------------------------------------
+
+キャンペーンID: RIS-2026-ChainDrop-KeyvNpmWorm
+標的: it / global
+マルウェア: ChainDrop（JavaScript製ドロッパー・サプライチェーン配送）
+
+【24時間以内の変化】
+[Unit 42 2026-08-07] 既報の自己増殖npmワームChainDropについて独立技術解析を公開。Ethereumスマートコントラクト(0xE1f2395ee43e45A1556EC6438a88c31B83493103)経由でC2ドメインを解決する新規TTPを確認し、2026-08-04に単一のブロックチェーントランザクションでC2ドメインを無停止ローテーションした事象を観測。GitHub Actionsランナーの/proc/<pid>/memへの直接メモリアクセスによるephemeral OIDCトークン窃取の具体的手法とMITRE ATT&CK T1059.007/T1528を明示。新規ドメイン(pypi-get.com/js-mirror.com/awqhnjewqjkl.icu)・C2 IP(104.21.91.101/172.67.215.154)・ハッシュ4件を追加公開
+
+【概要】
+npmサプライチェーンを介して自己増殖する認証情報窃取ワームChainDrop（既報）についてUnit 42が独立した技術解析を公開し、Ethereumスマートコントラクトを用いたC2ドメイン解決というブロックチェーンベースの新規C2手法と、GitHub Actionsランナーのプロセスメモリから直接OIDCトークン・シークレットを窃取する具体的手法、新規IOC群、MITRE ATT&CK技術IDを明らかにした。
+
+攻撃の流れ（判明分）:
+1. 侵害されたkeyv等のnpmパッケージのインストール時に悪性コードが自動実行される
+2. GitHub Actionsランナー上で/proc/<pid>/memに直接アクセスしephemeral OIDCトークン・シークレットをディスク書き込み前に窃取
+3. 窃取したnpmトークン・GitHub PATを用いて他メンテナのパッケージへ横展開し自己増殖
+4. Ethereumスマートコントラクト経由で解決したドメインへ窃取データを送信。C2ドメインはオンチェーン取引で更新可能なため単一ドメインの遮断では無力化できない
+
+【新規TTP】
+・[T1059.007] Command and Scripting Interpreter: JavaScript — npm install時のNode.js/JavaScript実行によるペイロード起動（Unit 42確認）
+・[T1528] Steal Application Access Token — GitHub Actionsランナーの/proc/<pid>/memへの直接アクセスによるephemeral OIDCトークンの窃取（ディスク書き込み前に読み取り）
+
+【IoC】
+IP: 104.21.91.101
+IP: 172.67.215.154
+Domain: npm-cache.com
+Domain: pypi-get.com
+Domain: js-mirror.com
+Domain: awqhnjewqjkl.icu
+Hash: 9fc2570b7cef51c1b8df116d144d11ff4096357be7d2c4c6367cfc2509cf1bcc
+Hash: 54dc7ea54a1317cca0e890a2770630cf7fa6c97813e0cb9d2caa93012b350668
+Hash: fd3ca4007b225fdf8de7af4345a19179d5efa8c4bb9205f88cda806e5684b1eb
+Hash: b27b82afa5f15512f3856e549fb83d873fd0049759a4b62ce64c8d7d4dc2c678
+
+【推奨アクション】
+・npm install/postinstall/require()実行時の外部ネットワーク接続を監視しnpm-cache.com/pypi-get.com/js-mirror.com/awqhnjewqjkl.icuへの通信を遮断する
+・GitHub Actionsのランナープロセスに対するメモリダンプ・/proc/<pid>/memアクセスを監視し、OIDCトークンの有効期間短縮・スコープ最小化を行う
+・侵害npmトークン・GitHub PAT・クラウド認証情報を全ローテーションする
+Splunk SPL: index=proxy OR index=dns dest_domain IN ("npm-cache.com","pypi-get.com","js-mirror.com","awqhnjewqjkl.icu") | stats count by src_ip dest_domain
+Splunk SPL: index=github_actions sourcetype=github:audit action=workflow_run | search command="require(" OR script="*postinstall*" | table _time repo actor command
+→ 正規のCI設定ファイル編集や業務目的のブロックチェーンRPC呼び出しと誤検知しやすいため、変更元プロセスがnpm/node実行コンテキストかを必ず確認する
+
+【参照】
+https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に単独で軸P8点・軸Q4点の閾値を満たす新規事案なし。UNC6671は継続監視のみで本日は本編非計上）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[ゼロデイ特報格] CVE未採番 / Metabase（Cloud / セルフホスト、BI/分析プラットフォーム）
+CVSS: 10.0（GHSA-vwf4-m7j8-wcjf評価） 状態: 実悪用確認 / ゼロデイ
+Metabase（BI/分析SaaS）のアプリケーションDBに対する未認証SQLインジェクション脆弱性でリモート管理者権限相当のアクセスを取得できることが確認された。Metabase社は「攻撃者が未知の0-day脆弱性を利用してMetabase Cloudを攻撃した」と公式表明し実環境での悪用（POST /api/session/reset_passwordが400応答を返した直後にGET /api/user/currentが成功する攻撃パターン）を確認済み。2026年8月3日の攻撃でFramework（氏名・メール・ログインIP・請求/配送先住所・電話番号・会社名）とTally（メールアドレスとパスワードハッシュ）への侵害が確認された。LexisNexisのMetabase APIも影響を受けたが情報漏洩の有無は不明。CVE番号は本日時点で未採番。修正版が2026年8月7日付で提供され、Cloud顧客は適用済み、セルフホストは手動更新が必要。
+IoC: 確認されず
+参照: https://www.bleepingcomputer.com/news/security/framework-tally-disclose-metabase-data-theft-attacks
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-08] Metabase CEOが「未知（0-day）の脆弱性」を用いたMetabase Cloudへの攻撃を確認したと表明。GHSA-vwf4-m7j8-wcjfとして未認証SQLインジェクションを公開。CVE番号は本日時点で未採番
+
+・[トレンド記事] NatJack攻撃クラス、NAT接続状態管理の設計弱点を悪用しTCPセッションハイジャック・DNSスプーフィングを実現(Black Hat USA 2026)
+セキュリティ研究者Malcolm StaggがBlack Hat USA 2026で新たな攻撃クラス「NatJack」を公開した。NAT接続状態管理の設計上の弱点を突き(1)TCPセッションのNATマッピング置換によるハイジャック(2)DNS要求への介入によるスプーフィング(3)外部露出マッピングポートの割り出し(4)NATテーブル枯渇によるDoS、の4手法を実証した。Windows NAT（Hyper-V、CVE-2026-56181）およびLinux Netfilter conntrack（CVE-2026-63913）が個別に採番されたが、NatJack自体は単一製品のCVEに閉じない設計レベルの脆弱性クラスである。攻撃者が被害者と同一NAT配下に位置することが前提となる。実悪用の証拠は確認されていない。
+参照: https://thehackernews.com/2026/08/new-natjack-attacks-hijack-tcp-sessions.html
+
+【24時間以内の変化】
+[The Hacker News 2026-08-07] NatJack攻撃クラスの詳細技術解説とCVE-2026-56181/CVE-2026-63913の採番を報道（独立ソース6件以上・バースト検出閾値超過）
+
+・[トレンド記事] npm新規サプライチェーン攻撃「Flooding Dropper」、850件近い悪意あるパッケージでクロスプラットフォームRAT/インフォスティーラーを配布
+Sonatype Research LabsとUnit 42が、npmレジストリ上の新規キャンペーン「Flooding Dropper」を報告した。タイポスクワッティング名の使い捨てアカウントを大量作成する手口で846件の悪意あるパッケージを公開し、ライフサイクルフックを避けてREADME内の指示でrequire()実行を誘導する新手法を用いる。ダウンローダー「WEL1DROPPER」がホストOS・CPUアーキテクチャを判別しCloudflare Workers上の複数ホストから互換ペイロード（クロスプラットフォームRAT・インフォスティーラー）を取得する。同日別途拡散したnpmワーム「ChainDrop」とは別系統のキャンペーンである（複数ソースが明示）。
+参照: https://thehackernews.com/2026/08/nearly-800-malicious-npm-packages.html
+
+【24時間以内の変化】
+[The Hacker News 2026-08-08] OpenSourceMalware研究者とUnit 42の共同分析を基に詳報。ChainDropとは別系統である旨を明記（独立ソース6件以上・バースト検出閾値超過）
+
+・[トレンド記事] 侵害済み企業メールボックス悪用の銀行マルウェアと暗号資産クリップボード窃取、GenがH1 2026の2攻撃チェーンを分析
+Gen Digital脅威リサーチチームが2026年上半期に観測した2種類の攻撃チェーンを公開した。1つ目は侵害された企業メールボックス経由でJavaScriptドロッパー→PowerShellステージング→難読化シェルコードローダーを展開しオンラインバンキングセッションを傍受する手口（Gepysマルウェアと一致、チェコ・スロバキア・ポーランド・リトアニア標的）。2つ目はRust製クリップボード監視マルウェアが21種のブロックチェーンアドレス形式を検知し署名前にウォレットアドレスを差し替える手口で、C2参照先をBinance Smart Chain上のスマートコントラクトに格納する「EtherHiding」技術を採用。単一ベンダー（Gen Digital）のレポートに基づく（単発シグナル）。
+参照: https://www.bleepingcomputer.com/news/security/real-emails-hijacked-payments-two-h1-2026-attack-chains/
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-07] Gen Digital H1 2026脅威レポートの内容を基に2種の攻撃チェーンを報道
+
+・[トレンド記事] Microsoft 365を狙うAitMフィッシング、Google/AWSインフラ悪用の6段階リダイレクトで給与・財務担当者を標的化
+Arctic Wolf Labsが、ボイスメール偽装フィッシングを起点とするMicrosoft 365向けAitMキャンペーンを報告した。Google Meet・Google Ads・Amazon S3を経由する6段階のリダイレクトチェーンでフィルタを回避した後、Microsoftの正規認証フローを実時間で中継するAitMプロキシへ誘導しMFA有効環境でも認証情報・セッションを窃取する。2026年7月時点で数百組織が標的とされ米国・カナダ・欧州の医療・教育・製造・政府・専門サービス組織に影響。MicrosoftのPayroll Pirates/Storm-2755クラスターとの技術的重複が指摘されているが単一グループへの帰属は未確定。
+参照: https://thehackernews.com/2026/08/microsoft-365-aitm-phishing-hijacks.html
+
+【24時間以内の変化】
+[The Hacker News 2026-08-07] Arctic Wolf Labsの分析を基に6段階リダイレクトAitMキャンペーンを詳報
+
+・[トレンド記事] Windows Hello for Businessの鍵をFIDO2パスキーとして悪用しEntra IDへ永続アクセスする手法を研究者が公開(PoC・CVE未採番)
+研究者Dirk-jan Mollemaが、サインイン済みWindowsセッションでのコード実行権を持つマルウェアがWindows Hello for Business（WHfB）の鍵をFIDO2パスキーとしてWebAuthn経由で悪用しMicrosoft Entra IDへ認証できる手法を公開した。Entra側の5分間有効なチャレンジがセッション・ユーザー・テナントに紐付いていない点を突く。取得トークンはデバイスIDを欠く場合があり新規デバイス登録・PRT取得・追加認証方法登録へ悪用され得る。PowerShell製PoCが公開されているがCVE・アドバイザリの紐付けは確認されず実悪用報告もない（研究/PoC段階）。
+参照: https://thehackernews.com/2026/08/malware-can-abuse-windows-hello-for.html
+
+【24時間以内の変化】
+[The Hacker News 2026-08-07] Dirk-jan Mollemaの研究とPoC公開、CVE未割当を確認の上で報道
+
+・[トレンド記事] AI生成パッチの約4分の3に欠陥、1Password（Off-by-1 Labs）とTrail of Bitsが6,080件を検証
+1Password内のOff-by-1 LabsがTrail of Bitsと共同で、複雑かつ影響度の高い6件のCVEを対象にChatGPT 5.5とClaude Opus 4.8が生成した計6,080件のパッチを評価した研究を公表した。約4分の3のAI生成パッチに何らかの欠陥があり約49.3%が既存のエクスプロイト経路を少なくとも1つ塞げず、20.1%は脆弱性自体は修正しつつアプリケーション動作を意図せず変更し、2.3%が新たなセキュリティ問題を導入した。レビューなしのAI生成パッチは期待値でみて負の価値を持ちうるとし熟練エンジニアによるレビューが引き続き必須と結論。
+参照: https://www.darkreading.com/application-security/ai-generated-patches-fail-half-time
+
+【24時間以内の変化】
+[Dark Reading 2026-08-08] 1Password/Off-by-1 Labsの研究結果（6,080件中の欠陥率統計）を報道
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Alinto SOGo CVE-2026-8496（実悪用確認済み・CISA KEV未登録）はKEV初回追加が近く、パッチ未適用環境は5.12.8への即時アップデートを最優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1（CISA KEV初回追加）
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [CERT/CC VU#487613 2026-08-07] onrepeatイベントハンドラ付きSVGを埋め込んだ細工ICSカレンダー招待によるXSSがVirusTotalでの観測に基づき実環境で悪用されていることを確認・公開。[JVN JVNVU#96816564 2026-08-07] 同脆弱性を国内向けに公開。対象CVEは本日時点でCISA KEV未登録
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py・n_cases=0・observed_gate_passed=false）
+  脅威情報: CERT/CCが独立に実悪用をVirusTotal観測で確認済みかつ修正版（5.12.8）が既に提供されている
+  確度アンカー: EPSSパーセンタイル0.3358（2026-08-07算出） / KEV登録: なし / SSVC決定: Attend / Automatable: no（ICSカレンダー招待の閲覧というユーザー操作を要するため）
+推定部分: （推測）CERT/CCの実悪用確認とパッチ提供済みという状況はCISAのKEV追加判断の典型条件に合致すると推測されるが、KEV追加は実悪用確認から数日〜数週間のラグを伴う場合があり、72時間以内に追加される保証はない。またEPSSパーセンタイルが0.3358と高くないことは留保材料である。
+先回り監視: 自組織のSOGoアクセスログにおけるICSカレンダー招待添付・onrepeat/SVGを含むペイロードの受信、Webメールセッション内での異常なJavaScript実行の兆候。CISA KEVカタログJSON本体でのCVE-2026-8496の掲載有無。
+的中判定: CISAがCVE-2026-8496をKEVカタログ本体（JSON feed）へ2026-08-09〜2026-08-11の範囲で初回追加した場合。CISA以外の第三者カタログへの掲載、再登録、他機関の注意喚起発行のみは的中とみなさない。
+
+※ M1観測可能性ゲート・M1-b頻度ゲートにより本日見送った主題（無採点・注意点として記録。カバレッジ: 発行1件/候補8件・見送り7件）:
+・Kemp LoadMaster CVE-2026-8037: KEV初回追加という事象そのものが本日既に確定した過去の事実であり、的中条件を未来に設定できないため見送り
+・Metabaseゼロデイ: CVE番号が本日時点で未採番でありE1（KEV初回追加）を構成できないため見送り（採番後に再評価）
+・ChainDrop 認証情報・トークン二次利用: 的中条件がE1〜E4のいずれにも一次・二値の形で紐付けられずM1「悪用拡大（曖昧）」禁止に抵触するため見送り
+・npm「Flooding Dropper」/Gen Digital H1 2026レポート/Arctic Wolf AitMキャンペーン: いずれも追随IOC公開を期待するE2型の主題であり教訓14「E2追随IOC除外（全Tier）」に該当するため発行せず
+・WordPress CVE-2026-64638（XSS2Shell）: 被害者操作を要する多段階の攻撃連鎖でありT3採用必須条件A（無認証・単一ステップ）を満たさないため見送り
+・NatJack: 攻撃者が被害者と同一NAT配下に位置するという強い前提を要する研究開示段階であり72時間窓で観測可能な一次・二値イベントに紐付けられないため見送り
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・UNC6671 / UNC6671-2026-HedgeFundVishing → no_change: 個人携帯電話への直接連絡等の追加詳細はあるが新規IOC・新規ATT&CK IDなく単独では軸P/Q閾値未達
+・不明（帰属未確定） / RIS-2026-ClickFix-macOSCryptoDrainer → already_reported: 本日記事は既報Huntress調査の再報道
+・TeamPCP / TeamPCP-2026-RedisSupplyChainLink → low_score: 単一ベンダー帰属で軸P6/軸Q3。国内昇格トリガー該当なし
+・不明（帰属未確定） / RIS-2026-WEL1DROPPER-NpmFloodingDropper → low_score: 単一ソース系帰属で軸P6/軸Q3
+・不明（Microsoft命名Storm-2755） / RIS-2026-Storm2755-PayrollPirateAitM → low_score: 単一ベンダー帰属で軸P6/軸Q3
+・不明（帰属未確定） / RIS-2026-NorthCarolinaPorts-CyberattackDisruption → low_score: 技術詳細皆無で軸P5/軸Q1
+・不明（帰属未確定） / RIS-2026-UnlimitedTechnologySystems-HealthcareBreach → insufficient_evidence: 攻撃者名・TTP言及なし
+・不明（帰属未確定） / RIS-2026-LeviStrauss-CorporateDataTheft → insufficient_evidence: 攻撃者名・TTP言及なし
+
+本日の集計:
+APT — 本編1件 / 注目動向0件 / 除外8件
+
+========================================

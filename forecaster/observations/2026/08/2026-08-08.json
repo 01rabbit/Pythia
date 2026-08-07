@@ -1,0 +1,380 @@
+{
+  "_schema_version": "1.1",
+  "_observation_date": "2026-08-08",
+  "_normalization_mode": "source_explicit_all",
+  "_normalization_note": "2026-08-08 分日次レポート JSON から正規化。main_cve / zero_day_special / apt_notable は当日空のため対象外。今回は Step 3.5 実行指示に従い、01-normalize.md が列挙する標準入力（reference_a/reference_b/apt_main/ai_attacks_main）に加え、trends.trends_cve（Metabase ゼロデイ）と trends.trends_topic（NatJack・npm Flooding Dropper・Gen Digital H1 2026・Arctic Wolf AitM・WHfB FIDO2悪用研究）も観測対象に含めた（当日の脅威観測材料として重要度が高いため）。trends_topic のうち「AI生成パッチの品質検証調査」（1Password/Off-by-1 Labs）は脅威主体の活動・脆弱性の悪用を記述しない防御側研究のためCyberThreatObservationの対象外として除外した。R3 の「明示」定義に従い、情報源が具体的な手口・挙動を記述しているものにのみ Technique を機械的マッピングで付与し、複合的な攻撃連鎖で単一Techniqueへの確証あるマッピングが困難な場合は techniques_note を付して見送った。",
+  "observations": [
+    {
+      "observation_id": "obs-2026-0808-001",
+      "observed_date": "2026-08-07",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "The Hacker News",
+        "url": "https://thehackernews.com/2026/08/new-wordpress-pre-auth-xss-could-lead.html",
+        "type": "news"
+      },
+      "actor_group": null,
+      "techniques": [],
+      "techniques_note": "XSS2Shell 手法（反射型XSS→user-profile.js 悪用による管理者REST APIコンテキスト奪取→任意ファイルアップロード→RCE）は、被害者（管理者）が攻撃者の制御下にあるページを閲覧するという追加の前提を要する複合的な攻撃連鎖であり、T1189（ドライブバイ）・T1190（公開アプリケーション悪用）・T1204（ユーザー実行）のいずれも部分一致にとどまり単一の ATT&CK Technique への確証あるマッピングが困難なため付与を見送った。",
+      "target": { "sectors": ["it"], "geos": ["GLOBAL", "JP"] },
+      "cve": ["CVE-2026-64638"],
+      "exploitation_stage": "poc_public",
+      "confidence": "medium",
+      "summary": "WordPress Core（4.7〜7.0.2）のログイン画面に認証前反射型XSS脆弱性CVE-2026-64638が存在し、研究者がXSS2Shell手法によるREST API経由のPHPコード実行への連鎖PoCを公開した。CVSSv4 8.9。7.0.3で修正済みで実悪用は本日時点で確認されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["poc", "wordpress", "xss-chain"]
+    },
+    {
+      "observation_id": "obs-2026-0808-002",
+      "observed_date": "2026-08-07",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "JVN",
+        "url": "https://jvn.jp/vu/JVNVU92139835",
+        "type": "advisory"
+      },
+      "actor_group": null,
+      "techniques": [],
+      "techniques_note": "悪意あるTLSサーバからの細工OCSPレスポンスによるクライアント側メモリ解放漏れ・DoSの機構は具体的に記述されているが、対応するATT&CK Technique（T1499はサーバ側可用性の妨害を主眼としており、クライアントが悪意あるサーバへ接続した結果生じるメモリ枯渇という本事案の前提とは異なる）への確証あるマッピングが困難なため付与を見送った。",
+      "target": { "sectors": ["it"], "geos": ["GLOBAL", "JP"] },
+      "cve": ["CVE-2026-54876"],
+      "exploitation_stage": "none",
+      "confidence": "high",
+      "summary": "OCSPレスポンス検証を有効化したOpenSSL TLSクライアントに、悪意あるTLSサーバからの細工OCSPレスポンスによりメモリ解放漏れが発生しDoSに至りうる脆弱性CVE-2026-54876がJVNにより公開された。CVSSv3 7.5。実悪用・PoC公開いずれも確認されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["dos", "openssl", "jvn"]
+    },
+    {
+      "observation_id": "obs-2026-0808-003",
+      "observed_date": "2026-08-07",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "SecurityWeek",
+        "url": "https://www.securityweek.com/critical-vulnerabilities-patched-with-chrome-151-update/",
+        "type": "news"
+      },
+      "actor_group": null,
+      "techniques": [
+        {
+          "technique_id": "T1203",
+          "sub_technique_id": null,
+          "tactic": "execution",
+          "evidence": "NVD/SecurityWeekが、細工したHTMLページの閲覧を起点にWebGL/Aura/Skia/ANGLE/Views各コンポーネントのUse-After-Freeを悪用しレンダラプロセスの侵害・サンドボックス脱出に至りうる機構を具体的に記述しているためT1203を付与（NVD/SecurityWeek 2026-08-07）"
+        }
+      ],
+      "target": { "sectors": ["it"], "geos": ["GLOBAL", "JP"] },
+      "cve": ["CVE-2026-19137", "CVE-2026-19149", "CVE-2026-19154", "CVE-2026-19157", "CVE-2026-19170", "CVE-2026-19172"],
+      "exploitation_stage": "none",
+      "confidence": "high",
+      "summary": "Google Chrome 151.0.7922.109未満のWebGL/Aura/Skia/ANGLE/Views各コンポーネントに存在するUse-After-Free脆弱性6件（Critical、CVE-2026-19137等）が修正された。Googleは本更新時点で実環境での悪用は確認されていないと明記している。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["chrome", "uaf", "patch-tuesday"]
+    },
+    {
+      "observation_id": "obs-2026-0808-004",
+      "observed_date": "2026-08-07",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "CERT/CC",
+        "url": "https://www.kb.cert.org/vuls/id/487613",
+        "type": "advisory"
+      },
+      "actor_group": null,
+      "techniques": [
+        {
+          "technique_id": "T1566",
+          "sub_technique_id": "T1566.001",
+          "tactic": "initial-access",
+          "evidence": "CERT/CC（VU#487613）が、onrepeatイベントハンドラ付きSVGを埋め込んだ細工ICSカレンダー招待（添付ファイル）を送付し閲覧させる手口を具体的に記述し、VirusTotalでの観測に基づき実環境での悪用を確認しているためT1566.001を付与（CERT/CC 2026-08-07）"
+        }
+      ],
+      "techniques_note": "招待閲覧後の反射型XSS実行によるメールボックスアクセス・セッションハイジャックそのものに対応する追加のATT&CK Techniqueは確証を持って特定できず付与を見送った。",
+      "target": { "sectors": ["it"], "geos": ["GLOBAL", "JP"] },
+      "cve": ["CVE-2026-8496"],
+      "exploitation_stage": "active_exploitation",
+      "confidence": "high",
+      "summary": "Alinto SOGo 5.12.7のICSカレンダー招待経由の反射型XSS脆弱性CVE-2026-8496について、CERT/CCがVirusTotalでの観測に基づき実環境での悪用を確認したと公表した。CVSSv3 6.1（Medium）だが実悪用が確認されている。5.12.8で修正済み。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["active-exploitation", "xss", "webmail", "cert-cc"]
+    },
+    {
+      "observation_id": "obs-2026-0808-005",
+      "observed_date": "2026-08-07",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "CISA KEV",
+        "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-8037",
+        "type": "advisory"
+      },
+      "actor_group": null,
+      "techniques": [],
+      "techniques_note": "本日の新規事実はCISA KEVカタログへの初回追加（E1イベント）のみであり、コマンドインジェクションの技術的機構自体は既報（2026-06-30初報時点でwatchTowr Labsが公開）の記述の反復である。本日分の新規情報としてのTechnique付与根拠がないため見送った。",
+      "target": { "sectors": ["it"], "geos": ["GLOBAL", "US"] },
+      "cve": ["CVE-2026-8037"],
+      "exploitation_stage": "kev_listed",
+      "confidence": "high",
+      "summary": "Progress Kemp LoadMasterの未認証root権限OSコマンドインジェクション脆弱性CVE-2026-8037（既報・2026-06-30初報）が、CISA KEVカタログへ本日付で新規追加された（FCEB期限2026-08-10）。新たな独立した実悪用確認報道は本日時点で見つかっておらず、exploitation_stageはkev_listedに留める。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["kev-addition", "e1", "kemp-loadmaster"]
+    },
+    {
+      "observation_id": "obs-2026-0808-006",
+      "observed_date": "2026-08-08",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "BleepingComputer",
+        "url": "https://www.bleepingcomputer.com/news/security/framework-tally-disclose-metabase-data-theft-attacks",
+        "type": "news"
+      },
+      "actor_group": null,
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "Metabase社CEOが未知の0-day脆弱性（GHSA-vwf4-m7j8-wcjf、未認証SQLインジェクション）を用いたMetabase Cloudへの実環境攻撃を確認したと公表し、POST /api/session/reset_password失敗直後にGET /api/user/currentが成功するという具体的な攻撃パターンを提示しているため、公開APIに対する未認証エクスプロイトとしてT1190を付与（BleepingComputer/Metabase公式 2026-08-08）"
+        }
+      ],
+      "target": { "sectors": ["it"], "geos": ["GLOBAL", "US"] },
+      "exploitation_stage": "active_exploitation",
+      "confidence": "high",
+      "summary": "BI/分析プラットフォームMetabaseのアプリケーションDBに対する未認証SQLインジェクションのゼロデイ脆弱性（GHSA-vwf4-m7j8-wcjf、CVSS10.0、CVE番号は本日時点で未採番）が実環境で悪用され、ノートPCメーカーFrameworkおよびフォームビルダーTallyから顧客データが窃取されたことが確認された。修正版は2026-08-07付で提供済み。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["zero-day", "sqli", "data-theft", "no-cve-yet"]
+    },
+    {
+      "observation_id": "obs-2026-0808-007",
+      "observed_date": "2026-08-07",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "The Hacker News",
+        "url": "https://thehackernews.com/2026/08/new-natjack-attacks-hijack-tcp-sessions.html",
+        "type": "news"
+      },
+      "actor_group": null,
+      "techniques": [],
+      "techniques_note": "TCPセッションハイジャック・DNSスプーフィングの機構は具体的に記述されているが、攻撃者が被害者と同一NAT配下（co-tenant）に位置することを前提とする設計レベルの攻撃クラスであり、単一のATT&CK Technique（AiTM系T1557等）への確証あるマッピングが困難なため付与を見送った。",
+      "target": { "sectors": ["it", "telecom"], "geos": ["GLOBAL"] },
+      "cve": ["CVE-2026-56181", "CVE-2026-63913"],
+      "exploitation_stage": "none",
+      "confidence": "high",
+      "summary": "セキュリティ研究者Malcolm StaggがBlack Hat USA 2026で、NAT接続状態管理の設計上の弱点を突きTCPセッションハイジャック・DNSスプーフィング等を実現する新たな攻撃クラス「NatJack」を公開した。Windows NAT（CVE-2026-56181）およびLinux Netfilter conntrack（CVE-2026-63913）に実装固有の脆弱性が個別に採番されたが、2026-08-07時点で実悪用の証拠は確認されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["nat", "research", "black-hat-2026"]
+    },
+    {
+      "observation_id": "obs-2026-0808-008",
+      "observed_date": "2026-08-08",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "Sonatype",
+        "url": "https://www.sonatype.com/blog/flooding-dropper-hits-npm-with-850-malicious-packages",
+        "type": "news"
+      },
+      "actor_group": null,
+      "techniques": [
+        {
+          "technique_id": "T1195",
+          "sub_technique_id": "T1195.001",
+          "tactic": "initial-access",
+          "evidence": "Sonatype Research Labsが、タイポスクワッティング名の使い捨てアカウントで846件近い悪意あるnpmパッケージを公開したと具体的に報告しているため、ソフトウェア依存関係の侵害としてT1195.001を付与（The Hacker News/Sonatype 2026-08-08）"
+        },
+        {
+          "technique_id": "T1105",
+          "sub_technique_id": null,
+          "tactic": "command-and-control",
+          "evidence": "ダウンローダー「WEL1DROPPER」がホストOS・CPUアーキテクチャを判別しCloudflare Workers上の複数ホストから互換ペイロード（クロスプラットフォームRAT・インフォスティーラー）を取得すると具体的に報告されているためT1105を付与（同上）"
+        }
+      ],
+      "target": { "sectors": ["it"], "geos": ["GLOBAL"] },
+      "confidence": "high",
+      "summary": "npmレジストリ上の新規サプライチェーン攻撃キャンペーン「Flooding Dropper」が、タイポスクワッティング名の使い捨てアカウントで846件近い悪意あるパッケージを公開し、ダウンローダー「WEL1DROPPER」経由でクロスプラットフォームRAT・インフォスティーラーを配布していることが確認された。同日発生の別系統キャンペーン「ChainDrop」とは異なるキャンペーンである（複数ソースが明示）。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["npm", "supply-chain", "typosquatting", "malware"]
+    },
+    {
+      "observation_id": "obs-2026-0808-009",
+      "observed_date": "2026-08-07",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "BleepingComputer",
+        "url": "https://www.bleepingcomputer.com/news/security/real-emails-hijacked-payments-two-h1-2026-attack-chains/",
+        "type": "news"
+      },
+      "actor_group": null,
+      "techniques": [
+        {
+          "technique_id": "T1566",
+          "sub_technique_id": "T1566.001",
+          "tactic": "initial-access",
+          "evidence": "Gen Digitalが、正規に侵害された企業メールボックスから配信されるフィッシングメールを起点にJavaScriptドロッパーを展開する手口（Gepysマルウェア）を具体的に報告しているためT1566.001を付与（BleepingComputer/Gen Digital 2026-08-07）"
+        },
+        {
+          "technique_id": "T1059",
+          "sub_technique_id": "T1059.001",
+          "tactic": "execution",
+          "evidence": "同フィッシングチェーンがPowerShellステージングを経て難読化シェルコードローダーを展開すると具体的に報告されているためT1059.001を付与（同上）"
+        },
+        {
+          "technique_id": "T1185",
+          "sub_technique_id": null,
+          "tactic": "collection",
+          "evidence": "プロキシ設定変更と悪意あるブラウザ拡張機能によりオンラインバンキングセッションを傍受する手口が具体的に報告されているためT1185を付与（同上）"
+        },
+        {
+          "technique_id": "T1115",
+          "sub_technique_id": null,
+          "tactic": "collection",
+          "evidence": "Rust製クリップボード監視マルウェアが21種のブロックチェーンアドレス形式を検知し署名前にウォレットアドレスを差し替えると具体的に報告されているためT1115を付与（同上）"
+        },
+        {
+          "technique_id": "T1102",
+          "sub_technique_id": "T1102.002",
+          "tactic": "command-and-control",
+          "evidence": "C2参照先をBinance Smart Chain上のスマートコントラクトに格納する「EtherHiding」技術を採用していると具体的に報告されているためT1102.002を付与（同上）"
+        }
+      ],
+      "target": { "sectors": ["finance"], "geos": ["CZ", "SK", "PL", "LT", "IT"] },
+      "confidence": "medium",
+      "summary": "Gen Digital脅威リサーチチームが2026年上半期に観測した2種類の攻撃チェーンを公開した。1つ目は侵害済み企業メールボックスからのフィッシングを起点にPowerShell経由でGepysマルウェアを展開しブラウザ拡張機能でオンラインバンキングセッションを傍受する手口（チェコ・スロバキア・ポーランド・リトアニア標的）、2つ目はクリップボード監視型マルウェアがウォレットアドレスを差し替えEtherHiding技術でC2を秘匿する手口である。単一ベンダーのレポートに基づき他の独立ソースによる追随は現時点で未確認。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["banking-malware", "clipboard-hijack", "etherhiding", "phishing"]
+    },
+    {
+      "observation_id": "obs-2026-0808-010",
+      "observed_date": "2026-08-07",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "The Hacker News",
+        "url": "https://thehackernews.com/2026/08/microsoft-365-aitm-phishing-hijacks.html",
+        "type": "news"
+      },
+      "actor_group": null,
+      "techniques": [
+        {
+          "technique_id": "T1566",
+          "sub_technique_id": "T1566.002",
+          "tactic": "initial-access",
+          "evidence": "Arctic Wolf Labsが、ボイスメール偽装のフィッシングメッセージから6段階のリダイレクトチェーンへ誘導する手口を具体的に報告しているためT1566.002を付与（The Hacker News/Arctic Wolf 2026-08-07）"
+        },
+        {
+          "technique_id": "T1557",
+          "sub_technique_id": null,
+          "tactic": "credential-access",
+          "evidence": "MicrosoftのAitMプロキシへ誘導しMFA有効環境でも認証情報・セッションをリアルタイムで中継・窃取すると具体的に報告されているためT1557を付与（同上）"
+        },
+        {
+          "technique_id": "T1102",
+          "sub_technique_id": null,
+          "tactic": "command-and-control",
+          "evidence": "Google Meet・Google Ads・Amazon S3を経由してレピュテーションベースのフィルタを回避するリダイレクトインフラとして正規Webサービスを悪用していると具体的に報告されているためT1102を付与（同上）"
+        }
+      ],
+      "target": { "sectors": ["healthcare", "education", "manufacturing", "government", "professional_services"], "geos": ["US", "CA"] },
+      "confidence": "medium",
+      "summary": "Arctic Wolf Labsが、ボイスメール偽装フィッシングを起点にGoogle Meet・Google Ads・Amazon S3を経由する6段階リダイレクトでレピュテーションフィルタを回避し、Microsoft 365の認証情報・MFAセッションをAitMプロキシでリアルタイムに窃取するキャンペーンを報告した。給与・人事・財務担当者を標的とし2026年7月時点で数百組織に影響。MicrosoftのPayroll Pirates/Storm-2755クラスターとの技術的重複が指摘されているが単一グループへの帰属は未確定。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["aitm", "phishing", "microsoft365", "bec"]
+    },
+    {
+      "observation_id": "obs-2026-0808-011",
+      "observed_date": "2026-08-07",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "The Hacker News",
+        "url": "https://thehackernews.com/2026/08/malware-can-abuse-windows-hello-for.html",
+        "type": "news"
+      },
+      "actor_group": null,
+      "techniques": [
+        {
+          "technique_id": "T1556",
+          "sub_technique_id": "T1556.006",
+          "tactic": "credential-access",
+          "evidence": "研究者Dirk-jan Mollemaが、サインイン済みWindowsセッションでのコード実行権を持つマルウェアが、セッション・ユーザー・テナントに紐付いていないEntra側のチャレンジを侵害端末へ中継してWindows Hello for Businessの鍵で署名させることで、PIN・生体認証・パスワードを要求せずMFA機構を回避してEntra IDへ認証できる手口を具体的に実証しているためT1556.006を付与（The Hacker News/Cyber Security News 2026-08-07）"
+        }
+      ],
+      "target": { "sectors": ["it"], "geos": ["GLOBAL"] },
+      "exploitation_stage": "poc_public",
+      "confidence": "medium",
+      "summary": "研究者Dirk-jan Mollemaが、既にコード実行権を持つマルウェアがWindows Hello for Businessの鍵をFIDO2パスキーとして悪用しPIN・生体認証・パスワードなしでMicrosoft Entra IDへ認証できる手法を公開した。PowerShell製PoCが公開されているが、2026-08-06時点でCVE・アドバイザリの紐付けはなく実悪用報告もない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["entra-id", "fido2", "credential-abuse", "research"]
+    },
+    {
+      "observation_id": "obs-2026-0808-012",
+      "observed_date": "2026-08-07",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "Unit 42",
+        "url": "https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/",
+        "type": "vendor_report"
+      },
+      "actor_group": null,
+      "techniques": [
+        {
+          "technique_id": "T1059",
+          "sub_technique_id": "T1059.007",
+          "tactic": "execution",
+          "evidence": "Unit 42が、npm install時のNode.js/JavaScript実行によるペイロード起動を確認し、MITRE ATT&CK T1059.007として明示しているため付与（Unit 42 2026-08-07）"
+        },
+        {
+          "technique_id": "T1528",
+          "sub_technique_id": null,
+          "tactic": "credential-access",
+          "evidence": "Unit 42が、GitHub Actionsランナーの/proc/<pid>/memへの直接アクセスによるephemeral OIDCトークンの窃取（ディスク書き込み前の読み取り）を確認し、MITRE ATT&CK T1528として明示しているため付与（Unit 42 2026-08-07）"
+        }
+      ],
+      "target": { "sectors": ["it"], "geos": ["GLOBAL"] },
+      "confidence": "medium",
+      "summary": "npmサプライチェーンを介して自己増殖する認証情報窃取ワームChainDrop（既報）について、Unit 42が独立した技術解析を公開した。Ethereumスマートコントラクト経由のC2ドメイン解決という新規手法と、GitHub Actionsランナーからのephemeral OIDCトークン窃取の具体的手法、新規IOC群を明らかにし、MITRE ATT&CK T1059.007・T1528を明示した。攻撃者の帰属は確認されていない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["npm-worm", "supply-chain", "oidc-theft", "blockchain-c2"]
+    },
+    {
+      "observation_id": "obs-2026-0808-013",
+      "observed_date": "2026-08-07",
+      "ingested_date": "2026-08-08",
+      "source": {
+        "name": "The Hacker News",
+        "url": "https://thehackernews.com/2026/08/claude-code-and-gemini-cli-flaws-let.html",
+        "type": "news"
+      },
+      "actor_group": null,
+      "techniques": [
+        {
+          "technique_id": "T1059",
+          "sub_technique_id": null,
+          "tactic": "execution",
+          "evidence": "Gemini CLIの.gemini/.envファイル経由のOSコマンドインジェクションによりサンドボックス初期化前にCIホスト上で任意コード実行が可能（CVE-2026-12537）と具体的に報告されているためT1059を付与（The Hacker News 2026-08-07）"
+        },
+        {
+          "technique_id": "T1567",
+          "sub_technique_id": null,
+          "tactic": "exfiltration",
+          "evidence": "事前承認済みのhuggingface.co裸ホスト名を悪用しWebFetch経由でダウンロードカウンタのサイドチャネルからAPIキーを1文字ずつ外部窃取する手口（CVE-2026-54316）が具体的に報告されているためT1567を付与（同上）"
+        }
+      ],
+      "target": { "sectors": ["it"], "geos": ["GLOBAL"] },
+      "cve": ["CVE-2026-12537", "CVE-2026-54316"],
+      "exploitation_stage": "poc_public",
+      "confidence": "high",
+      "summary": "Black Hat USA 2026で公表された、単一の悪意あるGitHub Issueを起点にClaude Code・Gemini CLI・OpenAI CodexのCI/CDワークフローを乗っ取れる共通のトラスト境界欠陥について、Gemini CLI側の脆弱性にCVE-2026-12537（CVSS10.0、OSコマンドインジェクション）、Claude Code側にCVE-2026-54316（CVSSv3.1 9.1、APIキーのサイドチャネル窃取）という正式なCVE番号・深刻度が判明した。3社ともパッチ提供済みで実被害報告はない。",
+      "verified_outcome": null,
+      "related_forecast_id": null,
+      "tags": ["ai-coding-agent", "cve", "supply-chain", "black-hat-2026"]
+    }
+  ]
+}

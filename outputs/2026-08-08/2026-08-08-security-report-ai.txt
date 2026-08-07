@@ -1,0 +1,85 @@
+========================================
+セキュリティインテリジェンス日報 — Section 1: AI攻撃動向
+調査日時: 2026-08-08 07:54 JST
+調査期間: 2026-08-07 07:00 〜 2026-08-08 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 単一の悪意あるGitHub IssueによるClaude Code／Gemini CLI／OpenAI Codexのリモートコード実行・認証情報窃取（CVE-2026-54316・CVE-2026-12537）
+カテゴリ: B / サブカテゴリ: B1 / 攻撃者種別: 研究者実証
+------------------------------------------------------------
+
+採用契機: A-R / A-P
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当項目の明示なし
+対象: it / global
+被害規模: 不明（責任開示によりパッチ提供済み・実悪用未確認）
+独立ソース数: 6件（burst_exceeded）
+
+【24時間以内の変化】
+[The Hacker News 2026-08-07] Gemini CLI側の脆弱性がCVE-2026-12537（CVSS10.0・.gemini/.envファイル経由のOSコマンドインジェクションでサンドボックス初期化前にCIホスト上でコード実行・Gemini CLI 0.39.1およびrun-gemini-cli 0.1.22で修正）、Claude Code側の脆弱性がCVE-2026-54316（CVSSv4 6.0/v3.1 9.1・Hugging Faceダウンロードカウンタ経由のサイドチャネルでAPIキーを1文字ずつ外部窃取・影響バージョン0.2.54〜2.1.163・2.1.163で修正）として正式にCVE番号・深刻度・影響/修正バージョンが判明した
+
+【概要】
+Novee SecurityがBlack Hat USA 2026（2026-08-05）で発表した、権限を持たない外部ユーザーが投稿した単一のGitHub Issueのみを起点にClaude Code・Gemini CLI・OpenAI Codexという主要AIコーディングエージェント3種のCI/CDワークフローを乗っ取れる共通のトラスト境界欠陥について、本日The Hacker Newsが続報しGemini CLI側にCVE-2026-12537（CVSS10.0）、Claude Code側にCVE-2026-54316（CVSSv4 6.0/v3.1 9.1）という正式なCVE番号・深刻度・影響バージョン・修正バージョンが判明した。OpenAI Codexについては引き続きCVE番号は付与されていない。3社ともパッチ提供済みで実被害報告はない。
+
+攻撃の流れ:
+1. 権限を持たないGitHub Issue投稿者が、リポジトリへの書き込み権限なしにトリアージ/CI連携AIエージェントへ悪意ある指示を到達させる
+2. Claude Codeでは事前承認済みのhuggingface.co裸ホスト名を悪用しWebFetch経由でダウンロードカウンタのサイドチャネルからAPIキーを1文字ずつ外部窃取（CVE-2026-54316）、Gemini CLIでは.gemini/.envファイル経由のOSコマンドインジェクションでサンドボックス初期化前にCIホスト上で任意コード実行（CVE-2026-12537）
+3. CIランナー上のシークレット（APIキー・認証情報）の窃取、または任意コード実行が成立する
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+検知シグナル: huggingface.co裸ホスト名への予期しないWebFetchアクセスパターン
+検知シグナル: CI環境における.gemini/.env読み込み直後の異常なプロセス生成
+
+【監視・対策ポイント】
+・GitHub Issueをトリガーとする CI/CD ワークフロー内でAIコーディングエージェントが実行する外部リクエスト・シェルコマンドを監視する
+Splunk SPL: index=cicd sourcetype=github_actions action="webfetch" dest_host="huggingface.co" | stats count by repo actor
+Splunk SPL: index=cicd EventCode=1 (ParentImage="*gemini*" OR ParentImage="*claude*") CommandLine="*.env*" | table _time ComputerName CommandLine
+→ パッチ適用済みバージョン（Claude Code 2.1.163以降・Gemini CLI 0.39.1以降・run-gemini-cli 0.1.22以降）へのアップグレードを最優先する
+
+【参照】
+https://thehackernews.com/2026/08/claude-code-and-gemini-cli-flaws-let.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当情報なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当情報なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はBlack Hat USA 2026で既報だったNovee社のGitHub Issue経由リモートコード実行事案について、Gemini CLI側にCVE-2026-12537（CVSS10.0）、Claude Code側にCVE-2026-54316（CVSSv4 6.0/v3.1 9.1）という正式なCVE番号・深刻度が判明し本編で再採用した（独立6媒体以上・バースト検出閾値超過）。新規候補としてPortSwiggerがAI支援研究システム「HTTP Terminator」でApache Traffic Serverのゼロデイを発見した事案を確認したが、軸X・軸Yとも閾値未達かつ単一ソースのため除外とした。全体として日次調査窓内はBlack Hat関連報道の続報フェーズであり、新規の重大インシデントは確認されなかった。
+
+本日の集計:
+AI攻撃 — 本編1件 / 参考A0件 / 参考B0件 / 除外4件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）1件 / C（インフラ）0件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・AI支援脆弱性発見ツールHTTP Terminator（PortSwigger）によるHTTP Desync新手法発見とApacheゼロデイ（CVE-2026-63078） → low_score: 軸X4/軸Y3でいずれも閾値未達。単一ソースのためバーストカウント1件（below_threshold）
+・1Password（Off-by-1 Labs）AI生成脆弱性パッチの信頼性検証調査 → insufficient_evidence: AI攻撃カテゴリA〜Cのいずれにも該当しない防御側調査
+・Apple「AI Slop」バグバウンティ提出数制限（SecurityWeekまとめ記事内言及） → out_of_window: 元事案は2026年6月実施、既報のまとめ再言及のみ
+・ShadowRay 2.0（Ray AIインフラ自己増殖型ボットネット）Black Hat USA 2026再発表 → out_of_window: 元キャンペーンの初出は2025-11-18公開済み
+
+本日の集計:
+AI攻撃 — 本編1件 / 参考A0件 / 参考B0件 / 除外4件
+
+========================================
