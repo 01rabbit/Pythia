@@ -1,0 +1,402 @@
+{
+  "_comment": "E3（CERT系初回注意喚起）出口チャネルの発行頻度実測。M1 頻度ゲートの判定値と base_rate_estimate の実測アンカーを供給する。★測っているのは『予報のスキルなしに的中条件が偶然成立する確率』であり、予報の良し悪しではない。発行済み予報の hit_criteria・的中判定結果の変更には使用禁止（原則D・教訓12）。",
+  "_schema_version": "1.0",
+  "_machine_generated": true,
+  "_generator": "scripts/build_advisory_cadence_stats.py",
+  "_generated_on": "2026-08-07",
+  "_source": {
+    "jpcert_cc_at_index": "https://www.jpcert.or.jp/at/YYYY.html",
+    "ipa_security_alert_index": "https://www.ipa.go.jp/security/security-alert/YYYY/index.html",
+    "kev_feed": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+    "kev_catalog_version": "2026.08.06",
+    "_years_note": "集計対象年は成分ごとに異なる。各 channels.E3.*.years_available を参照。"
+  },
+  "_governance": "knowledge/ の自動書き換え禁止ルール（行動原則5）に従い、再生成は日次ルーチンからは行わず、必ず PR として提案し人間レビューを経てコミットする。",
+  "_limitations": [
+    "coverage_ratio の分母は『当該期間に KEV へ追加された CVE』であり、Pythia が実際に予報候補とする母集団（実悪用確認・PoC公開・APT関連等）と完全には一致しない。予報母集団は KEV より注目度が高い側に偏る可能性があり、その場合 coverage_ratio は真値の下限寄りになる。",
+    "p_specific_cve_within_72h の時間原点は KEV 追加日であり、Pythia の予報発行日ではない。予報は KEV 追加以外（ベンダー勧告・PoC公開・APT報道）を起点に発行されることがあり、その場合の窓は本統計の窓とずれる。この時間原点のずれに対するロバストネスは p_specific_cve_within_72h_symmetric_sensitivity（窓 [-3,+3]）で確認できる。",
+    "注意喚起の初回発行が KEV 追加より前になる事例が相当割合ある（lag_kev_added_to_first_advisory.pct_first_advisory_before_kev 参照）。これは JPCERT/CC が日本国内で影響の大きい主題を CISA より早く扱うケースがあるためであり（推測）、E3 が『KEV の後追い』だけではないことを示す。ただし主要値は片側窓 [0,+3] で測っており、これらは分子に計上されない。",
+    "JPCERT/CC の発行日は各文書の「（公開）」表記（初版日）を採用している。同一主題の更新版は初版日に丸められるため、更新公開を的中条件とする予報のベースレートには本統計を使わない（M1 は初回発行のみを E3 と定義している）。",
+    "IPA の CVE 抽出は文書本文の CVE-ID 文字列一致による。製品名のみで CVE を明記しない告知は CVE 単位の coverage に計上されず、IPA 側の coverage_ratio は過小評価となる。この過小評価は combined 値にも波及する。",
+    "CERT/CC（kb.cert.org VU#）は本版では未計測。E3 の定義には含まれるため、combined 値は E3 全体のわずかな過小評価となる。CERT/CC の VU# 発行頻度はJPCERT/CC・IPA と同程度かそれ以下であり、結論（E3 の窓内発生率が低い）を反転させる規模ではない（推測・未実測）。",
+    "部分年（実行年）は days_covered で正規化しているが、注意喚起の発行は月例更新サイクル（マイクロソフト第2火曜等）に同期して不均一に分布する。72時間窓の確率は一様ポアソン近似であり、月例週とそれ以外で実際の確率は上下する。",
+    "ハザードの分母『未発火』は KEV 追加を時間原点とする近似である。予報がベンダー勧告・PoC公開など KEV 以外を起点に発行された場合、実際の未発火判定はずれる。個別予報では hit_criteria 記載時点で当該チャネルに既存の注意喚起がないことを直接確認すること（本統計は母集団の見積もりであり、個別の未発火確認の代替にはならない）。",
+    "本統計は的中条件（hit_criteria）を緩める根拠には使用禁止。使ってよいのは (1) M1 頻度ゲートによる発行前の主題選別（入口）、(2) base_rate_estimate の記入アンカー、の2用途のみ（原則D・教訓12）。"
+  ],
+  "_usage": {
+    "m1_frequency_gate": "fast_72h の主的中条件に採用してよいのは、当該チャネルのp_specific_cve_within_72h（＝観測遅延 k を条件とする実測ハザード）が m1_frequency_gate_threshold 以上のチャネルに限る。下回るチャネルは slow_7d へ割当てるか、注意点1行へ格下げする。起点イベントからの遅延 k が既知の場合は by_k_days[k] を使う（k が大きいほどハザードは急減する）。",
+    "m1_frequency_gate_threshold": 0.1,
+    "_threshold_rationale": "確度『低』の目標帯上限が 0.40、E1（KEV初回追加）の実測窓内発生率が 0.30（kev-leadtime-stats.json era_2023_plus_recommended.pct_within_3d）であることから、実運用で機能しているチャネルは 0.30 前後にある。その 1/3 を下限とし、これを下回るチャネルは fast_72h の主的中条件に採らない。閾値の変更は人間レビュー経由でのみ行う。",
+    "base_rate_estimate": "当該チャネルの hazard_by_observation_lag.by_k_days[k]（k=起点イベントから予報発行までの日数・既定は pipeline_default_k）を記入の起点とし、個別 Evidence の強さに応じて調整する。起点から 2 倍を超えて上振れさせる場合は forecast の根拠欄に理由を明記する。"
+  },
+  "channels": {
+    "E3": {
+      "_definition": "E3 = JPCERT/CC・IPA・CERT/CC の初回注意喚起発行（pipeline-forecast-verification.md 観測出口クラス表）。本統計は実運用で hit_criteria に指定される JPCERT/CC・IPA の2成分を実測する。CERT/CC は Pythia の hit_criteria での指定頻度が低く索引の機械取得形式も異なるため本版では未計測（_limitations 参照）。",
+      "components": {
+        "jpcert_cc_at": {
+          "_name": "JPCERT/CC 注意喚起",
+          "_index": "https://www.jpcert.or.jp/at/",
+          "years_available": [
+            "2021",
+            "2022",
+            "2023",
+            "2024",
+            "2025",
+            "2026"
+          ],
+          "cadence": {
+            "by_year": {
+              "2021": {
+                "advisories": 50,
+                "days_covered": 365,
+                "partial_year": false,
+                "advisories_per_day": 0.13699,
+                "distinct_cves_named": 100
+              },
+              "2022": {
+                "advisories": 33,
+                "days_covered": 365,
+                "partial_year": false,
+                "advisories_per_day": 0.09041,
+                "distinct_cves_named": 29
+              },
+              "2023": {
+                "advisories": 30,
+                "days_covered": 365,
+                "partial_year": false,
+                "advisories_per_day": 0.08219,
+                "distinct_cves_named": 38
+              },
+              "2024": {
+                "advisories": 24,
+                "days_covered": 366,
+                "partial_year": false,
+                "advisories_per_day": 0.06557,
+                "distinct_cves_named": 27
+              },
+              "2025": {
+                "advisories": 26,
+                "days_covered": 365,
+                "partial_year": false,
+                "advisories_per_day": 0.07123,
+                "distinct_cves_named": 36
+              },
+              "2026": {
+                "advisories": 21,
+                "days_covered": 219,
+                "partial_year": true,
+                "advisories_per_day": 0.09589,
+                "distinct_cves_named": 26
+              }
+            },
+            "total_advisories": 184,
+            "total_days_covered": 2045,
+            "advisories_per_day": 0.08998,
+            "mean_days_between_advisories": 11.11,
+            "p_any_advisory_in_72h_window": 0.2464
+          },
+          "kev_overlap": {
+            "kev_cves_added_in_scope": 1661,
+            "kev_cves_named_by_channel": 177,
+            "coverage_ratio": 0.1066,
+            "_coverage_ratio_note": "『KEV収載CVEが当該チャネルにいつか名指しされる確率』。窓の制約を含まないため、窓内発生率の上限として読む。",
+            "kev_cves_with_advisory_in_window": 98,
+            "p_specific_cve_within_72h_unconditional": 0.059,
+            "_unconditional_note": "無条件版（KEV追加日を起点とし、[0,+3] に1本以上あれば計上）。予報発行時点で既に発火済みの事例を分子に含むため、実際の予報が達成しうる的中率の**上限**であり、base_rate_estimate には使わない。M1 頻度ゲートと base_rate_estimate は hazard_by_observation_lag を使う。",
+            "hazard_by_observation_lag": {
+              "_definition": "予報が起点イベント（KEV追加）から k 日後に発行されたとき、発行日の翌日〜+3日（fast_72h の検証窓）に当該CVEの初回注意喚起が出る確率。分母は発行時点で未発火の CVE のみ（既発火は的中しえないため除外）。",
+              "_why_conditional": "無条件確率は『いつか出た』事例を含むが、E3 の的中条件は『初回』発行である。発行済みの主題を予報しても的中しえないため、無条件確率は base_rate として系統的に過大となる。E3 が 0/13 に終わった主因はこの条件付けの誤りである（2026-08-07 精度分析）。",
+              "by_k_days": {
+                "0": {
+                  "at_risk": 1587,
+                  "fired_in_window": 90,
+                  "hazard": 0.05671
+                },
+                "1": {
+                  "at_risk": 1511,
+                  "fired_in_window": 15,
+                  "hazard": 0.00993
+                },
+                "2": {
+                  "at_risk": 1502,
+                  "fired_in_window": 7,
+                  "hazard": 0.00466
+                },
+                "3": {
+                  "at_risk": 1497,
+                  "fired_in_window": 3,
+                  "hazard": 0.002
+                },
+                "4": {
+                  "at_risk": 1496,
+                  "fired_in_window": 2,
+                  "hazard": 0.00134
+                },
+                "5": {
+                  "at_risk": 1495,
+                  "fired_in_window": 1,
+                  "hazard": 0.00067
+                },
+                "6": {
+                  "at_risk": 1494,
+                  "fired_in_window": 0,
+                  "hazard": 0.0
+                },
+                "7": {
+                  "at_risk": 1494,
+                  "fired_in_window": 0,
+                  "hazard": 0.0
+                }
+              },
+              "pipeline_default_k": 1,
+              "_pipeline_default_note": "Pythia の日次パイプラインは前日分の観測を翌 07:00 JST に収集するため、起点イベントから予報発行までの標準遅延は 1 日である。特段の事情がない限り by_k_days['1'] を base_rate_estimate の起点に採る。"
+            },
+            "p_specific_cve_within_72h": 0.00993,
+            "_p_specific_note": "M1 頻度ゲートが参照する主要値。hazard_by_observation_lag.by_k_days[pipeline_default_k].hazard と同値。",
+            "p_specific_cve_within_72h_symmetric_sensitivity": 0.06201,
+            "_symmetric_note": "窓を [-3日, +3日] に広げた感度分析値。予報発行の時間原点が KEV 追加とは限らない（ベンダー勧告起点の予報もある）ことへの上限側ロバストネス確認用。M1 頻度ゲートの判定には主要値（片側 [0,+3]）を用いる。",
+            "lag_kev_added_to_first_advisory": {
+              "n": 177,
+              "_note": "初回注意喚起のラグ（日）。負値は KEV 追加より前の発行。",
+              "median_days": 1.0,
+              "p25_days": -57.0,
+              "p75_days": 1.0,
+              "min_days": -433,
+              "max_days": 965,
+              "pct_first_advisory_before_kev": 0.3729,
+              "sufficient_sample": true
+            }
+          }
+        },
+        "ipa_security_alert": {
+          "_name": "IPA 重要なセキュリティ情報",
+          "_index": "https://www.ipa.go.jp/security/security-alert/",
+          "years_available": [
+            "2024",
+            "2025",
+            "2026"
+          ],
+          "_availability_note": "IPA は 2024 年のサイト改編により 2023 年以前の年次索引が 404 で到達不能。到達不能年を発行0件として集計すると頻度を過小評価するため、本成分および combined の集計期間から除外している。",
+          "cadence": {
+            "by_year": {
+              "2024": {
+                "advisories": 26,
+                "days_covered": 366,
+                "partial_year": false,
+                "advisories_per_day": 0.07104,
+                "distinct_cves_named": 56
+              },
+              "2025": {
+                "advisories": 29,
+                "days_covered": 365,
+                "partial_year": false,
+                "advisories_per_day": 0.07945,
+                "distinct_cves_named": 59
+              },
+              "2026": {
+                "advisories": 14,
+                "days_covered": 219,
+                "partial_year": true,
+                "advisories_per_day": 0.06393,
+                "distinct_cves_named": 33
+              }
+            },
+            "total_advisories": 69,
+            "total_days_covered": 950,
+            "advisories_per_day": 0.07263,
+            "mean_days_between_advisories": 13.77,
+            "p_any_advisory_in_72h_window": 0.2025
+          },
+          "kev_overlap": {
+            "kev_cves_added_in_scope": 608,
+            "kev_cves_named_by_channel": 61,
+            "coverage_ratio": 0.1003,
+            "_coverage_ratio_note": "『KEV収載CVEが当該チャネルにいつか名指しされる確率』。窓の制約を含まないため、窓内発生率の上限として読む。",
+            "kev_cves_with_advisory_in_window": 22,
+            "p_specific_cve_within_72h_unconditional": 0.03618,
+            "_unconditional_note": "無条件版（KEV追加日を起点とし、[0,+3] に1本以上あれば計上）。予報発行時点で既に発火済みの事例を分子に含むため、実際の予報が達成しうる的中率の**上限**であり、base_rate_estimate には使わない。M1 頻度ゲートと base_rate_estimate は hazard_by_observation_lag を使う。",
+            "hazard_by_observation_lag": {
+              "_definition": "予報が起点イベント（KEV追加）から k 日後に発行されたとき、発行日の翌日〜+3日（fast_72h の検証窓）に当該CVEの初回注意喚起が出る確率。分母は発行時点で未発火の CVE のみ（既発火は的中しえないため除外）。",
+              "_why_conditional": "無条件確率は『いつか出た』事例を含むが、E3 の的中条件は『初回』発行である。発行済みの主題を予報しても的中しえないため、無条件確率は base_rate として系統的に過大となる。E3 が 0/13 に終わった主因はこの条件付けの誤りである（2026-08-07 精度分析）。",
+              "by_k_days": {
+                "0": {
+                  "at_risk": 589,
+                  "fired_in_window": 10,
+                  "hazard": 0.01698
+                },
+                "1": {
+                  "at_risk": 582,
+                  "fired_in_window": 3,
+                  "hazard": 0.00515
+                },
+                "2": {
+                  "at_risk": 580,
+                  "fired_in_window": 1,
+                  "hazard": 0.00172
+                },
+                "3": {
+                  "at_risk": 579,
+                  "fired_in_window": 0,
+                  "hazard": 0.0
+                },
+                "4": {
+                  "at_risk": 579,
+                  "fired_in_window": 5,
+                  "hazard": 0.00864
+                },
+                "5": {
+                  "at_risk": 579,
+                  "fired_in_window": 10,
+                  "hazard": 0.01727
+                },
+                "6": {
+                  "at_risk": 579,
+                  "fired_in_window": 10,
+                  "hazard": 0.01727
+                },
+                "7": {
+                  "at_risk": 574,
+                  "fired_in_window": 10,
+                  "hazard": 0.01742
+                }
+              },
+              "pipeline_default_k": 1,
+              "_pipeline_default_note": "Pythia の日次パイプラインは前日分の観測を翌 07:00 JST に収集するため、起点イベントから予報発行までの標準遅延は 1 日である。特段の事情がない限り by_k_days['1'] を base_rate_estimate の起点に採る。"
+            },
+            "p_specific_cve_within_72h": 0.00515,
+            "_p_specific_note": "M1 頻度ゲートが参照する主要値。hazard_by_observation_lag.by_k_days[pipeline_default_k].hazard と同値。",
+            "p_specific_cve_within_72h_symmetric_sensitivity": 0.03947,
+            "_symmetric_note": "窓を [-3日, +3日] に広げた感度分析値。予報発行の時間原点が KEV 追加とは限らない（ベンダー勧告起点の予報もある）ことへの上限側ロバストネス確認用。M1 頻度ゲートの判定には主要値（片側 [0,+3]）を用いる。",
+            "lag_kev_added_to_first_advisory": {
+              "n": 61,
+              "_note": "初回注意喚起のラグ（日）。負値は KEV 追加より前の発行。",
+              "median_days": 7.0,
+              "p25_days": -217.0,
+              "p75_days": 16.0,
+              "min_days": -827,
+              "max_days": 216,
+              "pct_first_advisory_before_kev": 0.2951,
+              "sufficient_sample": true
+            }
+          }
+        }
+      },
+      "combined": {
+        "_note": "両成分の索引が揃う年のみで集計した E3 の代表値。M1 頻度ゲートと base_rate_estimate はこの combined 値を参照する。",
+        "years_available": [
+          "2024",
+          "2025",
+          "2026"
+        ],
+        "cadence": {
+          "by_year": {
+            "2024": {
+              "advisories": 50,
+              "days_covered": 366,
+              "partial_year": false,
+              "advisories_per_day": 0.13661,
+              "distinct_cves_named": 70
+            },
+            "2025": {
+              "advisories": 55,
+              "days_covered": 365,
+              "partial_year": false,
+              "advisories_per_day": 0.15068,
+              "distinct_cves_named": 75
+            },
+            "2026": {
+              "advisories": 35,
+              "days_covered": 219,
+              "partial_year": true,
+              "advisories_per_day": 0.15982,
+              "distinct_cves_named": 54
+            }
+          },
+          "total_advisories": 140,
+          "total_days_covered": 950,
+          "advisories_per_day": 0.14737,
+          "mean_days_between_advisories": 6.79,
+          "p_any_advisory_in_72h_window": 0.3802
+        },
+        "kev_overlap": {
+          "kev_cves_added_in_scope": 608,
+          "kev_cves_named_by_channel": 103,
+          "coverage_ratio": 0.1694,
+          "_coverage_ratio_note": "『KEV収載CVEが当該チャネルにいつか名指しされる確率』。窓の制約を含まないため、窓内発生率の上限として読む。",
+          "kev_cves_with_advisory_in_window": 74,
+          "p_specific_cve_within_72h_unconditional": 0.12171,
+          "_unconditional_note": "無条件版（KEV追加日を起点とし、[0,+3] に1本以上あれば計上）。予報発行時点で既に発火済みの事例を分子に含むため、実際の予報が達成しうる的中率の**上限**であり、base_rate_estimate には使わない。M1 頻度ゲートと base_rate_estimate は hazard_by_observation_lag を使う。",
+          "hazard_by_observation_lag": {
+            "_definition": "予報が起点イベント（KEV追加）から k 日後に発行されたとき、発行日の翌日〜+3日（fast_72h の検証窓）に当該CVEの初回注意喚起が出る確率。分母は発行時点で未発火の CVE のみ（既発火は的中しえないため除外）。",
+            "_why_conditional": "無条件確率は『いつか出た』事例を含むが、E3 の的中条件は『初回』発行である。発行済みの主題を予報しても的中しえないため、無条件確率は base_rate として系統的に過大となる。E3 が 0/13 に終わった主因はこの条件付けの誤りである（2026-08-07 精度分析）。",
+            "by_k_days": {
+              "0": {
+                "at_risk": 575,
+                "fired_in_window": 56,
+                "hazard": 0.09739
+              },
+              "1": {
+                "at_risk": 527,
+                "fired_in_window": 8,
+                "hazard": 0.01518
+              },
+              "2": {
+                "at_risk": 520,
+                "fired_in_window": 1,
+                "hazard": 0.00192
+              },
+              "3": {
+                "at_risk": 519,
+                "fired_in_window": 0,
+                "hazard": 0.0
+              },
+              "4": {
+                "at_risk": 519,
+                "fired_in_window": 1,
+                "hazard": 0.00193
+              },
+              "5": {
+                "at_risk": 519,
+                "fired_in_window": 1,
+                "hazard": 0.00193
+              },
+              "6": {
+                "at_risk": 519,
+                "fired_in_window": 1,
+                "hazard": 0.00193
+              },
+              "7": {
+                "at_risk": 518,
+                "fired_in_window": 0,
+                "hazard": 0.0
+              }
+            },
+            "pipeline_default_k": 1,
+            "_pipeline_default_note": "Pythia の日次パイプラインは前日分の観測を翌 07:00 JST に収集するため、起点イベントから予報発行までの標準遅延は 1 日である。特段の事情がない限り by_k_days['1'] を base_rate_estimate の起点に採る。"
+          },
+          "p_specific_cve_within_72h": 0.01518,
+          "_p_specific_note": "M1 頻度ゲートが参照する主要値。hazard_by_observation_lag.by_k_days[pipeline_default_k].hazard と同値。",
+          "p_specific_cve_within_72h_symmetric_sensitivity": 0.125,
+          "_symmetric_note": "窓を [-3日, +3日] に広げた感度分析値。予報発行の時間原点が KEV 追加とは限らない（ベンダー勧告起点の予報もある）ことへの上限側ロバストネス確認用。M1 頻度ゲートの判定には主要値（片側 [0,+3]）を用いる。",
+          "lag_kev_added_to_first_advisory": {
+            "n": 103,
+            "_note": "初回注意喚起のラグ（日）。負値は KEV 追加より前の発行。",
+            "median_days": 1.0,
+            "p25_days": -5.0,
+            "p75_days": 1.0,
+            "min_days": -827,
+            "max_days": 264,
+            "pct_first_advisory_before_kev": 0.2718,
+            "sufficient_sample": true
+          }
+        }
+      }
+    },
+    "E1_reference": {
+      "_source_file": "forecaster/knowledge/kev-leadtime-stats.json",
+      "_note": "E1 は本スクリプトでは再計算せず既存実測を参照する。時間原点が NVD 公開であり E3 の KEV 追加起点とは条件付けが異なるため、両者の数値を直接比較する際は _limitations を必ず併読すること。",
+      "pct_within_3d": 0.3,
+      "n": 746
+    }
+  }
+}

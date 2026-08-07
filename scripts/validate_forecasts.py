@@ -19,12 +19,21 @@ forecaster/schema/forecast.schema.json（v1.0 wrapper 形式）に照らして�
 - deadline_date が発行日（ファイル名日付）以降であること
 - base_rate_estimate が 0〜1 の範囲であること
 
+M1-b 頻度ゲート・ゲートE・base_rate 実測アンカー（2026-08-07 追加・Issue #118 対応）:
+- fast_72h × E3 を violation として拒否する（実測ハザード 0.015 < 閾値 0.10・教訓16）。
+- fast_72h の確度が出口チャネルの実測ハザード上限を超えていないか検査する（ゲートE）。
+- base_rate_estimate がアンカー起点値の2倍超なのに base_rate_rationale が無い場合を拒否する。
+- これらは「どの主題を発行してよいか」という入口の操作であり、発行済み予報の的中判定条件・
+  判定結果には遡及しない（原則D・教訓12）。RULE_EFFECTIVE_DATE_2026_08 より前に発行された
+  予報は検査対象外とし、過去ファイルを遡って violation にしない。
+
 勧告（非致命・exit codeに影響しない・stderr表示のみ・Issue #42）:
 - fast_72h × E2 で hit_criteria が追随IOC公開期待型の語句を含む予報を検知し、
   03-forecast.md「E2追随IOC除外（全Tier）」・教訓14 に照らした人間レビューを促す。
   一次ソース自身の続報（帰属・エコシステム・C2の3点一致）という正当な残置ケースを
   機械的にブロックしないため、violation ではなく advisory とする（発行済み予報の
   的中判定基準は緩めない・原則D）。
+- base_rate_anchor / observation_lag_days の未記載、実測ハザード未測定クラスの採用。
 
 使い方:
     python3 scripts/validate_forecasts.py
@@ -83,7 +92,56 @@ ALLOWED_FORECAST_KEYS = set(REQUIRED_FORECAST_KEYS) | {
     "estimated_portion",
     "verified_outcome",
     "retrieval",
+    "base_rate_anchor",
+    "base_rate_rationale",
 }
+
+ALLOWED_BASE_RATE_ANCHOR_KEYS = {
+    "source_file",
+    "source_key",
+    "value",
+    "observation_lag_days",
+}
+REQUIRED_BASE_RATE_ANCHOR_KEYS = {"source_file", "value"}
+ENUM_BASE_RATE_ANCHOR_SOURCE = {
+    "forecaster/knowledge/kev-leadtime-stats.json",
+    "forecaster/knowledge/advisory-cadence-stats.json",
+    "forecaster/verification/retrieval-calibration.json",
+}
+
+# --- M1-b 頻度ゲート / ゲート E（確度上限）の実測ハザード表（2026-08-07 追加） ---
+# 出典は pipeline-forecast-verification.md「M1-b 頻度ゲート」の表と同一。
+# 値の更新は knowledge/ の再生成（PR + 人間レビュー）に合わせて行う。
+CHANNEL_HAZARD = {
+    # ★E1 の 0.30 は暫定値。kev-leadtime-stats.json era_2023_plus_recommended.pct_within_3d
+    # 由来で時間原点が NVD 公開日、かつ「最終的に KEV 追加された CVE」への条件付け
+    # （生存バイアス）を含み、E3 の「発行時点で未発火」を条件とする厳密なハザードとは
+    # 同種の量ではない。採用可の実質的な根拠は内部実績 4/11 = 36.4%（2026-06〜08）。
+    "E1": 0.30,
+    "E2": None,  # 実測不能（発行停止で蓄積経路が閉鎖・教訓14）
+    "E3": 0.015,  # advisory-cadence-stats.json E3.combined k=1 ハザード（教訓16）
+    "E4": None,  # 未実測（n=1）
+}
+M1B_FREQUENCY_THRESHOLD = 0.10
+# ゲート E: p_channel が下限を満たさない確度は名乗れない（降格方向のみ）
+CONFIDENCE_HAZARD_FLOOR = {"high": 0.40, "medium": 0.20, "low": 0.10}
+# base_rate_estimate がアンカー起点値の何倍を超えたら理由記載を必須とするか
+BASE_RATE_UPLIFT_LIMIT = 2.0
+
+# M1-b / ゲートE / base_rate アンカーの発効日。
+# これらは「どの主題を発行してよいか」という入口の操作であり、発行済み予報の
+# 的中判定条件・判定結果には遡及しない（原則D・教訓12）。発効日より前に発行された
+# 予報は新ルールの検査対象外とし、過去ファイルを遡って violation にしない。
+RULE_EFFECTIVE_DATE_2026_08 = "2026-08-08"
+
+
+def _is_before_effective_date(forecast, effective_date):
+    """forecast_id の発行日が発効日より前か（＝新ルールの遡及対象外か）を返す。"""
+    m = RE_FORECAST_ID.match(forecast.get("forecast_id") or "")
+    if not m:
+        return False  # 日付を特定できない場合は検査する（安全側）
+    d = m.group(1)
+    return f"{d[:4]}-{d[4:6]}-{d[6:]}" < effective_date
 
 ALLOWED_RETRIEVAL_KEYS = {
     "n_cases",
@@ -359,6 +417,147 @@ def check_e2_followup_advisory(rep, fname, fc_id, forecast):
     )
 
 
+def check_m1b_frequency_gate(rep, fname, fc_id, forecast):
+    """M1-b 頻度ゲート: fast_72h の主的中条件は実測ハザード ≥ 0.10 のクラスに限る。
+
+    E2（教訓14）と E3（教訓16）は「別々のチャネルの問題」ではなく、
+    出口イベントの発生頻度を検査していないという単一の欠陥の二度の発現である。
+    個別の語句マッチではなくチャネル単位のハザードで機械的に塞ぐ。
+
+    E2 は正当な残置ケース（一次ソース自身の続報・帰属/エコシステム/C2の3点一致）が
+    あるため従来どおり check_e2_followup_advisory の非致命勧告に委ね、ここでは扱わない。
+    E3 にはカーブアウトが存在しないため violation とする。
+    """
+    if forecast.get("forecast_class") != "fast_72h":
+        return
+    channel = forecast.get("outcome_channel")
+    hazard = CHANNEL_HAZARD.get(channel)
+
+    if channel == "E3":
+        rep.add(
+            fname, fc_id, "outcome_channel",
+            f"fast_72h × E3 は発行禁止（実測ハザード {hazard} < "
+            f"M1-b 閾値 {M1B_FREQUENCY_THRESHOLD}）。E3 の初回注意喚起は KEV 追加の"
+            "翌日に一極集中し、予報発行時点では既に発火済みか二度と起きない（教訓16・0/13）。"
+            "的中条件を E1（KEV初回追加）へ置換するか、本編注意点1行へ格下げすること。",
+        )
+        return
+
+    if hazard is not None and hazard < M1B_FREQUENCY_THRESHOLD:
+        rep.add(
+            fname, fc_id, "outcome_channel",
+            f"fast_72h × {channel} は実測ハザード {hazard} が M1-b 閾値 "
+            f"{M1B_FREQUENCY_THRESHOLD} を下回るため主的中条件に採用不可。",
+        )
+    elif hazard is None and channel not in ("E2",):
+        rep.advise(
+            fname, fc_id, "outcome_channel",
+            f"fast_72h × {channel} は実測ハザード未測定。M1-b は未実測クラスを"
+            "fast_72h の主的中条件に採ることを禁じている。確度=低に留めるか、"
+            "実測を先に行うこと（pipeline-forecast-verification.md「M1-b 頻度ゲート」）。",
+        )
+
+
+def check_confidence_hazard_ceiling(rep, fname, fc_id, forecast):
+    """ゲートE: 出口チャネルの実測ハザードを超える確度は名乗れない（降格方向のみ）。
+
+    確度は『脆弱性の深刻さ』ではなく『hit_criteria のイベントが窓内に起きる確率』の
+    約束である。両者の取り違えにより確度=高8.3%・中11.4%・低10.5%と弁別力が
+    失われていた（2026-08-07 精度分析）。
+    """
+    if forecast.get("forecast_class") != "fast_72h":
+        return
+    channel = forecast.get("outcome_channel")
+    confidence = forecast.get("confidence")
+    hazard = CHANNEL_HAZARD.get(channel)
+    floor = CONFIDENCE_HAZARD_FLOOR.get(confidence)
+    if hazard is None or floor is None:
+        return
+    if hazard < floor:
+        allowed = [c for c, f in CONFIDENCE_HAZARD_FLOOR.items() if hazard >= f]
+        allowed_note = "・".join(allowed) if allowed else "なし（fast_72h 発行不可）"
+        rep.add(
+            fname, fc_id, "confidence",
+            f"確度={confidence} は出口クラス {channel} の実測ハザード {hazard} では"
+            f"名乗れない（ゲートE: 確度={confidence} の下限は {floor}）。"
+            f"このチャネルで名乗れる確度: {allowed_note}。",
+        )
+
+
+def check_base_rate_anchor(rep, fname, fc_id, forecast):
+    """base_rate_estimate が実測アンカーから導出されているかを検査する（教訓16）。"""
+    anchor = forecast.get("base_rate_anchor")
+    estimate = forecast.get("base_rate_estimate")
+
+    if anchor is None:
+        rep.advise(
+            fname, fc_id, "base_rate_anchor",
+            "base_rate_anchor 未記載。2026-08-07 改訂で base_rate_estimate は実測アンカー"
+            "からの導出が必須になった（主観値では『的が小さすぎる主題』を発行時に検知できない）。"
+            "03-forecast.md「base_rate_estimate」手順1〜4に従って記録すること。",
+        )
+        return
+
+    if not isinstance(anchor, dict):
+        rep.add(fname, fc_id, "base_rate_anchor", f"オブジェクトではない: {anchor!r}")
+        return
+
+    unknown = set(anchor) - ALLOWED_BASE_RATE_ANCHOR_KEYS
+    if unknown:
+        rep.add(
+            fname, fc_id, "base_rate_anchor",
+            f"未知のキー: {sorted(unknown)}",
+        )
+    missing = REQUIRED_BASE_RATE_ANCHOR_KEYS - set(anchor)
+    if missing:
+        rep.add(
+            fname, fc_id, "base_rate_anchor",
+            f"必須キーが不足: {sorted(missing)}",
+        )
+
+    source = anchor.get("source_file")
+    if source is not None and source not in ENUM_BASE_RATE_ANCHOR_SOURCE:
+        rep.add(
+            fname, fc_id, "base_rate_anchor.source_file",
+            f"許可されていない出典: {source!r}"
+            f"（許可: {sorted(ENUM_BASE_RATE_ANCHOR_SOURCE)}）",
+        )
+
+    lag = anchor.get("observation_lag_days")
+    if lag is None:
+        rep.advise(
+            fname, fc_id, "base_rate_anchor.observation_lag_days",
+            "起点イベントからの発行遅延 k が未記録。ハザードは k に強く依存するため"
+            "（E3 は k=0 で 0.097・k=1 で 0.015）必ず数えて記録すること。",
+        )
+    elif not isinstance(lag, int) or isinstance(lag, bool) or lag < 0:
+        rep.add(
+            fname, fc_id, "base_rate_anchor.observation_lag_days",
+            f"0以上の整数ではない: {lag!r}",
+        )
+
+    value = anchor.get("value")
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return
+    if not 0 <= value <= 1:
+        rep.add(
+            fname, fc_id, "base_rate_anchor.value",
+            f"0〜1 の範囲外: {value!r}",
+        )
+        return
+
+    if not isinstance(estimate, (int, float)) or isinstance(estimate, bool):
+        return
+    limit = value * BASE_RATE_UPLIFT_LIMIT
+    if estimate > limit and not forecast.get("base_rate_rationale"):
+        rep.add(
+            fname, fc_id, "base_rate_estimate",
+            f"アンカー起点値 {value} の {BASE_RATE_UPLIFT_LIMIT} 倍（{round(limit, 4)}）を"
+            f"超える {estimate} を記入しているが base_rate_rationale が未記載。"
+            "理由なき2倍超は発行却下（03-forecast.md 手順3）。",
+        )
+
+
 def check_forecast(rep, fname, forecast, seen_ids, file_date, day_count):
     """forecast 1件を検査する。seen_ids は全ファイル横断の {forecast_id: ファイル名}。"""
     if not isinstance(forecast, dict):
@@ -534,6 +733,13 @@ def check_forecast(rep, fname, forecast, seen_ids, file_date, day_count):
 
     # E2追随IOC除外の勧告検知（非致命・Issue #42）
     check_e2_followup_advisory(rep, fname, fc_id, forecast)
+
+    # M1-b 頻度ゲート・ゲートE・base_rate 実測アンカー（2026-08-07・Issue #118 対応）
+    # 入口の操作であり発行済み予報には遡及しない（原則D）。発効日前の予報はスキップ。
+    if not _is_before_effective_date(forecast, RULE_EFFECTIVE_DATE_2026_08):
+        check_m1b_frequency_gate(rep, fname, fc_id, forecast)
+        check_confidence_hazard_ceiling(rep, fname, fc_id, forecast)
+        check_base_rate_anchor(rep, fname, fc_id, forecast)
 
 
 def check_file(rep, path, seen_ids):
