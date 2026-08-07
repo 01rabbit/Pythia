@@ -47,9 +47,11 @@ scripts/backfill_observations.py         ← 過去日付の観測を CISA KEV �
 scripts/build_attack_group_history.py    ← 追跡対象グループの過去事例知識を MITRE ATT&CK から抽出（PR提案+人間レビュー経由でのみ再生成）
 scripts/build_kev_leadtime_stats.py      ← KEV全件の「NVD公開→KEV追加」ラグ実測分布を算出（E1検証窓・base_rate参考・PR経由でのみ再生成）
 scripts/build_advisory_cadence_stats.py  ← E3出口チャネル（JPCERT/CC注意喚起・IPA）の発行頻度と未発火条件付きハザードを実測（M1-b頻度ゲート判定値・base_rate実測アンカー・PR経由でのみ再生成）
+scripts/build_kev_hazard_stats.py        ← E1（KEV初回追加）の窓内発生率を母集団明示で実測（base_rate_estimateのアンカー・内部実績によるp_channel集計・PR経由でのみ再生成）
 scripts/build_epss_kev_calibration.py    ← KEV追加前日のEPSS%ile実測（M3確度アンカー較正・PR経由でのみ再生成）
 forecaster/knowledge/kev-leadtime-stats.json ← KEVリードタイム実測統計（生存バイアス等の限界を_limitationsに明記・hit_criteria変更には使用禁止）
 forecaster/knowledge/advisory-cadence-stats.json ← E3チャネル発行頻度実測（M1-b頻度ゲートの判定値・base_rate実測アンカー。観測遅延k条件付きハザードが正であり無条件確率はbase_rateに使用禁止・hit_criteria変更には使用禁止）
+forecaster/knowledge/kev-hazard-stats.json ← E1窓内発生率の母集団別実測（strata=base_rate_estimateのアンカー／internal_channel_rates=p_channelの正本。★strataのhazardをp_channelに代入禁止・両者は別の量＝教訓17・hit_criteria変更には使用禁止）
 forecaster/knowledge/epss-kev-calibration.json ← EPSS×KEV較正統計（M3のEPSS条件の感度実測・P(KEV|EPSS高)の根拠には使用禁止。全件監査証跡は epss-kev-calibration-entries.json に分離）
 scripts/check_knowledge_untouched.py     ← 日次コミット前の knowledge/ 無変更チェック（行動原則5の機械的ガード・SKILL.md Step 4 で実行）
 scripts/build_zeroday_itw_priors.py      ← Google Project Zero「0-day ITW」からゼロデイ過去分布を抽出（cited・検知バイアス明記・PR経由でのみ再生成）
