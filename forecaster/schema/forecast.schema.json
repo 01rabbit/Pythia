@@ -107,9 +107,45 @@
         },
         "base_rate_estimate": {
           "type": "number",
-          "description": "この的中条件が偶然（予報のスキルなしに）成立する確率の発行時主観値（0〜1）。ベースレート対比の予報スキルを事後測定するための記録。E1（KEV初回追加）はKEV登録済みCVEでは相対的に高いベースレートになりやすい点に留意し、KEV未登録の新規PoCベースの予報より高めの値を見積もる、等の指針は03-forecast.mdの記入指針を参照。",
+          "description": "この的中条件が偶然（予報のスキルなしに）成立する確率（0〜1）。ベースレート対比の予報スキルを事後測定するための記録。★2026-08-07 改訂: 主観値ではなく実測アンカー（base_rate_anchor）からの導出を必須とする。起点値から2倍を超えて上振れさせる場合は base_rate_rationale の記載が必須。記入手順は03-forecast.md「base_rate_estimate」の手順1〜4を参照。",
           "minimum": 0,
           "maximum": 1
+        },
+        "base_rate_anchor": {
+          "type": "object",
+          "description": "base_rate_estimate の導出に使った実測アンカー（2026-08-07 追加）。主観値のままでは「的が小さすぎる主題を撃っている」ことが発行時に検知されないため導入した（教訓16: E3 は記録平均0.24に対し実測0.015）。検証ステージがアンカーと実績の乖離を月次で突合する。",
+          "additionalProperties": false,
+          "required": ["source_file", "value"],
+          "properties": {
+            "source_file": {
+              "type": "string",
+              "description": "アンカー値の出典ファイル。",
+              "enum": [
+                "forecaster/knowledge/kev-leadtime-stats.json",
+                "forecaster/knowledge/advisory-cadence-stats.json",
+                "forecaster/verification/retrieval-calibration.json"
+              ]
+            },
+            "source_key": {
+              "type": "string",
+              "description": "出典ファイル内の参照キー（例: era_2023_plus_recommended.pct_within_3d、channels.E3.combined.kev_overlap.hazard_by_observation_lag.by_k_days.1.hazard）。"
+            },
+            "value": {
+              "type": "number",
+              "description": "アンカーの起点値（実測ハザード・0〜1）。",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "observation_lag_days": {
+              "type": "integer",
+              "description": "起点イベント（KEV追加日・ベンダー勧告日・PoC公開日のうち hit_criteria が依存する事象）から予報発行日までの日数 k。ハザードは k に強く依存する（E3 は k=0 で 0.097・k=1 で 0.015）ため必ず数えて記録する。",
+              "minimum": 0
+            }
+          }
+        },
+        "base_rate_rationale": {
+          "type": "string",
+          "description": "base_rate_estimate をアンカー起点値の2倍を超えて上振れさせた場合の理由（1行）。2倍以内の調整および下振れ方向の調整では省略可。理由なき2倍超は発行却下（03-forecast.md 手順3）。"
         },
         "kev_snapshot": {
           "type": "object",
