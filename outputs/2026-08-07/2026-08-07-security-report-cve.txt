@@ -1,0 +1,159 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-07 07:50 JST
+調査期間: 2026-08-06 07:00 〜 2026-08-07 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1が8点以上かつ軸2が4点以上のCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: JVN 発行（国内ベンダーアドバイザリ）／国内で広く使われる製品への直接影響
+
+------------------------------------------------------------
+1. CVE-2026-20200 / Cisco Integrated Management Controller (IMC)
+対象: UCS C-Series M7/M8 ラックサーバ（スタンドアロンモード）および同 IMC ベースの各種アプライアンス
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 8.8 (High)
+状態: PoC公開
+パッチ提供: 提供済み（Cisco 公式アドバイザリ記載の修正版（具体版数は一次情報で未確認））
+
+【24時間以内の変化】
+[Help Net Security 2026-08-06] ドイツ NSIDE ATTACK LOGIC の研究者 Christoph Peil 氏が PoC ツール「CIMCown」を GitHub で公開したと報道（採用条件F: PoC・Exploitコードの新規公開）。Cisco PSIRT は実悪用を認識していないと明記している
+
+【概要】
+Cisco IMC（Integrated Management Controller）の Web ベース管理インターフェースに存在する脆弱性で、低権限で認証済みのリモート攻撃者が基盤 OS 上で任意コマンドを実行できる。CVSS は NVD 値 8.8（AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H・出典は CNA psirt@cisco.com。NVD Primary スコアは未付与）で、ベンダー・一部メディアが 9.8 と記載する例があるが本レポートは pipeline-1-cve.md の規定により NVD を正とする。本CVEを含む Cisco の一斉ハードニングリリース（cisco-sa-hardening-imc 系・2026-08-05 16:00 GMT 公開）自体は調査窓の開始前であり、同一バッチの Cisco Catalyst SD-WAN・IOS XE 各CVEは窓外として除外した。本CVEのみ 2026-08-06 に第三者研究者による PoC ツール「CIMCown」の公開が報じられ、採用条件F（PoC新規公開）が窓内で成立したため採用する。CISA KEV 未登録・実悪用未確認、EPSS パーセンタイル 0.545（2026-08-06）。軸1は5点にとどまるが、Cisco UCS 系サーバは国内の行政・金融データセンタで広く採用されており、PoC 公開により具体的リスクが顕在化したため参考A（国内影響あり）へ昇格した。なお本CVEは悪用に有効な認証情報を要する（PR:L）ため、poc-exploitation-criteria.json の T3 採用必須条件A（無認証）を満たさず、予報化は見送り本欄の注意点に留める（教訓10）。
+
+攻撃の流れ:
+1. IMC Web 管理インターフェースへ低権限の認証済みアクセスを取得する
+2. 管理インターフェース経由でコマンドインジェクションを行い基盤 OS 上で任意コマンドを実行する
+3. 管理コントローラ権限を奪取し、配下サーバの構成改変・永続化の起点とする
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・UCS / IMC 管理インターフェースへの認証済みリクエストのうち、コマンド実行を伴う異常なパラメータ・短時間の多量アクセスを監視する。管理インターフェースがインターネットまたは業務 VLAN から到達可能でないかを併せて棚卸しする。
+Splunk SPL: index=network sourcetype=cisco:imc OR sourcetype=cisco:ucs | stats count values(uri_path) as paths by src_ip user | where count > 50
+Splunk SPL: index=proxy OR index=firewall dest_port IN (80,443) | search dest_category="management_interface" OR dest_ip IN (<IMC管理IPレンジ>) | stats dc(src_ip) as src_count by dest_ip | where src_count > 5
+→ 正規の運用保守作業（ファームウェア更新・構成バックアップ）でも管理 API への連続アクセスは発生するため、保守ウィンドウ外・未登録の送信元 IP からのアクセスに絞って確認する。
+
+【参照】
+https://www.helpnetsecurity.com/2026/08/06/cisco-imc-cve-2026-20200-public-poc-exploit/
+https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=CVE-2026-20200
+
+------------------------------------------------------------
+2. CVE-2026-66344 / NetKids iMark（ネットワーク機器監視ソフトウェア）
+対象: V5.2.5.0 およびそれ以前
+------------------------------------------------------------
+
+優先度: 中
+CVSS: v3 6.7 / v4 5.4 (Medium)
+状態: ゼロデイ
+パッチ提供: 未提供
+
+【24時間以内の変化】
+[JVN 2026-08-06] JVN#28045338 が 2026-08-05 に公開され 探索パス要素の制御不備（CWE-427） が開示された。前回実行窓（2026-08-05 07:00〜2026-08-06 07:00 JST）で未検知だったため本日新規計上する
+
+【概要】
+国内ベンダー株式会社アイ・エス・ティのネットワーク機器監視ソフトウェア NetKids iMark に 探索パス要素の制御不備（CWE-427） が存在し、当該デバイスへのログイン権限を持つ攻撃者、またはシステムドライブへの書き込み権限を持つ攻撃者が SYSTEM 権限で任意コードを実行できる可能性がある。JVN#28045338 として公開された。開発者は更新版を計画中と表明しているのみで、本レポート作成時点で修正版は提供されていない（ゼロデイ状態）。CVSS は NVD 未登録のため JVN 記載値を採用した。実悪用・PoC 公開はいずれも未確認。JVN 発行（国内ベンダーアドバイザリ）を参考A昇格トリガーとして採用した。
+
+攻撃の流れ:
+1. 対象ホストへのログイン権限またはシステムドライブへの書き込み権限を取得する
+2. 探索パス上の非標準ディレクトリへ悪意ある実行ファイル・DLL を配置する
+3. NetKids iMark のサービス起動時に SYSTEM 権限で任意コードが実行される
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・NetKids iMark のプロセスが非標準パスから実行ファイル・DLL をロードしていないかを Sysmon で監視する。併せてインストールディレクトリおよび探索パス上のディレクトリの ACL を点検する。
+Splunk SPL: index=wineventlog sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational EventCode=7 | search Image="*iMark*" NOT ImageLoaded IN ("C:\\Windows\\System32\\*","C:\\Program Files*") | stats count by ComputerName Image ImageLoaded
+Splunk SPL: index=wineventlog EventCode=4688 New_Process_Name="*iMark*" | stats count values(Creator_Process_Name) as parent by ComputerName
+→ 正規の追加モジュールも非標準パスに置かれる場合があるため、資産管理台帳と突合し未登録のパスからのロードのみを調査対象とする。
+
+【参照】
+https://jvn.jp/jp/JVN28045338/
+
+------------------------------------------------------------
+3. CVE-2026-66839 / NetKids iMark（ネットワーク機器監視ソフトウェア）
+対象: V5.2.5.0 およびそれ以前
+------------------------------------------------------------
+
+優先度: 中
+CVSS: v3 6.7 / v4 8.4 (High)
+状態: ゼロデイ
+パッチ提供: 未提供
+
+【24時間以内の変化】
+[JVN 2026-08-06] JVN#28045338 が 2026-08-05 に公開され 非引用の探索パス要素（CWE-428） が開示された。前回実行窓（2026-08-05 07:00〜2026-08-06 07:00 JST）で未検知だったため本日新規計上する
+
+【概要】
+国内ベンダー株式会社アイ・エス・ティのネットワーク機器監視ソフトウェア NetKids iMark に 非引用の探索パス要素（CWE-428） が存在し、当該デバイスへのログイン権限を持つ攻撃者、またはシステムドライブへの書き込み権限を持つ攻撃者が SYSTEM 権限で任意コードを実行できる可能性がある。JVN#28045338 として公開された。開発者は更新版を計画中と表明しているのみで、本レポート作成時点で修正版は提供されていない（ゼロデイ状態）。CVSS は NVD 未登録のため JVN 記載値を採用した。実悪用・PoC 公開はいずれも未確認。JVN 発行（国内ベンダーアドバイザリ）を参考A昇格トリガーとして採用した。
+
+攻撃の流れ:
+1. 対象ホストへのログイン権限またはシステムドライブへの書き込み権限を取得する
+2. 探索パス上の非標準ディレクトリへ悪意ある実行ファイル・DLL を配置する
+3. NetKids iMark のサービス起動時に SYSTEM 権限で任意コードが実行される
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・NetKids iMark のプロセスが非標準パスから実行ファイル・DLL をロードしていないかを Sysmon で監視する。併せてインストールディレクトリおよび探索パス上のディレクトリの ACL を点検する。
+Splunk SPL: index=wineventlog sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational EventCode=7 | search Image="*iMark*" NOT ImageLoaded IN ("C:\\Windows\\System32\\*","C:\\Program Files*") | stats count by ComputerName Image ImageLoaded
+Splunk SPL: index=wineventlog EventCode=4688 New_Process_Name="*iMark*" | stats count values(Creator_Process_Name) as parent by ComputerName
+→ 正規の追加モジュールも非標準パスに置かれる場合があるため、資産管理台帳と突合し未登録のパスからのロードのみを調査対象とする。
+
+【参照】
+https://jvn.jp/jp/JVN28045338/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: JVN#28045338 NetKids iMark における複数の脆弱性 https://jvn.jp/jp/JVN28045338/
+未発行: CVE-2026-20200 — 24時間窓内に JPCERT/CC・IPA の発行確認されず
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当CVEなし。Cisco IOS XE CVE-2026-20272 は CVSS 9.8・未認証RCEだが勧告・NVD公開とも窓外のため除外へ）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-20303 (Cisco Catalyst SD-WAN) → out_of_window: ベンダー勧告 cisco-sa-hardening-sdwan-faLcR3K は 2026-08-05 16:00 GMT（= 2026-08-06 01:00 JST）公開・Version 1.0 Final で改訂なし、NVD 公開も 2026-08-05T17:16Z でいずれも調査窓開始（2026-08-06 07:00 JST）より前。窓内の NVD lastModified 更新（2026-08-06T15:44:56.043Z）は無関係ベンダーのCVEとミリ秒まで一致する一括バッチ処理であり vulnStatus は Awaiting Analysis のまま・NVD Primary スコア未付与のため採用条件B（重要更新）に該当しない。CVSS 9.9 だがベクタは PR:L で未認証悪用は不可、KEV未登録・PoC未公開・PSIRT実悪用認知なし、EPSS %ile 0.213
+・CVE-2026-20304 (Cisco Catalyst SD-WAN) → out_of_window: CVE-2026-20303 と同一勧告バッチ・同一時刻で窓外。CVSS 9.9・PR:L（要認証）、EPSS %ile 0.168
+・CVE-2026-20272 (Cisco IOS XE Software) → out_of_window: ベンダー勧告 cisco-sa-hardening-iosxe-V8NMuMZJ は 2026-08-05 16:00 GMT 公開・Version 1.0 Final、NVD 公開 2026-08-05T17:16Z でいずれも調査窓開始前。窓内の NVD lastModified 更新は上記と同一の一括バッチであり採用条件Bに該当しない。CVSS 9.8・PR:N（未認証・UI不要）で技術的深刻度は高くKEV追加時は即時再評価が必要だが、窓内の変化がないため本日は不採用とし継続監視対象とする
+・CVE-2026-64633 (Veeam ONE) → out_of_window: CVSS v4.0 10.0・未認証RCE（AV:N/AC:L/AT:N/PR:N/UI:N）だが、NVD 公開 2026-08-04T17:16Z・ベンダー KB4892 は 2026-08-04 公開/2026-08-05 更新・Security NEXT 国内報道も 2026-08-05 でいずれも窓外。KEV未登録・実悪用未確認・PoC未公開（GitHub の同名リポジトリは実行可能コードを含まない）・EPSS %ile 0.262。継続監視対象
+・CVE-2026-24254 (NVIDIA Dynamo) → out_of_window: CVSS 9.8・PR:N。NVD 公開 2026-08-04T18:16Z、NVIDIA Security Bulletin 5842 は 2026-08-04 の初版のみで改訂履歴なし。窓内の変化は NVD 一括バッチ更新のみ。KEV未登録・PoC未確認・実悪用未確認・EPSS %ile 0.369。なお NVIDIA 自身の記述で CWE-288（認証回避）と説明文 out-of-bounds write が不整合であり脆弱性の本質は未確認
+・CVE-2025-15628 (TP-Link Omada（ZTP 関連・Forescout 報告15件の代表）) → out_of_window: TP-Link 勧告 2026-08-03・Forescout ブログ 2026-08-04・新規7件の NVD 公開 2026-08-03 でいずれも窓外。窓内は NVD 一括バッチ更新（2026-08-06T15:36:14.720Z・13件ミリ秒一致）のみ。採番は全て CVE-2025-* 系列で CVE-2026-* は存在せず、単体の最高 CVSS は v4.0 8.2 で 9.0 未満。KEV未登録・PoC未確認・実悪用言及なし
+・CVE-2026-18577 (N-able N-central) → already_reported
+・CVE-2026-18556 (N-able N-central) → already_reported
+・CVE-2026-9198 (Langflow) → already_reported
+・CVE-2026-34486 (Apache Tomcat) → already_reported
+・CVE-2026-63077 (JetBrains TeamCity) → already_reported
+・CVE-2026-64531 (Linux Kernel（OVSwrap / Open vSwitch）) → already_reported
+・CVE-2026-59774 (Gitea) → already_reported
+・CVE-2026-58048 (cPanel & WHM) → already_reported
+・CVE-2026-17583 (Thermo Fisher Applied Biosystems) → out_of_window: CVE 公開 2026-07-31・報道 2026-08-03 でいずれも調査窓外。KEV 未登録・実悪用未確認。継続監視対象
+・CVE-2026-41679 (Paperclip（AI エージェント基盤）) → already_reported: 2026-08-06 分レポートで Section 1 AI攻撃として既報。加えて追跡検証の結果、NVD 公開は 2026-04-23・GHSA-68qg-g8mg-6pr7 は 2026-04-10・Metasploit モジュール公開は 2026-06 と本体事象はいずれも窓外であることを確認（窓内は二次解説記事のみ）。窓内の新規変化なし
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A3件 / 参考B0件 / 除外16件
+
+========================================

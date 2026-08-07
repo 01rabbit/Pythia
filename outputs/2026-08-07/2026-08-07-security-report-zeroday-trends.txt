@@ -1,0 +1,179 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-07 07:50 JST
+調査期間: 2026-08-06 07:00 〜 2026-08-07 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. UNC6671（別名: BlackFile（旧恐喝ブランド）／Redact（2026-05 改称）／Pink／Helix／Falcon / 国家帰属: 明示なし / 帰属信頼度: high）
+活動タイプ: active_campaign / ttp_update / new_target
+------------------------------------------------------------
+
+キャンペーンID: UNC6671-2026-HedgeFundVishing
+標的: finance / professional_services / North America / US
+マルウェア: AiTM フィッシングキット（名称非公表）
+
+【24時間以内の変化】
+[BleepingComputer / Bloomberg / Fortune / Cybernews 2026-08-06] Google Threat Intelligence Group（GTIG）の分析を引用し、UNC6671 が 2026-07 以降に大手ヘッジファンド・PE ファーム・法律事務所・格付機関へ標的をシフトした攻撃の波を確認したと複数媒体が一斉報道
+
+【概要】
+Google Threat Intelligence Group（GTIG）が追跡する金銭動機の侵入グループ UNC6671 が、従来の小売・ホスピタリティから金融サービスへ標的をシフトしたことが 2026-08-06 に複数媒体で報じられた。同グループは BlackFile（2026-05 に Redact へ改称）を含む Pink / Helix / Falcon の複数恐喝ブランドを単一の中核侵入チームで運用しているとされ、英語話者犯罪ネットワーク「The Com」との関連が中確度で指摘されている。今回の波では Point72 Asset Management・Millennium Management・Two Sigma Investments・Citadel などの大手ヘッジファンドに加え PE ファーム・大手法律事務所・格付機関が標的となった。AI 音声クローンで信頼された役員・同僚の声を模倣するビッシングと、AiTM フィッシングキットによる認証情報・セッション Cookie のリアルタイム窃取を組み合わせ、Microsoft 365 / Okta の SSO を経由してクラウド基盤へ横展開する。Two Sigma は攻撃阻止を確認、Point72 は攻撃を受けたが顧客情報の流出はないと発表している。GTIG は 2026 年1〜5月だけで少なくとも 1,060 万ドル相当のビットコイン支払いを追跡し、要求額は最大 300 万ドル・平均約 75 万ドルで妥結していると報告した。
+
+攻撃の流れ（判明分）:
+1. 標的組織の役員・従業員の個人携帯へ AI 音声クローンを用いたビッシングを行い、ヘルプデスクまたは同僚になりすます
+2. AiTM フィッシングキットへ誘導し MFA 承認済みのセッション Cookie と認証情報をリアルタイムで窃取する
+3. Microsoft 365 / Okta の SSO を経由してクラウド基盤へ横展開し、自動化ツールでデータを持ち出したうえで恐喝ブランド名義で身代金を要求する
+
+【新規TTP】
+・[T1566.004] Phishing: Spearphishing Voice — 個人携帯電話への音声フィッシング。AI 音声クローンでヘルプデスク・役員になりすます（GTIG 分析・2026-08-06 報道）
+・[T1557] Adversary-in-the-Middle — AiTM フィッシングキットで認証情報と MFA 承認済みセッション Cookie をリアルタイム窃取（GTIG 分析・2026-08-06 報道）
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・ヘルプデスクの本人確認手順を音声以外の要素（コールバック・社内チャットの多要素確認）へ切り替える。Microsoft 365 / Okta で新規デバイス登録・異常な地理的サインインの条件付きアクセスポリシーを強化し、セッション Cookie の再利用を検知したら即時失効させる。役員・財務・法務部門を対象にビッシング訓練を優先実施する。
+Splunk SPL: index=o365 sourcetype="o365:management:activity" Operation=UserLoggedIn | stats dc(ClientIP) as ip_count values(DeviceProperties) as devices by UserId | where ip_count > 3
+Splunk SPL: index=okta sourcetype=OktaIM2 eventType="user.mfa.factor.activate" OR eventType="policy.evaluate_sign_on" | stats count by actor.alternateId client.ipAddress | where count > 5
+→ 正規の出張・リモート勤務でも複数 IP からのサインインは発生するため、新規デバイス登録と同時刻に発生した MFA 要素追加のみを高優先度で確認する。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hedge-fund-cyberattacks-tied-to-blackfile-linked-unc6671-extortion-group/
+https://fortune.com/2026/08/06/major-hedge-funds-targeted-in-wave-of-attempted-cyberattacks/
+https://cybernews.com/security/wall-street-ai-vishing-citadel-two-sigma-point72/
+https://www.hedgeweek.com/major-hedge-funds-fend-off-coordinated-cyberattack-campaign-using-ai-driven-vishing-tactics/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 不明（帰属未確定）（別名: なし / 国家帰属: 明示なし / 帰属信頼度: unconfirmed）
+活動タイプ: active_campaign
+------------------------------------------------------------
+
+キャンペーンID: RIS-2026-KyodoNews-AccountCompromise
+標的: other / Asia-Pacific / JP
+マルウェア: 判明分なし
+
+【24時間以内の変化】
+[ITmedia NEWS / INTERNET Watch / 時事ドットコム / 中日新聞 2026-08-06] 共同通信社が 2026-08-05 に職員アカウントの第三者による不正利用と約6,000件の連絡先情報閲覧の可能性を公表。前回実行窓で未検知だったため本日新規計上する
+
+【概要】
+共同通信社は 2026-08-05、外部からの情報提供を受けた調査の結果、一部職員のアカウントが第三者に不正利用され、当該アカウントのメールおよび保存ファイルが閲覧された可能性があると公表した。流出のおそれがある情報は職員関連約3,000件、加盟社・取引先関連約3,000件の氏名・所属・役職・メールアドレス等で、パスワードの漏えいは確認されていないとしている。共同通信および加盟社のシステム・業務への影響は確認されていない。攻撃者の帰属・侵入手口はいずれも公表されておらず、軸P1/軸Q1と低スコアだが、国内組織への侵害が確認された事案であるため参考A昇格トリガーにより注目動向へ採用した。
+
+攻撃の流れ（判明分）:
+1. 職員アカウントの認証情報が何らかの経路で第三者に取得される（手口は非公表）
+2. 当該アカウントでメール・保存ファイルへアクセスされる
+3. 職員・加盟社・取引先の氏名/所属/役職/メールアドレス等 約6,000件が閲覧された可能性
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・報道機関・その加盟社/取引先は、窃取された可能性のある連絡先情報を悪用した標的型フィッシング・なりすましメールに警戒する。共同通信名義の不審な連絡は別経路で真正性を確認する。自組織でも同種のアカウント不正利用に備え、メールボックスの委任・転送ルールの棚卸しと MFA 適用状況の確認を行う。
+Splunk SPL: index=o365 Operation IN ("New-InboxRule","Set-InboxRule","Add-MailboxPermission") | stats count values(Parameters) as params by UserId ClientIP
+Splunk SPL: index=email sender_domain="kyodonews.jp" OR subject="*共同通信*" | stats count by sender src_ip | where count > 10
+→ 正規の業務連絡と区別するため、送信元 IP・SPF/DKIM/DMARC の認証結果が失敗している通信に絞って確認する。
+
+【参照】
+https://www.itmedia.co.jp/news/article/2608/05/2000000406/
+https://internet.watch.impress.co.jp/docs/news/2130852.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+※ トラックB（section_route: trends）由来のCVE: 該当なし（24時間窓内にCVE未採番の高インパクト事象なし）
+
+・[トレンド記事] keyv/cacheable npm ワーム（Shai-Hulud 系）が 420 超パッケージ・最大 2,234 バージョンへ拡散
+2026-08-04 に npm パッケージ keyv・cacheable のメンテナ GitHub アカウントが乗っ取られ、preinstall スクリプトを仕込んだ悪意あるバージョンが公開された。自己増殖型ワームとして関連 9〜12 組織・420〜444 パッケージ名・最大 2,234 バージョンへ拡散し（集計元により件数に幅がある）、npm トークン・GitHub トークン・クラウド認証情報・秘密鍵を窃取したうえで GitHub Actions ランナーのメモリまで読み取る。悪意あるコミットには .claude/settings.json（SessionStart フック）や .vscode/tasks.json（folderOpen 時実行タスク）を通じて AI コーディングツール・エディタの自動実行を狙う仕込みも確認されたが、いずれもワークスペース信頼の保護により無条件実行はされない。JFrog は同一系統を「Shai-Hulud の再来」と位置づけている。
+
+【24時間以内の変化】
+[The Hacker News 2026-08-06] 被害パッケージ集計の更新版を報道。独立ソース10件以上が追随しバースト検出閾値超過
+[SANS Internet Storm Center 2026-08-06] 「Don't Revoke That Token Yet」で、トークンを安易に失効させると攻撃者側の失効監視ハンドラが発火しうるとの技術的注意喚起（2026-08-05 公開・前回窓で未検知のため本日計上）
+
+参照:
+https://thehackernews.com/2026/08/keyv-linked-npm-worm-poisons-hundreds.html
+https://isc.sans.edu/diary/33218
+https://research.jfrog.com/post/shai-hulud-is-back-august/
+https://blog.flatt.tech/entry/keyv_compromise
+
+・[トレンド記事] ClickFix 攻撃、250超のドメインでブラウザフィンガープリンティングを用い macOS マルウェアを選別配布
+Microsoft Threat Intelligence が追跡する ClickFix 系インフラで、250 を超えるフロントエンドドメインが訪問者を先に JavaScript でフィンガープリンティング（navigator / screen / window / document / location / console 等から情報収集）し、クローラやサンドボックスには無害なページを、選別した実ユーザーにのみ偽ダウンロードページを表示する手口へ進化していることが報じられた。最終的に MacSync および Atomic Stealer（AMOS）を配布し、認証情報・ブラウザデータ・暗号資産ウォレットを窃取する。別途 Huntress は ClickFix 経由で配布される Go 製 macOS インフォスティーラーを報告しており、ウォレット残高を全額ではなく設定可能な一部割合だけ窃取する新手口を確認している（C2 は制裁対象のバレットプルーフホスティング事業者 AS210644 上）。
+
+【24時間以内の変化】
+[The Hacker News 2026-08-06] Microsoft Threat Intelligence の分析を基にフィンガープリンティング選別型 ClickFix を報道（前回窓の終端付近で未検知のため本日計上）
+[BleepingComputer 2026-08-06] Huntress による Go 製 macOS インフォスティーラー（ClickFix 配布・部分割合窃取）の分析を報道
+
+参照:
+https://thehackernews.com/2026/08/over-250-clickfix-domains-use-browser.html
+https://www.bleepingcomputer.com/news/security/clickfix-attack-pushes-macos-infostealer-for-crypto-theft-attacks/
+
+・[トレンド記事] Greatness PhaaS がデバイスコードフィッシングを追加し Microsoft 365 の MFA 回避を強化
+2022 年半ばから Telegram 経由で月額 289 ドルで販売されているフィッシングキット Greatness が、従来の認証情報フィッシングに加え、Microsoft AiTM（MFA 承認済みトークンの窃取）および OAuth デバイス認可フローを悪用したデバイスコードフィッシング（利用者の操作なしにトークンを取得する手口）を追加したことが報じられた。RingCentral になりすましたメールでメールセキュリティフィルタを回避する新キャンペーンも観測されている。標的は Microsoft 365 に加え iCloud・Yahoo・Google Workspace へ拡大している。
+
+【24時間以内の変化】
+[The Hacker News / BleepingComputer 2026-08-06] デバイスコードフィッシング追加と RingCentral なりすましキャンペーンを複数媒体が報道（独立3ソース以上・持続性チェック充足）
+
+参照:
+https://thehackernews.com/2026/08/greatness-phaas-adds-device-code.html
+https://www.bleepingcomputer.com/news/security/phishing-service-spoofs-ringcentral-to-steal-microsoft-365-accounts/
+
+・[トレンド記事] スイス連邦情報通信技術局（BIT/OFIT）がオンプレミス SharePoint 経由で約200アカウントの認証情報侵害を公表
+スイス連邦情報通信技術局（BIT/OFIT）は 2026-08-06、オンプレミス Microsoft SharePoint サーバで約200アカウントのログイン認証情報が侵害されたことを公式に公表した。2026-07-28 に異常活動を検知し、07-31 に複数アカウントの認証情報侵害を確認した。攻撃者は 2026 年7月に Microsoft が開示し 7月 Patch Tuesday で修正された SharePoint の脆弱性を悪用したとみられる（推測。報道間で CVE-2026-50522 / CVE-2026-56164 と表記が揺れており、BIT 自身は具体的な CVE 番号を確定公表していない）。データ窃取の証拠は現時点で確認されておらず、外部インターネットアクセスの遮断・パスワードリセット・サーバ再構築が実施されている。攻撃者の帰属は未確定で、軸P7/軸Q3のため APT セクションでは除外としトレンド記事として記録する。
+
+【24時間以内の変化】
+[BleepingComputer / SecurityAffairs / The Record / admin.ch 2026-08-06] BIT/OFIT が公式発表を行い、複数媒体が SharePoint 脆弱性悪用の疑いとして一斉報道
+
+参照:
+https://www.bleepingcomputer.com/news/security/swiss-government-sharepoint-breach-compromised-200-accounts/
+https://www.admin.ch/de/newnsb/1CjmpBBHQaMV82PjKEpcL
+https://therecord.media/swiss-bit-foitt-hacked-possibly-sharepoint-vulnerabilities
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: keyv/cacheable npm ワーム（Shai-Hulud 系）に対し、CI/CD の npm・クラウド認証情報の失効と再発行を最優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E3（CERT初回勧告）
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [The Hacker News 2026-08-06] keyv/cacheable ワームの被害パッケージ集計更新版を報道。[JFrog Security Research 2026-08] 同一系統を「Shai-Hulud の再来」として420超パッケージ・1,381バージョンの侵害を確認。[SANS Internet Storm Center 2026-08-05] トークン失効時に攻撃者側の失効監視ハンドラが発火しうるとの技術的注意喚起を公開
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py の検索で n_cases=0・observed_gate_passed=false）。（過去実績）
+  脅威情報: 2026-08-04 に開始したワームは本日時点も拡散が継続中で、npm トークン・GitHub トークン・クラウド認証情報・秘密鍵を窃取し GitHub Actions ランナーのメモリまで読み取る。シンガポール CSA は 2026-08-06 付でアドバイザリ AD-2026-009 を発行済み。JPCERT/CC の 2026年8月の注意喚起は 2026-08-03 の Ruby on Rails 1件のみで、本件の注意喚起は本レポート作成時点で未発行であることを一次ソース（jpcert.or.jp/at/2026.html）で確認済み
+  確度アンカー: EPSS %ile 取得不能 / KEV登録: なし / SSVC: Track / Automatable: yes
+推定部分: （推測）国内でも keyv/flat-cache 系は依存関係として広範に取り込まれているため JPCERT/CC・IPA が注意喚起を発行する動機はあると推測するが、攻撃開始（2026-08-04）から既に3日が経過しても未発行であること、および過去の Shai-Hulud 系 npm 侵害でも JPCERT/CC の個別注意喚起は確認されていないことから、72時間内の発行確率は低いという留保がある。
+先回り監視: CI/CD ランナーから未知の宛先への外向き HTTPS 通信、npm publish イベントの想定外の増加、preinstall/postinstall ライフサイクルスクリプトの新規実行、GitHub Actions のシークレット読み出し回数の急増。これらは的中判定とは独立に、自組織で最初に現れるシグナルとして監視する。
+的中判定: JPCERT/CC または IPA が keyv/cacheable を含む npm サプライチェーン侵害に関する初回の注意喚起（JPCERT/CC 注意喚起ページ）または重要なセキュリティ情報（IPA）を 2026-08-10 23:59 JST までに新規発行した場合。
+
+※ M1 観測可能性ゲート・T3足切りにより本日見送った主題（無採点・注意点として記録）:
+・Cisco IMC CVE-2026-20200: 2026-08-06 に第三者PoC「CIMCown」が公開されたが、悪用に有効な認証情報を要する（PR:L）ため poc-exploitation-criteria.json の T3 必須条件A（無認証）を満たさず予報化を見送った（教訓10）。参考Aの注意点として記載済み。
+・UNC6671 ヘッジファンド標的キャンペーン: 追随IOC公開期待型（E2）は 03-forecast.md「E2追随IOC除外（全Tier）」に該当するため発行しない。先回り監視のみとする。
+・Cisco IOS XE CVE-2026-20272: 勧告・NVD公開とも窓外のため Evidence 起点（原則1）を満たさず、継続監視対象に留める。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】APT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定） / RIS-2026-SwissBIT-SharePointBreach → low_score: 軸P7（政府機関侵害確認+5 / CVE武器化の疑い+2）/ 軸Q3 で軸P8点未満、国内昇格トリガーも該当なし。攻撃者・CVE番号とも未確定。Section 2 のトレンド記事（TREND-2026-08-07-004）として記録済み
+・不明（帰属未確定） / RIS-2026-ENDLESSDOORS-ZbtlinkBackdoor → low_score: 軸P3（新規マルウェア技術分析公開）/ 軸Q1。単一ソース・帰属未確定・実運用での悪用確認なし。具体的な C2 IOC を伴うため Section 4 SOC推奨情報（SOC-2026-08-07-002）として採録済み
+・不明（帰属未確定） / RIS-2026-ClickFix-macOSCryptoDrainer → low_score: 軸P3 / 軸Q1。単一ソース（Huntress）・帰属未確定・被害規模不明。Section 2 のトレンド記事（TREND-2026-08-07-002）に統合済み
+・CyberAv3ngers / CyberAv3ngers-2026-ICSPivot → already_reported
+・INC Ransomware / INCRansomware-2026-SonicWallSMAExploit → no_change: 8/5〜8/6 の続報は既報範囲内で技術的変化なし
+・不明（帰属未確定） / RIS-2026-ChainDrop-KeyvNpmWorm → no_change: APT 活動としての新規変化なし。拡散状況の更新は Section 2 トレンド記事（TREND-2026-08-07-001）として記録
+・Storm-2945 / Storm2945-2026-CaptiveCrunch → no_change
+
+本日の集計:
+APT — 本編1件 / 注目動向1件 / 除外7件
+
+========================================
