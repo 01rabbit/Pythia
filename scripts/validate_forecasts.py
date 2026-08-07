@@ -104,23 +104,33 @@ ALLOWED_BASE_RATE_ANCHOR_KEYS = {
 }
 REQUIRED_BASE_RATE_ANCHOR_KEYS = {"source_file", "value"}
 ENUM_BASE_RATE_ANCHOR_SOURCE = {
-    "forecaster/knowledge/kev-leadtime-stats.json",
+    "forecaster/knowledge/kev-hazard-stats.json",
     "forecaster/knowledge/advisory-cadence-stats.json",
+    "forecaster/knowledge/kev-leadtime-stats.json",
     "forecaster/verification/retrieval-calibration.json",
 }
 
-# --- M1-b 頻度ゲート / ゲート E（確度上限）の実測ハザード表（2026-08-07 追加） ---
+# --- M1-b 頻度ゲート / ゲート E（確度上限）の p_channel 表（2026-08-07・教訓17 で改訂） ---
 # 出典は pipeline-forecast-verification.md「M1-b 頻度ゲート」の表と同一。
 # 値の更新は knowledge/ の再生成（PR + 人間レビュー）に合わせて行う。
+#
+# ★p_channel は「Pythia が予報を発行する条件」を条件とする窓内発生率であり、
+#   base_rate_estimate に記入する base_rate（広い候補母集団が条件）とは別の量である。
+#   E1 では p_channel 0.36 に対し base_rate 0.0003 と約1000倍違う（教訓17）。
+#   base_rate のアンカーは kev-hazard-stats.json の strata[].hazard を使うこと。
 CHANNEL_HAZARD = {
-    # ★E1 の 0.30 は暫定値。kev-leadtime-stats.json era_2023_plus_recommended.pct_within_3d
-    # 由来で時間原点が NVD 公開日、かつ「最終的に KEV 追加された CVE」への条件付け
-    # （生存バイアス）を含み、E3 の「発行時点で未発火」を条件とする厳密なハザードとは
-    # 同種の量ではない。採用可の実質的な根拠は内部実績 4/11 = 36.4%（2026-06〜08）。
-    "E1": 0.30,
+    # 内部実績 4/11（2026-06〜08）。95%CI [0.15, 0.65]。
+    # kev-hazard-stats.json internal_channel_rates.E1 が集計値の正本。
+    "E1": 0.36,
     "E2": None,  # 実測不能（発行停止で蓄積経路が閉鎖・教訓14）
-    "E3": 0.015,  # advisory-cadence-stats.json E3.combined k=1 ハザード（教訓16）
+    "E3": 0.015,  # advisory-cadence-stats.json E3.combined k=1 ハザード（母集団一致・教訓16）
     "E4": None,  # 未実測（n=1）
+}
+# M1-b の採否判定に使う Wilson 95%CI 下限（内部実績由来のクラスのみ）。
+# 小標本での偶然の高値を採らないため、採否は点推定ではなく下限で判定する。
+# ゲートE（確度上限）は約束の最良推定値である点推定を使う（判定基準が異なる）。
+CHANNEL_HAZARD_CI_LOWER = {
+    "E1": 0.15,
 }
 M1B_FREQUENCY_THRESHOLD = 0.10
 # ゲート E: p_channel が下限を満たさない確度は名乗れない（降格方向のみ）
@@ -443,10 +453,18 @@ def check_m1b_frequency_gate(rep, fname, fc_id, forecast):
         )
         return
 
-    if hazard is not None and hazard < M1B_FREQUENCY_THRESHOLD:
+    # 採否は Wilson 95%CI 下限で判定する（小標本での偶然の高値を採らない）。
+    # 下限が定義されていないクラスは点推定で判定する。
+    decision_value = CHANNEL_HAZARD_CI_LOWER.get(channel, hazard)
+    if decision_value is not None and decision_value < M1B_FREQUENCY_THRESHOLD:
+        basis = (
+            f"95%CI下限 {decision_value}"
+            if channel in CHANNEL_HAZARD_CI_LOWER
+            else f"実測ハザード {decision_value}"
+        )
         rep.add(
             fname, fc_id, "outcome_channel",
-            f"fast_72h × {channel} は実測ハザード {hazard} が M1-b 閾値 "
+            f"fast_72h × {channel} は {basis} が M1-b 閾値 "
             f"{M1B_FREQUENCY_THRESHOLD} を下回るため主的中条件に採用不可。",
         )
     elif hazard is None and channel not in ("E2",):
@@ -550,11 +568,16 @@ def check_base_rate_anchor(rep, fname, fc_id, forecast):
         return
     limit = value * BASE_RATE_UPLIFT_LIMIT
     if estimate > limit and not forecast.get("base_rate_rationale"):
+        ratio = estimate / value if value else float("inf")
         rep.add(
             fname, fc_id, "base_rate_estimate",
-            f"アンカー起点値 {value} の {BASE_RATE_UPLIFT_LIMIT} 倍（{round(limit, 4)}）を"
-            f"超える {estimate} を記入しているが base_rate_rationale が未記載。"
-            "理由なき2倍超は発行却下（03-forecast.md 手順3）。",
+            f"アンカー起点値 {value} に対し {estimate}（約{ratio:.0f}倍）を記入しているが "
+            "base_rate_rationale が未記載。★これは異常検知ではなく"
+            "「予報のスキル主張を明文化する義務」である（教訓17）。"
+            "起点値は広い候補母集団のベースレートであり、E1 のように起点値が極端に小さい層では"
+            "数百倍〜千倍の上振れが正常だが、その場合も"
+            "「この主題がなぜ一般の候補と桁違いに発火が近いのか」を1行で述べること"
+            "（03-forecast.md 手順3）。",
         )
 
 
