@@ -1,0 +1,488 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-08 07:54 JST
+調査期間: 2026-08-07 07:00 〜 2026-08-08 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-08-07 07:00 〜 2026-08-08 07:00 JST
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 単一の悪意あるGitHub IssueによるClaude Code／Gemini CLI／OpenAI Codexのリモートコード実行・認証情報窃取（CVE-2026-54316・CVE-2026-12537）
+カテゴリ: B / サブカテゴリ: B1 / 攻撃者種別: 研究者実証
+------------------------------------------------------------
+
+採用契機: A-R / A-P
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当項目の明示なし
+対象: it / global
+被害規模: 不明（責任開示によりパッチ提供済み・実悪用未確認）
+独立ソース数: 6件（burst_exceeded）
+
+【24時間以内の変化】
+[The Hacker News 2026-08-07] Gemini CLI側の脆弱性がCVE-2026-12537（CVSS10.0・.gemini/.envファイル経由のOSコマンドインジェクションでサンドボックス初期化前にCIホスト上でコード実行・Gemini CLI 0.39.1およびrun-gemini-cli 0.1.22で修正）、Claude Code側の脆弱性がCVE-2026-54316（CVSSv4 6.0/v3.1 9.1・Hugging Faceダウンロードカウンタ経由のサイドチャネルでAPIキーを1文字ずつ外部窃取・影響バージョン0.2.54〜2.1.163・2.1.163で修正）として正式にCVE番号・深刻度・影響/修正バージョンが判明した
+
+【概要】
+Novee SecurityがBlack Hat USA 2026（2026-08-05）で発表した、権限を持たない外部ユーザーが投稿した単一のGitHub Issueのみを起点にClaude Code・Gemini CLI・OpenAI Codexという主要AIコーディングエージェント3種のCI/CDワークフローを乗っ取れる共通のトラスト境界欠陥について、本日The Hacker Newsが続報しGemini CLI側にCVE-2026-12537（CVSS10.0）、Claude Code側にCVE-2026-54316（CVSSv4 6.0/v3.1 9.1）という正式なCVE番号・深刻度・影響バージョン・修正バージョンが判明した。OpenAI Codexについては引き続きCVE番号は付与されていない。3社ともパッチ提供済みで実被害報告はない。
+
+攻撃の流れ:
+1. 権限を持たないGitHub Issue投稿者が、リポジトリへの書き込み権限なしにトリアージ/CI連携AIエージェントへ悪意ある指示を到達させる
+2. Claude Codeでは事前承認済みのhuggingface.co裸ホスト名を悪用しWebFetch経由でダウンロードカウンタのサイドチャネルからAPIキーを1文字ずつ外部窃取（CVE-2026-54316）、Gemini CLIでは.gemini/.envファイル経由のOSコマンドインジェクションでサンドボックス初期化前にCIホスト上で任意コード実行（CVE-2026-12537）
+3. CIランナー上のシークレット（APIキー・認証情報）の窃取、または任意コード実行が成立する
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+検知シグナル: huggingface.co裸ホスト名への予期しないWebFetchアクセスパターン
+検知シグナル: CI環境における.gemini/.env読み込み直後の異常なプロセス生成
+
+【監視・対策ポイント】
+・GitHub Issueをトリガーとする CI/CD ワークフロー内でAIコーディングエージェントが実行する外部リクエスト・シェルコマンドを監視する
+Splunk SPL: index=cicd sourcetype=github_actions action="webfetch" dest_host="huggingface.co" | stats count by repo actor
+Splunk SPL: index=cicd EventCode=1 (ParentImage="*gemini*" OR ParentImage="*claude*") CommandLine="*.env*" | table _time ComputerName CommandLine
+→ パッチ適用済みバージョン（Claude Code 2.1.163以降・Gemini CLI 0.39.1以降・run-gemini-cli 0.1.22以降）へのアップグレードを最優先する
+
+【参照】
+https://thehackernews.com/2026/08/claude-code-and-gemini-cli-flaws-let.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当情報なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当情報なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はBlack Hat USA 2026で既報だったNovee社のGitHub Issue経由リモートコード実行事案について、Gemini CLI側にCVE-2026-12537（CVSS10.0）、Claude Code側にCVE-2026-54316（CVSSv4 6.0/v3.1 9.1）という正式なCVE番号・深刻度が判明し本編で再採用した（独立6媒体以上・バースト検出閾値超過）。新規候補としてPortSwiggerがAI支援研究システム「HTTP Terminator」でApache Traffic Serverのゼロデイを発見した事案を確認したが、軸X・軸Yとも閾値未達かつ単一ソースのため除外とした。全体として日次調査窓内はBlack Hat関連報道の続報フェーズであり、新規の重大インシデントは確認されなかった。
+
+本日の集計:
+AI攻撃 — 本編1件 / 参考A0件 / 参考B0件 / 除外4件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）1件 / C（インフラ）0件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 不明（帰属未確定・Aikidoは既知のShai-Huludファミリーに分類）（国家帰属: 明示なし / 帰属信頼度: unconfirmed）
+活動タイプ: ttp_update / ioc_release / active_campaign
+------------------------------------------------------------
+
+キャンペーンID: RIS-2026-ChainDrop-KeyvNpmWorm
+標的: it / global
+マルウェア: ChainDrop（JavaScript製ドロッパー・サプライチェーン配送）
+
+【24時間以内の変化】
+[Unit 42 2026-08-07] 既報の自己増殖npmワームChainDropについて独立技術解析を公開。Ethereumスマートコントラクト(0xE1f2395ee43e45A1556EC6438a88c31B83493103)経由でC2ドメインを解決する新規TTPを確認し、2026-08-04に単一のブロックチェーントランザクションでC2ドメインを無停止ローテーションした事象を観測。GitHub Actionsランナーの/proc/<pid>/memへの直接メモリアクセスによるephemeral OIDCトークン窃取の具体的手法とMITRE ATT&CK T1059.007/T1528を明示。新規ドメイン(pypi-get.com/js-mirror.com/awqhnjewqjkl.icu)・C2 IP(104.21.91.101/172.67.215.154)・ハッシュ4件を追加公開
+
+【概要】
+npmサプライチェーンを介して自己増殖する認証情報窃取ワームChainDrop（既報）についてUnit 42が独立した技術解析を公開し、Ethereumスマートコントラクトを用いたC2ドメイン解決というブロックチェーンベースの新規C2手法と、GitHub Actionsランナーのプロセスメモリから直接OIDCトークン・シークレットを窃取する具体的手法、新規IOC群、MITRE ATT&CK技術IDを明らかにした。
+
+攻撃の流れ（判明分）:
+1. 侵害されたkeyv等のnpmパッケージのインストール時に悪性コードが自動実行される
+2. GitHub Actionsランナー上で/proc/<pid>/memに直接アクセスしephemeral OIDCトークン・シークレットをディスク書き込み前に窃取
+3. 窃取したnpmトークン・GitHub PATを用いて他メンテナのパッケージへ横展開し自己増殖
+4. Ethereumスマートコントラクト経由で解決したドメインへ窃取データを送信。C2ドメインはオンチェーン取引で更新可能なため単一ドメインの遮断では無力化できない
+
+【新規TTP】
+・[T1059.007] Command and Scripting Interpreter: JavaScript — npm install時のNode.js/JavaScript実行によるペイロード起動（Unit 42確認）
+・[T1528] Steal Application Access Token — GitHub Actionsランナーの/proc/<pid>/memへの直接アクセスによるephemeral OIDCトークンの窃取（ディスク書き込み前に読み取り）
+
+【IoC】
+IP: 104.21.91.101
+IP: 172.67.215.154
+Domain: npm-cache.com
+Domain: pypi-get.com
+Domain: js-mirror.com
+Domain: awqhnjewqjkl.icu
+Hash: 9fc2570b7cef51c1b8df116d144d11ff4096357be7d2c4c6367cfc2509cf1bcc
+Hash: 54dc7ea54a1317cca0e890a2770630cf7fa6c97813e0cb9d2caa93012b350668
+Hash: fd3ca4007b225fdf8de7af4345a19179d5efa8c4bb9205f88cda806e5684b1eb
+Hash: b27b82afa5f15512f3856e549fb83d873fd0049759a4b62ce64c8d7d4dc2c678
+
+【推奨アクション】
+・npm install/postinstall/require()実行時の外部ネットワーク接続を監視しnpm-cache.com/pypi-get.com/js-mirror.com/awqhnjewqjkl.icuへの通信を遮断する
+・GitHub Actionsのランナープロセスに対するメモリダンプ・/proc/<pid>/memアクセスを監視し、OIDCトークンの有効期間短縮・スコープ最小化を行う
+・侵害npmトークン・GitHub PAT・クラウド認証情報を全ローテーションする
+Splunk SPL: index=proxy OR index=dns dest_domain IN ("npm-cache.com","pypi-get.com","js-mirror.com","awqhnjewqjkl.icu") | stats count by src_ip dest_domain
+Splunk SPL: index=github_actions sourcetype=github:audit action=workflow_run | search command="require(" OR script="*postinstall*" | table _time repo actor command
+→ 正規のCI設定ファイル編集や業務目的のブロックチェーンRPC呼び出しと誤検知しやすいため、変更元プロセスがnpm/node実行コンテキストかを必ず確認する
+
+【参照】
+https://unit42.paloaltonetworks.com/chaindrop-npm-worm-analysis/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に単独で軸P8点・軸Q4点の閾値を満たす新規事案なし。UNC6671は継続監視のみで本日は本編非計上）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[ゼロデイ特報格] CVE未採番 / Metabase（Cloud / セルフホスト、BI/分析プラットフォーム）
+CVSS: 10.0（GHSA-vwf4-m7j8-wcjf評価） 状態: 実悪用確認 / ゼロデイ
+Metabase（BI/分析SaaS）のアプリケーションDBに対する未認証SQLインジェクション脆弱性でリモート管理者権限相当のアクセスを取得できることが確認された。Metabase社は「攻撃者が未知の0-day脆弱性を利用してMetabase Cloudを攻撃した」と公式表明し実環境での悪用（POST /api/session/reset_passwordが400応答を返した直後にGET /api/user/currentが成功する攻撃パターン）を確認済み。2026年8月3日の攻撃でFramework（氏名・メール・ログインIP・請求/配送先住所・電話番号・会社名）とTally（メールアドレスとパスワードハッシュ）への侵害が確認された。LexisNexisのMetabase APIも影響を受けたが情報漏洩の有無は不明。CVE番号は本日時点で未採番。修正版が2026年8月7日付で提供され、Cloud顧客は適用済み、セルフホストは手動更新が必要。
+IoC: 確認されず
+参照: https://www.bleepingcomputer.com/news/security/framework-tally-disclose-metabase-data-theft-attacks
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-08] Metabase CEOが「未知（0-day）の脆弱性」を用いたMetabase Cloudへの攻撃を確認したと表明。GHSA-vwf4-m7j8-wcjfとして未認証SQLインジェクションを公開。CVE番号は本日時点で未採番
+
+・[トレンド記事] NatJack攻撃クラス、NAT接続状態管理の設計弱点を悪用しTCPセッションハイジャック・DNSスプーフィングを実現(Black Hat USA 2026)
+セキュリティ研究者Malcolm StaggがBlack Hat USA 2026で新たな攻撃クラス「NatJack」を公開した。NAT接続状態管理の設計上の弱点を突き(1)TCPセッションのNATマッピング置換によるハイジャック(2)DNS要求への介入によるスプーフィング(3)外部露出マッピングポートの割り出し(4)NATテーブル枯渇によるDoS、の4手法を実証した。Windows NAT（Hyper-V、CVE-2026-56181）およびLinux Netfilter conntrack（CVE-2026-63913）が個別に採番されたが、NatJack自体は単一製品のCVEに閉じない設計レベルの脆弱性クラスである。攻撃者が被害者と同一NAT配下に位置することが前提となる。実悪用の証拠は確認されていない。
+参照: https://thehackernews.com/2026/08/new-natjack-attacks-hijack-tcp-sessions.html
+
+【24時間以内の変化】
+[The Hacker News 2026-08-07] NatJack攻撃クラスの詳細技術解説とCVE-2026-56181/CVE-2026-63913の採番を報道（独立ソース6件以上・バースト検出閾値超過）
+
+・[トレンド記事] npm新規サプライチェーン攻撃「Flooding Dropper」、850件近い悪意あるパッケージでクロスプラットフォームRAT/インフォスティーラーを配布
+Sonatype Research LabsとUnit 42が、npmレジストリ上の新規キャンペーン「Flooding Dropper」を報告した。タイポスクワッティング名の使い捨てアカウントを大量作成する手口で846件の悪意あるパッケージを公開し、ライフサイクルフックを避けてREADME内の指示でrequire()実行を誘導する新手法を用いる。ダウンローダー「WEL1DROPPER」がホストOS・CPUアーキテクチャを判別しCloudflare Workers上の複数ホストから互換ペイロード（クロスプラットフォームRAT・インフォスティーラー）を取得する。同日別途拡散したnpmワーム「ChainDrop」とは別系統のキャンペーンである（複数ソースが明示）。
+参照: https://thehackernews.com/2026/08/nearly-800-malicious-npm-packages.html
+
+【24時間以内の変化】
+[The Hacker News 2026-08-08] OpenSourceMalware研究者とUnit 42の共同分析を基に詳報。ChainDropとは別系統である旨を明記（独立ソース6件以上・バースト検出閾値超過）
+
+・[トレンド記事] 侵害済み企業メールボックス悪用の銀行マルウェアと暗号資産クリップボード窃取、GenがH1 2026の2攻撃チェーンを分析
+Gen Digital脅威リサーチチームが2026年上半期に観測した2種類の攻撃チェーンを公開した。1つ目は侵害された企業メールボックス経由でJavaScriptドロッパー→PowerShellステージング→難読化シェルコードローダーを展開しオンラインバンキングセッションを傍受する手口（Gepysマルウェアと一致、チェコ・スロバキア・ポーランド・リトアニア標的）。2つ目はRust製クリップボード監視マルウェアが21種のブロックチェーンアドレス形式を検知し署名前にウォレットアドレスを差し替える手口で、C2参照先をBinance Smart Chain上のスマートコントラクトに格納する「EtherHiding」技術を採用。単一ベンダー（Gen Digital）のレポートに基づく（単発シグナル）。
+参照: https://www.bleepingcomputer.com/news/security/real-emails-hijacked-payments-two-h1-2026-attack-chains/
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-07] Gen Digital H1 2026脅威レポートの内容を基に2種の攻撃チェーンを報道
+
+・[トレンド記事] Microsoft 365を狙うAitMフィッシング、Google/AWSインフラ悪用の6段階リダイレクトで給与・財務担当者を標的化
+Arctic Wolf Labsが、ボイスメール偽装フィッシングを起点とするMicrosoft 365向けAitMキャンペーンを報告した。Google Meet・Google Ads・Amazon S3を経由する6段階のリダイレクトチェーンでフィルタを回避した後、Microsoftの正規認証フローを実時間で中継するAitMプロキシへ誘導しMFA有効環境でも認証情報・セッションを窃取する。2026年7月時点で数百組織が標的とされ米国・カナダ・欧州の医療・教育・製造・政府・専門サービス組織に影響。MicrosoftのPayroll Pirates/Storm-2755クラスターとの技術的重複が指摘されているが単一グループへの帰属は未確定。
+参照: https://thehackernews.com/2026/08/microsoft-365-aitm-phishing-hijacks.html
+
+【24時間以内の変化】
+[The Hacker News 2026-08-07] Arctic Wolf Labsの分析を基に6段階リダイレクトAitMキャンペーンを詳報
+
+・[トレンド記事] Windows Hello for Businessの鍵をFIDO2パスキーとして悪用しEntra IDへ永続アクセスする手法を研究者が公開(PoC・CVE未採番)
+研究者Dirk-jan Mollemaが、サインイン済みWindowsセッションでのコード実行権を持つマルウェアがWindows Hello for Business（WHfB）の鍵をFIDO2パスキーとしてWebAuthn経由で悪用しMicrosoft Entra IDへ認証できる手法を公開した。Entra側の5分間有効なチャレンジがセッション・ユーザー・テナントに紐付いていない点を突く。取得トークンはデバイスIDを欠く場合があり新規デバイス登録・PRT取得・追加認証方法登録へ悪用され得る。PowerShell製PoCが公開されているがCVE・アドバイザリの紐付けは確認されず実悪用報告もない（研究/PoC段階）。
+参照: https://thehackernews.com/2026/08/malware-can-abuse-windows-hello-for.html
+
+【24時間以内の変化】
+[The Hacker News 2026-08-07] Dirk-jan Mollemaの研究とPoC公開、CVE未割当を確認の上で報道
+
+・[トレンド記事] AI生成パッチの約4分の3に欠陥、1Password（Off-by-1 Labs）とTrail of Bitsが6,080件を検証
+1Password内のOff-by-1 LabsがTrail of Bitsと共同で、複雑かつ影響度の高い6件のCVEを対象にChatGPT 5.5とClaude Opus 4.8が生成した計6,080件のパッチを評価した研究を公表した。約4分の3のAI生成パッチに何らかの欠陥があり約49.3%が既存のエクスプロイト経路を少なくとも1つ塞げず、20.1%は脆弱性自体は修正しつつアプリケーション動作を意図せず変更し、2.3%が新たなセキュリティ問題を導入した。レビューなしのAI生成パッチは期待値でみて負の価値を持ちうるとし熟練エンジニアによるレビューが引き続き必須と結論。
+参照: https://www.darkreading.com/application-security/ai-generated-patches-fail-half-time
+
+【24時間以内の変化】
+[Dark Reading 2026-08-08] 1Password/Off-by-1 Labsの研究結果（6,080件中の欠陥率統計）を報道
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Alinto SOGo CVE-2026-8496（実悪用確認済み・CISA KEV未登録）はKEV初回追加が近く、パッチ未適用環境は5.12.8への即時アップデートを最優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1（CISA KEV初回追加）
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [CERT/CC VU#487613 2026-08-07] onrepeatイベントハンドラ付きSVGを埋め込んだ細工ICSカレンダー招待によるXSSがVirusTotalでの観測に基づき実環境で悪用されていることを確認・公開。[JVN JVNVU#96816564 2026-08-07] 同脆弱性を国内向けに公開。対象CVEは本日時点でCISA KEV未登録
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py・n_cases=0・observed_gate_passed=false）
+  脅威情報: CERT/CCが独立に実悪用をVirusTotal観測で確認済みかつ修正版（5.12.8）が既に提供されている
+  確度アンカー: EPSSパーセンタイル0.3358（2026-08-07算出） / KEV登録: なし / SSVC決定: Attend / Automatable: no（ICSカレンダー招待の閲覧というユーザー操作を要するため）
+推定部分: （推測）CERT/CCの実悪用確認とパッチ提供済みという状況はCISAのKEV追加判断の典型条件に合致すると推測されるが、KEV追加は実悪用確認から数日〜数週間のラグを伴う場合があり、72時間以内に追加される保証はない。またEPSSパーセンタイルが0.3358と高くないことは留保材料である。
+先回り監視: 自組織のSOGoアクセスログにおけるICSカレンダー招待添付・onrepeat/SVGを含むペイロードの受信、Webメールセッション内での異常なJavaScript実行の兆候。CISA KEVカタログJSON本体でのCVE-2026-8496の掲載有無。
+的中判定: CISAがCVE-2026-8496をKEVカタログ本体（JSON feed）へ2026-08-09〜2026-08-11の範囲で初回追加した場合。CISA以外の第三者カタログへの掲載、再登録、他機関の注意喚起発行のみは的中とみなさない。
+
+※ M1観測可能性ゲート・M1-b頻度ゲートにより本日見送った主題（無採点・注意点として記録。カバレッジ: 発行1件/候補8件・見送り7件）:
+・Kemp LoadMaster CVE-2026-8037: KEV初回追加という事象そのものが本日既に確定した過去の事実であり、的中条件を未来に設定できないため見送り
+・Metabaseゼロデイ: CVE番号が本日時点で未採番でありE1（KEV初回追加）を構成できないため見送り（採番後に再評価）
+・ChainDrop 認証情報・トークン二次利用: 的中条件がE1〜E4のいずれにも一次・二値の形で紐付けられずM1「悪用拡大（曖昧）」禁止に抵触するため見送り
+・npm「Flooding Dropper」/Gen Digital H1 2026レポート/Arctic Wolf AitMキャンペーン: いずれも追随IOC公開を期待するE2型の主題であり教訓14「E2追随IOC除外（全Tier）」に該当するため発行せず
+・WordPress CVE-2026-64638（XSS2Shell）: 被害者操作を要する多段階の攻撃連鎖でありT3採用必須条件A（無認証・単一ステップ）を満たさないため見送り
+・NatJack: 攻撃者が被害者と同一NAT配下に位置するという強い前提を要する研究開示段階であり72時間窓で観測可能な一次・二値イベントに紐付けられないため見送り
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックA〔製品別CVE〕帰属のゼロデイCVEなし。Metabaseゼロデイはトラック B〔CVE未採番〕帰属のため注目CVE欄にゼロデイ特報格として掲載）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1が8点以上かつ軸2が4点以上のCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT国内報道 / JVN発行（国内ベンダーアドバイザリ）
+
+------------------------------------------------------------
+1. CVE-2026-64638 / WordPress Core（ログイン画面）
+対象: 4.7〜7.0.2（7.0.3で修正・4.7系列までバックポート）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: v4 8.9 (High)
+状態: PoC公開
+
+【24時間以内の変化】
+[The Hacker News 2026-08-07] ログイン画面の認証前反射型XSSを起点に「XSS2Shell」手法でuser-profile.jsを悪用しREST API経由のPHPコード実行へ連鎖しうる手口が公開され、WordPress 7.0.3での修正が報じられた
+[Security NEXT 2026-08-07] WordPressログイン画面のXSS脆弱性と修正版公開を国内向けに報道
+
+【概要】
+WordPressのログイン失敗時のユーザー名表示処理に認証前反射型XSSが存在し、pwn.aiの実証により標準のuser-profile.jsスクリプトを悪用する「XSS2Shell」という手法でREST API経由の認証済みコンテキストを奪取し任意ファイルアップロードからPHPコード実行へ連鎖しうることが示された。攻撃者が用意した第三者サイトを管理者権限を持つ被害者が閲覧するなど攻撃者の制御が及ばない条件を要するため実際の悪用難度は一定あるが、XSS自体は無認証で成立する。WordPress 7.0.3で修正済み。実悪用は本日時点で確認されていない。
+
+攻撃の流れ:
+1. 細工したログイン失敗ユーザー名処理を悪用し認証前に反射型XSSを実行
+2. XSS2Shell手法でuser-profile.jsを悪用し認証済み管理者のREST APIコンテキストを奪取（被害者の閲覧・操作が必要）
+3. 任意ファイルアップロードAPI経由でPHPコードを設置しRCEへ発展する可能性
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・wp-login.php宛のXSSペイロードを含むリクエストおよびuser-profile.js経由の異常なREST APIコールを監視する
+Splunk SPL: index=web_logs sourcetype=access_combined uri_path="*/wp-login.php*" (uri_query="*%3Cscript%3E*" OR uri_query="*onerror=*" OR uri_query="*onload=*") | stats count by clientip, uri_query
+Splunk SPL: index=web_logs sourcetype=access_combined uri_path="*/wp-json/wp/v2/users/*" method=POST | stats count by clientip, uri_path, status
+→ 正規のログインエラーメッセージにHTML特殊文字が混入する誤検知を避けるため、scriptタグやイベントハンドラ属性を含むペイロードに限定して検知する
+
+【参照】
+https://www.security-next.com/188520
+https://thehackernews.com/2026/08/new-wordpress-pre-auth-xss-could-lead.html
+
+------------------------------------------------------------
+2. CVE-2026-54876 / OpenSSL（TLSクライアント、OCSPレスポンス検証有効時）
+対象: X509_V_FLAG_OCSP_RESP_CHECK系フラグを有効化しているOpenSSL TLSクライアント
+------------------------------------------------------------
+
+優先度: 中
+CVSS: 7.5 (High)
+状態: （実悪用・PoCとも未確認）
+
+【24時間以内の変化】
+[JVN 2026-08-07] OpenSSLのOCSPレスポンス検証におけるクライアント側メモリリーク脆弱性（CVE-2026-54876）をJVN（JVNVU#92139835）が国内向けに新規公開
+
+【概要】
+OCSPレスポンス検証を有効化したOpenSSL TLSクライアントに対し、悪意あるTLSサーバがSingleResponseエントリを含まない細工したOCSPレスポンスを送信すると、OCSP_response_get1_basic()で確保されたOCSP_BASICRESPが解放されずメモリリークが発生する。証明書フィールドへの偽証明書の詰め込みでリーク量を増幅可能であり、長時間接続を繰り返すクライアントではメモリ枯渇によるDoSに至り得る。詳細な対象バージョン・パッチ版番号は一次情報参照が必要で本日時点で未確認。実悪用・PoC公開いずれも確認されていない。
+
+攻撃の流れ:
+1. 悪意あるTLSサーバがクライアントのOCSPレスポンス検証を狙い接続を受け付ける
+2. SingleResponseエントリを含まない細工OCSPレスポンス（偽証明書を詰め込み増幅可能）を返送
+3. クライアント側でOCSP_BASICRESP構造体が解放されずメモリリークが蓄積し、長時間稼働クライアントでメモリ枯渇（DoS）に至る
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・TLSクライアントプロセスのメモリ使用量の異常増加、および同一送信元TLSサーバとの反復ハンドシェイクを監視する
+Splunk SPL: index=os_metrics sourcetype=perfmon:process process_name=*client* | timechart span=1h max(mem_used_mb) by process_name
+→ 通常のOCSPステープリング利用パターンと区別するため、同一リモートホストとの反復ハンドシェイク＋プロセスメモリの持続的増加を組み合わせて判断する
+
+【参照】
+https://jvn.jp/vu/JVNVU92139835
+
+------------------------------------------------------------
+3. CVE-2026-19137 / Google Chrome（151.0.7922.109未満、WebGL等）
+対象: 151.0.7922.109未満（CVE-2026-19149/19154/19157/19170/19172と同時修正）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: Critical（社内評価・数値未公表）
+状態: （実悪用未確認）
+
+【24時間以内の変化】
+[NVD 2026-08-07] Chrome 151.0.7922.109向けの追加セキュリティ修正としてCVE-2026-19137/19149/19154/19157/19170/19172（いずれもUse-After-Free/境界外書き込み、Chromium社内評価Critical）が新規公開された
+[Security NEXT 2026-08-07] 「Chrome」にクリティカル6件を含む脆弱性修正のセキュリティ更新を国内向けに報道
+[SecurityWeek 2026-08-07] Chrome 151アップデートで6件のCritical・35件のHigh脆弱性を修正、悪用報告なしと報道
+
+【概要】
+Google Chrome 151.0.7922.109において、WebGL・Aura・Skia・ANGLE・Viewsの各コンポーネントにUse-After-Free（一部境界外書き込み）が発見され、レンダラプロセス侵害後のサンドボックス脱出に悪用されうる6件のCritical脆弱性が修正された。あわせて35件のHigh脆弱性も修正されている（合計41件）。Googleは本更新時点でこれらの脆弱性が実環境で悪用されたとは述べていない。CVE-2026-19137はWebGL起因でAndroid版が対象。
+
+攻撃の流れ:
+1. 攻撃者が細工したHTMLページを被害者に閲覧させ、WebGL等の脆弱コンポーネントでレンダラプロセスを侵害
+2. Use-After-Freeを悪用しレンダラ内での任意コード実行の足がかりを得る
+3. サンドボックス脱出を試み、成功すればOSレベルでの追加悪用に発展しうる（本日時点で実悪用報告なし）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・エンドポイントでのChromeレンダラプロセスクラッシュ多発や、パッチ未適用端末の継続的な検出を監視する
+Splunk SPL: index=edr sourcetype=process_crash process_name="*chrome*" module_name IN ("*libwebgl*","*angle*","*skia*") | stats count by host, process_name
+Splunk SPL: index=inventory sourcetype=browser_version product="Chrome" | where version < "151.0.7922.109" | stats count by host
+→ 通常のレンダラクラッシュと区別するため、特定モジュール関連クラッシュの急増や同一ペイロード配信元への複数端末アクセスを併せて確認する
+
+【参照】
+https://www.security-next.com/188474
+https://www.securityweek.com/critical-vulnerabilities-patched-with-chrome-151-update/
+
+------------------------------------------------------------
+4. CVE-2026-8496 / Alinto SOGo（Webメール/グループウェア）
+対象: 5.12.7（5.12.8で修正）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 6.1 (Medium)
+状態: 実悪用確認
+
+【24時間以内の変化】
+[CERT/CC (VU#487613) 2026-08-07] 細工したICSカレンダー招待（description欄のSVG+onrepeatイベントハンドラ未サニタイズ）を介したXSS脆弱性がVirusTotalでの観測に基づき実環境で悪用されていることをCERT/CCが確認・公開
+[JVN 2026-08-07] 同脆弱性（JVNVU#96816564）を国内向けに新規公開
+
+【概要】
+Alinto SOGo 5.12.7において、ICSカレンダー招待ファイルのdescriptionフィールドに埋め込まれたSVGコンテンツがonrepeatイベントハンドラを含む場合に十分サニタイズされずWebメール画面で描画される反射型XSS脆弱性が存在する。攻撃者は細工したカレンダー招待を送付するだけで、閲覧した認証済み利用者のセッション内で任意のJavaScriptを実行させ、メールボックスアクセスやメール・連絡先窃取、セッションハイジャック等に悪用できる。CERT/CCはVirusTotalでの観測に基づき実環境での悪用を確認しており、CVSSはMedium（6.1）だが実悪用が確認されている点を重視する必要がある。5.12.8で修正済み。
+
+攻撃の流れ:
+1. 攻撃者がonrepeatイベントハンドラ付きSVGを埋め込んだ細工ICSカレンダー招待を作成
+2. 被害者（SOGo認証済み利用者）が招待を閲覧すると未サニタイズのSVGがレンダリングされJavaScriptが実行
+3. 認証済みセッション内でメールボックスアクセス・メール/連絡先窃取・セッションハイジャック等に悪用
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・SOGoへのICS招待の受信内容とWebメールセッション内での異常なJavaScript実行兆候を監視する
+Splunk SPL: index=mail_gateway sourcetype=smtp_content attachment_type="text/calendar" content="*onrepeat*" | stats count by sender, recipient
+Splunk SPL: index=web_logs sourcetype=access_combined uri_path="*/SOGo/*" (uri_query="*%3Csvg*" OR uri_query="*onrepeat*") | stats count by clientip
+→ 正規のICS招待にはonrepeat等のイベントハンドラ属性は通常含まれないため、当該属性を含むICS添付ファイルの受信自体を高優先度アラートとして扱う
+
+【参照】
+https://jvn.jp/vu/JVNVU96816564
+https://www.kb.cert.org/vuls/id/487613
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: JVNVU#92139835 OpenSSLのOCSPレスポンス検証におけるクライアント側のメモリリークの脆弱性 https://jvn.jp/vu/JVNVU92139835
+発行あり: JVNVU#96816564 Alinto SOGo v5.12.7における不正な形式のICSカレンダー招待を介したクロスサイトスクリプティングの脆弱性 https://jvn.jp/vu/JVNVU96816564
+未発行: CVE-2026-64638 / CVE-2026-19137 — 24時間窓内にJPCERT/CC・IPAの発行確認されず
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-8037 / Progress Kemp LoadMaster（ECS Connection Manager / Object Scale Connection Manager / MOVEit WAF含む）
+CVSS: 9.8
+既報（6/30初報）の未認証root権限OSコマンドインジェクション脆弱性について、CISAが本日付でKEVカタログへ新規追加した（FCEB期限2026-08-10）。watchTowr Labsによる詳細エクスプロイトチェーン公開とeSentireによる実悪用試行観測は既報済みで、独立した新規実悪用確認報道は本日時点で見つかっていない。EPSSパーセンタイルは99.7%と極めて高い。パッチは6月時点で提供済み。国内報道は本日時点で未確認。対処: GA 7.2.63.2 / LTSF 7.2.54.18 へのアップデート。
+IoC: 確認されず
+
+監視: [ネットワークアプライアンスログ] LoadMaster管理APIへの異常なコマンド注入パターンを含むリクエストを監視する
+Splunk SPL: index=network_appliance sourcetype=loadmaster_api (uri_path="*/accessv2*" OR uri_path="*/cmd*") (uri_query="*;*" OR uri_query="*|*" OR uri_query="*$(*") | stats count by clientip, uri_path
+→ 正規の設定変更APIコールとの誤検知を避けるため、シェルメタ文字を含むパラメータ値に限定して検知する
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-8037
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Djangoフレームワークの脆弱性4件（最大CVSS8.8）を修正するセキュリティアップデート公開
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: Django（Webアプリケーションフレームワーク）
+
+【24時間以内の変化】
+[Security NEXT 2026-08-07] Django 6.0.8/5.2.17でCVE-2026-15307（CVSS8.8）を含む4件の脆弱性を修正するセキュリティアップデートを公開したと報道。実悪用の報告はなし
+
+【概要】
+Django公式が2026-08-04付でCVSS9.0未満の脆弱性4件（空間ルックアップ経由のファイル書込み/外部リクエスト、GEOMETRYCOLLECTIONネストによる異常終了、管理画面XSS、言語コード処理によるDoS）を修正するセキュリティリリースを公開した。広く利用されるOSS Webフレームワークのミドルウェア層の脆弱性であり、CVSS9.0未満・KEV未登録・PoC未公開のためSection3の主要枠には該当しないが、SOCとして把握し今週中のパッチ適用を確認すべき事案である。
+
+【推奨アクション】
+・Django公式セキュリティリリース（6.0.8 / 5.2.17）へ今週中にアップデートする
+・GeoDjango等で外部入力を伴う空間クエリを扱うアプリケーションはCVE-2026-15307の影響有無を優先確認する
+・管理画面（/admin/）のXSS（CVE-2026-15920）対策として管理者アカウントへのアクセス制限を再確認する
+→ パッチ未適用環境でのエラーログ急増は悪用試行の可能性があるため通常のデプロイ起因エラーと切り分けて確認する
+
+【参照】
+https://www.security-next.com/188462
+https://thehackernews.com/2026/08/veeam-terraform-mcp-django-patch.html
+
+------------------------------------------------------------
+2. Microsoft/Appleが2026年8月の追加セキュリティ更新を公開、Azure/Entra/TeamsでCVSS9.9〜10.0の複数脆弱性を修正
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft Azure / Entra ID / Teams / SharePoint、Apple macOS
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-07] MicrosoftがPlanetary Computer Pro（CVE-2026-63508）・Azure SQL Database（CVE-2026-56162）・Teams（CVE-2026-65667）でCVSS10.0、Azure Service Bus等でCVSS9.9の脆弱性を修正。AppleがmacOSのScreen Sharing認証バイパス（CVE-2026-65400・CVSS7.5）を修正するアップデートを公開したと報道。両ベンダーとも実悪用の言及はなし
+
+【概要】
+MicrosoftはActive Directory・Azure・Entra・SharePoint・Teamsにまたがる複数の脆弱性を修正し、うちPlanetary Computer Pro・Azure SQL Database・Teamsの3件はCVSS10.0、Azure Service Bus等4件はCVSS9.9だった。クラウド側で提供者により修正済みのためエンドユーザー側のパッチ適用は不要だが、認証・認可欠如という性質上、修正前の期間の不審なアクセスの遡及確認が望ましい。AppleはmacOSのScreen Sharing認証バイパス（CVE-2026-65400）を修正するアップデート（Tahoe 26.6.1 / Sequoia 15.7.9 / Sonoma 14.8.9）を公開しており、端末側での適用が必要。いずれもCISA KEV未登録・実悪用未確認。
+
+【推奨アクション】
+・Microsoft 365/Azure/Entraの管理者は修正されたCVEに関連するサインインログ・管理操作ログを遡って確認し異常なテナント間アクセスがないか点検する
+・macOS端末をTahoe 26.6.1 / Sequoia 15.7.9 / Sonoma 14.8.9以降へ今週中にアップデートする
+・Active DirectoryおよびEntra Provisioning Serviceの権限昇格系CVEを踏まえTier0/Tier1管理者アカウントの棚卸しと最小権限化を実施する
+→ クラウド側修正のため直接の攻撃痕跡ログは限定的だが修正日以前の管理操作ログとの突合で予兆確認が可能
+
+【参照】
+https://www.securityweek.com/microsoft-apple-release-fresh-security-updates/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-63078 (Apache Traffic Server) → insufficient_evidence: AI支援HTTP desync研究「HTTP Terminator」が発見したゼロデイ・責任開示済みでパッチ提供済みと報道されたが、2026-08-07時点でCVE.org/NVDにレコード不存在（CVE_RECORD_DNE）を確認したためCVSS・対象バージョン未確認。継続監視対象
+・CVE-2026-64564 (Linux kernel SCTP "SCTPhantom") → out_of_window: NVD公開2026-08-04・パッチ提供2026-08-03といずれも調査窓外。継続監視対象
+・CVE-2024-31867 (Apache Zeppelin) → out_of_window: JVNDB公開2026-08-06T14:39 JSTで前回窓内だが前回未検知。本日窓外
+・CVE-2026-20303 (Cisco Catalyst SD-WAN) → already_reported: Cisco勧告・NVD公開は2026-08-05で窓外、本日報道は新規ファクトなしの再掲
+・CVE-2026-20304 (Cisco Catalyst SD-WAN) → already_reported: CVE-2026-20303と同一勧告バッチ、新規ファクトなし
+・CVE-2026-20272 (Cisco IOS XE) → already_reported: 同一2026-08-05付勧告の再掲、新規ファクトなし
+・CVE-2026-20310 (Cisco Catalyst SD-WAN) → out_of_window: 本日初確認の新規CVE IDだが同一2026-08-05付勧告バッチに属し公開自体は窓外
+・CVE-2026-20267 (Cisco IOS XE) → out_of_window: 同上
+・CVE-2026-0516 (SonicWall SonicOS) → out_of_window: NVD公開・アドバイザリともに2026-08-05で窓外
+・CVE-2026-15307 (Django、代表CVE) → out_of_window: Django公式発表2026-08-04で窓外（SOC推奨情報として別途採用）
+・CVE-2026-63077 (JetBrains TeamCity) → already_reported: 2026-08-06分でKEV追加・active_exploitationへ更新済み
+・CVE-2026-64531 (Linux Kernel Open vSwitch) → already_reported: 2026-08-06分で低スコア除外済み
+・CVE-2026-59774 (Gitea) → already_reported: 2026-08-06分で低スコア除外済み
+・CVE-2026-9198 (IBM Langflow OSS) → already_reported: 2026-08-06分で参考B→本編へ再分類済み
+
+[APT]
+・UNC6671 / UNC6671-2026-HedgeFundVishing → no_change: 個人携帯電話への直接連絡等の追加詳細はあるが新規IOC・新規ATT&CK IDなく単独では軸P/Q閾値未達
+・不明（帰属未確定） / RIS-2026-ClickFix-macOSCryptoDrainer → already_reported: 本日記事は既報Huntress調査の再報道
+・TeamPCP / TeamPCP-2026-RedisSupplyChainLink → low_score: 単一ベンダー帰属で軸P6/軸Q3。国内昇格トリガー該当なし
+・不明（帰属未確定） / RIS-2026-WEL1DROPPER-NpmFloodingDropper → low_score: 単一ソース系帰属で軸P6/軸Q3
+・不明（Microsoft命名Storm-2755） / RIS-2026-Storm2755-PayrollPirateAitM → low_score: 単一ベンダー帰属で軸P6/軸Q3
+・不明（帰属未確定） / RIS-2026-NorthCarolinaPorts-CyberattackDisruption → low_score: 技術詳細皆無で軸P5/軸Q1
+・不明（帰属未確定） / RIS-2026-UnlimitedTechnologySystems-HealthcareBreach → insufficient_evidence: 攻撃者名・TTP言及なし
+・不明（帰属未確定） / RIS-2026-LeviStrauss-CorporateDataTheft → insufficient_evidence: 攻撃者名・TTP言及なし
+
+[AI攻撃]
+・AI支援脆弱性発見ツールHTTP Terminator（PortSwigger）によるHTTP Desync新手法発見とApacheゼロデイ → low_score: 軸X4/軸Y3でいずれも閾値未達。単一ソースのためバーストカウント1件
+・1Password（Off-by-1 Labs）AI生成脆弱性パッチの信頼性検証調査 → insufficient_evidence: AI攻撃カテゴリA〜Cのいずれにも該当しない防御側調査
+・Apple「AI Slop」バグバウンティ提出数制限 → out_of_window: 元事案は6月実施・既報
+・ShadowRay 2.0 Black Hat USA 2026再発表 → out_of_window: 元キャンペーンの初出は2025-11-18公開済み
+
+[SOC推奨情報]
+・Atuin導入環境におけるLinuxシェル履歴のフォレンジック手法解説（SANS ISC） → insufficient_evidence: CVE関連/ゼロデイ関連/AI攻撃関連のいずれの観点区分にも該当せず
+・米CISAによるJetBrains TeamCity脆弱性(CVE-2026-63077)悪用に関する注意喚起 → out_of_window: アドバイザリ・記事とも2026-08-05〜06付
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A4件 / 参考B1件 / 除外14件
+APT — 本編1件 / 注目動向0件 / 除外8件
+AI攻撃 — 本編1件 / 参考A0件 / 参考B0件 / 除外4件
+SOC推奨情報 — 高0件 / 中2件 / 低0件 / 除外2件
+
+========================================
