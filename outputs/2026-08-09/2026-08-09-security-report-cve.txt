@@ -1,0 +1,92 @@
+========================================
+セキュリティインテリジェンス日報 — Section 3: 製品別CVE
+調査日時: 2026-08-09 07:42 JST
+調査期間: 2026-08-08 07:00 〜 2026-08-09 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックA〔製品別CVE〕帰属のゼロデイCVEなし。Metabaseゼロデイはトラック B〔CVE未採番〕帰属のためsecurity-report-zeroday-trends.txtの【注目CVE（リスト外）】にゼロデイ特報格として掲載）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-18577 / N-able N-central
+対象: オンプレミス版 2026.3.1.7未満の全ビルド（2026.3.1.10未満はHotfix 2未適用として引き続き対象）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: v3 8.2 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[The Hacker News 2026-08-08] N-ableが2026-08-06付でHotfix 2（2026.3.1.10）を公開。2026-07-31に検知した侵害環境で、攻撃者がHotfix 1適用後もTake Control機能経由で管理対象エンドポイントへ到達し、Cloudflare Tunnelサービスを新規登録してN-central側のアクセス遮断後も持続化していたことが判明。新規侵害IOC（IPアドレス10件）を追加公開
+
+【概要】
+N-able N-centralの別経路認証バイパス脆弱性CVE-2026-18577（既報・2026-08-04本編採用）について、攻撃者がHotfix 1適用後も管理対象システムへの到達性を維持していたことが新たに判明した。攻撃者はN-central管理サーバへの不正アクセスを起点にTake Control機能で管理対象エンドポイントへ接続し、侵害端末上にCloudflare Tunnelサービスを偽装名で新規登録することでN-central側のアクセスを遮断された後も持続的なアクセスを確保していた。N-ableは2026-08-06付でHotfix 2（オンプレミス版2026.3.1.10）を公開し、Hotfix 1適用済み環境でも追加適用を必須としている。影響を受けた顧客数は限定的とN-ableは説明している。国内報道は既報のSecurity NEXT記事（2026-08-04）以降、本日時点で新規確認されていない。
+
+攻撃の流れ:
+1. CVE-2026-18577（CWE-288別経路認証バイパス）を悪用しN-central管理サーバへ管理者権限で到達
+2. Take Control機能を用いて管理対象環境内のエンドポイントへ接続
+3. 侵害端末上に偽装名（svchost.exe等）のCloudflare Tunnelサービスを新規登録し、N-central側アクセス遮断後も持続化
+
+【IoC】
+IP: 173.249.252.176
+IP: 173.249.252.200
+IP: 185.156.46.150
+IP: 23.234.94.43
+IP: 37.153.90.88
+IP: 37.19.210.32
+IP: 68.235.46.214
+IP: 68.235.46.235
+IP: 87.249.138.34
+IP: 92.118.112.181
+
+【監視ポイント】
+・[Windowsイベントログ / ネットワークログ] N-central管理対象エンドポイント上での不審なCloudflare Tunnelサービス登録・Take Control経由の異常アクセスを監視する
+Splunk SPL: index=wineventlog EventCode=7045 ServiceFileName="*cloudflared*" OR ServiceName="*Cloudflare*" | stats count by ComputerName, ServiceFileName
+Splunk SPL: index=firewall OR index=proxy dest_ip IN ("173.249.252.176","173.249.252.200","185.156.46.150","23.234.94.43","37.153.90.88","37.19.210.32","68.235.46.214","68.235.46.235","87.249.138.34","92.118.112.181") | stats count by src_ip, dest_ip
+→ 正規のCloudflare Tunnel利用組織では誤検知しうるため、N-central管理対象外の資産での新規サービス登録に限定して確認する
+
+【参照】
+https://thehackernews.com/2026/08/n-central-attackers-reach-managed.html
+https://www.n-able.com/blog/n-central-security-update-august-6-2026
+https://www.helpnetsecurity.com/2026/08/03/cve-2026-18577-n-able-n-central-vulnerability/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にJPCERT/CC・IPA注意喚起・Security NEXT等国内報道による新規昇格CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-8037 / Progress Kemp LoadMaster（ECS Connection Manager / Object Scale Connection Manager / MOVEit WAF含む）
+CVSS: 9.6
+既報（6/30初報・2026-08-07付CISA KEV追加済み）の未認証root権限OSコマンドインジェクション脆弱性について、41日間で792件の悪用試行が18カ国65個の送信元IPから観測されていたとする集計データが新たに報道された。試行の多くは不成功と評価されており、実被害の独立確認は本日時点でも得られていない。対処: GA 7.2.63.2 / LTSF 7.2.54.18 へのアップデート（提供済み）。
+IoC: 確認されず
+
+監視: [ネットワークアプライアンスログ] LoadMaster管理APIへの異常なコマンド注入パターンを含むリクエストを監視する
+Splunk SPL: index=network_appliance sourcetype=loadmaster_api (uri_path="*/accessv2*" OR uri_path="*/cmd*") (uri_query="*;*" OR uri_query="*|*" OR uri_query="*$(*") | stats count by clientip, uri_path
+→ 正規の設定変更APIコールとの誤検知を避けるため、シェルメタ文字（; | $() ` &&）を含むパラメータ値に限定して検知する
+
+参照: https://thehackernews.com/2026/08/progress-kemp-loadmaster-flaw-hits-cisa.html
+参照: https://www.esentire.com/security-advisories/progress-kemp-loadmaster-vulnerability-targeted-cve-2026-8037
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+該当なし（本日の一次入力〔security-intel-collector/data/raw 当日窓分・8件〕はいずれも本編・参考B・トラックB・AI攻撃・APTのいずれかで採用済みであり、除外に回したCVEはなし）
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編1件 / 参考A0件 / 参考B1件 / 除外0件
+
+========================================
