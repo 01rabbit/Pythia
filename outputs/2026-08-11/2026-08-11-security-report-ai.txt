@@ -1,0 +1,65 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-11 07:58 JST
+調査期間: 2026-08-10 07:00 〜 2026-08-11 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-08-10 〜 2026-08-11
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内に軸X6点以上かつ軸Y4点以上の新規事案なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+・Kimsuky、オフラインAIスタックでフィッシング高度化とマルウェア開発自動化を試行
+カテゴリ: A3 採用契機: A-X
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+北朝鮮の偵察総局傘下とされるKimsukyが、公開チャットボットへの入力にとどまらず自組織サーバ上でOllama・GPT4All（RAG用localdocs_v3.db設定済み）・Msty・LLaMaSharp・Microsoft Semantic Kernel・OpenAI Whisper・Cursor等を組み合わせたオフラインAIスタックを運用している実態を韓国のGeniansが確認した。運用者ログの一部からはウォレット情報やGmail認証情報の抽出を指示する記述も回収されており、既報のOperation GitPower（LNK起点のPowerShellチェーンでGitHubをC2チャネルに悪用しAsyncRATを配布する北朝鮮系キャンペーン）との関連が指摘されている。Genians自身は現時点を訓練済みモデルの本格運用ではなく研究・知識獲得段階と評価しており、AIスタック運用による確認済み被害者は本日時点で報告されていない。
+
+監視: [組織内資産におけるローカルLLM実行ファイル（Ollama/GPT4All/LLaMaSharp等）の異常なプロセス生成や、業務上想定されないRAG設定ファイル生成を監視する]
+検知SPL: index=edr (Image="*ollama*" OR Image="*gpt4all*" OR Image="*LLaMaSharp*") | stats count by Computer,User,Image
+→ 開発・調査目的での正規のローカルLLM運用と区別するため、資産台帳で許可されたローカルAI運用ホスト一覧と突合し、非登録資産での実行を優先確認する。
+
+参照: https://thehackernews.com/2026/08/kimsuky-builds-offline-ai-stack-that.html
+参照: https://www.genians.co.kr/en/blog/threat_intelligence/kimsuky_ai_llm
+
+
+・Ghostjacking: 汚染ログ経由の間接プロンプトインジェクションでAIエージェントを乗っ取る攻撃チェーン
+カテゴリ: B1 採用契機: A-P
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+Tenet Security（既報Agentjacking/SentryMCP経由の研究の発展版）が、AIエージェントが信頼するサービス（Sentry・Cloudflare・Datadog）のログ・アラートに攻撃者が埋め込んだ自然言語の指示文をそのまま実行してしまう構造的欠陥「Ghostjacking」をDEF CON 2026で実証した。Claude Codeに対して成功率90%を記録し標準的なセキュリティ検知をトリガーせず、Claude Desktopでもサンドボックス回避の脆弱性を新たに発見してAnthropicへ報告・修正済みとしている。Cloudflareではブロックログへの指示文注入でDNS設定改変を、Datadogでは偽診断アラートで認証情報窃取を、SentryのAIエージェント「Seer」では細工した修正案の採用と下流エージェントへの伝播を実証した。実インシデントではなくPoCベースの研究実証であり、Tenetは緩和ツール「agent-jackstop」を公開している。
+
+監視: [Sentry/Cloudflare/Datadog等、AIエージェントへ流入する監視・アラートテキストへの入力サニタイズ状況と、読み取り専用ログ参照から設定変更操作への遷移を伴うイベント系列を監視する]
+検知SPL: index=cloudflare_logs sourcetype=firewall_events | regex Description="(?i)(ignore previous|system prompt|execute|curl |powershell)" | table _time,Description,ClientIP
+→ ファイアウォールブロックログの説明文にコマンド様・指示様の文字列が含まれる場合、AIエージェント経由の二次実行を疑い遮断・レビューする。
+
+参照: https://www.securityweek.com/ghostjacking-attack-uses-poisoned-logs-to-turn-ai-agents-bad/
+参照: https://tenetsecurity.ai/blog/ghostjacking-attacks-agentic-kill-chain/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内に該当情報なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+本日はKimsuky（北朝鮮）によるオフラインAIスタック構築（フィッシング高度化・マルウェア開発自動化）、およびTenet SecurityによるGhostjacking攻撃チェーン（汚染ログ経由の間接プロンプトインジェクションでAIエージェントを乗っ取り、Claude Codeで成功率90%を実証）の2件を参考B採用とした。いずれも独立ソース1件のみでバースト検出閾値未達のため本編昇格は見送った。OpenAI Astraのサイバー能力評価一時停止・ChatGPT 5.6 Cyber限定公開はガバナンス動向としてSOC推奨情報で別途扱う。
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B2件 / 除外5件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）1件 / C（インフラ）0件
+
+
+========================================
