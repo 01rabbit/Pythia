@@ -321,7 +321,7 @@
 | CVE-2026-48449 | Adobe Campaign Classic (ACC) v7 | 2026-08-03 | none | 2026-08-03 | YES | CVSS10.0・CWE-863未認証RCE・APSB26-114（2026-07-29）でbuild 9398へ修正済み・実悪用未確認・軸1=6点/軸2=1点で数値判定基準未達により除外・継続監視対象 |
 | CVE-2026-48448 | Adobe Campaign Classic (ACC) v7 | 2026-08-03 | none | 2026-08-03 | YES | CVSS8.6・CWE-89 SQLi・CVE-2026-48449と同一アドバイザリ（APSB26-114）内の複合脆弱性・軸1=2点で除外・継続監視対象 |
 | CVE-2026-59309 | VMware vCenter Server | 2026-08-03 | none | 2026-08-03 | YES | CVSS9.8・CWE-303認証バイパス（Directory Service）・VMSA-2026-0006（2026-07-29）・回避策なしだがパッチ提供済み・実悪用未確認・軸1=7点/軸2=1点で除外・継続監視対象 |
-| CVE-2026-59310 | VMware vCenter Server | 2026-08-03 | none | 2026-08-03 | YES | CVSS9.8・CWE-22ディレクトリトラバーサル（Syslogサーバ、未認証RCE）・VMSA-2026-0006・CVE-2026-59309と同一アドバイザリ内複合脆弱性・軸1=7点で除外・継続監視対象 |
+| CVE-2026-59310 | VMware vCenter Server | 2026-08-03 | active_exploitation | 2026-08-13 | YES | CVSS9.8・CWE-22ディレクトリトラバーサル（Syslogサーバ、未認証RCE）・VMSA-2026-0006・CVE-2026-59309と同一アドバイザリ内複合脆弱性・軸1=7点で除外・継続監視対象 / QUIRSOが開示5日後より実悪用（cronジョブ設置・reverse_ssh永続化）を47カ国361ユニークIPで確認・KEV未登録・攻撃予報fc-20260813-2(T1/E1/fast_72h/確度低・期限2026-08-16)起点・参考B再採用 |
 | CVE-2026-47876 | VMware ESX | 2026-08-03 | none | 2026-08-03 | YES | CVSS9.3・CWE-787 VMXNET3境界外書き込み（VMエスケープ、悪用にゲストVM内管理者権限が前提）・VMSA-2026-0006・軸1=4点で除外・継続監視対象 |
 | CVE-2026-41703 | VMware ESX / Workstation / Fusion | 2026-08-03 | none | 2026-08-03 | YES | ESX側CVSS7.6（ベンダー値、NVD値未確認）・境界外読み取り・VMSA-2026-0006・軸1=2点で除外・継続監視対象 |
 | CVE-2026-43456 | Linux kernel（net/bonding） | 2026-08-03 | poc_public | 2026-08-03 | YES | CVSS7.8・CWE-908型混同・2007年混入から19年間未修正（2026年3月上流修正）・kernelCTF開示規約によりPoC相当のエクスプロイト技術詳細が公開・GMOサイバーセキュリティbyイエラエ（国内ベンダー・発見者）技術ブログ+ScanNetSecurity国内報道により参考A採用 |
@@ -357,3 +357,11 @@
 | CVE未採番（Metabaseゼロデイ） | Metabase（Cloud / セルフホスト、BI/分析プラットフォーム） | 2026-08-08 | active_exploitation | 2026-08-08 | YES | CVSS10.0（ベンダー/GHSA-vwf4-m7j8-wcjf評価、CVE番号は本日時点で未採番）・未認証SQLインジェクションからリモート管理者権限奪取・Metabase CEOが0-day実悪用を公式確認・Framework/Tally顧客データ侵害確認（8/3）・LexisNexisも影響有無不明・修正版提供済み・トラックB帰属・ゼロデイ特報格として注目CVE採用（軸1=10点/軸2=1点）・CVE採番後に再評価 |
 | CVE-2026-64564 | Linux kernel（SCTP、"SCTPhantom"） | 2026-08-08 | none | 2026-08-08 | YES | CVSSv4 8.5（Tencent評価・NVD未スコア）・use-after-free（sctp_process_asconf経路）・root権限ローカル特権昇格＋コンテナエスケープリスク・広範ディストリ（Debian13/Ubuntu24.04/RHEL9/Rocky9等）影響・2026-08-03パッチ提供済み・PoC/実悪用とも本日時点で未確認・CVE公開/パッチとも調査窓外のため除外だが影響範囲が広いため継続監視 |
 | CVE-2026-63078 | Apache Traffic Server | 2026-08-08 | none | 2026-08-08 | YES | AI支援HTTP desync研究「HTTP Terminator」（PortSwigger James Kettle氏）が発見したゼロデイ・責任開示済みでパッチ提供済みとThe Hacker Newsが報道・2026-08-07時点でCVE.org/NVDにレコード未登録のためCVSS/対象バージョン未確認・CVEレコード公開後に再評価 |
+| CVE-2026-68820 | Windows Ancillary Function Driver for WinSock (AFD.sys) | 2026-08-13 | active_exploitation | 2026-08-13 | YES | CVSS7.0・KEV登録(2026-08-11)・Lazarus Group実悪用(Operation Dream Job)・JPCERT/CC注意喚起・ゼロデイ特報採用 |
+| CVE-2026-20349 | Cisco Secure Firewall ASA / FTD（Remote Access SSL VPN） | 2026-08-13 | active_exploitation | 2026-08-13 | YES | CVSS8.6・KEV登録(2026-08-11)・FCEB期限2026-08-14・未認証DoS・本編採用 |
+| CVE-2026-72898 | Metabase（BIツール） | 2026-08-13 | active_exploitation | 2026-08-13 | YES | CVSS10.0・KEV登録(2026-08-11)・FCEB期限2026-08-14・未認証SQLi→管理者権限奪取・本編採用 |
+| CVE-2026-48362 | Adobe ColdFusion | 2026-08-13 | none | 2026-08-13 | YES | CVSS10.0・OSコマンドインジェクション・実悪用未確認・Security NEXT国内報道・参考A採用 |
+| CVE-2026-71398 | Adobe Campaign Classic | 2026-08-13 | none | 2026-08-13 | YES | CVSS10.0・不適切な認可・実悪用未確認・Security NEXT国内報道・参考A採用 |
+| CVE-2026-66147 | SonicWall Global Management System（GMS） | 2026-08-13 | none | 2026-08-13 | YES | CVSS9.4・未認証コマンドインジェクション・実悪用未確認・Security NEXT国内報道・参考A採用 |
+| CVE-2026-71362 | Adobe Commerce / Magento Open Source | 2026-08-13 | active_exploitation | 2026-08-13 | YES | CVSS9.1・Sansec実悪用試行確認・KEV未登録・攻撃予報fc-20260813-1(T1/E1/fast_72h/確度低・期限2026-08-16)起点・参考B採用 |
+| CVE-2026-55040 | Microsoft SharePoint Server | 2026-08-13 | poc_public | 2026-08-13 | YES | CVSS9.1・Rapid7 PoC公開・DefusedがPoCのハニーポットでの武器化確認・7月Patch Tuesdayで修正済み・参考B採用 |

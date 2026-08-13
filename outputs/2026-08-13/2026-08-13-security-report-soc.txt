@@ -1,0 +1,206 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-13 07:40 JST
+調査期間: 2026-08-12 07:00 〜 2026-08-13 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 2026年8月Microsoft Patch Tuesday - 421件の脆弱性・実悪用確認1件を含む大規模更新
+観点: CVE関連
+採用契機: β / γ
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft Windows / Office 等
+
+【24時間以内の変化】
+[Security NEXT/JPCERT-CC 2026-08-12] マイクロソフトが2026年8月月例セキュリティ更新プログラムを公開、約400件（実数421件）の脆弱性に対処。実悪用確認済みのCVE-2026-68820を含む
+
+【概要】
+2026年8月のMicrosoft Patch Tuesdayで421件のCVEが修正され、うち1件（CVE-2026-68820、Windows AFD.sys use-after-free、Lazarus Groupが実悪用）は既に実悪用が確認されている（Section3ゼロデイ特報で個別採用済み）。更新規模が大きいため、テスト・展開の優先順位付けと展開スケジュールの前倒し検討が必要。
+
+【推奨アクション】
+・実悪用確認済みのCVE-2026-68820（AFD.sys）を含む更新プログラムを最優先で適用する
+・421件全体のCVSS Critical/High該当分を抽出し、境界公開資産・特権管理用ホストから優先展開する
+・JPCERT/CC注意喚起（at260022.html）記載の対象製品リストを社内資産管理台帳と突合する
+
+【参照】
+https://www.security-next.com/188678
+https://www.jpcert.or.jp/at/2026/at260022.html
+
+------------------------------------------------------------
+2. ShieldBreak: Nightmare EclipseがMicrosoft Defenderのパッチ不備を突く新PoC公開
+観点: ゼロデイ関連
+採用契機: δ / ε
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft Defender for Windows
+
+【24時間以内の変化】
+[The Hacker News 2026-08-12] 研究者Chaotic Eclipse（Nightmare Eclipse/MSNightmare）が、2026年7月に修正されたCVE-2026-50656（RoguePlanet、Malware Protection Engineのrace condition・CVSS7.8）に対するMicrosoftの修正が不完全であるとして、パッチを完全にバイパスしSYSTEM権限を取得する新PoC「ShieldBreak」を公開（成功率100%と主張）。CVE-2026-50656自体は2026-06-18から継続監視中の既報CVE（reported-cves.md記載）
+
+【概要】
+Microsoft Defender for Windowsの権限昇格脆弱性CVE-2026-50656（RoguePlanet）についてMicrosoftが2026年7月に提供した修正を、研究者Chaotic Eclipse（Windows脆弱性連続開示キャンペーンで既報のNightmare Eclipse）が完全にバイパスする新PoC「ShieldBreak」を2026-08-11に公開した。Windows 11 25H2（Canary）・Windows Server 2025で動作を確認、Windows 10/Server版でも脆弱だがPoCは未対応。現時点で実悪用の報告はないが、同研究者は過去にも複数のWindowsゼロデイを継続的に開示しており（BitLockerバイパスCVE-2026-45585等）、実環境での悪用速度が過去事例より早い傾向がある。
+
+【推奨アクション】
+・Microsoft Malware Protection Engineの更新状況（バージョン1.1.26060.3008以降）を再確認する
+・ShieldBreak PoCの技術的特徴（SYSTEM権限取得時の異常プロセスチェーン）に基づく検知ルールの追加を検討する
+・Nightmare Eclipse/Chaotic Eclipseの過去の開示パターン（CVE-2026-45585・CVE-2026-50656等）を踏まえ、今後72時間の追加開示を注視する
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*MsMpEng.exe*" | stats count by Computer,NewProcessName
+→ MsMpEng.exeから通常発生しない子プロセスの生成有無を優先確認する。
+
+【参照】
+https://thehackernews.com/2026/08/shieldbreak-zero-day-poc-claims.html
+https://www.bleepingcomputer.com/news/security/new-microsoft-defender-shieldbreak-zero-day-grants-system-privileges
+
+------------------------------------------------------------
+3. Plug and Pwn: Windows Plug and Play機能を悪用したSYSTEM権限奪取手法がDEF CONで公開
+観点: ゼロデイ関連
+採用契機: ε / γ
+------------------------------------------------------------
+
+優先度: 中
+対象: Windows 11（完全更新環境含む）
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-12] 研究者Alejandro Hernando・Borja MartínezがDEF CON 34（2026年8月）で、Windows Plug and Play機能を悪用しUACプロンプトなしでSYSTEM権限のドライバ・co-installerを実行させる「Plug and Pwn」攻撃を発表。FaceDancer等のUSBエミュレーション機材またはRDP USB転送機能で物理アクセスなしにも再現可能、完全更新済みWindows 11でも約5分で成立
+
+【概要】
+Windows の Plug and Play 機能・co-installer 実行パスが NT AUTHORITY\SYSTEM 権限で UAC プロンプトなしに実行されることを悪用し、エミュレートしたUSBデバイスまたはRDP USBリダイレクト経由で脆弱なベンダー製ドライバ・co-installerのインストールを強制しSYSTEM権限を取得する手法。Sierra Wireless・Sony FeliCa・Intel RealSense・Wacom・Atheros等複数ベンダーのソフトウェアで実証された。既知の脆弱性（CVE-2019-10617等、旧CVEの新規適用でありトラックA新規CVEには該当しない）を利用したチェーンであり研究開示のみで実悪用の報告はないが、`DisableCoInstallers`レジストリ値の設定等の緩和策がある。
+
+【推奨アクション】
+・`DisableCoInstallers`レジストリキーの設定を検討する（完全な対策ではない点に留意）
+・デバイスインストール制限ポリシー（Group Policy）の適用を検討する
+・RDP経由のUSBリダイレクト機能が不要な環境では無効化する
+Splunk SPL: index=wineventlog EventCode=20001 OR EventCode=7045 | stats count by Computer,DriverName
+→ 通常業務で使用しないベンダーのco-installerインストールイベントを優先確認する。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/plug-and-pwn-attack-uses-fake-usb-devices-for-windows-system-access
+
+------------------------------------------------------------
+4. 737件の偽Chrome VPN拡張機能がSOCKS5プロキシへトラフィックを誘導
+観点: CVE関連
+採用契機: β / δ
+------------------------------------------------------------
+
+優先度: 中
+対象: Google Chrome拡張機能
+
+【24時間以内の変化】
+[BleepingComputer/The Hacker News 2026-08-12] Chromeウェブストアで公開された737件の偽VPN・プロキシ拡張機能が、単一の事業者が運営するSOCKS5プロキシ経由でユーザートラフィックをルーティングしていたことが判明。少なくとも40の開発者アカウントに分散し主にロシア語話者を標的
+
+【概要】
+正規のVPN・プロキシサービスを装った737件のChrome拡張機能が、単一事業者運営のSOCKS5プロキシインフラへユーザーの通信を誘導していたことが判明した。ブロック済みサービスへのアクセスを求めるロシア語話者ユーザーを主な標的としているが、Chromeウェブストア上のなりすまし拡張機能全般の脅威として国内組織でも拡張機能インストールポリシーの再確認が推奨される。
+
+【推奨アクション】
+・組織管理のChrome環境で許可拡張機能リスト（allowlist）方式への移行を検討する
+・VPN・プロキシを標榜する拡張機能のインストール実績を資産管理システムで棚卸しする
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hundreds-of-fake-chrome-vpn-extensions-route-traffic-through-a-proxy
+
+------------------------------------------------------------
+5. ICS/OT製品定例パッチ - Siemens/Schneider Electric/Phoenix Contact等
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: Siemens/Schneider Electric/Phoenix Contact製ICS/OT製品
+
+【24時間以内の変化】
+[SecurityWeek/JVN 2026-08-12] Siemens・Schneider Electric・Phoenix Contact各社がICS Patch Tuesdayに合わせ脆弱性を修正、CISAも複数のICS/ICS Medical Advisoryを公開
+
+【概要】
+月例のICS Patch Tuesdayに合わせ、Siemens・Schneider Electric・Phoenix Contact各社がOT/ICS製品の脆弱性を修正し、CISAも複数のICS/ICS Medical Advisoryを公開した。個別のCVSS9.0以上・実悪用確認事例は本日時点で確認されていないが、OT環境はパッチ適用サイクルが長いため早期の影響評価が推奨される。
+
+【推奨アクション】
+・自組織のOT/ICS資産台帳とCISA ICS Advisory対象製品を突合する
+・本番停止を伴う適用は次回メンテナンスウィンドウで計画する
+
+【参照】
+https://www.securityweek.com/ics-patch-tuesday-vulnerabilities-fixed-by-siemens-schneider-phoenix-contact-2
+
+------------------------------------------------------------
+6. チップメーカーPatch Tuesday - Intel/AMDが計80件超の脆弱性を修正
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: Intel/AMD製プロセッサ・関連ソフトウェア
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-12] Intelが顧客向けに権限昇格・コード実行につながる複数の高深刻度脆弱性を通知、AMDと合わせ計80件超の脆弱性が修正された
+
+【概要】
+IntelとAMDが月例のチップメーカーPatch Tuesdayで計80件超の脆弱性を修正した。Intelは権限昇格・コード実行につながりうる複数の高深刻度脆弱性を顧客向けに通知している。ファームウェア更新はOS更新と別管理となるケースが多いため、資産管理台帳上での適用状況の可視化が必要。
+
+【推奨アクション】
+・ファームウェア・マイクロコード更新の適用状況をOS更新とは別に確認する
+・特に高深刻度（権限昇格・コード実行）に分類された項目を優先する
+
+【参照】
+https://www.securityweek.com/chipmaker-patch-tuesday-intel-amd-fix-over-80-vulnerabilities-combined
+
+------------------------------------------------------------
+7. Ivanti EPMアップデート - 認証情報漏洩・エージェントサービスクラッシュの脆弱性を修正
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: Ivanti Endpoint Manager (EPM)
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-12] Ivanti EPMのアップデートが公開され、外部SQL接続用の認証情報漏洩・エージェントサービスのクラッシュにつながるリモート悪用可能な脆弱性を修正
+
+【概要】
+Ivanti Endpoint Manager（EPM）のアップデートで、外部SQL接続用の認証情報を漏洩させうる脆弱性、およびエージェントサービスをクラッシュさせうる脆弱性が修正された。実悪用の報告はないが、Ivanti製品は過去に複数回実悪用の標的となっているため早期適用が推奨される。
+
+【推奨アクション】
+・Ivanti EPMの最新アップデート適用状況を確認する
+・外部SQL接続の認証情報を保有する環境ではローテーションを検討する
+
+【参照】
+https://www.securityweek.com/ivanti-epm-update-patches-remotely-exploitable-flaws
+
+------------------------------------------------------------
+8. TCG TPM2.0リファレンス実装に情報漏洩・サイドチャネル脆弱性（CERT/CC）
+観点: CVE関連
+採用契機: α
+------------------------------------------------------------
+
+優先度: 低
+対象: TCG TPM2.0リファレンス実装
+
+【24時間以内の変化】
+[JVN（CERT/CC経由） 2026-08-12] CERT/CCがTCG TPM2.0リファレンス実装の複数脆弱性（CVE-2026-6726・CVE-2026-6727、情報漏洩・タイミングサイドチャネル）についてアドバイザリを公表
+
+【概要】
+TCG TPM2.0のリファレンス実装に情報漏洩およびタイミング・サイドチャネル攻撃に対する脆弱性CVE-2026-6726・CVE-2026-6727が判明した。CVSSスコア・詳細な悪用条件は本日時点で未確認（CERT/CCアドバイザリVU#431093参照）。TPM実装依存のため影響範囲は限定的とみられる。
+
+【推奨アクション】
+・自組織で使用するTPM実装がTCGリファレンス実装ベースか確認する
+・ベンダーからのファームウェア更新情報を継続監視する
+
+【参照】
+https://jvn.jp/vu/JVNVU96623328
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[SOC推奨情報]
+該当なし
+
+本日の集計:
+SOC推奨情報 — 高2件 / 中5件 / 低1件 / 除外0件
+
+========================================
