@@ -1,0 +1,237 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-12 07:20 JST
+調査期間: 2026-08-11 07:00 〜 2026-08-12 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 2026年8月Microsoft Patch Tuesday: 約400件修正・実悪用ゼロデイ1件・未認証Critical RCE多件、優先パッチ適用計画の即時策定を
+観点: CVE関連
+採用契機: γ/β
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft Windows / SharePoint / Exchange / Azure（2026年8月更新プログラム全体）
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-11] 2026年8月Patch Tuesdayで約400件（情報源により396〜421件と集計差異あり）の脆弱性を修正、実悪用ゼロデイ1件（CVE-2026-68820）・公開済み未悪用ゼロデイ2件（CVE-2026-62832「LegacyHive」・CVE-2026-72971）を含むと報道
+[SecurityWeek 2026-08-12] Critical 42件（RCE 37件・権限昇格5件）、うち無認証RCE CVSS9.8が4件（CVE-2026-62878 Windows DNS Serverワーム可能性あり・CVE-2026-62893 Windows Deployment Services TFTP・CVE-2026-62815 Windows QUIC・CVE-2026-59124 HPC Pack）と報道。SharePointは30件の脆弱性修正を含む（CVE-2026-63520含む）
+
+【概要】
+2026年8月のMicrosoft月例更新プログラムで約400件の脆弱性が修正され、うち北朝鮮Lazarus GroupがFudModuleルートキット展開に悪用していた実悪用ゼロデイCVE-2026-68820（afd.sys権限昇格）、パッチ前に公開されていた未悪用ゼロデイ2件（CVE-2026-62832・CVE-2026-72971）、および無認証で悪用可能なCVSS9.8のCritical RCEが4件（Windows DNS Serverはワーム可能性ありと指摘）含まれる。SharePoint関連も30件修正されており、うちCVE-2026-63520はRapid7が無認証RCEチェーンのPoCを本日公開している。
+
+【推奨アクション】
+・優先度: Windows DNS Server（CVE-2026-62878、ワーム可能性あり）・SharePointオンプレミス（CVE-2026-63520）・afd.sys（CVE-2026-68820、実悪用中）を最優先でパッチ適用
+・SharePointは既に本年2件のKEV登録実績があるため、CVE-2026-63520関連のRapid7 PoC公開を踏まえ露出状況（インターネット直接公開の有無）を再確認
+・afd.sys悪用によるFudModule展開の兆候（未署名カーネルドライバのロード）をEDRで確認
+Splunk SPL: index=wineventlog EventCode=4688 CommandLine="*sc.exe*" AND CommandLine="*create*" | stats count by Computer, CommandLine
+
+【参照】
+https://www.bleepingcomputer.com/news/microsoft/microsoft-august-2026-patch-tuesday-fixes-400-flaws-3-zero-days
+https://www.securityweek.com/august-2026-patch-tuesday-microsoft-fixes-421-cves-one-exploited-zero-day
+https://krebsonsecurity.com/2026/08/microsoft-plugs-nearly-400-security-holes
+
+------------------------------------------------------------
+2. Cisco Secure Endpoint Connector同梱ClamAV、PoC公開済みDoS脆弱性2件（CVE-2026-20337/20338）
+観点: CVE関連
+採用契機: η
+------------------------------------------------------------
+
+優先度: 高
+対象: Cisco Secure Endpoint Connector（Windows/Linux/Mac）/ ClamAV 1.5.0-1.5.3
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-11] ClamAVのZIPアーカイブパーサに起因するDoS脆弱性2件（CVE-2026-20337/20338）についてCiscoが注意喚起、PoC公開済みだが実悪用は未確認と公表
+
+【概要】
+EDR製品Cisco Secure Endpoint ConnectorのマルウェアスキャンエンジンClamAV（1.5.0〜1.5.3）にZIPアーカイブ解析処理の不備によるDoS脆弱性が2件（CVE-2026-20337/20338）確認された。未認証のリモート攻撃者が細工したZIPファイルをスキャン対象として送り込むことでスキャンプロセスをクラッシュさせられる。PoCコードは既に公開されているが実悪用は確認されていない。ClamAV 1.5.4（2026-08-07リリース）で修正済み、Cisco版の更新は2026年8月中に予定。
+
+【推奨アクション】
+・ClamAV 1.5.4への更新、またはCisco Secure Endpoint Connectorの更新版リリースを待って速やかに適用
+・Windows環境ではClamAVスキャンプロセスが特権コンテキストで動作するためDoSの影響が大きいことに留意
+
+【参照】
+https://www.bleepingcomputer.com/news/security/cisco-warns-of-high-severity-clamav-flaws-with-public-exploits
+
+------------------------------------------------------------
+3. BdThemes系Elementorアドオン7製品でサプライチェーン攻撃、118,000件超の導入サイトに影響
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: BdThemes Element Pack / Live Copy Paste / Prime Slider / Ultimate Post Kit等（WordPress Elementorアドオン）
+
+【24時間以内の変化】
+[The Hacker News 2026-08-11] Wordfenceの研究者がBdThemes製7プラグインの静的リモートJSONデータストリームが汚染され、悪意あるJavaScriptにより不正管理者アカウント作成・Webシェル設置が行われたと報告
+
+【概要】
+WordPress向けElementorアドオンを開発するBdThemesの7製品（Element Pack Addons・Live Copy Paste・Pixel Gallery・Prime Slider・Smart Admin Assistant・Ultimate Post Kit・Ultimate Store Kit、合計導入数118,000件超）で、開発元が管理するDigitalOcean Spacesバケットへの書き込み権限が奪われ静的JSONデータストリームが汚染された。汚染されたJSONにより管理画面上で悪意あるJavaScriptがサイレント実行され、プラグイン更新やファイル改変を伴わずに不正管理者アカウントの作成とWebシェル設置が行われた。BdThemesは2026-08-07〜08にプラグインを無効化しレビュー中。
+
+【推奨アクション】
+・対象プラグインの利用有無を確認し、BdThemesからの安全宣言・更新版リリースまで利用を停止
+・管理者アカウント一覧を確認し心当たりのないアカウントの有無を点検
+・wp-content配下の不審なPHPファイル（Webシェル）の有無を確認
+
+【参照】
+https://thehackernews.com/2026/08/bdthemes-supply-chain-attack-poisons.html
+
+------------------------------------------------------------
+4. Mozilla、FirefoxおよびThunderbird Linux版の署名鍵を早期ローテーション（鍵漏洩の可能性）
+観点: ゼロデイ関連
+採用契機: γ
+------------------------------------------------------------
+
+優先度: 中
+対象: Firefox / Thunderbird（Linux版・RPMパッケージ検証）
+
+【24時間以内の変化】
+[The Hacker News 2026-08-11] Mozilla社内リポジトリへ暗号化されていない署名鍵のコピーが誤ってコミットされていたことが判明し、2026-08-06付で鍵を失効・新鍵へローテーションしたと報道
+
+【概要】
+Mozilla社内の非公開リポジトリへFirefox/Thunderbird Linux版ダウンロードの署名に使う秘密鍵の暗号化されていないコピーが誤ってコミットされていたことが判明した。監査ログ上は不正アクセスの証跡なしとされるが、予定より約7か月早く鍵をローテーションし旧鍵を失効させた。Linux利用者のうち手動で署名検証を行っている利用者やRPMパッケージ利用者は新しい鍵情報への更新が必要となる場合がある。
+
+【推奨アクション】
+・RPMパッケージ経由でFirefox/Thunderbirdを配布・検証している場合は新しい署名鍵（フィンガープリント 827E 6586 0867 9618 CD34 9F93 678E 455D 7676 7AA3）への更新手順を確認
+・手動GPG検証を行っている利用者への周知
+
+【参照】
+https://thehackernews.com/2026/08/mozilla-revokes-firefox-and-thunderbird.html
+
+------------------------------------------------------------
+5. AIチャット窃取で削除済みだったChrome拡張機能が復活し悪意ある活動を再開
+観点: AI攻撃関連
+採用契機: δ
+------------------------------------------------------------
+
+優先度: 中
+対象: Google Chromeウェブストア（拡張機能・製品名は原典未特定）
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-11] AIチャット内容を窃取していたとして一度Googleに削除された拡張機能（30万件超のインストール実績・評価4.6）がChromeウェブストアへ再登録され悪意ある活動を再開したと報道
+
+【概要】
+AIチャットボット（ChatGPT等）とのやり取り内容を窃取していたことを理由に一度Googleによって削除されたChrome拡張機能が、別名義または再申請により再びChromeウェブストアへ掲載され、悪意ある活動を再開していることが確認された。過去に30万件超のインストール実績・4.6の高評価を得ていたため再感染範囲が広がるおそれがある。
+
+【推奨アクション】
+・従業員のブラウザ拡張機能インストール状況を棚卸しし、AIチャットボット関連の拡張機能の利用実態を確認
+・拡張機能インストールの管理者承認制の導入を検討
+
+【参照】
+https://www.securityweek.com/extension-banned-for-stealing-ai-chats-returns-to-chrome-store-resumes-malicious-activities
+
+------------------------------------------------------------
+6. DEF CON 34研究発表: Windows Plug and Play自動インストール機構の悪用でパッチ適用済みWindows 11でもSYSTEM権限奪取が可能
+観点: ゼロデイ関連
+採用契機: ε
+------------------------------------------------------------
+
+優先度: 中
+対象: Windows 11（Plug and Playデバイスドライバ自動インストール機構）
+
+【24時間以内の変化】
+[The Hacker News 2026-08-11] 研究者Alejandro Hernando氏・Borja Martinez氏がDEF CON 34で「Plug And Pwn」と題し、USBデバイスのエミュレーションとベンダー製co-installerの脆弱性連鎖によりフルパッチ適用済みWindows 11上でSYSTEM権限を奪取する手法を発表
+
+【概要】
+Windows Plug and Play（PnP）の自動デバイスドライバインストール機構を悪用し、特定USBデバイス（Sierra Wireless・Sony FeliCaリーダー等）を偽装することで、ベンダー製co-installerの平文HTTP通信・パストラバーサル不備を連鎖させSYSTEM権限のコード実行に至る手法がDEF CON 34で発表された。物理USB接続を要する変種に加え、RDP経由でUSBリダイレクトが有効な環境で認証済み低権限ユーザーからリモートに実行可能な変種も存在する。CVE番号は付与されておらず公式パッチも公開されていない。
+
+【推奨アクション】
+・デバイスインストールポリシーで許可デバイスをホワイトリスト化する
+・リモートデスクトップサービスでUSBリダイレクト機能を既定で無効化する（Microsoft既定推奨に準拠）
+・co-installerによる平文HTTP通信の有無を資産管理台帳で確認する
+
+【参照】
+https://thehackernews.com/2026/08/researchers-turn-usb-auto-install-into.html
+
+------------------------------------------------------------
+7. 悪意あるSIMカードがセルラーIoTモデム内で任意ATコマンド実行を可能にする研究（CVE-2026-57550）
+観点: CVE関連
+採用契機: ε
+------------------------------------------------------------
+
+優先度: 低
+対象: Quectel EC25/EG25/RM52xNシリーズモデム等（セルラーIoTデバイス）
+
+【24時間以内の変化】
+[The Hacker News 2026-08-11] バーミンガム大学・Fuzzware社が、悪意あるSIMカードのRUN AT proactive command機能により物理的に挿入されたSIMからモデム上で任意ATコマンドを実行できる脆弱性CVE-2026-57550（GSMA CVD-2026-0122）を発表
+
+【概要】
+EV充電器・産業用ルータ・車載テレマティクス等に組み込まれるセルラーモデム（Quectel EC25/EG25/RM52xN系等）に対し、物理的に挿入した悪意あるSIMカードのRUN AT proactive command機能を用いて認証なしに任意のATコマンドを実行できる脆弱性CVE-2026-57550が確認された。2G強制ダウングレード（不可逆）・遠隔電源断・TFTP経由の任意ファイル読み取り、商用EV充電器でのRCEまで実証されている。悪用には物理アクセス（SIM交換またはインターポーザ挿入）が必要で実悪用報告はない。QualcommおよびQuectelは対応を確認済み。
+
+【推奨アクション】
+・物理的にアクセス可能なセルラーIoT機器（EV充電器・産業用ルータ等）のSIMスロット保護状況を点検
+・ベンダー（Quectel等）のファームウェア更新提供状況を継続確認
+
+【参照】
+https://thehackernews.com/2026/08/a-malicious-sim-card-can-run-attacker.html
+
+------------------------------------------------------------
+8. 米上院、水道事業者向けサイバーセキュリティ支援法案と「Water Watch Center」始動
+観点: ゼロデイ関連
+採用契機: ζ
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-11] DEF CON 34で人材・予算不足の水道事業者を支援する新組織「Water Watch Center」が始動、米上院でも支援法案が提出されたと報道
+
+【概要】
+資金・人員が不足しがちな米国の水道事業者向けにサイバーセキュリティ支援を行う新組織「Water Watch Center」がDEF CON 34で発足し、米上院でも同分野を支援する法案が提出された。国内の重要インフラ事業者においても同種の外部支援スキームの動向として参考になる。
+
+【推奨アクション】
+・重要インフラ事業者は同種の外部支援スキーム・情報共有体制の国内動向を継続的に注視する
+
+【参照】
+https://www.securityweek.com/us-water-systems-get-cyber-boost-from-new-senate-bill-and-water-watch-center
+
+------------------------------------------------------------
+9. Cloudflare、1Tbps超DDoS攻撃が2026年第2四半期に前四半期比5倍へ急増と報告
+観点: ゼロデイ関連
+採用契機: δ/ζ
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-11] Cloudflareが2026年第2四半期に1Tbpsを超えるネットワーク層DDoS攻撃を800件超緩和したと報告、前四半期比で5倍に急増
+
+【概要】
+Cloudflareの四半期報告によると、2026年第2四半期に同社が緩和した1Tbpsを超える大規模ネットワーク層DDoS攻撃が800件超に達し、前四半期比で5倍に急増した。Kimwolf v7等の新型ボットネットによるトラフィック偽装技術の高度化も背景にあるとみられる。
+
+【推奨アクション】
+・自組織のDDoS対策サービスの緩和容量（Tbps級攻撃への耐性）を再確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/ddos-attacks-over-1-tbps-surged-fivefold-in-the-second-quarter
+
+------------------------------------------------------------
+10. デルタ航空、DEF CON参加者搭乗便での不正Wi-Fiネットワーク・デオーセンティケーション攻撃疑いを調査中
+観点: ゼロデイ関連
+採用契機: δ
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-12] ラスベガス発アトランタ行きのDEF CON参加者搭乗便で不正なWi-Fiネットワークが確認され、デルタ航空が調査を開始したと報道
+
+【概要】
+DEF CON 34参加者を乗せたラスベガス発アトランタ行きのデルタ航空便で、機内に不正なWi-Fiネットワークが出現していたことが確認され、同社が調査を開始した。詳細（デオーセンティケーション攻撃の有無等）は本日時点で確定していない。
+
+【推奨アクション】
+・続報を注視し、機内Wi-Fi等の一時的な無線ネットワークに接続する際の注意喚起を検討
+
+【参照】
+https://www.bleepingcomputer.com/news/security/delta-probes-wi-fi-deauth-attack-on-flight-carrying-def-con-attendees
+
+本日の集計:
+SOC推奨情報 — 高2件 / 中4件 / 低4件 / 除外0件
+========================================
