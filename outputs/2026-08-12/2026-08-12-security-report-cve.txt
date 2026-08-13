@@ -1,0 +1,149 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-12 07:20 JST
+調査期間: 2026-08-11 07:00 〜 2026-08-12 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-68820 / Microsoft Windows Ancillary Function Driver for WinSock (afd.sys)
+対象: 2026年8月Patch Tuesday時点でサポート対象の全Windowsバージョン（afd.sys搭載）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 7.0 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-11] 2026年8月Microsoft Patch Tuesdayで400件の脆弱性を修正、うちCVE-2026-68820（afd.sys use-after-free権限昇格）が実悪用中のゼロデイと公表
+[The Hacker News 2026-08-11] CVE-2026-68820をWindowsドライバのゼロデイとして報道、Check Point Researchが北朝鮮Lazarus GroupによるFudModuleカーネルルートキット展開への悪用を確認したと報道
+[CISA KEV 2026-08-11] CVE-2026-68820がCISA KEVカタログへ本日付で新規追加（catalogVersion 2026.08.11）
+
+【概要】
+Windows Ancillary Function Driver for WinSock（afd.sys）のuse-after-freeによるローカル権限昇格の脆弱性CVE-2026-68820が2026年8月Patch Tuesdayで修正され、Check Point Researchの分析に基づき北朝鮮Lazarus Groupがカーネルモードルートキット「FudModule」を展開する目的で実悪用していたことが確認された。悪用には対象端末上で既にコード実行権を得ていることが前提となるレース条件を利用してSYSTEM権限へ昇格する。
+
+攻撃の流れ:
+1. 初期侵入（Lazarus Groupの既知手口。本CVE単体の記述には含まれない）で対象端末上のコード実行権を獲得
+2. afd.sysのuse-after-freeを利用したレース条件でSYSTEM権限へ昇格
+3. カーネルモードルートキットFudModuleを展開し検知回避・永続化
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・2026年8月Patch Tuesday累積更新プログラムの即時適用（回避策は公表されていない）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM/Splunk] afd.sys経由の権限昇格およびFudModule系カーネルルートキットの展開兆候を監視する
+Splunk SPL: index=wineventlog EventCode=4688 (NewProcessName="*\\svchost.exe" OR NewProcessName="*\\lsass.exe") ParentProcessName!="*\\services.exe" | stats count by Computer, NewProcessName, ParentProcessName
+Splunk SPL: index=wineventlog EventCode=6 OR EventCode=7045 ImageLoaded="*.sys" Signed=false | stats count by Computer, ImageLoaded
+→ afd.sys自体は正規ドライバのため異常検知は権限昇格後の挙動（未署名ドライバロード・LSASSアクセス増加）に着目する
+
+【参照】
+https://www.bleepingcomputer.com/news/microsoft/microsoft-august-2026-patch-tuesday-fixes-400-flaws-3-zero-days
+https://thehackernews.com/2026/08/microsoft-patches-398-flaws-including.html
+
+------------------------------------------------------------
+2. CVE-2026-72898 / Metabase（BI/分析プラットフォーム）
+対象: 2026-08-07修正版未適用の全バージョン（自己ホスト型・Metabase Cloud両方に影響）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[CISA KEV 2026-08-11] CVE-2026-72898がCISA KEVカタログへ本日付で新規追加（catalogVersion 2026.08.11）
+[The Hacker News 2026-08-11] 未認証SQLインジェクション経由で管理者アクセスを奪取するゼロデイの実悪用が確認され、複数組織の顧客データが窃取されたと報道
+
+【概要】
+BI/分析プラットフォームMetabaseの/reset_passwordエンドポイントに存在する未認証SQLインジェクションの脆弱性CVE-2026-72898（CVSS10.0）が、2026-08-06にMetabase Cloudへのゼロデイ攻撃として実悪用されたことが確認された。攻撃者は本脆弱性を用いてアプリケーションデータベースへ任意SQLを注入し管理者権限を奪取、接続先データベースの認証情報窃取・データ読み取り・エクスポートが可能となる。複数組織が既に顧客データ窃取の被害を受けている。
+
+攻撃の流れ:
+1. 未認証で/reset_passwordエンドポイントへSQLインジェクションペイロードを送信
+2. アプリケーションデータベースを操作し管理者アクセス権を奪取
+3. 接続済みデータベースの認証情報窃取・顧客データの読み取り/エクスポート
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・2026-08-07修正版への即時アップグレード（回避策としてのpublicアクセス制限は暫定措置に留まる）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM/Splunk] Metabaseの/reset_password・/api/user/currentエンドポイントへの異常なリクエストパターンを監視する
+Splunk SPL: index=web_proxy uri_path="*/api/session/reset_password*" | stats count by src_ip, http_status | where count > 5
+Splunk SPL: index=web_proxy uri_path="*/api/user/current*" earliest=-10m | join src_ip [search index=web_proxy uri_path="*/api/session/reset_password*" http_status=4* earliest=-10m] | table _time src_ip uri_path http_status
+→ reset_password失敗直後にuser/currentが成功するパターンは既知の悪用シグネチャ（Metabase公式公表）
+
+【参照】
+https://thehackernews.com/2026/08/metabase-zero-day-exploited-in-wild.html
+https://github.com/metabase/metabase/security/advisories/GHSA-vwf4-m7j8-wcjf
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1・軸2閾値を満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A昇格トリガーを満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-20349 / Cisco Secure Firewall ASA / Secure Firewall Threat Defense (FTD)
+CVSS: 8.6
+Cisco ASA/FTDのRemote Access SSL VPNサービスにおけるHTTPリクエスト処理のエラーチェック不備により、SSLリッスンソケットが有効な環境で未認証の攻撃者が細工したHTTPリクエストを送信するとデバイスが再起動しDoSに至る脆弱性CVE-2026-20349（CVSS8.6）が実悪用されている。Ciscoは回避策がないとしバージョン別ホットフィックスの即時適用を強く推奨している。
+IoC: 確認されず
+監視: [SIEM/Splunk] ASA/FTDのVPNサービスクラッシュ・予期しない再起動を監視する
+Splunk SPL: index=cisco_asa sourcetype=cisco:asa ("%ASA-1-" OR "Reload") | stats count by host, _time | where count > 0
+→ 予期しない再起動ログ（%ASA-1-*系メッセージ）の急増を確認する。誤検知除外にはメンテナンス予定と突合すること
+参照: https://www.bleepingcomputer.com/news/security/cisco-warns-of-asa-and-ftd-vpn-flaw-exploited-to-crash-devices
+参照: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-asaftd-vpn-dos-dzv4mQFF
+
+・CVE-2026-63520 / Microsoft SharePoint Server（Subscription Edition / 2019 / Enterprise Server 2016、オンプレミスのみ）
+CVSS: 8.1
+Rapid7がAI支援の研究プロセスを用い、2026年7月に修正済みのSharePoint JWT認証バイパスCVE-2026-55040（CVSS9.1）と本日のPatch Tuesdayで新たに修正されたBusiness Connectivity Servicesの安全でない.NET型インスタンス化の脆弱性CVE-2026-63520（CVSS8.1）を連鎖させ、認証情報なしでSharePointサーバ上でコード実行に至る攻撃チェーンの技術解析とPoCスクリプトを公開した。オンプレミスのSharePoint Server Subscription Edition/2019/2016が対象でSharePoint Onlineは影響を受けない。SharePointは本年6〜7月にも複数回KEV登録された実績があり、既存の攻撃者による追随リスクに注意が必要である。
+IoC: 確認されず
+監視: [SIEM/Splunk] SharePoint Business Connectivity Services経由の異常なプロセス起動・IISマシンキー窃取試行を監視する
+Splunk SPL: index=iis sourcetype=iis cs_uri_stem="*/_vti_bin/*" OR cs_uri_stem="*/_layouts/*" sc_status>=500 | stats count by c_ip, cs_uri_stem
+→ w3wp.exeを親プロセスとする不審な子プロセス起動（cmd.exe/powershell.exe等）を優先確認する。既報CVE-2026-45659/56164のIOCとの重複がないか照合すること
+参照: https://thehackernews.com/2026/08/researchers-disclose-ai-assisted.html
+
+・CVE-2026-45659 / Microsoft SharePoint Server（Subscription Edition / 2019 / Enterprise Server 2016）
+CVSS: 8.8
+既報のSharePointデシリアライゼーションRCE脆弱性CVE-2026-45659（2026-07-01 KEV登録済み）について、CISAが本日KEVカタログのランサムウェア悪用フラグをUnknownからKnownへ更新し、ランサムウェアグループによる悪用を正式に確認した。Shadowserverの調査では8,500台超のSharePointサーバがインターネットに露出しており、うち200台超が本脆弱性に対し未パッチのままである。
+IoC: 確認されず
+監視: [SIEM/Splunk] 既報監視ポイントを継続（IISマシンキー窃取・不審なデシリアライゼーション試行）
+Splunk SPL: index=iis sourcetype=iis cs_uri_stem="*/_layouts/*" sc_status=500 | stats count by c_ip, cs_uri_stem
+→ ランサムウェア展開段階では横展開・大量ファイル暗号化の兆候（EDRアラート急増）も併せて確認する
+参照: https://www.bleepingcomputer.com/news/security/cisa-microsoft-sharepoint-flaw-now-exploited-in-ransomware-attacks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-62832 (Microsoft Windows User Profile Service（LegacyHive）) → パッチ前公開ゼロデイだが実悪用未確認・PoC未確認・KEV未登録。軸1=5点（ゼロデイ報道+4・広く使われる製品+1）/軸2=0点。本日Patch Tuesdayで修正済み。
+・CVE-2026-72971 (Windows Container Isolation FS Filter Driver) → パッチ前公開ゼロデイ（改ざん脆弱性）だが実悪用未確認・PoC未確認・KEV未登録。軸1=5点/軸2=0点。本日Patch Tuesdayで修正済み。
+・CVE-2026-62878 (Windows DNS Server) → CVSS9.8・未認証RCE・ワーム可能性ありと報道されるがPoC未公開・実悪用未確認・KEV未登録。軸1=7点（未認証RCE+3・CVSS9.0以上+3・広く使われる製品+1）/軸2=0点。SOC推奨情報SOC-2026-08-12-001に集約掲載。
+・CVE-2026-62893 (Windows Deployment Services（TFTP処理）) → CVSS9.8・未認証RCEだがPoC未公開・実悪用未確認・KEV未登録。軸1=7点/軸2=0点。SOC推奨情報SOC-2026-08-12-001に集約掲載。
+・CVE-2026-62815 (Microsoft QUICプロトコル) → CVSS9.8・未認証RCEだがPoC未公開・実悪用未確認・KEV未登録。軸1=7点/軸2=0点。SOC推奨情報SOC-2026-08-12-001に集約掲載。
+・CVE-2026-59124 (Microsoft HPC Pack) → Important評価・既定インストールされない構成限定。軸1=2点/軸2=0点。
+・CVE-2026-20337 (ClamAV（Cisco Secure Endpoint Connector同梱、ZIPパーサ）) → PoC公開済みDoSのみ・実悪用未確認・KEV未登録・CVSS非公表。軸1推定5点/軸2=0点。SOC推奨情報SOC-2026-08-12-002に集約掲載。
+・CVE-2026-20338 (ClamAV（Cisco Secure Endpoint Connector同梱、ZIPパーサ）) → CVE-2026-20337と同一アドバイザリ内の複合脆弱性。SOC推奨情報SOC-2026-08-12-002に集約掲載。
+・CVE-2026-57550 (Quectel EC25/EG25/RM52xNシリーズ等セルラーIoTモデム) → 物理アクセス（SIM交換）前提のATコマンド任意実行研究。軸1=1点（広く使われるOSSではないがIoT組込+1程度）/軸2=0点。PoC/実悪用未確認・KEV未登録。SOC推奨情報SOC-2026-08-12-007に集約掲載。
+・CVE-2026-53413 (Zoom Workplace / Rooms / Meeting SDK（annotator機能、通称Zoomsday）) → ゼロクリックRCE（メモリ破損）だがCVSS非公表・KEV未登録・実悪用未確認。同一開示内のCVE-2026-53414（DoS）・CVE-2026-53415（UAF）も含む。軸1推定4点（未認証RCE+3・広く使われる製品+1）/軸2=0点。Workplace 7.1.5/7.0.6等で修正済み。
+・CVE-2026-48331 (Adobe Campaign Classic（ACC）オンプレミス版) → 既報（2026-08-05）・APSB26-120内複合脆弱性（CVE-2026-48323/48330含む）。本日のSecurityWeek記事は既報内容の再掲で新規事実確認できず。
+
+本日の集計:
+CVE — ゼロデイ特報2件 / 本編0件 / 参考A0件 / 参考B3件 / 除外11件
+========================================
