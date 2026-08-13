@@ -1,0 +1,140 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-14 07:00 JST
+調査期間: 2026-08-13 07:00 〜 2026-08-14 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-20267 / Cisco IOS XE Software（複合脆弱性群、CVE-2026-20268〜20273含む）
+対象: 17.9 (17.9.10未満) / 17.12 (17.12.8未満) / 17.15 (17.15.6未満) / 17.18 (17.18.4/17.18.4a未満) / 26.1 (26.1.2未満)
+------------------------------------------------------------
+
+優先度: 中
+CVSS: 9.0 (Critical)
+状態: 状態変化なし
+
+【24時間以内の変化】
+[JVN iPedia 新着 2026-08-13] Cisco IOS XE Softwareの複合脆弱性6件（アクセス制御・バッファエラー・リソース制御・計算誤り・制御フロー不備・インジェクション）がJVN iPedia新着として登録された
+
+【概要】
+Ciscoが2026-08-05に公開したIOS XE Software Security Hardening Release: August 2026（社内テストで発見・実悪用未確認）に含まれる複数脆弱性（CVE-2026-20267〜20273）が本日JVN iPedeiaへ日本語登録された。最も深刻なCVE-2026-20267はCVSS9.0のアクセス制御不備で未認証リモート攻撃者が認可チェックを完全にバイパスできる。回避策はなく、修正版へのアップグレードが必須。Cisco公式は実悪用未確認としている。
+
+攻撃の流れ:
+1. 未認証でIOS XEデバイスの管理インタフェースへアクセス
+2. 認可チェックをバイパスし制限された機能・リソースへ到達
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[IOS XEデバイスの管理アクセスログ・設定変更ログを監視する]
+Splunk SPL: index=network sourcetype=cisco:ios | search action="config change" OR user="unknown" | stats count by device_ip user
+→ インターネットに管理インタフェースを露出しているIOS XEデバイスの有無を優先確認し、修正版への計画的アップグレードを実施する
+
+【参照】
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ
+https://jvndb.jvn.jp/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-59310 / VMware vCenter Server
+対象: vCenter Server 未パッチ版（VMSA-2026-0006、2026-07-29公開の修正を未適用の環境）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.8 (Critical)
+状態: 実悪用確認
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-14] vCenter Syslogサーバのディレクトリトラバーサル脆弱性が悪用されreverse_sshによる永続的リモートアクセスが確立されていることが判明
+[Rapid7 2026-08-13] CVE-2026-59309（認証バイパス）とCVE-2026-59310（RCE）の技術解析ブログを公開
+[Dark Reading 2026-08-14] グローバルな攻撃キャンペーンとして報道、361件のユニークな被害IPアドレスが47カ国で確認されたと報告
+
+【概要】
+Broadcomが2026-07-29に公開したvCenter Server Syslogサーバの未認証ディレクトリトラバーサル脆弱性（CWE-22、CVSS9.8）が、開示から5日後の2026-08-03からAPT水準の攻撃者により実悪用されていることが判明した。パストラバーサルによるファイル書き込みから任意コード実行に至り、攻撃者はcronジョブを設置してreverse_sshによる永続的リモートアクセスを確立している。QUIRSOの観測では47カ国361件のユニークな被害IPアドレス（ドイツ・米国・トルコ・イラン・フランスに集中）が確認されており、CISA KEVへの登録は本日時点で未確認。
+
+攻撃の流れ:
+1. 未認証でvCenter Syslogサーバへディレクトリトラバーサルリクエストを送信
+2. 任意ファイル書き込みからコード実行に至り、悪意あるcronジョブを設置
+3. reverse_sshで永続的なリモートアクセスを確立し被害環境内で活動を継続
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[vCenter Server の Syslog / Web アクセスログおよびcronジョブ変更を監視する]
+Splunk SPL: index=vmware sourcetype=vcenter_syslog uri_path="*..%2f*" OR uri_path="*..\\/*" | stats count by src_ip
+Splunk SPL: index=linux sourcetype=cron (action=create OR action=modify) NOT user=root | table _time host cron_entry user
+→ vCenter管理インターフェースの直接インターネット露出有無を確認し、cronエントリの新規追加・reverse_ssh関連プロセス（ssh -R 等）の起動有無を優先確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/critical-vmware-vcenter-rce-flaw-exploited-for-reverse-ssh-access/
+https://thehackernews.com/2026/08/attackers-exploit-vmware-vcenter.html
+https://www.darkreading.com/vulnerabilities-threats/global-threat-campaign-critical-vmware-vcenter-flaw
+https://www.rapid7.com/blog/post/etr-critical-vmware-vcenter-vulnerabilities-allow-authentication-bypass-and-remote-code-execution-cve-2026-59309-cve-2026-59310/
+
+------------------------------------------------------------
+2. CVE-2026-71362 / Adobe Commerce / Magento Open Source
+対象: Commerce, Commerce B2B, Magento Open Source（2026年7月パッチまでの各バージョン）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.1 (Critical)
+状態: 実悪用確認
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-13] Adobeが認可不備の脆弱性を修正するアドバイザリを公開した直後からSansecが実悪用の試行をブロックしたと報告
+[SecurityWeek 2026-08-13] 開示からわずかな時間で攻撃が開始されたと報道
+
+【概要】
+Adobe Commerce / Magento Open Sourceのセッション処理においてカスタマーIDとセッションの紐付けが不適切な脆弱性（CWE-863、CVSS9.1）が発見され、Adobeが2026年8月パッチで修正した。既存アカウント・管理者権限・ユーザー操作を必要とせずセッションを別顧客のアカウントへ切り替えられるため、未認証の攻撃者が顧客アカウントを乗っ取れる。Adobeのアドバイザリ公開直後からSansecが実悪用の試行を検知・ブロックしたと報告しており、開示から短時間で武器化された。
+
+攻撃の流れ:
+1. 未認証で対象ECサイトのセッション識別処理に対しリクエストを送信
+2. セッションが別の既存顧客アカウントへ切り替わる
+3. 乗っ取った顧客アカウントの決済情報・個人情報へアクセス
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Adobe Commerce / Magentoのセッションログ・アカウント切り替え挙動を監視する]
+Splunk SPL: index=web sourcetype=magento_access uri_path="*/customer/account*" | stats dc(session_id) by src_ip | where dc(session_id) > 5
+→ 同一IPから短時間に複数の顧客セッションが生成・切り替わっていないかを確認する。パッチ未適用環境は最優先で適用する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-adobe-commerce-flaw-to-hijack-customer-accounts/
+https://securityaffairs.com/197149/hacking/adobe-commerce-cve-2026-71362-comes-under-attack-shortly-after-public-disclosure.html
+https://www.securityweek.com/adobe-commerce-bug-targeted-immediately-after-disclosure/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-68820 (Microsoft Windows AFD.sys (WinSock)) → 2026-08-12にゼロデイ特報として既報・Lazarus/FudModule実悪用の内容に変化なし
+・CVE-2026-62832 (Microsoft Windows User Profile Service (LegacyHive)) → 2026-08-12に既報・除外判定（軸1=5点）から変化なし
+・CVE-2026-20349 (Cisco Secure Firewall ASA / FTD) → 2026-08-12に参考B既報・窓内の新規進展確認されず
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A1件 / 参考B2件 / 除外3件
+========================================
