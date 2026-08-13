@@ -1,0 +1,329 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-14 07:00 JST
+調査期間: 2026-08-13 07:00 〜 2026-08-14 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に新規ゼロデイ特報事案なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用基準を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: JVN iPedia新着登録（国内向け脆弱性情報公開）
+
+
+------------------------------------------------------------
+1. CVE-2026-20267 / Cisco IOS XE Software（複合脆弱性群、CVE-2026-20268〜20273含む）
+対象: 17.9 (17.9.10未満) / 17.12 (17.12.8未満) / 17.15 (17.15.6未満) / 17.18 (17.18.4/17.18.4a未満) / 26.1 (26.1.2未満)
+------------------------------------------------------------
+
+優先度: 中
+CVSS: 9.0 (Critical)
+状態: 状態変化なし
+
+【24時間以内の変化】
+[JVN iPedia 新着 2026-08-13] Cisco IOS XE Softwareの複合脆弱性6件（アクセス制御・バッファエラー・リソース制御・計算誤り・制御フロー不備・インジェクション）がJVN iPedia新着として登録された
+
+【概要】
+Ciscoが2026-08-05に公開したIOS XE Software Security Hardening Release: August 2026（社内テストで発見・実悪用未確認）に含まれる複数脆弱性（CVE-2026-20267〜20273）が本日JVN iPedeiaへ日本語登録された。最も深刻なCVE-2026-20267はCVSS9.0のアクセス制御不備で未認証リモート攻撃者が認可チェックを完全にバイパスできる。回避策はなく、修正版へのアップグレードが必須。Cisco公式は実悪用未確認としている。
+
+攻撃の流れ:
+1. 未認証でIOS XEデバイスの管理インタフェースへアクセス
+2. 認可チェックをバイパスし制限された機能・リソースへ到達
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[IOS XEデバイスの管理アクセスログ・設定変更ログを監視する]
+Splunk SPL: index=network sourcetype=cisco:ios | search action="config change" OR user="unknown" | stats count by device_ip user
+→ インターネットに管理インタフェースを露出しているIOS XEデバイスの有無を優先確認し、修正版への計画的アップグレードを実施する
+
+【参照】
+https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-hardening-iosxe-V8NMuMZJ
+https://jvndb.jvn.jp/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-59310 / VMware vCenter Server
+対象: vCenter Server 未パッチ版（VMSA-2026-0006、2026-07-29公開の修正を未適用の環境）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.8 (Critical)
+状態: 実悪用確認
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-14] vCenter Syslogサーバのディレクトリトラバーサル脆弱性が悪用されreverse_sshによる永続的リモートアクセスが確立されていることが判明
+[Rapid7 2026-08-13] CVE-2026-59309（認証バイパス）とCVE-2026-59310（RCE）の技術解析ブログを公開
+[Dark Reading 2026-08-14] グローバルな攻撃キャンペーンとして報道、361件のユニークな被害IPアドレスが47カ国で確認されたと報告
+
+【概要】
+Broadcomが2026-07-29に公開したvCenter Server Syslogサーバの未認証ディレクトリトラバーサル脆弱性（CWE-22、CVSS9.8）が、開示から5日後の2026-08-03からAPT水準の攻撃者により実悪用されていることが判明した。パストラバーサルによるファイル書き込みから任意コード実行に至り、攻撃者はcronジョブを設置してreverse_sshによる永続的リモートアクセスを確立している。QUIRSOの観測では47カ国361件のユニークな被害IPアドレス（ドイツ・米国・トルコ・イラン・フランスに集中）が確認されており、CISA KEVへの登録は本日時点で未確認。
+
+攻撃の流れ:
+1. 未認証でvCenter Syslogサーバへディレクトリトラバーサルリクエストを送信
+2. 任意ファイル書き込みからコード実行に至り、悪意あるcronジョブを設置
+3. reverse_sshで永続的なリモートアクセスを確立し被害環境内で活動を継続
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[vCenter Server の Syslog / Web アクセスログおよびcronジョブ変更を監視する]
+Splunk SPL: index=vmware sourcetype=vcenter_syslog uri_path="*..%2f*" OR uri_path="*..\\/*" | stats count by src_ip
+Splunk SPL: index=linux sourcetype=cron (action=create OR action=modify) NOT user=root | table _time host cron_entry user
+→ vCenter管理インターフェースの直接インターネット露出有無を確認し、cronエントリの新規追加・reverse_ssh関連プロセス（ssh -R 等）の起動有無を優先確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/critical-vmware-vcenter-rce-flaw-exploited-for-reverse-ssh-access/
+https://thehackernews.com/2026/08/attackers-exploit-vmware-vcenter.html
+https://www.darkreading.com/vulnerabilities-threats/global-threat-campaign-critical-vmware-vcenter-flaw
+https://www.rapid7.com/blog/post/etr-critical-vmware-vcenter-vulnerabilities-allow-authentication-bypass-and-remote-code-execution-cve-2026-59309-cve-2026-59310/
+
+------------------------------------------------------------
+2. CVE-2026-71362 / Adobe Commerce / Magento Open Source
+対象: Commerce, Commerce B2B, Magento Open Source（2026年7月パッチまでの各バージョン）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.1 (Critical)
+状態: 実悪用確認
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-13] Adobeが認可不備の脆弱性を修正するアドバイザリを公開した直後からSansecが実悪用の試行をブロックしたと報告
+[SecurityWeek 2026-08-13] 開示からわずかな時間で攻撃が開始されたと報道
+
+【概要】
+Adobe Commerce / Magento Open Sourceのセッション処理においてカスタマーIDとセッションの紐付けが不適切な脆弱性（CWE-863、CVSS9.1）が発見され、Adobeが2026年8月パッチで修正した。既存アカウント・管理者権限・ユーザー操作を必要とせずセッションを別顧客のアカウントへ切り替えられるため、未認証の攻撃者が顧客アカウントを乗っ取れる。Adobeのアドバイザリ公開直後からSansecが実悪用の試行を検知・ブロックしたと報告しており、開示から短時間で武器化された。
+
+攻撃の流れ:
+1. 未認証で対象ECサイトのセッション識別処理に対しリクエストを送信
+2. セッションが別の既存顧客アカウントへ切り替わる
+3. 乗っ取った顧客アカウントの決済情報・個人情報へアクセス
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Adobe Commerce / Magentoのセッションログ・アカウント切り替え挙動を監視する]
+Splunk SPL: index=web sourcetype=magento_access uri_path="*/customer/account*" | stats dc(session_id) by src_ip | where dc(session_id) > 5
+→ 同一IPから短時間に複数の顧客セッションが生成・切り替わっていないかを確認する。パッチ未適用環境は最優先で適用する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-adobe-commerce-flaw-to-hijack-customer-accounts/
+https://securityaffairs.com/197149/hacking/adobe-commerce-cve-2026-71362-comes-under-attack-shortly-after-public-disclosure.html
+https://www.securityweek.com/adobe-commerce-bug-targeted-immediately-after-disclosure/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Jewelbug（別名: なし / 国家帰属: CN / 帰属信頼度: medium）
+活動タイプ: active_campaign/new_malware/initial_access_broker
+------------------------------------------------------------
+
+標的: government/defense/telecom / Asia-Pacific/Middle East
+マルウェア: XG-Web
+
+【24時間以内の変化】
+[Symantec (Security.com) 2026-08-13] 中国拠点とみられるAPTグループJewelbugが単一のカスタムC2パネル『XG-Web』でサイバースパイ活動と暗号資産詐欺を同時運用していると初報
+[Dark Reading 2026-08-14] アジア太平洋・中東の政府・軍事・通信機関への侵害と大規模フィッシングインフラの併存を追跡報道
+
+【概要】
+SymantecがJewelbugと命名した脅威アクターが、単一のカスタムC2パネル『XG-Web』を用いて国家スパイ活動と小規模な暗号資産詐欺の双方を運用していることが判明した。アジア・中東の政府・軍事・通信機関の政府向けウェブメールシステムを侵害しブラウザCookie（58万件超）とメール本文（2,300件超）を窃取する一方、44台のコンテンツ管理サーバで数千件の暗号資産・スポーツ賭博等のAI生成フィッシングサイトを運用している。実装からは中国系国家関与が推定されるが政府機関による公式帰属はなく、Symantec単独の帰属レポートである。
+
+攻撃の流れ（判明分）:
+1. 政府機関のウェブメールシステムへ侵入しブラウザCookieを窃取
+2. 窃取したCookieでセッションを乗っ取りメール内容・組織内活動を監視
+3. 並行して同一C2基盤上でAI生成の暗号資産・賭博フィッシングサイト群を44台のCMSサーバで運用し金銭を詐取
+
+【新規TTP】
+・[T1539] Steal Web Session Cookie — 政府ウェブメールシステムからブラウザCookieを58万件超窃取したとSymantecが記述
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・政府・軍事・通信セクターの組織はウェブメールシステムへの異常アクセス・セッションCookie再利用の兆候を確認する。フィッシング対策として暗号資産・賭博テーマのなりすましサイトへの注意喚起を行う。
+Splunk SPL: index=proxy sourcetype=webmail_access | stats count by src_ip user_agent | where count > 100
+→ 通常と異なる地理的送信元からのウェブメールセッション再利用、短時間での大量メール本文取得アクセスを優先確認する
+
+【参照】
+https://www.darkreading.com/threat-intelligence/jewelbug-apt-state-espionage-cryptocurrency-theft
+https://www.security.com/blog-post/jewelbug-crypto-fraud-espionage
+https://www.bleepingcomputer.com/news/security/hackers-breach-govt-webmail-while-running-parallel-crypto-fraud/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向採用基準を満たす活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックB CVEなし）
+
+
+・[トレンド記事] City-Forumキャンペーン: 設定不備のSalesforce/ServiceNowポータルからのデータ窃取が1年以上継続
+SaaSセキュリティ企業RecoがCity-Forumと命名した長期継続キャンペーンが、組織が匿名ゲストユーザーへ過剰に公開してしまったSalesforce Experience CloudおよびServiceNowカスタマーポータルからデータを窃取していると本日報告された。プラットフォーム自体の脆弱性は悪用せず設定不備のみを悪用する手口で、単一のドイツ拠点VPSサーバ（158.220.87.79、city-forum.comへ解決）から通信サービス・銀行金融サービス・エンタープライズソフトウェアベンダー・セキュリティ企業・公共部門ポータル等の複数組織が標的となっており、活動は現在も継続・増加している。
+
+参照: https://www.bleepingcomputer.com/news/security/city-forum-data-theft-attacks-target-salesforce-servicenow-portals/
+参照: https://www.darkreading.com/cyberattacks-data-breaches/long-running-data-theft-campaign-salesforce-servicenow
+参照: https://www.theregister.com/cyber-crime/2026/08/13/mystery-attacker-spent-a-year-raiding-salesforce-and-servicenow-portals/5287368
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: VMware vCenter未パッチ環境はCVE-2026-59310の緊急パッチ適用とcronジョブ・reverse_ssh痕跡の確認を優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: BleepingComputer/The Hacker News/Dark Reading 2026-08-13〜14: CVE-2026-59310（vCenter Syslogサーバのディレクトリトラバーサル、CVSS9.8）がAPT水準の攻撃者により2026-08-03から実悪用され、47カ国361件のユニークな被害IPアドレスが確認されたと報道
+  過去パターン: 境界近傍の仮想化基盤管理ソフトウェアの未認証RCEは実悪用確認から短期間でCISA KEVへ追加される事例が過去に複数観測されている（過去実績）
+  脅威情報: Rapid7が技術解析を公開済みでありCVE-2026-59309（認証バイパス）との連鎖悪用も指摘されている。CISA KEVには本日時点で未登録
+  確度アンカー: EPSS percentile=0.6375 / KEV登録=False / SSVC決定=Attend / Automatable=no / EPSS算出日=2026-08-13
+推定部分: 推定 — KEV初回追加までのラグは事案により大きく変動し、確定的なタイミングは予測できない。EPSSパーセンタイル0.6375はM3の確度=高閾値（0.95以上）に遠く及ばず、確度は低に留める
+先回り監視: vCenter管理インタフェースへの外部からの異常アクセス、cron設定の新規変更、reverse_ssh関連プロセス（ssh -R等）の起動
+的中判定: CISAがCVE-2026-59310をKEVカタログへ初回追加した場合（dateAddedが検証窓内と一致）
+
+・予報2: Adobe Commerce/Magento未パッチ環境はCVE-2026-71362の緊急パッチ適用とセッション異常の確認を優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: BleepingComputer/SecurityAffairs 2026-08-13: Adobeがアドバイザリ公開直後からSansecがCVE-2026-71362（CVSS9.1、セッション識別不備によるアカウント乗っ取り）への実悪用試行をブロックしたと報道
+  過去パターン: 認証不要・ワンステップで悪用可能なECプラットフォームの脆弱性は開示後短時間で武器化される傾向がある（過去実績）
+  脅威情報: 既存アカウント・特権・ユーザー操作を必要としない未認証攻撃であり悪用難易度が低い
+  確度アンカー: EPSS percentile=0.39 / KEV登録=False / SSVC決定=Track / Automatable=yes / EPSS算出日=2026-08-13
+推定部分: 推定 — EPSSパーセンタイル0.39はM3の確度=高閾値（0.95以上）を大きく下回り、確度は低に留める。KEV追加の有無・時期は現時点で確認できない
+先回り監視: 顧客アカウントでの異常なセッション切り替わり、同一送信元からの短時間大量アカウントアクセス試行
+的中判定: CISAがCVE-2026-71362をKEVカタログへ初回追加した場合（dateAddedが検証窓内と一致）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本編: 該当なし / 参考A: 該当なし / 参考B: 該当なし（24時間窓内にバースト閾値を満たすAI攻撃関連情報なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Fortinet FortiWeb / FortiManagerの認証関連脆弱性を修正
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: FortiWeb / FortiManager
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-13] FortinetがFortiWebおよびFortiManagerの認証関連脆弱性を修正するアドバイザリを公開
+
+【概要】
+Fortinet製品は国内でも広く利用されている境界防御機器であり、認証関連の脆弱性は放置すると認証バイパスにつながるリスクがある。実悪用は現時点で確認されていないが早期のパッチ適用が推奨される。
+
+【推奨アクション】
+・該当バージョンの棚卸しとパッチ適用計画の策定
+・FortiWeb/FortiManager管理インタフェースの外部露出有無を確認
+Splunk SPL: index=network sourcetype=fortinet* action=login | stats count by src_ip user result
+→ 通常と異なる送信元からの管理画面ログイン試行を優先確認する
+
+【参照】
+https://www.securityweek.com/
+
+------------------------------------------------------------
+2. Zoom Workplace/Rooms/Meeting SDKの会議参加者間RCE脆弱性を修正
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: Zoom Workplace / Rooms / Meeting SDK
+
+【24時間以内の変化】
+[Security NEXT 2026-08-13] Zoomが会議参加者間でRCE攻撃が可能となる脆弱性を修正したと報道
+
+【概要】
+Zoomは国内企業でも広く利用される会議ツールであり、会議参加者間でのRCEは社内会議に招待された第三者からの侵害経路になりうる。実悪用は確認されていないが速やかなクライアント更新が推奨される。
+
+【推奨アクション】
+・Zoomクライアント・SDKを最新版へ更新
+・社内利用端末のバージョン棚卸しを実施
+→ パッチ適用状況をMDM等で確認する
+
+【参照】
+https://www.security-next.com/
+
+------------------------------------------------------------
+3. WordPress 7.0.4がRCE脆弱性を修正
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: WordPress
+
+【24時間以内の変化】
+[Security NEXT 2026-08-14] WordPress 7.0.4が公開されRCE脆弱性（特定条件下で影響）へ対処したと報道
+
+【概要】
+WordPressは国内でも広く使われるCMSであり、特定条件下でのRCE脆弱性は影響範囲の精査とアップデートが推奨される。
+
+【推奨アクション】
+・管理下のWordPressサイトを7.0.4へ更新
+・影響条件（プラグイン構成等）に該当する環境を優先確認
+→ 更新適用状況を資産管理台帳と突合する
+
+【参照】
+https://www.security-next.com/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-68820 (Microsoft Windows AFD.sys (WinSock)) → 2026-08-12にゼロデイ特報として既報・Lazarus/FudModule実悪用の内容に変化なし
+・CVE-2026-62832 (Microsoft Windows User Profile Service (LegacyHive)) → 2026-08-12に既報・除外判定（軸1=5点）から変化なし
+・CVE-2026-20349 (Cisco Secure Firewall ASA / FTD) → 2026-08-12に参考B既報・窓内の新規進展確認されず
+
+[APT]
+・不明（帰属未確定・City-Forumインフラ運用者） / CityForum-2026-SalesforceServiceNowDataTheft → 軸P3/軸Q8・参考A昇格トリガー該当なしのため除外。Section 2トレンド記事で別途言及
+・Akira（ランサムウェアアフィリエイト） / Akira-2026-SafeModeEDREvasion → 軸P6/軸Q1のため除外（単一被害・詳細組織非公開）
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A1件 / 参考B2件 / 除外3件
+APT — 本編1件 / 注目動向0件 / 除外2件
+AI攻撃 — 本編0件 / 参考A0件 / 参考B0件 / 除外0件
+SOC推奨情報 — 高0件 / 中3件 / 低0件 / 除外0件
+
+========================================
