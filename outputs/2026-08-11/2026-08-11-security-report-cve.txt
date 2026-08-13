@@ -1,0 +1,111 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-11 07:58 JST
+調査期間: 2026-08-10 07:00 〜 2026-08-11 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内にゼロデイ特報該当のCVE・事象なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内に軸1が8点以上かつ軸2が4点以上の新規CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+昇格理由: JVN発行（JPCERT/CC調整の脆弱性情報流通）
+
+・CVE-2026-13133 / LINE PC版（Windows版）
+CVSS: 7.8 (High) 状態: 確認情報なし
+
+【24時間以内の変化】
+[JVN 2026-08-10] LINE PC版（Windows版）のインストーラにおけるDLL読み込みに関する脆弱性（CVE-2026-13133）を公表。情報セキュリティ早期警戒パートナーシップ経由の届出をJPCERT/CCが開発者との調整を担当し26.4.0で修正済み
+
+【概要】
+国内で極めて広く利用されるチャットアプリ「LINE」のPC版（Windows版）インストーラに、ファイル検索パスの制御不備（CWE-427）に起因するDLLサイドローディングの脆弱性CVE-2026-13133が判明した。インストーラと同一ディレクトリに悪意あるDLLを配置されると、インストール実行時に意図しないコードが読み込まれる可能性がある。中村行宏氏が情報セキュリティ早期警戒パートナーシップを通じてIPAへ報告し、JPCERT/CCの調整のもと開発者が26.4.0で修正した。CVSSv3は7.8（High）・CVSSv4は8.4で、ローカルでの悪用を前提とするためEPSSパーセンタイルは1.95%と低い。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[LINEインストーラ実行時に、インストーラと同一ディレクトリから未署名・非標準のDLLがロードされていないかを監視する]
+Splunk SPL: index=sysmon EventCode=7 (Image="*LineInst*" OR Image="*LINE*Setup*") NOT Signed=true | table _time,Computer,ImageLoaded,Image
+→ 正規インストーラの署名済みDLL群をベースラインとして除外し、ダウンロードフォルダ等ユーザー書込み可能な場所からのインストーラ実行と未署名DLLロードの組み合わせを優先確認する。
+
+【参照】
+https://jvn.jp/jp/JVN40467227
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-000109.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・CVE-2026-8037 / Progress Kemp LoadMaster / ECS Connection Manager / Object Scale Connection Manager / MOVEit WAF
+CVSS: 9.8 (Critical)
+Progress Kemp LoadMasterの未認証root権限OSコマンドインジェクション脆弱性CVE-2026-8037は2026-08-07付でCISA KEVカタログへ新規追加され、FCEB機関向け対応期限が本日2026-08-10に到来した。CISAはKEV登録・期限到来を受け改めて緊急パッチ適用を要請したが、独立した新規実悪用確認や被害組織の報告は本日時点でも得られておらず、既報の792件の悪用試行（41日間・18カ国65送信元IP、多くは不成功と評価）から実質的な進展は確認できなかった。EPSSパーセンタイルは99.94%（2026-08-10時点）と極めて高く、悪用のしやすさ自体は変わらず高水準にある。
+IoC: 確認されず
+
+監視: [LoadMaster管理インタフェースへの異常なパラメータ付きリクエストと、悪用試行時に典型的な送信元IPレンジからのアクセスを監視する]
+Splunk SPL: index=* sourcetype=kemp:loadmaster:access | regex uri_query="(?i)(;|\||&&|\$\()" | stats count by src_ip,uri_path
+→ 既報の悪用試行元65 IPは大半が失敗しているため、成功可否の判断には後続のroot権限プロセス生成やアウトバウンド通信の有無を必ず併せて確認する。
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+参照: https://www.bleepingcomputer.com/news/security/cisa-warns-of-critical-progress-loadmaster-flaw-exploited-in-attacks
+参照: https://www.securityweek.com/cisa-urges-immediate-patching-of-exploited-progress-loadmaster-vulnerability
+参照: https://www.security-next.com/188591
+
+
+・CVE-2026-15409 / SonicWall SMA1000 Appliances（Work Placeインターフェース）
+CVSS: 10.0 (Critical)
+SonicWall SMA1000のSSRF脆弱性CVE-2026-15409（CVSS10.0）は2026-07-14付でCISA KEVへ登録済みであり、INC Ransomwareによる連鎖悪用（KNUCKLEBALL経由でSuo5/ORANGETAILを展開）が継続的に確認されてきた。本日、CISAがKEVカタログ上でランサムウェアグループによる悪用を公式にフラグしたことが報じられ、これまでベンダー分析主体だった悪用状況が政府機関による正式確認に格上げされた。新たな脅威アクター名の追加はなく、既報のINC Ransomwareが引き続き実行主体と見られる。Shadowserverの調査ではSMA1000の露出台数が約380台確認されている。
+IoC: 確認されず
+
+監視: [SMA1000アプライアンスへの異常なWork Placeインターフェースアクセスと、侵害後に典型的なWebシェル配置の兆候を監視する]
+Splunk SPL: index=* sourcetype=sonicwall:sma (uri_path="*workplace*" OR uri_path="*swvpn*") status>=200 | stats count by src_ip,uri_path
+→ 既にKEV登録済み・実悪用継続中のため、パッチ未適用資産は即時隔離を優先し、侵害後方の横展開（Suo5トンネル等）の兆候も併せて確認する。
+
+参照: https://www.bleepingcomputer.com/news/security/cisa-sonicwall-sma1000-flaws-now-exploited-by-ransomware-gangs
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+
+・CVE-2026-15410 / SonicWall SMA1000 Appliances（Appliance Management Console）
+CVSS: 7.2 (High)
+SonicWall SMA1000のポスト認証コードインジェクション脆弱性CVE-2026-15410（CVSS7.2）はCVE-2026-15409と連鎖する形で実悪用が継続確認されている。本日CISAが両CVEについてランサムウェアグループ（INC Ransomware）による悪用を公式にフラグしたことが新たに報じられた。
+IoC: 確認されず
+
+監視: [Appliance Management Consoleへの認証後の異常なコマンド実行痕跡を監視する]
+Splunk SPL: index=* sourcetype=sonicwall:sma:mgmt EventType=config_change | stats count by src_ip,user,action
+→ CVE-2026-15409との連鎖悪用が前提のため、SSRF検知アラートとの相関で優先度を上げる。
+
+参照: https://www.bleepingcomputer.com/news/security/cisa-sonicwall-sma1000-flaws-now-exploited-by-ransomware-gangs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-70426 (Jenkins（コア）) → 軸1×軸2閾値未達（CVSS9.0だがKEV未登録・PoC/実悪用未確認・同日修正版提供済み。軸1=4点・国内被害報道なしのため除外（Remotingデシリアライズ保護フィルタ不備、他CVE-2026-70427/70428/70429および18種のプラグイン脆弱性も同一アドバイザリ内で除外））
+・CVE-2026-67261 (Dell VSI（Virtual Storage Integrator for VMware vSphere Client）) → 軸1×軸2閾値未達（CVSS9.8未認証OSコマンドインジェクションだがKEV未登録・PoC/実悪用未確認・記事本文未取得のため窓内新規性の確認が不完全。軸1=6点・軸2=0点で除外（70件中の代表CVEのみ確認））
+・CVE-2026-20337 (ClamAV（Cisco Secure Endpoint Connector同梱）) → 軸1×軸2閾値未達（CVSS7.5・DoSのみ・PoC公開2件確認（CVE-2026-20337/20338）も実悪用未確認・低優先度フラグ該当（DoSのみCVSS8.0未満）。他CVE-2026-20338/20339/20345/20346/20347/20348も同一アドバイザリ内で除外）
+・CVE未採番 (Roundcube Webmail) → 根拠不十分・CVE未採番等（1.6.18/1.7.3で未認証RCE等11件を緊急修正（markasjunkプラグイン経由）だがCVE番号本日時点で未採番・KEV/PoC/実悪用いずれも未確認。CVE採番後の再評価を推奨し継続監視）
+・CVE-2026-67243 (freo2（国産CMS）) → 軸1×軸2閾値未達（悪用に製品内最上位管理権限が前提のため実害インパクトは限定的。CVSS未確認・KEV/PoC/実悪用とも未確認で軸1低スコア）
+・CVE-2026-14304 (miChecker（総務省提供ウェブアクセシビリティ評価ツール）) → 軸1×軸2閾値未達（CVSSv3 3.3/v4 4.6と低評価のXXE。国内公的機関ツールだが深刻度が低く軸1・軸2とも閾値未達）
+・CVE-2026-18497 (stb TrueTypeライブラリ（複数OSSに組込）) → 軸1×軸2閾値未達（ヒープOOB読み取り・修正版未提供（開発元報告のみ）・KEV/PoC/実悪用未確認。エコシステム横断だが個別リスクは限定的）
+・CVE-2026-56821 (Netty（OCSP証明書検証）) → 軸1×軸2閾値未達（証明書改ざんチェック不備。4.1.136.Final/4.2.16.Finalで修正済み・KEV/PoC/実悪用未確認。CVE-2026-56822（TOCTOU競合状態）も同一アドバイザリ内で除外）
+・CVE-2026-34191 (Apache APR-util) → 軸1×軸2閾値未達（apr_dbd_oracle経由SQLi。KEV/PoC/実悪用未確認。CVE-2026-34502/34501（ヒープバッファオーバーフロー）・CVE-2026-32327（DoS）も同一パッチ内で除外）
+・CVE未採番 (JVN iPediaバッチ登録CVE群（Chrome18件・Oracle Retail/Commerce/Enterprise Manager4件・Azure AD/Logic Apps/Entra Provisioning3件・Dell OpenManage2件・tigera Calico2件・Elasticsearch2件・Zephyr1件）) → 根拠不十分・CVE未採番等（2026-08-10 12:19〜12:21 JSTの同一バッチタイムスタンプで一括カタログ登録。CVE番号未特定・窓内の新規性（既公表パッチの再掲か新規かの区別）を本日中に確認しきれず個別採用を見送り。次回以降のCVE番号特定・既報照合を推奨）
+・CVE-2026-66344 (NetKids iMark) → 既報・変化なし
+・CVE-2026-58073 (Veeam Service Provider Console) → 既報・変化なし
+・CVE-2026-8496 (Alinto SOGo（Webメール/グループウェア）) → 既報・変化なし
+・CVE-2026-54876 (OpenSSL（TLSクライアント、OCSPレスポンス検証）) → 既報・変化なし
+・CVE未採番 (Connective eID Extension（Nitro社製、ベルギーeID用）) → 軸1×軸2閾値未達（CVE未採番。無断eID/決済カード読取・PINフィッシング・任意コード実行の脆弱性群だが7月末に既に完全修復済みで実悪用報告なし。ベルギー限定で国内トリガーなし）
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A1件 / 参考B3件 / 除外15件
+
+
+========================================

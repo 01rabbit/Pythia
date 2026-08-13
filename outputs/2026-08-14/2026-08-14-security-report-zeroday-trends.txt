@@ -1,0 +1,116 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-14 07:00 JST
+調査期間: 2026-08-13 07:00 〜 2026-08-14 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Jewelbug（別名: なし / 国家帰属: CN / 帰属信頼度: medium）
+活動タイプ: active_campaign/new_malware/initial_access_broker
+------------------------------------------------------------
+
+標的: government/defense/telecom / Asia-Pacific/Middle East
+マルウェア: XG-Web
+
+【24時間以内の変化】
+[Symantec (Security.com) 2026-08-13] 中国拠点とみられるAPTグループJewelbugが単一のカスタムC2パネル『XG-Web』でサイバースパイ活動と暗号資産詐欺を同時運用していると初報
+[Dark Reading 2026-08-14] アジア太平洋・中東の政府・軍事・通信機関への侵害と大規模フィッシングインフラの併存を追跡報道
+
+【概要】
+SymantecがJewelbugと命名した脅威アクターが、単一のカスタムC2パネル『XG-Web』を用いて国家スパイ活動と小規模な暗号資産詐欺の双方を運用していることが判明した。アジア・中東の政府・軍事・通信機関の政府向けウェブメールシステムを侵害しブラウザCookie（58万件超）とメール本文（2,300件超）を窃取する一方、44台のコンテンツ管理サーバで数千件の暗号資産・スポーツ賭博等のAI生成フィッシングサイトを運用している。実装からは中国系国家関与が推定されるが政府機関による公式帰属はなく、Symantec単独の帰属レポートである。
+
+攻撃の流れ（判明分）:
+1. 政府機関のウェブメールシステムへ侵入しブラウザCookieを窃取
+2. 窃取したCookieでセッションを乗っ取りメール内容・組織内活動を監視
+3. 並行して同一C2基盤上でAI生成の暗号資産・賭博フィッシングサイト群を44台のCMSサーバで運用し金銭を詐取
+
+【新規TTP】
+・[T1539] Steal Web Session Cookie — 政府ウェブメールシステムからブラウザCookieを58万件超窃取したとSymantecが記述
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・政府・軍事・通信セクターの組織はウェブメールシステムへの異常アクセス・セッションCookie再利用の兆候を確認する。フィッシング対策として暗号資産・賭博テーマのなりすましサイトへの注意喚起を行う。
+Splunk SPL: index=proxy sourcetype=webmail_access | stats count by src_ip user_agent | where count > 100
+→ 通常と異なる地理的送信元からのウェブメールセッション再利用、短時間での大量メール本文取得アクセスを優先確認する
+
+【参照】
+https://www.darkreading.com/threat-intelligence/jewelbug-apt-state-espionage-cryptocurrency-theft
+https://www.security.com/blog-post/jewelbug-crypto-fraud-espionage
+https://www.bleepingcomputer.com/news/security/hackers-breach-govt-webmail-while-running-parallel-crypto-fraud/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（トラックB CVEなし）
+
+
+・[トレンド記事] City-Forumキャンペーン: 設定不備のSalesforce/ServiceNowポータルからのデータ窃取が1年以上継続
+SaaSセキュリティ企業RecoがCity-Forumと命名した長期継続キャンペーンが、組織が匿名ゲストユーザーへ過剰に公開してしまったSalesforce Experience CloudおよびServiceNowカスタマーポータルからデータを窃取していると本日報告された。プラットフォーム自体の脆弱性は悪用せず設定不備のみを悪用する手口で、単一のドイツ拠点VPSサーバ（158.220.87.79、city-forum.comへ解決）から通信サービス・銀行金融サービス・エンタープライズソフトウェアベンダー・セキュリティ企業・公共部門ポータル等の複数組織が標的となっており、活動は現在も継続・増加している。
+
+参照: https://www.bleepingcomputer.com/news/security/city-forum-data-theft-attacks-target-salesforce-servicenow-portals/
+参照: https://www.darkreading.com/cyberattacks-data-breaches/long-running-data-theft-campaign-salesforce-servicenow
+参照: https://www.theregister.com/cyber-crime/2026/08/13/mystery-attacker-spent-a-year-raiding-salesforce-and-servicenow-portals/5287368
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: VMware vCenter未パッチ環境はCVE-2026-59310の緊急パッチ適用とcronジョブ・reverse_ssh痕跡の確認を優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: BleepingComputer/The Hacker News/Dark Reading 2026-08-13〜14: CVE-2026-59310（vCenter Syslogサーバのディレクトリトラバーサル、CVSS9.8）がAPT水準の攻撃者により2026-08-03から実悪用され、47カ国361件のユニークな被害IPアドレスが確認されたと報道
+  過去パターン: 境界近傍の仮想化基盤管理ソフトウェアの未認証RCEは実悪用確認から短期間でCISA KEVへ追加される事例が過去に複数観測されている（過去実績）
+  脅威情報: Rapid7が技術解析を公開済みでありCVE-2026-59309（認証バイパス）との連鎖悪用も指摘されている。CISA KEVには本日時点で未登録
+  確度アンカー: EPSS percentile=0.6375 / KEV登録=False / SSVC決定=Attend / Automatable=no / EPSS算出日=2026-08-13
+推定部分: 推定 — KEV初回追加までのラグは事案により大きく変動し、確定的なタイミングは予測できない。EPSSパーセンタイル0.6375はM3の確度=高閾値（0.95以上）に遠く及ばず、確度は低に留める
+先回り監視: vCenter管理インタフェースへの外部からの異常アクセス、cron設定の新規変更、reverse_ssh関連プロセス（ssh -R等）の起動
+的中判定: CISAがCVE-2026-59310をKEVカタログへ初回追加した場合（dateAddedが検証窓内と一致）
+
+・予報2: Adobe Commerce/Magento未パッチ環境はCVE-2026-71362の緊急パッチ適用とセッション異常の確認を優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: BleepingComputer/SecurityAffairs 2026-08-13: Adobeがアドバイザリ公開直後からSansecがCVE-2026-71362（CVSS9.1、セッション識別不備によるアカウント乗っ取り）への実悪用試行をブロックしたと報道
+  過去パターン: 認証不要・ワンステップで悪用可能なECプラットフォームの脆弱性は開示後短時間で武器化される傾向がある（過去実績）
+  脅威情報: 既存アカウント・特権・ユーザー操作を必要としない未認証攻撃であり悪用難易度が低い
+  確度アンカー: EPSS percentile=0.39 / KEV登録=False / SSVC決定=Track / Automatable=yes / EPSS算出日=2026-08-13
+推定部分: 推定 — EPSSパーセンタイル0.39はM3の確度=高閾値（0.95以上）を大きく下回り、確度は低に留める。KEV追加の有無・時期は現時点で確認できない
+先回り監視: 顧客アカウントでの異常なセッション切り替わり、同一送信元からの短時間大量アカウントアクセス試行
+的中判定: CISAがCVE-2026-71362をKEVカタログへ初回追加した場合（dateAddedが検証窓内と一致）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[APT]
+
+・不明（帰属未確定・City-Forumインフラ運用者） / CityForum-2026-SalesforceServiceNowDataTheft → 軸P3/軸Q8・参考A昇格トリガー該当なしのため除外。Section 2トレンド記事で別途言及
+・Akira（ランサムウェアアフィリエイト） / Akira-2026-SafeModeEDREvasion → 軸P6/軸Q1のため除外（単一被害・詳細組織非公開）
+
+本日の集計:
+APT — 本編1件 / 注目動向0件 / 除外2件
+========================================

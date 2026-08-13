@@ -1,0 +1,141 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-11 07:58 JST
+調査期間: 2026-08-10 07:00 〜 2026-08-11 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内にゼロデイ特報該当のCVE・事象なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・[参考B相当（国際先行）] CVE未採番 / Metabase（Cloud / セルフホスト、BI/分析プラットフォーム）
+CVSS: 10.0 (Critical) 状態: 実悪用確認
+Metabaseの未認証SQLインジェクションからリモート管理者権限奪取に至るゼロデイ脆弱性（GHSA-vwf4-m7j8-wcjf、CVSS10.0）は2026-08-08既報のまま本日時点でもCVE番号は未採番だが、自己ホスト版の修正版が正式リリースされ、実悪用時に典型的なAPIリクエストパターン（パスワードリセットAPIへの失敗リクエスト直後の現在ユーザー情報取得API成功）がIoCとして判明した。被害組織としてFramework社の顧客名・ログインIP・住所・電話・メールの漏洩が確認されている（決済情報は対象外）。LexisNexis社は自社の不審な活動との無関係を明言している。
+URL: POST /api/session/reset_password (400応答)
+URL: GET /api/user/current (直後に200応答)
+参照: https://thehackernews.com/2026/08/metabase-zero-day-exploited-in-wild.html
+参照: https://www.securityweek.com/metabase-patches-vulnerability-exploited-as-zero-day
+参照: https://github.com/metabase/metabase/security/advisories/GHSA-vwf4-m7j8-wcjf
+
+・[トレンド記事] BdThemes WordPressプラグイン群のサプライチェーン侵害で不正管理者アカウント作成
+WordPress向けデザインツールベンダーBdThemesの配信基盤が侵害され、管理者ブラウザへ配信されるリモートJSONフィードが改ざんされて不正な管理者アカウントが作成される事案が確認された。攻撃者・侵入経路は本日時点で非公開。BdThemesは影響プラグインの利用者に認証情報のローテーションとアカウント棚卸しを推奨している。
+参照: https://www.bleepingcomputer.com/news/security/bdthemes-plugins-supply-chain-hack-creates-rogue-wordpress-admins
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CyberAv3ngers（Bauxite / Hydro Kitten・イラン帰属は推定段階）（別名: Bauxite/Hydro Kitten / 国家帰属: 不明 / 帰属信頼度: 低）
+活動タイプ: 新規キャンペーン/新規標的
+------------------------------------------------------------
+
+標的: energy/government/critical_infrastructure / US
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-10] 少なくとも12州へ拡大していた米国水道セクター標的キャンペーンについて、New Jersey（Cape May・Woodbine水道システム、7/27攻撃・電話系統のみ影響）とAlabama（Childersburg上下水道・ガスシステム、同日攻撃・ICS標的だがサービス断なし）の具体的な被害施設名が新たに判明
+
+【概要】
+CISA/FBI/NSA/EPA/DOE/USCYBERCOM合同勧告AA26-097Aで継続追跡中の米国水道セクター標的キャンペーンについて、本日New Jersey（Cape May郡・Woodbine水道システム）とAlabama（Childersburg上下水道・ガスシステム）が新たに実名で確認された標的として報じられた。両施設とも2026-07-27の攻撃が確認されているが、州数自体（既報「少なくとも12州」）に変化はなく、個別施設名の特定という点で新規性がある。運用上の重大な支障は両施設とも報告されていない。侵入手法は既報通りベンダー設置の未文書化セルラーモデム悪用・デフォルト/共通認証情報の悪用が中心と見られ、イラン関与は米情報機関の予備評価に留まり正式確定ではない。
+
+攻撃の流れ（判明分）:
+1. インターネット露出したOT機器（Rockwell MicroLogix等PLC）を、ベンダー設置の未文書化セルラーモデムまたはデフォルト認証情報経由でスキャン・侵入する
+2. HMI/SCADA表示を偽装しつつ安全動作パラメータを上書きする
+3. パスワード変更によりオペレーターを締め出す（New Jersey/Alabamaの2施設ではサービス断・重大支障には至らず）
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・水道・エネルギー等重要インフラ事業者はOT機器のインターネット直接露出（特にベンダー設置の未文書化セルラーモデム）を排除し、デフォルト・共通認証情報を排除する。CISAの水道セクター向け緊急勧告（2026-07-30）に従いOT機器の露出排除を最優先で実施する。
+Splunk SPL: index=ot_network (src_zone="cellular_modem" OR src_zone="internet") dest_zone="ot_scada" | stats count by src_ip,dest_ip,dest_port
+→ OT/SCADAセグメントへの携帯回線・インターネット経由の直接到達は本来想定されない通信のため、1件でも検知は高優先度調査対象とする。
+
+【参照】
+https://www.securityweek.com/new-jersey-alabama-join-states-targeted-in-water-cyberattacks/
+
+------------------------------------------------------------
+2. INC Ransomware（INC Ransom）（別名: なし / 国家帰属: 不明 / 帰属信頼度: 中）
+活動タイプ: 新規キャンペーン/公式帰属
+------------------------------------------------------------
+
+標的: government/it / AU/US/AE/CO/CH
+マルウェア: KNUCKLEBALL, Suo5, ORANGETAIL
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-10] CISAがKEVカタログ上でCVE-2026-15409/15410のランサムウェアグループによる悪用を公式にフラグ。これまでベンダー分析主体だった悪用状況が政府機関公式確認に格上げされた。Shadowserverが露出台数約380台を確認
+
+【概要】
+SonicWall SMA1000のCVE-2026-15409/15410を連鎖悪用しroot権限取得後にKNUCKLEBALL経由でSuo5/ORANGETAILを展開するINC Ransomwareのキャンペーンは、Resecurity分析で「dominant threat actor」化と確認済みだった。本日、CISAがKEVカタログ上でランサムウェアグループによる悪用を公式にフラグしたことが報じられ、政府機関による正式確認という新たな展開があった。新規の脅威アクター名や技術的詳細の追加はない。
+
+攻撃の流れ（判明分）:
+1. CVE-2026-15409（SSRF）とCVE-2026-15410（ポスト認証コードインジェクション）を連鎖悪用しroot権限を取得する
+2. KNUCKLEBALL（Pythonローダー）経由でSuo5（HTTPプロキシ）・ORANGETAIL（Javaウェブシェル）を展開する
+3. 豪州/米国/UAE/コロンビア/スイス等の政府機関・民間企業でリークサイト掲載による二重恐喝を実施する
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・SonicWall SMA1000の未パッチ資産は本日中のパッチ適用を最優先とする。パッチ適用済みでも侵害後の永続化痕跡（Webシェル・不審プロセス）の有無を確認する。
+Splunk SPL: index=* sourcetype=sonicwall:sma uri_path="*workplace*" status>=200 | stats count by src_ip
+→ 既にKEV登録済み・実悪用継続中のため、パッチ未適用資産は即時隔離を優先する。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/cisa-sonicwall-sma1000-flaws-now-exploited-by-ransomware-gangs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・Storm-1175（Microsoft命名） / Microsoftの脅威インテリジェンスチームは、中国リンクの金銭動機クラスタStorm-1175が、旧来使用していたMedusaランサムウェアから自前開発のC++製新型ランサムウェア「StormEncryptor」へ乗り換えたことを初めて公表した。侵入経路にはN-able N-centralの認証バイパス脆弱性CVE-2026-18577（既存KEV登録済み、CVE-2026-18556のパッチ不備に起因）が新たに武器化されている。侵害後はAnyDesk/SimpleHelp等の正規RMMツールとAdvanced IP Scannerによる偵察、Mimikatzによる認証情報窃取を経て、サービス名「Cloudflared」を偽装したCloudflareトンネルで永続化する手口が確認された。Storm-1175は過去にMirth Connect・ConnectWise ScreenConnect・JetBrains TeamCity・Fortinet FortiClient EMS・Fortra GoAnywhereも武器化した実績を持つ。本日時点でMicrosoft以外の独立ソースによる確認は得られていない。 採用契機: 本文参照。帰属信頼度: 中。
+推奨アクション: N-central運用組織はCVE-2026-18577/18556のパッチ適用状況を再確認する。正規RMMツール（AnyDesk/SimpleHelp）のインストールパス・署名・呼び出し元プロセスを点検し、許可されていない導入を洗い出す。
+参照: https://thehackernews.com/2026/08/china-linked-hackers-deploy-new.html
+参照: https://www.bleepingcomputer.com/news/security/new-stormencryptor-ransomware-used-by-former-medusa-affiliate
+
+・不明（帰属未確定） / ポーランド国家CERT（CERT.PL）が、既報のポーランド風力/太陽光30サイトへの攻撃（2026年1月Sandworm帰属で一次報道済み）と並行して発生していた第2の事案を初めて技術詳細付きで公開した。攻撃者は風力発電サイトのFortinet VPN/ファイアウォールを侵害後、同一ネットワーク上のTeltonikaセルラールータを発見し、SSHサービスを悪用して配電事業者管理のプライベートAPN（携帯電話網）へトンネルを確立、実世界で初めて観測されたとされる手法でAPN内をスキャンし住民5万人分の熱供給を担うCHP施設のWago PLCを特定した。同PLC経由でSiemens PLCへ接続し蒸気タービン・水処理システムを停止させ熱電併給プロセスを中断、さらにゲートウェイコントローラのパーティションテーブルを破壊し復旧を妨げた。CERT.PL本文は攻撃手法に焦点を当てており、明確な脅威アクター名は明示していない。二次情報の一部でSandworm（第1事案）とは別のFSB系クラスタとの見方も見られるが、一次情報で確認できないため帰属は未確定として扱う。 採用契機: 本文参照。帰属信頼度: 未確定。
+推奨アクション: OT事業者は風力・太陽光等の分散発電サイトVPN機器から配電事業者管理網へのセグメンテーションを再点検し、プライベートAPN・セルラーモデム経由でOTセグメントへ到達する通信経路がないか監査する。
+参照: https://www.securityweek.com/novel-private-apn-pivot-let-hackers-sabotage-second-polish-energy-facility/
+参照: https://cert.pl/en/posts/2026/08/incident-follow-up-report-energy-sector-2025/
+
+・不明（帰属未確定） / KDDI傘下ISP群のメールシステムへの不正アクセス事案（既報・最大1223万件超のメールアドレス・パスワード漏洩）について、総務省が2026-07-29付でKDDIに対し書面による行政指導を発出したことが本日判明した。総務省はパスワードが暗号化・十分な保護なしで保存されていた点を重大な問題として指摘し、検知から公表までの22日の遅延を「迅速な対応とは言えない」と批判、電気通信事業法の通信の秘密保護規定への抵触も指摘した。KDDIには2026-08-31までの初回報告義務および行政指導日から最低1年間の四半期報告義務（再発防止策の実施状況・二次被害状況を含む）が課された。攻撃者側の技術情報に更新はなく、既報通り第三者製ソフトウェアのゼロデイ脆弱性の悪用が原因とされている。 採用契機: 本文参照。帰属信頼度: 未確定。
+推奨アクション: 漏洩済み認証情報を用いたクレデンシャルスタッフィング再来を想定し、傘下ISPの認証ログを継続監視する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/10/55902.html
+
+・不明（帰属未確定） / 国内スポーツ用品メーカーのヨネックスは、台湾子会社の一部サーバが第三者に侵害されたことを公表した。一部業務への影響が確認されているが、影響範囲は当該子会社に限定されるとしている。攻撃者・侵入手口は本日時点で非公開。 採用契機: 本文参照。帰属信頼度: 未確定。
+推奨アクション: 国内本社を含むグループ全体での認証情報・ネットワーク分離状況を確認し、続報を注視する。
+参照: https://www.security-next.com/188594
+
+・不明（帰属未確定） / 島根県が管理する共同研究サイトが第三者に改ざんされ、閲覧者を外部サイトへ誘導する事象が確認された。攻撃者・手法の詳細は本日時点で非公開。 採用契機: 本文参照。帰属信頼度: 未確定。
+推奨アクション: 同種のCMS・自治体運営ドメインを持つ組織は、外部誘導先ドメインの確認とCMS管理画面の認証情報点検を行う。
+参照: https://www.security-next.com/188193
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+本日の新規予報なし。
+
+理由: 調査窓内（2026-08-10 07:00〜2026-08-11 07:00 JST）でCISA KEVカタログ本体（feeds/known_exploited_vulnerabilities.json）を確認したところ新規追加は無く（直近追加は2026-08-07 Progress LoadMaster）、Step A'（KEV登録+実確認イベント起点）の前提となる「本日新たに確認された」実確認イベントが存在しない。既報CVE（LoadMaster・SonicWall SMA1000）・APT活動（Storm-1175・CyberAv3ngers等）はいずれも継続中の事案の状態更新に留まり、観測出口クラスE1（KEV初回追加）は本日消費済みでない一方、E2（追随IOC公開）・E3（初回注意喚起）はpipeline-forecast-verification.md教訓14・16により全Tierで発行禁止、E4（PoC公開）に該当する新規PoCも本日は確認されなかった。原則1（Evidence起点の義務化）により、有効な観測出口クラスに紐付く新規Evidenceがないまま予報を作成することは禁止されているため、本日は予報を発行しない。
+
+カバレッジ: 発行予報数 / 候補主題数 = 0 / 3（見送りクラス数: 3件 — LoadMaster続報〔E1消費済み・新規性なし〕、SonicWall CISA公式確認〔E2/E3該当のため発行禁止〕、Metabaseパッチ提供〔CVE未採番のためE1不可・E2/E3禁止〕）
+[APT]
+・Head Mare（PhantomCore） / HeadMare-2026-TrueConfTrojanizedInstaller → 変化なし（The Hacker News本日記事は既報Kaspersky初報(8/7)の再報・詳細版。IoC詳細（SysExcSvc.dll等）は追加判明したが軸P/軸Qのスコアを変えるほどの新規性はなく除外維持）
+・Kimsuky（北朝鮮） / Kimsuky-2026-OperationGitPower-OfflineAI → 軸P×軸Q閾値未達（オフラインAIスタック構築の詳細はSection 1 AI攻撃動向（参考B）で扱う。APT-track単独では軸P6/軸Q1で閾値未達・国内トリガーもなし）
+・佐銀デジタルパートナーズ（佐賀銀行グループ会社） / 未採番 → 既報・変化なし（本日のSecurity NEXT記事は既報RIS-2026-SaginDigitalPartners-MailServerBreach（2026-07-08初報）と内容一致（メールサーバ不正アクセス・スパム踏み台・顧客DB隔離済み）の可能性が高く重複と判断）
+・シミックヘルスケア・インスティテュート（RAコネクト患者支援サービス） / 未採番 → 調査窓外（本文確認の結果、侵害発生2026-06-15・公表2026-07-24の事案の再掲記事であり調査窓（24時間）内の新規変化ではない）
+・ジェイアール東海高島屋（アルバイトスタッフ管理システム） / 未採番 → 調査窓外（本文確認の結果、初回開示2026-05-08・続報2026-07-24の事案の再掲記事であり調査窓内の新規変化ではない）
+
+本日の集計:
+APT — 本編2件 / 注目動向5件 / 除外5件
+
+
+========================================
