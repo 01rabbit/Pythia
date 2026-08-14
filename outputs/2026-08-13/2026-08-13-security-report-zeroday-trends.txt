@@ -1,0 +1,172 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-13 07:40 JST
+調査期間: 2026-08-12 07:00 〜 2026-08-13 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Lazarus Group（別名: Hidden Cobra、Guardians of Peace、ZINC、Diamond Sleet、APT-C-26 / 国家帰属: KP / 帰属信頼度: 中）
+活動タイプ: active_campaign / new_malware / infrastructure_change
+------------------------------------------------------------
+
+キャンペーンID: LazarusGroup-2026-OperationDreamJob-AFDZeroDay
+標的: defense / manufacturing / Western Europe / South America / South Asia
+マルウェア: Troy、ForestTiger（別名ScoringMathTea）、MISTPEN、FudModule 3.1、RelayShell
+
+【24時間以内の変化】
+[Check Point Research 2026-08-12] レポート「Shattering the Dream」を公開、Lazarus GroupによるOperation Dream Jobキャンペーンの一環としてCVE-2026-68820（Windows AFD.sys use-after-free）を2026年7月上旬から実悪用していたと初報
+[Microsoft 2026-08-11] 2026年8月Patch TuesdayでCVE-2026-68820を修正、実悪用を確認と明記
+[BleepingComputer/The Hacker News/SecurityWeek 2026-08-12] Check Pointレポートを受けそれぞれ独自に詳報、フランス国内で少なくとも1組織の侵害を確認しスピアフィッシングの踏み台に利用されたと報道
+
+【概要】
+北朝鮮系Lazarus Groupが、長期継続中のOperation Dream Jobキャンペーン（LinkedIn経由の偽採用勧誘による標的接近）の一環として、2026年7月上旬からWindows Ancillary Function Driver for WinSock（AFD.sys）のuse-after-free脆弱性CVE-2026-68820をゼロデイとして実悪用し、フランス・ドイツ・ブラジル・インドの防衛・航空宇宙企業（偵察センサー・ドローン・ロボティクス関連技術を保有）を標的に、新型バックドアTroy・ForestTiger・MISTPENダウンローダ・カーネルモードルートキットFudModule 3.1を展開していたことがCheck Point Researchの調査で判明した。侵害済みのWordPress/SharePoint/脆弱なRoundcubeメールサーバ（CVE-2025-49113悪用）をC2インフラとして利用し、PHP製の未文書化ウェブシェルRelayShellも新たに確認された。フランス国内で少なくとも1組織が侵害を受け、その組織を踏み台にした二次スピアフィッシングへの悪用も確認されている。Microsoftは本CVEを2026年8月Patch Tuesdayで修正し、CISAはKEVカタログへ初回追加、JPCERT/CCも注意喚起を発行した。
+
+攻撃の流れ（判明分）:
+1. LinkedIn経由の偽採用勧誘（Operation Dream Job）で防衛・航空宇宙企業の従業員に接触
+2. 侵害済みWordPress/SharePoint/脆弱なRoundcubeメールサーバ（CVE-2025-49113）経由でマルウェア配布・C2確立
+3. CVE-2026-68820（AFD.sys UAF）を悪用しローカル権限昇格でSYSTEM権限を取得
+4. FudModule 3.1でSmart App Control改ざん・EDRテレメトリ無効化、Troy/ForestTiger/MISTPENを展開し長期潜伏・偵察
+5. 侵害済み組織を踏み台としたスピアフィッシングで関連組織への横展開を試行
+
+【新規TTP】
+・[T1566] Phishing — LinkedIn経由の偽採用勧誘（Operation Dream Job）
+・[T1068] Exploitation for Privilege Escalation — CVE-2026-68820（AFD.sys use-after-free）悪用によるSYSTEM権限取得
+・[T1014] Rootkit — FudModule 3.1カーネルモードルートキットによるSmart App Control改ざん・EDRテレメトリ無効化
+
+【IoC】
+Domain: envell[.]xyz
+Domain: enveil[.]online
+Domain: uxtramine[.]org
+Filename: RelayShell
+
+【推奨アクション】
+・2026年8月Microsoftセキュリティ更新プログラム（AFD.sys修正）を最優先で適用する。防衛・航空宇宙セクターの企業はLinkedIn等での未確認の採用勧誘への注意喚起を社内周知し、Check Point公開のIOC（envell[.]xyz等）を境界機器・プロキシでブロックする。侵害済みRoundcubeサーバ（CVE-2025-49113）の適用状況も併せて確認する。
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*afd.sys*" OR CommandLine="*AFD*" | stats count by Computer,User
+Splunk SPL: index=proxy_logs dest_domain IN ("envell.xyz","enveil.online","uxtramine.org") | stats count by src,dest_domain
+Splunk SPL: index=wineventlog EventCode=7045 ImageLoaded="*FudModule*" OR RegistryPath="*SmartAppControl*" | table _time,Computer
+→ AFD.sys関連の異常終了・SYSTEM権限プロセス生成タイミングの相関確認を優先する。防衛・航空宇宙セクター以外でも同種のLinkedIn採用勧誘フィッシングへの注意喚起は有効。
+
+【参照】
+https://thehackernews.com/2026/08/lazarus-exploits-windows-zero-day-to.html
+https://www.bleepingcomputer.com/news/security/lazarus-hackers-exploited-windows-zero-day-to-target-defense-firms
+https://www.securityweek.com/fresh-windows-zero-day-exploited-in-north-korean-cyberattacks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸P8点未満または参考A昇格トリガー未該当の新規事案なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] 日米韓など10カ国超が北朝鮮ITワーカー問題で共同注意喚起 - AI活用による手口高度化にも言及
+日本の外務省・国家サイバー統括室・警察庁・財務省・経済産業省と、米国・韓国・豪州・カナダ・フランス・ドイツ・イタリア・オランダ・ニュージーランド・英国の関係機関が2026年7月31日付で共同署名し、北朝鮮ITワーカーが他国籍者になりすましフリーランスプラットフォームで就労し収入を北朝鮮の親元機関へ送金する手口について注意喚起を発表した。内部脅威化やデータ流出・暗号資産窃取への関与、AIを活用した手法の高度化にも言及しているが、Lazarus Group等の具体的なサイバー部隊名や個別マルウェア・C2インフラの明示はない（ScanNetSecurity報道による限り）。Pythia Phase1フォーカスグループLazarus Groupとの直接連鎖は本記事からは確認できないため、地政学先行指標としての採用は本日は見送り、文脈情報としてのみ記録する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/12/55907.html
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-08-11] 日米韓など同盟国が北朝鮮ITワーカーの手口や特徴をまとめた共同注意喚起を公表したと報道
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Adobe Commerce/Magento CVE-2026-71362実悪用確認環境は緊急パッチ適用とアカウント乗っ取り兆候の確認を最優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1（KEV初回追加）
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [BleepingComputer 2026-08-12] Sansecが Adobe Commerce/Magento CVE-2026-71362 の実悪用試行を確認し同社Shield WAFでブロック中と報告。[Adobe 2026-08-11] APSB26-92で分離パッチ公開済み。
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py --date 2026-08-13 実行・min_similarity=0.5・n_cases=0・observed_gate_passed=false。product-categories.jsonに当該製品のキーワードマッピングが存在せず製品カテゴリ軸が不一致となったことが主因）。（過去実績）
+  脅威情報: Adobe Commerce/Magentoは国内外で広く使われるeコマースプラットフォームであり、実悪用確認+パッチ提供済みという状況はCISAのKEV追加判断の典型的な充足要件（実悪用確認・対応策の存在）に合致する。
+  確度アンカー: EPSSパーセンタイル0.38961（2026-08-12算出） / KEV登録: なし / SSVC決定: Attend / Automatable: yes
+推定部分: （推定）実悪用確認+パッチ提供済みという状況はCISAのKEV追加判断の典型的な充足要件に合致すると推測されるが、KEV追加までのタイムラグ（過去実測では生存バイアスを伴う分布・kev-leadtime-stats.json参照）は数日〜数週間に及ぶ場合があり72時間以内の追加は保証されない。SSVC決定・Automatable値はEvidence（未認証・単一リクエストでの認可バイパス）からの推定であり一次ソースが明示したものではない。
+先回り監視: Adobe Commerce/Magento環境の顧客アカウントAPIへの異常アクセス（同一IPからの複数顧客ID照会・通常フローを経ないセッション確立）、Sansecからの追加IOC・悪用パターン公開。
+的中判定: CISAがCVE-2026-71362をKEVカタログ本体（JSON feed: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json）へ初回追加した場合（dateAddedが2026-08-13〜2026-08-16の範囲で新規記録されること）。
+
+・予報2: VMware vCenter CVE-2026-59310実悪用環境はcronジョブ・reverse_ssh痕跡の緊急確認とパッチ適用を最優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1（KEV初回追加）
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [The Hacker News/QUIRSO 2026-08-12] CVE-2026-59310の実悪用活動（cronジョブ設置・reverse_sshによる永続化）を47カ国361ユニークIPで確認、開示（2026-08-03）から5日後より活動開始と報告。
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py --date 2026-08-13 実行・min_similarity=0.5・n_cases=0・observed_gate_passed=false。product-categories.jsonに当該製品のキーワードマッピングが存在せず製品カテゴリ軸が不一致となったことが主因）。（過去実績）
+  脅威情報: VMware vCenterは企業の仮想化基盤の中核であり広く使われる製品。修正版は2026年7月末に提供済みで実悪用も複数国にわたり観測されており、CISAのKEV追加判断の典型的な充足要件に合致する。
+  確度アンカー: EPSSパーセンタイル0.63717（2026-08-12算出） / KEV登録: なし / SSVC決定: Attend / Automatable: yes
+推定部分: （推定）QUIRSOによる実悪用確認は単一ベンダー観測であり、本日時点で他ベンダーによる独立確認は無い。KEV追加までのタイムラグは確認されておらず72時間以内の追加は保証されない。SSVC決定・Automatable値はEvidenceからの推定であり一次ソースが明示したものではない。
+先回り監視: vCenter Syslogサーバへのパストラバーサル試行ログ（uri_pathに".."を含むリクエスト）、cronジョブへの不審な登録、reverse_sshプロセスの新規出現。
+的中判定: CISAがCVE-2026-59310をKEVカタログ本体（JSON feed）へ初回追加した場合（dateAddedが2026-08-13〜2026-08-16の範囲で新規記録されること）。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-68820 / Windows Ancillary Function Driver for WinSock (AFD.sys)
+対象: Windows 11 build 26100/26200 等（2026年8月Patch Tuesdayで修正）
+------------------------------------------------------------
+
+優先度: 緊急
+CVSS: 7.0 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[Check Point Research 2026-08-12] Lazarus Groupが2026年7月上旬からCVE-2026-68820（AFD.sys use-after-free・権限昇格）をOperation Dream Jobキャンペーンで実悪用していたと報告（レポート「Shattering the Dream」）
+[Microsoft/JPCERT-CC 2026-08-12] 2026年8月Patch Tuesdayで修正版を提供、Microsoft自身が実悪用を確認と明記。JPCERT/CCが本CVEを名指しした注意喚起（at260022.html）を発行
+[BleepingComputer/The Hacker News/SecurityWeek 2026-08-12] Check Pointレポートを受け、Lazarus Groupによる欧州・南米・アジアの防衛/航空宇宙企業標的の攻撃としてそれぞれ詳報
+
+【概要】
+Windows Ancillary Function Driver for WinSock（AFD.sys）のuse-after-free脆弱性CVE-2026-68820を、北朝鮮系Lazarus GroupがOperation Dream Jobキャンペーンの一環として2026年7月上旬から実悪用し、ローカル権限昇格経由でSYSTEM権限を取得しForestTiger（別名ScoringMathTea）・新型バックドアTroy・軽量ダウンローダMISTPEN・カーネルモードルートキットFudModule 3.1を展開していたことがCheck Point Researchの調査で判明した。標的はフランス・ドイツ・ブラジル・インドの防衛・航空宇宙企業で、偵察センサーやドローン等の軍事関連技術を持つ企業が狙われた。攻撃はLinkedIn経由の偽採用勧誘から始まり、侵害済みのWordPress/SharePoint/脆弱なRoundcubeウェブメールサーバ（CVE-2025-49113悪用）をC2インフラとして利用、PHP製ウェブシェルRelayShellも新たに確認された。Microsoftは2026年8月Patch Tuesdayで修正を提供し実悪用を確認、CISAは2026-08-11付でKEVカタログへ初回追加、JPCERT/CCも同CVEを名指しした注意喚起を発行した。
+
+攻撃の流れ:
+1. LinkedIn経由の偽採用勧誘（Operation Dream Job）で標的企業の従業員に接触
+2. 侵害済みWordPress/SharePoint/脆弱なRoundcubeメールサーバ（CVE-2025-49113）経由でマルウェア配布・C2確立
+3. CVE-2026-68820（AFD.sys UAF）を悪用しローカル権限昇格でSYSTEM権限を取得
+4. FudModule 3.1カーネルモードルートキットでSmart App Controlを改ざん・EDRテレメトリを無効化
+5. Troy（17コマンド対応DLLインプラント）・ForestTiger・MISTPENを展開し持続的なアクセスと偵察を確立
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・2026年8月Microsoftセキュリティ更新プログラム（AFD.sys修正）を最優先で適用する
+・防衛・航空宇宙セクターの企業はLinkedIn経由の未確認の採用勧誘・添付ファイル開封を制限する社内周知を行う
+・Check Point公開のIOC（envell[.]xyz / enveil[.]online / uxtramine[.]org 等）を境界機器・プロキシでブロックする
+
+【IoC】
+Domain: envell[.]xyz
+Domain: enveil[.]online
+Domain: uxtramine[.]org
+Filename: RelayShell
+
+【監視ポイント】
+・AFD.sys経由の権限昇格試行、FudModuleによるレジストリ改ざん、Troy/MISTPENの通信パターンを監視する
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*afd.sys*" OR CommandLine="*AFD*" | stats count by Computer,User
+Splunk SPL: index=proxy_logs dest_domain IN ("envell.xyz","enveil.online","uxtramine.org") | stats count by src,dest_domain
+Splunk SPL: index=wineventlog EventCode=7045 OR EventCode=4657 RegistryPath="*SmartAppControl*" | table _time,Computer,RegistryPath
+→ AFD.sys関連のクラッシュ・異常終了ログとSYSTEM権限プロセスの生成タイミングの相関を確認する。防衛・航空宇宙セクターでは特にLinkedIn経由の採用関連メール添付ファイルの実行有無を優先確認する。
+
+【参照】
+https://thehackernews.com/2026/08/lazarus-exploits-windows-zero-day-to.html
+https://www.bleepingcomputer.com/news/security/lazarus-hackers-exploited-windows-zero-day-to-target-defense-firms
+https://www.securityweek.com/fresh-windows-zero-day-exploited-in-north-korean-cyberattacks
+https://www.jpcert.or.jp/at/2026/at260022.html
+
+------------------------------------------------------------
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・不明（帰属未確定・City-Forum） / CityForum-2026-SalesforceServiceNowGuestAbuse → low_score: セキュリティ企業Reco単独の帰属調査（軸P: 単一ベンダー報告+3のみ、軸Q: 複数地域・複数業種+3）で軸P=3〜6点・軸Q=3点となり判定順1〜3のいずれも不該当（軸P<8かつ参考A昇格トリガーなし）。SalesforceのAura/LWR Guest User機能およびServiceNow Service Portal検索エンドポイントの未認証悪用による情報窃取活動で、インフラは2025年3月から存在。国内影響の言及なし。継続監視対象。
+
+本日の集計:
+APT — 本編1件 / 注目動向0件 / 除外1件
+
+========================================

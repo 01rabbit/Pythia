@@ -1,0 +1,642 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-13 07:40 JST
+調査期間: 2026-08-12 07:00 〜 2026-08-13 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-08-12 07:00 〜 2026-08-13 07:00
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. LiteLLM/Trivy侵害サプライチェーン攻撃 - CloudSEKが2,500組織超の露出を確認
+カテゴリ: C / サブカテゴリ: C6 / 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: A-Q / A-U
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当項目の明示なし
+対象: it / manufacturing / telecom / global
+被害規模: CloudSEK確認: 約434,000件の窃取ファイル・イベントを分析し2,500組織超の露出を確認（NVIDIA・Cisco・Deloitte・Volkswagen・FedEx・Siemens・X Corp等の名前を含むデータセット公開。ただし露出=確認済み侵害ではない点にCloudSEKも留意を促している）
+独立ソース数: 2件（below_threshold）
+
+【24時間以内の変化】
+[The Hacker News 2026-08-12] CloudSEKが、2026年3月のAqua Security Trivy侵害経由で流出したPyPIトークンを用いてLiteLLM 1.82.8へ悪意あるコードが混入された事案（PyPI滞在約40分・2026-03-24 10:39〜16:00 UTC）について、約434,000件の窃取ファイル・イベント分析に基づき2,500組織超の露出を確認したと報告。悪意あるバージョンには`litellm_init.pth`というPythonインタプリタ起動時に自動実行されるファイルが含まれ、LiteLLMをインポートしなくても影響を受ける設計だったと新たに判明
+[SecurityWeek 2026-08-12] CloudSEKが露出組織を名前・ドメインで検索できる公開データセット（exposure.cloudsek.com/ai-supply-chain-incident）を公開したと報道。以前は別々に語られていた複数の被害報告が「同一攻撃チェーンの異なる段階」であったことも整理された
+
+【概要】
+2026年6月19日付で既報のLiteLLM PyPIサプライチェーン侵害（Aqua Security Trivyの侵害を起点に窃取したPyPIトークンでLiteLLM 1.82.8へ悪意あるコードを混入、TeamPCPによる認証情報窃取・Vectランサムウェアとの連携）について、脅威インテリジェンス企業CloudSEKが2026-08-12、約434,000件の窃取ファイル・イベントの分析に基づき2,500組織超が露出したと報告した。技術的な新知見として、悪意あるバージョンにはPythonインタプリタ起動時に自動実行される`litellm_init.pth`ファイルが含まれ、LiteLLMを直接インポートしていない環境でも影響を受ける設計だったことが判明。CloudSEKは露出組織を検索できる公開データセットを提供し、NVIDIA・Cisco・Deloitte・Volkswagen・FedEx・Siemens・X Corp等の大企業名を含むが、リスト掲載は侵害の確定を意味しないと注記している。
+
+攻撃の流れ:
+1. 2026年3月、Aqua Security Trivyの侵害で漏洩したPyPI APIトークンを攻撃者が悪用
+2. LiteLLM 1.82.8へ、Pythonインタプリタ起動時に自動実行される`litellm_init.pth`を含む悪意あるコードを混入しPyPIへ直接アップロード（滞在時間約40分）
+3. ダウンロードした環境でクラウド鍵・SSH鍵・Kubernetesトークン・DBパスワード等の認証情報を窃取
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+検知シグナル: litellm_init.pth ファイルの存在（sitecustomize相当の自動実行ファイル）
+
+【監視・対策ポイント】
+・CI/CD環境・Python実行環境における`litellm_init.pth`ファイルの存在と2026年3月時点のLiteLLM 1.82.8導入履歴を確認する
+Splunk SPL: index=file_integrity file_name="litellm_init.pth" | stats count by host,file_path
+Splunk SPL: index=pip_install_logs package="litellm" version="1.82.8" | table _time,host
+→ exposure.cloudsek.com/ai-supply-chain-incidentで自組織名・ドメインが該当しないか確認し、該当する場合は該当期間にLiteLLMを導入していたホストの認証情報を全面ローテーションする。
+
+【参照】
+https://thehackernews.com/2026/08/malicious-litellm-releases-tied-to.html
+https://www.securityweek.com/over-2500-organizations-impacted-by-litellm-supply-chain-attack
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当情報なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当情報なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はLiteLLM/Trivy侵害サプライチェーン攻撃についてCloudSEKが約434,000件の窃取ファイル・イベント分析に基づき2,500組織超の露出を確認したと報告し本編で採用した（burst_count=2件・below_threshold）。研究者による暗号化推論オブジェクトからの推論内容復元研究（arXiv論文）は独立ソース1件のためTemporal Burst Filtering基準未達で除外とした。全体として本日調査窓内は新規の大規模インシデントの続報フェーズであり、突出したバースト検出は確認されなかった。
+
+本日の集計:
+AI攻撃 — 本編1件 / 参考A0件 / 参考B0件 / 除外1件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）0件 / C（インフラ）1件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Lazarus Group（別名: Hidden Cobra、Guardians of Peace、ZINC、Diamond Sleet、APT-C-26 / 国家帰属: KP / 帰属信頼度: 中）
+活動タイプ: active_campaign / new_malware / infrastructure_change
+------------------------------------------------------------
+
+キャンペーンID: LazarusGroup-2026-OperationDreamJob-AFDZeroDay
+標的: defense / manufacturing / Western Europe / South America / South Asia
+マルウェア: Troy、ForestTiger（別名ScoringMathTea）、MISTPEN、FudModule 3.1、RelayShell
+
+【24時間以内の変化】
+[Check Point Research 2026-08-12] レポート「Shattering the Dream」を公開、Lazarus GroupによるOperation Dream Jobキャンペーンの一環としてCVE-2026-68820（Windows AFD.sys use-after-free）を2026年7月上旬から実悪用していたと初報
+[Microsoft 2026-08-11] 2026年8月Patch TuesdayでCVE-2026-68820を修正、実悪用を確認と明記
+[BleepingComputer/The Hacker News/SecurityWeek 2026-08-12] Check Pointレポートを受けそれぞれ独自に詳報、フランス国内で少なくとも1組織の侵害を確認しスピアフィッシングの踏み台に利用されたと報道
+
+【概要】
+北朝鮮系Lazarus Groupが、長期継続中のOperation Dream Jobキャンペーン（LinkedIn経由の偽採用勧誘による標的接近）の一環として、2026年7月上旬からWindows Ancillary Function Driver for WinSock（AFD.sys）のuse-after-free脆弱性CVE-2026-68820をゼロデイとして実悪用し、フランス・ドイツ・ブラジル・インドの防衛・航空宇宙企業（偵察センサー・ドローン・ロボティクス関連技術を保有）を標的に、新型バックドアTroy・ForestTiger・MISTPENダウンローダ・カーネルモードルートキットFudModule 3.1を展開していたことがCheck Point Researchの調査で判明した。侵害済みのWordPress/SharePoint/脆弱なRoundcubeメールサーバ（CVE-2025-49113悪用）をC2インフラとして利用し、PHP製の未文書化ウェブシェルRelayShellも新たに確認された。フランス国内で少なくとも1組織が侵害を受け、その組織を踏み台にした二次スピアフィッシングへの悪用も確認されている。Microsoftは本CVEを2026年8月Patch Tuesdayで修正し、CISAはKEVカタログへ初回追加、JPCERT/CCも注意喚起を発行した。
+
+攻撃の流れ（判明分）:
+1. LinkedIn経由の偽採用勧誘（Operation Dream Job）で防衛・航空宇宙企業の従業員に接触
+2. 侵害済みWordPress/SharePoint/脆弱なRoundcubeメールサーバ（CVE-2025-49113）経由でマルウェア配布・C2確立
+3. CVE-2026-68820（AFD.sys UAF）を悪用しローカル権限昇格でSYSTEM権限を取得
+4. FudModule 3.1でSmart App Control改ざん・EDRテレメトリ無効化、Troy/ForestTiger/MISTPENを展開し長期潜伏・偵察
+5. 侵害済み組織を踏み台としたスピアフィッシングで関連組織への横展開を試行
+
+【新規TTP】
+・[T1566] Phishing — LinkedIn経由の偽採用勧誘（Operation Dream Job）
+・[T1068] Exploitation for Privilege Escalation — CVE-2026-68820（AFD.sys use-after-free）悪用によるSYSTEM権限取得
+・[T1014] Rootkit — FudModule 3.1カーネルモードルートキットによるSmart App Control改ざん・EDRテレメトリ無効化
+
+【IoC】
+Domain: envell[.]xyz
+Domain: enveil[.]online
+Domain: uxtramine[.]org
+Filename: RelayShell
+
+【推奨アクション】
+・2026年8月Microsoftセキュリティ更新プログラム（AFD.sys修正）を最優先で適用する。防衛・航空宇宙セクターの企業はLinkedIn等での未確認の採用勧誘への注意喚起を社内周知し、Check Point公開のIOC（envell[.]xyz等）を境界機器・プロキシでブロックする。侵害済みRoundcubeサーバ（CVE-2025-49113）の適用状況も併せて確認する。
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*afd.sys*" OR CommandLine="*AFD*" | stats count by Computer,User
+Splunk SPL: index=proxy_logs dest_domain IN ("envell.xyz","enveil.online","uxtramine.org") | stats count by src,dest_domain
+Splunk SPL: index=wineventlog EventCode=7045 ImageLoaded="*FudModule*" OR RegistryPath="*SmartAppControl*" | table _time,Computer
+→ AFD.sys関連の異常終了・SYSTEM権限プロセス生成タイミングの相関確認を優先する。防衛・航空宇宙セクター以外でも同種のLinkedIn採用勧誘フィッシングへの注意喚起は有効。
+
+【参照】
+https://thehackernews.com/2026/08/lazarus-exploits-windows-zero-day-to.html
+https://www.bleepingcomputer.com/news/security/lazarus-hackers-exploited-windows-zero-day-to-target-defense-firms
+https://www.securityweek.com/fresh-windows-zero-day-exploited-in-north-korean-cyberattacks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸P8点未満または参考A昇格トリガー未該当の新規事案なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] 日米韓など10カ国超が北朝鮮ITワーカー問題で共同注意喚起 - AI活用による手口高度化にも言及
+日本の外務省・国家サイバー統括室・警察庁・財務省・経済産業省と、米国・韓国・豪州・カナダ・フランス・ドイツ・イタリア・オランダ・ニュージーランド・英国の関係機関が2026年7月31日付で共同署名し、北朝鮮ITワーカーが他国籍者になりすましフリーランスプラットフォームで就労し収入を北朝鮮の親元機関へ送金する手口について注意喚起を発表した。内部脅威化やデータ流出・暗号資産窃取への関与、AIを活用した手法の高度化にも言及しているが、Lazarus Group等の具体的なサイバー部隊名や個別マルウェア・C2インフラの明示はない（ScanNetSecurity報道による限り）。Pythia Phase1フォーカスグループLazarus Groupとの直接連鎖は本記事からは確認できないため、地政学先行指標としての採用は本日は見送り、文脈情報としてのみ記録する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/12/55907.html
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-08-11] 日米韓など同盟国が北朝鮮ITワーカーの手口や特徴をまとめた共同注意喚起を公表したと報道
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: Adobe Commerce/Magento CVE-2026-71362実悪用確認環境は緊急パッチ適用とアカウント乗っ取り兆候の確認を最優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1（KEV初回追加）
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [BleepingComputer 2026-08-12] Sansecが Adobe Commerce/Magento CVE-2026-71362 の実悪用試行を確認し同社Shield WAFでブロック中と報告。[Adobe 2026-08-11] APSB26-92で分離パッチ公開済み。
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py --date 2026-08-13 実行・min_similarity=0.5・n_cases=0・observed_gate_passed=false。product-categories.jsonに当該製品のキーワードマッピングが存在せず製品カテゴリ軸が不一致となったことが主因）。（過去実績）
+  脅威情報: Adobe Commerce/Magentoは国内外で広く使われるeコマースプラットフォームであり、実悪用確認+パッチ提供済みという状況はCISAのKEV追加判断の典型的な充足要件（実悪用確認・対応策の存在）に合致する。
+  確度アンカー: EPSSパーセンタイル0.38961（2026-08-12算出） / KEV登録: なし / SSVC決定: Attend / Automatable: yes
+推定部分: （推定）実悪用確認+パッチ提供済みという状況はCISAのKEV追加判断の典型的な充足要件に合致すると推測されるが、KEV追加までのタイムラグ（過去実測では生存バイアスを伴う分布・kev-leadtime-stats.json参照）は数日〜数週間に及ぶ場合があり72時間以内の追加は保証されない。SSVC決定・Automatable値はEvidence（未認証・単一リクエストでの認可バイパス）からの推定であり一次ソースが明示したものではない。
+先回り監視: Adobe Commerce/Magento環境の顧客アカウントAPIへの異常アクセス（同一IPからの複数顧客ID照会・通常フローを経ないセッション確立）、Sansecからの追加IOC・悪用パターン公開。
+的中判定: CISAがCVE-2026-71362をKEVカタログ本体（JSON feed: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json）へ初回追加した場合（dateAddedが2026-08-13〜2026-08-16の範囲で新規記録されること）。
+
+・予報2: VMware vCenter CVE-2026-59310実悪用環境はcronジョブ・reverse_ssh痕跡の緊急確認とパッチ適用を最優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1（KEV初回追加）
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [The Hacker News/QUIRSO 2026-08-12] CVE-2026-59310の実悪用活動（cronジョブ設置・reverse_sshによる永続化）を47カ国361ユニークIPで確認、開示（2026-08-03）から5日後より活動開始と報告。
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py --date 2026-08-13 実行・min_similarity=0.5・n_cases=0・observed_gate_passed=false。product-categories.jsonに当該製品のキーワードマッピングが存在せず製品カテゴリ軸が不一致となったことが主因）。（過去実績）
+  脅威情報: VMware vCenterは企業の仮想化基盤の中核であり広く使われる製品。修正版は2026年7月末に提供済みで実悪用も複数国にわたり観測されており、CISAのKEV追加判断の典型的な充足要件に合致する。
+  確度アンカー: EPSSパーセンタイル0.63717（2026-08-12算出） / KEV登録: なし / SSVC決定: Attend / Automatable: yes
+推定部分: （推定）QUIRSOによる実悪用確認は単一ベンダー観測であり、本日時点で他ベンダーによる独立確認は無い。KEV追加までのタイムラグは確認されておらず72時間以内の追加は保証されない。SSVC決定・Automatable値はEvidenceからの推定であり一次ソースが明示したものではない。
+先回り監視: vCenter Syslogサーバへのパストラバーサル試行ログ（uri_pathに".."を含むリクエスト）、cronジョブへの不審な登録、reverse_sshプロセスの新規出現。
+的中判定: CISAがCVE-2026-59310をKEVカタログ本体（JSON feed）へ初回追加した場合（dateAddedが2026-08-13〜2026-08-16の範囲で新規記録されること）。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-68820 / Windows Ancillary Function Driver for WinSock (AFD.sys)
+対象: Windows 11 build 26100/26200 等（2026年8月Patch Tuesdayで修正）
+------------------------------------------------------------
+
+優先度: 緊急
+CVSS: 7.0 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[Check Point Research 2026-08-12] Lazarus Groupが2026年7月上旬からCVE-2026-68820（AFD.sys use-after-free・権限昇格）をOperation Dream Jobキャンペーンで実悪用していたと報告（レポート「Shattering the Dream」）
+[Microsoft/JPCERT-CC 2026-08-12] 2026年8月Patch Tuesdayで修正版を提供、Microsoft自身が実悪用を確認と明記。JPCERT/CCが本CVEを名指しした注意喚起（at260022.html）を発行
+[BleepingComputer/The Hacker News/SecurityWeek 2026-08-12] Check Pointレポートを受け、Lazarus Groupによる欧州・南米・アジアの防衛/航空宇宙企業標的の攻撃としてそれぞれ詳報
+
+【概要】
+Windows Ancillary Function Driver for WinSock（AFD.sys）のuse-after-free脆弱性CVE-2026-68820を、北朝鮮系Lazarus GroupがOperation Dream Jobキャンペーンの一環として2026年7月上旬から実悪用し、ローカル権限昇格経由でSYSTEM権限を取得しForestTiger（別名ScoringMathTea）・新型バックドアTroy・軽量ダウンローダMISTPEN・カーネルモードルートキットFudModule 3.1を展開していたことがCheck Point Researchの調査で判明した。標的はフランス・ドイツ・ブラジル・インドの防衛・航空宇宙企業で、偵察センサーやドローン等の軍事関連技術を持つ企業が狙われた。攻撃はLinkedIn経由の偽採用勧誘から始まり、侵害済みのWordPress/SharePoint/脆弱なRoundcubeウェブメールサーバ（CVE-2025-49113悪用）をC2インフラとして利用、PHP製ウェブシェルRelayShellも新たに確認された。Microsoftは2026年8月Patch Tuesdayで修正を提供し実悪用を確認、CISAは2026-08-11付でKEVカタログへ初回追加、JPCERT/CCも同CVEを名指しした注意喚起を発行した。
+
+攻撃の流れ:
+1. LinkedIn経由の偽採用勧誘（Operation Dream Job）で標的企業の従業員に接触
+2. 侵害済みWordPress/SharePoint/脆弱なRoundcubeメールサーバ（CVE-2025-49113）経由でマルウェア配布・C2確立
+3. CVE-2026-68820（AFD.sys UAF）を悪用しローカル権限昇格でSYSTEM権限を取得
+4. FudModule 3.1カーネルモードルートキットでSmart App Controlを改ざん・EDRテレメトリを無効化
+5. Troy（17コマンド対応DLLインプラント）・ForestTiger・MISTPENを展開し持続的なアクセスと偵察を確立
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・2026年8月Microsoftセキュリティ更新プログラム（AFD.sys修正）を最優先で適用する
+・防衛・航空宇宙セクターの企業はLinkedIn経由の未確認の採用勧誘・添付ファイル開封を制限する社内周知を行う
+・Check Point公開のIOC（envell[.]xyz / enveil[.]online / uxtramine[.]org 等）を境界機器・プロキシでブロックする
+
+【IoC】
+Domain: envell[.]xyz
+Domain: enveil[.]online
+Domain: uxtramine[.]org
+Filename: RelayShell
+
+【監視ポイント】
+・AFD.sys経由の権限昇格試行、FudModuleによるレジストリ改ざん、Troy/MISTPENの通信パターンを監視する
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*afd.sys*" OR CommandLine="*AFD*" | stats count by Computer,User
+Splunk SPL: index=proxy_logs dest_domain IN ("envell.xyz","enveil.online","uxtramine.org") | stats count by src,dest_domain
+Splunk SPL: index=wineventlog EventCode=7045 OR EventCode=4657 RegistryPath="*SmartAppControl*" | table _time,Computer,RegistryPath
+→ AFD.sys関連のクラッシュ・異常終了ログとSYSTEM権限プロセスの生成タイミングの相関を確認する。防衛・航空宇宙セクターでは特にLinkedIn経由の採用関連メール添付ファイルの実行有無を優先確認する。
+
+【参照】
+https://thehackernews.com/2026/08/lazarus-exploits-windows-zero-day-to.html
+https://www.bleepingcomputer.com/news/security/lazarus-hackers-exploited-windows-zero-day-to-target-defense-firms
+https://www.securityweek.com/fresh-windows-zero-day-exploited-in-north-korean-cyberattacks
+https://www.jpcert.or.jp/at/2026/at260022.html
+
+------------------------------------------------------------
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-20349 / Cisco Secure Firewall ASA / FTD（Remote Access SSL VPN）
+対象: ASA 9.16.1〜9.24系（修正版9.16.4.50等）/ FTD 7.0〜7.7・10.0系
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 8.6 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[Cisco PSIRT 2026-08-11] Remote Access SSL VPNサービスのHTTPリクエスト検証不備（CWE-244）を公表、未認証リモートDoS（デバイス再起動）の実悪用を確認
+[CISA KEV 2026-08-11] KEVカタログへ初回追加（dateAdded 2026-08-11）、FCEB期限2026-08-14
+[Security NEXT 2026-08-12] 国内向けにCisco ASA/FTDのSSL VPN DoS脆弱性・ゼロデイ攻撃を報道
+
+【概要】
+Cisco Secure Firewall ASA / FTDのRemote Access SSL VPNサービスにHTTPリクエスト検証不備（CWE-244）があり、未認証のリモート攻撃者が細工したHTTPリクエストを送信することでデバイスを予期せず再起動させサービス拒否を引き起こすことが可能な脆弱性CVE-2026-20349が判明した。IKEv2リモートアクセスVPN・SSL-VPN・Zero Trust Network Accessの構成が影響を受ける。CISAは2026-08-11付でKEVカタログへ初回追加しFCEB機関に2026-08-14までの対処を義務付けた。Cisco Secure Firewall Management Center（FMC）は本脆弱性の対象外。回避策は無く修正版の適用が必須。
+
+攻撃の流れ:
+1. 未認証の攻撃者がRemote Access SSL VPNサービスへ細工したHTTPリクエストを送信
+2. HTTPリクエスト検証の不備によりヒープ関連の異常処理が発生
+3. デバイスが予期せず再起動しサービス拒否（DoS）状態となる
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・ASA/FTDのVPNサービスクラッシュログ・異常再起動・HTTPリクエストの異常パターンを監視する
+Splunk SPL: index=cisco_asa sourcetype=cisco:asa ("%ASA-1-" OR "Device rebooted") | stats count by host,_time
+Splunk SPL: index=cisco_ftd sourcetype=cisco:ftd EventType="process_crash" Process="*webvpn*" | table _time,host,Process
+→ 短時間内の複数回再起動・SSL VPNサービス異常終了ログが確認された場合はDoS攻撃を疑い、境界のアクセス制御（管理インタフェースの外部非公開化）を優先確認する。
+
+【参照】
+https://thehackernews.com/2026/08/cisco-asa-and-ftd-flaw-exploited-in.html
+https://www.security-next.com/188685
+
+------------------------------------------------------------
+2. CVE-2026-72898 / Metabase（BIツール）
+対象: /reset_password エンドポイントを持つ影響バージョン全般（GHSA-vwf4-m7j8-wcjf参照）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 / v4 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA KEV 2026-08-11] Metabase SQLインジェクション脆弱性（/reset_passwordエンドポイント経由）をKEVカタログへ初回追加
+[Security NEXT 2026-08-12] 米当局がMetabase製BIツールの脆弱性悪用に注意喚起と報道
+
+【概要】
+オープンソースBIツールMetabaseの/reset_passwordエンドポイントに未認証SQLインジェクション脆弱性CVE-2026-72898（CVSS 10.0）が存在し、遠隔の未認証攻撃者が任意SQLをMetabaseアプリケーションデータベースへ注入することで管理者権限を取得可能。攻撃者は取得した管理者権限でアプリケーション設定の変更、接続先データベースの認証情報窃取、接続先データベースの任意データ読み取り・export が可能となる。CISAは2026-08-11付でKEVカタログへ初回追加しFCEB機関へ2026-08-14までの対処を義務付けた。国内では独自報道は確認されていないが、Security NEXTが米当局の注意喚起を紹介している。
+
+攻撃の流れ:
+1. 未認証の攻撃者が/reset_passwordエンドポイントへ細工したSQLペイロードを送信
+2. SQLインジェクションによりMetabaseアプリケーションデータベースへ不正アクセスし管理者権限を取得
+3. アプリケーション設定変更・接続先データベースの認証情報窃取・データ読み取り/exportを実行
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Metabaseの/reset_passwordエンドポイントへの異常リクエスト・管理者権限変更ログを監視する
+Splunk SPL: index=web_proxy uri_path="*/reset_password*" dest="*metabase*" | stats count by src,uri_query
+Splunk SPL: index=metabase_audit action="user-joined" OR action="setting-update" | table _time,user,action
+→ /reset_passwordへのSQL構文を含むクエリパラメータ（UNION SELECT等）を優先検知し、管理者アカウント新規作成・設定変更ログとの時系列相関を確認する。
+
+【参照】
+https://www.security-next.com/188699
+https://nvd.nist.gov/vuln/detail/CVE-2026-72898
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT国内報道
+
+------------------------------------------------------------
+1. CVE-2026-48362 / Adobe ColdFusion
+対象: 2025.0.12未満 / 2023.0.23未満
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 10.0 (Critical) 状態: （実悪用・PoCとも未確認）
+
+【24時間以内の変化】
+[Adobe 2026-08-11] ColdFusionのOSコマンドインジェクション（CVE-2026-48362, CVSS10.0）等3件の脆弱性を修正するセキュリティ更新を公開（優先度1）
+[Security NEXT 2026-08-11] 「Adobe ColdFusion」に深刻な脆弱性ありと国内向けに報道、早期の更新を呼びかけ
+
+【概要】
+Adobe ColdFusionにOSコマンドインジェクション（CVE-2026-48362, CVSS10.0）・Evalインジェクション（CVE-2026-48273, CVSS9.9）・不適切な認可（CVE-2026-71384, CVSS9.6）の3件の脆弱性が判明し、2025.0.12/2023.0.23で修正された。優先度1（悪用可能性が高い）に分類されている。現時点で実悪用の報告はないが、直近2週間で3度目となるColdFusionの緊急更新であり（Security NEXT報道）、Security NEXTが国内向けに早期対処を呼びかけている。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・ColdFusionプロセスからの異常な子プロセス生成・OSコマンド実行を監視する
+Splunk SPL: index=coldfusion_logs sourcetype=coldfusion:access uri_path="*/CFIDE/*" status>=200 | stats count by src,uri_path
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*coldfusion*" | stats count by Computer,NewProcessName
+→ ColdFusionプロセス（jrun.exe等）からshell/cmd起動が確認された場合は要優先確認。
+
+【参照】
+https://thehackernews.com/2026/08/adobe-patches-three-cvss-100-coldfusion.html
+https://www.security-next.com/188665
+
+------------------------------------------------------------
+2. CVE-2026-71398 / Adobe Campaign Classic
+対象: v7 7.4.4 build 9400未満（オンプレミス/ハイブリッド展開のオンプレミス部分のみ。Adobeホスト型は対応済み）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 10.0 (Critical) 状態: （実悪用・PoCとも未確認）
+
+【24時間以内の変化】
+[Adobe 2026-08-11] Campaign Classicの不適切な認可（CVE-2026-71398/CVE-2026-27302、いずれもCVSS10.0）・SQLインジェクション（CVE-2026-48381, CVSS9.0）を修正
+[Security NEXT 2026-08-12] 「Adobe Campaign Classic」に緊急更新、半月で3度目と国内向けに報道
+
+【概要】
+Adobe Campaign Classicに不適切な認可の脆弱性2件（CVE-2026-71398・CVE-2026-27302、いずれもCVSS10.0）とSQLインジェクション（CVE-2026-48381, CVSS9.0）が判明し、v7 7.4.4 build 9400で修正された。対象はオンプレミスおよびハイブリッド展開のオンプレミス構成部分のみで、Adobeホスト型インスタンスは既に対応済み。Security NEXTによれば、Campaign Classicの緊急性の高い更新は半月で3度目であり、2週間前に別のCVSS10.0脆弱性（CVE-2026-48449）が修正されたばかりという文脈がある。現時点で実悪用の報告はない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Campaign Classic管理画面への異常アクセス・権限外操作の試行を監視する
+Splunk SPL: index=campaign_classic_logs uri_path="*/nl/jsp/*" status=200 | stats count by src,uri_path,user
+→ 通常業務時間外の管理系エンドポイントへのアクセスや権限昇格を試みるリクエストパターンを優先確認する。
+
+【参照】
+https://thehackernews.com/2026/08/adobe-patches-three-cvss-100-coldfusion.html
+https://www.security-next.com/188692
+
+------------------------------------------------------------
+3. CVE-2026-66147 / SonicWall Global Management System（GMS）
+対象: 仮想アプライアンス版・Windows版（Dispatcher Service搭載バージョン）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.4 (Critical) 状態: （実悪用・PoCとも未確認）
+
+【24時間以内の変化】
+[SonicWall 2026-08-11] GMSのDispatcher Serviceにおける未認証コマンドインジェクション（CVE-2026-66147, CVSS9.4）とパストラバーサル（CVE-2026-66145, CVSS9.1）を含む計6件の脆弱性を修正
+[Security NEXT 2026-08-11] 「SonicWall」の管理製品にRCEなど深刻な脆弱性ありと国内向けに報道、修正版適用を呼びかけ
+
+【概要】
+SonicWall Global Management System（GMS、仮想アプライアンス版・Windows版）に、Dispatcher Serviceで認証なしに細工したリクエストによりコマンド注入が可能な脆弱性CVE-2026-66147（CVSS9.4）と、zipファイル展開処理の不備により機密データ読み取り・任意ファイル書き込みが可能なパストラバーサル脆弱性CVE-2026-66145（CVSS9.1）が判明した。両CVEを含め計6件の脆弱性が修正されている。現時点で実悪用・PoC公開の報告はないが、SonicWall製品は過去に複数回実悪用の標的となっており（CVE-2026-15409/15410等）、Security NEXTが国内向けに早期の更新適用を呼びかけている。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・GMS Dispatcher Serviceへの異常リクエスト・不審なファイル書き込みを監視する
+Splunk SPL: index=sonicwall_gms sourcetype=sonicwall:gms process="Dispatcher" | stats count by src,command
+→ GMS管理インタフェースがインターネットへ直接露出していないか併せて確認し、露出している場合はアクセス制御を優先する。
+
+【参照】
+https://www.security-next.com/188663
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-71362 / Adobe Commerce / Magento Open Source
+CVSS: 9.1 (Critical)
+Adobe Commerce / Magentoの顧客セッションにおける顧客IDの取り扱い不備による不適切な認可の脆弱性CVE-2026-71362（CVSS9.1）が判明し、既存アカウント・管理者権限・ユーザー操作を必要とせず攻撃者が機密リソースへ昇格アクセスできる。攻撃者はこれを悪用しアカウント乗っ取りや顧客の非公開データへのアクセスが可能となる。Adobeが2026-08-11にAPSB26-92で分離パッチを公開したのと前後して、eコマースセキュリティ企業Sansecが実悪用試行を確認し同社のShield WAFで悪用試行をブロックしていると報告した。国内ソースでの報道は本日時点で確認されていない。
+IoC: 確認されず
+
+監視: Adobe Commerce/Magentoの顧客アカウントAPIへの異常アクセスパターンを監視する
+Splunk SPL: index=magento_logs uri_path="*/customer/account*" status=200 | stats count by src,customer_id
+→ 同一IPからの複数顧客IDへの連続アクセスや、通常のログインフローを経ないセッション確立を優先確認する。
+
+参照: https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-adobe-commerce-flaw-to-hijack-customer-accounts
+
+・CVE-2026-59310 / VMware vCenter Server（Syslogサーバ）
+CVSS: 9.8 (Critical)
+VMware vCenter ServerのSyslogサーバに存在するディレクトリトラバーサル脆弱性CVE-2026-59310（CVSS9.8、2026-07-30公開・2026-08-03付既報でaxis1=7点により当時は除外扱い）について、ドイツのセキュリティ企業QUIRSOが2026-08-12、開示から5日後の2026-08-08頃より実際の悪用活動（パストラバーサル→悪意あるcronジョブ設置→reverse_sshによる永続化）を確認したと報告した。47カ国361のユニーク攻撃元IPが観測され、ドイツ・米国・トルコ・イラン・フランスに集中。QUIRSOは「開示と悪用開始のタイミングの強い相関から、開示自体が攻撃の起点になったとみられる」と指摘している。Broadcomは2026年7月末に修正版を提供済み。
+IoC: 確認されず
+
+監視: vCenter Syslogサーバへのパストラバーサル試行・不審なcronジョブ設置・reverse_sshプロセスを監視する
+Splunk SPL: index=vcenter_logs sourcetype=vmware:vcenter:syslog uri_path="*..*" | stats count by src,uri_path
+Splunk SPL: index=linux_audit comm="reverse_ssh" OR CommandLine="*crontab*" | table _time,host,user,CommandLine
+→ reverse_sshの存在単体は悪意の証拠にならないため、cronジョブへの不審な登録・想定外の外部通信との組み合わせで判断する（QUIRSOの指摘に基づく）。
+
+参照: https://thehackernews.com/2026/08/attackers-exploit-vmware-vcenter.html
+
+・CVE-2026-55040 / Microsoft SharePoint Server
+CVSS: 9.1 (Critical)
+Microsoft SharePoint Enterprise Server 2016 / SharePoint Server 2019のJWTトークン検証パイプラインに認証バイパスの脆弱性CVE-2026-55040（CVSS9.1、2026年7月Patch Tuesdayで修正済み）が存在し、権限のない攻撃者がSharePointサイトのユーザーまたは管理者としてなりすまし操作を実行できる。ファイル閲覧・データ改ざんは可能だが可用性への影響はないとMicrosoftは説明している。Rapid7の研究者Stephen Fewerが技術解説とPoCコード（GitHub: sfewer-r7/CVE-2026-55040）を公開した同日、脅威インテリジェンス企業DefusedがこのPoCが既にSharePointハニーポットに対し武器化・実悪用試行されていることを確認した。Shadowserverは8,500台超の露出SharePointサーバをインターネット上で確認している。なお同時期に別のSharePoint RCE脆弱性CVE-2026-45659（2026-07-01付KEV登録済み・ランサムウェア悪用確認済み）も引き続き悪用されている。
+IoC: 確認されず
+
+監視: SharePointサーバへの異常なJWTトークン・なりすましアクセスの試行を監視する
+Splunk SPL: index=sharepoint_logs sourcetype=sharepoint:iis cs_uri_stem="*_api*" sc_status=200 | stats count by c_ip,cs_username
+→ Rapid7公開PoC（GitHub: sfewer-r7/CVE-2026-55040）のリクエストパターンとの一致有無を確認し、露出サーバは早急にパッチ適用状況を再点検する。
+
+参照: https://www.bleepingcomputer.com/news/microsoft/hackers-leverage-new-microsoft-sharepoint-exploit-in-attacks
+参照: https://www.securityweek.com/sharepoint-vulnerability-exploited-shortly-after-poc-release
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 2026年8月Microsoft Patch Tuesday - 421件の脆弱性・実悪用確認1件を含む大規模更新
+観点: CVE関連
+採用契機: β / γ
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft Windows / Office 等
+
+【24時間以内の変化】
+[Security NEXT/JPCERT-CC 2026-08-12] マイクロソフトが2026年8月月例セキュリティ更新プログラムを公開、約400件（実数421件）の脆弱性に対処。実悪用確認済みのCVE-2026-68820を含む
+
+【概要】
+2026年8月のMicrosoft Patch Tuesdayで421件のCVEが修正され、うち1件（CVE-2026-68820、Windows AFD.sys use-after-free、Lazarus Groupが実悪用）は既に実悪用が確認されている（Section3ゼロデイ特報で個別採用済み）。更新規模が大きいため、テスト・展開の優先順位付けと展開スケジュールの前倒し検討が必要。
+
+【推奨アクション】
+・実悪用確認済みのCVE-2026-68820（AFD.sys）を含む更新プログラムを最優先で適用する
+・421件全体のCVSS Critical/High該当分を抽出し、境界公開資産・特権管理用ホストから優先展開する
+・JPCERT/CC注意喚起（at260022.html）記載の対象製品リストを社内資産管理台帳と突合する
+
+【参照】
+https://www.security-next.com/188678
+https://www.jpcert.or.jp/at/2026/at260022.html
+
+------------------------------------------------------------
+2. ShieldBreak: Nightmare EclipseがMicrosoft Defenderのパッチ不備を突く新PoC公開
+観点: ゼロデイ関連
+採用契機: δ / ε
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft Defender for Windows
+
+【24時間以内の変化】
+[The Hacker News 2026-08-12] 研究者Chaotic Eclipse（Nightmare Eclipse/MSNightmare）が、2026年7月に修正されたCVE-2026-50656（RoguePlanet、Malware Protection Engineのrace condition・CVSS7.8）に対するMicrosoftの修正が不完全であるとして、パッチを完全にバイパスしSYSTEM権限を取得する新PoC「ShieldBreak」を公開（成功率100%と主張）。CVE-2026-50656自体は2026-06-18から継続監視中の既報CVE（reported-cves.md記載）
+
+【概要】
+Microsoft Defender for Windowsの権限昇格脆弱性CVE-2026-50656（RoguePlanet）についてMicrosoftが2026年7月に提供した修正を、研究者Chaotic Eclipse（Windows脆弱性連続開示キャンペーンで既報のNightmare Eclipse）が完全にバイパスする新PoC「ShieldBreak」を2026-08-11に公開した。Windows 11 25H2（Canary）・Windows Server 2025で動作を確認、Windows 10/Server版でも脆弱だがPoCは未対応。現時点で実悪用の報告はないが、同研究者は過去にも複数のWindowsゼロデイを継続的に開示しており（BitLockerバイパスCVE-2026-45585等）、実環境での悪用速度が過去事例より早い傾向がある。
+
+【推奨アクション】
+・Microsoft Malware Protection Engineの更新状況（バージョン1.1.26060.3008以降）を再確認する
+・ShieldBreak PoCの技術的特徴（SYSTEM権限取得時の異常プロセスチェーン）に基づく検知ルールの追加を検討する
+・Nightmare Eclipse/Chaotic Eclipseの過去の開示パターン（CVE-2026-45585・CVE-2026-50656等）を踏まえ、今後72時間の追加開示を注視する
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*MsMpEng.exe*" | stats count by Computer,NewProcessName
+→ MsMpEng.exeから通常発生しない子プロセスの生成有無を優先確認する。
+
+【参照】
+https://thehackernews.com/2026/08/shieldbreak-zero-day-poc-claims.html
+https://www.bleepingcomputer.com/news/security/new-microsoft-defender-shieldbreak-zero-day-grants-system-privileges
+
+------------------------------------------------------------
+3. Plug and Pwn: Windows Plug and Play機能を悪用したSYSTEM権限奪取手法がDEF CONで公開
+観点: ゼロデイ関連
+採用契機: ε / γ
+------------------------------------------------------------
+
+優先度: 中
+対象: Windows 11（完全更新環境含む）
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-12] 研究者Alejandro Hernando・Borja MartínezがDEF CON 34（2026年8月）で、Windows Plug and Play機能を悪用しUACプロンプトなしでSYSTEM権限のドライバ・co-installerを実行させる「Plug and Pwn」攻撃を発表。FaceDancer等のUSBエミュレーション機材またはRDP USB転送機能で物理アクセスなしにも再現可能、完全更新済みWindows 11でも約5分で成立
+
+【概要】
+Windows の Plug and Play 機能・co-installer 実行パスが NT AUTHORITY\SYSTEM 権限で UAC プロンプトなしに実行されることを悪用し、エミュレートしたUSBデバイスまたはRDP USBリダイレクト経由で脆弱なベンダー製ドライバ・co-installerのインストールを強制しSYSTEM権限を取得する手法。Sierra Wireless・Sony FeliCa・Intel RealSense・Wacom・Atheros等複数ベンダーのソフトウェアで実証された。既知の脆弱性（CVE-2019-10617等、旧CVEの新規適用でありトラックA新規CVEには該当しない）を利用したチェーンであり研究開示のみで実悪用の報告はないが、`DisableCoInstallers`レジストリ値の設定等の緩和策がある。
+
+【推奨アクション】
+・`DisableCoInstallers`レジストリキーの設定を検討する（完全な対策ではない点に留意）
+・デバイスインストール制限ポリシー（Group Policy）の適用を検討する
+・RDP経由のUSBリダイレクト機能が不要な環境では無効化する
+Splunk SPL: index=wineventlog EventCode=20001 OR EventCode=7045 | stats count by Computer,DriverName
+→ 通常業務で使用しないベンダーのco-installerインストールイベントを優先確認する。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/plug-and-pwn-attack-uses-fake-usb-devices-for-windows-system-access
+
+------------------------------------------------------------
+4. 737件の偽Chrome VPN拡張機能がSOCKS5プロキシへトラフィックを誘導
+観点: CVE関連
+採用契機: β / δ
+------------------------------------------------------------
+
+優先度: 中
+対象: Google Chrome拡張機能
+
+【24時間以内の変化】
+[BleepingComputer/The Hacker News 2026-08-12] Chromeウェブストアで公開された737件の偽VPN・プロキシ拡張機能が、単一の事業者が運営するSOCKS5プロキシ経由でユーザートラフィックをルーティングしていたことが判明。少なくとも40の開発者アカウントに分散し主にロシア語話者を標的
+
+【概要】
+正規のVPN・プロキシサービスを装った737件のChrome拡張機能が、単一事業者運営のSOCKS5プロキシインフラへユーザーの通信を誘導していたことが判明した。ブロック済みサービスへのアクセスを求めるロシア語話者ユーザーを主な標的としているが、Chromeウェブストア上のなりすまし拡張機能全般の脅威として国内組織でも拡張機能インストールポリシーの再確認が推奨される。
+
+【推奨アクション】
+・組織管理のChrome環境で許可拡張機能リスト（allowlist）方式への移行を検討する
+・VPN・プロキシを標榜する拡張機能のインストール実績を資産管理システムで棚卸しする
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hundreds-of-fake-chrome-vpn-extensions-route-traffic-through-a-proxy
+
+------------------------------------------------------------
+5. ICS/OT製品定例パッチ - Siemens/Schneider Electric/Phoenix Contact等
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: Siemens/Schneider Electric/Phoenix Contact製ICS/OT製品
+
+【24時間以内の変化】
+[SecurityWeek/JVN 2026-08-12] Siemens・Schneider Electric・Phoenix Contact各社がICS Patch Tuesdayに合わせ脆弱性を修正、CISAも複数のICS/ICS Medical Advisoryを公開
+
+【概要】
+月例のICS Patch Tuesdayに合わせ、Siemens・Schneider Electric・Phoenix Contact各社がOT/ICS製品の脆弱性を修正し、CISAも複数のICS/ICS Medical Advisoryを公開した。個別のCVSS9.0以上・実悪用確認事例は本日時点で確認されていないが、OT環境はパッチ適用サイクルが長いため早期の影響評価が推奨される。
+
+【推奨アクション】
+・自組織のOT/ICS資産台帳とCISA ICS Advisory対象製品を突合する
+・本番停止を伴う適用は次回メンテナンスウィンドウで計画する
+
+【参照】
+https://www.securityweek.com/ics-patch-tuesday-vulnerabilities-fixed-by-siemens-schneider-phoenix-contact-2
+
+------------------------------------------------------------
+6. チップメーカーPatch Tuesday - Intel/AMDが計80件超の脆弱性を修正
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: Intel/AMD製プロセッサ・関連ソフトウェア
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-12] Intelが顧客向けに権限昇格・コード実行につながる複数の高深刻度脆弱性を通知、AMDと合わせ計80件超の脆弱性が修正された
+
+【概要】
+IntelとAMDが月例のチップメーカーPatch Tuesdayで計80件超の脆弱性を修正した。Intelは権限昇格・コード実行につながりうる複数の高深刻度脆弱性を顧客向けに通知している。ファームウェア更新はOS更新と別管理となるケースが多いため、資産管理台帳上での適用状況の可視化が必要。
+
+【推奨アクション】
+・ファームウェア・マイクロコード更新の適用状況をOS更新とは別に確認する
+・特に高深刻度（権限昇格・コード実行）に分類された項目を優先する
+
+【参照】
+https://www.securityweek.com/chipmaker-patch-tuesday-intel-amd-fix-over-80-vulnerabilities-combined
+
+------------------------------------------------------------
+7. Ivanti EPMアップデート - 認証情報漏洩・エージェントサービスクラッシュの脆弱性を修正
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: Ivanti Endpoint Manager (EPM)
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-12] Ivanti EPMのアップデートが公開され、外部SQL接続用の認証情報漏洩・エージェントサービスのクラッシュにつながるリモート悪用可能な脆弱性を修正
+
+【概要】
+Ivanti Endpoint Manager（EPM）のアップデートで、外部SQL接続用の認証情報を漏洩させうる脆弱性、およびエージェントサービスをクラッシュさせうる脆弱性が修正された。実悪用の報告はないが、Ivanti製品は過去に複数回実悪用の標的となっているため早期適用が推奨される。
+
+【推奨アクション】
+・Ivanti EPMの最新アップデート適用状況を確認する
+・外部SQL接続の認証情報を保有する環境ではローテーションを検討する
+
+【参照】
+https://www.securityweek.com/ivanti-epm-update-patches-remotely-exploitable-flaws
+
+------------------------------------------------------------
+8. TCG TPM2.0リファレンス実装に情報漏洩・サイドチャネル脆弱性（CERT/CC）
+観点: CVE関連
+採用契機: α
+------------------------------------------------------------
+
+優先度: 低
+対象: TCG TPM2.0リファレンス実装
+
+【24時間以内の変化】
+[JVN（CERT/CC経由） 2026-08-12] CERT/CCがTCG TPM2.0リファレンス実装の複数脆弱性（CVE-2026-6726・CVE-2026-6727、情報漏洩・タイミングサイドチャネル）についてアドバイザリを公表
+
+【概要】
+TCG TPM2.0のリファレンス実装に情報漏洩およびタイミング・サイドチャネル攻撃に対する脆弱性CVE-2026-6726・CVE-2026-6727が判明した。CVSSスコア・詳細な悪用条件は本日時点で未確認（CERT/CCアドバイザリVU#431093参照）。TPM実装依存のため影響範囲は限定的とみられる。
+
+【推奨アクション】
+・自組織で使用するTPM実装がTCGリファレンス実装ベースか確認する
+・ベンダーからのファームウェア更新情報を継続監視する
+
+【参照】
+https://jvn.jp/vu/JVNVU96623328
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-58231 (SAP Commerce Cloud (Data Hub Adapter)) → low_score: CVSS10.0未認証コード実行だが軸1=7点（未認証RCE+3・CVSS9.0以上+3・広く使われる製品+1）で8点未満、軸2=1点（海外複数ソース報道のみ）で参考A昇格トリガーも該当なし。実悪用・KEV登録・国内報道いずれも本日時点で未確認のため除外。継続監視対象。
+・CVE未採番 (JVN iPedia新着50件（Cisco Secure Firewall Management Center SQLインジェクション・Red Hat build of keycloak複数件・IBM各製品・Johnson Controls各製品等）) → insufficient_evidence: 調査窓内にJVN iPedia新着として50件のベンダーアドバイザリが収集されたが、タイトル・種別からKEV登録・CVSS9.0以上・実悪用確認等の高インパクト条件に該当する明確な兆候は確認されなかった。個別50件の詳細（CVSS・実悪用状況）の逐次照会は本日の調査時間内に完了できなかったため、既報CVEとの重複確認を含め翌日以降の継続調査対象として保留する（除外ではなく調査未了。低優先度フラグ）。
+
+[APT]
+・不明（帰属未確定・City-Forum） / CityForum-2026-SalesforceServiceNowGuestAbuse → low_score: セキュリティ企業Reco単独の帰属調査（軸P: 単一ベンダー報告+3のみ、軸Q: 複数地域・複数業種+3）で軸P=3〜6点・軸Q=3点となり判定順1〜3のいずれも不該当（軸P<8かつ参考A昇格トリガーなし）。SalesforceのAura/LWR Guest User機能およびServiceNow Service Portal検索エンドポイントの未認証悪用による情報窃取活動で、インフラは2025年3月から存在。国内影響の言及なし。継続監視対象。
+
+[AI攻撃]
+・OpenAI/Anthropic/Google APIの暗号化推論オブジェクトから弱いモデルが強いモデルの推論内容を復元できる研究（arXiv論文） → low_score: 研究者チームがOpenAI/Anthropic/Googleの暗号化推論ブロック（encrypted reasoning items等）をセッション越しに再生し、より弱いモデル（Claude Haiku等）を『あいまいなデコーダ』として使い強いモデルの推論内容を復元できることを実証（arXiv論文、6,708件の公開エージェント軌跡から704件のプライバシー侵害情報＝APIキー62件・パスワード33件等を回収）。ただし調査窓内の独立ソースは The Hacker News 1件のみでTemporal Burst Filtering基準（48時間以内3件以上）未達（below_threshold）。軸X=3点（研究者PoC実証のみ）・軸Y=1点（潜在的リスクのみ・単一ソース）双方が低評価のため除外。研究者によれば緩和策適用後は同攻撃は機能しないとのこと。継続監視対象（各社の追加対応・他ソースの追随を待つ）。
+
+[SOC推奨情報]
+該当なし
+
+本日の集計:
+CVE — ゼロデイ特報1件 / 本編2件 / 参考A3件 / 参考B3件 / 除外2件
+APT — 本編1件 / 注目動向0件 / 除外1件
+AI攻撃 — 本編1件 / 参考A0件 / 参考B0件 / 除外1件
+SOC推奨情報 — 高2件 / 中5件 / 低1件 / 除外0件
+
+========================================

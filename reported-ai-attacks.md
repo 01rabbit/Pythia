@@ -13,7 +13,7 @@
 | インシデント名 / CVE等 | カテゴリ | 初報日 | 最終状態 | 最終更新日 | 継続監視 | 備考 |
 |--------------------------|----------|--------|----------|------------|----------|------|
 | Agentjacking（SentryMCP経由） | C3・A4 | 2026-06-19 | 継続監視 | 2026-06-19 | YES | Tenet Security実証・2,388組織露出・85%成功率・本編採用 |
-| LiteLLM PyPI供給チェーン侵害（TeamPCP） | C6 | 2026-06-19 | 継続監視 | 2026-07-05 | YES | 47,000DL・9500万月間DLのパッケージ感染・本編採用／Sophos/Infosecurity Magazine/IT Pro等2026-07-02〜03報道: TeamPCP（The Com系）とランサムウェアグループVectが正式提携し、TeamPCPが窃取した認証情報（Aqua Security Trivy侵害含むCI/CDワークフロー1万件・認証情報50万件超）を用いてVectが少なくとも1件で実際にランサムウェアを展開・恐喝したことを初確認・FBIはAI普及による攻撃自動化・産業化の加速を警告・バーストカウント5件（threshold_met）・本編再採用（AI-2026-07-05-002） |
+| LiteLLM PyPI供給チェーン侵害（TeamPCP） | C6 | 2026-06-19 | 継続監視 | 2026-08-13 | YES | 47,000DL・9500万月間DLのパッケージ感染・本編採用／Sophos/Infosecurity Magazine/IT Pro等2026-07-02〜03報道: TeamPCP（The Com系）とランサムウェアグループVectが正式提携し、TeamPCPが窃取した認証情報（Aqua Security Trivy侵害含むCI/CDワークフロー1万件・認証情報50万件超）を用いてVectが少なくとも1件で実際にランサムウェアを展開・恐喝したことを初確認・FBIはAI普及による攻撃自動化・産業化の加速を警告・バーストカウント5件（threshold_met）・本編再採用（AI-2026-07-05-002）／CloudSEK（The Hacker News/SecurityWeek 2026-08-12）: 約434,000件の窃取ファイル・イベント分析に基づき2,500組織超の露出を確認・litellm_init.pth自動実行の技術詳細判明・公開データセット(exposure.cloudsek.com/ai-supply-chain-incident)公開・バーストカウント2件(below_threshold)・本編再採用（AI-2026-08-12-001） |
 | CVE-2026-7482（Ollama Bleeding Llama） | C1 | 2026-06-19 | 継続監視 | 2026-06-19 | YES | CVSS 9.1・300,000台露出・未認証メモリリード・参考B採用 |
 | OWASP State of Agentic AI Security 2026 v2.01 | B1・C3全般 | 2026-06-19 | 継続監視 | 2026-06-19 | YES | OWASP包括的レポート・実CVE紐付き・参考B採用 |
 | AI生成フィッシング集団→個別最適化移行（Zscaler 2026-06-12） | A1 | 2026-06-19 | 継続監視 | 2026-06-19 | YES | Zscalerレポート・日本語AI生成フィッシング増加・参考A採用 |
