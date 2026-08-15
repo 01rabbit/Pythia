@@ -1,0 +1,144 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-16 07:00 JST
+調査期間: 2026-08-15 07:00 〜 2026-08-16 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に新規ゼロデイ特報事案なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Mustang Panda（別名: HoneyMyte/Bronze President/TA416/Earth Preta/RedDelta / 国家帰属: CN / 帰属信頼度: medium）
+活動タイプ: ttp_update/new_malware
+------------------------------------------------------------
+
+標的: government / Asia/Europe
+マルウェア: CoolClient、msagent.sys（署名済みカーネルモードルートキットドライバ）
+
+【24時間以内の変化】
+[Kaspersky (Securelist) 2026-08-14] 中国nexusのMustang Panda（HoneyMyte）がCoolClientバックドアの二次ペイロードとして、盗用/再利用された証明書（Nanjing Ranyi Technology Co., Ltd.発行）で署名されたカーネルモードルートキットドライバmsagent.sysを新たに投入していると初報
+[The Hacker News 2026-08-14] 署名済みルートキットドライバによるプロセス・ファイル・レジストリ・C2通信の隠蔽機能（33種のIOCTLハンドラ）の技術詳細を追跡報道
+
+【概要】
+Kaspersky GReATは、中国nexusのスパイ活動グループMustang Panda（別名HoneyMyte/Bronze President/TA416/Earth Preta/RedDelta）が、既存のCoolClientバックドア（PlugX初期侵入後に展開）の二次ペイロードとして、盗用または再利用された正規証明書で署名されたカーネルモードルートキットドライバmsagent.sysを新たに使用していることを確認したと開示した。同ドライバは33種のIOCTLハンドラを備え、プロセス・ファイル・レジストリの隠蔽およびC2通信先IPのネットワーク照会結果からの隠蔽を行う。ミャンマー・モンゴル・パキスタン・ロシアの政府機関で被害が確認されており、既存のZoho WorkDrive悪用キャンペーン（インド標的）とはマルウェア・C2基盤・標的が異なるため別キャンペーンとして記録する。
+
+攻撃の流れ（判明分）:
+1. PlugXによる初期侵入後、署名済み正規実行ファイル（defender.exe/Sang.exeへリネームしたSangfor製バイナリ）経由で悪意あるlibngs.dllをDLLサイドロードしCoolClientを起動
+2. レジストリRunキー・サービス登録・スケジュールタスクで永続化を確立
+3. LZMA圧縮されたmsagent.sysドライバを抽出しサービスとして登録、カーネルレベルでプロセス・ファイル・レジストリ・ネットワーク通信を隠蔽しC2活動を継続
+
+【新規TTP】
+・[T1574.002] DLL Side-Loading — 署名済み正規実行ファイル（defender.exe）を悪用しlibngs.dllをサイドロード
+・[T1547.001] Registry Run Keys / Startup Folder — HKCU Runキー『goopdate』で永続化
+・[T1053.005] Scheduled Task — SYSTEM権限のスケジュールタスクを登録し永続化
+・[T1562.001] Disable or Modify Tools — カーネルモードルートキットによりセキュリティツールからプロセス・ファイル・通信を隠蔽
+・[T1112] Modify Registry — レジストリコールバックフィルタリングで自身のレジストリキーを隠蔽
+・[T1014] Rootkit — 署名済みカーネルモードドライバmsagent.sysをサービス登録し33種のIOCTLハンドラでプロセス・ファイルシステム・ネットワーク通信を隠蔽
+
+【IoC】
+Domain: cloudtroe.giize[.]com, employers.theworkpc[.]com, freeread.casacam[.]net, us.lenovoappstore[.]com, sundanish.freeddns[.]org, torinarlabs.webredirect[.]org, news.dursamjbataar[.]org, video.dursamjbataar[.]org, black-popular[.]com, whatismybestthing[.]com
+Hash: 2d7c8780e97409770a9d4f31c66c9d63, 9460e150e1981d5c165043520c5c12fe, 9717f005c5fb98e08d2ad983d88f94ee, f518d8e5fe70d9090f6280c68a95998f, eb79558b037669792652a816e2c669de
+Filename: msagent.sys, libngs.dll, ctxmui.dll
+
+【推奨アクション】
+・署名済みドライバmsagent.sysおよびサービス名『media_updaten』の有無をハンティングする。上記C2ドメインのブロック・監視を行う。PlugXの侵害指標をCoolClient/ルートキット展開の先行シグナルとして扱う。南・中央アジアおよびロシアの政府・公共部門は優先的に検知を強化する。
+Splunk SPL: sourcetype=WinEventLog:Sysmon EventCode=6 ImageLoaded="*msagent.sys*"
+Splunk SPL: sourcetype=WinEventLog:System EventCode=7045 ServiceName="media_updaten"
+Splunk SPL: sourcetype=dns query IN ("cloudtroe.giize.com","employers.theworkpc.com","freeread.casacam.net","us.lenovoappstore.com","sundanish.freeddns.org")
+→ 署名済みドライバのロードイベントは通常稀であり、未知の発行者（特に有効期限切れ・盗用の疑いがある証明書）による新規ドライバロードは高優先度で確認する
+
+【参照】
+https://securelist.com/honeymyte-coolclient-driver-rootkit/121028/
+https://thehackernews.com/2026/08/mustang-panda-adds-signed-windows.html
+
+------------------------------------------------------------
+2. Jewelbug（別名: Earth Alux/REF7707/CL-STA-0049 / 国家帰属: CN / 帰属信頼度: medium）
+活動タイプ: new_target/ioc_release
+------------------------------------------------------------
+
+標的: government / Asia-Pacific/Middle East
+マルウェア: XG-Web
+
+【24時間以内の変化】
+[TechTimes 2026-08-15] Jewelbugが国営通信キャリアの共有Webメール基盤への書込み権限を悪用し、1本の悪意あるスクリプトタグ挿入のみで15の政府省庁を同時に侵害していたことが新たに判明。XG-Webパネルが100万件超のインプラント通信を記録していたことも判明。別名Earth Alux/REF7707/CL-STA-0049としての他ベンダー追跡実績も確認
+
+【概要】
+2026-08-14に既報のJewelbug（Symantec命名、中国nexus・帰属信頼度中）について、単一の国営通信キャリアが運用する共有Webメール基盤への書込み権限を悪用し、1本の悪意あるスクリプトタグを挿入するだけで15の政府省庁を同時に侵害していたという新たな手口の詳細が判明した。XG-Web管理パネルには100万件超のインプラント通信ログが記録されており、他のセキュリティベンダーからはEarth Alux・REF7707・CL-STA-0049として個別に追跡されてきたクラスタと同一である可能性が示された。既報の被害規模（ブラウザCookie58万件超・メール本文2,300件超窃取、44台のCMSサーバでの暗号資産・賭博フィッシング運用）に変化はない。
+
+攻撃の流れ（判明分）:
+1. 国営通信キャリアが運用する複数政府機関共有のWebメール基盤への書込み権限を取得
+2. 共有基盤へ1本の悪意あるスクリプトタグを挿入するのみで、当該基盤を利用する15の政府省庁を一括で侵害
+3. 各省庁のウェブメールセッションからブラウザCookie・メール本文を窃取しXG-Webパネルへ集約、並行して同一C2基盤で暗号資産・賭博フィッシングサイト群を運用
+
+【新規TTP】
+・[T1539] Steal Web Session Cookie — （既報継続）政府ウェブメールシステムからブラウザCookieを58万件超窃取
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・複数テナント・複数組織が共有するWebメール／ポータル基盤について、コンテンツ書込み権限の棚卸しとスクリプトタグ挿入検知（CSP・SRI等）を実施する。政府・軍事・通信セクターはウェブメールセッションCookie再利用の兆候を監視する。
+Splunk SPL: index=proxy sourcetype=webmail_access | stats count by src_ip user_agent | where count > 100
+→ 共有基盤を利用する複数組織で同時多発的に類似の異常アクセスが観測された場合、単一の基盤側侵害を疑う
+
+【参照】
+https://www.techtimes.com/articles/324587/20260815/jewelbug-spy-ring-hit-15-ministries-one-strike-ran-crypto-fraud-same-panel.htm
+
+━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向採用基準を満たす活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックB CVEなし）
+
+・[トレンド記事] Trezor、物流委託先ShipMonkの侵害で約13,689名分の顧客配送情報が流出
+ハードウェアウォレットのTrezorは、物流・分析基盤ベンダーShipMonkが利用するMetabase（既知SQLインジェクション脆弱性経由）を侵害されたことにより、2026-05-10〜08-08の注文に紐づく顧客の氏名・メールアドレス・電話番号・配送先住所が流出したと公式開示した。完全な情報は11,742名分、部分的な情報は1,947名分が対象で、Trezor自身のウォレット基盤・秘密鍵・ファームウェアには影響がないとされる一方、フィッシング・ソーシャルエンジニアリングの実害リスクが残る。90日間のデータ保持・削除契約が被害範囲を限定したとTrezorは説明している。
+
+参照: https://www.bleepingcomputer.com/news/security/trezor-discloses-data-breach-affecting-nearly-14-000-customers/
+参照: https://trezor.io/blog/news/recent-customer-data-exposed-in-shipping-provider-incident
+
+━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: NetScaler ADC/Gateway未パッチ環境はCVE-2026-8452の緊急パッチ適用とSAML関連リクエストの監視強化を優先すべき
+Tier: 3
+確度: 低
+観測出口クラス: E1
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: watchTowr Labs 2026-08-14: CVE-2026-8452（NetScaler ADC/Gateway、CVSS9.8）を単なるDoSではなく未認証・単一リクエストでroot権限RCEに至る脆弱性として再分類する詳細な悪用手順・シェルコードを公開。JPCERT/CC 2026-08-15: 注意喚起at260024.htmlを発行し即時パッチ適用を呼びかけ（実悪用は本日時点で未確認）
+  過去パターン: 無認証・単一リクエストで悪用可能なVPN/境界機器のRCEは、PoC公開後にKEV初回追加へ至る事例が過去に複数観測されている（過去実績）。ただしCVE-2026-8452固有の類似過去事例検索（Step C''）は該当0件
+  脅威情報: CISA KEVカタログJSON本体を確認したが本日時点で当該CVEは未登録。ASLRが有効に機能しておらずメモリレイアウトが再起動後も予測可能である点が武器化の難易度を下げている
+  確度アンカー: EPSS percentile=0.39743 / KEV登録=False / SSVC決定=Attend / Automatable=yes / EPSS算出日=2026-08-15
+推定部分: 推定 — PoC難易度基準（無認証・単一ステップ・ASLR回避不要）を満たすためT3として採用したが、EPSSパーセンタイル0.39743はM3確度=中の閾値（0.90以上またはKEV登録）にも届かず確度は低に留める。KEV初回追加までの具体的なタイミングは予測できない
+先回り監視: NetScaler ns.log/nsppeプロセスの異常終了・再起動、SAML/AAA仮想サーバへの異常に大きいSignedInfo/PrefixListペイロードを含むリクエスト、管理者未認識のWebシェル設置
+的中判定: CISAがCVE-2026-8452をKEVカタログへ初回追加した場合（dateAddedが検証窓内〈2026-08-16〜2026-08-19〉と一致）
+
+━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・不明（帰属未確定・マルウェア命名のみ） / RIS-2026-Evooo1Bot-MiraiSOCKS5Botnet → 軸P6/軸Q5・参考A昇格トリガー該当なしのため除外。既知CVE群の悪用という観点でSection4 SOC推奨情報側で採用
+・APT36（Transparent Tribe / Mythic Leopard、帰属信頼度: 中） / APT36-2026-PATCHCORD-AfghanTelecomEspionage → Acronis TRU一次開示・The Hacker News追跡報道とも2026-08-13付であり調査窓（2026-08-15 07:00〜2026-08-16 07:00 JST）外。次回以降の窓内で新規進展があれば再評価する
+
+本日の集計:
+APT — 本編2件 / 注目動向0件 / 除外2件
+
+========================================

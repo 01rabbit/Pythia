@@ -1,0 +1,85 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-16 07:00 JST
+調査期間: 2026-08-15 07:00 〜 2026-08-16 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に新規ゼロデイ特報事案なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-8452 / Citrix NetScaler ADC / NetScaler Gateway
+対象: NetScaler ADC/Gateway 14.1 (14.1-72.61未満) / 13.1 (13.1-63.18未満) / NetScaler ADC FIPS (14.1-72.61-FIPS未満) / NetScaler ADC FIPS/NDcPP 13.1 (13.1-37.272未満)
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.8 (Critical)
+状態: PoC公開
+
+【24時間以内の変化】
+[watchTowr Labs 2026-08-14] CVE-2026-8452を単なるDoSではなく、SAML SignedInfo PrefixList解析処理のヒープバッファオーバーフローから未認証root権限RCEに至る脆弱性として再分類する技術解析とPoC/シェルコードを公開
+[JPCERT/CC 2026-08-15] CVE-2026-8452に関する注意喚起（at260024.html）を公開し未パッチ環境への即時アップデートを呼びかけ。本日時点で実悪用の確認はないと明記
+
+【概要】
+CVE-2026-8452は2026-06-30にCitrixがバルクアドバイザリ（CTX696604）で「予測不能な動作／サービス拒否」としてのみ公開しパッチを提供していたNetScaler ADC/GatewayのSAML処理に存在するメモリオーバーフロー脆弱性だが、2026-08-14にwatchTowr LabsがSAML SignedInfoのPrefixList解析処理における未認証ヒープバッファオーバーフローを起点に、ヒープチャンク破壊・任意アドレスへのmemcpy・関数ポインタ（tx_pkt_complete_fptr）上書きを経てnsppeプロセス上でroot権限のリモートコード実行に至る詳細な悪用手順とシェルコードを公開し、深刻度の再評価が必要となった。ASLRが有効に機能しておらずプロセス再起動後もメモリレイアウトが予測可能なため悪用難易度は低い。JPCERT/CCは翌2026-08-15に注意喚起を発行し未パッチ環境への即時アップデートを呼びかけているが、独立した実悪用の確認は本日時点で得られていない。
+
+攻撃の流れ:
+1. SAML SP/IdPとして構成されたNetScaler（Gateway/AAA仮想サーバ）へ、細工したds:SignedInfo PrefixList属性を含む未認証SAMLメッセージを送信
+2. 境界検証のない固定長バッファへPrefixListデータがコピーされ隣接ヒープチャンクのメタデータが破壊される
+3. 破壊済みチャンクを起点にsplitPktInner内のmemcpyを利用し任意アドレスへの書き込みを達成
+4. 関数ポインタtx_pkt_complete_fptrを上書きし実行フローを攻撃者制御のシェルコードへ転送、実行可能ヒープ上でroot権限コードを実行
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[NetScalerのns.log/newnslog・httpaccess.log・AAA/SAML認証ログ、nsppeプロセスのクラッシュ/再起動ログを監視する]
+Splunk SPL: sourcetype=citrix:netscaler:syslog ("nsppe" AND (crash OR restart OR core)) | stats count by host
+Splunk SPL: sourcetype=citrix:netscaler:aaa (saml OR "SignedInfo") | eval payload_len=len(_raw) | where payload_len > 8000
+→ SAML/AAA仮想サーバ設定の有無を優先確認し、該当構成のNetScalerは修正版（14.1-72.61 / 13.1-63.18）へ即時アップデートする。nsppeプロセスの異常な再起動・クラッシュはPoC試行の兆候として扱う
+
+【参照】
+https://www.jpcert.or.jp/at/2026/at260024.html
+https://labs.watchtowr.com/youre-back-in-the-room-citrix-netscaler-pre-auth-rce-cve-2026-8452/
+https://nvd.nist.gov/vuln/detail/CVE-2026-8452
+https://support.citrix.com/external/article/CTX696604/netscaler-adc-and-netscaler-gateway-secu.html
+
+━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考情報A採用基準を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考情報B採用基準を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-71362 (Adobe Commerce / Magento Open Source) → 2026-08-14に参考B既報・窓内の新規進展確認されず（既存の攻撃予報との重複発行に関する人間レビュー要請が既報にあり、本日は新規予報化しない）
+・CVE-2026-68820 (Microsoft Windows AFD.sys (WinSock)) → 2026-08-12にゼロデイ特報として既報・Lazarus/FudModule実悪用の内容から窓内の変化確認されず
+・CVE-2026-72898 (Metabase) → KEV登録済みとして既報・窓内の新規進展確認されず（ShipMonk/Trezor侵害の起点として本日はSection2トレンド記事側で言及）
+・CVE-2026-63077 (JetBrains TeamCity) → 既報・2026-08-14のSecurity NEXT記事は既知事実の再掲のみで新規事実なし
+・CVE-2026-56164 (Microsoft SharePoint) → 既報・KEV登録済みで窓内の新規進展確認されず
+・CVE-2026-8037 (Progress Kemp LoadMaster / ECS Connection Manager) → 既報・FCEB期限到来（2026-08-10）から窓内の新規進展確認されず
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編1件 / 参考A0件 / 参考B0件 / 除外6件
+
+========================================
