@@ -1,0 +1,697 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-08-16",
+    "generated_at": "2026-08-16T07:50:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-08-15T07:00:00+09:00",
+      "to": "2026-08-16T07:00:00+09:00"
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [
+    {
+      "cve_id": "CVE-2026-8452",
+      "product": "Citrix NetScaler ADC / NetScaler Gateway",
+      "vendor": "Cloud Software Group (Citrix)",
+      "affected_versions": "NetScaler ADC/Gateway 14.1 (14.1-72.61未満) / 13.1 (13.1-63.18未満) / NetScaler ADC FIPS (14.1-72.61-FIPS未満) / NetScaler ADC FIPS/NDcPP 13.1 (13.1-37.272未満)",
+      "priority": "high",
+      "cvss_v3": 9.8,
+      "cvss_v4": 8.8,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-119"
+      ],
+      "epss": {
+        "score": 0.00487,
+        "percentile": 0.39743,
+        "model_date": "2026-08-15"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "14.1-72.61 / 13.1-63.18（FIPS/NDcPP版含む、2026-06-30提供済み）",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 12,
+      "axis2_score": 5,
+      "jpcert_ipa": {
+        "issued": true,
+        "entries": [
+          {
+            "title": "注意喚起: NetScaler ADCおよびNetScaler Gatewayにおけるリモートコード実行につながる脆弱性（CVE-2026-8452）に関する注意喚起",
+            "url": "https://www.jpcert.or.jp/at/2026/at260024.html"
+          }
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "watchTowr Labs",
+          "date": "2026-08-14T00:00:00+09:00",
+          "description": "CVE-2026-8452を単なるDoSではなく、SAML SignedInfo PrefixList解析処理のヒープバッファオーバーフローから未認証root権限RCEに至る脆弱性として再分類する技術解析とPoC/シェルコードを公開"
+        },
+        {
+          "source": "JPCERT/CC",
+          "date": "2026-08-15T14:31:00+09:00",
+          "description": "CVE-2026-8452に関する注意喚起（at260024.html）を公開し未パッチ環境への即時アップデートを呼びかけ。本日時点で実悪用の確認はないと明記"
+        }
+      ],
+      "overview": "CVE-2026-8452は2026-06-30にCitrixがバルクアドバイザリ（CTX696604）で「予測不能な動作／サービス拒否」としてのみ公開しパッチを提供していたNetScaler ADC/GatewayのSAML処理に存在するメモリオーバーフロー脆弱性だが、2026-08-14にwatchTowr LabsがSAML SignedInfoのPrefixList解析処理における未認証ヒープバッファオーバーフローを起点に、ヒープチャンク破壊・任意アドレスへのmemcpy・関数ポインタ（tx_pkt_complete_fptr）上書きを経てnsppeプロセス上でroot権限のリモートコード実行に至る詳細な悪用手順とシェルコードを公開し、深刻度の再評価が必要となった。ASLRが有効に機能しておらずプロセス再起動後もメモリレイアウトが予測可能なため悪用難易度は低い。JPCERT/CCは翌2026-08-15に注意喚起を発行し未パッチ環境への即時アップデートを呼びかけているが、独立した実悪用の確認は本日時点で得られていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "SAML SP/IdPとして構成されたNetScaler（Gateway/AAA仮想サーバ）へ、細工したds:SignedInfo PrefixList属性を含む未認証SAMLメッセージを送信"
+        },
+        {
+          "step": 2,
+          "description": "境界検証のない固定長バッファへPrefixListデータがコピーされ隣接ヒープチャンクのメタデータが破壊される"
+        },
+        {
+          "step": 3,
+          "description": "破壊済みチャンクを起点にsplitPktInner内のmemcpyを利用し任意アドレスへの書き込みを達成"
+        },
+        {
+          "step": 4,
+          "description": "関数ポインタtx_pkt_complete_fptrを上書きし実行フローを攻撃者制御のシェルコードへ転送、実行可能ヒープ上でroot権限コードを実行"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "watchTowr Labs 2026-08-14: 未認証で公開されたSAML/AAAエンドポイントへ細工したリクエストを送信しヒープオーバーフロー経由でroot権限RCEに至る悪用手順を実証"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "NetScalerのns.log/newnslog・httpaccess.log・AAA/SAML認証ログ、nsppeプロセスのクラッシュ/再起動ログを監視する",
+        "splunk_spl": [
+          "sourcetype=citrix:netscaler:syslog (\"nsppe\" AND (crash OR restart OR core)) | stats count by host",
+          "sourcetype=citrix:netscaler:aaa (saml OR \"SignedInfo\") | eval payload_len=len(_raw) | where payload_len > 8000"
+        ],
+        "detection_notes": "SAML/AAA仮想サーバ設定の有無を優先確認し、該当構成のNetScalerは修正版（14.1-72.61 / 13.1-63.18）へ即時アップデートする。nsppeプロセスの異常な再起動・クラッシュはPoC試行の兆候として扱う"
+      },
+      "references": [
+        {
+          "url": "https://www.jpcert.or.jp/at/2026/at260024.html",
+          "title": null,
+          "language": "ja",
+          "source": "JPCERT/CC"
+        },
+        {
+          "url": "https://labs.watchtowr.com/youre-back-in-the-room-citrix-netscaler-pre-auth-rce-cve-2026-8452/",
+          "title": null,
+          "language": "en",
+          "source": "watchTowr Labs"
+        },
+        {
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-8452",
+          "title": null,
+          "language": "en",
+          "source": "NVD"
+        },
+        {
+          "url": "https://support.citrix.com/external/article/CTX696604/netscaler-adc-and-netscaler-gateway-secu.html",
+          "title": null,
+          "language": "en",
+          "source": "Cloud Software Group (Citrix)"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "government",
+        "finance",
+        "telecom"
+      ],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260816-CVEP-be9df810"
+    }
+  ],
+  "reference_a": [],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-08-16-001",
+        "title": "Trezor、物流委託先ShipMonkの侵害で約13,689名分の顧客配送情報が流出",
+        "summary": "ハードウェアウォレットのTrezorは、物流・分析基盤ベンダーShipMonkが利用するMetabase（既知SQLインジェクション脆弱性経由）を侵害されたことにより、2026-05-10〜08-08の注文に紐づく顧客の氏名・メールアドレス・電話番号・配送先住所が流出したと公式開示した。完全な情報は11,742名分、部分的な情報は1,947名分が対象で、Trezor自身のウォレット基盤・秘密鍵・ファームウェアには影響がないとされる一方、フィッシング・ソーシャルエンジニアリングの実害リスクが残る。90日間のデータ保持・削除契約が被害範囲を限定したとTrezorは説明している。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-08-15T00:00:00+09:00",
+            "description": "Trezorが公式開示。ShipMonk経由の侵害で顧客配送情報が流出したと発表"
+          },
+          {
+            "source": "Trezor Blog",
+            "date": "2026-08-14T00:00:00+09:00",
+            "description": "公式インシデント開示を公開"
+          }
+        ],
+        "sector_impact": [
+          "finance",
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/trezor-discloses-data-breach-affecting-nearly-14-000-customers/",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://trezor.io/blog/news/recent-customer-data-exposed-in-shipping-provider-incident",
+            "title": null,
+            "language": "en",
+            "source": "Trezor Blog"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260816-TRND-a135f167"
+      }
+    ]
+  },
+  "apt_main": [
+    {
+      "group_name": "Mustang Panda",
+      "aliases": [
+        "HoneyMyte",
+        "Bronze President",
+        "TA416",
+        "Earth Preta",
+        "RedDelta"
+      ],
+      "nation_state": "CN",
+      "attribution_confidence": "medium",
+      "campaign_id": "MustangPanda-2026-CoolClientKernelRootkit",
+      "activity_type": [
+        "ttp_update",
+        "new_malware"
+      ],
+      "motivation": "espionage",
+      "first_seen": null,
+      "last_seen": "2026-08-15",
+      "targets": {
+        "sectors": [
+          "government"
+        ],
+        "regions": [
+          "Asia",
+          "Europe"
+        ],
+        "countries": [
+          "MM",
+          "MN",
+          "PK",
+          "RU"
+        ]
+      },
+      "malware": [
+        {
+          "name": "CoolClient",
+          "type": "backdoor",
+          "language": null,
+          "delivery": [
+            "dll_sideloading"
+          ],
+          "persistence": [
+            "registry",
+            "scheduled_task",
+            "service"
+          ],
+          "c2_protocol": []
+        },
+        {
+          "name": "msagent.sys（署名済みカーネルモードルートキットドライバ）",
+          "type": "rootkit",
+          "language": null,
+          "delivery": [],
+          "persistence": [
+            "service"
+          ],
+          "c2_protocol": []
+        }
+      ],
+      "axis_p_score": 11,
+      "axis_q_score": 8,
+      "changes_24h": [
+        {
+          "source": "Kaspersky (Securelist)",
+          "date": "2026-08-14T00:00:00+09:00",
+          "description": "中国nexusのMustang Panda（HoneyMyte）がCoolClientバックドアの二次ペイロードとして、盗用/再利用された証明書（Nanjing Ranyi Technology Co., Ltd.発行）で署名されたカーネルモードルートキットドライバmsagent.sysを新たに投入していると初報"
+        },
+        {
+          "source": "The Hacker News",
+          "date": "2026-08-14T00:00:00+09:00",
+          "description": "署名済みルートキットドライバによるプロセス・ファイル・レジストリ・C2通信の隠蔽機能（33種のIOCTLハンドラ）の技術詳細を追跡報道"
+        }
+      ],
+      "overview": "Kaspersky GReATは、中国nexusのスパイ活動グループMustang Panda（別名HoneyMyte/Bronze President/TA416/Earth Preta/RedDelta）が、既存のCoolClientバックドア（PlugX初期侵入後に展開）の二次ペイロードとして、盗用または再利用された正規証明書で署名されたカーネルモードルートキットドライバmsagent.sysを新たに使用していることを確認したと開示した。同ドライバは33種のIOCTLハンドラを備え、プロセス・ファイル・レジストリの隠蔽およびC2通信先IPのネットワーク照会結果からの隠蔽を行う。ミャンマー・モンゴル・パキスタン・ロシアの政府機関で被害が確認されており、既存のZoho WorkDrive悪用キャンペーン（インド標的）とはマルウェア・C2基盤・標的が異なるため別キャンペーンとして記録する。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "PlugXによる初期侵入後、署名済み正規実行ファイル（defender.exe/Sang.exeへリネームしたSangfor製バイナリ）経由で悪意あるlibngs.dllをDLLサイドロードしCoolClientを起動"
+        },
+        {
+          "step": 2,
+          "description": "レジストリRunキー・サービス登録・スケジュールタスクで永続化を確立"
+        },
+        {
+          "step": 3,
+          "description": "LZMA圧縮されたmsagent.sysドライバを抽出しサービスとして登録、カーネルレベルでプロセス・ファイル・レジストリ・ネットワーク通信を隠蔽しC2活動を継続"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1574.002",
+          "name": "DLL Side-Loading",
+          "implementation": "署名済み正規実行ファイル（defender.exe）を悪用しlibngs.dllをサイドロード"
+        },
+        {
+          "mitre_id": "T1547.001",
+          "name": "Registry Run Keys / Startup Folder",
+          "implementation": "HKCU Runキー『goopdate』で永続化"
+        },
+        {
+          "mitre_id": "T1053.005",
+          "name": "Scheduled Task",
+          "implementation": "SYSTEM権限のスケジュールタスクを登録し永続化"
+        },
+        {
+          "mitre_id": "T1562.001",
+          "name": "Disable or Modify Tools",
+          "implementation": "カーネルモードルートキットによりセキュリティツールからプロセス・ファイル・通信を隠蔽"
+        },
+        {
+          "mitre_id": "T1112",
+          "name": "Modify Registry",
+          "implementation": "レジストリコールバックフィルタリングで自身のレジストリキーを隠蔽"
+        },
+        {
+          "mitre_id": "T1014",
+          "name": "Rootkit",
+          "implementation": "署名済みカーネルモードドライバmsagent.sysをサービス登録し33種のIOCTLハンドラでプロセス・ファイルシステム・ネットワーク通信を隠蔽"
+        }
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [],
+        "domains": [
+          "cloudtroe.giize[.]com",
+          "employers.theworkpc[.]com",
+          "freeread.casacam[.]net",
+          "us.lenovoappstore[.]com",
+          "sundanish.freeddns[.]org",
+          "torinarlabs.webredirect[.]org",
+          "news.dursamjbataar[.]org",
+          "video.dursamjbataar[.]org",
+          "black-popular[.]com",
+          "whatismybestthing[.]com"
+        ],
+        "hashes": [
+          "2d7c8780e97409770a9d4f31c66c9d63",
+          "9460e150e1981d5c165043520c5c12fe",
+          "9717f005c5fb98e08d2ad983d88f94ee",
+          "f518d8e5fe70d9090f6280c68a95998f",
+          "eb79558b037669792652a816e2c669de"
+        ],
+        "urls": [],
+        "filenames": [
+          "msagent.sys",
+          "libngs.dll",
+          "ctxmui.dll"
+        ]
+      },
+      "recommended_actions": "署名済みドライバmsagent.sysおよびサービス名『media_updaten』の有無をハンティングする。上記C2ドメインのブロック・監視を行う。PlugXの侵害指標をCoolClient/ルートキット展開の先行シグナルとして扱う。南・中央アジアおよびロシアの政府・公共部門は優先的に検知を強化する。",
+      "splunk_spl": [
+        "sourcetype=WinEventLog:Sysmon EventCode=6 ImageLoaded=\"*msagent.sys*\"",
+        "sourcetype=WinEventLog:System EventCode=7045 ServiceName=\"media_updaten\"",
+        "sourcetype=dns query IN (\"cloudtroe.giize.com\",\"employers.theworkpc.com\",\"freeread.casacam.net\",\"us.lenovoappstore.com\",\"sundanish.freeddns.org\")"
+      ],
+      "detection_notes": "署名済みドライバのロードイベントは通常稀であり、未知の発行者（特に有効期限切れ・盗用の疑いがある証明書）による新規ドライバロードは高優先度で確認する",
+      "references": [
+        {
+          "url": "https://securelist.com/honeymyte-coolclient-driver-rootkit/121028/",
+          "title": null,
+          "language": "en",
+          "source": "Kaspersky (Securelist)"
+        },
+        {
+          "url": "https://thehackernews.com/2026/08/mustang-panda-adds-signed-windows.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_main",
+      "info_id": "20260816-APTC-e6047458"
+    },
+    {
+      "group_name": "Jewelbug",
+      "aliases": [
+        "Earth Alux",
+        "REF7707",
+        "CL-STA-0049"
+      ],
+      "nation_state": "CN",
+      "attribution_confidence": "medium",
+      "campaign_id": "Jewelbug-2026-XGWeb-EspionageCryptoFraud",
+      "activity_type": [
+        "new_target",
+        "ioc_release"
+      ],
+      "motivation": "espionage",
+      "first_seen": null,
+      "last_seen": "2026-08-15",
+      "targets": {
+        "sectors": [
+          "government"
+        ],
+        "regions": [
+          "Asia-Pacific",
+          "Middle East"
+        ],
+        "countries": []
+      },
+      "malware": [
+        {
+          "name": "XG-Web",
+          "type": "other",
+          "language": null,
+          "delivery": [],
+          "persistence": [],
+          "c2_protocol": [
+            "https"
+          ]
+        }
+      ],
+      "axis_p_score": 8,
+      "axis_q_score": 8,
+      "changes_24h": [
+        {
+          "source": "TechTimes",
+          "date": "2026-08-15T00:00:00+09:00",
+          "description": "Jewelbugが国営通信キャリアの共有Webメール基盤への書込み権限を悪用し、1本の悪意あるスクリプトタグ挿入のみで15の政府省庁を同時に侵害していたことが新たに判明。XG-Webパネルが100万件超のインプラント通信を記録していたことも判明。別名Earth Alux/REF7707/CL-STA-0049としての他ベンダー追跡実績も確認"
+        }
+      ],
+      "overview": "2026-08-14に既報のJewelbug（Symantec命名、中国nexus・帰属信頼度中）について、単一の国営通信キャリアが運用する共有Webメール基盤への書込み権限を悪用し、1本の悪意あるスクリプトタグを挿入するだけで15の政府省庁を同時に侵害していたという新たな手口の詳細が判明した。XG-Web管理パネルには100万件超のインプラント通信ログが記録されており、他のセキュリティベンダーからはEarth Alux・REF7707・CL-STA-0049として個別に追跡されてきたクラスタと同一である可能性が示された。既報の被害規模（ブラウザCookie58万件超・メール本文2,300件超窃取、44台のCMSサーバでの暗号資産・賭博フィッシング運用）に変化はない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "国営通信キャリアが運用する複数政府機関共有のWebメール基盤への書込み権限を取得"
+        },
+        {
+          "step": 2,
+          "description": "共有基盤へ1本の悪意あるスクリプトタグを挿入するのみで、当該基盤を利用する15の政府省庁を一括で侵害"
+        },
+        {
+          "step": 3,
+          "description": "各省庁のウェブメールセッションからブラウザCookie・メール本文を窃取しXG-Webパネルへ集約、並行して同一C2基盤で暗号資産・賭博フィッシングサイト群を運用"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1539",
+          "name": "Steal Web Session Cookie",
+          "implementation": "（既報継続）政府ウェブメールシステムからブラウザCookieを58万件超窃取"
+        }
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "複数テナント・複数組織が共有するWebメール／ポータル基盤について、コンテンツ書込み権限の棚卸しとスクリプトタグ挿入検知（CSP・SRI等）を実施する。政府・軍事・通信セクターはウェブメールセッションCookie再利用の兆候を監視する。",
+      "splunk_spl": [
+        "index=proxy sourcetype=webmail_access | stats count by src_ip user_agent | where count > 100"
+      ],
+      "detection_notes": "共有基盤を利用する複数組織で同時多発的に類似の異常アクセスが観測された場合、単一の基盤側侵害を疑う",
+      "references": [
+        {
+          "url": "https://www.techtimes.com/articles/324587/20260815/jewelbug-spy-ring-hit-15-ministries-one-strike-ran-crypto-fraud-same-panel.htm",
+          "title": null,
+          "language": "en",
+          "source": "TechTimes"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_main",
+      "info_id": "20260816-APTC-334d0dab"
+    }
+  ],
+  "apt_notable": [],
+  "forecasts": [
+    {
+      "forecast_number": 1,
+      "title": "NetScaler ADC/Gateway未パッチ環境はCVE-2026-8452の緊急パッチ適用とSAML関連リクエストの監視強化を優先すべき",
+      "tier": 3,
+      "confidence": "low",
+      "confidence_numeric": 0.3,
+      "framing": "defensive_action",
+      "outcome_channel": "E1",
+      "window_hours": 72,
+      "forecast_class": "fast_72h",
+      "forecast_class_rationale": "CISA KEV初回追加は72h窓で外部可視化される一次イベントのためfast_72hに割当（M2）",
+      "root": {
+        "evidence": "watchTowr Labs 2026-08-14: CVE-2026-8452（NetScaler ADC/Gateway、CVSS9.8）を単なるDoSではなく未認証・単一リクエストでroot権限RCEに至る脆弱性として再分類する詳細な悪用手順・シェルコードを公開。JPCERT/CC 2026-08-15: 注意喚起at260024.htmlを発行し即時パッチ適用を呼びかけ（実悪用は本日時点で未確認）",
+        "past_patterns": "無認証・単一リクエストで悪用可能なVPN/境界機器のRCEは、PoC公開後にKEV初回追加へ至る事例が過去に複数観測されている（過去実績）。ただしCVE-2026-8452固有の類似過去事例検索（Step C''）は該当0件",
+        "threat_intel": "CISA KEVカタログJSON本体を確認したが本日時点で当該CVEは未登録。ASLRが有効に機能しておらずメモリレイアウトが再起動後も予測可能である点が武器化の難易度を下げている"
+      },
+      "anchor": {
+        "epss_score": 0.00487,
+        "epss_percentile": 0.39743,
+        "epss_model_date": "2026-08-15",
+        "kev_registered": false,
+        "ssvc_decision": "Attend",
+        "ssvc_automatable": "yes"
+      },
+      "kev_snapshot": {
+        "date_added": null,
+        "ransomware_flag": null,
+        "reference_set": []
+      },
+      "estimated_part": "推定 — PoC難易度基準（無認証・単一ステップ・ASLR回避不要）を満たすためT3として採用したが、EPSSパーセンタイル0.39743はM3確度=中の閾値（0.90以上またはKEV登録）にも届かず確度は低に留める。KEV初回追加までの具体的なタイミングは予測できない",
+      "early_warning_signals": "NetScaler ns.log/nsppeプロセスの異常終了・再起動、SAML/AAA仮想サーバへの異常に大きいSignedInfo/PrefixListペイロードを含むリクエスト、管理者未認識のWebシェル設置",
+      "hit_criteria": "CISAがCVE-2026-8452をKEVカタログへ初回追加した場合（dateAddedが検証窓内〈2026-08-16〜2026-08-19〉と一致）",
+      "deadline_date": "2026-08-19",
+      "related_cves": [
+        "CVE-2026-8452"
+      ],
+      "related_apt_campaigns": []
+    }
+  ],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-08-16-001",
+      "title": "Evooo1Bot: 既知CVE群を悪用しSOCKS5中継ノード化するMirai派生Linuxボットネット",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "δ",
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "境界ルータ・ファイアウォール・IoT機器（Alcatel OmniPCX・NETGEAR・Tenda・Mitsubishi Electric・Telesquare・D-Link等の未パッチ機器）",
+      "targets": {
+        "sectors": [
+          "telecom",
+          "it",
+          "other"
+        ],
+        "regions": [
+          "JP",
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "FortiGuard Labs / BleepingComputer",
+          "date": "2026-08-15T00:00:00+09:00",
+          "description": "Mirai派生の新型Linuxボットネット『Evooo1Bot』が2026年7月以降、複数の既知CVEを悪用し境界機器を侵害しSOCKS5中継ノード化していると報告。FortiGuardのテレメトリ観測地域には日本も含まれる"
+        }
+      ],
+      "overview": "FortiGuard Labsが開示したEvooo1Botは、Alcatel OmniPCX（CVE-2007-3010）・NETGEAR（CVE-2016-6277）・Tenda（CVE-2018-14558/CVE-2020-10987）・三菱電機ME-RTU（CVE-2019-14931）・Telesquare（CVE-2021-46422/CVE-2024-29269）・D-Link（CVE-2022-37055/CVE-2025-55583/CVE-2025-10123）等、既に採番済みの複数CVEを悪用し境界ルータ・ファイアウォール・IoT機器を侵害、SOCKS5中継ノード化・SSHブルートフォース・認証情報窃取・DDoSに利用するMirai派生ボットネットであり、いずれも単体ではSection3本編採用基準（軸1）に届かないが、境界機器のパッチ未適用状態がまとめて悪用される構図としてSOC運用上把握すべき事案である。",
+      "recommended_actions": [
+        "上記ベンダー製品（Alcatel/NETGEAR/Tenda/三菱電機/Telesquare/D-Link等）の資産棚卸しとファームウェア更新状況の確認",
+        "境界機器の管理画面インターネット直接露出の有無を確認し不要な露出を排除",
+        "デフォルト管理者認証情報の変更、SOCKS5等の不審なリレーポート（TCP/1080等）の開放有無を確認"
+      ],
+      "monitoring": {
+        "description": "境界/IoT機器からの外部通信をFirewall/IPS/DNSログで監視する",
+        "splunk_spl": [
+          "index=network dest_port=1080 sourcetype=firewall | stats count by src_ip dest_ip",
+          "index=proxy OR index=dns (dest_ip=\"91.92.40.118\" OR url=\"*wget.sh\")"
+        ],
+        "detection_notes": "IoT/境界機器からの予期しないSOCKS5リスナー開放や既知C2（91.92.40[.]118）への通信を優先確認する"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/new-evooo1bot-linux-botnet-turns-routers-into-traffic-relay-nodes",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://www.fortinet.com/blog/threat-research/multi-functional-linux-botnet-evooo1bot",
+          "title": null,
+          "language": "en",
+          "source": "FortiGuard Labs"
+        }
+      ],
+      "info_id": "20260816-SOCR-147475c9"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-71362",
+        "product": "Adobe Commerce / Magento Open Source",
+        "reason": "already_reported",
+        "reason_detail": "2026-08-14に参考B既報・窓内の新規進展確認されず（既存の攻撃予報との重複発行に関する人間レビュー要請が既報にあり、本日は新規予報化しない）",
+        "reported_date": "2026-08-14"
+      },
+      {
+        "cve_id": "CVE-2026-68820",
+        "product": "Microsoft Windows AFD.sys (WinSock)",
+        "reason": "already_reported",
+        "reason_detail": "2026-08-12にゼロデイ特報として既報・Lazarus/FudModule実悪用の内容から窓内の変化確認されず",
+        "reported_date": "2026-08-12"
+      },
+      {
+        "cve_id": "CVE-2026-72898",
+        "product": "Metabase",
+        "reason": "already_reported",
+        "reason_detail": "KEV登録済みとして既報・窓内の新規進展確認されず（ShipMonk/Trezor侵害の起点として本日はSection2トレンド記事側で言及）",
+        "reported_date": "2026-08-11"
+      },
+      {
+        "cve_id": "CVE-2026-63077",
+        "product": "JetBrains TeamCity",
+        "reason": "already_reported",
+        "reason_detail": "既報・2026-08-14のSecurity NEXT記事は既知事実の再掲のみで新規事実なし",
+        "reported_date": "2026-08-06"
+      },
+      {
+        "cve_id": "CVE-2026-56164",
+        "product": "Microsoft SharePoint",
+        "reason": "already_reported",
+        "reason_detail": "既報・KEV登録済みで窓内の新規進展確認されず",
+        "reported_date": "2026-07-15"
+      },
+      {
+        "cve_id": "CVE-2026-8037",
+        "product": "Progress Kemp LoadMaster / ECS Connection Manager",
+        "reason": "already_reported",
+        "reason_detail": "既報・FCEB期限到来（2026-08-10）から窓内の新規進展確認されず",
+        "reported_date": "2026-06-30"
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "RIS-2026-Evooo1Bot-MiraiSOCKS5Botnet",
+        "group_name": "不明（帰属未確定・マルウェア命名のみ）",
+        "reason": "low_score",
+        "reason_detail": "軸P6/軸Q5・参考A昇格トリガー該当なしのため除外。既知CVE群の悪用という観点でSection4 SOC推奨情報側で採用",
+        "reported_date": "2026-08-16"
+      },
+      {
+        "campaign_id": "APT36-2026-PATCHCORD-AfghanTelecomEspionage",
+        "group_name": "APT36（Transparent Tribe / Mythic Leopard、帰属信頼度: 中）",
+        "reason": "out_of_window",
+        "reason_detail": "Acronis TRU一次開示・The Hacker News追跡報道とも2026-08-13付であり調査窓（2026-08-15 07:00〜2026-08-16 07:00 JST）外。次回以降の窓内で新規進展があれば再評価する",
+        "reported_date": "2026-08-16"
+      }
+    ],
+    "ai_attacks": [
+      {
+        "attack_id": null,
+        "title": "Trivy（AquaSecurity）が2,500組織規模のサプライチェーン侵害の真因と判明（LiteLLM PyPI侵害の訂正報道）",
+        "reason": "out_of_window",
+        "reason_detail": "SecurityWeek/SOCRadar 2026-08-14 11:35 UTC公開であり調査窓（2026-08-14 22:00 UTC開始）外。既報LiteLLM PyPI供給チェーン侵害（TeamPCP）行の訂正情報のため、次回更新時の反映を推奨",
+        "reported_date": "2026-08-16"
+      },
+      {
+        "attack_id": null,
+        "title": "台湾政府機関・原子力安全機関へのHermes/OpenClaw AIエージェント自律型サイバー攻撃（Dream Security/台湾行政院数位発展部）",
+        "reason": "out_of_window",
+        "reason_detail": "初報・追跡報道とも2026-08-12〜08-14付であり調査窓外。reported-ai-attacks.md/reported-apts.mdいずれにも未収載のためバックフィル候補として日次サマリーで報告",
+        "reported_date": "2026-08-16"
+      }
+    ],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 1,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 6,
+      "total_processed": 7
+    },
+    "apt": {
+      "main": 2,
+      "notable": 0,
+      "excluded": 2,
+      "total_processed": 4
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 2,
+      "total_processed": 2,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 0,
+      "medium": 1,
+      "low": 0,
+      "excluded": 0,
+      "total_processed": 1,
+      "perspective_breakdown": {
+        "cve": 1,
+        "zeroday": 0,
+        "ai_attack": 0
+      }
+    }
+  }
+}
