@@ -1,0 +1,226 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-18 07:00 JST
+調査期間: 2026-08-17 07:00 〜 2026-08-18 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-69414 / Microsoft Defender (Malware Protection Engine) — ShieldBreak
+対象: Windows 10 / Windows 11(25H2含む) / Windows Server各版（CVE-2026-50656 RoguePlanet修正パッチ適用済み環境を含む・修正はバイパスされる）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 未公開
+状態: ゼロデイ / PoC公開
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-17] 研究者Nightmare EclipseがCVE-2026-50656(RoguePlanet)の修正をバイパスする新規ゼロデイ「ShieldBreak」のPoCを公開。Microsoftはパッチを開発中と表明したが本日時点で未提供
+
+【概要】
+RoguePlanet（CVE-2026-50656）の修正をバイパスする新たなMicrosoft Defenderの権限昇格ゼロデイがShieldBreakとして研究者Nightmare Eclipseにより公開され、限定的権限を持つローカル攻撃者が完全パッチ適用環境でもMalware Protection Engineの脆弱性を突きSYSTEM権限を取得できる状態にあるが、Microsoftは本日時点で正式パッチを提供できていない。同研究者は既にCVE-2026-45585（BitLockerバイパス）・CVE-2026-50656（RoguePlanet）を連続開示しているNightmare Eclipseキャンペーンの一環であり、Windowsゼロデイ連続開示活動として継続監視対象（reported-apts.md: NightmareEclipse-2026-WindowsZeroDayDisclosure）である。
+
+攻撃の流れ:
+1. ローカルの限定権限攻撃者がMalware Protection Engineの脆弱性を悪用するペイロードを実行
+2. Defenderの保護プロセス(MsMpEng.exe)に攻撃者コードを実行させ、RoguePlanet修正のバイパスに成功
+3. SYSTEM権限を取得し完全な権限昇格を達成
+
+【暫定緩和策】
+・Defenderの保護プロセスからの異常な子プロセス生成をEDRで監視する
+・ローカル管理者以外のログオン権限を持つユーザーを最小化する（パッチ未提供のため当面の緩和策）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[MsMpEng.exe（Defender保護プロセス）からの異常な子プロセス生成を監視]
+Splunk SPL: index=sysmon EventCode=1 ParentImage="*MsMpEng.exe" | stats count by Image CommandLine ComputerName
+→ MsMpEng.exeが正規Defenderコンポーネント以外の子プロセスを生成した場合は要調査。パッチ未提供のためEDR側の異常検知が実質的な当面の緩和策。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/microsoft-working-on-defender-patch-for-shieldbreak-zero-day
+https://thehackernews.com/2026/08/shieldbreak-zero-day-poc-claims.html
+https://www.malwarebytes.com/blog/bugs/2026/08/shieldbreak-bypasses-microsofts-patch-for-earlier-defender-flaw
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用基準を満たすCVEなし）
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: 国内報道 / 国内ベンダーアドバイザリ / JVN発行
+
+・CVE-2026-71368 / F-RevoCRM
+CVSS: 6.1 状態: 特記事項なし
+
+【24時間以内の変化】
+[JVN iPedia 2026-08-17] JVNDB-2026-000112として新規登録、シンキングリード公式アドバイザリと同時公開
+
+【概要】
+F-RevoCRMにログイン機能を持つユーザーが特定ページへアクセスした際に意図しないスクリプトが実行される可能性があるクロスサイトスクリプティングの脆弱性。パッチは提供予定だが本日時点で未リリース。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[F-RevoCRMエンドポイントへのXSSパターン混入を監視]
+Splunk SPL: index=web_proxy dest="*f-revocrm*" | regex uri_query="(?i)(<script|onerror=|javascript:)" | table _time src_ip uri_path uri_query
+→ パラメータ内へのスクリプトタグ混入はXSS試行として扱う
+
+【参照】
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-000112.html
+https://jvn.jp/jp/JVN58692577/996364/index.html
+https://f-revocrm.jp/2026/08/47374/
+
+昇格理由: 国内報道 / 国内ベンダーアドバイザリ / JVN発行
+
+・CVE-2026-8715 / Vault Secrets Operator
+CVSS: 9.6 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-08-17] 「シークレット管理製品『Vault Secrets Operator』に深刻な脆弱性」として国内報道、HCSEC-2026-28の内容を紹介
+
+【概要】
+Kubernetes上でVaultシークレットを同期するVault Secrets OperatorのAppRole認証機能secretIDPathフィールドにパス検証不備があり、限定的なKubernetes RBAC権限を持つテナントがOperator PodのファイルシステムをVaultAuth/VaultConnection/VaultStaticSecret経由で任意ファイル読み取りし外部へ窃取できる。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[K8s監査ログでVaultAuth/VaultStaticSecretリソースの不審な作成・更新を監視]
+Splunk SPL: index=k8s_audit objectRef.resource="vaultauths" verb IN (create,update) | table _time user objectRef.name requestObject.spec.appRole.secretIDPath
+→ secretIDPathに予期しないパスが設定された場合は不正操作の疑い。1.5.0未適用環境は優先対応。
+
+【参照】
+https://discuss.hashicorp.com/t/hcsec-2026-28-vault-secrets-operator-vulnerable-to-arbitrary-file-read-via-approle-secretidpath/77645
+https://www.security-next.com/188867
+
+昇格理由: 国内報道 / 国内ベンダーアドバイザリ / JVN発行
+
+・CVE-2026-17186 / IBM Db2 Mirror for i
+CVSS: 9.9 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-08-17] 「データベース同期製品『IBM Db2 Mirror for i』に深刻な脆弱性」として国内報道、CVE-2026-17186ほか計5件を紹介
+
+【概要】
+IBM Db2 Mirror for iのコマンド処理における特定要素の無害化不備により、リモートの未認証攻撃者が任意のCLコマンドを実行可能な脆弱性（CVE-2026-17186、CVSS9.9、PR:N/UI:N）。同一アドバイザリ内にはCVE-2026-17184（CVSS9.8・任意コード実行）、CVE-2026-17182（CVSS9.8・認証回避）、CVE-2026-17181（CVSS9.3・パストラバーサル）、CVE-2026-16879（CVSS8.8・認可不備）が含まれる複合脆弱性群であり、IBMは対応を完了している。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[IBM i QAUDJRN監査ログでHTTPサーバジョブ経由の異常なCLコマンド実行を監視]
+Splunk SPL: index=ibmi sourcetype=qaudjrn command_type=CL user=QTMHHTTP | stats count by _time remote_ip command
+→ HTTPサーバジョブ経由での予期しないCLコマンド実行は侵害の強い兆候。パッチ適用状況の即時確認を推奨。
+
+【参照】
+https://www.security-next.com/188896
+https://www.ibm.com/support/pages/node/7240351
+
+昇格理由: 国内報道 / 国内ベンダーアドバイザリ / JVN発行
+
+・CVE-2026-66149 / SonicWall Email Security（netmask処理）
+CVSS: 7.8 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-08-17] 「『SonicWall Email Security』に脆弱性 - 更新を強く推奨」として国内報道
+
+【概要】
+SonicWall Email SecurityのCLIにおけるnetmaskコマンド処理に起因するコード生成の不適切な制御の脆弱性で、CLI認証を前提にroot権限での任意OSコマンド実行が可能。修正版10.0.36が提供済みで、アドバイザリ公開（2026-08-11）時点で悪用は確認されていない。同一アドバイザリ内にSNMP処理の脆弱性CVE-2026-66150がある。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SonicWall管理CLIアクセスログの異常なコマンド投入を監視]
+Splunk SPL: index=sonicwall sourcetype=mgmt_cli command="*netmask*" | stats count by user src_ip command
+→ 想定外ユーザーからのnetmask関連コマンド投入は要調査。10.0.36未満は優先パッチ対象。
+
+【参照】
+https://www.security-next.com/188892
+
+昇格理由: 国内報道 / 国内ベンダーアドバイザリ / JVN発行
+
+・CVE-2026-66150 / SonicWall Email Security（SNMP処理）
+CVSS: 7.8 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-08-17] CVE-2026-66149と同一アドバイザリ内で報道
+
+【概要】
+SonicWall Email SecurityのCLIにおけるSNMPコマンド処理に起因するコード生成の不適切な制御の脆弱性で、CLI認証を前提にroot権限での任意OSコマンド実行が可能。CVE-2026-66149（netmask処理）と同一アドバイザリの複合脆弱性。修正版10.0.36提供済み・悪用未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SonicWall管理CLIアクセスログの異常なコマンド投入を監視]
+Splunk SPL: index=sonicwall sourcetype=mgmt_cli command="*snmp*" | stats count by user src_ip command
+→ 想定外ユーザーからのsnmp関連コマンド投入は要調査。10.0.36未満は優先パッチ対象。
+
+【参照】
+https://www.security-next.com/188892
+
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-59310 / VMware vCenter Server
+CVSS: 9.8
+既報のvCenterディレクトリトラバーサル脆弱性(CVE-2026-59310、認証バイパスのCVE-2026-59309と併用、2026-08-03から実悪用確認済み)について、独インシデント対応企業QUIRSOが中国語アーティファクト・中国語圏セキュリティ研究の流用・被害地域が中国本土を除く点等を根拠に中国nexus疑いのAPTによる実行と分析し、vmdirのPythonモジュール悪用による認証情報窃取、正規VMwareサービス名を偽装したcronジョブでの永続化（linuxFileバックドア・reverse_ssh）、JSP Webシェル(vmware-perf-update.jsp)設置に加え、最終段階としてBabuk派生ランサムウェア（拡張子.babyk）をESXiホストへ展開する挙動を新たに確認したと報じた。攻撃者は2026-08-14にGitHubへログ消去ユーティリティtmpcleanを公開しており活動は継続中。既報の被害規模（47カ国361件のユニーク被害IP）自体は2026-08-13〜14時点の集計を維持。
+IP: 146.59.252.178, 5.34.177.38, 185.144.28.120, 192.255.141.13, 5.34.176.100 / Domain: se9ly9upbhay.shop / Filename: vmware-perf-update.jsp, tmpclean
+
+監視: [vCenter監査ログでのアカウント作成・cron変更、既知C2 IPへの通信を監視]
+Splunk SPL: index=vmware sourcetype=vcenter_audit (action="account created" OR action="cron modified") | table _time user host action
+Splunk SPL: index=firewall dest_ip IN (5.34.177.38,185.144.28.120,192.255.141.13,5.34.176.100,146.59.252.178) | stats count by src_ip dest_ip dest_port
+→ vCenter管理コンソール外からのアカウント作成・cron変更は高確度の侵害兆候。列挙IOC宛通信は即時遮断対象。ESXiホスト上の.babyk拡張子ファイル・身代金メモの有無を確認する。
+
+参照: https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html
+
+・CVE-2026-58231 / SAP Commerce Cloud（Data Hub Adapter拡張）
+CVSS: 10.0
+SAP Commerce CloudのData Hub Adapter拡張における未認証攻撃者がデフォルト認証クライアントを悪用し検証不備のある機能へ細工した入力を送信することで任意コード実行が可能な最大深刻度(CVSS10.0)の脆弱性で、SAPが2026-08-11に修正を公開した3日後の8/14からハニーポットでの実悪用試行が確認されている。公開PoCは確認されていない。
+IoC: 確認されず
+
+監視: [Data Hub Adapterエンドポイントへの未認証/デフォルトクライアントアクセスを監視]
+Splunk SPL: index=web_proxy uri_path="*/datahub*" OR uri_path="*/hac/*" | stats count by src_ip uri_path status
+→ 未認証セッションからのDataHub関連エンドポイントアクセスかつ異常ペイロードは即時調査対象。IPフィルタセットによる該当エンドポイント制限が暫定緩和策。
+
+参照: https://www.securityweek.com/critical-sap-commerce-cloud-vulnerability-exploited-3-days-after-disclosure
+参照: https://thehackernews.com/2026/08/sap-commerce-cloud-cve-2026-58231.html
+参照: https://www.bleepingcomputer.com/news/security/max-severity-sap-commerce-cloud-flaw-now-targeted-in-attacks/
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】CVE
+━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-54121 (Active Directory Certificate Services (AD CS) — Certighost) → 根拠不十分（パッチ提供済み(2026-07-14)・PoC公開済み(2026-07-24)の既知脆弱性についてBleepingComputerが本日新たに公開した攻撃フロー解説記事のみで、新規の実悪用観測・状態変化なし。採用条件A〜Hのいずれにも該当しないと判断し除外（下流での再判定は不要と判定）。）
+・CVE-2026-4793 (Synology Assistant Windows版) → 既報・変化なし（2026-08-05に参考A採用済み。本日のJVN登録は既報Security NEXT記事と実質同一で新規の状態変化なし。）
+・CVE-2026-8452 (Citrix NetScaler ADC/Gateway) → 既報・変化なし（2026-08-16分レポートで本編採用済み。本日のSecurity NEXT記事は既知知見の国内メディア再報道のみで新規事実の追加なし。）
+・CVE-2026-19478 (GitLab GraphQL（未認証プロジェクト削除）) → スコア基準未達（axis1境界値（4〜7点）・axis2=0（海外単一ソースのみ、参考Aトリガー未確認）。）
+・CVE-2026-19650 (GitLab CSRF（GraphQL multiplexクエリ）) → スコア基準未達（CVSS7.1でCVSS加点条件未達、PoC非公開。CVE-2026-19478と同一アドバイザリ内の複合脆弱性。）
+・CVE-2026-15748 (Forminator WordPressプラグイン（未認証ファイルアップロードRCE）) → スコア基準未達（axis1=7（PoC非公開のため8点未達）、axis2=0（国内報道未確認）。）
+・CVE-2026-15826 (User Profile Builder WordPressプラグイン（認証バイパス）) → スコア基準未達（axis1=7・axis2=0。CVE-2026-15748と同一記事由来。）
+・CVE-2026-14304 (miChecker（Eclipse Foundation・XXE）) → スコア基準未達（CVSS3.3/4.6と低深刻度、KEV非登録・PoC非公開・参考Aトリガーなし。）
+・CVE-2026-58076 (Apache Airflow（デシリアライゼーション）) → スコア基準未達（axis1=3（悪用にDAG-author権限等が前提）、axis2=0（参考Aトリガーなし）。）
+・CVE未採番 (Snowflake GitHub Actions（コマンドインジェクション・CVE未採番）) → 根拠不十分（脆弱性混入・発見・修正がいずれも約2ヶ月前(2026-06)に完了済みで、本日公開の記事はAIエージェントによる発見の事後解説。採用条件A〜Hのいずれにも該当せず除外。）
+
+本日の集計: CVE — ゼロデイ特報1件 / 本編0件 / 参考A5件 / 参考B2件 / 除外10件
+========================================
