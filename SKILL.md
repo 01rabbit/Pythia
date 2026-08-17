@@ -184,6 +184,14 @@ Section 4: SOC推奨情報
   knowledge/ の変更を revert してからコミットし、意図した補正は Issue/PR として提案する）
 - 変更ファイル（reported-*.md / outputs/YYYY-MM-DD/ / forecaster/ の Step 3.5 成果物）を
   git add → git commit → git push する。コミットメッセージ: `daily report: YYYY-MM-DD`
+- セッションの実行環境がブランチ+PR運用を強制する場合（main への直接pushが拒否される場合）:
+  1. push 先ブランチから main への PR を作成する（既存の draft 作成指示に従う）
+  2. 作成直後に PR を ready for review へ変更する（draft 解除）
+  3. GitHub の auto-merge を有効化する（マージ方式: MERGE。要求レビュー・必須チェックが
+     存在すればそれらを満たした時点で自動的に main へマージされる。auto-merge が
+     リポジトリで無効な場合は失敗を許容し、その旨を日次サマリーに1行記録して人間の
+     マージ判断を待つ）
+  （2026-08-18 user-decision (01rabbit): 日次レポートPRは今後自動的にmainへマージする方針）
 - 保存完了後、`security-report.txt`（全セクション完全版）の全文をチャットに表示する
 - 続けて Step 5 の日次サマリー（日本語）を生成し、チャットの最終メッセージとして表示する
 
