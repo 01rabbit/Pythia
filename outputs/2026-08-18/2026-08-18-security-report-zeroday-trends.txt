@@ -1,0 +1,221 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-18 07:00 JST
+調査期間: 2026-08-17 07:00 〜 2026-08-18 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-69414 / Microsoft Defender (Malware Protection Engine) — ShieldBreak
+対象: Windows 10 / Windows 11(25H2含む) / Windows Server各版（CVE-2026-50656 RoguePlanet修正パッチ適用済み環境を含む・修正はバイパスされる）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 未公開
+状態: ゼロデイ / PoC公開
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-17] 研究者Nightmare EclipseがCVE-2026-50656(RoguePlanet)の修正をバイパスする新規ゼロデイ「ShieldBreak」のPoCを公開。Microsoftはパッチを開発中と表明したが本日時点で未提供
+
+【概要】
+RoguePlanet（CVE-2026-50656）の修正をバイパスする新たなMicrosoft Defenderの権限昇格ゼロデイがShieldBreakとして研究者Nightmare Eclipseにより公開され、限定的権限を持つローカル攻撃者が完全パッチ適用環境でもMalware Protection Engineの脆弱性を突きSYSTEM権限を取得できる状態にあるが、Microsoftは本日時点で正式パッチを提供できていない。同研究者は既にCVE-2026-45585（BitLockerバイパス）・CVE-2026-50656（RoguePlanet）を連続開示しているNightmare Eclipseキャンペーンの一環であり、Windowsゼロデイ連続開示活動として継続監視対象（reported-apts.md: NightmareEclipse-2026-WindowsZeroDayDisclosure）である。
+
+攻撃の流れ:
+1. ローカルの限定権限攻撃者がMalware Protection Engineの脆弱性を悪用するペイロードを実行
+2. Defenderの保護プロセス(MsMpEng.exe)に攻撃者コードを実行させ、RoguePlanet修正のバイパスに成功
+3. SYSTEM権限を取得し完全な権限昇格を達成
+
+【暫定緩和策】
+・Defenderの保護プロセスからの異常な子プロセス生成をEDRで監視する
+・ローカル管理者以外のログオン権限を持つユーザーを最小化する（パッチ未提供のため当面の緩和策）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[MsMpEng.exe（Defender保護プロセス）からの異常な子プロセス生成を監視]
+Splunk SPL: index=sysmon EventCode=1 ParentImage="*MsMpEng.exe" | stats count by Image CommandLine ComputerName
+→ MsMpEng.exeが正規Defenderコンポーネント以外の子プロセスを生成した場合は要調査。パッチ未提供のためEDR側の異常検知が実質的な当面の緩和策。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/microsoft-working-on-defender-patch-for-shieldbreak-zero-day
+https://thehackernews.com/2026/08/shieldbreak-zero-day-poc-claims.html
+https://www.malwarebytes.com/blog/bugs/2026/08/shieldbreak-bypasses-microsofts-patch-for-earlier-defender-flaw
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 不明（Suspected China-nexus APT）（別名: なし / 国家帰属: CN / 帰属信頼度: low）
+活動タイプ: new_malware/active_campaign
+------------------------------------------------------------
+
+標的: 不明 / global
+マルウェア: linuxFile、reverse_ssh、vmware-perf-update.jsp、Babuk-derived ransomware (.babyk)
+
+【24時間以内の変化】
+[The Hacker News（原典QUIRSO） 2026-08-17] QUIRSOが中国語アーティファクト・研究流用・被害地域（中国本土除外）から中国nexus疑いと分析し、Babuk派生ランサムウェア(.babyk)展開・JSP Webシェル・ログ消去ツールtmpcleanの新規使用を確認。既報の被害規模（47カ国361件のユニークIP、2026-08-13〜14既報）に加え、攻撃最終段階としてランサムウェア展開が新たに判明
+
+【概要】
+Broadcom VMware vCenterのディレクトリトラバーサル脆弱性CVE-2026-59310（2026-08-03から実悪用確認）を巡り、独インシデント対応企業QUIRSOが中国nexus疑いのAPTによる実行と分析。vmdirのPythonモジュール悪用による認証情報窃取、正規VMwareサービス名を偽装したcronジョブでの永続化（linuxFileバックドア・reverse_ssh）、JSP Webシェル設置に加え、本日新たに攻撃最終段階としてBabuk派生ランサムウェア（拡張子.babyk）のESXiホストへの展開とログ消去ツールtmpclean（2026-08-14 GitHub公開）の使用が確認された。既報の被害規模（47カ国361件のユニーク被害IP）自体は2026-08-13〜14時点の集計を維持しており本日新規に拡大したものではない。
+
+攻撃の流れ（判明分）:
+1. CVE-2026-59309認証バイパスでvcenter_admin管理者アカウントを作成
+2. vSphere REST API経由でESXiホストを列挙・偵察
+3. vmdir Pythonモジュール悪用+レジストリクエリで認証情報窃取、sudoers改変
+4. VMware正規サービス名偽装のcronジョブでlinuxFile/reverse_ssh/JSP Webシェルを永続化
+5. tmpcleanユーティリティでログ消去、Babuk派生ランサムウェア(.babyk)をESXiホストへ展開しファイル暗号化
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+IP: 146.59.252.178, 5.34.177.38, 185.144.28.120, 192.255.141.13, 5.34.176.100
+Domain: se9ly9upbhay.shop
+Filename: vmware-perf-update.jsp, tmpclean
+
+【推奨アクション】
+・CVE-2026-59310/CVE-2026-59309の緊急パッチ適用・インターネット露出vCenterの即時遮断。vpxd/vmdirログでvcenter_admin相当の想定外管理者アカウント作成を監査。cronジョブ名がvmware-vpxd-stats-*等の正規サービス偽装でないか確認。ESXiホスト上の.babyk拡張子ファイル・身代金メモの有無を確認。
+Splunk SPL: index=vmware sourcetype=vpxd ("vcenter_admin" OR "account creation") | table _time host user
+Splunk SPL: index=linux sourcetype=cron ("vmware-vpxd-stats" OR "vmware-perf-collect" OR "vmware-perf-sync") | stats count by host cron_entry
+→ 正規VMwareメンテナンスジョブはvmdir Pythonモジュール経由で管理者アカウントを作成しない。変更管理記録との突合を必須とする。
+
+【参照】
+https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html
+
+------------------------------------------------------------
+2. Cl0p（別名: Chubby Scorpius/FIN11/Graceful Spider/Lace Tempest / 国家帰属: 不明 / 帰属信頼度: medium）
+活動タイプ: active_campaign/new_target
+------------------------------------------------------------
+
+標的: energy/healthcare/manufacturing/professional_services / global
+マルウェア: 判明分なし
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-17] PTC Windchill/FlexPLM脆弱性CVE-2026-12569を悪用したCl0pキャンペーンの新規43組織被害バッチが判明。Philips（社内エンタープライズサーバ侵害を確認）、GE（調査中）、Shell（データ89GB窃取の主張）が新規標的として判明。ReliaQuest/Ransom-ISAC/CISAが実悪用を独立確認し、CISAがFCEB機関へ3日以内の対応を義務付け
+
+【概要】
+2026-07-28に一旦軸P5/軸Q5で除外していたCl0pのPTC Windchill/FlexPLM（CVE-2026-12569）悪用キャンペーンが、Philips・GE・Shellを含む新規43組織の被害バッチ公開により大幅に拡大した。Cl0pはインターネット露出Windchill/FlexPLMインスタンスへJSP Webシェルを設置しバックアップ・設計図面・施設写真等を窃取しており、Shellからは89GBのデータ窃取を主張している。ReliaQuest・Ransom-ISAC・CISAが独立して実悪用を確認し、CISAはFCEB機関に3日以内の対応を義務付ける勧告を発出した。PTC製品は航空宇宙・防衛・自動車・医療機器分野で3万社超が利用しており影響範囲は広い。
+
+攻撃の流れ（判明分）:
+1. インターネット露出したPTC Windchill/FlexPLMインスタンスをCVE-2026-12569で侵害
+2. JSP Webシェル設置によるデータ窃取（バックアップ・設計図・施設写真等）
+3. 二重恐喝によるデータ公開の脅迫（新規43組織を含むバッチ公開）
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・PTC Windchill/FlexPLMの2026-06-17以降のセキュリティパッチ未適用インスタンスの即時特定・隔離。インターネット露出Windchill/FlexPLMサーバの遮断・WAF前段配置。JSPディレクトリ配下の不審なWebシェルファイルの監査。
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/windchill/*" OR uri_path="*/flexplm/*" | stats count by src uri_path status
+Splunk SPL: index=web sourcetype=access_combined uri_path="*.jsp" method=POST | table _time src uri_path
+→ 通常運用でPOST頻度が低いJSPパスへの新規POSTアクセスを重点確認。CI/CDによる正規デプロイと誤検知区別のため変更管理記録と突合する。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/philips-and-ge-investigating-clop-ransomware-data-theft-claims
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定） / テレビ朝日メディアプレックスは、サーバ認証連携に使用する認証情報が窃取・悪用されたことで2026-04-28に不正アクセスが発生し、2026-06-19に情報漏えいの可能性を確認したと2026-07-30付で第二報を公表した。対象は従業員1,343件（氏名・マイナンバー・生年月日・性別・住所・電話番号・銀行口座番号を含む）、採用応募者2,786件、個人事業主取引先414件。攻撃者・侵入手口の技術詳細は非公開。 採用契機: V（国内組織侵害確認）。帰属信頼度: low。
+推奨アクション: サーバ間連携用認証情報のローテーション・シークレット管理製品への移行。マイナンバー等機微情報を扱うシステムへのアクセス制御・監査ログ強化。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/17/55939.html
+
+・不明（帰属未確定・ランサムウェア） / 2025-10-19に発生したアスクルへのランサムウェア攻撃について、同社は継続調査の結果、既報の約739,700件（2025-12-12時点）に加えて新たに約60万件の個人情報（氏名・住所・電話番号・メールアドレス）が漏えいのリスクにさらされていた可能性があることを2026-07-30付で公表した。外部への漏えいおよび不正利用の事実は現時点で確認されていない。対象者への個別通知を実施中。攻撃グループ名・侵入手口は非公表。 採用契機: V（国内組織侵害確認）。帰属信頼度: low。
+推奨アクション: 対象者への継続的な注意喚起（フィッシング・なりすまし警戒）。ダークウェブ監視によるデータ流通の有無の継続モニタリング。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/17/55938.html
+
+・不明（帰属未確定） / 既報の講談社従業員フィッシング被害について、攻撃者が2026-07-27にクリックされたフィッシングリンク経由で窃取した認証情報を用い2026-07-30に従業員のメールアカウントへアクセス、取引先連絡先（最大3,812件）を窃取した上でそのうち553件へ本人になりすました二次フィッシングメールを大量送信していたことが新たに判明した。従業員は同日中に異常を検知しパスワード変更・セッション削除を実施。 採用契機: V（国内組織侵害確認）。帰属信頼度: low。
+推奨アクション: 全社的なフィッシング再訓練・取引先への注意喚起済みメール送信の周知。侵害アカウントからの送信メールをテナント全体で遡及監査。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/17/55940.html
+
+・不明（帰属未確定） / エンタメ施設「うんこミュージアム」を運営する株式会社たのしいミュージアムのウェブサイトが2026-08-10 17:04〜08-11 11:24（JST）の間、ソフトウェアの脆弱性を突かれ不正アクセス・一部改ざんを受けた。問い合わせフォーム経由の顧客情報（氏名・電話番号・メールアドレス・問い合わせ内容）が流出した可能性があり、対象は4名。悪性ファイル除去・復旧・脆弱性修正・個別連絡を実施済み。 採用契機: V（国内組織侵害確認）。帰属信頼度: low。
+推奨アクション: 悪用された脆弱性の特定コンポーネントの棚卸しとパッチ適用。WAF導入・改ざん検知の常時監視。
+参照: https://www.security-next.com/188876
+
+・不明（帰属未確定） / 淡路島の宿泊施設「海月館」を運営するかいげつは、外部からのサイバー攻撃により2026-07-29夜〜07-30朝にかけて顧客の氏名・連絡先情報が流出した可能性があることを公表した。検知後アクセスを遮断し外部専門家の支援で調査中。被害件数は非公表。 採用契機: V（国内組織侵害確認）。帰属信頼度: low。
+推奨アクション: 予約管理システムのアクセス経路の総点検。顧客への注意喚起（フィッシング警戒）継続。
+参照: https://www.security-next.com/188294
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━
+
+・[ゼロデイ特報格] CVE未採番 / Unisoc T606/T612/T7250チップセット搭載Androidデバイス（Motorola E13・Realme C33・Xiaomi Redmi A5等）のVoLTEビデオ通話悪用チェーン
+CVSS: 未公開 状態: ゼロデイ / PoC公開
+2026年3月に開示されたUnisocモデムファームウェアでのリモートコード実行（第1段階）を起点に、モデムプロセッサとアプリケーションプロセッサ間で共有される物理メモリ空間を悪用しARM Memory Protection UnitへのコプロセッサレジスタI/O経由の書き込みでカーネルメモリを改変する第2段階を組み合わせ、細工したVoLTEビデオ通話の着信のみで認証・ユーザー操作なしに完全なAndroidカーネルアクセスを達成する攻撃チェーンがSSD Secure Disclosureにより公開された。パッチ・緩和策は本日時点で存在せず、Unisocは開示への応答もない。
+IoC: 確認されず
+参照: https://thehackernews.com/2026/08/unisoc-volte-video-call-exploit-chain-can-give-attackers-full-android-kernel-access.html
+
+
+・[トレンド記事] Evooo1Bot ── Mirai派生Linuxボットネットが複数ベンダーの既知脆弱性を悪用しSOCKS5プロキシ化
+新種Linuxボットネット「Evooo1Bot」は公開済みMirai系ソースコードを拡張したもので、暗号化C2通信・SSHブルートフォーススキャナ・SOCKS5リレーモジュール・認証情報スニファ・多数の既知脆弱性を組み込んだエクスプロイト群を統合している。悪用対象はAlcatel OmniPCX・NETGEARルータ・Tenda・Mitsubishi Electric ME-RTU・Telesquare/D-Link・Hikvision・Atlassian Confluence・WSO2・Zyxel・TP-Link・PHP・Kubernetesにも及ぶ。目的はDDoSとSOCKS5プロキシ化による攻撃元秘匿。ローダーは91.92.40[.]118でホスト、C2はポート443。単一CVEに紐付かないマルチベンダー・エッジデバイス標的の攻撃キャンペーン。
+参照: https://www.bleepingcomputer.com/news/security/new-evooo1bot-linux-botnet-turns-routers-into-traffic-relay-nodes
+参照: https://thehackernews.com/2026/08/evooo1bot-linux-botnet-exploits-known.html
+参照: https://www.darkreading.com/cyber-risk/linux-botnet-evooo1bot-mirai-capabilities-beyond-ddos
+
+・[トレンド記事] 「TheHatman」を名乗る攻撃者がAzure/Entra ID認証情報侵害でFortune 500企業複数社のデータを窃取と主張
+アンダーグラウンドフォーラムで「TheHatman」を名乗る攻撃者が、パスワードスプレー攻撃とMFA疲労攻撃を組み合わせた侵害済み認証情報を用い、Azure/Entra ID環境から複数のFortune 500企業の従業員データを窃取したと主張。McDonald's・Tata Consultancy Services・Vodafone・Gap Inc.等が対象とされる。TataとGapは信頼できる侵害の証拠なし・データは古いと否定する一方、Hudson Rockはリークサンプルを真正性高と評価しており確証は未確定。特定のCVEに紐付かない認証情報ベースの侵害キャンペーン。
+参照: https://www.securityweek.com/fortune-500-companies-hit-in-azure-data-theft-campaign
+参照: https://www.bleepingcomputer.com/news/security/hacker-claims-36-million-azure-account-records-stolen-from-major-companies
+
+・[トレンド記事] 暗号資産ハードウェアウォレット大手SafePalでデータ侵害、約4万人分の顧客情報が販売目的で流出
+SafePalで、注文追跡機能プラグインの認可不備により2025年3月〜2026年4月の注文者データへの不正アクセスが判明。データ削除処理の設定ミスにより本来消去されるべき古いデータも保持され続けていた。流出は氏名・メールアドレス・配送先住所・電話番号・購入情報で、シードフレーズ・秘密鍵等は含まれないとSafePalは説明。サイバー犯罪フォーラムで身元不明の売り手が該当データの販売を持ちかけている。
+参照: https://www.bleepingcomputer.com/news/security/safepal-data-breach-impacts-39-798-customers-stolen-info-for-sale
+参照: https://www.securityweek.com/40000-impacted-by-safepal-data-breach
+
+・[トレンド記事] フランス税務当局（DGFiP）に「ZeroBytes」を名乗る攻撃者が侵入、67.8万人分の税務データ流出
+フランス経済財政省傘下のDGFiP（税務総局）システムに攻撃者「ZeroBytes」が侵入し、複数データベースから機密情報を窃取。攻撃者は2026年8月12日にPwnForums上で犯行を告知。流出データは個人・事業者67.8万件分の税務記録・事業者データ・地籍データに加え、土地登記プラットフォーム(SPDC)から追加で25.2万件。フランス経済財務省は「ユーザーID・パスワードは侵害されていない」とコメントし、ANSSIと共同調査中。
+参照: https://www.bleepingcomputer.com/news/security/french-tax-authority-data-breach-affects-678-000-individuals
+参照: https://www.securityweek.com/680000-impacted-by-french-tax-authority-data-breach
+
+・[トレンド記事] 欧州物流大手CEVA Logistics侵害の被害範囲拡大 ── ポケモンセンターが新たな被害企業として判明
+2026年7月29日〜8月1日にかけて発生した欧州物流大手CEVA Logistics（CMA CGMグループ子会社）へのサイバー攻撃に関連し、新たにポケモンセンターの英国・ドイツ顧客の個人情報（氏名・住所・電話番号・メールアドレス・注文内容）が漏えいしたことが判明。決済カード情報は含まれない。欧州8拠点の倉庫業務に混乱が生じ、一部注文がキャンセルされた。
+参照: https://www.bleepingcomputer.com/news/security/pokemon-center-data-breach-exposes-customer-info-cancels-some-orders
+
+━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: SAP Commerce Cloud（CVE-2026-58231）のパッチ未適用環境は緊急適用とData Hub Adapter関連エンドポイントへの異常アクセス監視を最優先すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [SecurityWeek 2026-08-17] SAP Commerce Cloud CVE-2026-58231（CVSS10.0・Data Hub Adapter拡張の未認証コード実行）についてSAPが2026-08-11に修正を公開した3日後の8/14からDefused Cyberハニーポットで実悪用試行を検知し、KEVIntelが独立確認したと報道。公開PoCは確認されていない
+  過去パターン: 無認証・単一ステップで悪用可能な最大深刻度(CVSS10.0)の脆弱性は、パッチ公開直後からの実悪用試行観測後にKEV初回追加へ至る事例が過去に複数観測されている（過去実績）。ただしCVE-2026-58231固有の類似過去事例検索（Step C''）は該当0件
+  脅威情報: CISA KEVカタログJSON本体を確認したが本日時点で当該CVEは未登録。国内でも利用されるeコマース基盤であり、露出インスタンスへのスキャン継続が想定される
+  確度アンカー: EPSS percentile=0.51055 / KEV登録=False / SSVC決定=Attend / Automatable=yes / EPSS算出日=2026-08-17
+推定部分: 推定 — ハニーポットでの実悪用試行観測からKEV初回追加までの具体的なタイミングは予測できない。EPSSパーセンタイル0.51055はM3確度=中の閾値（0.90以上またはKEV登録）にも届かないため確度は低に留める
+先回り監視: Data Hub Adapter/hac関連エンドポイントへの未認証アクセス試行の増加、デフォルト認証クライアントを用いた異常なAPI呼び出し、SAP Commerce Cloudサーバでの予期しない子プロセス生成
+的中判定: CISAがCVE-2026-58231をKEVカタログへ初回追加した場合（dateAddedが検証窓内〈2026-08-18〜2026-08-21〉と一致）。他機関リストへの追加・既存エントリ更新・再登録は非的中
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】APT
+━━━━━━━━━━━━━━━━━━━━━━
+
+・Cavern Manticore / CavernManticore-2026-SysAidC2Framework → スコア基準未達（軸P6/軸Q1・国内昇格トリガー該当なし。新規モジュールGoogleService.dll/rnp.dllの発見（Kaspersky報道）は継続監視のみ。）
+・不明（"ZeroBytes"・フランス税務当局DGFiPデータ侵害） / 未採番 → スコア基準未達（軸P5（政府機関侵害のみ）/軸Q1（単一組織・単一国）。フランス国外事案のため参考A昇格トリガー該当なし。単一犯罪者ハンドルのみで政府機関公式帰属なし。Section2トレンド記事側で採用。）
+・不明（SafePalデータ侵害） / 未採番 → スコア基準未達（軸P2/軸Q1・金銭動機の犯罪行為、国家関与の言及なし、国内昇格トリガーなし。Section2トレンド記事側で採用。）
+・"TheHatman"（Fortune 500企業Azureテナントデータ窃取主張） / 未採番 → 根拠不十分（TCS・Gap Incが侵害を否定し真正性未検証。単一犯罪者の主張ベース。Section2トレンド記事側で採用。）
+・Evooo1Bot（Linuxボットネット・Mirai派生） / 未採番 → スコア基準未達（軸P6（新規マルウェア発見）/軸Q3（グローバル展開のみで被害組織数不明）。攻撃者帰属なし・国内昇格トリガーなし。Section2トレンド記事・Section4 SOC推奨情報側で採用。）
+
+本日の集計: APT — 本編2件 / 注目動向5件 / 除外5件
+========================================
