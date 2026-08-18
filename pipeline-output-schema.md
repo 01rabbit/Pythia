@@ -121,6 +121,16 @@ raw = "{YYYYMMDD}::{タイトル}::{主URL}"
   "investigation_period": {
     "from": "YYYY-MM-DDTHH:MM:SS+09:00",
     "to":   "YYYY-MM-DDTHH:MM:SS+09:00"
+  },
+  "sweep": {
+    "status": "ok",
+    "threshold": 9.0,
+    "kev_catalog_version": "YYYY.MM.DD",
+    "candidates": 45,
+    "handled": 45,
+    "unhandled": 0,
+    "kev_added_in_window": 1,
+    "ghsa_origin_over_threshold": 6
   }
 }
 ```
@@ -133,6 +143,27 @@ raw = "{YYYYMMDD}::{タイトル}::{主URL}"
 | mode | integer | **非推奨（deprecated: true）**。モード選択は pipeline-3-weighting.md にて廃止済み・常に3固定。過去JSONとの後方互換性維持のためのみフィールドを残置し、新規ロジックでは参照しないこと |
 | mode_deprecated | boolean | 常に true。mode フィールドが非推奨であることを機械可読に示す注記フラグ |
 | investigation_period | object | 調査窓の開始・終了（ISO 8601、時刻・タイムゾーンオフセット必須） |
+| sweep | object | 網羅スイープ（`scripts/nvd_window_sweep.py`）の母集団と突合結果。下記「meta.sweep」参照 |
+
+### meta.sweep
+
+Step 0.7 の網羅スイープと Step 3.9 の突合結果を記録する（SKILL.md 参照）。
+**この記録はレポートの完全性を事後に検証可能にするためにある。**
+値は突合コマンドの出力をそのまま転記し、推定値を書かないこと。
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| status | string | `ok`（スイープ実行成功）/ `failed`（取得失敗・スイープ未実行）。`failed` の場合は他フィールドを null にし、Step 5 サマリーにも明記する |
+| threshold | number | 列挙に使ったCVSS下限（既定 9.0）。判定は v3.1/v4.0/v3.0 の最大値 |
+| kev_catalog_version | string | 参照した CISA KEV カタログ版（再現性確保のため必須） |
+| candidates | integer | スイープ母集団の件数（`sweep_candidates`） |
+| handled | integer | うちレポートに出現した件数（採用または除外記録済み） |
+| unhandled | integer | 未処理件数。**Step 4 のコミット時点で 0 であること** |
+| kev_added_in_window | integer | 窓内の CISA KEV 新規追加件数（観測出口クラス E1 の母集団） |
+| ghsa_origin_over_threshold | integer | 閾値以上のうち GHSA 起点の件数（報道系ソースが構造的に落とす層の実測値） |
+
+`unhandled` が 0 でないレポートをコミットしてはならない。やむを得ず 0 にできない場合は、
+残件と理由を除外サマリーへ記録したうえで Step 5 サマリーに明記する。
 
 ---
 
@@ -856,3 +887,49 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 - `burst_status` / `axis_x_score` / `axis_y_score` によるAI攻撃の優先度フィルタリングを行う
 - `ttps[].mitre_id` を集計してATT&CKカバレッジマップを作成する
 - `malware[].c2_protocol` / `malware[].delivery` を横断分析してTTP変化を追跡する
+
+---
+
+## トークン使用量ファイル（token-usage.json）
+
+`outputs/YYYY-MM-DD/YYYY-MM-DD-token-usage.json` は**レポートではなく実行コストの運用メタ情報**である。
+`scripts/token_usage_report.py` が生成し、テキスト変換ファイルには含めない。
+
+```json
+{
+  "measured_at": "YYYY-MM-DDTHH:MM:SS+09:00",
+  "label": "daily report YYYY-MM-DD",
+  "session_ids": ["..."],
+  "transcripts": ["..."],
+  "first_message_at": "YYYY-MM-DDTHH:MM:SS+09:00",
+  "last_message_at": "YYYY-MM-DDTHH:MM:SS+09:00",
+  "api_requests": 283,
+  "tokens": {
+    "input": 0, "cache_write_5m": 0, "cache_write_1h": 0,
+    "cache_read": 0, "output": 0, "total": 0
+  },
+  "server_tools": { "web_search_requests": 0, "web_fetch_requests": 0, "cost_usd": 0.0 },
+  "cost_usd": { "input": 0.0, "cache_write": 0.0, "cache_read": 0.0, "output": 0.0,
+                "total": 0.0, "server_tools": 0.0, "grand_total": 0.0 },
+  "cost_jpy": null,
+  "jpy_rate": null,
+  "cost_is_complete": true,
+  "by_model": { "<model-id>": { "api_requests": 0, "tokens": {}, "cost_usd": {}, "priced": true } },
+  "notes": ["..."]
+}
+```
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| measured_at | string | 計測時刻（このスクリプト実行時点のスナップショット。以降の処理分は含まない） |
+| label | string | 実行ラベル（日次は `daily report YYYY-MM-DD`） |
+| session_ids / transcripts | array | 集計対象のセッションID・トランスクリプトパス（サブエージェント分を含む） |
+| api_requests | integer | 重複排除後のAPI呼び出し回数 |
+| tokens | object | 入力 / キャッシュ書込(5m・1h) / キャッシュ読出 / 出力 / 合計 |
+| cost_usd | object | 上記内訳ごとの料金概算とサーバーツール込みの総額 |
+| cost_is_complete | boolean | 単価未登録モデルが混在した場合 false（総額が過小になる） |
+| by_model | object | モデル別内訳。`priced: false` は単価未登録 |
+
+- **料金は Anthropic 公開単価に基づく概算**であり、定額プラン利用時の実請求額とは一致しない
+- 計測は commit 前に1回だけ行い、PR本文・チャット報告では保存済み JSON を
+  `--from-json` で再描画して数値を一致させる

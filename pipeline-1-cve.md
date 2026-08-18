@@ -75,6 +75,10 @@ pipeline-2-trends.md へ引き渡す。後日CVEが採番され製品に紐付�
 ---
 
 ## 調査ソース（優先順）
+
+★ソース巡回に先立ち、後述「網羅スイープ」の機械列挙で母集団を確定させること。
+下記のソース名を列挙するだけでは GHSA / VulnCheck / MITRE 起点のCVEは構造的に拾えない。
+
 1. CISA KEV: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
 2. NVD: https://nvd.nist.gov/
 3. CVE Program（一次レコード）: https://www.cve.org/
@@ -111,11 +115,113 @@ pipeline-2-trends.md へ引き渡す。後日CVEが採番され製品に紐付�
 ## 除外ルール（フラグ付け・足切り禁止）
 - 期間内に A〜H が確認できない古いCVEは除外
 - 既報（reported-cves.md 掲載済み）かつ期間内に変化なし → 除外
+- **後述「網羅スイープ」の母集団に含まれるCVEは、採用しない場合も除外サマリーへ
+  理由付きで記録する**（記録の免除規定は設けない。理由は同節「記録義務を課す理由」参照）
 - 採用済みCVEについては製品・種別を問わず足切り禁止
 - 以下は除外ではなく `低優先度` フラグを付けて次ステップへ渡す:
   - CVSS 7.0未満 かつ KEV非登録 かつ PoC非公開
   - DoSのみ CVSS 8.0未満
   - 情報漏洩のみ CVSS 8.0未満
+
+---
+
+## 網羅スイープ（必須）
+
+報道系ソースの巡回だけでは調査窓内のCVE母集団が確定しないため、**Step 1 の収集を始める前に
+機械列挙を1回実行し、その出力を候補集合の起点とする**（SKILL.md Step 0.7）。
+
+### スイープの実行
+
+```bash
+# 窓内に新規公開された CVSS 9.0以上 + CISA KEV 窓内追加を全件列挙
+python3 scripts/nvd_window_sweep.py \
+  --window-start "${WINDOW_START}" --window-end "${WINDOW_END}" \
+  --output ".cache/daily-security-intel/${TODAY}/step1-sweep.json"
+```
+
+- 入力の `WINDOW_START` / `WINDOW_END` は **JST**（`"2026-08-18 07:00"` 形式）。
+  スクリプトが内部でUTCへ変換して NVD へ渡す
+- 出力の Markdown 表はそのまま Step 1 サブエージェントへの指示文に貼ってよい
+- `--threshold` で下限を変更できる（既定 9.0）。国内シグナルが濃い日や
+  スポット監査では `--threshold 7.0` も使う
+- 依存は標準ライブラリのみ。`NVD_API_KEY` を設定するとレート制限が緩和される
+- 出力先は `.cache/`（Git 追跡対象外）。このスクリプトは `forecaster/knowledge/` を
+  一切書き換えない（CLAUDE.md 行動原則5）
+
+### 記録義務を課す理由
+
+「トラック採用条件に非該当のCVEは除外サマリー記載不要」という運用にすると、
+**取りこぼしと意図的な不採用が事後に区別できなくなる**。
+
+姉妹リポジトリ（security-intel / fdns-intel）の 2026-08-04〜07 の窓では、以下9件が
+レポート本体にも除外サマリーにも一切現れないことが実測で判明した
+（CVSS 9.0以上が5件、公開PoCありを含む）:
+Misskey (v4.0 9.2・GHSA起点) / OpenEMR (v4.0 9.4・VulnCheck起点) /
+osTicket (v3.1 9.8・MITRE起点) / kotaemon (v3.1 9.8・VulnCheck起点) /
+Flowise (v4.0 9.2・GHSA起点) / Grav CMS / Apache Airflow (v3.1 9.8・公開PoCあり) ほか。
+
+いずれも GHSA / VulnCheck / MITRE 起点の OSS 系で、BleepingComputer /
+The Hacker News / SecurityWeek には載らない。**調査ソースに「GitHub Advisory
+Database」と名前を書くだけでは構造的に拾えない**ため、機械列挙を必須とする。
+
+Pythia 本リポジトリでも 2026-08-18 の窓で同種の欠損を実測している
+（スイープ候補45件のうちレポートに出現1件・未処理44件、うち GHSA 起点6件）。
+
+### Pythia において取りこぼしが予報を歪める経路
+
+観測の取りこぼしは、単にレポートの網羅性が落ちるだけの問題ではない。
+
+1. 日次レポート JSON → `forecaster/observations/` へ正規化（01-normalize）
+2. observations 全履歴 → ベースライン統計 `technique-freq` / `group-activity`（02-baseline）
+3. ベースライン・実測アンカー → 予報の `base_rate_estimate` と確度（03-forecast）
+
+収集が特定の情報源クラス（報道系）に偏ると、**観測母集団そのものが偏り、
+ベースラインと base_rate が系統的に歪む**。予報の確度は歪んだ分布の上に乗るため、
+検証ループ（04-verify）では「予報ロジックの誤り」と「観測母集団の欠損」を区別できない。
+さらに E1（CISA KEV 初回追加）は主要な観測出口チャネルであり、
+窓内 KEV 追加の全件把握は的中判定の前提条件である。
+
+### スイープが依拠する仕様（変更時の注意）
+
+- **NVD の severity フィルタは使わない**。公開直後（`vulnStatus: Received`）のCVEは
+  NVD一次評価が未付与で、`cvssV3Severity=CRITICAL` 等が CNA 提供スコアと噛み合わない。
+  実測では同フィルタが2件しか返さず（うち1件は実スコア7.4）、
+  osTicket 9.8 / kotaemon 9.8 / OpenEMR 9.4 / Misskey 9.2 が全て欠落した。
+  **フィルタなしで全件取得し、閾値判定はクライアント側で行う**
+- **CVSS v2 は閾値判定に使わない**。v2 の 10.0 は v3.1/v4.0 の Critical と等価ではなく、
+  v2 しか付いていない古いCNAのCVEを大量に拾ってノイズになる。
+  判定は v3.1 / v4.0 / v3.0 のうち最大値で行う
+- **`lastModStartDate` トラックは既定で使わない**。NVD は古いCVEの CPE 付与・参照整理で
+  日常的に数千件を更新するため、ノイズが支配的になる（実測で2,507件、
+  うち Linux kernel 一括再更新216件・2024年以前の KEV 既報CVEが多数）。
+  実務上重要な「KEV 新規追加」は KEV カタログ側から別途拾う。
+  監査目的で必要なときのみ `--include-modified` を付ける
+- **アグリゲータCNA はバッチ集約してはならない**。GHSA / MITRE / VulDB / VulnCheck /
+  CERT/CC / HackerOne / WPScan 等は複数ベンダーのCVEを横断的に採番するため、
+  件数が多くても「同一ベンダーの同一リリース」ではない。集約すると
+  **まさに取りこぼしたCVEが代表1件の影に消える**（実測で GHSA 採番12件の中に
+  Misskey / kotaemon / Flowise / OpenSIPS / Sequelize という無関係な製品が同居していた）。
+  単一ベンダーPSIRT が同一窓で5件以上を一括公開したかたまりのみ集約してよい
+
+### 母集団の処理義務（完全性チェック）
+
+スイープ母集団の各CVEは、**採用 / 除外サマリーへの理由付き記録 / バッチ集約**の
+いずれかに必ず割り当てる。Step 3 のJSON生成後に突合を実行し、未処理0件を確認する:
+
+```bash
+python3 scripts/nvd_window_sweep.py \
+  --from-json ".cache/daily-security-intel/${TODAY}/step1-sweep.json" \
+  --reconcile "outputs/${TODAY}/${TODAY}-security-report.json"
+```
+
+未処理があると終了コード1で未処理一覧を出力する。未処理を解消してから Step 4 へ進む
+（SKILL.md Step 3.9）。
+
+**注意: 突合は「レポート JSON 全文にそのCVE IDが1度でも現れるか」だけを見る。**
+除外サマリーへ理由なしでCVE IDを並べれば突合は通ってしまうため、
+突合の通過は完全性の必要条件であって十分条件ではない。除外には必ず理由を書くこと。
+
+---
 
 ## 各CVEに付与するメタデータ
 - CVE ID / 製品名 / CVSS（NVDを正とする）
