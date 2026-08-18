@@ -1,0 +1,270 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-19 07:33 JST
+調査期間: 2026-08-18 07:00 〜 2026-08-19 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-33824 / Internet Key Exchange (IKE) Service Extensions
+対象: Windows 10 (1607/1809/21H2/22H2)、Windows 11 (22H3/23H2/24H2/25H2/26H1)、Windows Server 2016以降のうち2026年4月14日公開の月例セキュリティ更新未適用の全ビルド（例: Windows 10 1607は10.0.14393.9060未満、Windows 11 26H1は10.0.28000.1836未満が該当）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-08-18] CISAがCVE-2026-33824をKEVカタログへ新規追加（dateAdded 2026-08-18・FCEB対応期限2026-08-21）。パッチは2026年4月に提供済みだが実悪用の証拠を理由に追加された
+
+【概要】
+Microsoft WindowsのIKE (Internet Key Exchange) Service Extensionsに存在する二重解放（double free、CWE-415）の脆弱性で、CVSSv3.1は9.8（Critical、AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H）である。IKEv2のフラグメント再構成処理においてSecurity Realm Vendor IDペイロードが確保するヒープメモリへの参照がシャローコピーされ、IkeDestroyPacketContextとIkeFreeMMSAの双方から解放されることで二重解放が発生し、認証不要・ユーザー操作不要のネットワーク経由でIKEEXTサービス（SYSTEM権限）上での任意コード実行に至る。Microsoftは2026年4月14日の月例パッチで修正済みだが、CISAは2026年8月18日にKEVカタログへ新規追加した。Zero Day Initiative(ZDI)が悪用メカニズムの技術解説を公開しており、コミュニティのPoCリポジトリにも該当CVEを対象としたコードの存在が確認できるが、本CVE単体を対象とした独立した実悪用観測レポート（ベンダー確認・ハニーポット観測等）は本調査時点で確認できておらず、CISAのKEV登録自体が実悪用の主要な根拠である点は未確認情報として明記する（推測）。
+
+攻撃の流れ:
+1. 攻撃者がWindows端末のUDP 500/4500ポート（IKE / NAT-T IKE）へ、Microsoft Security Realm Vendor IDを含むIKE_SA_INITメッセージをネットワーク経由で送信する
+2. 続けて複数の暗号化フラグメント（SKF）ペイロードから成る不正なIKE_AUTHメッセージを送信し、フラグメント再構成処理でヒープメモリのシャローコピーを発生させる
+3. IkeDestroyPacketContextとIkeFreeMMSAの双方で同一メモリ領域が解放される二重解放（double free）がトリガーされ、IKEEXTサービス（SYSTEM権限）のコンテキストで任意コード実行に至る（推測: ZDI技術解説に基づく再構成であり、実際の攻撃者コードの詳細は未確認）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM] IKEEXTサービスの異常終了・再起動、およびUDP 500/4500ポートへの大量・連続した細工パケット着信を監視する。VPNゲートウェイ・境界Windowsホストが対象
+Splunk SPL: index=wineventlog sourcetype="WinEventLog:System" EventCode=7031 Service_Name="IKEEXT" | stats count by ComputerName _time
+Splunk SPL: index=network sourcetype=firewall (dest_port=500 OR dest_port=4500) proto=UDP | stats count by src_ip dest_ip | where count > 200
+Splunk SPL: index=wineventlog sourcetype="WinEventLog:System" EventCode=7034 Service_Name="IKEEXT" | stats count by ComputerName
+→ IKEEXTサービスの短時間での繰り返しクラッシュ（EventCode 7031/7034）は悪用試行の強いシグナルだが、正規のVPN接続不調でも発生しうるため送信元IPの妥当性（既知ピアか）と組み合わせて判断する
+
+【参照】
+https://www.thezdi.com/blog/2026/4/22/cve-2026-33824-remote-code-execution-in-windows-ikev2
+https://www.cisa.gov/news-events/alerts/2026/08/18/cisa-adds-four-known-exploited-vulnerabilities-catalog
+https://www.security-next.com/183438/2
+https://nvd.nist.gov/vuln/detail/CVE-2026-33824
+------------------------------------------------------------
+2. CVE-2026-55040 / SharePoint
+対象: Microsoft SharePoint Enterprise Server 2016（16.0.5561.1001未満）、SharePoint Server 2019（16.0.10417.20175未満）、SharePoint Server Subscription Edition（16.0.19725.20434未満）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.1 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-08-18] CISAがCVE-2026-55040をKEVカタログへ新規追加（dateAdded 2026-08-18・FCEB対応期限2026-08-21）。Rapid7が2026-08-11に公開したPoC後、実悪用が急拡大したことを受けた追加
+
+【概要】
+Microsoft SharePoint（Enterprise Server 2016 / Server 2019 / Subscription Edition）に存在する弱い認証（weak authentication、CWE-1390）の脆弱性で、CVSSv3.1は9.1（Critical、AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:N）である。JWTトークン検証処理の4つの弱点を組み合わせることで、未認証の攻撃者が外側ヘッダに"alg: none"を指定し署名検証を回避したJWTを作成し、SharePoint自身のSTS証明書サムプリントで署名鍵解決処理を悪用したうえで検証されないダミー署名を付与することで、管理者を含む任意のSharePointユーザーになりすますことができる。Microsoftは2026年7月14日のPatch Tuesdayで修正済みだが、Rapid7が2026年8月11日に技術解説とPoCスクリプトを公開した数時間後から実悪用が急拡大し、KEVIntelは2026年7月19日以降計12件の悪用試行（うち8件が8月12〜13日に集中）を記録している。CISAは2026年8月18日にKEVカタログへ新規追加した。インターネットに露出したオンプレミスSharePointサーバは8,500台超が未パッチのまま残っているとの報道がある。
+
+攻撃の流れ:
+1. 攻撃者が未認証のままSharePointサーバへHTTPリクエストを送信し、外側ヘッダに"alg: none"を指定したJWTを提示して署名検証を回避する
+2. SharePoint自身のSTS証明書サムプリントを利用した署名鍵解決処理の不備を突き、検証されないダミー署名（例: "AAAA"）を付与したトークンを渡す
+3. 偽造JWTが正規トークンとして受理され、管理者を含む任意のSharePointユーザーへなりすまし、文書の閲覧・改ざん・データ窃取や広域Microsoft 365環境への横展開の足がかりを得る
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM] SharePoint ULSログでのJWT検証異常・認証イベント、IISログでの管理系エンドポイントへの異常アクセス、直後の管理者アカウントによる不審なログオンを監視する
+Splunk SPL: index=sharepoint sourcetype=sharepoint_uls ("JWT" OR "token validation failed" OR "alg none") | stats count by src_ip user
+Splunk SPL: index=iis sourcetype=iis cs_uri_stem="*/_vti_bin/*" OR cs_uri_stem="*/_layouts/15/*" sc_status=200 | stats count by c_ip cs_uri_stem
+Splunk SPL: index=wineventlog sourcetype="WinEventLog:Security" EventCode=4624 Logon_Type=3 Account_Name="*admin*" | stats count by Account_Name src_ip
+→ JWT関連の異常検証ログは正規のトークン更新失敗でも発生するため、直後に管理者権限操作（ユーザー追加・権限変更等）が続くかどうかを併せて確認する
+
+【参照】
+https://www.rapid7.com/blog/post/ra-microsoft-sharepoint-jwt-token-authentication-bypass-cve-2026-55040/
+https://securityaffairs.com/197137/hacking/sharepoint-cve-2026-55040-comes-under-attack-following-public-exploit.html
+https://www.cisa.gov/news-events/alerts/2026/08/18/cisa-adds-four-known-exploited-vulnerabilities-catalog
+https://www.security-next.com/187553
+https://nvd.nist.gov/vuln/detail/CVE-2026-55040
+------------------------------------------------------------
+3. CVE-2026-59310 / VMware vCenter
+対象: VMware vCenter Server 8.0〜8.0 U3k、9.0.x（9.0.2.0100未満）、9.1.x（9.1.0.0300未満）。VMware Cloud Foundation 5.x/9.0.x/9.1.x、vSphere Foundation 9.0.x/9.1.x、Telco Cloud Infrastructure 3.0、Telco Cloud Platform 3.0/4.x/5.0.x/5.1.x に組み込まれたvCenterも対象
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-08-18] CISAがCVE-2026-59310をKEVカタログへ新規追加（dateAdded 2026-08-18・FCEB対応期限2026-08-21）。開示5日後の2026-08-03から侵害ホストが攻撃者インフラへの通信を開始していたことが判明
+
+【概要】
+Broadcom VMware vCenterのSyslogサーバに存在するパストラバーサル（CWE-22）の脆弱性で、CVSSv3.1は9.8（Critical、AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H）である。vCenterへのネットワークアクセスを持つ未認証の攻撃者がディレクトリトラバーサルを悪用して任意コード実行に至ることができる。Broadcomは2026年7月29日に修正パッチを公開した際、悪用は未観測としていたが、開示からわずか5日後の8月3日には侵害ホストが攻撃者インフラへの通信を開始していたことが判明している。ドイツのインシデント対応企業QUIRSOは、中国語のアーティファクトや中国語圏のセキュリティ研究の再利用、UTC+8の活動時間帯パターン等から中程度の確度で中国語話者の攻撃者による活動と評価しており（推測・帰属は中程度確度の評価であり確定情報ではない）、攻撃は最終的にBabuk系統のランサムウェア（拡張子.babyk）の展開に至っているが、QUIRSOはこれがフォレンジック調査妨害のための目くらまし（ESXiログの暗号化）である可能性を指摘している。侵害は47か国361のユニークIPアドレスで確認されており、ドイツ・米国・トルコ・イラン・フランスに集中している。本調査時点で公開されたPoCコードは確認できていない。
+
+攻撃の流れ:
+1. 未認証の攻撃者がvCenter SyslogサーバへディレクトリトラバーサルペイロードをPOSTし、任意コード実行を得る
+2. 侵害したホストへ悪意のあるcronジョブを設置し、永続化を確立する
+3. オープンソースツールreverse_sshを展開してアウトバウンドSSH接続を攻撃者インフラへ確立し、インバウンド遮断を回避したリモートアクセス・C2チャネルを維持する（一部事例ではBabuk系統ランサムウェアの展開に至る、推測: 主目的かフォレンジック妨害目的かは未確定）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM] vCenter Syslogサーバへのパストラバーサル試行、Linux側cronジョブの改変、reverse_sshバイナリの実行・アウトバウンドSSH接続を監視する。QUIRSOはreverse_sshクライアントバイナリを検知する汎用YARAルールを公開しているが正規利用でも誤検知しうる点に注意
+Splunk SPL: index=vcenter sourcetype=vmware:vcenter:syslog ("../" OR "%2e%2e%2f" OR "..%2f") | stats count by src_ip
+Splunk SPL: index=linux sourcetype=cron OR sourcetype=linux_secure "reverse_ssh" OR "/tmp/*ssh*" | stats count by host
+Splunk SPL: index=network sourcetype=firewall app=ssh direction=outbound dest_port!=22 | stats count by src_ip dest_ip
+→ reverse_ssh検知は正規のトンネリング利用と重なるため、vCenterアプライアンス上での予期しないcron変更・アウトバウンド接続開始時刻が2026-08-03以降かを併せて確認する
+
+【参照】
+https://thehackernews.com/2026/08/attackers-exploit-vmware-vcenter.html
+https://thehackernews.com/2026/08/suspected-china-nexus-actor-exploits.html
+https://www.bleepingcomputer.com/news/security/critical-vmware-vcenter-rce-flaw-exploited-for-reverse-ssh-access/
+https://www.security-next.com/188019
+https://nvd.nist.gov/vuln/detail/CVE-2026-59310
+------------------------------------------------------------
+4. CVE-2026-65400 / macOS
+対象: macOS Sonoma 14.8.9未満 / macOS Sequoia 15.7.9未満 / macOS Tahoe 26.6.1未満（画面共有 screensharingd を有効化している端末）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-08-18] CISAがCVE-2026-65400をKEVカタログへ新規追加（dateAdded 2026-08-18・FCEB対応期限2026-08-21）。CISAは2026-08-14にCVSSベクターを見直しスコアを7.1から9.8へ引き上げた
+
+【概要】
+Apple macOSの画面共有（Screen Sharing）機能を担うシステムデーモンscreensharingdに存在する不適切な認証（improper authentication、CWE-287）の脆弱性で、CVSSv3.1は9.8（Critical、AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H、CISA-ADPによる再評価後の値）である。SRP（Secure Remote Password）認証処理のフレーム長検証ロジックの不備により、ネットワーク上の攻撃者がポート5900（画面共有）へ細工したパケットを送るだけで有効な認証情報なしにログインでき、研究者は「正しい順序で1〜2パケットを送るだけで初回から常に成功する」と説明している。Appleは2026年8月6日にmacOS Tahoe 26.6.1・Sequoia 15.7.9・Sonoma 14.8.9で緊急修正を公開した。オランダのNCSC-NLは2026年8月中旬、ポート5900をインターネットに露出させた複数システムで実悪用を確認し、いずれの事例でもroot権限を奪取したうえでMoneroマイニングソフトウェアが設置されていたと報告した。CISAは当初CVSSを7.1（低権限攻撃者・部分的影響を想定したベクター）としていたが、2026年8月14日に無権限・完全な侵害を想定したベクターへ見直し9.8へ引き上げたうえで、8月18日にKEVカタログへ追加した。研究者bl4styらによる読み書き機能を含む詳細なPoCが2026年8月上旬に公開されている。
+
+攻撃の流れ:
+1. 攻撃者がインターネットに露出したポート5900（画面共有・screensharingd）を持つMacへ、SRP認証のフレーム長検証ロジックを悪用した細工パケットをネットワーク経由で送信する
+2. screensharingdの認証状態管理の不備により、有効な認証情報なしで画面共有セッションの確立に成功する
+3. root権限でのコマンド実行を確立し、Moneroマイニングソフトウェアを設置して不正マイニングを行う（NCSC-NL確認事例）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM] インターネットに露出したポート5900の存在、screensharingdプロセスの異常な認証成功、侵害後のroot権限プロセスによる高CPU負荷（クリプトマイニング）を監視する
+Splunk SPL: index=network sourcetype=firewall dest_port=5900 direction=inbound | stats count by src_ip dest_ip
+Splunk SPL: index=macos_logs sourcetype=macos:unifiedlog process="screensharingd" ("authentication" OR "SRP") | stats count by host
+Splunk SPL: index=macos_logs sourcetype=macos:unifiedlog ("xmrig" OR "monero" OR "stratum+tcp") | stats count by host process
+→ ポート5900の外部露出自体が高リスクシグナルであるため、パッチ適用前は露出資産の棚卸しを優先する。マイニング検知はCPU高負荷単独では誤検知しやすく、stratumプロトコル通信や未知バイナリの実行と組み合わせて判断する
+
+【参照】
+https://thehackernews.com/2026/08/apple-macos-screen-sharing-flaw.html
+https://www.securityweek.com/recent-macos-screen-sharing-vulnerability-exploited-in-attacks/
+https://www.tomshardware.com/tech-industry/cyber-security/macos-screen-sharing-flaw-exploited-to-root-macs-and-plant-monero-miners
+https://www.zaikei.co.jp/article/20260816/865967.html
+https://www.apple-hacks.com/entry/macos-screen-sharing-cve-2026-65400-exploited
+https://nvd.nist.gov/vuln/detail/CVE-2026-65400
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-64849 / MLflow
+CVSS: 9.3
+MLflowはAIエージェント・大規模言語モデル・機械学習モデルを対象としたオープンソースAIエンジニアリングプラットフォームである。3.15.0より前のバージョンでは、未認証のPOST /api/2.0/mlflow/webhooks/{id}/testエンドポイントがwebhook URL検証時にmlflow/utils/validation.pyの_validate_webhook_url()を元のURLに対してのみ実行する一方、実配信を行うmlflow/webhooks/delivery.pyはHTTPリダイレクトを追跡し再解決したホスト名を検証せずに利用するため、攻撃者が公開HTTPSエンドポイントを用意してAWSインスタンスメタデータ（169.254.169.254）やlocalhost等の内部アドレスへリダイレクトさせるSSRFが成立する。/testエンドポイントはレスポンス本文をそのまま返すため、クラウド認証情報・APIトークン・アプリケーションシークレットの窃取が未認証のまま可能であり、CVE採番直後からハニーポットでの実悪用試行が観測されている（推測を含まない事実観測）。
+IoC: 確認されず
+
+監視: [SIEM] MLflowサーバのアクセスログでwebhookテストエンドポイントへの未認証リクエスト、および外部URLへの異常なアウトバウンド接続（特にリダイレクト経由でのメタデータサービスIPへのアクセス）を監視する
+Splunk SPL: index=web_proxy OR index=mlflow_access sourcetype=access_combined uri_path="*/api/2.0/mlflow/webhooks/*/test" | stats count by src_ip, dest_ip
+Splunk SPL: index=cloud_metadata dest_ip="169.254.169.254" | search src_ip!=<known_service_ip> | stats count by src_ip, http_user_agent
+→ webhookテスト機能を業務で使わない環境では当該エンドポイントへのアクセス自体が異常。正規のMLflow内部プロセスからのメタデータアクセスとの切り分けが必要
+参照: https://cyberpress.org/hackers-exploit-mlflow-ssrf-flaw/
+参照: https://www.thehackerwire.com/mlflow-unauthenticated-ssrf-via-webhook-test-endpoint/
+参照: https://advisories.gitlab.com/pypi/mlflow/CVE-2026-64849/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-73343 (WP Compress) → CVSS v3.1 10.0。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。説明文で明示的にUnauthenticated RCEと分類（PR:N確認）。CVSS単体+未認証RCE加点で計6点、widely-used加点なし（利用規模の裏取りなし）。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75784 (TRENDnet TEW-WLC100) → CVSS v3.1 10.0。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。vuldb起点。説明文に「exploit is now public」とありPoC公開加点。ただしTRENDnet無線LANコントローラは境界機器（VPN/FW）に該当せずボーナスなし。 軸1=5点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75874 (Mozilla Firefox/Thunderbird) → CVSS v3.1 10.0。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Mozilla公式Firefox 154/Thunderbird 154セキュリティ更新の一部（サンドボックスエスケープ）。Mozilla公式アドバイザリ(mfsa2026-74等)群の一環と推定されるが本CVE個別のPoC・実悪用の第三者報道は未確認。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-32444 (Cwicly) → CVSS v3.1 9.9。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。PatchstackはContributor権限が必要と明記（PR:L）。未認証条件を満たさず加点なし。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-32463 (Sync Post With Other Site) → CVSS v3.1 9.9。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Contributor権限が必要（PR:L）。未認証RCE/認証バイパスの加点条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-32474 (Templatiq) → CVSS v3.1 9.9。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Contributor権限が必要（PR:L）。未認証RCE/認証バイパスの加点条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-55166 (Lemur) → GHSA(GitHub Advisory Database)起点のCVE。CVSS v3.1 9.9。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。GHSA起点（GHSA-v2wp-frmc-5q3v, Netflix/lemur公式アドバイザリで確認）。SSOで認証済みユーザーがacme_url経由でクラウドメタデータへSSRF・AWS IAM窃取に至る複合脆弱性。ただしSSO認証済みユーザーが前提（PR:L）のため未認証条件を満たさず、KEV登録・実悪用の第三者報道も未確認。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-66627 (GP Premium) → CVSS v3.1 9.9。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Contributor権限が必要（PR:L）。未認証RCE/認証バイパスの加点条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-66780 (submariner-operator) → CVSS v3.1 9.9。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Red Hat secalert起点。侵害済みクラスタ（join済みクラスタの権限）が前提でPR:Lに相当。submariner-operatorはニッチなK8sマルチクラスタ連携ツールでwidely-used加点なし。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75843 (ArcadeDB) → CVSS v3.1 9.9。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。gRPCトランザクション実行スレッドでの認証主体バインド漏れだが「authenticated readers」が前提（PR:L）。未認証条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75851 (ArcadeDB) → CVSS v3.1 9.9。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。非同期ワーカーへの認証主体伝播漏れだが「read access to a single database」の保有ユーザーが前提（PR:L）。未認証条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75877 (TRENDnet TV-IP751WIC) → CVSS v3.1 9.9。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。vuldb起点。説明文に「exploit has been published」とありPoC公開加点。IPカメラ製品でボーダー機器（VPN/FW）には該当せずそれ以上の加点なし。 軸1=5点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-15748 (Forminator Forms) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Wordfence起点。SecurityWeek記事（300,000 WordPress Sites Potentially Exposed to Hacking Due to Form Plugin Flaw, 2026-08-18）で海外報道を確認（cves-window.jsonの機械収集とも一致）。未認証のArbitrary File Upload（PHP webshell設置に転用可能と判断しRCE相当として加点）+CVSS+広く使われる製品（300,000サイト規模、Wordfence/SecurityWeek報道で裏取り）で軸1=7点。ただし軸1は8点未満、軸2も1点（海外報道のみ・JPCERT/IPA等の国内トリガーなし）のため参考A昇格条件を満たさず除外。 軸1=7点/軸2=1点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-32470 (FundEngine) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。Unauthenticated PHP Object Injectionだが、ガジェットチェーンによるRCE到達性が確認情報から裏取りできないため未認証RCE加点は付与せず（ハルシネーション回避）。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-38165 (xdocreport) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。MITRE起点。SSTI（Velocity テンプレートエンジン）による任意コード実行が説明文に明記されPR:N（未認証）。widely-used加点は付与せず（xdocreportはニッチなJavaドキュメント生成ライブラリ）。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-42163 (Mahara) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。MITRE起点。Mahara（オープンソースeポートフォリオ、複数国の大学で利用）はLTI連携での内部アカウント不正アクセス。未認証RCE/認証バイパスの明確な記述はなくwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-42164 (Mahara) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。MITRE起点。Maharaのテキストブロック機能でのバックアップ内容の意図しない復元。widely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-45117 (MyBB) → GHSA(GitHub Advisory Database)起点のCVE。CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。GHSA起点。MyBB公式リリースノート(mybb.com/versions/1.8.40)で修正確認。インストーラが公開されている場合に未認証でPHPコード注入・RCEに至ると説明文に明記（PR:N）。MyBBは広く使われるフォーラムソフトウェア。ただし軸1=7点で8点未満のため除外。 軸1=7点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-47627 (NVIDIA Triton Inference Server) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。NVIDIA公式PSIRT起点。TheHackerWire記事で「no public PoC available at the time of writing」と確認、影響はDoSのみ（RCE不可）。NVIDIA Tritonは広く使われるAI推論基盤としてwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-59940 (seroval) → GHSA(GitHub Advisory Database)起点のCVE。CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。GHSA起点。seroval（JSシリアライズライブラリ）のPromise制御ノード検証不備。プラグイン有効時の限定条件下（PR:L相当）でwidely-used加点対象ともいえずニッチなライブラリと判断。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-67271 (Dell PowerStore SDNAS) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Dell PSIRT起点。DSA-2026-157（2026-08-11公表）およびスペイン国家CERT INCIBE-CERTのアラートで裏取り。未認証・リモートでのDoS/RCEが説明文・Dell公式に明記（PR:N）。Dell PowerStoreは広く使われるエンタープライズストレージ製品。ただし軸1=7点（8点未満）、軸2=1点（INCIBE-CERT等海外複数ソース報道のみ・国内トリガーなし）のため除外。 軸1=7点/軸2=1点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-67854 (Qcms) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。MITRE起点。SQLインジェクションから任意コード実行に至ると説明文に明記・PR:N（未認証）。Qcmsはニッチな中国語圏CMSでwidely-used加点なし。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-67868 (S2OPC) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。MITRE起点。S2OPC（産業用OPC-UAスタック）のヒープOOB書き込みによるリモートコード実行がPR:N（未認証）で説明文に明記。ICS関連ライブラリだが境界機器そのものではなくボーナス対象外。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-67919 (Halo) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。MITRE起点。Halo（Javaベースの国産ブログ/CMS）のプラグインエンドポイント経由RCEがPR:N（未認証）で説明文に明記。widely-used加点なし（利用規模の裏取りなし）。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-67960 (PbootCMS) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。MITRE起点。PbootCMSの複数コントローラ経由RCEがPR:N（未認証）で説明文に明記。widely-used加点なし。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73341 (RegistrationMagic) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。Unauthenticated PHP Object Injectionだがガジェットチェーンの裏取りができないため未認証RCE加点は付与せず。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73366 (Easy Google Maps) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。Unauthenticated PHP Object Injectionだがガジェットチェーンの裏取りができないため未認証RCE加点は付与せず。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73376 (Ultimate Maps by Supsystic) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。Unauthenticated PHP Object Injectionだがガジェットチェーンの裏取りができないため未認証RCE加点は付与せず。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73380 (Popup by Supsystic) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。Unauthenticated PHP Object Injectionだがガジェットチェーンの裏取りができないため未認証RCE加点は付与せず。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73397 (Youzify) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。Unauthenticated Deserializationだが具体的なRCE到達性の裏取りができないため未認証RCE加点は付与せず。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73996 (Masteriyo LMS) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。Unauthenticated Arbitrary File Upload（PR:N）。WordPressプラグインでのファイルアップロード制限不備はWebシェル設置＝RCE相当として加点。widely-used加点なし（利用規模の裏取りなし）。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-74979 (Mozilla Firefox/Thunderbird) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Mozilla公式Firefox 154セキュリティ更新の一部（Add-ons Manager mitigation bypass）。第三者による実悪用・PoC報道は未確認。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-74990 (Mozilla Firefox/Thunderbird) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Mozilla公式Firefox 154/Thunderbird 154/ESR向けセキュリティ更新（内部発見のメモリ破損バグ群、Mozilla自身が「悪用され得た可能性を否定できない」と記述する定型のfuzzing起因バグ）。個別の実悪用確認なし。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75627 (Bastillion) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。URIパス検証不備により未認証で認証フィルタを回避し管理者コントローラへアクセス可能と説明文に明記（PR:N・認証バイパス）。BastillionはニッチなSSHゲートウェイ管理ツールでwidely-used加点なし。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75852 (ArcadeDB) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。MongoDBワイヤプロトコル経由で未認証のままinsert/find/update/delete等が可能と説明文に明記（PR:N・認証バイパス相当）。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75854 (ArcadeDB) → CVSS v3.1 9.8。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。Redisワイヤプロトコル経由で未認証のまま読み書き削除が可能・全セキュリティゲートを回避と説明文に明記（PR:N・認証バイパス相当）。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-12564 (Ansible Automation Platform Controller) → CVSS v3.1 9.6。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Red Hat secalert起点。認証済み・credential-creation権限を持つ攻撃者が前提（PR:L）。Ansible Automation Platformは広く使われるエンタープライズ自動化基盤としてwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-28192 (Piotnet Addons For Elementor Pro) → CVSS v3.1 9.6。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。Unauthenticated Arbitrary File Upload（PR:N）。WordPressプラグインでのファイルアップロード制限不備はWebシェル設置＝RCE相当として加点。widely-used加点なし。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-71424 (Onyx) → GHSA(GitHub Advisory Database)起点のCVE。CVSS v3.1 9.6。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。GHSA起点。TheHackerWire記事で技術詳細を確認（BASIC_ACCESS権限を持つ低権限ユーザーが前提・PR:L）。未認証条件を満たさず。OnyxはオープンソースAIプラットフォームとしてwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75783 (TRENDnet TEW-WLC100P) → CVSS v3.1 9.6。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。vuldb起点。説明文に「exploit has been disclosed publicly」とありPoC公開加点。ただしAV:A（隣接ネットワークのみ）でリモート到達性が限定的。 軸1=5点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-57580 (authentik) → GHSA(GitHub Advisory Database)起点のCVE。CVSS v4.0 9.4。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。GHSA起点。同種のSAML NameID XMLコメント注入による認証バイパス脆弱性クラス（関連CVE-2026-40165等）が既知でauthentikにおける実在の脆弱性パターンと確認。他アカウントへのなりすまし（認証バイパス相当）として加点。authentikは広く使われるオープンソースIDプロバイダ。ただし軸1=7点（8点未満）のため除外。 軸1=7点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-45118 (MyBB) → GHSA(GitHub Advisory Database)起点のCVE。CVSS v3.1 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。GHSA起点。MyBB公式リリースノートで修正確認。内容はオープンリダイレクト＋反射型JS注入であり、サーバサイドRCE・認証バイパスには該当しないため加点対象外（widely-used加点のみ）。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-50161 (libre (baresip)) → GHSA(GitHub Advisory Database)起点のCVE。CVSS v4.0 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。GHSA起点。WebSocketフレームの整数オーバーフローによるメモリ破損の可能性はあるが、RCEとしての到達性・実悪用の裏取りはできず。libre/baresipはVoIP/WebRTC組み込みで広く使われるためwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-52735 (Zebra (Zcashノード)) → GHSA(GitHub Advisory Database)起点のCVE。CVSS v4.0 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。GHSA起点。技術的特徴（P2SHリディームスクリプトのsigopアンダーカウント）がZcash Foundation公式アドバイザリGHSA-gf9r-m956-97qxと一致するとみられるが、CVE番号での一次ソース確認はできず（推測）。cryptopolitan/bloomingbit/cryptotimes/crypto.news等の海外複数ソースがZebraの緊急パッチ公表を報道（軸2=1）。本CVE自体が実悪用されたとの確認はなし。Zcashは主要な暗号資産ノードソフトウェアとしてwidely-used加点。 軸1=4点/軸2=1点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73187 (Sticky Chat Widget) → CVSS v3.1 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。未認証SQLインジェクション。RCE・認証バイパスに該当する加点条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73339 (Modern Events Calendar) → CVSS v3.1 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。未認証SQLインジェクション。RCE・認証バイパスに該当する加点条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73355 (Affiliates Manager) → CVSS v3.1 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。未認証SQLインジェクション。RCE・認証バイパスに該当する加点条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73365 (JetAppointment) → CVSS v3.1 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。未認証SQLインジェクション。RCE・認証バイパスに該当する加点条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73392 (Super Store Finder) → CVSS v3.1 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。未認証SQLインジェクション。RCE・認証バイパスに該当する加点条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-74015 (Readabler) → CVSS v3.1 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。未認証SQLインジェクション。RCE・認証バイパスに該当する加点条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-74902 (SiYuan) → CVSS v4.0 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。ファイルアップロード時のXSS。CVSS v4.0のAV:L（ローカル）でリモート到達性が限定的、RCE加点条件を満たさない。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75626 (SpiderFoot) → CVSS v4.0 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。相関ビュー閲覧時に発火する格納型XSSでAPIキー窃取の可能性。SpiderFootはOSINTコミュニティで広く使われるツールとしてwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75827 (Grav) → CVSS v4.0 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。Blueprint動的データのRCEだが「page-edit or blueprint-config access」を持つ攻撃者が前提と説明文に明記（認証済み）。同種のBlueprint::dynamicData()起因RCE脆弱性クラス（CVE-2026-65008等）がGrav CMSで複数回開示されている既知パターンと確認。Gravは広く使われるオープンソースフラットファイルCMSとしてwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75828 (Grav) → CVSS v4.0 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。「Authenticated editors」が前提の格納型XSS（PR:L）。widely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75832 (Grav APIプラグイン) → CVSS v4.0 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。Grav APIプラグインの認可不備だが「an API key scoped」を保有する攻撃者が前提（PR相当あり）。Gravファミリーとしてwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75835 (Grav APIプラグイン) → CVSS v4.0 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。Grav APIプラグインの認可不備だが「a scoped API key minted on a privileged account」を保有する攻撃者が前提。Gravファミリーとしてwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75837 (Grav) → CVSS v4.0 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。「A delegated admin.users operator」が前提の権限昇格。Gravファミリーとしてwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75913 (CodeWhale) → CVSS v3.1 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。AIコーディングツールCodeWhaleのgit_showツールでの引数インジェクション。同ツールに関連する複数の脆弱性クラス（git_blame/js_execution/image_analyze）が確認できるが、いずれもツール呼び出しへのユーザー/モデル操作が前提。widely-used加点は付与せず（利用規模の裏取りなし）。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75926 (Hugo) → CVSS v4.0 9.3。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。Node.jsパーミッションモデルのバイパス（CVSS v4.0 AV:L・ローカルビルド環境が前提）。Hugoは広く使われる静的サイトジェネレータとしてwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-67443 (FUXA) → GHSA(GitHub Advisory Database)起点のCVE。CVSS v4.0 9.2。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。GHSA起点。「a remote unauthenticated attacker can obtain a signed guest token」と説明文に明記（PR:N・認証バイパス）。FUXAは同種の認証バイパス→RCEに至る脆弱性クラスの開示歴（CVE-2026-25938等、exploit-db公開済み）が確認できるオープンソースSCADA/HMI製品。widely-used加点は付与せず（利用規模の裏取りなし）。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-71878 (GBIF Integrated Publishing Toolkit) → CVSS v4.0 9.2。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Mandiant CVE起点(mandiant-cve@google.com)。初期セットアップ機能の認証欠如が再起動後も残存し管理者権限を奪取可能・PR:N。widely-used加点は付与せず（GBIF IPTは生物多様性データ公開向けのニッチな専門ツール）。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75856 (CodeWhale) → CVSS v4.0 9.2。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。DNSピニングのTOCTOU回避によるSSRF。ツール呼び出しの操作が前提でwidely-used加点は付与せず。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-18963 (Red Hat build of Keycloak) → CVSS v3.1 9.1。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Red Hat secalert起点。メール確認リンク不要でパスワードリセットを強制し完全なアカウント制御を奪取可能と説明文に明記（PR:N・認証バイパス）。Red Hat build of Keycloakは広く使われるエンタープライズIDアクセス管理製品。ただし軸1=7点（8点未満）のため除外。 軸1=7点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-42162 (Mahara) → CVSS v3.1 9.1。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。MITRE起点。Maharaのアーティファクトへの不正アクセス（ページ内ファイルパス操作）。widely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-51977 (Trueview T18061 WiFiカメラ) → CVSS v3.1 9.1。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。「a physically proximate attacker」が前提（物理接近が必要）。widely-used加点は付与せず（ニッチな消費者向けWiFiカメラ）。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-52723 (ePA 3.x Integration) → GHSA(GitHub Advisory Database)起点のCVE。CVSS v3.1 9.1。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。GHSA起点。ドイツの電子カルテ（ePA）連携ソフトウェアにおけるVAUサーバ証明書検証不備でMITM攻撃が可能・ネットワーク経路上の攻撃者が前提。同ベンダー(med-united/epa4all)の同種TLS証明書検証不備（CVE-2026-54342等）が別途確認できる既知パターン。認証境界の実質的な回避としてbypass相当加点。ドイツ国内医療インフラ固有でwidely-used加点・国内(JP)トリガーともになし。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-71879 (GBIF Integrated Publishing Toolkit) → CVSS v4.0 9.1。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Mandiant CVE起点(mandiant-cve@google.com)。初期セットアップ機能の認証欠如が完了まで露出し管理者権限を奪取可能・PR:N。GBIF IPT（71878と同一製品・関連脆弱性）。widely-used加点は付与せず。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-73381 (Popup by Supsystic) → CVSS v3.1 9.1。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Patchstack起点。「Unauthenticated Broken Authentication」と説明文に明記（PR:N・文字通りの認証バイパス）。widely-used加点なし。 軸1=6点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-74938 (Mozilla Firefox/Thunderbird) → CVSS v3.1 9.1。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Mozilla公式Firefox 154/Thunderbird 154セキュリティ更新の一部（JavaScript: GC mitigation bypass）。第三者による実悪用・PoC報道は未確認。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-74956 (Mozilla Firefox/Thunderbird) → CVSS v3.1 9.1。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。Mozilla公式Firefox 154/Thunderbird 154セキュリティ更新の一部（DOM Service Workers same-origin bypass）。第三者による実悪用・PoC報道は未確認。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75094 (COMFAST CF-N1-Sルーター) → CVSS v3.1 9.1。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。vuldb起点。説明文に「exploit has been published and may be used」とありPoC公開加点。ただしCVSSベクタはPR:H（既に高権限で認証済みが前提）のため未認証RCE加点は付与せず。 軸1=5点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75625 (Kraken(P2Pエージェント)) → CVSS v4.0 9.1。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。CVSS v4.0のAT:P（特定の攻撃前提条件が必要・エージェント間経路や悪意あるピアの存在が前提）。KrakenはUber発のコンテナ/クラウドネイティブ領域で知られるP2P配布ツールとしてwidely-used加点のみ。 軸1=4点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-62988 (Froxlor) → GHSA(GitHub Advisory Database)起点のCVE。CVSS v3.1 9.0。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。GHSA起点。認証済み管理者API操作が前提（PR:H）。パスワード/2FAフィールドがAPIレスポンスに漏洩する情報漏洩でRCE・認証バイパスには該当せず。 軸1=3点/軸2=0点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-75130 (Context7) → CVSS v3.1 9.0。KEV登録なし・網羅スイープ確認時点で実悪用未確認（in_kev=false）。VulnCheck起点。TheHackerWire・Noma Security（"ContextCrush"named research）・ox.security のMCPサプライチェーンアドバイザリ等、海外複数の独立したセキュリティ研究記事で実証的な攻撃実演（.envファイル窃取・破壊的削除）を確認（PoC実演あり・軸2=1点相当の複数海外報道）。Context7はAIコーディングエージェント（Claude Code/Cursor等）利用者の間で広く使われるMCPサーバとしてwidely-used加点。ただしCVSS(3点)+PoC実演(2点)+widely-used(1点)=6点で軸1は8点未満のため除外。 軸1=6点/軸2=1点（本編・参考A・参考Bいずれの閾値も未達）のためpipeline-3-weighting.md 判定順4により除外（低優先度）。
+・CVE-2026-61241 (Oracle製品群（Critical Patch Update 2026年8月）) → Oracle Critical Patch Update 2026年8月 一括公開の代表エントリ（CVE-2026-61241, CVSS v3.1 10.0, secalert_us@oracle.com）。ほか143件（CVE一覧は.cache/daily-security-intel/2026-08-19/oracle-candidates.jsonに機械記録）。KEV登録なし・PoC未確認・実悪用未確認（Oracle CPU定例一括公開）。単一ベンダーPSIRTが同一窓で5件以上を一括公開した塊としてpipeline-1-cve.md「網羅スイープ」節の集約規定に基づき1件に集約。144件全件についてoracle-candidates.json照合によりin_kev=falseを確認済み（KEV登録があれば個別分離する規定だが該当なし）。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編4件 / 参考A0件 / 参考B1件 / 除外75件
+
+========================================

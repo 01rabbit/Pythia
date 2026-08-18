@@ -1,0 +1,108 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-19 07:33 JST
+調査期間: 2026-08-18 07:00 〜 2026-08-19 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Tenable Security Centerに複数の緊急脆弱性（CVSS最大9.9、RCE/コマンドインジェクション）
+観点: CVE関連
+採用契機: η/α
+------------------------------------------------------------
+
+優先度: 高
+対象: Tenable Security Center
+
+【24時間以内の変化】
+[Security NEXT 2026-08-18] 「『Tenable Security Center』に深刻な脆弱性 - 修正版を公開」で2026年8月13日発表の脆弱性情報（製品固有11件・サードパーティ含め計20件、うちクリティカル3件）を報道
+
+【概要】
+脆弱性管理製品であるTenable Security Centerに、認証済み一般ユーザーが悪用可能なリモートコード実行の脆弱性CVE-2026-19626（CVSSv3 9.9・レポート生成機能を通じて細工した入力でサービスアカウント権限のコード実行が可能）、およびOSコマンドインジェクションのCVE-2026-19681（CVSSv3 9.9）・CVE-2026-19682（CVSSv3 9.0）を含む計3件のクリティカル脆弱性と、重要度「高」5件・「中」複数件が確認された。SOCが日常的に依存する脆弱性管理基盤そのものが侵害されると、脆弱性スキャン結果の改ざんや管理者権限奪取を通じて社内ネットワーク全体の可視性・信頼性が損なわれるため優先度は高いと判断する。影響バージョン・パッチの詳細はTenable公式アドバイザリで要確認。
+
+【推奨アクション】
+・自組織のTenable Security Centerのバージョンを確認し、該当する場合は本日中にベンダー提供の修正パッチを適用する
+・パッチ適用までの間、Security Centerの管理コンソール・レポート生成機能へのアクセスを社内ネットワーク・許可済みIPに制限する
+・Security Centerサービスアカウントの権限を最小化し、直近の認証ログ・レポート生成ジョブの実行履歴に異常がないか確認する
+・脆弱性管理基盤自体が攻撃対象となり得るという前提で、当該サーバのEDR監視・ネットワーク分離状況を再点検する
+・[SIEM] Security Centerサーバでの異常なレポート生成リクエスト・OSコマンド実行の兆候を監視する
+Splunk SPL: index=security_center sourcetype=tenable_sc_audit action=report_generate | stats count by user, src_ip, report_template | where count > 20
+Splunk SPL: index=os_logs host=<tenable_sc_host> (process="sh" OR process="bash" OR process="cmd.exe") parent_process IN ("java", "tomcat*", "php*") | table _time, host, parent_process, process, cmdline
+→ レポート生成ジョブから子プロセスとしてシェル・スクリプトインタプリタが起動するのは通常発生しないため、検知時は高優先度でエスカレーションする。正規のカスタムレポートテンプレートによるスクリプト実行がある環境では事前にベースラインを確認し誤検知を除外する
+
+【参照】
+https://www.security-next.com/188974
+https://www.tenable.com/plugins/nessus/328966
+------------------------------------------------------------
+2. Apple、WebKit中心に多数の脆弱性を修正するmacOS/iOS/Safariセキュリティアップデートを公開
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: Apple macOS Tahoe / iOS / iPadOS / Safari (WebKit)
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-18] 「Dozens of WebKit Vulnerabilities Patched With Fresh macOS, iOS Security Updates」で2026年8月17〜18日リリースのmacOS Tahoe 26.6.2（28件・うちWebKit21件）、Safari 26.6.1（WebKit関連22件）、iOS/iPadOS 26.6.1、iOS/iPadOS 18.7.10（120件超）を報道
+[The Register 2026-08-18] 「Apple plugs image-processing hole ripe for spyware abuse」で画像処理系脆弱性のスパイウェア悪用リスクを指摘
+
+【概要】
+AppleがmacOS Tahoe 26.6.2・Safari 26.6.1・iOS/iPadOS 26.6.1および旧OS向けiOS/iPadOS 18.7.10を一斉リリースし、大半がWebKit（Safariのレンダリングエンジン）に起因する多数の脆弱性を修正した。影響はSafari/プロセスのクラッシュ、メモリ破損、機密情報漏えいのほか、Audio・ImageIO・IOGPUFamily・カーネルの一部脆弱性ではサンドボックス脱出やカーネルメモリ問題、任意コード実行に至る可能性がある。画像処理系の脆弱性についてはスパイウェア悪用のリスクが指摘されており、BYOD端末やモバイル経由で社内リソースにアクセスする従業員が多い組織では特に注意が必要。定期パッチサイクルの一環ではあるが、Safari/WebKitのブラウジング動線を通じた無害化前の攻撃面（悪意あるWebページ閲覧のみで到達可能な脆弱性が含まれる）である点を踏まえ今週中の適用を推奨する。
+
+【推奨アクション】
+・MDM（Jamf、Intune等）経由で管理下のmacOS/iOS/iPadOS端末に対し今週中にアップデートを配信する
+・旧OSサポート対象端末（iOS/iPadOS 18.7.10配信対象）も見落とさず、BYOD端末含め適用状況を棚卸しする
+・アップデート未適用端末が多数残る場合は、業務上重要なWebアプリへのアクセスを一時的にMDM/CASB側で制限することを検討する
+・[SIEM] MDMのパッチ適用率レポートで未適用端末を可視化する
+Splunk SPL: index=mdm sourcetype=jamf_inventory os_version!="26.6.2" os_version!="26.6.1" os_version!="18.7.10" platform IN ("macOS","iOS","iPadOS") | stats count by os_version, department
+→ 配布ポリシーの猶予期間終了後も未適用の端末は経営層・重要業務端末を優先してフォローアップする
+
+【参照】
+https://www.securityweek.com/dozens-of-webkit-vulnerabilities-patched-with-fresh-macos-ios-security-updates/
+https://www.theregister.com/security/2026/08/18/apple-plugs-image-processing-hole-ripe-for-spyware-abuse/
+------------------------------------------------------------
+3. Rapid7調査: AIによる脆弱性発見の加速で高/緊急脆弱性の開示件数が倍増、CVSS偏重のパッチ運用が限界に
+観点: AI攻撃関連
+採用契機: γ/ε
+------------------------------------------------------------
+
+優先度: 中
+対象: 該当なし
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-18] 「AI-Driven Vulnerability Surge Breaks the Traditional Patching Model」でRapid7 Labsの2026年第2四半期版Quarterly Threat Landscape Reportを報道
+
+【概要】
+Rapid7 Labsの最新四半期脅威レポートによると、CVSS 7〜10の高/緊急脆弱性の開示件数は2025年第2四半期の4,268件から2026年第2四半期には8,539件へと倍増した一方、新たに実悪用が確認された脆弱性は40件（前年同期比8%増）にとどまった。Rapid7は、攻撃者側が自動化・AI支援ツールを用いて脆弱性開示から悪用までの時間を圧縮しており、CVSSスコアなど静的な深刻度評価だけに依存した従来型のパッチサイクルはもはや追いつかないと警告している（Rapid7による分析結果であり、AIの寄与度そのものはRapid7の推定を含む）。防御側には深刻度スコアではなく実際に攻撃者が悪用可能な「露出（exposure）」を基準にした優先順位付けへの転換が求められる。
+
+【推奨アクション】
+・月次パッチ会議で、CVSSスコアのみに基づく優先順位付けからKEV登録有無・悪用観測・攻撃面（インターネット公開資産か等）を加味したExposure-based Prioritizationへの移行を検討する
+・四半期ごとの高/緊急脆弱性の開示件数トレンドを社内ダッシュボードで継続的に可視化し、パッチ運用のリソース配分見直しの根拠とする
+・自組織の資産管理・ASM（Attack Surface Management）ツールの棚卸し状況を確認し、外部露出資産の脆弱性検知〜パッチ適用までのリードタイムを短縮する打ち手を検討する
+・[SIEM] 内部脆弱性管理システムでの新規CVSS 7以上の登録件数・平均パッチ適用日数を追跡する
+
+【参照】
+https://www.securityweek.com/ai-driven-vulnerability-surge-breaks-the-traditional-patching-model/
+https://www.rapid7.com/blog/post/tr-new-report-ai-threats-q2-2026-ends-traditional-patch-cycles/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[SOC推奨情報]
+・MLflow/FUXAのSSRF脆弱性を悪用したクラウド認証情報窃取（THN報道） → pipeline-1-cve.md トラックB（リスト外製品CVE）の対象と判断し、trends.trends_cve（CVE調査エージェント担当）に委ねるため本セクションでは採用しない
+・WordPress Formidable Forms系プラグインの脆弱性CVE-2026-15748（30万サイトに影響、任意ファイルアップロード） → 採番済みCVEでpipeline-1-cve.mdトラックA/Bの判定対象のため、CVE調査エージェント（Section 3 / trends.trends_cve）の担当領域と判断し除外
+・GitLabの認証不要コード実行に繋がる重大脆弱性（Security NEXT報道） → 採番済みCVEでCVE調査エージェントのトラックA/B判定対象と重複するため除外
+・AIフレームワーク「Ray」の脆弱性、CISA・Security NEXTが悪用を警告 → 採番済みCVEかつAI関連製品のため、CVE調査エージェント（トラックA/B）またはAI攻撃調査エージェント（Step 1c）の担当領域と重複すると判断し除外
+・JetBrains YouTrackの認証不要データベースバックアップ取得の脆弱性CVE-2026-75045 → 採番済みCVE（開発ツール製品）でCVE調査エージェントのトラックA/B判定対象と重複するため除外
+・SafePal（ハードウェアウォレットメーカー）の注文追跡プラグイン脆弱性による約4万人分の情報漏えい → 単一ベンダーの個別インシデントであり単発シグナル。暗号資産ハードウェアウォレット利用者向けの被害で国内SOC運用への波及・α〜η該当が乏しく低スコアのため除外（low_score）
+・IPA、重要インフラ分野向けAIセキュリティ研修の受講募集を開始（東京開催） → 研修受講募集の案内であり、規制・ガイダンス要件の変更（ζ）や注意喚起（α）には該当しない。24時間以内の新規脅威情報を伴わないため除外
+
+本日の集計:
+SOC推奨情報 — 高1件 / 中2件 / 低0件 / 除外7件
+
+========================================

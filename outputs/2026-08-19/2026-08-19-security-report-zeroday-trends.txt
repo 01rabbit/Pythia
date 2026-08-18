@@ -1,0 +1,165 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-19 07:33 JST
+調査期間: 2026-08-18 07:00 〜 2026-08-19 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Cl0p（別名: Chubby Scorpius/FIN11/Graceful Spider/Lace Tempest / 国家帰属: 不明 / 帰属信頼度: 中）
+活動タイプ: TTP更新/新規キャンペーン
+------------------------------------------------------------
+
+標的: manufacturing/retail/professional_services / global
+マルウェア: 無名カスタムJSP Webシェル
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-19] ReliaQuestの技術分析（BleepingComputer経由）で、Windchill/FlexPLM侵害に使われたJSP Webシェルの内部構造が判明。MethodContext/WTConnection/WTKeyStoreUtil等Windchill固有クラスを直接インポートし汎用Webシェルの流用ではなく標的アプリ専用に開発されたことを確認。HTTPヘッダX-windchill-req（8文字・先頭1文字がコマンド種別、残り7文字は固定値）を用いた独自プロトコルで、認証情報復号+LDAP設定抽出／ファイルボールト列挙／ファイル取得・削除／追加Javaバイトコード実行／OS判別／死活確認の計8コマンドを実装。新規被害組織の追加や新規IOCの公開はなし（既報Philips/GE/Shellの範囲内）
+
+【概要】
+PTC Windchill/FlexPLMの脆弱性（CVE-2026-12569）を武器化しデータ窃取型恐喝を続けるCl0p（関連銘柄）キャンペーンで、攻撃に用いられたJSP Webシェルの技術分析が新たに公開された。Webシェルはアプリケーション内部API・データベーススキーマ・キーストア・ファイルボールト構造に関する詳細な知識に基づいて開発された標的特化型ツールであり、汎用Webシェルの転用ではないことが判明した。同キャンペーンは既に製造業/自動車/航空宇宙/小売の43組織超（Philips・GE・Shellを含む）への侵害が確認されており、CISAがFCEB機関へ3日以内対応を義務付けている。
+
+攻撃の流れ（判明分）:
+1. PTC Windchill/FlexPLMの脆弱性（CVE-2026-12569）を悪用し初期侵入
+2. 16進数命名のカスタムJSP Webシェルを/Windchill/login/配下に設置
+3. X-windchill-reqヘッダー経由の独自コマンドで認証情報復号・LDAP設定抽出・ファイルボールト列挙
+4. 対象ファイルを取得しリークサイトでの公開・恐喝に利用
+
+【新規TTP】
+・[T1505.003] Web Shell — ReliaQuest分析（BleepingComputer 2026-08-18経由）: Windchill固有クラス（MethodContext/WTConnection/WTKeyStoreUtil）を直接インポートするJSP Webシェルを実装し、HTTPヘッダX-windchill-req経由の独自プロトコル（8文字コマンド）で遠隔操作
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・PTC Windchill/FlexPLMのCVE-2026-12569パッチを未適用の場合は緊急適用する。/Windchill/login/配下の16進数命名JSPファイルの新規生成有無を確認し、Webサーバアクセスログでリクエストヘッダ「X-windchill-req」の出現を照合する。侵害が疑われる場合はLDAP認証情報のローテーションを実施する。
+・検知SPLクエリ: Splunk SPL: index=web_proxy OR index=iis sourcetype=access_combined uri_path="*/Windchill/*" | regex _raw="X-windchill-req" | table _time, src_ip, uri_path, http_user_agent
+・検知SPLクエリ: Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*java.exe" NewProcessName="*cmd.exe" | search CommandLine="*Windchill*" | stats count by ComputerName, CommandLine
+→ X-windchill-reqヘッダーは正規Windchillクライアントでは通常使用されないため、出現自体が高確度の侵害シグナルとなる。誤検知除外として社内監視ツール等が同名ヘッダーを独自に使用していないか事前確認する。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/clop-created-custom-web-shell-for-windchill-data-theft-attacks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定・ランサムウェア侵害の痕跡、名鉄協商関連の既報キャンペーンの新規被害詳細） / 名鉄協商が2026-06-23に検知したランサムウェア侵害について、同社が駐車場管理業務を受託していた中電不動産の顧客情報約4,000件（氏名・住所・銀行口座情報・車両情報を含む月極契約者データ）が外部流出した可能性が新たに確認された。具体的な情報漏えいの事実は確認されていないが可能性は否定できないとされている。攻撃者名・侵入手口は非公開。
+採用契機: RIS-2026-MeitetsuKyosho-CaritecoRansomware 帰属信頼度: 不明
+推奨アクション: 委託先ベンダーのランサムウェア侵害時に自社データが含まれる範囲を即座に棚卸しする体制を整備する。中電不動産は対象顧客への個別通知と口座情報を含むためのフィッシング・不正利用監視の強化を検討する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/18/55948.html
+・不明（帰属未確定） / 国立研究開発法人科学技術振興機構（JST）は、一部職員のメールアカウントが第三者による不正アクセスを受け、保存情報が外部に流出したおそれがあることを明らかにした。侵入経路・攻撃者・影響範囲の詳細は本日時点で非公開。
+採用契機: RIS-2026-JST-EmailAccountBreach 帰属信頼度: 不明
+推奨アクション: 組織向けメールアカウントの多要素認証未設定アカウントの棚卸しを実施し、異常サインイン（インポッシブルトラベル等）の監視を強化する。
+参照: https://www.security-next.com/188597
+・不明（帰属未確定） / ペット用品・アクアリウム用品を扱うチャームは、同社通信販売サイトが第三者による不正アクセスを受け、顧客の個人情報が流出した可能性があることを明らかにした。攻撃者・侵入手口・対象件数の詳細は本日時点で非公開。
+採用契機: RIS-2026-Charm-PetSupplyBreach 帰属信頼度: 不明
+推奨アクション: ECサイトの決済ページ・フォーム部分のファイル改ざん検知（FIM）を導入し、WAFログで異常な管理画面ログインを監視する。
+参照: https://www.security-next.com/188965
+・不明（帰属未確定） / 建築資材の卸売や住宅販売を手がけるナイスは、メールアカウントが第三者による不正アクセスを受け、アカウント内に保存されていた個人情報が流出した可能性があることを明らかにした。攻撃者・侵入手口の詳細は非公開。
+採用契機: RIS-2026-Nice-EmailAccountBreach 帰属信頼度: 不明
+推奨アクション: 業務メールアカウントの多要素認証適用状況を点検し、フィッシング起点の認証情報窃取を疑い該当アカウントのパスワードローテーション・セッション無効化を実施する。
+参照: https://www.security-next.com/188537
+・不明（帰属未確定） / ウォーターサーバー事業などを展開するシンアイ産業は、利用予定だったウェブシステムが侵害を受け、顧客の個人情報が流出した可能性があることを明らかにした。攻撃者・侵入手口の詳細は非公開。
+採用契機: RIS-2026-ShinAiSangyo-WebSystemBreach 帰属信頼度: 不明
+推奨アクション: 本番導入前のシステムであっても顧客データを投入する場合は同水準のセキュリティ検証（脆弱性診断・WAF適用）を事前に実施する。
+参照: https://www.security-next.com/188461
+・不明（帰属未確定・ランサムウェア） / 書籍/音楽/アパレル等の複数小売チェーン（WonderGOO・WonderREX・新星堂・HAPiNS・JEANS MATE）を展開するREXTホールディングスが2026-08-09にランサムウェア攻撃を検知し、一部店舗の臨時休業・時短営業、決済・買取・ポイントサービスの制限、通販サイトの出荷遅延が発生した。2026-08-14時点で顧客・取引先情報の外部流出の可能性は極めて低いとされるが完全には否定されていない。攻撃者名・侵入手口は非公開。
+採用契機: RIS-2026-REXT-RetailRansomware 帰属信頼度: 不明
+推奨アクション: 店舗POS・在庫管理・通販基盤を含む小売企業横断のネットワークセグメンテーションを点検し、ランサムウェア横展開を早期に検知するEDRカバレッジをPOS端末まで拡大する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/18/55952.html
+・不明（帰属未確定・決済ページ改ざん） / RIZAPが運営する「APORITOオンラインストア」で悪意ある外部スクリプトが設置され、2026-05-01〜08-05の期間に利用した顧客の氏名・住所・電話番号・メールアドレスに加え、クレジットカード番号・有効期限・セキュリティコードが外部流出した可能性がある。2026-08-05に不審な外部送信を検知しサイトを停止、2026-08-08に対象顧客へ通知、2026-08-10に公表した。攻撃者・侵入手口の詳細は非公開。
+採用契機: RIS-2026-RizapAporito-PaymentCardBreach 帰属信頼度: 不明
+推奨アクション: 決済フォームを含むページのサブリソース整合性（SRI）・コンテンツセキュリティポリシー（CSP）を強化し、外部ドメインへの不審なPOST送信をブロックする。カード会社と連携し不正利用モニタリングを対象顧客へ案内する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/18/55951.html
+・不明（帰属未確定・ランサムウェア、VPN機器悪用） / 丸高興業は2026-03-11にサーバ暗号化によりランサムウェア攻撃を検知し、フォレンジック調査結果を2026-07-29に公表した。攻撃者はVPN機器を悪用して内部ネットワークへ侵入し、不正な管理者アカウントを作成した上で複数サーバを暗号化、侵入後の活動の一部はログ削除により完全な特定ができないとしている。少なくとも1.5GBの顧客情報（社名・担当者・連絡先・取引履歴等）の漏えい可能性がある。攻撃グループ名は非公開。
+採用契機: RIS-2026-MarukoKogyo-VPNRansomware 帰属信頼度: 不明
+推奨アクション: VPN機器のファームウェア更新・多要素認証の適用状況を点検し、管理者アカウントの新規作成をリアルタイムでアラート化する。ログのフォワーディング先を改ざん困難な集中管理基盤へ変更する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/18/55950.html
+・不明（帰属未確定・サポート詐欺） / 沖縄県那覇市は、市立学校の教員がパソコンの利用中にサポート詐欺の被害に遭ったことを明らかにした。サポート詐欺に関する校内研修を受けた際、自身が被害に遭っていたことに気づいたという。技術的詳細・侵害端末上の情報範囲は非公開。既報の杏林大学教員サポート詐欺事案（RIS-2026-KyorinUniv-TechSupportScam）と同種の手口。
+採用契機: RIS-2026-NahaTeacher-TechSupportScam 帰属信頼度: 不明
+推奨アクション: 教育委員会管轄の全教員端末にリモートアクセスツール（AnyDesk/TeamViewer等）のインストール制限とブラウザの警告表示ブロックを適用し、サポート詐欺対応研修を定期実施する。
+参照: https://www.security-next.com/188878
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+（注目CVE（リスト外）: 該当なし）
+
+・[トレンド記事] Microsoft、Windows 11でLOLBinとして悪用されてきたWMICツールの削除を開始
+MicrosoftはWindows 11 24H2/25H2および最新ベータビルドから、WMIC（Windows Management Instrumentation Command-line）をFeature on Demand経由でも提供せず完全削除した。WMICは2016年（Windows Server 2012）・2021年（Windows 10 21H1）に非推奨化され、Windows 11 22H2以降はFeature on Demand化されていたが、ランサムウェア・マルウェアがシャドウコピー削除・EDR/Defenderの検知除外追加・セキュリティ製品のアンインストール・端末情報収集等のLOLBin（Living-off-the-Land Binary）として長年悪用してきた経緯があり、今回で提供自体を打ち切る。Microsoftは代替としてPowerShellの利用を推奨している。
+参照: https://www.bleepingcomputer.com/news/microsoft/microsoft-removes-wmic-lolbin-tool-in-windows-11-beta-builds/
+参照: https://www.windowslatest.com/2026/08/17/windows-11-is-losing-a-legacy-tool-wmic-hat-malware-and-ransomware-have-abused-for-years/
+参照: https://www.itechpost.com/articles/237042/20260817/windows-11-wmic-removal-targets-legacy-tool-abused-malware-ransomware-years.htm
+・[トレンド記事] 「City-Forum」キャンペーン、Salesforce/ServiceNowのゲストポータルを標的に長期スクレイピング
+セキュリティ企業Recoが「City-Forum」と命名した攻撃キャンペーンが、Salesforce Experience CloudおよびServiceNow Service Portalのゲストユーザー向け過度に緩い共有設定（脆弱性の悪用ではなく設定不備）を悪用し、2025年3月頃から1年以上にわたりデータを継続的に窃取していることが判明した。単一のVPSサーバ（158.220.87.79、独Contabo社ホスティング）から、SalesforceのAuraエンドポイントおよびLightning Web Runtime GraphQL層、ServiceNowの非公開検索エンドポイントに対しGo言語製の自作ツールでアクセスしており、通信は全てGo net/httpライブラリの既定User-Agentという共通の指紋を持つ。通信・企業向けソフトウェア（セキュリティ/データプライバシーベンダーを含む）・金融機関・公共部門ポータルが標的とみられ、ある標的だけで56万件超のアクセスイベントが記録された。Recoは活動主体を特定の攻撃者グループには帰属させておらず、インフラは現在も稼働中で観測量は増加傾向にある。
+参照: https://thehackernews.com/2026/08/one-attacker-has-scraped-both.html
+参照: https://www.bleepingcomputer.com/news/security/city-forum-data-theft-attacks-target-salesforce-servicenow-portals/
+参照: https://www.securityweek.com/stealthy-city-forum-attacks-target-salesforce-and-servicenow-with-custom-toolset/
+参照: https://www.darkreading.com/cyberattacks-data-breaches/long-running-data-theft-campaign-salesforce-servicenow
+参照: https://www.reco.ai/blog/city-forum-campaign-salesforce-servicenow
+・[トレンド記事] RubyGemsへの新規タイポスクワッティングキャンペーン「StubMaker」、16パッケージでブラウザ認証情報・暗号資産ウォレットを窃取
+研究コミュニティOpenSourceMalwareが2026年8月15日に発見した「StubMaker」と呼ばれるタイポスクワッティングキャンペーンが、RubyGemsに公開された16件の悪意あるパッケージ（ubnuler・activesupmport等、正規パッケージ名に酷似）を通じてWindows利用者を狙っている。gemインストール時に実行される extconf.rb フックが起点となり、GitHubのリリースから22MBのRust製ローダーを取得、続いてGo製の情報窃取ツール「wincfg」を起動する多段構成。Chromiumベースブラウザのアプリバウンド暗号化を回避して認証情報・閲覧履歴・クレジットカード情報を窃取するほか、暗号資産ウォレット・シードフレーズ・Telegram Desktopのデータも標的とする。攻撃者はGitHubアカウント（github.com/bebraz1、現在アクセス不能）とdresslee.com等のドメイン、Gofileへのアップロードを利用している。
+参照: https://thehackernews.com/2026/08/16-typosquatted-rubygems-packages-steal.html
+・[トレンド記事] 「TheHatman」によるAzure/Entra資格情報窃取・大量売買、Fortinet等を狙うFortiBleedキャンペーンも継続
+Unit 42（Palo Alto Networks）が2026年8月18日更新のThreat Briefで、大規模資格情報攻撃の動向を2件まとめて注意喚起した。1件目は「TheHatman」を名乗る攻撃者がBreachForums上で2026年8月1〜10日にかけて複数回の販売スレッドを公開し、McDonald's（170万件超）・Tata Consultancy Services（約80万件）・Vodafone（約42.5万件）・HCL Technologies・InterContinental Hotels Group・Kyndryl・Gap・Hexaware・Wyndham Hotelsなど少なくとも9社のAzure/Entraテナントから従業員ディレクトリ情報を窃取・販売した事案。Azure基盤自体の脆弱性やゼロデイの証跡はなく、インフォスティーラー・フィッシング・MFA未整備の悪用による認証情報窃取が主因とみられる（推測要素含む一次調査結果）。2件目は2026年6月に発覚したFortinet・Sophos・MSSQL機器を狙う大規模パスワードスプレー「FortiBleed」キャンペーンで、設定情報の窃取からオフラインでのクラック・持続的アクセス確立まで多段階の手口が継続している。Unit 42はフィッシング耐性MFA・ZTNA導入・既定認証情報の変更・不要アカウント無効化・リモートアクセスログ監査を推奨している。
+参照: https://unit42.paloaltonetworks.com/large-scale-credential-attacks/
+参照: https://www.theregister.com/security/2026/08/17/crook_hawks_millions_of_records_allegedly_plundered_from_corporate_azure_tenants/
+参照: https://www.securityweek.com/fortune-500-companies-hit-in-azure-data-theft-campaign/
+参照: https://www.bleepingcomputer.com/news/security/hacker-claims-36-million-azure-account-records-stolen-from-major-companies/
+・[トレンド記事] 「Ransom Busters」、ランサムウェア被害組織に二次接触し身代金の肩代わりを持ちかける詐欺的スキーム
+「Ransom Busters」を名乗るランサムウェアアフィリエイト（またはその関係者）が、既に他のランサムウェアグループの被害に遭った組織に対しメールで積極的に接触し、「攻撃者のサーバーをハッキングして窃取データを削除してあげる」と持ちかけ、2万〜6万ドルの報酬を要求する詐欺的スキームが確認された。特定の1グループの攻撃キャンペーンではなく、既存の様々なランサムウェア被害者を横断的に狙う二次的な詐欺の手口であり、身代金交渉を装った二重恐喝の亜種とみられる。Dark Readingは「インシデント対応サービスを装うランサムウェアアクター」と位置づけている。
+参照: https://thehackernews.com/2026/08/ransom-busters-claims-it-hacked.html
+参照: https://www.darkreading.com/cyberattacks-data-breaches/ransom-busters-ransomware-actor-incident-recovery-service
+・[トレンド記事] REXT運営のWonderGOO・新星堂等にランサムウェア攻撃、一部店舗で営業制限
+リユース・小売大手REXT（WonderGOO・WonderREX・新星堂・HAPiNS・JEANS MATE等の店舗ブランドを展開）が2026年8月9日にランサムウェアによる不正アクセスを受け、社内ネットワークの一部システムに障害が発生した。影響により一部店舗の休業・営業時間短縮、キャッシュレス決済の制限、買取・査定サービスの停止、ポイントサービス停止、EC/オンラインサービスの発送遅延が生じている。調査時点で顧客情報・取引先情報の外部流出の可能性を完全には否定できず、個人情報保護委員会等関係当局への報告を進めているとしている。連結子会社D&Mについては、VPN経由の侵入が疑われるとの報道もある（推測含む・侵入経路の公式確認は未了）。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/18/55952.html
+参照: https://www.wonder.co.jp/event/detail?id=2474
+・[トレンド記事] 消費者金融Heights Finance、クラウド基盤への不正アクセスで約120万人分の情報流出
+米消費者金融Heights Finance Holdings Coは、顧客データ保管に利用していたサードパーティのクラウド基盤への不正アクセスにより、氏名・住所・メールアドレス・電話番号・社会保障番号・政府発行ID番号・運転免許証番号・銀行口座情報を含む個人情報が窃取されたとして、少なくとも120万人超に通知を開始した。侵害は2026年5月上旬に発覚し、影響を受けたプラットフォームは既に対策済みで、融資管理システムなど他システムへの影響はないとしている。SecurityWeekによれば、既知のランサムウェア・恐喝グループによる犯行声明は確認されておらず、攻撃者は特定されていない。
+参照: https://www.securityweek.com/heights-finance-data-breach-impacts-at-least-1-2-million-individuals/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: MLflow SSRF（CVE-2026-64849）実悪用確認済み環境は、CISA KEV初回追加を待たずクラウド認証情報のローテーションと3.15.0への緊急パッチ適用を優先すべき
+Tier: 2
+確度: 低
+観測出口クラス: E1
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [Cyber Press 2026-08-18] MLflowの未認証SSRF脆弱性（webhook /testエンドポイント）がCVE採番から数時間以内にグローバルハニーポット網で実悪用試行を検知されたと報道。[TheHackerWire 2026-08-18] HTTPリダイレクト追跡時のホスト名再検証不備という技術詳細を報道。
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py 検索結果 n_cases=0）。（過去実績）
+  脅威情報: MLflowは機械学習パイプラインで広く使われるOSSであり、未認証でクラウド認証情報・APIトークンを窃取できるSSRFはAIインフラ攻撃（Section 1 カテゴリC1）とも直接関連する。CVE採番当日からの実悪用は攻撃側の対応速度の速さを示す。
+  確度アンカー: EPSS percentile 未算出 / KEV登録 未登録 / SSVC決定 未算出 / Automatable yes / EPSS算出日 未算出
+推定部分: （推測）実悪用確認済みCVEがCISA KEVへ追加されるまでの一般的な傾向から72時間以内の追加を見込むが、CISAの個別選定プロセス・優先順位は非公開であり、本CVE固有の追加時期を裏付ける直接証拠はない。
+先回り監視: 自組織のMLflowサーバアクセスログでの POST /api/2.0/mlflow/webhooks/*/test への未認証リクエスト、およびクラウドメタデータサービス（169.254.169.254等）へのアウトバウンド接続急増。
+的中判定: CISAがCVE-2026-64849をCISA KEVカタログ本体（known_exploited_vulnerabilities.json）へ初回追加した場合（dateAddedが2026-08-19〜2026-08-22の間）。他の脆弱性情報サイト・第三者「KEV」カタログへの掲載は的中根拠に採用しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・不明（TWINLOOT運用者。Ontinueは技術的類似性からSTAC4749との関連可能性に言及するが実装が大きく異なるため未確定） / RIS-2026-TWINLOOT-M365DeadDrop → Ontinue単独報告（The Hacker News/Dark Reading 2026-08-18経由）。新型PythonインプラントTWINLOOT（PyArmor難読化）を初報。Teams経由のIT部門なりすましビッシングで侵入しSharePoint Online/Microsoft Graph APIをC2デッドドロップに悪用、TeamsのTURNリレーで対話的アクセス、被害者Edgeブラウザ(headless)をChrome DevTools Protocol経由でC2トランスポートに転用する新規手口。TypeLib COMハイジャック・GhostTask型TaskCache操作・レジストリハイブ操作ツールSwarmer（実環境初観測）で永続化。標的セクター・地域は記事内未特定・IOC非公開・国家帰属の言及なし。単一ベンダー帰属（新規マルウェア発見+3・単一ベンダー帰属+3）で軸P6、標的情報不足のため軸Q1にとどまり、国内昇格トリガーもないため除外。継続監視対象
+・Ransom Busters（ランサムウェアアフィリエイトを自称する二次恐喝グループ・帰属未確定） / RIS-2026-RansomBusters-SecondaryExtortionScam → BleepingComputer/Dark Reading 2026-08-18同時報道。「Ransom Busters」を名乗る主体がランサムウェア被害組織へ直接メールで接触し、ランサムウェアグループのサーバから窃取データを削除すると称して2万〜6万ドルの支払いを要求する二次恐喝手口を確認。マルウェア・CVE武器化・具体的IOCの言及なし、被害規模・標的セクターも不明。軸P3（単一ベンダー帰属+3相当）/軸Q2（複数メディア確認+2）で除外。継続監視対象
+・不明（帰属未確定・単一インフラ運用者） / CityForum-2026-SalesforceServiceNowDataTheft → The Hacker News 2026-08-18記事はReco原典（2026-08-13初報・既報）の解説的な再構成記事であり、インフラ（158.220.87.79/city-forum.com）・手口（Salesforce Experience Cloud/ServiceNowゲストアクセス誤設定悪用）とも既報の範囲内。新規被害組織・新規IOC・攻撃規模の更新は確認されず「活動は継続中で件数は増加傾向」という定性的言及のみ。状態変化なしのため除外
+・TheHatman（ハンドルネームを名乗る単一の脅威アクター・帰属未確定） / RIS-2026-TheHatman-EntraCredentialSale → Unit 42「Threat Brief: Mitigating Large-Scale Credential Attacks」2026-08-18更新版で新規言及。2026-08-01〜17にフォーラムで複数組織のMicrosoft Entraテナントから窃取した従業員情報の販売を主張し、MFA疲労攻撃・パスワードスプレーによる侵入を主張。Unit 42自身が「主張を独自検証していない」と明記しており、IOC・技術的裏付けの提示なし。単一の未検証な犯行声明のみのため不採用
+・不明（帰属未確定・決済アプリ改ざん） / RIS-2026-InkKakumei-PaymentCardBreach → ScanNetSecurity 2026-08-18記事は既報事案（インク通販サイト「インク革命」・決済アプリ改ざん・24,166名分カード情報流出可能性・2025-12-09発覚）の再報道。件数・時系列とも既報から変化なし
+
+本日の集計:
+APT — 本編1件 / 注目動向9件 / 除外5件
+
+========================================

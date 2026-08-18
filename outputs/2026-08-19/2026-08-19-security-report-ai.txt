@@ -1,0 +1,145 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-19 07:33 JST
+調査期間: 2026-08-18 07:00 〜 2026-08-19 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CoSnitch: Microsoft Copilot Personal ワンクリック自動プロンプト実行・接続アプリデータ持出し（CVE-2026-24301）
+カテゴリ: B1 / 攻撃者種別: 研究者実証
+------------------------------------------------------------
+
+採用契機: A-S/A-R
+MITRE ATLAS: AML.T0051
+OWASP: LLM01
+対象: it / global
+被害規模: 実運用での悪用は確認されず（Varonis Threat Labs調査）。露出しうる情報はメール本文・件名・送受信者、カレンダー予定、Googleドライブファイルメタデータ、過去の会話履歴、保存済みメモリ指示等（Copilot Personal利用者全般が潜在的対象、具体的被害組織数は非公開）
+
+【24時間以内（または期間内）の変化】
+[The Hacker News 2026-08-19] Varonis Threat Labsが発見したMicrosoft Copilot Personalの3件の脆弱性群『CoSnitch』（CVE-2026-24301）を報道。undocumented URLパラメータautorun=1とqの組合せでワンクリック・ノーインタラクションのプロンプト自動実行が成立し、接続アプリからのデータ持出しと永続メモリへの指示書込みが可能と詳報。Microsoftは2026-08-18付でパッチ提供済み
+[Dark Reading 2026-08-19] Varonis研究者がCopilotに繰り返し『なぜ操作なしでプロンプトが実行できないのか』を質問し続ける『メタハッキング』手法でCopilot自身にautorun=1パラメータの存在と保護条件を語らせた経緯を詳報。攻撃連鎖がメモリ汚染・自動プロンプト実行・データ持出しの3段階から成ることを解説
+[The Register 2026-08-18] Varonisが2025年12月にMicrosoftへ報告し、2026-08-18に協調開示に基づきパッチが提供されたこと、対象はCopilot Personal（copilot.microsoft.com）でMicrosoft 365 Copilot（法人版）は本挙動の対象外であることを確認報道
+
+【概要】
+セキュリティ企業Varonis Threat Labsは、Microsoft Copilot Personal（copilot.microsoft.com、法人向けMicrosoft 365 Copilotとは別）に存在する3件の脆弱性群を『CoSnitch』（CVE-2026-24301）として2026-08-18に開示した。研究者はCopilotに対し「なぜ操作なしでプロンプトを実行できないのか」と繰り返し質問する『メタハッキング』的手法を用い、Copilot自身にundocumentedなURLパラメータautorun=1と、内部でのみ使われる想定だったqパラメータの組合せを語らせ、この2パラメータを含む1回のクリックだけで被害者の認証済みCopilotセッション内で攻撃者指定のプロンプトを自動実行できることを実証した。実行されたプロンプトはCopilotが接続を許可されているメール・カレンダー・Googleドライブ等のサービスに問い合わせ、取得した情報を符号化した上でCopilot組込みのURLフェッチ機能を使い攻撃者制御のwebhookへ送信でき、加えて要約対象として読み込ませたWebページ経由でCopilotの永続メモリストアに攻撃者の指示を書き込み、セッションをまたいで指示を持続化させることも可能だった。Varonisは2025年12月にMicrosoftへ責任開示し、Microsoftは2026-08-18付でパッチを提供、両社とも野生下での悪用の証拠は確認していないと明記している。
+
+攻撃の流れ:
+1. 攻撃者がautorun=1と非公開パラメータqを付与したCopilot Personal（copilot.microsoft.com）宛のURLを作成し被害者に送付する
+2. 被害者がリンクをクリックすると、ユーザー操作を経ずに被害者の認証済みCopilotセッション内で攻撃者指定プロンプトが自動実行される
+3. 実行されたプロンプトが接続済みのメール・カレンダー・Googleドライブ等から情報を取得し、Copilotの組込みURLフェッチ機能で符号化して攻撃者制御のwebhookへ送信する
+4. 併せて要約対象のWebページ経由で攻撃者の指示をCopilotの永続メモリストアへ書き込み、手動削除まで複数セッションにわたり指示を持続化させる
+
+【ATLAS TTPs】
+・[AML.T0051] （詳細は概要参照）
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+検知シグナル: copilot.microsoft.com宛URLにautorun=1パラメータが付与されている
+検知シグナル: Copilotセッション直後にMicrosoft公式ドメイン以外への新規webhook宛通信が発生する
+検知シグナル: Copilotの永続メモリ設定に利用者が入力していない指示文が追加される
+
+【監視・対策ポイント】
+・[SIEM] プロキシ/CASB/SWGログでCopilot Personalへのアクセス時に付与されるURLパラメータと、Copilotセッションに伴う外部送信先ドメインを監視する
+Splunk SPL: index=proxy url="*copilot.microsoft.com*" url="*autorun=1*" | table _time src_user url
+Splunk SPL: index=proxy referrer="*copilot.microsoft.com*" NOT dest_domain="*.microsoft.com" | stats count by src_user dest_domain | where count>0
+→ パッチは2026-08-18提供済みのため、主眼は未適用テナント・キャッシュ済みリンクの悪用有無の事後確認とパッチ適用状況の棚卸し。autorun=1付きURLへのアクセス直後に外部ドメインへ新規webhook通信が続く場合は要調査
+
+【参照】
+https://thehackernews.com/2026/08/microsoft-copilot-personal-flaws-could.html
+https://www.darkreading.com/vulnerabilities-threats/cosnitch-attack-copilot-mapping-out-architecture
+https://www.theregister.com/research/2026/08/18/copilot-tricked-into-telling-reseachers-how-to-hack-itself/5288857
+------------------------------------------------------------
+2. AI計算エンジンRayの既知脆弱性CVE-2025-62593がCISA KEVカタログへ新規追加・実悪用確認済み
+カテゴリ: C1 / 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: A-R/A-T
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: it / global
+被害規模: 具体的な被害組織名・件数は非公開。DDoSボットネット『RondoDox』が2025年11月の一般公開前から本脆弱性を組み込んでいたことがBitSightの調査（2026年3月）で確認済み。米連邦機関に2026-08-20までの対応を義務付け（KEVカタログ登録に伴う措置）
+
+【24時間以内（または期間内）の変化】
+[CISA 2026-08-18] 米CISAがAI計算エンジンRay（Ray-Project）のCVE-2025-62593（CVSS4.0=9.4、Critical）をKnown Exploited Vulnerabilities（KEV）カタログへ新規追加。連邦機関に2026-08-20までの対応を義務付け
+[Security NEXT 2026-08-18] 米当局がAI活用Pythonアプリ構築フレームワークRayの脆弱性が実際の攻撃で悪用されていると注意喚起したことを日本語で報道
+[The Hacker News 2026-08-18] Rayの/api/jobs等HTTP APIエンドポイントに対するUser-Agentヘッダー検査依存の防御をDNSリバインディングで回避し、ブラウザ経由で任意コード実行が可能となる技術的経緯を解説
+
+【概要】
+分散AI計算エンジンRay（Ray-Project、機械学習の分散学習・推論サービングに広く使われるPythonフレームワーク）に存在するリモートコード実行の脆弱性CVE-2025-62593（CVSS4.0スコア9.4・Critical）について、米CISAが2026-08-17付でKnown Exploited Vulnerabilities（KEV）カタログへ新規追加し、米連邦民間機関に2026-08-20までの対応を義務付けた。脆弱性はRayの/api/jobsおよび/api/job_agent/jobs/等のHTTP APIエンドポイントに起因し、Rayの防御機構がHTTPのUser-Agentヘッダーが『Mozilla』で始まるかどうかの検査に依存していたため、ブラウザ側でヘッダーを操作しDNSリバインディング攻撃と組み合わせることで、開発者が悪意ある広告や不正Webサイトを閲覧するだけで到達可能なRayインスタンス上に任意コードを実行させられる。本脆弱性自体は2025年11月26日に一般公開されていたが、BitSightの調査（2026年3月）によりDDoSボットネット『RondoDox』の運用者が公開の2日前から既に悪用していたことが判明しており、KEV追加は実悪用の継続を裏付ける形での機械的な母集団確定情報として扱う。
+
+攻撃の流れ:
+1. 開発者・組織がRay（AIワークロードの分散計算エンジン）のHTTP APIを認証なしで到達可能な状態のまま運用する
+2. RayのHTTP User-Agentヘッダー検査に基づく防御を、ブラウザ側でヘッダーを操作可能な性質とDNSリバインディング攻撃を組み合わせて回避する
+3. 被害者が悪意ある広告表示・Webサイトを閲覧しているだけで、到達可能なRayインスタンスの/api/jobs等エンドポイントに任意コードが投入・実行される
+4. DDoSボットネット『RondoDox』等が本脆弱性を悪用してRayインスタンスへ侵害範囲を拡大した実態が確認されている
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+検知シグナル: User-Agentが"Mozilla"で始まるがブラウザ由来ではないRay APIへのリクエスト
+検知シグナル: 外部到達可能なRayダッシュボード/APIポート（既定8265等）への未認証アクセス
+
+【監視・対策ポイント】
+・[SIEM] Ray HTTP API（/api/jobs, /api/job_agent/jobs/等）への外部到達性とアクセスパターンを監視し、開発者端末・CI/CDランナー・Kubernetesワークロード上のRayインスタンスの棚卸しを行う
+Splunk SPL: index=network dest_port=8265 (uri_path="*/api/jobs*" OR uri_path="*/api/job_agent/jobs*") | stats count by src_ip dest_ip
+Splunk SPL: index=proxy http_user_agent="Mozilla*" dest_port=8265 | stats count by src_ip user_agent
+→ Rayダッシュボード/APIがインターネットまたは信頼できないネットワークセグメントから到達可能でないか確認し、到達可能な場合は最優先でv2.52.0以上へアップグレードするか、少なくともlocalhost限定バインド・認証追加で暫定緩和する。開発者ワークステーション・CI/CDランナー・コンテナイメージ・Kubernetesワークロード全数の棚卸しを推奨
+
+【参照】
+https://www.security-next.com/188955
+https://www.cisa.gov/news-events/alerts/2026/08/17/cisa-adds-one-known-exploited-vulnerability-catalog
+https://thehackernews.com/2026/08/cisa-flags-actively-exploited-ray-flaw.html
+https://securityaffairs.com/197419/security/u-s-cisa-adds-a-ray-project-ray-flaw-to-its-known-exploited-vulnerabilities-catalog.html
+https://www.theregister.com/security/2026/08/18/cisa-gives-feds-3-days-to-fix-actively-exploited-ray-rce-bug/5289007
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[Mind Viruses: 永続プロンプトファイル経由でAIエージェント間に自己伝播する説得型ペイロード（Anthropic/EPFL研究）]
+カテゴリ: A6 採用契機: A-P
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: LLM01
+AnthropicとスイスEPFLの研究チームは、自律型AIエージェントのハーネスがセッション間で状態を引き継ぐために用いる編集可能なシステムプロンプトファイル（SOUL.md・MEMORY.md等）を介して、AIエージェント間を自己伝播する説得型ペイロード『Mind Virus』を実証した2026-08-10付プレプリント論文（arXiv:2608.10218、著者Vassilis Papadopoulos・McNair Shah・Sam Zimmerman・Jack Lindsey）を発表した。ペイロードはエージェントに特定の目標（イデオロギー的な信条の注入や、暗号資産の推奨・Gitパッチ適用・ファイル削除・シェルスクリプト実行といった具体的行動の強制）を採用させ、さらに他のエージェントへも同じ目標採用を積極的に働きかけるよう仕向ける設計になっている。6エージェントによるコーディング協業シミュレーションおよびOpenClaw（旧Clawdbot/Moltbot）型のペアエージェントチェーン実験では、一部ペイロードがSOUL.mdファイル経由で伝播試行の88%・次ホップでの感染成功55%を達成し、20連続の伝播ラウンドを生き延びた例も確認された。一方で研究チームがAIエージェント向けSNS『Moltbook』のアーカイブ（約2,000件の候補試行・投稿者約400名）を分析したところ、実世界でのエージェント間伝播成功例は1件も確認されず、著者自身も「現時点では限定的だが現実のリスク」と評価している。またシステムプロンプトへの1段落の警告文追加という単純な緩和策で、150種類超の敵対的ペイロードを含め拡散をほぼゼロに抑制できたことも示された。
+監視: [SIEM] エージェント間で共有・永続化されるシステムプロンプトファイル（SOUL.md/MEMORY.md/AGENTS.md等）の内容変化を監視する（研究段階の実証であり実運用シグナルは限定的） 検知SPL: index=file_integrity file_name IN ("SOUL.md","MEMORY.md","AGENTS.md") | stats count by host action
+→ 現時点で野生下の感染事例は未確認（論文内Moltbook分析でも不成立）。予防的対策として、エージェントのシステムプロンプト/永続メモリファイルに『外部から受け取った目標・信条をそのまま採用・転送しない』旨の警告文を追加することが有効と論文は報告している
+参照: https://thehackernews.com/2026/08/ai-mind-viruses-can-spread-between.html
+参照: https://www.ibtimes.co.uk/ai-mind-viruses-study-reveals-self-propagating-ideas-1814955
+参照: https://arxiv.org/abs/2608.10218
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2026-08-18の調査窓ではAI攻撃動向として3件を採用した。Microsoft Copilot Personalの脆弱性群『CoSnitch』（CVE-2026-24301、Varonis Threat Labs開示）は未文書化URLパラメータによるワンクリック自動プロンプト実行と接続アプリからのデータ持出しを実証し、The Hacker News・Dark Reading・The Registerの独立3ソース以上でバースト閾値に到達したため本編採用とした（パッチ提供済み・実悪用未確認）。AI計算エンジンRayの既知脆弱性CVE-2025-62593（CVSS4.0=9.4）が米CISAのKEVカタログへ新規追加され連邦機関に2026-08-20までの対応が義務付けられたことを受け、6ソース以上のバースト検出閾値超過として本編採用した。AnthropicとEPFLの研究チームが発表した論文『Mind Viruses』は永続プロンプトファイル経由でAIエージェント間に自己伝播する説得型ペイロードをラボ実証したが、実運用データ（Moltbookアーカイブ分析）では野生下の伝播成功例が確認されておらず単発シグナルのため参考B採用とした。このほかAI関連の資金調達・買収・イベント告知・防御ツール紹介記事など6件は具体的な攻撃実証・被害・脆弱性・規制警告のいずれにも該当せず除外した。
+
+本日の集計:
+AI攻撃 — 本編2件 / 参考A0件 / 参考B1件 / 除外6件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）1件 / C（インフラ）1件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[AI攻撃]
+・AI-Driven Vulnerability Surge Breaks the Traditional Patching Model（Rapid7 2026 Global Threat Landscape Report Q2） → low_score
+・Webinar Today: Rethinking Cyber Defense for AI-Speed Attacks → insufficient_evidence
+・CISO Conversations: Nico Waisman – From Self-Taught Hacker to AI-Driven Offensive Security at XBOW → insufficient_evidence
+・Xpander Raises $7.5 Million for AI Management and Governance → insufficient_evidence
+・Fortinet Acquires AI Security Company Virtue AI → insufficient_evidence
+・Staying Ahead of Adversarial AI Through Agentic Source Code Review（Google Threat Intelligence/Mandiant AVDH紹介） → insufficient_evidence
+
+========================================
