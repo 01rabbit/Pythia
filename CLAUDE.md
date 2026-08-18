@@ -41,6 +41,8 @@ forecaster/forecasts/daily/              ← 日次サイバー脅威予報
 forecaster/verification/                 ← 予報 × 実績の突合記録（月次JSON）
 forecaster/prompts/01〜04.md             ← 4ステージ（正規化・ベースライン・予報・検証）のプロンプト
 forecaster/case-based-retrieval-design.md ← 類似過去事例検索（Case-Based Retrieval）設計書
+scripts/nvd_window_sweep.py              ← ★Step 0.7 網羅スイープ／Step 3.9 突合ゲート（NVD+KEV 機械列挙で観測母集団を確定。knowledge/ 非書込・出力は .cache/ のみ）
+scripts/token_usage_report.py            ← 日次実行のトークン量・料金概算を算出（Step 4 で計測・outputs/ へ保存）
 scripts/retrieve_similar_cases.py        ← 予報 Step C'' 類似過去事例検索器（内部実績・読み取り専用）
 scripts/record_retrieval_calibration.py  ← 検証時に retrieval 較正データを収集（design §8・検証ステージのみ書込）
 scripts/backfill_observations.py         ← 過去日付の観測を CISA KEV から機械バックフィル（観測のみ・ベースライン統計対象外・予報は遡及生成しない）
@@ -54,6 +56,7 @@ forecaster/knowledge/advisory-cadence-stats.json ← E3チャネル発行頻度�
 forecaster/knowledge/kev-hazard-stats.json ← E1窓内発生率の母集団別実測（strata=base_rate_estimateのアンカー／internal_channel_rates=p_channelの正本。★strataのhazardをp_channelに代入禁止・両者は別の量＝教訓17・hit_criteria変更には使用禁止）
 forecaster/knowledge/epss-kev-calibration.json ← EPSS×KEV較正統計（M3のEPSS条件の感度実測・P(KEV|EPSS高)の根拠には使用禁止。全件監査証跡は epss-kev-calibration-entries.json に分離）
 scripts/check_knowledge_untouched.py     ← 日次コミット前の knowledge/ 無変更チェック（行動原則5の機械的ガード・SKILL.md Step 4 で実行）
+scripts/check_report_consistency.py      ← 日次コミット前の JSON×派生テキスト整合チェック（書き起こし乖離の機械的ガード・読み取り専用・SKILL.md Step 4 で実行）
 scripts/build_zeroday_itw_priors.py      ← Google Project Zero「0-day ITW」からゼロデイ過去分布を抽出（cited・検知バイアス明記・PR経由でのみ再生成）
 scripts/backfill_cisa_advisories.py      ← CISA AA勧告（Wayback経由）から過去APT観測を機械バックフィル（Technique/actorは明示分のみ・観測のみ・ベースライン対象外）
 forecaster/knowledge/zeroday-itw-priors.json ← P0由来ゼロデイ過去分布（Section2文脈付け・Step C'''参照・予測確率の直接根拠には使用禁止）
@@ -82,6 +85,7 @@ outputs/YYYY-MM-DD/                      ← 日次収集レポート（予報�
   YYYY-MM-DD-security-report-zeroday-trends.txt     ← Section 2: ゼロデイ・トレンド（ゼロデイ特報・APT活動・注目CVE・攻撃予報）
   YYYY-MM-DD-security-report-ai.txt                 ← Section 1: AI攻撃動向（本編・参考B・参考A・週次サマリー）
   YYYY-MM-DD-security-report-soc.txt                ← Section 4: SOC推奨情報（高/中/低優先度）
+  YYYY-MM-DD-token-usage.json                       ← 実行トークン量・料金概算（運用メタ情報・レポートではない）
 ```
 
 ## 実行方法
@@ -100,7 +104,70 @@ Claude Code Routines が毎日 07:00 JST に `SKILL.md` のパイプラインを
   `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-cve.txt`,
   `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-zeroday-trends.txt`,
   `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-ai.txt`,
-  `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-soc.txt`
+  `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-soc.txt`,
+  `outputs/YYYY-MM-DD/YYYY-MM-DD-token-usage.json`
+
+## 網羅スイープ（毎回必須）
+
+Step 0.7 で `scripts/nvd_window_sweep.py` を実行し、調査窓内に公開された CVSS 9.0以上のCVEと
+CISA KEV 窓内追加を機械的に全件列挙して観測母集団を確定させる。
+Step 3.9 で `--reconcile` により生成レポートと突合し、**未処理0件を確認してから Step 4 へ進む**。
+
+```bash
+# Step 0.7: 母集団の確定（Step 1 の収集を始める前）
+python3 scripts/nvd_window_sweep.py \
+  --window-start "${WINDOW_START}" --window-end "${WINDOW_END}" \
+  --output ".cache/daily-security-intel/${TODAY}/step1-sweep.json"
+
+# Step 3.9: 突合（未処理があると終了コード1）
+python3 scripts/nvd_window_sweep.py \
+  --from-json ".cache/daily-security-intel/${TODAY}/step1-sweep.json" \
+  --reconcile "outputs/${TODAY}/${TODAY}-security-report.json"
+```
+
+### この仕組みを入れた理由
+
+報道系ソース（BleepingComputer / The Hacker News / SecurityWeek や RSS 収集記事）には
+GHSA / VulnCheck / MITRE 起点の OSS 系CVEが載らないため、調査ソースに
+「GitHub Advisory Database」と名前を書くだけでは構造的に落ちる。
+姉妹リポジトリでは 2026-08-04〜07 の窓で計9件（CVSS 9.0以上が5件・公開PoCあり含む）が
+レポート本体にも除外サマリーにも一切現れない取りこぼしが実測された。
+Pythia 本リポジトリでも 2026-08-18 の窓で同種の欠損を実測している
+（スイープ候補45件のうちレポートに出現1件・未処理44件、うち GHSA 起点6件）。
+
+**Pythia ではこれが予報の歪みに直結する。** 観測（forecaster/observations/）は
+日次レポート JSON から正規化され、そこからベースライン統計と予報の base_rate が算出される。
+収集が情報源クラスに偏れば観測母集団が偏り、ベースラインと base_rate が系統的に歪む。
+その結果、検証ループ（04-verify）で「予報ロジックの誤り」と「観測母集団の欠損」を
+区別できなくなる。さらに E1（CISA KEV 初回追加）は主要な観測出口チャネルであり、
+窓内 KEV 追加の全件把握は的中判定の前提条件である。
+
+- 母集団の各CVEは **採用 / 除外サマリーへの理由付き記録 / バッチ集約** のいずれかに必ず割り当てる
+- 突合結果（候補件数 / 未処理件数 / KEV窓内追加件数）は `meta.sweep` に記録し、
+  Step 5 の日次サマリーにも1行含める
+- このスクリプトは `forecaster/knowledge/` を一切書き換えない（行動原則5）。出力は `.cache/` のみ
+- 詳細な仕様・注意点（NVD の severity フィルタを使わない理由、`lastModStartDate` を
+  既定で使わない理由、アグリゲータCNA をバッチ集約してはならない理由）は
+  `pipeline-1-cve.md`「網羅スイープ」節に記載している
+
+## トークン使用量・料金概算（毎回必須）
+
+日次実行の完了時には、その実行で消費したトークン量と料金概算を計測してユーザーへ報告する
+（SKILL.md Step 4 で計測 → Step 5 でチャット報告）。
+
+```bash
+python3 scripts/token_usage_report.py --label "daily report ${TODAY}" \
+  --output "outputs/${TODAY}/${TODAY}-token-usage.json"
+```
+
+- 集計元は Claude Code のセッショントランスクリプト。Step 1〜3 で並列起動した
+  サブエージェント分（`<session-id>/subagents/agent-*.jsonl`）も合算される
+- 内訳はキャッシュ書込（5m=1.25倍 / 1h=2.0倍）・読出（0.1倍）を分けて算出する。
+  長時間の日次実行ではキャッシュ分が支配的になる
+- **料金は公開単価に基づく概算**であり、定額プラン利用時の実請求額とは一致しない
+- 計測は commit 前に1回だけ行い、報告時は `--from-json` で再描画して数値を一致させる
+- 単価改定・新モデル追加時は `scripts/token_usage_report.py` の `PRICES_USD_PER_MTOK` を更新する
+- ファイル仕様は `pipeline-output-schema.md`「トークン使用量ファイル」節を参照
 
 ## 出力フォーマット
 

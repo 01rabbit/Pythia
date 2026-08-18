@@ -21,6 +21,9 @@ schedule: daily
 9. `pipeline-output-schema.md` — JSONスキーマ定義
 10. `pipeline-forecast-verification.md` — 攻撃予報の品質ルール（Step 3 / 3.5 で参照）
 
+> 情報収集の完全性は Step 0.7 の網羅スイープと Step 3.9 の突合ゲートで機械的に担保する。
+> Step 5 の日次サマリーには、突合結果（候補件数 / 未処理件数）とトークン使用量も含める。
+
 ## レポート区分（3区分）
 
 本パイプラインは以下の3区分でレポートを構成する:
@@ -72,8 +75,36 @@ Section 4: SOC推奨情報
 - Web 検索は data/raw に無い情報の補完としてのみ使用する（再現性確保のため）
 - data/raw が取得できない・空の場合はその旨をレポート meta に記録し、Web 検索へフォールバックする
 
+### Step 0.7: 網羅スイープ（必須・Step 1 の前）
+
+Step 1 の収集を始める**前に**、調査窓内のCVE母集団を機械列挙で確定させる。
+報道系ソース（RSS 収集記事）には GHSA / VulnCheck / MITRE 起点の OSS 系CVEが載らないため、
+これを省くと**観測が情報源クラスに偏り、ベースラインと base_rate が系統的に歪む**
+（→ 予報の確度が歪んだ分布の上に乗り、検証で予報ロジックの誤りと区別できなくなる）。
+
+```bash
+python3 scripts/nvd_window_sweep.py \
+  --window-start "${WINDOW_START}" --window-end "${WINDOW_END}" \
+  --output ".cache/daily-security-intel/${TODAY}/step1-sweep.json"
+```
+
+- `WINDOW_START` / `WINDOW_END` は Step 0 で確定した調査窓（JST・`"2026-08-18 07:00"` 形式）
+- 保存先を `SWEEP_FILE` として保持し、Step 1 の調査へ渡す。
+  標準出力の Markdown 表はそのまま Step 1 の指示文に貼ってよい
+- 窓内の CVSS 9.0以上（v3.1/v4.0/v3.0 の最大値で判定）と **CISA KEV 窓内追加を全件**列挙する。
+  KEV 窓内追加は予報の観測出口チャネル E1 の母集団そのものであり、Step 3.5 の予報・
+  週次検証の前提になる
+- 実行に失敗した場合は `SWEEP_FILE` に `取得失敗` を記録し、**スイープ未実行であることを
+  Step 1 の指示文とレポート meta に明記する**（黙って報道系ソースだけで進めない）
+- **このスイープを省略・他ソースで代替してはならない。** 仕様上の注意
+  （NVD の severity フィルタを使わない理由・`lastModStartDate` を既定で使わない理由・
+  アグリゲータCNA をバッチ集約してはならない理由）は `pipeline-1-cve.md`「網羅スイープ」節に記載
+
 ### Step 1: CVE調査（pipeline-1-cve.md に従う）
-- 一次入力: Step 0.5 の `cves-*.json`（RSS 収集記事から機械抽出した CVE 言及。CVSS/EPSS 等の詳細は NVD/Web 照会で補完する）
+- 一次入力: Step 0.7 の `SWEEP_FILE`（NVD/KEV 機械列挙による母集団・**全件を処理対象とする**）
+  および Step 0.5 の `cves-*.json`（RSS 収集記事から機械抽出した CVE 言及。CVSS/EPSS 等の詳細は NVD/Web 照会で補完する）
+- **スイープ母集団の各CVEは「採用」「除外サマリーへ理由付き記録」「バッチ集約」のいずれかに必ず割り当てる**
+  （記載免除規定は設けない。Step 3.9 で機械突合する）
 - トラックA/B の定義・帰属判定は pipeline-1-cve.md の「トラックA/B 排他的決定木」に従う
   （本ファイルでは重複定義しない）
 - 期間内に採用条件 A〜H の変化が確認できるCVEを収集。`reported-cves.md` と照合し既報除外
@@ -163,6 +194,34 @@ Section 4: SOC推奨情報
 - `forecaster/forecasts/daily/YYYY-MM-DD.md`
 - `forecaster/forecasts/daily/YYYY-MM-DD.json`（予報サイドカー・03-forecast.md 参照）
 
+### Step 3.9: 網羅スイープ突合（必須・Step 4 の前）
+
+Step 0.7 のスイープ母集団が、生成した `security-report.json` ですべて処理されているかを
+機械的に確認する。
+
+```bash
+python3 scripts/nvd_window_sweep.py \
+  --from-json ".cache/daily-security-intel/${TODAY}/step1-sweep.json" \
+  --reconcile "outputs/${TODAY}/${TODAY}-security-report.json"
+```
+
+- **未処理0件（終了コード0）を確認してから Step 4 へ進む。未処理を残したまま進んではならない**
+- 未処理が出た場合は、その一覧について採用または除外サマリーへの追記を行い、
+  `security-report.json`（およびテキスト変換ファイル）を更新してから再実行する
+- 単一ベンダーPSIRT の一括公開バッチは代表1件が記録されていれば足りる。
+  スクリプトは残りも未処理として挙げるので、除外サマリーの当該エントリに
+  `cve_id` を「代表CVE ほかN件」の形で列挙して突合を通す
+- **除外には必ず理由を書く。** 突合は「レポート JSON 全文にCVE IDが現れるか」だけを見るため、
+  理由なしでID を並べても通ってしまう（突合通過は完全性の必要条件であって十分条件ではない）
+- 突合結果（候補件数 / 未処理件数 / KEV窓内追加件数）を `meta.sweep` に記録する
+  （pipeline-output-schema.md「meta.sweep」節）。Step 0.7 が失敗した場合は
+  `meta.sweep.status: "failed"` を記録する
+- Step 3.9 は Step 3.5（予報生成）の後で構わないが、**Step 4 のコミットより前**に通すこと
+
+この突合は、姉妹リポジトリで9件のCVEがレポート本体にも除外サマリーにも現れないまま
+失われた事故（`pipeline-1-cve.md`「記録義務を課す理由」参照）の再発防止であり、
+Pythia では加えて**観測母集団の偏りがベースライン・base_rate を歪めることを防ぐ**ためにある。
+
 ### Step 4: ファイル更新・保存・コミット
 - 本日報告したCVE IDは `reported-cves.md` の該当行を更新する
   フォーマット: `CVE-ID` をキーに `exploitation_stage` / `最終更新日` / `継続監視` / `備考` を更新し、新規のみ追加
@@ -177,9 +236,30 @@ Section 4: SOC推奨情報
   4. `YYYY-MM-DD-security-report-zeroday-trends.txt` — Section 2: ゼロデイ・トレンド
   5. `YYYY-MM-DD-security-report-ai.txt` — Section 1: AI攻撃動向
   6. `YYYY-MM-DD-security-report-soc.txt` — Section 4: SOC推奨情報
+  7. `YYYY-MM-DD-token-usage.json` — 実行トークン量・料金概算（運用メタ情報・下記で生成）
+- **トークン使用量・料金概算を計測する（毎回必須・commit 前に1回だけ実行する）**:
+
+  ```bash
+  python3 scripts/token_usage_report.py --label "daily report ${TODAY}" \
+    --output "outputs/${TODAY}/${TODAY}-token-usage.json"
+  ```
+
+  - 集計元は Claude Code のセッショントランスクリプト。Step 1〜3 で並列起動した
+    サブエージェントの消費分（`<session-id>/subagents/agent-*.jsonl`）も合算される
+  - 内訳はキャッシュ書き込み（5m=1.25倍 / 1h=2.0倍）・読み出し（0.1倍）を分けて算出する。
+    長時間の日次実行ではキャッシュ分が支配的になる
+  - **料金は公開単価に基づく概算**であり、定額プラン利用時の実請求額とは一致しない
+  - 保存済み JSON から同じ数値を再描画できる（PR本文・チャット報告で数値を一致させる）:
+    `python3 scripts/token_usage_report.py --from-json "outputs/${TODAY}/${TODAY}-token-usage.json" --format markdown`
+  - 単価改定・新モデル追加時は `scripts/token_usage_report.py` の `PRICES_USD_PER_MTOK` を更新する
 - コミット直前に `python3 scripts/check_reported.py`・`python3 scripts/validate_observations.py`・
-  `python3 scripts/validate_forecasts.py`・`python3 scripts/check_knowledge_untouched.py` を
+  `python3 scripts/validate_forecasts.py`・`python3 scripts/check_knowledge_untouched.py`・
+  `python3 scripts/check_report_consistency.py --date ${TODAY}` を
   実行し、違反があれば修正してからコミットする
+  （check_report_consistency は JSON と派生テキスト5種の食い違いを機械検査する。
+  **テキストにあって JSON に無い CVE ID** はエラーになる — テキスト側だけに書かれた情報は
+  観測へ取り込まれず、人が読む記録と機械が学習する記録が乖離するため、
+  JSON へ反映するかテキストから除いてから再実行すること）
   （check_knowledge_untouched は knowledge/ の無変更を機械的に確認する。失敗した場合は
   knowledge/ の変更を revert してからコミットし、意図した補正は Issue/PR として提案する）
 - 変更ファイル（reported-*.md / outputs/YYYY-MM-DD/ / forecaster/ の Step 3.5 成果物）を
@@ -216,8 +296,12 @@ Section 4: SOC推奨情報
    発行なしの場合は「本日の新規予報なし」とその理由を1行で
 5. **観測・ベースライン**: 正規化した観測件数・techniques 付与件数・
    ベースライン期間（`_baseline_period_days`）と有効性フラグ
-6. **実行状態**: バリデーション4スクリプトの結果、コミット/push 先ブランチ名、
-   PR を作成した場合はその番号
+6. **網羅スイープ**: スイープ候補件数 / 未処理件数 / KEV窓内追加件数
+   （Step 0.7 が失敗した場合は「スイープ未実行」とその影響を1行で明記する）
+7. **トークン使用量・料金概算**: 合計トークン数と USD 概算（Step 4 で保存した
+   `token-usage.json` の数値をそのまま使う。概算である旨を併記する）
+8. **実行状態**: バリデーション5スクリプトの結果、Step 3.9 突合の合否、
+   コミット/push 先ブランチ名、PR を作成した場合はその番号
 
 表示形式:
 - 日本語プレーンテキスト（チャット表示用のため、レポート本文と同様に装飾記法へ依存しない）
@@ -233,6 +317,7 @@ push 先がセッションブランチとなり PR を作成する場合は、�
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-zeroday-trends.txt`（Section 2: ゼロデイ・トレンド）
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-ai.txt`（Section 1: AI攻撃動向）
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-soc.txt`（Section 4: SOC推奨情報）
+- `outputs/YYYY-MM-DD/YYYY-MM-DD-token-usage.json`（トークン量・料金概算・運用メタ情報）
 - `reported-cves.md` / `reported-apts.md` / `reported-ai-attacks.md`（追記）
 - `forecaster/observations/` `forecaster/baseline/` `forecaster/forecasts/daily/`（Step 3.5）
 
