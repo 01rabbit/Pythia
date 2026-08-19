@@ -1,0 +1,210 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-20 09:30 JST
+調査期間: 2026-08-19 07:00 〜 2026-08-20 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当のCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] ヘルステックCareCloud、データ侵害の影響が370万人超に拡大
+米ヘルスケアIT企業CareCloudは、2026年3月10日〜16日にAWS環境が侵害されたインシデントについて、HHS（米保健福祉省）への届出で被害規模を370万人超（3.75百万人）に修正したと公表した。当初は約35万人規模と見られていたが、氏名・住所・社会保障番号・運転免許証番号・生年月日・医療保険情報・診療情報等が流出し、2026年内の医療データ侵害としては5番目の規模となった。CVE番号や攻撃者の帰属情報は確認できず、電子カルテ保管サービスとして多数の医療機関の患者データを扱う立場上、二次的な影響範囲が大きい。
+参照: https://www.bleepingcomputer.com/news/security/healthtech-firm-carecloud-data-breach-impacts-37-million-patients
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Medusa（別名: なし / 国家帰属: 不明 / 帰属信頼度: 高）
+活動タイプ: 公式帰属・新規キャンペーン
+------------------------------------------------------------
+
+標的: healthcare・defense・manufacturing・government・it・finance・education / US
+マルウェア: 判明分なし
+
+【24時間以内の変化】
+[BleepingComputer (CISA/FBI/HHS共同勧告AA25-071a更新) 2026-08-19] CISA・FBI・HHSが合同勧告を更新し、2021年1月以降、米国内重要インフラ組織500超（2026年4月時点）への侵害を確認したと発表。2025年3月時点の300超から拡大。
+
+【概要】
+Medusaは2021年活動開始のRaaS（Ransomware-as-a-Service）グループで、アフィリエイトモデルにより初期アクセスブローカー（IAB、報酬$100〜$1,000,000）を介したネットワーク侵入を主軸とする。CISA・FBI・HHSが2025年3月発行の合同勧告を更新し、2026年4月時点で米国内重要インフラ組織500超への侵害を確認したと発表した。医療・公衆衛生、防衛産業基盤、重要製造業、政府サービス、IT、金融サービスなど複数の重要セクターにまたがる被害が報告されている。（推測）2026年2月にSymantecが北朝鮮Lazarus配下のAndarielによるMedusa使用を初めて確認したと報じているが、本勧告自体には国家帰属の記述はない。
+
+攻撃の流れ（判明分）:
+1. サイバー犯罪フォーラムを通じ初期アクセスブローカー（IAB）を募集・報酬支払い
+2. IABが提供する侵害済みアクセスを起点にネットワークへ侵入
+3. 二重恐喝（データ窃取＋暗号化）によるランサムウェア展開
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・重要インフラ・医療・防衛産業基盤の組織は、CISA/FBI/HHS合同勧告AA25-071a原文を確認し、IAB経由の侵入を想定した外部公開資産の認証強化・多要素認証の徹底・異常なリモートアクセスの監視強化を実施する。
+・[ログソース / SIEM（Splunk等）] 検知SPLクエリ: Splunk SPL: index=* sourcetype=windows_security EventCode=4624 OR EventCode=4625 | stats count by src_ip, user | where count > 20
+→ 原典に具体的IOC・マルウェア名の記載がないため、本日時点では汎用的な異常アクセス検知に留める。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/cisa-medusa-ransomware-hit-over-500-critical-infrastructure-orgs
+https://www.cisa.gov/news-events/cybersecurity-advisories/aa25-071a
+
+------------------------------------------------------------
+2. 不明（中国語話者系の疑い・帰属信頼度: 低〜中）（別名: なし / 国家帰属: CN / 帰属信頼度: 低）
+活動タイプ: マルウェア発見・新規キャンペーン・標的拡大
+------------------------------------------------------------
+
+標的: government・energy・critical_infrastructure / East Asia・TW
+マルウェア: Hermes/OpenClaw自律型攻撃基盤
+
+【24時間以内の変化】
+[Dark Reading (原典: Financial Times 2026-08-12・イスラエルDream社) 2026-08-19] 本パイプラインでは本日が初回捕捉（reported-apts.md・reported-ai-attacks.mdいずれにも未収載を確認済み）。実際の攻撃は2026年7月初頭の4日間に実行され、初出報道は2026-08-12前後。
+
+【概要】
+イスラエルのAI/サイバー防衛企業Dream社が発見し、Financial Timesが2026-08-12に報じた事案。公開されているオープンソースのAIエージェント基盤Hermes・OpenClawを組み合わせ、人間の承認なしに攻撃全体（偵察・脆弱性特定・戦術転換）を自律遂行する枠組みを構築したとされる。台湾政府機関21システムを標的にした4日間の作戦で、最大8エージェントを同時展開し人事記録等を窃取、その後、台湾の原子力安全機関やエネルギー企業へ標的を拡大した。（推測）帰属は中国語アーティファクトに基づく推定であり、政府機関による公式確認ではない。
+
+攻撃の流れ（判明分）:
+1. Hermes・OpenClawを組み合わせた自律型攻撃フレームワークを構築
+2. 台湾政府機関21システムを対象に自律偵察・マッピングを実施（最大8エージェント同時稼働）
+3. 脆弱性探索、人間の介入なしに戦術を自律的に転換
+4. 政府機関アカウント85件超へ侵害・人事記録2,500件超を窃取
+5. 標的を台湾原子力安全機関・エネルギー企業7社以上へ拡大
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・政府機関・重要インフラ（特にエネルギー・原子力関連）は、自律型AIエージェントによる偵察・戦術転換を前提とした振る舞い検知を強化する。
+・[ログソース / SIEM（Splunk等）] 検知SPLクエリ: Splunk SPL: index=network sourcetype=firewall | stats dc(dest_port) as unique_ports, count as attempts by src_ip | where unique_ports > 15 AND attempts > 100 | sort -attempts
+→ IOC非公開のため、行動パターン（短時間での戦術多様化・複数同時セッション）による検知アプローチが原典でも推奨されている。AI攻撃としての観点はSection 1（AI攻撃動向・参考A）でも別途記録している。
+
+【参照】
+https://www.darkreading.com/cyberattacks-data-breaches/china-linked-hacker-ai-capabilities-apac-attack
+https://cyberscoop.com/near-autonomous-ai-attack-government-target-taiwan/
+https://www.theregister.com/security/2026/08/12/near-autonomous-ai-agents-attack-taiwans-nuclear-safety-agency/
+
+------------------------------------------------------------
+3. 不明（Suspected China-nexus APT・帰属信頼度: 低）（別名: なし / 国家帰属: CN / 帰属信頼度: 低）
+活動タイプ: マルウェア発見・新規キャンペーン・活動再開
+------------------------------------------------------------
+
+標的: 不明 / 不明
+マルウェア: Babuk派生ランサムウェア(.babyk)
+
+【24時間以内の変化】
+[The Hacker News (CISA KEVカタログ追加まとめ記事内) 2026-08-19] 根拠CVE（CVE-2026-59310, VMware vCenter）がCISA KEVカタログへ2026-08-18付で正式追加されたことを確認。被害規模・攻撃手法は既報の範囲内で新規拡大なし。
+
+【概要】
+VMware vCenter脆弱性CVE-2026-59310/CVE-2026-59309を巡り、QUIRSOが中国語アーティファクト・研究流用・被害地域から中国nexus疑いと分析。vmdir Pythonモジュール悪用による認証情報窃取・正規VMwareサービス名偽装cronジョブでの永続化（linuxFileバックドア・reverse_ssh）・JSP Webシェル設置に加え、攻撃最終段階としてBabuk派生ランサムウェア（拡張子.babyk）のESXiホストへの展開とログ消去ツールtmpcleanを確認。既報の被害規模（47カ国361件のユニークIP）自体は本日新規拡大ではない。
+
+攻撃の流れ（判明分）:
+1. CVE-2026-59310（ディレクトリトラバーサル・未認証RCE）を悪用しvCenterへ侵入
+2. vmdir Pythonモジュール悪用による認証情報窃取・cronジョブでの永続化（linuxFileバックドア・reverse_ssh）
+3. JSP Webシェル（vmware-perf-update.jsp）を設置
+4. Babuk派生ランサムウェア（.babyk拡張子）をESXiホストへ展開し、ログ消去ツールtmpcleanで痕跡を消去
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+Filename: vmware-perf-update.jsp
+Filename: tmpclean
+
+【推奨アクション】
+・VMware vCenter運用組織は、CVE-2026-59310/59309への即時パッチ適用、vmdirプロセスの異常なcronジョブ・reverse_ssh永続化の有無を確認する。
+・[ログソース / SIEM（Splunk等）] 検知SPLクエリ: Splunk SPL: index=vcenter sourcetype=vmware:vcenter:log "vmdir" (cron OR reverse_ssh) | stats count by host
+→ CVE側で既に予報2件が発行済みのため、本日は新規予報を発行せず観測記録のみとする（重複発行回避）。
+
+【参照】
+https://thehackernews.com/2026/08/critical-macos-sharepoint-vcenter-and.html
+
+------------------------------------------------------------
+4. Cl0p（Chubby Scorpius / FIN11 / Graceful Spider / Lace Tempest）（別名: Chubby Scorpius・FIN11・Graceful Spider・Lace Tempest / 国家帰属: 不明 / 帰属信頼度: 中）
+活動タイプ: 新規キャンペーン・標的拡大
+------------------------------------------------------------
+
+標的: manufacturing・it / 不明
+マルウェア: hex命名JSP Webシェル
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-19] 「Cl0p Ransomware Group Names Over 40 Victims of PTC Windchill Campaign」— リークサイトで新たに公表された被害組織名として、既報のPhilips/Shellに加えFiserv・Zebra（Technologies）・Mindray・Largan Precisionが新規確認された。
+
+【概要】
+Cl0pグループによるPTC Windchill/FlexPLM脆弱性（CVE-2026-12569）を武器化したデータ恐喝キャンペーン。JSP Webシェル（HTTPヘッダX-windchill-req経由の独自プロトコル）で認証情報復号・LDAP設定抽出・ファイルボールト列挙等を実行。本日新たにFiserv・Zebra・Mindray・Largan Precisionが被害組織として公表された（既報Philips・Shellに加え計40組織超）。
+
+攻撃の流れ（判明分）:
+1. PTC Windchill/FlexPLM脆弱性CVE-2026-12569を悪用し侵入
+2. Windchill固有クラスを直接インポートする標的特化型JSP Webシェルを設置
+3. X-windchill-reqヘッダ経由の独自プロトコルで認証情報復号・LDAP設定抽出・ファイルボールト列挙を実行
+4. 窃取データを基にリークサイトで被害組織を公表し二重恐喝を実施
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・PTC Windchill/FlexPLM運用組織は、CVE-2026-12569への緊急パッチ適用とX-windchill-reqヘッダを含む異常リクエストの監視を実施する。
+・[ログソース / SIEM（Splunk等）] 検知SPLクエリ: Splunk SPL: index=web sourcetype=windchill_access http_header="X-windchill-req" | stats count by src_ip, uri_path
+→ 既知の8コマンド体系（S/E/O/J/D/L/G/R）に一致するリクエストパターンは即時調査対象。
+
+【参照】
+https://www.securityweek.com/cl0p-ransomware-group-names-over-40-victims-of-ptc-windchill-campaign
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定） / RIS-2026-SakuraInternet-SalesSystemBreach: 日本政府クラウド（Government Cloud）の国内選定事業者の一つであるさくらインターネットが、営業管理システムへの不正アクセスにより顧客契約・会員情報が最大約136万件流出した可能性を公表した。攻撃者・侵入手口は非公開。パスワードはハッシュ化済み、クレジットカード情報は非保存。攻撃者の犯行声明はなく帰属は未確定。 採用契機: 侵害報告。帰属信頼度: low。
+推奨アクション: さくらインターネット利用顧客はパスワード変更・不審なログイン試行の監視を推奨。同社からの正式な事後報告書公開を待って詳細評価を継続する。
+参照: https://www.security-next.com/189072
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: TrueConf Server未パッチ環境は、Head Mareグループによる実悪用継続を前提に緊急パッチ適用とポート4307遮断を優先すべき
+forecast_id: fc-20260820-1
+Tier: 1
+確度: 低（M3: KEV未登録・EPSS未算出のため定量ゲートD1未充足。確度=中の明示適用条件（KEV登録+PoC公開／実悪用確認+パッチ未提供／APT行動パターンからの推定）もいずれも非該当〔本CVEはパッチ提供済み〕。M1観測可能性ゲート・M1-b頻度ゲート〔E1のp_channel=0.36≥0.10〕は通過するため「確度: 低」を適用）
+観測出口クラス: E1（KEV初回追加）
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [Kaspersky ICS CERT KLCERT-26-058 2026-08-11] TrueConf Server（未パッチ環境）に対しHead Mareグループが2026年7月からCVE-2026-72529/72530の連結チェーンで実悪用し、正規インストーラーをPhantomCore/PhantomGraphバックドア混入版に差し替えるサプライチェーン攻撃を実施していたことを確認。[The Hacker News/BleepingComputer 2026-08-19] 攻撃チェーン全体像・IOC（SysExcSvc.dll等）の技術詳細が集約報道された。
+  過去パターン: 類似過去事例なし（scripts/retrieve_similar_cases.py 検索結果 n_cases=0）。
+  脅威情報: パッチは2026-06-18提供済みだが実悪用は継続中とみられ、KEVには本日時点で未登録。CVSS9.8（CVE-2026-72529）・9.5（CVE-2026-72530）。
+  確度アンカー: EPSS未算出 / KEV未登録 / SSVC決定 未算出 / Automatable: yes / EPSS算出日: 該当なし
+推定部分: （推測）実悪用が継続中のCVEがCISA KEVへ追加されるまでの一般的な傾向から72時間以内の追加を見込むが、CISAの個別選定プロセス・優先順位は非公開であり、本CVE固有の追加時期を裏付ける直接証拠はない。TrueConfはロシア/CIS圏中心の製品でありCISA（米国機関）の優先度判断に地域的な遅延が生じる可能性がある点も留保する。
+先回り監視: 自組織のTrueConf Serverへのポート4307への外部アクセスログ、public/js/locale.phpの改ざん、OneDrive（onedrive.com/1drv.ms）への通常想定されないサーバーセグメントからの通信。
+的中判定: CISAがCVE-2026-72529またはCVE-2026-72530をCISA KEVカタログ本体（known_exploited_vulnerabilities.json）へ初回追加した場合（dateAddedが2026-08-19〜2026-08-22の間）。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（APT）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（中国nexus・帰属信頼度: 中／Bitdefender命名） / RIS-2026-SilkParasite-CentralAsiaGovEspionage → 軸P=6点/軸Q=3点、参考A昇格トリガー該当なし（中央アジア・コーカサス標的、国内関連なし）。★要人間レビュー: 既存 RIS-2026-OctLurkSilkLurk-CentralAsiaGov（2026-08-01・Kaspersky）と標的地域・帰属傾向が類似するがマルウェア・調査ベンダーが不一致のため統合せず新規記録のみ。
+・不明（中国語話者系・DeepSeek駆動／Unit 42追跡） / RIS-2026-KnYuanDeepSeek-WindowsIKEExploitation → 軸P=5点/軸Q=1点、参考A昇格トリガー該当なし。★要人間レビュー: reported-ai-attacks.md既報のknaithe/KnYuan事案（AI-2026-07-31-001、DeepSeek×Hermes自律型サイバー攻撃基盤）との「自律調査→実悪用」進展である可能性が高く、APT側新規キー化かAI側既存エントリ更新かの判断が必要。
+・Operation CameraSwarm（Dahua IPカメラ、不明・Russian-speaking疑い） / Operation CameraSwarm（Dahua IPカメラ、不明・Russian-speaking疑い） → 軸P4/Q1相当。国家帰属なし・限定地域（露/ウクライナ）・単一〜二次ベンダー（Hunt.io）。14,530台超のDahua製IPカメラ侵害、標的が限定的・ニッチ。
+・StopAndProtect（不明・金銭動機） / StopAndProtect（不明・金銭動機） → 軸P6/Q3相当。国家帰属なし・単一ベンダー(Check Point)。約2,000件の侵害WordPressサイト悪用。Section4 SOC推奨情報で採用済み（実用アクション優先のため）。
+・MacSync Stealer（不明・金銭動機） / MacSync Stealer（不明・金銭動機） → 軸P6/Q1相当。国家帰属なし・単一ベンダー(Microsoft)。30以上のドメインをmacOS情報窃取マルウェアへ紐付け。Section4 SOC推奨情報でIOC実用価値を評価し採用済み。
+・CareCloud（米ヘルスケアIT企業、不明） / CareCloud（米ヘルスケアIT企業、不明） → 攻撃者未特定・技術詳細極小・単発企業被害。Section2 trends_topicで一般トレンド記事として採用済み。
+・CVE-2026-55040（SharePoint、不明） / CVE-2026-55040（SharePoint、不明） → CISA KEV追加（2026-08-18、本調査窓より前）・具体的脅威アクター名なし。CVE側（Section3 exclusions.cve）で既報・変化なしとして記録済み。
+・CVE-2026-65400（macOS Screen Sharing、不明） / CVE-2026-65400（macOS Screen Sharing、不明） → CISA KEV追加（2026-08-18、本調査窓より前）・Moneroマイナー配布のみで国家関与/標的型の言及なし。
+・米司法省: イラン人17名起訴（Mabna Institute） / 米司法省: イラン人17名起訴（Mabna Institute） → pipeline-1b-apt.md規定により法執行・摘発情報は日次収集対象外（週次検証ステージへ申し送り）。
+・Ransom Busters（詐称データ復旧業者、不明） / Ransom Busters（詐称データ復旧業者、不明） → ランサムウェア被害者への二次詐欺でAPT活動性なし。SOC推奨情報向けの参考情報。
+
+本日の集計:
+APT — 本編4件 / 注目動向1件 / 除外10件
+
+========================================

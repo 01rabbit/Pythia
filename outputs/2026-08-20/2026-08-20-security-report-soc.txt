@@ -1,0 +1,356 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-20 09:30 JST
+調査期間: 2026-08-19 07:00 〜 2026-08-20 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. acmailer 複数の脆弱性（XSS + 権限不備）
+観点: CVE関連
+採用契機: alpha, beta
+------------------------------------------------------------
+
+優先度: 高
+対象: acmailer CGI（4.1.2以前）/ acmailer DB（1.2.2以前）
+
+【24時間以内の変化】
+[JVN #47716829 / JVN iPedia 2026-08-19] 情報セキュリティ早期警戒パートナーシップに基づきJPCERT/CCが開発者と調整。CVE-2026-66358（XSS, CVSS8.8）とCVE-2026-70408（認可不備, CVSS6.1）の2件が公表された（詳細はSection3参考A参照）。
+
+【概要】
+acmailerは国内のレンタルサーバー事業者経由で広く導入されているメール配信CGI/DB製品であり、認可不備と組み合わさるとサブアカウント経由での管理者権限奪取からの二次被害につながる恐れがあるため、SOCは自組織・委託先の利用有無を至急確認すべきである。
+
+【推奨アクション】
+・自社・委託先（レンタルサーバー環境含む）でacmailer CGI/DBの利用有無を棚卸し、利用があればバージョンを確認する
+・ベンダー提供の最新版へのアップデートを最優先で適用する
+・サブアカウント一覧を確認し、意図しない管理者権限アカウントが作成されていないか監査する
+・[ログソース / SIEM（Splunk等）] acmailer管理パネルへのスクリプトインジェクション試行、想定外のサブアカウント作成イベントを監視する
+Splunk SPL: index=web_proxy OR index=waf uri="*acmailer*" (uri="*<script*" OR uri="*onerror=*") | table _time, src_ip, uri, http_status
+
+【参照】
+https://jvn.jp/jp/JVN47716829/
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-000118.html
+
+------------------------------------------------------------
+2. さくらインターネット レンタルサーバー顧客環境の侵害（最大136万アカウント規模）
+観点: CVE関連
+採用契機: beta, delta
+------------------------------------------------------------
+
+優先度: 高
+対象: さくらインターネット レンタルサーバーサービス／販売管理システム
+
+【24時間以内の変化】
+[Security NEXT / BleepingComputer 2026-08-19] さくらインターネットが、レンタルサーバーの一部顧客環境が第三者に侵害されたことを公表。583件の顧客アカウントで第三者ログイン試行、一部サーバーへのマルウェア設置、販売管理システムも被害の可能性があり、影響は最大136万アカウント規模に及ぶ可能性が報じられている（詳細はSection2 APT活動・注目動向参照）。
+
+【概要】
+さくらインターネットは国内で広く利用されるホスティング事業者であり、今回の侵害は多数の国内組織・個人サイトの認証情報・顧客データ漏えいにつながる可能性があるため、利用有無の確認とパスワード変更が必要である。
+
+【推奨アクション】
+・自社・委託先でさくらインターネットのレンタルサーバー／関連サービスを利用していないか確認し、利用があれば全アカウントのパスワード変更・APIキー再発行を実施する
+・さくらインターネットからの公式通知・被害範囲アップデートを継続的に確認する
+・漏えいの可能性がある顧客情報を用いた標的型フィッシングへの注意喚起を社内外に実施する
+・[ログソース / SIEM（Splunk等）] さくらインターネット関連サービスへの不審なログイン試行、および関連ドメインを騙るフィッシング活動を監視する
+Splunk SPL: index=email_security (subject="*さくら*" OR sender_domain="*sakura*") | stats count by sender, recipient, subject
+
+【参照】
+https://www.security-next.com/189072
+https://www.bleepingcomputer.com/news/security/sakura-internet-hack-exposes-data-of-up-to-1-36-million-accounts/
+
+------------------------------------------------------------
+3. Oracle 2026年8月Critical Patch Update（943パッチ・CVSS 10.0含む）
+観点: CVE関連
+採用契機: beta
+------------------------------------------------------------
+
+優先度: 中
+対象: Oracle製品全般（Fusion Middleware・Hyperion・E-Business Suite・Siebel CRM等）
+
+【24時間以内の変化】
+[SecurityWeek / Oracle CPU Advisory 2026-08-19] Oracleが四半期定例パッチで943件のパッチ・1,000超のユニークCVEを公開。うち150超がクリティカル、約90件がCVSS9.8以上。最大深刻度CVSS10.0のOracle Internet Directory LDAPサーバー脆弱性（CVE-2026-61241）を含む。
+
+【概要】
+四半期定例のOracle CPUは対象製品・CVE件数が非常に多く個別のトラックA判定になじまないため、SOCとしては規模・傾向をまとめて把握し次回パッチサイクルの優先順位付け材料とすべきである。
+
+【推奨アクション】
+・自組織のOracle製品資産棚卸し（バージョン・インターネット公開有無）を実施しCPU対象製品と突合する
+・Oracle Internet Directory・Fusion Middleware・E-Business Suiteなど外部公開されやすいコンポーネントを優先してパッチ計画に組み込む
+・[ログソース / SIEM（Splunk等）] パッチ適用までの間、Oracle関連コンポーネントへの異常な管理系リクエスト・認証失敗の増加を監視する
+Splunk SPL: index=app_logs sourcetype=oracle* (action=login OR action=admin) | stats count by src_ip, user, action | where count > 20
+
+【参照】
+https://www.oracle.com/security-alerts/cpujul2026.html
+https://www.securityweek.com/943-patches-rolled-out-with-oracles-august-2026-security-update/
+
+------------------------------------------------------------
+4. Ivanti Endpoint Manager (EPM) 複数の高深刻度脆弱性
+観点: CVE関連
+採用契機: alpha, eta
+------------------------------------------------------------
+
+優先度: 中
+対象: Ivanti Endpoint Manager (EPM) 2024（SU7未満）
+
+【24時間以内の変化】
+[Ivanti Security Advisory / JPCERT Weekly Report 2026-08-19] Ivanti EPMに3件の高深刻度脆弱性が公表され、EPM 2024 SU7で修正。公表時点で実悪用の報告なし。JPCERT/CC Weekly Reportにも掲載。
+
+【概要】
+Ivanti EPMはセキュリティ・IT資産管理製品自体の脆弱性であり、過去にIvanti製品は攻撃者に繰り返し狙われてきた実績があるため、実悪用未確認の現時点でも早期のパッチ適用が望ましい。
+
+【推奨アクション】
+・Ivanti EPMの利用有無・バージョンを確認し、SU7への更新を計画する
+・EPMサーバーへの管理コンソールアクセスを社内ネットワーク・VPN経由に制限できているか再確認する
+・[ログソース / SIEM（Splunk等）] EPMサーバーへの管理コンソール認証試行・異常な設定変更を監視する
+Splunk SPL: index=endpoint_mgmt sourcetype=ivanti_epm (action=login OR action=config_change) | stats count by src_ip, user | where count > 10
+
+【参照】
+https://hub.ivanti.com/s/article/Security-Advisory-Ivanti-Endpoint-Manager-EPM-August-2026
+https://www.jpcert.or.jp/wr/2026/wr260819.html
+
+------------------------------------------------------------
+5. Windows Defender クラッシュ不具合の修正（Microsoft）
+観点: CVE関連
+採用契機: gamma, eta
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft Windows Defender
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-19] Microsoftが既知の不具合としてWindows Defenderのクラッシュを引き起こしていた問題を修正したと発表。
+
+【概要】
+EDR/AVエージェントのクラッシュは修正版が出るまでの間エンドポイントでの検知が一時的に無効化・低下していた可能性を意味し、SOCは影響期間中に検知が欠落したイベントがなかったか遡及確認する必要がある。
+
+【推奨アクション】
+・管理端末でDefenderのエージェント状態（サービス稼働・シグネチャ更新日時）を確認し、クラッシュ発生端末がないか棚卸しする
+・修正パッチの全社展開状況を追跡し、未適用端末を洗い出す
+・クラッシュが疑われる期間についてEDRテレメトリの欠落がないかSIEM側でログを遡及確認する
+・[ログソース / SIEM（Splunk等）] Defenderサービスの異常終了・停止イベントとハートビート欠落を監視する
+Splunk SPL: index=edr sourcetype=defender (EventCode=1000 OR EventCode=1001) service="WinDefend" | stats count by host, EventCode | where count > 0
+
+【参照】
+https://www.bleepingcomputer.com/news/microsoft/microsoft-fixes-known-issue-causing-windows-defender-crashes/
+
+------------------------------------------------------------
+6. パスワードスプレー攻撃が155倍に急増（Azure CLI/ROPC悪用・Huntress報告）
+観点: CVE関連
+採用契機: delta, epsilon
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft Azure CLI / Entra ID
+
+【24時間以内の変化】
+[BleepingComputer (Huntress Labs) 2026-08-19] Huntress Labsが2026年上半期にパスワードスプレー攻撃が155倍に急増したと報告。Azure CLIを狙う「LSHIY」キャンペーンは2週間で8,100万件超のログイン試行・78件の侵害を記録。MFAの適用漏れがあるROPC（Resource Owner Password Credentials）フローを悪用。
+
+【概要】
+攻撃者はMFA導入済みの組織であってもAzure CLI経由のROPC認証フローがMFA・条件付きアクセスの対象外になっているギャップを突いており、海外での急増が国内Azure利用企業にも波及しうるため、SOCはConditional Accessポリシーの網羅性を至急点検すべきである。
+
+【推奨アクション】
+・Entra IDでROPCフローおよびAzure CLIに対するConditional Access適用状況を確認する
+・不要なROPC依存アプリケーションを無効化し、Azure CLIアクセスを管理者に限定する
+・全ユーザー・全クラウドアプリを対象としたMFA強制設定（除外なし）へ見直す
+・[ログソース / SIEM（Splunk等）] 単一送信元から多数ユーザーへの低頻度・分散型認証試行（パスワードスプレーパターン）を監視する
+Splunk SPL: index=azuread sourcetype=SigninLogs ResultType!=0 | stats dc(UserPrincipalName) as unique_users, count by src_ip, bin(_time, 10m) | where unique_users > 15
+
+【参照】
+https://www.bleepingcomputer.com/news/security/password-spraying-attacks-surge-155x-as-hackers-exploit-mfa-gaps/
+
+------------------------------------------------------------
+7. Cloud Metadata Service（169.254.169.254）へのスキャン活動（SANS ISC）
+観点: CVE関連
+採用契機: gamma, delta
+------------------------------------------------------------
+
+優先度: 中
+対象: クラウドインスタンスメタデータサービス（AWS/Azure/GCP等 IMDS全般）
+
+【24時間以内の変化】
+[SANS Internet Storm Center 2026-08-19] クラウドメタデータサービス（169.254.169.254）に対する単純なスキャン活動をISCが観測。IAMロールの認証情報やサービスアカウントトークンの窃取に悪用され得るとSSRF等の脆弱性と組み合わせて悪用される代表的な攻撃経路として改めて注意喚起。
+
+【概要】
+169.254.169.254へのアクセスはSSRF系脆弱性の典型的な悪用先であり、自組織のクラウド環境でIMDSv2強制化やアウトバウンド/内部プロキシ経由での監視が適切に構成されているかを再点検する好機である。
+
+【推奨アクション】
+・AWSはIMDSv2の強制化（IMDSv1無効化）、Azure/GCPは同等のメタデータサービス保護設定が有効になっているか点検する
+・アプリケーションのSSRF対策（URLバリデーション・内部アドレス範囲へのアウトバウンド制限）を再確認する
+・[ログソース / SIEM（Splunk等）] 169.254.169.254宛の内部通信・SSRF経由と疑われるメタデータサービスアクセスを監視する
+Splunk SPL: index=vpc_flow OR index=waf dest_ip="169.254.169.254" | stats count by src_ip, host, app | where count > 0
+
+【参照】
+https://isc.sans.edu/diary/rss/33260
+
+------------------------------------------------------------
+8. 米当局、Siemens PLC対象のAI活用攻撃について警告（重要インフラ）
+観点: AI攻撃関連
+採用契機: epsilon, delta
+------------------------------------------------------------
+
+優先度: 中
+対象: Siemens製PLC（産業用制御システム／OT環境）
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-19] 米当局がSiemens製PLCを標的としたAIを活用した攻撃について警告を発表（詳細はSection1 AI攻撃動向・参考A参照）。
+
+【概要】
+攻撃者がAIを用いてICS/OT環境の偵察・攻撃コード生成を効率化しているとされる動向は、SOC・OTセキュリティ担当が把握すべき攻撃者TTPの変化であり、国内にも同種Siemens PLC等を用いる製造業・インフラ事業者が多数存在する。
+
+【推奨アクション】
+・自組織で使用しているSiemens PLC等ICS機器の型番・ファームウェアバージョンを棚卸しし、既知の脆弱性・パッチ適用状況を確認する
+・OTネットワークとITネットワークの分離（セグメンテーション）状況を再点検する
+・[ログソース / SIEM（Splunk等）] IT-OT境界を越えるPLCプロトコル（S7comm/Modbus/EtherNet-IP等）への異常アクセスを監視する
+Splunk SPL: index=ot_network dest_port IN (102,502,44818,20000) | stats count by src_ip, dest_ip, dest_port | where count > 50
+
+【参照】
+https://www.bleepingcomputer.com/news/security/us-warns-of-ai-powered-attacks-on-siemens-plcs-in-critical-infrastructure/
+
+------------------------------------------------------------
+9. 中国系ハッカーがAPAC攻撃でAI活用能力を実演
+観点: AI攻撃関連
+採用契機: delta, epsilon
+------------------------------------------------------------
+
+優先度: 中
+対象: 該当なし
+
+【24時間以内の変化】
+[Dark Reading 2026-08-19] 中国系とみられる攻撃者がAPAC地域への攻撃においてAI活用能力を実演したと報道（台湾政府機関侵害事案の詳細はSection1/Section2参照）。
+
+【概要】
+APAC地域を標的とした攻撃者によるAI活用の実演は地域的に日本への波及可能性を伴う動向であり、SOC・脅威インテリジェンス担当が注視すべき事案である。
+
+【推奨アクション】
+・続報でIOC（C2ドメイン・ハッシュ等）が公開され次第、自組織の脅威インテリジェンスフィードに反映する
+・APAC地域の同業他社・関連組織への影響報告がないか情報収集を継続する
+
+【参照】
+https://www.darkreading.com/vulnerabilities-threats/china-linked-hacker-shows-ai-capabilities-apac-attack
+
+------------------------------------------------------------
+10. StopAndProtect: 約2,000件のWordPressサイトを悪用したマルウェア配布・情報窃取キャンペーン
+観点: CVE関連
+採用契機: beta, delta
+------------------------------------------------------------
+
+優先度: 中
+対象: WordPress（プラグイン/テーマ含むCMSエコシステム全般）
+
+【24時間以内の変化】
+[The Hacker News 2026-08-19] 「StopAndProtect」と呼ばれる攻撃キャンペーンが約2,000件の侵害済みWordPressサイトを悪用し、マルウェア配布とデータ窃取を行っていると報告。既知のプラグイン/テーマの脆弱性・設定不備の悪用とみられる。
+
+【概要】
+WordPressは国内でも中小企業・メディアサイトで広く利用されるCMSであり、海外で観測された大規模侵害キャンペーンが国内サイトにも波及する可能性があるため、プラグイン・テーマの更新状況とファイル改ざんの有無を確認することが望ましい。
+
+【推奨アクション】
+・自社運用WordPressサイトのプラグイン・テーマを最新版に更新し、不要なプラグインを無効化・削除する
+・サイトファイルの改ざん検知を実施し、不審な管理者アカウント・PHPファイルの追加がないか確認する
+・[ログソース / SIEM（Splunk等）] WordPress管理画面への異常アクセス・不審なファイルアップロードを監視する
+Splunk SPL: index=web_access uri IN ("*wp-admin*","*wp-login.php*") | stats count by src_ip, uri, status | where count > 20
+
+【参照】
+https://thehackernews.com/2026/08/stopandprotect-uses-nearly-2000-hacked.html
+
+------------------------------------------------------------
+11. MacSync Stealer、30以上のローテーションドメインでmacOS認証情報窃取（Microsoft追跡）
+観点: CVE関連
+採用契機: eta, delta
+------------------------------------------------------------
+
+優先度: 中
+対象: macOS端末全般
+
+【24時間以内の変化】
+[The Hacker News (Microsoft Security Blog) 2026-08-19] Microsoft Defender Expertsは、macOS狙いの情報窃取マルウェア「MacSync Stealer」が30以上のローテーションドメインをC2・データ窃取インフラとして使用していることを公開した。ClickFix型のソーシャルエンジニアリングからTerminalでの悪意あるコマンド実行に誘導する。
+
+【概要】
+MacSync Stealerはドメインを頻繁にローテーションするため、Microsoftはドメイン指標ではなく通信挙動パターン（/curl/等）による追跡へ手法を転換している。macOS端末を運用する組織は、ClickFix型の偽エラーメッセージ・ターミナルコマンド誘導への注意喚起と、公開済みの通信挙動パターンによる検知強化が有効である。
+
+【推奨アクション】
+・ClickFix型ソーシャルエンジニアリング（偽エラー画面からのTerminalコマンド実行誘導）への注意喚起を従業員へ実施する
+・macOSエンドポイントのEDR/プロキシログで/curl/・/dynamic?txd=等の特徴的な通信パターンを監視ルールに追加する
+・[ログソース / SIEM（Splunk等）] macOS端末からの不審なcurl実行・Base64/gunzipによるペイロード展開挙動を監視する
+Splunk SPL: index=edr os=macos (process_name="curl" OR process_name="zsh") parent_process="Terminal" | stats count by host, process_name
+
+【参照】
+https://thehackernews.com/2026/08/microsoft-links-30-rotating-domains-to.html
+https://www.microsoft.com/en-us/security/blog/2026/08/18/hunting-macsync-stealer-infrastructure-through-behavioral-pivots/
+
+------------------------------------------------------------
+12. フィルター無しAI「Kriminal」プラットフォームがサイバー犯罪懸念を惹起
+観点: AI攻撃関連
+採用契機: epsilon
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[Dark Reading 2026-08-19] 倫理的制約を回避した「No-Filter」型AIプラットフォーム「Kriminal」がサイバー犯罪コミュニティで注目されていると報道（詳細はSection1 AI攻撃動向・参考B参照）。
+
+【概要】
+検閲なしAIプラットフォームの登場は攻撃者側のツールキット進化を示す動向であり、フィッシングメールの精巧化やマルウェア亜種生成の高速化につながる可能性がある。
+
+【推奨アクション】
+・生成AIを悪用したフィッシング・マルウェア生成ツールの動向として継続的にウォッチする
+・フィッシング対策・メールセキュリティ製品のAI生成コンテンツ検知機能の有効性を確認する
+
+【参照】
+https://www.darkreading.com/vulnerabilities-threats/no-filter-kriminal-ai-platform-raises-cybercrime-concerns
+
+------------------------------------------------------------
+13. Phishing 3.0: AIエージェント対AIエージェントの攻防
+観点: AI攻撃関連
+採用契機: epsilon
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[The Hacker News 2026-08-19] フィッシング攻撃がAIエージェントによる自動生成・自動応答段階（Phishing 3.0）に進化し、防御側もAIエージェントによる検知・対応で対抗する構図になりつつあると解説。
+
+【概要】
+フィッシングの生成・実行がAIエージェントによって自動化されつつある一方、防御側もAIエージェント活用の検知高度化を進めているという業界動向として中長期的に把握しておくべきである。
+
+【推奨アクション】
+・自組織のメールセキュリティ・SOC運用におけるAIエージェント活用のロードマップ検討材料とする
+・既存のフィッシング検知ルールがAI生成文面に対応できているか確認する
+
+【参照】
+https://thehackernews.com/2026/08/phishing-3-0-fight-moves-to-agent.html
+
+------------------------------------------------------------
+14. Cloudflare Workers に対するリモートSpectre攻撃でJWT漏えいを実証（研究開示）
+観点: AI攻撃関連
+採用契機: epsilon, eta
+------------------------------------------------------------
+
+優先度: 低
+対象: Cloudflare Workers
+
+【24時間以内の変化】
+[The Hacker News 2026-08-19] 研究者がCloudflare Workers環境で同居する別テナントのWorkerからJWTを最大12ビット/秒で漏えいさせるリモートSpectre攻撃を実証（2021年実証の360倍の速度）。Cloudflareは本番環境で既に緩和済み。
+
+【概要】
+CVE非採番のサイドチャネル攻撃技術の実証であり実悪用は確認されていないが、マルチテナント型サーバーレス/エッジ実行環境における投機的実行攻撃の到達点を示すものであり参考情報として把握しておくとよい。
+
+【推奨アクション】
+・自組織がCloudflare Workers等マルチテナント型サーバーレス基盤で機微情報をWorkerメモリ上に長時間保持していないか設計を見直す
+
+【参照】
+https://thehackernews.com/2026/08/cloudflare-workers-spectre-attack-leaks.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（SOC推奨情報）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+本日の集計:
+SOC推奨情報 — 高2件 / 中9件 / 低3件 / 除外0件
+
+========================================

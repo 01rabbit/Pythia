@@ -1,0 +1,181 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-20 09:30 JST
+調査期間: 2026-08-19 07:00 〜 2026-08-20 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当のCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編相当の製品別CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: JPCERT/CC・IPA注意喚起（JVN #47716829）
+
+・CVE-2026-66358 / acmailer
+CVSS: 8.8 (High) 状態: 特記事項なし
+
+【24時間以内の変化】
+[JVN / JVN iPedia 2026-08-19] JVN#47716829としてIPA早期警戒パートナーシップ経由で公表。情報セキュリティ早期警戒パートナーシップに基づきJPCERT/CCが開発者と調整。
+
+【概要】
+国産メール配信システムacmailerに格納型クロスサイトスクリプティング脆弱性が公表された。認証済み（一般権限）利用者がWeb管理画面経由で悪意あるスクリプトを保存でき、後にアクセスした管理者等の高権限ユーザーのブラウザ上で実行させることで、管理者アカウントの乗っ取りやセッション窃取に悪用されうる。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] acmailer管理画面へのリクエスト中のスクリプトインジェクション試行を監視。
+Splunk SPL: index=web sourcetype=acmailer_access uri_path="*/admin/*" body="*<script*" | table _time, user, uri_path
+
+【参照】
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-000118.html
+https://jvn.jp/jp/JVN47716829
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [acmailerにおける複数の脆弱性] https://jvn.jp/jp/JVN47716829
+
+昇格理由: JPCERT/CC・IPA注意喚起（JVN #47716829）
+
+・CVE-2026-70408 / acmailer
+CVSS: 6.1 (Medium) 状態: 特記事項なし
+
+【24時間以内の変化】
+[JVN / JVN iPedia 2026-08-19] JVN#47716829としてIPA早期警戒パートナーシップ経由で公表（CVE-2026-66358と同一勧告内）。
+
+【概要】
+acmailerのサブアカウント機能に認可処理の不備があり、権限のないサブアカウント利用者が本来作成権限のない（管理者権限を含む）サブアカウントを作成できる。権限昇格の足がかりとなりうる。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] サブアカウント作成イベントの監視。
+Splunk SPL: index=web sourcetype=acmailer_access uri_path="*/admin/*subaccount*" method=POST | table _time, user, uri_path
+
+【参照】
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-000118.html
+https://jvn.jp/jp/JVN47716829
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [acmailerにおける複数の脆弱性] https://jvn.jp/jp/JVN47716829
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-64849 / MLflow
+CVSS: 9.3 (Critical)
+MLflowの未認証webhookテストエンドポイントにはリダイレクト処理時のURLピン留め検証が欠如しており、攻撃者が任意の内部・クラウドメタデータサービス（例: 169.254.169.254）へリクエストを送らせ、その応答ステータスと応答本文を取得できるサーバーサイドリクエストフォージェリ（SSRF）が存在する。CISAは本CVEを2026-08-19付でKEVカタログへ新規追加した。（推測）クラウド環境ではメタデータサービス経由でIAM認証情報等の窃取に発展しうるが、この波及効果はCISA/NVDの記述からの推定であり個別侵害の確認はない。
+IoC: 確認されず
+監視: [ログソース / SIEM（Splunk等）] MLflowサーバーのアクセスログ・アウトバウンドHTTPリクエストログを監視。 検知SPL: index=web_proxy dest_ip=169.254.169.254 OR dest_ip="fd00:ec2::254" | stats count by src_ip, uri_path | where count>0; index=mlflow_access uri_path="*/webhooks/test*" OR uri_path="*/ajax-api/*/mlflow/webhooks*" | stats count by src_ip, http_method
+→ MLflowサーバー自身からクラウドメタデータIP宛の通信は通常発生しないため、検知時は即座にIAMロール権限を確認しwebhookテスト機能への到達性をFW/リバースプロキシ側で遮断する。
+参照: https://github.com/mlflow/mlflow/security/advisories/GHSA-7gwp-5pfp-969j
+
+・CVE-2026-72529 / TrueConf Server
+CVSS: 9.8 (Critical)
+TrueConf Serverはデフォルトで開放されるTCP 4307番ポート経由で未認証の外部攻撃者からアクセス可能な未文書化機能を持ち、CVE-2026-72529によりスクリプトを実行でき、続くCVE-2026-72530（コード注入）により隔離環境（サンドボックス）を脱出してホストOS上で任意コードを実行できる。この攻撃チェーンによりHead Mareグループはpublic/js/locale.phpをWebシェルに置換し、正規TrueConfクライアントインストーラーをPhantomCore（RAT/バックドア）およびPhantomGraph（OneDriveをC2に利用する副次バックドア）混入版に差し替えるサプライチェーン型攻撃を実施した（パッチは2026-06-18提供済みであり、新規ゼロデイではなくパッチ未適用環境への悪用である）。
+IoC: Filename: SysExcSvc.dll; Filename: SysReadSvc.dll; Filename: locale.php
+監視: [ログソース / SIEM（Splunk等）] TrueConf Serverへのポート4307アクセスログおよびファイル整合性監視。 検知SPL: index=firewall dest_port=4307 dest_zone=dmz | stats count by src_ip, dest_ip | where count > 5; index=fim file_path="*truconf*locale.php*" (action=modified OR action=created) | table _time, file_path, file_hash, user; index=dns query="*onedrive*" OR query="*1drv.ms*" src_category="server_infra" | stats count by src_ip, query
+→ TrueConf Serverプロセス自体からOneDrive等クラウドストレージへの通信は通常発生しないため、サーバーセグメントからの当該通信は要即時調査。ポート4307への外部アクセスは本来遮断すべきであり検知時はFWルール不備を疑う。
+参照: https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-breakout-from-isolated-environment/
+
+・CVE-2026-72530 / TrueConf Server
+CVSS: 9.5 (Critical)
+CVE-2026-72529で実行可能になったスクリプトが、コード注入（CWE-94）の不備によりTrueConf Serverの隔離環境（サンドボックス）を脱出し、ホストOS上で任意コードを実行できる。CVE-2026-72529との連結でHead Mareグループの武器化チェーンを構成する（詳細はCVE-2026-72529のoverview参照）。
+IoC: Filename: SysExcSvc.dll; Filename: SysReadSvc.dll
+監視: [ログソース / SIEM（Splunk等）] TrueConf Serverプロセスの子プロセス生成・サンドボックス境界を越えるファイルアクセスを監視。 検知SPL: index=edr parent_process="*truconf*" (process_name="cmd.exe" OR process_name="powershell.exe" OR process_name="sh") | stats count by host, process_name
+→ TrueConf Serverプロセスから通常のシェル・スクリプトインタプリタが子プロセスとして生成されることは想定されないため、検知時は即時隔離する。
+参照: https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-breakout-from-isolated-environment/
+
+・CVE-2026-19490 / NetScaler ADC / NetScaler Gateway
+CVSS: 9.3 (Critical) [CVSS v4]
+Citrix NetScaler ADCおよびNetScaler Gatewayに認証バイパス（CWE-288、別経路による認証回避）の脆弱性が存在し、ネットワークアクセス可能な未認証の攻撃者が有効な認証情報なしにゲートウェイを通過し内部リソースへ不正アクセスできる可能性がある。2026-08-19時点でRapid7は実悪用の観測なしと報告している一方、Citrix製品は過去繰り返し悪用実績のある高価値標的であるため早期パッチ適用が推奨される（推測 — 過去のCitrixBleed／CitrixBleed2の悪用実績パターンからの外挿であり、本CVE固有の悪用予測ではない）。
+IoC: 確認されず
+監視: [ログソース / SIEM（Splunk等）] NetScaler認証ログ・管理インターフェースアクセスログ。 検知SPL: index=netscaler sourcetype=citrix:netscaler:aaa (event_type=login_failure OR event_type=session_created) | stats count by src_ip, username | where count=0 OR username="*anonymous*"; index=netscaler sourcetype=citrix:netscaler:ns action=* dest_port=443 | stats count by src_ip, uri_path | where uri_path IN ("*/nitro/*","*/logon/*")
+→ 通常の認証フローを経ずにセッションが確立されているログパターン（session_created直前にlogin_failureイベントが存在しない）を優先確認する。
+参照: https://www.rapid7.com/blog/post/etr-cve-2026-19490-critical-vulnerability-affecting-citrix-netscaler-adc-and-netscaler-gateway/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（CVE）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-75143 (FFmpeg) → 軸1=4点/軸2=0点。RIST協議リーダーのヒープバッファオーバーフロー（CVSS9.8、CWE-787系）。未認証RCEの明示的記述なくPoC非公開のため閾値未達。
+・CVE-2026-75595 (Netty) → 軸1=4点/軸2=0点。TLSハンドシェイク処理のオフセット判定誤りによる証明書検証迂回（CVSS v4 9.1）。実悪用・PoC非公開のため閾値未達。
+・CVE-2026-21580 (Atlassian Confluence Data Center/Server) → 軸1=4点/軸2=0点。Stored XSS+権限昇格+誤設定の複合脆弱性（NVD評価9.3・Atlassian自社評価8.6）。実悪用・PoC非公開のため閾値未達。
+・CVE-2026-48024 (Wazuh) → 軸1=4点/軸2=0点。クラスタ間パストラバーサル（CVSS9.1、PR:H・共有Fernet鍵保持のクラスタピア前提のため未認証条件非該当）。
+・CVE-2026-48162 (Wazuh) → 軸1=4点/軸2=0点。CVE-2026-48024と同一クラスタ同期処理の別経路パストラバーサル。PR:H前提のため未認証条件非該当。
+・CVE-2026-49441 (Wazuh) → 軸1=4点/軸2=0点。CVE-2026-48024/48162と同一クラスタ同期処理の別経路パストラバーサル。PR:H前提のため未認証条件非該当。
+・CVE-2026-55089 (Etherpad) → 軸1=4点/軸2=0点。OAuth admin claim検証不備による認可バイパス（CVSS9.9）。PoC非公開・実悪用未確認のため閾値未達。
+・CVE-2026-55085 (Etherpad) → 軸1=4点/軸2=0点。番号付きリストstart属性の未エスケープによるXSS（CVSS9.6）。PoC非公開・実悪用未確認のため閾値未達。
+・CVE-2026-18051 (W3 Total Cache (WordPress)) → 軸1=4点/軸2=0点。キャッシュファイル名構築の検証不備による任意ファイル上書き（CVSS10.0）。RCE直接記述なくPoC非公開のため閾値未達（900k+インストールだが単体では届かず）。
+・CVE-2024-58376 (Renovate) → 軸1=4点/軸2=0点。helmv3マネージャーのコマンドインジェクション（CVSS v4 9.3）。commit access保有者前提のため未認証条件非該当。
+・CVE-2026-47187 (SSHFS) → 軸1=4点/軸2=0点。シンボリックリンク検証不備（CVSS9.3、UI:R・ユーザー操作要のため未認証条件非該当）。
+・CVE-2026-32475 (Elementor Pro (WordPress)) → 軸1=4点/軸2=0点。任意ファイルアップロード（CVSS9.0、AC:H）。未認証の明確な記述不足のため閾値未達（500万+インストールだが単体では届かず）。
+・CVE-2026-18937 (Broken Link Checker (WordPress)) → 軸1=7点/軸2=0点。未認証でのPHPグローバル変数上書きによるRCE（CVSS9.0、700k+インストール）。境界機器非該当のため軸1が8点にわずかに届かず。
+・CVE-2026-67364 (Balbooa Forms (Joomla拡張)) → 軸1=6点/軸2=0点。未認証Pre-auth PHPコード注入（CVSS10.0）。境界機器・広く使われる製品のいずれにも非該当のため閾値未達。
+・CVE-2026-74803 (Zoo (Joomla拡張, yootheme)) → 軸1=6点/軸2=0点。未認証任意ファイルアップロード（CVSS10.0）。同上理由で閾値未達。
+・CVE-2026-74804 (Zoo (Joomla拡張, yootheme)) → 軸1=6点/軸2=0点。未認証SQLインジェクション（CVSS9.3、CVE-2026-74803と同一製品）。同上理由で閾値未達。
+・CVE-2026-18031 (TabaPay Gateway (WordPress)) → 軸1=6点/軸2=0点。未認証認証バイパス（CVSS9.8）。同上理由で閾値未達。
+・CVE-2026-18315 (TrueBooker (WordPress)) → 軸1=6点/軸2=0点。未認証IDOR経由アカウント乗っ取り（CVSS9.8）。同上理由で閾値未達。
+・CVE-2026-18776 (TrueBooker (WordPress)) → 軸1=6点/軸2=0点。未認証メールアドレス変更経由アカウント乗っ取り（CVSS9.8、CVE-2026-18315/73347と同一プラグイン）。同上理由で閾値未達。
+・CVE-2026-73347 (TrueBooker (WordPress)) → 軸1=6点/軸2=0点。未認証権限昇格（CVSS9.8）。同上理由で閾値未達。
+・CVE-2026-63722 (ICEcoder) → 軸1=6点/軸2=0点。認証バイパス+CSRFバイパス+コマンド実行の連鎖による未認証RCE（CVSS9.8）。同上理由で閾値未達。
+・CVE-2026-66613 (JetEngine (WordPress/Elementorアドオン)) → 軸1=6点/軸2=0点。未認証RCE（CVSS9.8）。同上理由で閾値未達。
+・CVE-2026-73389 (Kalles Addons (WordPress)) → 軸1=6点/軸2=0点。未認証PHPオブジェクトインジェクション（CVSS9.8）。同上理由で閾値未達。
+・CVE-2026-73390 (Total Donations (WordPress)) → 軸1=6点/軸2=0点。未認証権限昇格（CVSS9.8、CVE-2026-73391と同一プラグイン）。同上理由で閾値未達。
+・CVE-2026-73391 (Total Donations (WordPress)) → 軸1=6点/軸2=0点。未認証SQLインジェクション（CVSS9.3）。同上理由で閾値未達。
+・CVE-2026-73183 (Maps Marker Pro (WordPress)) → 軸1=6点/軸2=0点。未認証SQLインジェクション（CVSS9.3）。同上理由で閾値未達。
+・CVE-2026-73185 (NGG Smart Image Search (WordPress)) → 軸1=6点/軸2=0点。未認証SQLインジェクション（CVSS9.3）。同上理由で閾値未達。
+・CVE-2026-73388 (Nikstore Core (WordPress)) → 軸1=6点/軸2=0点。未認証SQLインジェクション（CVSS9.3）。同上理由で閾値未達。
+・CVE-2026-66794 (cluster-proxy-addon (Red Hat Multicluster Engine for Kubernetes)) → 軸1=6点/軸2=0点。未認証での認証・認可チェックバイパス（CVSS9.3）。同上理由で閾値未達。
+・CVE-2026-71960 (Cudy WR3000) → 軸1=6点/軸2=0点。ハードコードJWT HMAC署名鍵によるMQTT認証バイパス（CVSS v4 9.3）。家庭用ルーターのため境界機器・widely used非該当。
+・CVE-2026-52889 (Formie (Craft CMSプラグイン)) → 軸1=6点/軸2=0点。未認証Twigテンプレート注入によるSSTI（CVSS9.8）。同上理由で閾値未達。
+・CVE-2026-53451 (Ground Station (SDR/衛星追跡スイート)) → 軸1=6点/軸2=0点。未認証Socket.IOコマンド経由のパストラバーサル（CVSS9.8）。ニッチな趣味/研究用途製品のためwidely used非該当。
+・CVE-2026-11751 (armeria-xds (LINE Corporation)) → 軸1=3点/軸2=0点。xDS TLSピア証明書検証の意図しない無効化（CVSS v4 9.1）。未認証の明示なし。開発元は日本企業だが国内被害・広範利用の裏付けなし。
+・CVE-2025-14600 (vsDesk) → 軸1=3点/軸2=0点。インセキュアデシリアライゼーション。ニッチな地域製品。
+・CVE-2026-16019 (FAYDAM Datalogger) → 軸1=3点/軸2=0点。SQLインジェクション。unauthenticated明記なし、ニッチなトルコ製産業IoT。
+・CVE-2026-22306 (Ozols Grupa OZOLS on Windows) → 軸1=3点/軸2=0点。コード整合性検証欠如。ニッチなバルト系ERP製品。
+・CVE-2026-45272 (MyBooks/Talebook) → 軸1=3点/軸2=0点。Pythonソース注入。PR:H前提（管理設定権限要）。
+・CVE-2026-53545 (Termix) → 軸1=3点/軸2=0点。認証済みユーザー前提のコマンド注入。未認証条件非該当。
+・CVE-2026-53546 (Termix) → 軸1=3点/軸2=0点。認証済みユーザー前提のクレデンシャル解決迂回。未認証条件非該当。
+・CVE-2026-53548 (Termix) → 軸1=3点/軸2=0点。認証済みユーザー前提のパスワード奪取。未認証条件非該当。
+・CVE-2026-62668 (Grav API Plugin (Grav CMS)) → 軸1=3点/軸2=0点。Webhook権限保持アカウント前提のSSRF系。未認証条件非該当。
+・CVE-2026-70496 (search-v2-operator (Kubernetes)) → 軸1=3点/軸2=0点。ClusterRoleの過剰権限設計不備。未認証攻撃者の関与ではない。
+・CVE-2026-71470 (search-v2-operator) → 軸1=3点/軸2=0点。CR editor権限前提の任意イメージ実行。未認証条件非該当。
+・CVE-2026-73364 (Flexible Subscriptions (WordPress)) → 軸1=3点/軸2=0点。Customer権限前提のPHPオブジェクトインジェクション。unauthenticated明記なし。
+・CVE-2026-75916 (SiYuan) → 軸1=3点/軸2=0点。ブロック参照オートコンプリートXSS。AV:LかつUI:Pで悪用条件限定的。
+・CVE-2026-75917 (SiYuan) → 軸1=3点/軸2=0点。ファイルツリーピッカーホバーツールチップXSS。同上理由。
+・CVE-2026-75949 (J-BusinessDirectory (Joomla拡張)) → 軸1=3点/軸2=0点。アップロード/削除機能のパストラバーサル。unauthenticated明記なし。
+・CVE-2026-75954 (J-BusinessDirectory (Joomla拡張)) → 軸1=3点/軸2=0点。SQLインジェクション。unauthenticated明記なし。
+・CVE-2026-75976 (TRENDnet TEW-823DRU) → 軸1=5点/軸2=0点。PoC公開のスタックバッファオーバーフロー。PR:L要・家庭用ルーターで企業導入基盤の関連性なし。
+・CVE-2026-76003 (UTT HiPER 1200GW) → 軸1=5点/軸2=0点。PoC公開のスタックバッファオーバーフロー。同上理由。
+・CVE-2026-76004 (UTT HiPER 1250GW) → 軸1=5点/軸2=0点。PoC公開のスタックバッファオーバーフロー。同上理由。
+・CVE-2026-76584 (TRENDnet TV-IP751WIC) → 軸1=5点/軸2=0点。PoC公開のスタックバッファオーバーフロー。同上理由。
+・CVE-2026-76008 (Comfast CF-N1-S) → 軸1=3点/軸2=0点。スタックバッファオーバーフロー。PoC言及なし、家庭用ルーター。
+・CVE-2026-76213 (phpMyFAQ) → 軸1=3点/軸2=0点。2FA試行回数カウンタのリセット可能なブルートフォース。AC:H・AT:P前提。
+・CVE-2026-76214 (phpMyFAQ) → 軸1=3点/軸2=0点。WebAuthnログインチャレンジ永続化不備。AC:H・AT:P前提。
+・CVE-2026-76242 (stigmem-node) → 軸1=3点/軸2=0点。フェデレーションピア登録の管理者承認欠如。限定的な悪用条件が前提。
+・CVE-2026-76243 (stigmem) → 軸1=3点/軸2=0点。認証無効化状態での未認証アクセス許可。運用者の明示的設定変更が前提のミスコンフィグ系。
+・CVE-2026-76244 (stigmem-node) → 軸1=3点/軸2=0点。mTLS無効化状態でのクリアテキスト通信露出。同上、ミスコンフィグ系。
+・CVE-2026-20030 (Cisco Crosswork / Cisco Secure Workload) → Cisco PSIRTが2026-08-19に内部セキュリティレビューによるソフトウェアハードニングリリースとして一括公開した8件のバッチ集約（代表CVE-2026-20030 ほか7件: CVE-2026-20357, CVE-2026-20358, CVE-2026-20359, CVE-2026-20315, CVE-2026-20317, CVE-2026-20231, CVE-2026-20318）。代表CVEの軸1=6点/軸2=0点（境界機器非該当のため8点未達）。単一ベンダーPSIRTの同一窓内5件以上の一括公開のためバッチ集約。
+・CVE-2026-16835 (IBM AIX / PowerVM VIOS / Power Systems Firmware) → IBM PSIRTが同一窓内で一括公開した21件のバッチ集約（代表CVE-2026-16835 ほか20件: CVE-2026-15068, CVE-2026-16816, CVE-2026-16656, CVE-2026-16834, CVE-2026-16840, CVE-2026-16845, CVE-2026-16862, CVE-2026-16864, CVE-2026-16872, CVE-2026-16882, CVE-2026-16885, CVE-2026-16894, CVE-2026-16913, CVE-2026-16917, CVE-2026-16919, CVE-2026-16687, CVE-2026-16903, CVE-2026-16839, CVE-2026-16822, CVE-2026-15065）。代表CVEの軸1=6点/軸2=0点（AV:Aのため境界機器非該当）。単一ベンダーPSIRTの同一窓内多数一括公開のためバッチ集約。
+・CVE-2026-62681 (Orval (OpenAPI/Swagger TypeScriptクライアントコード生成ツール)) → Orvalプロジェクトが同一日に一括開示した同一脆弱性クラス（未エスケープ文字列によるコード注入）の11件バッチ集約（代表CVE-2026-62681 ほか10件: CVE-2026-62682, CVE-2026-71864, CVE-2026-71865, CVE-2026-71866, CVE-2026-71867, CVE-2026-71868, CVE-2026-71869, CVE-2026-71871, CVE-2026-72716, CVE-2026-72717）。代表CVEの軸1=3点/軸2=0点（開発時ビルドツールでエンドユーザー向け未認証RCEに非該当）。単一OSSプロジェクトの一括開示のためバッチ集約。
+・CVE-2026-8452 (Citrix NetScaler ADC / NetScaler Gateway) → 2026-08-16に本編採用済み（軸1=12点/軸2=5点、攻撃予報fc-20260816-1起点）。本窓内のJPCERT/CC Weekly Report・ScanNetSecurity記事は本CVEの既報内容の再掲であり新規事実の追加は確認されず（別CVEのCVE-2026-19490と混同しないこと、CVE-2026-19490は本日reference_bで新規採用）。
+・CVE-2026-72898 (Metabase) → 2026-08-08初報・2026-08-12最終更新済み（軸1=10点/軸2=1点、ゼロデイ特報として既報）。本窓内のJPCERT/CC Weekly Report・ScanNetSecurity記事は既報内容の再掲であり、CVE公開日（2026-08-10）・KEV追加日（2026-08-11）とも本調査窓より前のため新規事実なし。
+・CVE-2026-65400 (Apple macOS Screen Sharing / SharePoint / vCenter / Windows IKE（複合記事）) → 2026-08-19分レポートで4件（CVE-2026-65400, CVE-2026-55040, CVE-2026-59310, CVE-2026-33824）とも採用・詳細記録済み（KEV dateAdded=2026-08-18で本調査窓より前）。本窓内のThe Hacker News記事（2026-08-19T11:01 UTC）は新規事実を追加していない。なおcves-latest.jsonの本疑似IDは複数CVEをまとめた記事見出し由来であり単一脆弱性のCVE番号ではない（データ品質メモ）。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A2件 / 参考B4件 / 除外64件
+
+========================================
