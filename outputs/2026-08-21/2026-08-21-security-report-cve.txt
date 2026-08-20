@@ -1,0 +1,191 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-21 07:00 JST
+調査期間: 2026-08-20 07:00 〜 2026-08-21 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にパッチ未提供のゼロデイ特報事象なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-19490 / Citrix NetScaler ADC / NetScaler Gateway
+対象: 14.1 build 73.32以前 / 13.1 build 63.21以前（FIPS/NDcPP構成含む）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: v4:9.3
+状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-08-20] 「NetScaler ADC/Gateway」に認証回避の脆弱性 - 重要度「クリティカル」として国内向けに報道（記事189093）
+[SecurityWeek 2026-08-20] Rapid7が本CVEを解説し実悪用が近く発生すると予測する記事を公開（実悪用は本調査時点で未確認）
+[BleepingComputer 2026-08-20] 「Citrix urges admins to patch new NetScaler flaws as soon as possible」と題し至急パッチ適用を呼びかけ
+[The Hacker News 2026-08-20] 認証バイパスの技術的背景を解説する記事を公開（Gateway/AAAサーバの特定構成が対象）
+
+【概要】
+NetScaler ADC/GatewayのGateway/AAAサーバ構成において別経路による認証バイパス（CWE-288）が存在し、CVSS v4で9.3のクリティカル評価を受けている。パッチは提供済みだがRapid7は2026-08-19時点で実悪用は未観測と明記した一方、SecurityWeekは実悪用が近く発生すると予測する記事を2026-08-20に公開し、Citrix自身も至急のパッチ適用を呼びかけている。Security NEXTが2026-08-20早朝に国内向けに報道したことで参考A採用条件を満たすが、軸1（10点）・軸2（Security NEXT国内報道+3・海外複数ソース報道+1=4点）の数値判定により本編へ帰属する。既報のCVE-2026-8452/CVE-2026-8451（watchTowr Labsが詳細PoCを公開した別のNetScaler脆弱性）とはCVE番号が異なるため混同しないこと。
+
+攻撃の流れ:
+1. 攻撃者が対象のGateway/AAAサーバ構成を持つNetScaler ADC/Gatewayへ到達
+2. 別経路の認証バイパスを利用し正規の認証プロセスを回避（具体的な攻撃手順はベンダー・研究者とも詳細を非公開）
+3. 認証済みセッションと同等のアクセス権を取得し内部ネットワークへの足がかりを得る（実悪用は本調査時点で未確認、あくまで技術的懸念の段階）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・NetScaler ADC/Gatewayの認証ログおよび管理インターフェースへのアクセスログを監視する
+Splunk SPL: index=netscaler sourcetype=citrix:netscaler:aaa (login_result=success OR login_result=failure) | stats count by src_ip, user, login_result
+Splunk SPL: index=netscaler sourcetype=citrix:netscaler:syslog "AAA" | rex field=_raw "session_id=(?<session_id>\S+)" | stats count by src_ip, session_id | where count > 5
+→ パッチ未適用のGateway/AAAサーバで異常なセッション確立パターン（同一IPからの短時間大量セッション等）が見られた場合は要精査。実悪用の一次報道は本調査時点で確認されていない点に留意。
+
+【参照】
+https://www.security-next.com/189093
+https://www.securityweek.com/exploitation-expected-for-critical-authentication-bypass-patched-in-citrix-netscaler/
+https://www.bleepingcomputer.com/news/security/citrix-urges-admins-to-patch-new-netscaler-flaws-as-soon-as-possible
+https://thehackernews.com/2026/08/critical-netscaler-flaw-can-bypass.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT 2026-08-20 報道
+
+・CVE-2026-20030 / Cisco Crosswork / Cisco Secure Workload
+CVSS: 10.0 (Critical) 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-08-20] 「Cisco Crosswork」にクリティカル脆弱性としてアップデート公開を国内向けに報道（記事189122）
+[Security NEXT 2026-08-20] 「Cisco Secure Workload」に複数の深刻な脆弱性として修正版提供を国内向けに報道（記事189109）
+[SecurityWeek 2026-08-20] Cisco Crosswork（CVE-2026-20030/20357/20358 CVSS10.0・CVE-2026-20359 CVSS9.9）とSecure Workload（CVE-2026-20315/20317/20231/20318等 CVSS9台）の一括セキュリティ強化リリースを解説
+
+【概要】
+Cisco Crosswork（ネットワーク自動化基盤）とCisco Secure Workload（ワークロード保護基盤）に対し、2026-08-19付でCisco PSIRTが計9件の脆弱性を一括公開した。Crossworkの3件（CVE-2026-20030/20357/20358）はCVSS10.0でSQLインジェクション・認証欠如・ファイルシステム外部制御、CVE-2026-20359はCVSS9.9で認証情報保護不備。Secure Workload側はCVE-2026-20315/20317（アクセス制御・認証不備）・CVE-2026-20231（コード/OSコマンドインジェクション）・CVE-2026-20318（パストラバーサル）等。いずれも内部テストで発見されCiscoは実悪用の報告はないと説明しているが回避策は存在しない。Security NEXTが両製品について個別に国内向け報道を行ったため参考A採用条件（軸1は8点未満だが参考A昇格トリガーに該当）を満たす。悪用が成立すれば未認証での管理者相当アクセス・RCE・認証バイパス・ファイル改ざん/削除に至る。代表CVEはCVE-2026-20030としこれに関連するほか8件（CVE-2026-20357/20358/20359/20315/20317/20231/20318 および識別未確定の1件）を含む。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Crosswork/Secure Workload管理コンソールへの認証イベント・API呼び出しログを監視する
+Splunk SPL: index=network sourcetype=cisco:crosswork (action=login OR action=api_call) | stats count by src_ip, user, uri_path | where count > 20
+Splunk SPL: index=network sourcetype=cisco:secure_workload uri_path=*/api/* status>=400 | stats count by src_ip, uri_path
+→ 内部テストで発見された脆弱性でありPoC・実悪用は本調査時点で未確認。パッチ適用を優先しつつ管理インターフェースへの外部到達性を制限する。
+
+【参照】
+https://www.security-next.com/189122
+https://www.security-next.com/189109
+https://www.securityweek.com/cisco-patches-critical-crosswork-secure-workload-vulnerabilities/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-73570 / Zimbra Collaboration
+CVSS: 8.9 (High)
+Zimbra CollaborationのSNMP通知処理（zimbra-snmpパッケージ・snmp_notifyパラメータ有効時に既定で動作するswatchdogサービス経由）において未認証の入力サニタイズ不備（CWE-78）が存在し、特別に細工したSMTPリクエストによりZimbraユーザ権限でOSコマンドが実行可能となる。パッチは2026-07-20リリースの10.1.20で提供済みだが、2026-08-20にThe Hacker News・BleepingComputer・SecurityWeekが揃って実悪用を報道した。swatchdogは既定で有効なため、SNMP通知機能を有効化しているパッチ未適用環境は露出度が高い。本調査時点で国内ソースでの報道は確認されていない。
+IoC: 確認されず
+監視: Zimbraのswatchdog/SNMP関連プロセス起動ログとメールキュー処理ログを監視する
+Splunk SPL: index=mail sourcetype=zimbra:mailbox "swatchdog" OR "snmp" | stats count by host, process
+Splunk SPL: index=mail sourcetype=zimbra:mailbox EventCode=process_start ParentProcess=*swatchdog* | table _time, host, CommandLine
+→ swatchdogから想定外の子プロセス（シェル起動等）が生成されていないか確認する。SNMP通知機能を使用していない環境ではsnmp_notifyを無効化することが暫定的な低減策になる。
+参照: https://thehackernews.com/2026/08/attackers-exploit-zimbra-snmp-flaw-for.html
+参照: https://www.bleepingcomputer.com/news/security/critical-zimbra-rce-flaw-now-actively-exploited-in-attacks
+参照: https://www.securityweek.com/hackers-target-zimbra-servers-in-active-exploitation-campaign/
+
+・CVE-2026-19478 / GitLab CE/EE
+CVSS: 9.4 (Critical)
+GitLabのGraphQLディレクティブ処理にコードインジェクションの脆弱性（CVSS9.4）が存在し、未認証・ユーザ操作不要のリモート攻撃者が公開プロジェクトの改ざん・削除やユーザデータの操作を行える。2026-08-17にGitLabが19.2.4等の緊急パッチを公開し、watchTowr Labsが再現の容易さを警告していたところ、SecurityWeekが2026-08-20付で公開直後の実悪用を報道した。自己ホスト型インスタンスのみが対象でGitLab.com/GitLab Dedicatedは対応済み。本調査時点で国内ソースでの報道は確認されていない。
+IoC: 確認されず
+監視: GitLab GraphQL APIへの異常なリクエストパターンとプロジェクト削除・改ざんイベントを監視する
+Splunk SPL: index=gitlab sourcetype=gitlab:api uri_path=*/api/graphql* | stats count by src_ip, user | where count > 50
+Splunk SPL: index=gitlab sourcetype=gitlab:audit event_type=project_destroyed OR event_type=project_changed | table _time, user, project
+→ 自己ホスト型GitLabで想定外のプロジェクト削除・改ざんが発生していないか監査ログを確認する。GitLab.com/Dedicated利用環境は対応不要。
+参照: https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/
+参照: https://thehackernews.com/2026/08/critical-gitlab-graphql-flaw-could-let.html
+参照: https://www.helpnetsecurity.com/2026/08/18/gitlab-critical-code-injection-flaw-cve-2026-19478/
+
+・CVE-2026-72529 / TrueConf Server
+CVSS: 9.8 (Critical)
+TrueConf Serverの未文書化機能に対する未認証アクセス（TCP 4307番ポート経由）が存在し、Head Mareグループ（親ロシア語圏APTと報じられる）が2026年7月から実悪用していたとKaspersky ICS CERT（KLCERT-26-058）が報告した。本CVEはCVE-2026-72530（サンドボックス脱出）と連結する攻撃チェーンの起点であり、正規のTrueConfインストーラーをPhantomCore/PhantomGraphバックドア混入版に差し替えるサプライチェーン型の攻撃に利用される。パッチは2026-06-18提供済み。CISAが2026-08-20付でKEVカタログへ初回追加した（本調査対象期間内の新規追加）。国内ソースでの報道は本調査時点で確認されていない。
+IoC: 確認されず
+監視: TrueConf Serverの4307/TCPへの外部アクセスとインストーラー配布ファイルの改ざんを監視する
+Splunk SPL: index=network sourcetype=firewall dest_port=4307 | stats count by src_ip, dest_ip
+Splunk SPL: index=endpoint sourcetype=sysmon EventCode=11 TargetFilename=*trueconf*installer* | table _time, host, Hashes
+→ 4307/TCPへの外部からの到達性がある場合は即時遮断を検討する。配布済みインストーラーのハッシュ値をベンダー公式値と照合する。
+参照: https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-missing-authentication-for-critical-function/
+参照: https://www.cisa.gov/news-events/alerts/2026/08/18/cisa-adds-four-known-exploited-vulnerabilities-catalog
+
+・CVE-2026-72530 / TrueConf Server
+CVSS: 9.0 (Critical)
+CVE-2026-72529との連結攻撃チェーンを構成するコード注入（CWE-94）によるサンドボックス脱出の脆弱性。詳細はCVE-2026-72529参照。CISAが2026-08-20付でKEVカタログへ初回追加した。
+IoC: 確認されず
+監視: CVE-2026-72529と同一（TrueConf Serverプロセスの異常な子プロセス生成を監視）
+Splunk SPL: index=endpoint sourcetype=sysmon EventCode=1 ParentImage=*trueconf* | table _time, host, CommandLine
+→ TrueConfサービスプロセスから想定外の子プロセスが生成されていないか確認する。
+参照: https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-missing-authentication-for-critical-function/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-66785 (Red Hat Submariner / Lighthouse / multicloud-operators-subscription / FreeIPA（ほか4件: CVE-2026-66788, CVE-2026-67567, CVE-2026-11861, CVE-2026-13097）) → Red Hat PSIRT（secalert@redhat.com）が同一窓で一括公開したCVSS9.1〜9.9のCritical脆弱性5件（OpenShiftマルチクラスタネットワーキング/GitOps関連コンポーネント3件・FreeIPA権限昇格2件）。単一ベンダーPSIRTの同時公開バッチとして代表CVEに集約。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-73992 (Query Wrangler (WordPress plugin, <=1.5.57)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。Subscriber権限でのRCE。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-74014 (IT Residence (WordPress plugin, <=3.2.1)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。Subscriber権限での任意ファイルアップロード。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-74016 (Smart Cleaning (WordPress plugin, <=4.8.6)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。Subscriber権限での任意ファイルアップロード。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-74018 (Warehouse Cargo (WordPress plugin, <=2.6.9)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。Subscriber権限での任意ファイルアップロード。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2025-15689 (Capella (WordPress theme, <=2.5.5)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証権限昇格。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-66583 (Forminator (WordPress plugin, <=1.57.0)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証PHPオブジェクトインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-66672 (Flatastic (WordPress theme, <=2.0)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証PHPオブジェクトインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-66682 (Abandoned Cart Pro for WooCommerce (WordPress plugin, <=10.4.0)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証権限昇格。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-73993 (FundEngine (WordPress theme, <=1.7.9)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証PHPオブジェクトインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-74001 (User Registration & Membership Pro (WordPress plugin, <=5.4.5)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証の認証処理不備。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-28164 (Easy Elementor Addons (WordPress plugin, from n/a〜2.3.7)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。CSRF。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2025-15688 (Capella (WordPress theme, <=2.5.5)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-66592 (rtMedia for WordPress, BuddyPress and bbPress (<=4.7.11)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-66593 (Security & Malware scan by CleanTalk (WordPress plugin, <=2.184)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-66609 (TheGem (Elementor) (WordPress theme, <=5.12.3)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-66649 (Directory Pro (WordPress plugin, <=2.5.8)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-66680 (Locatoraid Store Locator (WordPress plugin, <=3.9.72)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-68566 (BookingPress Appointment Booking Pro (WordPress plugin, <=6.0.2)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-66600 (Media Library Assistant (WordPress plugin, <=3.39)) → Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。Author権限での任意ファイルアップロード。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-76589 (TRENDnet TEW-755AP (up to 20260702)) → VulDB発行（cna@vuldb.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。/sbin/mycliのssid引数によるスタックバッファオーバーフロー。VulDB記載では「exploit made public」とあるがコンシューマ向けSOHOルーター機器で広範な国内利用実績は未確認・KEV未登録・実悪用未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-76590 (TRENDnet TEW-755AP (up to 20260702)) → VulDB発行（cna@vuldb.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。/cgi-bin/wan.cgiのPPPoEパスワード引数によるスタックバッファオーバーフロー。VulDB記載では「exploit made public」とあるがコンシューマ向けSOHOルーター機器で広範な国内利用実績は未確認・KEV未登録・実悪用未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-77022 (Comfast CF-N1-S 2.6.0.1) → VulDB発行（cna@vuldb.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。mbox-config SSID設定機能のスタックバッファオーバーフロー。VulDB記載では「exploit made public」とあるがコンシューマ向けSOHOルーター機器で広範な国内利用実績は未確認・KEV未登録・実悪用未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-77148 (Comfast CF-N1-S 2.6.0.1) → VulDB発行（cna@vuldb.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。mbox-config チャンネル設定機能のスタックバッファオーバーフロー。VulDB記載では「exploit made public」とあるがコンシューマ向けSOHOルーター機器で広範な国内利用実績は未確認・KEV未登録・実悪用未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-55642 (dbx (dbx-web, Rust製DBクライアント)) → GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。DBX_PASSWORD未設定時にauth_middlewareが全リクエストを素通しする認証欠如。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-71428 (unstructured (Python製ドキュメント前処理ライブラリ, RAG/AIデータパイプラインで利用)) → GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。partition/partition_html/partition_mdのurl引数がホスト検証なしで取得されるSSRF。RAGパイプラインでの利用実績があるためSOC推奨情報で別途注意喚起。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-73251 (Mongoose (組込みWebサーバ/ネットワークライブラリ)) → GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。マルチ証明書CAバンドル使用時のTLSサーバなりすまし（証明書検証不備）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-63382 (libevent (evhttpモジュール)) → GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。Transfer-Encodingヘッダの不整合処理によるHTTPリクエストスマグリング。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-63385 (libevent (evhttpモジュール)) → GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。パーセントエンコードNULバイトのデコード等によるパス検証バイパス。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-71485 (Centrifugo (リアルタイムメッセージングサーバ)) → GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。クライアント制御ヘッダのプロキシ転送によるヘッダインジェクション。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-73253 (Mongoose (組込みWebサーバ/ネットワークライブラリ)) → GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。ワイルドカード証明書によるサブドメインなりすまし。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-73256 (Mongoose (組込みWebサーバ/ネットワークライブラリ)) → GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。HTTP/1.0リバースプロキシ環境でのTransfer-Encoding/Content-Length不整合によるリクエストスマグリング。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-73257 (Mongoose (組込みWebサーバ/ネットワークライブラリ)) → GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。Content-LengthとTransfer-Encoding併記時の優先順位不整合によるリクエストスマグリング。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-14950 (Festo FDS Web Interface (info@cert.vde.com)) → セッション有効期限切れ後もセッション継続利用が可能な不備。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-15706 (Baylan Smart Meter Management Application (BMS) <1.1.10.142 (iletisim@usom.gov.tr)) → 重要機能の認証欠如による認証バイパス。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-18265 (OSNEXUS QuantaStor (zdi-disclosures@trendmicro.com)) → Kapacitor設定機能の認証欠如による未認証RCE（ZDI開示）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-19586 (Omada Gateway OpenVPN Server構成) → OpenVPN接続確立処理における未認証事前認証OSコマンドインジェクション。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-2334 (vsDesk v14.0101 (vulnerability@kaspersky.com)) → 管理者権限保有者によるCSVインポート機能のサーバ側検証不備（要管理者権限）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-16926 (IBM AIX 7.2/7.3, IBM PowerVM VIOS 4.1 (psirt@us.ibm.com)) → 入力特殊要素の不適切な無害化による任意ファイル上書き。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-53424 (dropbox samly (Elixir製SAML SPライブラリ)) → esaml_sp:validate_assertion/2の重複検出no-opによるSAMLアサーションのリプレイ攻撃（Authentication Bypass by Capture-replay）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-75860 (JSON Options (WordPress plugin, contact@wpscan.com)) → 権限・nonce検証欠如による未認証権限昇格・サイト完全掌握（WPScan発行のためアグリゲータ扱い）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-76850 (LMDeploy (AIモデル推論デプロイメントフレームワーク, disclosure@vulncheck.com)) → disaggregated-serving通信でのpickle.loads()による未認証デシリアライゼーションRCE。AI推論基盤関連CVEのためSOC推奨情報で別途注意喚起（VulnCheck発行のためアグリゲータ扱い）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。
+・CVE-2026-76310 (Splunk Enterprise（embedded reportトークンによるセッション窃取、ほか4件: CVE-2026-76311, CVE-2026-76312, CVE-2026-76404, CVE-2026-20266）) → Splunk/Cisco PSIRT（psirt@cisco.com）が2026-08-18〜19に一括公開したCVSS9.1〜9.4の脆弱性5件。CVE-2026-76310/76311/76312はembedded reportトークンを保有する未認証ユーザによるセッション情報窃取（CVSS9.4）、CVE-2026-76404はSplunk MCP Serverでadmin権限保有者によるOSコマンド実行（CVSS9.1）、CVE-2026-20266はSplunk AI Toolkitのbtoolヘルパーにおけるシェル実行パターン起因のOSコマンドインジェクション（CVSS9.1、AI関連コンポーネント）。単一ベンダーPSIRTの同時公開バッチとして代表CVEに集約。KEV未登録・PoC未公開・実悪用未確認・本CVE群についての国内報道未確認のため軸1<8点・軸2=0点で除外（Splunkは国内でも広く利用されるSIEM製品だが本バッチ固有の国内報道は本調査時点で未確認）。
+・CVE未採番 (isolated-vm (Node.js製サンドボックスライブラリ, GHSA-864f-rcv7-6rh4・CVE未採番)) → ExternalCopyの型混同によりサンドボックス化されたJavaScriptがホストメモリを破壊しRCEへ発展しうる欠陥。週間ダウンロード数約100万の広く使われるnpmパッケージでAIエージェントのコード実行サンドボックスとしても利用されるが、CVE番号未採番・公式CVSS値なし・PoC公開未確認・実悪用未確認のため軸1<8点・軸2=1点（海外複数ソース報道のみ）で除外。SOC推奨情報で別途注意喚起。
+・CVE未採番 (AIT-GUI (NASA/JPL AMMOS Instrument Toolkit操作コンソール, GHSA-p9r8-2q67-fp86・CVE未採番)) → Sessions.create()の認証欠如により未認証攻撃者が衛星・観測機器への任意コマンド発行が可能（CVSS9.4）。2.5.2で修正済み。NASA/JPL特有の宇宙運用地上系ソフトウェアであり国内での利用実績・関連性は確認されないため軸1<8点・軸2=1点（海外複数ソース報道のみ）で除外。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編1件 / 参考A1件 / 参考B4件 / 除外45件

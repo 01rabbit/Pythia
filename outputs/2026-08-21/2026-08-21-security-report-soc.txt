@@ -1,0 +1,128 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-21 07:00 JST
+調査期間: 2026-08-20 07:00 〜 2026-08-21 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Elementor Pro（WordPress）の未認証RCE脆弱性、パッチ適用を至急確認
+観点: CVE関連
+採用契機: α/δ
+------------------------------------------------------------
+
+優先度: 高
+対象: Elementor Pro (WordPress plugin)
+
+【24時間以内の変化】
+[The Hacker News 2026-08-20] CVE-2026-32475（CVSS9.0）としてElementor ProのFormsモジュール File Uploadフィールドの脆弱性を報道。4.2.2未満が対象、2026-08-19に4.2.2で修正済み
+
+【概要】
+Elementor Pro（WordPress向け人気ページビルダープラグイン）のFormsモジュール File Uploadフィールドにおいて、拡張子チェックとファイル移動処理が異なるループで動作する不整合を突き、未認証攻撃者が拡張子ブロックリストを回避してPHPファイルを公開ディレクトリへアップロードできる（CVE-2026-32475・CVSS9.0）。ファイルアップロード型フォームを公開しているサイトであれば悪用可能で、ファイル名はuniqid()（時刻ベースで予測可能）から特定されうる。本調査時点でトラックA判定は軸1=7点・軸2=1点で数値上は除外となるが、Elementor Proは国内外含め広く利用されるプラグインであり、パッチ提供済み（4.2.2）のため至急のバージョン確認を推奨する。
+
+【推奨アクション】
+・Elementor Proを4.2.2以降へ至急アップデートする
+・アップデートが即座に行えない場合は該当サイトのFile Uploadフィールドを含むフォームを一時的に無効化する
+・公開ディレクトリ配下に不審なPHPファイルが存在しないか確認する
+Splunk SPL: index=web sourcetype=access_combined uri_path=*wp-content/uploads* method=GET file_ext=php | stats count by src_ip, uri_path
+
+【参照】
+https://thehackernews.com/2026/08/elementor-pro-flaw-could-let.html
+https://www.bleepingcomputer.com/news/security/critical-elementor-pro-bug-exposes-wordpress-sites-to-rce-attacks/
+
+------------------------------------------------------------
+2. Atlassian製品群、サードパーティ依存関係の脆弱性109件超を一括パッチ公開
+観点: CVE関連
+採用契機: γ
+------------------------------------------------------------
+
+優先度: 中
+対象: Bamboo / Bitbucket / Confluence / Crowd / Fisheye/Crucible / Jira
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-20] Atlassianがサードパーティ依存関係（Axios/Apache Tomcat/Netty等）の脆弱性109件超（Critical 10件・High 162件）を対象に一括セキュリティ公開を実施
+
+【概要】
+AtlassianがBamboo・Bitbucket・Confluence・Crowd・Fisheye/Crucible・Jiraの各製品でサードパーティ依存ライブラリの脆弱性を一括パッチした。代表例はAxios（CVE-2026-42043・CVE-2026-40175・CVE-2026-42264）・Apache Tomcat（CVE-2026-41293・CVE-2026-43512・CVE-2026-43515）・Netty（CVE-2026-42584）。個別の実悪用報告は本調査時点で確認されていないが件数が多く定期パッチサイクルとして把握推奨。
+
+【推奨アクション】
+・自社Atlassian製品（Confluence/Jira等セルフホスト環境）のバージョンと本バルクリリースの対象バージョンを照合する
+・次回メンテナンスウィンドウでのパッチ適用計画を立てる（緊急の単独脆弱性ではなく定期パッチ扱い）
+
+【参照】
+https://www.securityweek.com/atlassian-splunk-patch-dozens-of-critical-high-severity-vulnerabilities/
+
+------------------------------------------------------------
+3. AIデータ処理・推論基盤ライブラリ（unstructured / LMDeploy）の脆弱性、RAG/AI基盤運用者は要確認
+観点: AI攻撃関連
+採用契機: β/γ
+------------------------------------------------------------
+
+優先度: 中
+対象: unstructured (Pythonライブラリ) / LMDeploy (AIモデル推論デプロイメントフレームワーク)
+
+【24時間以内の変化】
+[GitHub Advisory Database 2026-08-20] unstructured（RAG/AIデータ取り込みパイプラインで使用）にCVE-2026-71428（SSRF・CVSS9.3）、LMDeploy（AI推論デプロイメント基盤）にCVE-2026-76850（pickleデシリアライゼーションRCE・CVSS9.8）がそれぞれ公開
+
+【概要】
+RAG（検索拡張生成）パイプラインで文書取り込みに広く使われるPythonライブラリunstructuredにおいて、partition/partition_html/partition_md関数のurl引数がホスト検証なしで取得されるSSRFが判明した（CVE-2026-71428）。またLLM推論デプロイメント基盤LMDeployでは、disaggregated-serving（分散推論）のピア間通信でpickle.loads()による未検証デシリアライゼーションが行われ、悪意あるピアからのRCEが可能となる欠陥が判明した（CVE-2026-76850）。いずれもAI/RAG基盤特有のコンポーネントで、CVE単体としては実悪用未確認のためSection3では軸1<8点で除外扱いだが、社内でAIエージェント・RAGパイプラインを運用するチームは利用有無の確認を推奨する。
+
+【推奨アクション】
+・社内のRAG/AIパイプラインでunstructuredライブラリを使用していないか棚卸しし、最新版へ更新する
+・LMDeployのdisaggregated-serving機能を有効化している場合はピア間通信を信頼できるネットワークに限定する
+
+【参照】
+https://github.com/advisories
+
+------------------------------------------------------------
+4. isolated-vm（Node.jsサンドボックスライブラリ）にサンドボックスエスケープ、AIエージェント実行基盤は要確認
+観点: AI攻撃関連
+採用契機: δ
+------------------------------------------------------------
+
+優先度: 中
+対象: isolated-vm (npmパッケージ)
+
+【24時間以内の変化】
+[The Hacker News 2026-08-20] isolated-vmのExternalCopy型混同によりサンドボックス化されたJavaScriptがホストメモリを破壊しRCEへ発展しうる欠陥（GHSA-864f-rcv7-6rh4）を報道。6.2.0/7.0.1で修正済み
+
+【概要】
+週間ダウンロード数約100万に上るNode.js製サンドボックスライブラリisolated-vmにおいて、ExternalCopy型の型混同によりサンドボックス化されたJavaScriptコードがホストメモリを破壊し得る欠陥が判明した（CVE番号未採番・GHSA-864f-rcv7-6rh4）。同ライブラリは信頼できないコード（AIエージェントが生成・実行するコード等）の隔離実行に用いられることがあり、サンドボックス脱出はAIエージェント実行基盤の安全性に直結する。6.2.0/7.0.1で修正済み。
+
+【推奨アクション】
+・自社のAIエージェント・コード実行基盤でisolated-vmを使用していないか確認し6.2.0/7.0.1以降へ更新する
+・サンドボックス実行環境は多層防御（コンテナ/VM分離との併用）を検討する
+
+【参照】
+https://thehackernews.com/2026/08/isolated-vm-flaw-lets-sandboxed.html
+
+------------------------------------------------------------
+5. AIエージェント封じ込め新フレームワーク『CUSTODY』の公開
+観点: AI攻撃関連
+採用契機: γ
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[Dark Reading 2026-08-21] ネットワーク内でAIエージェントの行動範囲を制約する新フレームワーク「CUSTODY」の公開を報道
+
+【概要】
+AIエージェントがネットワーク内で実行できる操作範囲を制約するための新しい防御フレームワーク「CUSTODY」が公開された。Agentic AI導入組織におけるガバナンス・封じ込め手法の一つとして参考情報を提供する。
+
+【推奨アクション】
+・AIエージェント導入を検討・運用している部門へ本フレームワークの情報を共有し、既存のエージェント権限管理と比較検討する
+
+【参照】
+https://www.darkreading.com/perimeter/new-custody-framework-constrains-ai-agents-inside-network
+
+[SOC推奨情報]
+該当なし
+
+本日の集計:
+SOC推奨情報 — 高1件 / 中3件 / 低1件 / 除外0件

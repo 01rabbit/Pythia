@@ -1,0 +1,1966 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-08-21",
+    "generated_at": "2026-08-21T07:00:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-08-20T07:00:00+09:00",
+      "to": "2026-08-21T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.08.20",
+      "candidates": 52,
+      "handled": 52,
+      "unhandled": 0,
+      "kev_added_in_window": 2,
+      "ghsa_origin_over_threshold": 9
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [
+    {
+      "cve_id": "CVE-2026-19490",
+      "product": "Citrix NetScaler ADC / NetScaler Gateway",
+      "vendor": "Cloud Software Group (Citrix)",
+      "affected_versions": "14.1 build 73.32以前 / 13.1 build 63.21以前（FIPS/NDcPP構成含む）",
+      "priority": "high",
+      "cvss_v3": null,
+      "cvss_v4": 9.3,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-288"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "14.1-73.32 / 13.1-63.21 以降",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 10,
+      "axis2_score": 4,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-08-20T08:22:54+09:00",
+          "description": "「NetScaler ADC/Gateway」に認証回避の脆弱性 - 重要度「クリティカル」として国内向けに報道（記事189093）"
+        },
+        {
+          "source": "SecurityWeek",
+          "date": "2026-08-20T17:33:25+09:00",
+          "description": "Rapid7が本CVEを解説し実悪用が近く発生すると予測する記事を公開（実悪用は本調査時点で未確認）"
+        },
+        {
+          "source": "BleepingComputer",
+          "date": "2026-08-20T21:14:38+09:00",
+          "description": "「Citrix urges admins to patch new NetScaler flaws as soon as possible」と題し至急パッチ適用を呼びかけ"
+        },
+        {
+          "source": "The Hacker News",
+          "date": "2026-08-20T22:35:13+09:00",
+          "description": "認証バイパスの技術的背景を解説する記事を公開（Gateway/AAAサーバの特定構成が対象）"
+        }
+      ],
+      "overview": "NetScaler ADC/GatewayのGateway/AAAサーバ構成において別経路による認証バイパス（CWE-288）が存在し、CVSS v4で9.3のクリティカル評価を受けている。パッチは提供済みだがRapid7は2026-08-19時点で実悪用は未観測と明記した一方、SecurityWeekは実悪用が近く発生すると予測する記事を2026-08-20に公開し、Citrix自身も至急のパッチ適用を呼びかけている。Security NEXTが2026-08-20早朝に国内向けに報道したことで参考A採用条件を満たすが、軸1（10点）・軸2（Security NEXT国内報道+3・海外複数ソース報道+1=4点）の数値判定により本編へ帰属する。既報のCVE-2026-8452/CVE-2026-8451（watchTowr Labsが詳細PoCを公開した別のNetScaler脆弱性）とはCVE番号が異なるため混同しないこと。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者が対象のGateway/AAAサーバ構成を持つNetScaler ADC/Gatewayへ到達"
+        },
+        {
+          "step": 2,
+          "description": "別経路の認証バイパスを利用し正規の認証プロセスを回避（具体的な攻撃手順はベンダー・研究者とも詳細を非公開）"
+        },
+        {
+          "step": 3,
+          "description": "認証済みセッションと同等のアクセス権を取得し内部ネットワークへの足がかりを得る（実悪用は本調査時点で未確認、あくまで技術的懸念の段階）"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "NetScaler ADC/Gatewayの認証ログおよび管理インターフェースへのアクセスログを監視する",
+        "splunk_spl": [
+          "index=netscaler sourcetype=citrix:netscaler:aaa (login_result=success OR login_result=failure) | stats count by src_ip, user, login_result",
+          "index=netscaler sourcetype=citrix:netscaler:syslog \"AAA\" | rex field=_raw \"session_id=(?<session_id>\\S+)\" | stats count by src_ip, session_id | where count > 5"
+        ],
+        "detection_notes": "パッチ未適用のGateway/AAAサーバで異常なセッション確立パターン（同一IPからの短時間大量セッション等）が見られた場合は要精査。実悪用の一次報道は本調査時点で確認されていない点に留意。"
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/189093",
+          "title": "「NetScaler ADC/Gateway」に認証回避の脆弱性 - 重要度「クリティカル」",
+          "language": "ja",
+          "source": "Security NEXT"
+        },
+        {
+          "url": "https://www.securityweek.com/exploitation-expected-for-critical-authentication-bypass-patched-in-citrix-netscaler/",
+          "title": "Exploitation Expected for Critical Authentication Bypass Patched in Citrix NetScaler",
+          "language": "en",
+          "source": "SecurityWeek"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/citrix-urges-admins-to-patch-new-netscaler-flaws-as-soon-as-possible",
+          "title": "Citrix urges admins to patch new NetScaler flaws as soon as possible",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://thehackernews.com/2026/08/critical-netscaler-flaw-can-bypass.html",
+          "title": "Critical NetScaler Flaw Can Bypass Authentication on Certain Gateway and AAA Servers",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "finance",
+        "government"
+      ],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260821-CVEP-913219be"
+    }
+  ],
+  "reference_a": [
+    {
+      "cve_id": "CVE-2026-20030",
+      "product": "Cisco Crosswork / Cisco Secure Workload",
+      "vendor": "Cisco Systems",
+      "affected_versions": "Crosswork 7.2.1-SP未満 / Secure Workload 4.0.4.16・3.10.9.1未満の各種ビルド",
+      "priority": "high",
+      "cvss_v3": 10.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-89",
+        "CWE-306",
+        "CWE-73"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "Crosswork 7.2.1-SP / Secure Workload 4.0.4.16・3.10.9.1",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 7,
+      "axis2_score": 4,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-08-20T03:11:16+09:00",
+          "description": "「Cisco Crosswork」にクリティカル脆弱性としてアップデート公開を国内向けに報道（記事189122）"
+        },
+        {
+          "source": "Security NEXT",
+          "date": "2026-08-20T01:13:31+09:00",
+          "description": "「Cisco Secure Workload」に複数の深刻な脆弱性として修正版提供を国内向けに報道（記事189109）"
+        },
+        {
+          "source": "SecurityWeek",
+          "date": "2026-08-20T20:46:04+09:00",
+          "description": "Cisco Crosswork（CVE-2026-20030/20357/20358 CVSS10.0・CVE-2026-20359 CVSS9.9）とSecure Workload（CVE-2026-20315/20317/20231/20318等 CVSS9台）の一括セキュリティ強化リリースを解説"
+        }
+      ],
+      "overview": "Cisco Crosswork（ネットワーク自動化基盤）とCisco Secure Workload（ワークロード保護基盤）に対し、2026-08-19付でCisco PSIRTが計9件の脆弱性を一括公開した。Crossworkの3件（CVE-2026-20030/20357/20358）はCVSS10.0でSQLインジェクション・認証欠如・ファイルシステム外部制御、CVE-2026-20359はCVSS9.9で認証情報保護不備。Secure Workload側はCVE-2026-20315/20317（アクセス制御・認証不備）・CVE-2026-20231（コード/OSコマンドインジェクション）・CVE-2026-20318（パストラバーサル）等。いずれも内部テストで発見されCiscoは実悪用の報告はないと説明しているが回避策は存在しない。Security NEXTが両製品について個別に国内向け報道を行ったため参考A採用条件（軸1は8点未満だが参考A昇格トリガーに該当）を満たす。悪用が成立すれば未認証での管理者相当アクセス・RCE・認証バイパス・ファイル改ざん/削除に至る。代表CVEはCVE-2026-20030としこれに関連するほか8件（CVE-2026-20357/20358/20359/20315/20317/20231/20318 および識別未確定の1件）を含む。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "パッチ未適用のCrosswork/Secure Workload管理インターフェースへネットワーク到達"
+        },
+        {
+          "step": 2,
+          "description": "SQLインジェクション・認証欠如・パストラバーサル等を悪用し認可チェックを回避（脆弱性ごとに手口は異なる）"
+        },
+        {
+          "step": 3,
+          "description": "管理者相当の権限を取得しネットワーク自動化基盤・ワークロード保護基盤を掌握（Ciscoは実悪用未確認と説明）"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Crosswork/Secure Workload管理コンソールへの認証イベント・API呼び出しログを監視する",
+        "splunk_spl": [
+          "index=network sourcetype=cisco:crosswork (action=login OR action=api_call) | stats count by src_ip, user, uri_path | where count > 20",
+          "index=network sourcetype=cisco:secure_workload uri_path=*/api/* status>=400 | stats count by src_ip, uri_path"
+        ],
+        "detection_notes": "内部テストで発見された脆弱性でありPoC・実悪用は本調査時点で未確認。パッチ適用を優先しつつ管理インターフェースへの外部到達性を制限する。"
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/189122",
+          "title": "「Cisco Crosswork」にクリティカル脆弱性 - アップデートを公開",
+          "language": "ja",
+          "source": "Security NEXT"
+        },
+        {
+          "url": "https://www.security-next.com/189109",
+          "title": "「Cisco Secure Workload」に複数の深刻な脆弱性 - 修正版を提供",
+          "language": "ja",
+          "source": "Security NEXT"
+        },
+        {
+          "url": "https://www.securityweek.com/cisco-patches-critical-crosswork-secure-workload-vulnerabilities/",
+          "title": "Cisco Patches Critical Crosswork, Secure Workload Vulnerabilities",
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "telecom"
+      ],
+      "region_impact": [
+        "JP",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a",
+      "info_id": "20260821-CVEP-f7539327"
+    }
+  ],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-73570",
+      "product": "Zimbra Collaboration",
+      "vendor": "Zimbra (Synacor)",
+      "affected_versions": "10.1.20未満",
+      "priority": "high",
+      "cvss_v3": 8.9,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [
+        "CWE-78"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "10.1.20",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 11,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-08-20T22:24:28+09:00",
+          "description": "「Attackers Exploit Zimbra SNMP Flaw for Unauthenticated Remote Code Execution」として実悪用の初報を公開"
+        },
+        {
+          "source": "BleepingComputer",
+          "date": "2026-08-20T23:39:48+09:00",
+          "description": "「Critical Zimbra RCE flaw now actively exploited in attacks」として実悪用拡大を報道"
+        },
+        {
+          "source": "SecurityWeek",
+          "date": "2026-08-20T23:50:49+09:00",
+          "description": "「Hackers Target Zimbra Servers in Active Exploitation Campaign」として攻撃キャンペーンの詳細を報道"
+        }
+      ],
+      "overview": "Zimbra CollaborationのSNMP通知処理（zimbra-snmpパッケージ・snmp_notifyパラメータ有効時に既定で動作するswatchdogサービス経由）において未認証の入力サニタイズ不備（CWE-78）が存在し、特別に細工したSMTPリクエストによりZimbraユーザ権限でOSコマンドが実行可能となる。パッチは2026-07-20リリースの10.1.20で提供済みだが、2026-08-20にThe Hacker News・BleepingComputer・SecurityWeekが揃って実悪用を報道した。swatchdogは既定で有効なため、SNMP通知機能を有効化しているパッチ未適用環境は露出度が高い。本調査時点で国内ソースでの報道は確認されていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者がzimbra-snmpパッケージ導入済み・SNMP通知有効なZimbraサーバへ細工したSMTPリクエストを送信"
+        },
+        {
+          "step": 2,
+          "description": "swatchdogサービスがSNMP通知処理内で未サニタイズの入力をOSコマンドへ組み込み実行"
+        },
+        {
+          "step": 3,
+          "description": "Zimbraユーザ権限でのコマンド実行が成立し後続の侵害・情報窃取に利用される"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Zimbraのswatchdog/SNMP関連プロセス起動ログとメールキュー処理ログを監視する",
+        "splunk_spl": [
+          "index=mail sourcetype=zimbra:mailbox \"swatchdog\" OR \"snmp\" | stats count by host, process",
+          "index=mail sourcetype=zimbra:mailbox EventCode=process_start ParentProcess=*swatchdog* | table _time, host, CommandLine"
+        ],
+        "detection_notes": "swatchdogから想定外の子プロセス（シェル起動等）が生成されていないか確認する。SNMP通知機能を使用していない環境ではsnmp_notifyを無効化することが暫定的な低減策になる。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/08/attackers-exploit-zimbra-snmp-flaw-for.html",
+          "title": "Attackers Exploit Zimbra SNMP Flaw for Unauthenticated Remote Code Execution",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/critical-zimbra-rce-flaw-now-actively-exploited-in-attacks",
+          "title": "Critical Zimbra RCE flaw now actively exploited in attacks",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://www.securityweek.com/hackers-target-zimbra-servers-in-active-exploitation-campaign/",
+          "title": "Hackers Target Zimbra Servers in Active Exploitation Campaign",
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260821-CVEP-0c2db0ff"
+    },
+    {
+      "cve_id": "CVE-2026-19478",
+      "product": "GitLab CE/EE",
+      "vendor": "GitLab Inc.",
+      "affected_versions": "19.2.4/19.1.6/19.0.8/18.11.11 より前の自己ホスト型インスタンス（GitLab.com/GitLab Dedicatedは対応済み）",
+      "priority": "high",
+      "cvss_v3": 9.4,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-94"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "19.2.4 / 19.1.6 / 19.0.8 / 18.11.11",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 11,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "SecurityWeek",
+          "date": "2026-08-20T16:48:24+09:00",
+          "description": "「Critical GitLab Flaw Exploited Shortly After Disclosure」として2026-08-17のパッチ公開後まもなく実悪用が確認されたと報道"
+        }
+      ],
+      "overview": "GitLabのGraphQLディレクティブ処理にコードインジェクションの脆弱性（CVSS9.4）が存在し、未認証・ユーザ操作不要のリモート攻撃者が公開プロジェクトの改ざん・削除やユーザデータの操作を行える。2026-08-17にGitLabが19.2.4等の緊急パッチを公開し、watchTowr Labsが再現の容易さを警告していたところ、SecurityWeekが2026-08-20付で公開直後の実悪用を報道した。自己ホスト型インスタンスのみが対象でGitLab.com/GitLab Dedicatedは対応済み。本調査時点で国内ソースでの報道は確認されていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者が未パッチの自己ホスト型GitLabインスタンスのGraphQLエンドポイントへ細工したリクエストを送信"
+        },
+        {
+          "step": 2,
+          "description": "特定のGraphQLディレクティブを通じたコードインジェクションで認可チェックを回避"
+        },
+        {
+          "step": 3,
+          "description": "公開プロジェクトの改ざん・削除やユーザデータの不正操作が成立"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "GitLab GraphQL APIへの異常なリクエストパターンとプロジェクト削除・改ざんイベントを監視する",
+        "splunk_spl": [
+          "index=gitlab sourcetype=gitlab:api uri_path=*/api/graphql* | stats count by src_ip, user | where count > 50",
+          "index=gitlab sourcetype=gitlab:audit event_type=project_destroyed OR event_type=project_changed | table _time, user, project"
+        ],
+        "detection_notes": "自己ホスト型GitLabで想定外のプロジェクト削除・改ざんが発生していないか監査ログを確認する。GitLab.com/Dedicated利用環境は対応不要。"
+      },
+      "references": [
+        {
+          "url": "https://www.securityweek.com/critical-gitlab-flaw-exploited-shortly-after-disclosure/",
+          "title": "Critical GitLab Flaw Exploited Shortly After Disclosure",
+          "language": "en",
+          "source": "SecurityWeek"
+        },
+        {
+          "url": "https://thehackernews.com/2026/08/critical-gitlab-graphql-flaw-could-let.html",
+          "title": "Critical GitLab GraphQL Flaw Could Let Unauthenticated Attackers Delete Public Projects",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.helpnetsecurity.com/2026/08/18/gitlab-critical-code-injection-flaw-cve-2026-19478/",
+          "title": "Critical GitLab flaw allows attackers to modify or delete public projects",
+          "language": "en",
+          "source": "Help Net Security"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260821-CVEP-8925df58"
+    },
+    {
+      "cve_id": "CVE-2026-72529",
+      "product": "TrueConf Server",
+      "vendor": "TrueConf",
+      "affected_versions": "5.3.9/5.4.9/5.5.5未満、それ以前の全バージョン",
+      "priority": "high",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-306"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "5.3.9 / 5.4.9 / 5.5.5 以降（2026-06-18提供）",
+        "eta": null
+      },
+      "fceb_deadline": "2026-08-23",
+      "kev_date_added": "2026-08-20",
+      "axis1_score": 11,
+      "axis2_score": 2,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEVカタログ",
+          "date": "2026-08-20T00:00:00+09:00",
+          "description": "CVE-2026-72529がCISA KEVカタログへ初回追加（FCEB期限2026-08-23・ランサムウェア既知利用: Unknown）。2026-08-20分の日次レポートでは「参考B採用・KEV未登録」として記録していたが、その後同日中にKEV登録が確定した"
+        }
+      ],
+      "overview": "TrueConf Serverの未文書化機能に対する未認証アクセス（TCP 4307番ポート経由）が存在し、Head Mareグループ（親ロシア語圏APTと報じられる）が2026年7月から実悪用していたとKaspersky ICS CERT（KLCERT-26-058）が報告した。本CVEはCVE-2026-72530（サンドボックス脱出）と連結する攻撃チェーンの起点であり、正規のTrueConfインストーラーをPhantomCore/PhantomGraphバックドア混入版に差し替えるサプライチェーン型の攻撃に利用される。パッチは2026-06-18提供済み。CISAが2026-08-20付でKEVカタログへ初回追加した（本調査対象期間内の新規追加）。国内ソースでの報道は本調査時点で確認されていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者がTCP 4307番ポート経由で未文書化機能へ未認証でアクセス"
+        },
+        {
+          "step": 2,
+          "description": "特別に細工したスクリプトでCVE-2026-72530のサンドボックス脱出と連結し正規インストーラーをバックドア混入版に差し替え"
+        },
+        {
+          "step": 3,
+          "description": "PhantomCore/PhantomGraphバックドアが常駐しサプライチェーン型の侵害が拡大"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "TrueConf Serverの4307/TCPへの外部アクセスとインストーラー配布ファイルの改ざんを監視する",
+        "splunk_spl": [
+          "index=network sourcetype=firewall dest_port=4307 | stats count by src_ip, dest_ip",
+          "index=endpoint sourcetype=sysmon EventCode=11 TargetFilename=*trueconf*installer* | table _time, host, Hashes"
+        ],
+        "detection_notes": "4307/TCPへの外部からの到達性がある場合は即時遮断を検討する。配布済みインストーラーのハッシュ値をベンダー公式値と照合する。"
+      },
+      "references": [
+        {
+          "url": "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-missing-authentication-for-critical-function/",
+          "title": "KLCERT-26-057: TrueConf Server. Missing authentication for critical function",
+          "language": "en",
+          "source": "Kaspersky ICS CERT"
+        },
+        {
+          "url": "https://www.cisa.gov/news-events/alerts/2026/08/18/cisa-adds-four-known-exploited-vulnerabilities-catalog",
+          "title": "CISA Adds Four Known Exploited Vulnerabilities to Catalog",
+          "language": "en",
+          "source": "CISA"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "telecom"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260821-CVEP-bd58f569"
+    },
+    {
+      "cve_id": "CVE-2026-72530",
+      "product": "TrueConf Server",
+      "vendor": "TrueConf",
+      "affected_versions": "5.3.9/5.4.9/5.5.5未満、それ以前の全バージョン",
+      "priority": "high",
+      "cvss_v3": 9.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-94"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "5.3.9 / 5.4.9 / 5.5.5 以降（2026-06-18提供）",
+        "eta": null
+      },
+      "fceb_deadline": "2026-09-03",
+      "kev_date_added": "2026-08-20",
+      "axis1_score": 11,
+      "axis2_score": 2,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEVカタログ",
+          "date": "2026-08-20T00:00:00+09:00",
+          "description": "CVE-2026-72530がCISA KEVカタログへ初回追加（FCEB期限2026-09-03・ランサムウェア既知利用: Unknown）。CVE-2026-72529と同時に追加された"
+        }
+      ],
+      "overview": "CVE-2026-72529との連結攻撃チェーンを構成するコード注入（CWE-94）によるサンドボックス脱出の脆弱性。詳細はCVE-2026-72529参照。CISAが2026-08-20付でKEVカタログへ初回追加した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "CVE-2026-72529で確立した未認証アクセスを起点に特別に細工したスクリプトを実行"
+        },
+        {
+          "step": 2,
+          "description": "コード注入によりサンドボックス化された実行環境から脱出"
+        },
+        {
+          "step": 3,
+          "description": "ホストOS上でのコード実行が成立しPhantomCore/PhantomGraphバックドアが展開される"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "CVE-2026-72529と同一（TrueConf Serverプロセスの異常な子プロセス生成を監視）",
+        "splunk_spl": [
+          "index=endpoint sourcetype=sysmon EventCode=1 ParentImage=*trueconf* | table _time, host, CommandLine"
+        ],
+        "detection_notes": "TrueConfサービスプロセスから想定外の子プロセスが生成されていないか確認する。"
+      },
+      "references": [
+        {
+          "url": "https://ics-cert.kaspersky.com/advisories/2026/08/11/trueconf-server-missing-authentication-for-critical-function/",
+          "title": "KLCERT-26-057: TrueConf Server. Missing authentication for critical function",
+          "language": "en",
+          "source": "Kaspersky ICS CERT"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "telecom"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260821-CVEP-a2aeee3c"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-66785",
+        "product": "Red Hat Submariner / Lighthouse / multicloud-operators-subscription / FreeIPA（ほか4件: CVE-2026-66788, CVE-2026-67567, CVE-2026-11861, CVE-2026-13097）",
+        "reason": "low_score",
+        "reason_detail": "Red Hat PSIRT（secalert@redhat.com）が同一窓で一括公開したCVSS9.1〜9.9のCritical脆弱性5件（OpenShiftマルチクラスタネットワーキング/GitOps関連コンポーネント3件・FreeIPA権限昇格2件）。単一ベンダーPSIRTの同時公開バッチとして代表CVEに集約。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-73992",
+        "product": "Query Wrangler (WordPress plugin, <=1.5.57)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。Subscriber権限でのRCE。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-74014",
+        "product": "IT Residence (WordPress plugin, <=3.2.1)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。Subscriber権限での任意ファイルアップロード。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-74016",
+        "product": "Smart Cleaning (WordPress plugin, <=4.8.6)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。Subscriber権限での任意ファイルアップロード。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-74018",
+        "product": "Warehouse Cargo (WordPress plugin, <=2.6.9)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。Subscriber権限での任意ファイルアップロード。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2025-15689",
+        "product": "Capella (WordPress theme, <=2.5.5)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証権限昇格。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-66583",
+        "product": "Forminator (WordPress plugin, <=1.57.0)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証PHPオブジェクトインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-66672",
+        "product": "Flatastic (WordPress theme, <=2.0)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証PHPオブジェクトインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-66682",
+        "product": "Abandoned Cart Pro for WooCommerce (WordPress plugin, <=10.4.0)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証権限昇格。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-73993",
+        "product": "FundEngine (WordPress theme, <=1.7.9)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証PHPオブジェクトインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-74001",
+        "product": "User Registration & Membership Pro (WordPress plugin, <=5.4.5)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証の認証処理不備。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-28164",
+        "product": "Easy Elementor Addons (WordPress plugin, from n/a〜2.3.7)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。CSRF。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2025-15688",
+        "product": "Capella (WordPress theme, <=2.5.5)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-66592",
+        "product": "rtMedia for WordPress, BuddyPress and bbPress (<=4.7.11)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-66593",
+        "product": "Security & Malware scan by CleanTalk (WordPress plugin, <=2.184)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-66609",
+        "product": "TheGem (Elementor) (WordPress theme, <=5.12.3)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-66649",
+        "product": "Directory Pro (WordPress plugin, <=2.5.8)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-66680",
+        "product": "Locatoraid Store Locator (WordPress plugin, <=3.9.72)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-68566",
+        "product": "BookingPress Appointment Booking Pro (WordPress plugin, <=6.0.2)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。未認証SQLインジェクション。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-66600",
+        "product": "Media Library Assistant (WordPress plugin, <=3.39)",
+        "reason": "low_score",
+        "reason_detail": "Patchstack発行（audit@patchstack.com、複数ベンダーのWordPressプラグイン/テーマを横断的に採番するアグリゲータCNAのためバッチ集約せず個別記録）。Author権限での任意ファイルアップロード。CVSS9.1〜9.9だがKEV未登録・PoC未公開・実悪用未確認・比較的ニッチなプラグインで広範な採用実績未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-76589",
+        "product": "TRENDnet TEW-755AP (up to 20260702)",
+        "reason": "low_score",
+        "reason_detail": "VulDB発行（cna@vuldb.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。/sbin/mycliのssid引数によるスタックバッファオーバーフロー。VulDB記載では「exploit made public」とあるがコンシューマ向けSOHOルーター機器で広範な国内利用実績は未確認・KEV未登録・実悪用未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-76590",
+        "product": "TRENDnet TEW-755AP (up to 20260702)",
+        "reason": "low_score",
+        "reason_detail": "VulDB発行（cna@vuldb.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。/cgi-bin/wan.cgiのPPPoEパスワード引数によるスタックバッファオーバーフロー。VulDB記載では「exploit made public」とあるがコンシューマ向けSOHOルーター機器で広範な国内利用実績は未確認・KEV未登録・実悪用未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-77022",
+        "product": "Comfast CF-N1-S 2.6.0.1",
+        "reason": "low_score",
+        "reason_detail": "VulDB発行（cna@vuldb.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。mbox-config SSID設定機能のスタックバッファオーバーフロー。VulDB記載では「exploit made public」とあるがコンシューマ向けSOHOルーター機器で広範な国内利用実績は未確認・KEV未登録・実悪用未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-77148",
+        "product": "Comfast CF-N1-S 2.6.0.1",
+        "reason": "low_score",
+        "reason_detail": "VulDB発行（cna@vuldb.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。mbox-config チャンネル設定機能のスタックバッファオーバーフロー。VulDB記載では「exploit made public」とあるがコンシューマ向けSOHOルーター機器で広範な国内利用実績は未確認・KEV未登録・実悪用未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-55642",
+        "product": "dbx (dbx-web, Rust製DBクライアント)",
+        "reason": "low_score",
+        "reason_detail": "GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。DBX_PASSWORD未設定時にauth_middlewareが全リクエストを素通しする認証欠如。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-71428",
+        "product": "unstructured (Python製ドキュメント前処理ライブラリ, RAG/AIデータパイプラインで利用)",
+        "reason": "low_score",
+        "reason_detail": "GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。partition/partition_html/partition_mdのurl引数がホスト検証なしで取得されるSSRF。RAGパイプラインでの利用実績があるためSOC推奨情報で別途注意喚起。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-73251",
+        "product": "Mongoose (組込みWebサーバ/ネットワークライブラリ)",
+        "reason": "low_score",
+        "reason_detail": "GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。マルチ証明書CAバンドル使用時のTLSサーバなりすまし（証明書検証不備）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-63382",
+        "product": "libevent (evhttpモジュール)",
+        "reason": "low_score",
+        "reason_detail": "GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。Transfer-Encodingヘッダの不整合処理によるHTTPリクエストスマグリング。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-63385",
+        "product": "libevent (evhttpモジュール)",
+        "reason": "low_score",
+        "reason_detail": "GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。パーセントエンコードNULバイトのデコード等によるパス検証バイパス。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-71485",
+        "product": "Centrifugo (リアルタイムメッセージングサーバ)",
+        "reason": "low_score",
+        "reason_detail": "GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。クライアント制御ヘッダのプロキシ転送によるヘッダインジェクション。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-73253",
+        "product": "Mongoose (組込みWebサーバ/ネットワークライブラリ)",
+        "reason": "low_score",
+        "reason_detail": "GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。ワイルドカード証明書によるサブドメインなりすまし。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-73256",
+        "product": "Mongoose (組込みWebサーバ/ネットワークライブラリ)",
+        "reason": "low_score",
+        "reason_detail": "GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。HTTP/1.0リバースプロキシ環境でのTransfer-Encoding/Content-Length不整合によるリクエストスマグリング。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-73257",
+        "product": "Mongoose (組込みWebサーバ/ネットワークライブラリ)",
+        "reason": "low_score",
+        "reason_detail": "GitHub Advisory Database発行（security-advisories@github.com、複数ベンダーを横断的に採番するアグリゲータCNAのため個別記録）。Content-LengthとTransfer-Encoding併記時の優先順位不整合によるリクエストスマグリング。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-14950",
+        "product": "Festo FDS Web Interface (info@cert.vde.com)",
+        "reason": "low_score",
+        "reason_detail": "セッション有効期限切れ後もセッション継続利用が可能な不備。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-15706",
+        "product": "Baylan Smart Meter Management Application (BMS) <1.1.10.142 (iletisim@usom.gov.tr)",
+        "reason": "low_score",
+        "reason_detail": "重要機能の認証欠如による認証バイパス。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-18265",
+        "product": "OSNEXUS QuantaStor (zdi-disclosures@trendmicro.com)",
+        "reason": "low_score",
+        "reason_detail": "Kapacitor設定機能の認証欠如による未認証RCE（ZDI開示）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-19586",
+        "product": "Omada Gateway OpenVPN Server構成",
+        "reason": "low_score",
+        "reason_detail": "OpenVPN接続確立処理における未認証事前認証OSコマンドインジェクション。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-2334",
+        "product": "vsDesk v14.0101 (vulnerability@kaspersky.com)",
+        "reason": "low_score",
+        "reason_detail": "管理者権限保有者によるCSVインポート機能のサーバ側検証不備（要管理者権限）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-16926",
+        "product": "IBM AIX 7.2/7.3, IBM PowerVM VIOS 4.1 (psirt@us.ibm.com)",
+        "reason": "low_score",
+        "reason_detail": "入力特殊要素の不適切な無害化による任意ファイル上書き。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-53424",
+        "product": "dropbox samly (Elixir製SAML SPライブラリ)",
+        "reason": "low_score",
+        "reason_detail": "esaml_sp:validate_assertion/2の重複検出no-opによるSAMLアサーションのリプレイ攻撃（Authentication Bypass by Capture-replay）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-75860",
+        "product": "JSON Options (WordPress plugin, contact@wpscan.com)",
+        "reason": "low_score",
+        "reason_detail": "権限・nonce検証欠如による未認証権限昇格・サイト完全掌握（WPScan発行のためアグリゲータ扱い）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-76850",
+        "product": "LMDeploy (AIモデル推論デプロイメントフレームワーク, disclosure@vulncheck.com)",
+        "reason": "low_score",
+        "reason_detail": "disaggregated-serving通信でのpickle.loads()による未認証デシリアライゼーションRCE。AI推論基盤関連CVEのためSOC推奨情報で別途注意喚起（VulnCheck発行のためアグリゲータ扱い）。KEV未登録・PoC未公開・実悪用未確認・国内報道未確認のため軸1<8点・軸2=0点で除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": "CVE-2026-76310",
+        "product": "Splunk Enterprise（embedded reportトークンによるセッション窃取、ほか4件: CVE-2026-76311, CVE-2026-76312, CVE-2026-76404, CVE-2026-20266）",
+        "reason": "low_score",
+        "reason_detail": "Splunk/Cisco PSIRT（psirt@cisco.com）が2026-08-18〜19に一括公開したCVSS9.1〜9.4の脆弱性5件。CVE-2026-76310/76311/76312はembedded reportトークンを保有する未認証ユーザによるセッション情報窃取（CVSS9.4）、CVE-2026-76404はSplunk MCP Serverでadmin権限保有者によるOSコマンド実行（CVSS9.1）、CVE-2026-20266はSplunk AI Toolkitのbtoolヘルパーにおけるシェル実行パターン起因のOSコマンドインジェクション（CVSS9.1、AI関連コンポーネント）。単一ベンダーPSIRTの同時公開バッチとして代表CVEに集約。KEV未登録・PoC未公開・実悪用未確認・本CVE群についての国内報道未確認のため軸1<8点・軸2=0点で除外（Splunkは国内でも広く利用されるSIEM製品だが本バッチ固有の国内報道は本調査時点で未確認）。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": null,
+        "product": "isolated-vm (Node.js製サンドボックスライブラリ, GHSA-864f-rcv7-6rh4・CVE未採番)",
+        "reason": "insufficient_evidence",
+        "reason_detail": "ExternalCopyの型混同によりサンドボックス化されたJavaScriptがホストメモリを破壊しRCEへ発展しうる欠陥。週間ダウンロード数約100万の広く使われるnpmパッケージでAIエージェントのコード実行サンドボックスとしても利用されるが、CVE番号未採番・公式CVSS値なし・PoC公開未確認・実悪用未確認のため軸1<8点・軸2=1点（海外複数ソース報道のみ）で除外。SOC推奨情報で別途注意喚起。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "cve_id": null,
+        "product": "AIT-GUI (NASA/JPL AMMOS Instrument Toolkit操作コンソール, GHSA-p9r8-2q67-fp86・CVE未採番)",
+        "reason": "insufficient_evidence",
+        "reason_detail": "Sessions.create()の認証欠如により未認証攻撃者が衛星・観測機器への任意コマンド発行が可能（CVSS9.4）。2.5.2で修正済み。NASA/JPL特有の宇宙運用地上系ソフトウェアであり国内での利用実績・関連性は確認されないため軸1<8点・軸2=1点（海外複数ソース報道のみ）で除外。",
+        "reported_date": "2026-08-21"
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "TransparentTribe-2026-PATCHCORD-AfghanTelecom",
+        "group_name": "Transparent Tribe（APT36、Acronis帰属・中確度）",
+        "reason": "low_score",
+        "reason_detail": "Acronisが新規バックドア群PATCHCORD/SHEETCORD/HACKERAI C2 Agentを報告しAPT36と中確度で紐付け。アフガン電気通信・インド重要インフラを標的とするフィッシングキャンペーン（Telecom_TMS.zip等）。新規マルウェア発見+新規TTP（Google Sheets C2悪用）で軸P=6点、地域限定（アフガニスタン/南アジア）・単一ベンダー報告で軸Q=3点。軸P<8点・軸Q<4点かつ国内トリガー該当なしのため除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "campaign_id": "Grandoreiro-2026-MexicoDLLSideloading",
+        "group_name": "不明（Grandoreiroオペレーター、Brazil拠点犯罪組織とみられる・帰属未確定）",
+        "reason": "low_score",
+        "reason_detail": "銀行詐欺マルウェアGrandoreiro（2024年法執行摘発後の活動再開）がメキシコ向けにDuplicate Files FinderアプリのDLLサイドローディングを用いた新キャンペーンを展開（Acronis報告）。メキシコ40%・スペイン17%・ペルー13%・アルゼンチン10%の検出比率。活動再開+単一ベンダー報告で軸P=4点、複数地域だがラテンアメリカ地域限定で軸Q=3点。軸P<8点・軸Q<4点かつ国内トリガー該当なしのため除外。",
+        "reported_date": "2026-08-21"
+      },
+      {
+        "campaign_id": "CEC-2026-TokyoDC2Ransomware",
+        "group_name": "不明（帰属未確定）",
+        "reason": "out_of_window",
+        "reason_detail": "シーイーシー東京第二データセンターが8月5日にランサムウェア攻撃を受けたが8月6日に復旧済み。攻撃対象は顧客システム・データとは別領域と判明し情報漏えいは確認されていない。本日はフォローアップ報道のみで発生・復旧自体は調査対象期間（8/20 07:00〜8/21 07:00 JST）外のため注目動向不採用（顧客影響なしと判断済みのため参考A昇格トリガーも不該当）。",
+        "reported_date": "2026-08-21"
+      }
+    ],
+    "ai_attacks": [
+      {
+        "attack_id": null,
+        "title": "Cryptographic Context Injection攻撃によるGrok（xAI）チャットデータ窃取実証",
+        "reason": "low_score",
+        "reported_date": "2026-08-21"
+      }
+    ],
+    "soc_recommendations": []
+  },
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-08-21-001",
+        "title": "Rust製crate『arrayref』ら複数パッケージへのサプライチェーン攻撃、DPRK類似基盤との重複疑い（推測）",
+        "summary": "crates.ioで公開されているRust製パッケージarrayref（過去90日で5300万DL超・累計245万DL）のメンテナアカウントが侵害され、proc-macro2を偽装した悪意あるproc-macro1パッケージが依存関係として注入された。build.rsスクリプトによりビルド時に自動実行され、ホストOSに応じたペイロードを選択的に投下する。append-only-vec・internmentなど関連パッケージ（合計約1900万インストール）にも波及し、暗号・グラフィックス・ブロックチェーン（Ethereum/Solana）・Rust製GUIフレームワーク等広範なエコシステムに影響した。2026-08-20 07:54（UTC）に報告され08:03にproc-macro1削除・08:41にarrayref 0.3.10がインデックスから削除される等、crates.io運営側が迅速に対応した。研究者は今回のインフラが直近のDPRK（北朝鮮）関連サプライチェーン攻撃と重複すると指摘しているが、これは調査中の指摘であり確定した攻撃者帰属ではない（推測）。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-08-20T17:53:52+09:00",
+            "description": "arrayref含む複数Rust crateへのサプライチェーン攻撃と対応状況を報道。悪意あるIP 23.254.165[.]112・関連ファイルパスをIOCとして公開"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/hackers-poison-arrayref-rust-crate-to-push-infostealer-malware",
+            "title": "Hackers poison arrayref Rust crate to push infostealer malware",
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260821-TRND-a334fe99"
+      },
+      {
+        "topic_id": "TREND-2026-08-21-002",
+        "title": "偽Web3ブラウザ拡張機能40種によるウォレット認証情報窃取キャンペーン",
+        "summary": "Firefox向けに40種の悪意あるブラウザ拡張機能が正規のWeb3・暗号資産ツールを偽装して配布され、ウォレットのシードフレーズ・秘密鍵等の窃取を試みていたことが判明した。拡張機能はMozilla Add-onsストア上で正規ツールに酷似した名称・アイコンを用いて利用者を誘導していた。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-08-20T17:42:03+09:00",
+            "description": "40種の悪意あるFirefox拡張機能がWeb3製品を偽装しウォレット情報を窃取していたと報道"
+          }
+        ],
+        "sector_impact": [
+          "finance",
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/08/40-malicious-firefox-extensions-pose-as.html",
+            "title": "40 Malicious Firefox Extensions Pose as Web3 Products to Steal Wallet Secrets",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260821-TRND-f10794e1"
+      },
+      {
+        "topic_id": "TREND-2026-08-21-003",
+        "title": "ウクライナ・ロシア国内のIPカメラ14,000台への不正アクセスキャンペーン（帰属未確定）",
+        "summary": "帰属不明の脅威アクターがウクライナおよびロシア国内で稼働する約14,000台のIPカメラへ不正アクセスしたことが報告された。攻撃者・目的とも本調査時点では特定されていない。",
+        "changes_24h": [
+          {
+            "source": "SecurityWeek",
+            "date": "2026-08-20T22:16:35+09:00",
+            "description": "ウクライナ・ロシアのIPカメラ14,000台への不正アクセスを報道"
+          }
+        ],
+        "sector_impact": [
+          "other"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.securityweek.com/threat-actor-hacks-14000-ip-cameras-in-ukraine-and-russia/",
+            "title": "Threat Actor Hacks 14,000 IP Cameras in Ukraine and Russia",
+            "language": "en",
+            "source": "SecurityWeek"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260821-TRND-ea736654"
+      }
+    ]
+  },
+  "apt_main": [
+    {
+      "group_name": "UNC7005（Storm-2945）",
+      "aliases": [
+        "UNC6293（Ice Relic/APT29傘下と関連付けられるクラスター）",
+        "UNC5976"
+      ],
+      "nation_state": "RU",
+      "attribution_confidence": "medium",
+      "campaign_id": "UNC7005-2026-CaptiveCrunch-OAuthWhatsAppHijack",
+      "activity_type": [
+        "active_campaign",
+        "new_target",
+        "ttp_update"
+      ],
+      "motivation": "espionage",
+      "first_seen": "2026-02-01",
+      "last_seen": "2026-08-20",
+      "targets": {
+        "sectors": [
+          "defense",
+          "government",
+          "education",
+          "critical_infrastructure"
+        ],
+        "regions": [
+          "Europe",
+          "North America",
+          "Eastern Europe"
+        ],
+        "countries": [
+          "UA",
+          "US"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 9,
+      "axis_q_score": 6,
+      "changes_24h": [
+        {
+          "source": "Google Threat Intelligence (Mandiant/GTIG)",
+          "date": "2026-08-20T23:00:00+09:00",
+          "description": "「Going with the Flow(s): Distinct Clusters Target Individuals of Interest to Russia」と題しUNC6293/UNC5976/UNC7005の3クラスターの手口を公開"
+        },
+        {
+          "source": "The Hacker News",
+          "date": "2026-08-21T04:59:19+09:00",
+          "description": "ロシア系ハッカーによるGoogle OAuth検証コード悪用・WhatsAppデバイスリンク詐欺によるアカウント乗っ取り手口を報道。Microsoft/Lumen Black Lotus Labs/Volexity/ReliaQuestが関連キャンペーン「CaptiveCrunch」（ホテル/カンファレンス施設のWi-Fi設定改変によるDNS中間者攻撃）を確認"
+        }
+      ],
+      "overview": "Google Threat Intelligence Group（GTIG）が、ロシアに関心を持つ個人・組織を標的とする複数の別個のクラスター（UNC6293・UNC5976・UNC7005）の活動を公開した。UNC7005（Microsoft命名Storm-2945）は正規のGoogle OAuth認証URLを標的へ直接送付し、標的から返送された検証コードでアカウントへアクセスする手口を用いる。また偽WhatsAppデバイスリンクページへ誘導しQRコードスキャン後、音声通話オプションでJavaScript実行により音声・映像を記録する手口も確認された。標的はウクライナ・西欧・米国の学術機関、外交官、NGO/シンクタンク、航空宇宙・防衛産業従事者、NATO関連組織。関連するCaptiveCrunchキャンペーン（ホテル・カンファレンス施設のWi-Fi設定改変によるDNS中間者攻撃）はMicrosoft・Lumen Black Lotus Labs・Volexity・ReliaQuestが独立して確認しており、複数メジャーベンダーによる裏付けがある。国家帰属は「ロシアに関心を持つ個人を標的とする」という標的選定パターンからの推定であり、GTIG自身は各クラスターを個別のUNC識別子として扱い断定的な政府主体名は付与していない点に留意（推測）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "標的（学術・外交・防衛関係者等）へ正規のGoogle OAuth検証URLまたは偽WhatsAppデバイスリンクページを送付"
+        },
+        {
+          "step": 2,
+          "description": "標的が検証コードを返送、またはQRコードスキャン後に音声通話オプションを選択"
+        },
+        {
+          "step": 3,
+          "description": "OAuthトークンの窃取またはJavaScript実行による音声・映像記録でアカウント・端末への継続アクセスを確立（CaptiveCrunchでは公衆Wi-Fi環境のDNS中間者攻撃も併用）"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "OAuth検証コードを第三者と共有しないことを対象者へ周知する。WhatsAppデバイスリンク時は必ず自身のスマートフォンから直接QRコードを読み取り、外部から送付されたリンクページ経由でのリンクを行わない。ホテル・カンファレンス会場等の公衆Wi-Fi利用時はVPN必須化を徹底する。",
+      "splunk_spl": [
+        "index=proxy dest_domain=*whatsapp* OR dest_domain=*accounts.google.com* | stats count by src_ip, user, dest_domain | where count > 3",
+        "index=dns query=*captivecrunch* OR query_type=A dest_domain IN (\"*.wa.me\", \"*whatsapp-web*\") | table _time, src_ip, query"
+      ],
+      "detection_notes": "外交・防衛・学術関係者アカウントでの短時間・複数回のOAuth検証コード入力要求、または公衆Wi-Fi接続後の異常なDNS応答を確認する。",
+      "references": [
+        {
+          "url": "https://cloud.google.com/blog/topics/threat-intelligence/distinct-clusters-target-individuals-of-interest-to-russia",
+          "title": "Distinct Clusters Target Individuals of Interest to Russia",
+          "language": "en",
+          "source": "Google Threat Intelligence (Mandiant)"
+        },
+        {
+          "url": "https://thehackernews.com/2026/08/suspected-russian-hackers-abuse-google.html",
+          "title": "Suspected Russian Hackers Abuse Google OAuth and WhatsApp Linking to Hijack Accounts",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_main",
+      "info_id": "20260821-APTC-bccab7b5"
+    }
+  ],
+  "apt_notable": [
+    {
+      "group_name": "不明（帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-SakuraInternet-UnauthorizedAccess",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-08-21",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-20T23:00:00+09:00",
+          "description": "「さくらインターネットに不正アクセス、会員情報1,360,563アカウントが影響を受けた可能性」と報道"
+        }
+      ],
+      "overview": "さくらインターネットの販売管理システムが第三者の不正アクセスを受け、会員情報1,360,563アカウントが影響を受けた可能性があると公表された。8月9日に異常を検知したが、侵入自体はそれ以前から発生していたとみられる。同社管理環境を経由し顧客システムへも侵入され一部サーバにマルウェアが設置された。漏えいの可能性がある情報は契約情報（会員ID・住所・氏名・電話番号・メールアドレス等）およびハッシュ化パスワード情報（30アカウント）、顧客環境のメールデータ・ウェブサイトデータ。外部専門機関と連携し認証情報失効・マルウェア除去・システム監視強化・フォレンジック調査を実施中。",
+      "attack_flow": [],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "影響を受けた可能性のある認証情報の変更・多要素認証の有効化を利用者へ案内する。フォレンジック調査結果と当局への報告状況を継続確認する。",
+      "splunk_spl": [],
+      "detection_notes": "国内組織の侵害確認により軸P1/軸Q1だが参考A昇格トリガー（国内組織への侵害が報告・確認される）により注目動向採用。",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/article/2026/08/20/55974.html",
+          "title": null,
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260821-APTC-1499b0d4"
+    },
+    {
+      "group_name": "不明（帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-Aflac-UnauthorizedAccess",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-08-21",
+      "targets": {
+        "sectors": [
+          "finance",
+          "finance"
+        ],
+        "regions": [],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-20T23:00:00+09:00",
+          "description": "「アフラック生命保険に不正アクセス、短時間に大量のデータ照会があった際に監視・制御する機能が不足」と報道（原因究明の続報）"
+        }
+      ],
+      "overview": "アフラック生命保険への不正アクセスにより顧客情報約440万人分（うち保険料振替口座情報を含む約22万人）・代理店情報約4万店が流出した。最初の漏えいは2026年6月10日に発生し6月25日に判明・6月30日に公表。「オンライン相談」「アフラックよりそうネット」のシステムにおいて短時間での大量データ照会を監視・制御する機能が不足していたことが主因とされる。再発防止策としてアクセス認証・データ照会認可の強化、大量アクセス監視体制の改善、経営陣の報酬一部自主返納等を実施予定。",
+      "attack_flow": [],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "影響を受けた可能性のある認証情報の変更・多要素認証の有効化を利用者へ案内する。フォレンジック調査結果と当局への報告状況を継続確認する。",
+      "splunk_spl": [],
+      "detection_notes": "国内組織の侵害確認により軸P1/軸Q1だが参考A昇格トリガー（国内組織への侵害が報告・確認される）により注目動向採用。",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/article/2026/08/20/55972.html",
+          "title": null,
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260821-APTC-e5d20230"
+    },
+    {
+      "group_name": "不明（帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-REXT-RansomwareAttack",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-08-21",
+      "targets": {
+        "sectors": [
+          "retail"
+        ],
+        "regions": [],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-20T23:00:00+09:00",
+          "description": "「REXTにランサムウェア攻撃、RIZAP『APORITO』事業でシステム障害」「REXTへのランサムウェア攻撃、JEANS MATE店舗での支払いは原則として現金のみに」と報道"
+        }
+      ],
+      "overview": "RIZAPが運営する「APORITO」事業の委託先であるREXTがランサムウェア攻撃を受け、社内ネットワークの一部でシステム障害が発生した。攻撃は8月9日に確認され8月10日に公表。同時期にREXTが運営する他店舗（WonderGOO・新星堂等）にも影響が及び、JEANS MATE店舗では支払いが原則現金のみとなる等、複数ブランドにまたがる被害が生じている。APORITO事業は8月10日から一部サービスが制限された。外部専門機関による調査を開始し公的機関へ報告済み。",
+      "attack_flow": [],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "影響を受けた可能性のある認証情報の変更・多要素認証の有効化を利用者へ案内する。フォレンジック調査結果と当局への報告状況を継続確認する。",
+      "splunk_spl": [],
+      "detection_notes": "国内組織の侵害確認により軸P1/軸Q1だが参考A昇格トリガー（国内組織への侵害が報告・確認される）により注目動向採用。",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/article/2026/08/20/55979.html",
+          "title": null,
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260821-APTC-d4453700"
+    },
+    {
+      "group_name": "不明（帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-Nidec-WebsiteBreach",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-08-21",
+      "targets": {
+        "sectors": [
+          "manufacturing"
+        ],
+        "regions": [],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-20T23:00:00+09:00",
+          "description": "「ニデックWebサイトにソフトウェアの脆弱性を悪用した不正アクセス」と報道"
+        }
+      ],
+      "overview": "ニデックのウェブサイトで使用していたソフトウェアの脆弱性を悪用した不正アクセスが発生した。7月24日に不正アクセスが確認され8月7日に調査結果が公表された。ウェブサイト会員約28,000名（氏名・メールアドレス・パスワード等）、問い合わせ者約4,500名（氏名・メールアドレス・勤務先・住所・電話番号等）が影響を受けた可能性がある。具体的な脆弱性の詳細（CVE番号等）は記事では明らかにされていない。外部専門機関と連携し継続調査・当局報告・再発防止策強化を実施中。",
+      "attack_flow": [],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "影響を受けた可能性のある認証情報の変更・多要素認証の有効化を利用者へ案内する。フォレンジック調査結果と当局への報告状況を継続確認する。",
+      "splunk_spl": [],
+      "detection_notes": "国内組織の侵害確認により軸P1/軸Q1だが参考A昇格トリガー（国内組織への侵害が報告・確認される）により注目動向採用。",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/article/2026/08/20/55977.html",
+          "title": null,
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260821-APTC-dae72977"
+    },
+    {
+      "group_name": "不明（帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-Innovation-GitHubBreach",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-08-21",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-20T23:00:00+09:00",
+          "description": "「イノベーションが利用するGitHubへの不正アクセス、62,691名分の顧客情報が漏えい」と報道"
+        }
+      ],
+      "overview": "イノベーションが利用する開発システムにおいて、プログラムの設定ファイル内に直接記載されていたGitHub認証情報（アクセストークン）が第三者に不正取得・悪用され、GitHubリポジトリへの不正アクセスにより顧客情報62,691名分（氏名62,631件・メールアドレス62,691件・電話番号506件）が漏えいした。本番データベースへのアクセスや本番環境からの情報漏えいは確認されていない。即時対応として該当アクセストークンを無効化・停止。再発防止策としてトークン権限・発行ワークフローの見直し、リポジトリアクセス監視強化、個人情報アップロード検知システム導入等を予定。",
+      "attack_flow": [],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "影響を受けた可能性のある認証情報の変更・多要素認証の有効化を利用者へ案内する。フォレンジック調査結果と当局への報告状況を継続確認する。",
+      "splunk_spl": [],
+      "detection_notes": "国内組織の侵害確認により軸P1/軸Q1だが参考A昇格トリガー（国内組織への侵害が報告・確認される）により注目動向採用。",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/article/2026/08/20/55975.html",
+          "title": null,
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260821-APTC-59188a1f"
+    },
+    {
+      "group_name": "不明（帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-HaiCheesePhoto-UnauthorizedAccess",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-08-21",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-20T23:00:00+09:00",
+          "description": "「『はいチーズ！フォト』に不正アクセス、漏えい件数の公表は顧客の保護と二次被害防止の観点から差し控える」と報道"
+        }
+      ],
+      "overview": "写真販売サービス「はいチーズ！フォト」が第三者の不正アクセスを受けた。漏えい件数については「顧客の保護と二次被害防止の観点から差し控える」として非公表。攻撃者・侵入経路とも詳細は本調査時点で確認されていない。同サービスは保育園・幼稚園・学校向け写真販売を扱うため、児童を含む個人情報が対象に含まれる可能性がある点に留意（推測）。",
+      "attack_flow": [],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "影響を受けた可能性のある認証情報の変更・多要素認証の有効化を利用者へ案内する。フォレンジック調査結果と当局への報告状況を継続確認する。",
+      "splunk_spl": [],
+      "detection_notes": "国内組織の侵害確認により軸P1/軸Q1だが参考A昇格トリガー（国内組織への侵害が報告・確認される）により注目動向採用。",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/article/2026/08/20/55971.html",
+          "title": null,
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260821-APTC-6c90888c"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [
+    {
+      "attack_id": "AI-2026-08-20-001",
+      "title": "AI生成エクスプロイトスクリプトによるSiemens S7系PLCへの攻撃（米重要インフラ、5機関合同勧告）",
+      "category": "A",
+      "subcategory": "A3",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-Q",
+        "A-T"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "energy",
+          "critical_infrastructure",
+          "manufacturing"
+        ],
+        "regions": [
+          "North America"
+        ],
+        "countries": [
+          "US"
+        ]
+      },
+      "damage_scale": "少なくとも12州で攻撃報告・ミネソタ州では30以上のコミュニティ水道システムの運用に支障（規模の詳細な金額換算は不明）",
+      "burst_count": 6,
+      "burst_status": "burst_exceeded",
+      "axis_x_score": 7,
+      "axis_y_score": 6,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-08-20T21:59:19+09:00",
+          "description": "NSA・CISA・FBI・エネルギー省・EPAの5機関合同勧告（AA26-231A）を報道。攻撃者がAIを用いてSiemens S7系PLCへの攻撃スクリプトを生成していることを政府勧告として初めて確認"
+        }
+      ],
+      "overview": "米国の水道・エネルギー・化学・製造業等の重要インフラで稼働するSiemens S7系PLCに対し、脅威アクターがAIで生成したPython製攻撃スクリプト（snap7.dll・python-snap7ライブラリを使用しS7comm経由でPLCと通信）を用いて侵害を試みていることを、NSA・CISA・FBI・エネルギー省・環境保護庁の5機関が2026-08-19付合同勧告（AA26-231A）で確認した。攻撃者はCensys・ZoomEye等のインターネットスキャンサービスで露出したPLCを特定し、正規のOT監視ソフトウェアを偽装したツールでPLCメモリ・構成データ・ラダーロジックプログラムへの読み書きアクセスを行う。少なくとも12州で攻撃が報告され、ミネソタ州では30以上のコミュニティ水道システムの運用に支障が生じる重大インシデントが確認されている。政府機関がAI生成コードによる重要インフラ攻撃を公式勧告で確認したのは今回が初めてであり、攻撃は継続中とされる。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者がCensys/ZoomEye等でインターネットに露出したSiemens S7系PLCを偵察・特定"
+        },
+        {
+          "step": 2,
+          "description": "AIを用いてPython製攻撃スクリプト（snap7.dll/python-snap7ベース）を生成し正規OT監視ツールを偽装"
+        },
+        {
+          "step": 3,
+          "description": "S7comm経由でPLCメモリ・構成データ・ラダーロジックへ読み書きアクセスし運用を妨害（ミネソタ州の水道システム障害等）"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "S7comm（TCP/102）経由の想定外の外部ホストからの接続",
+          "python-snap7/snap7.dllを用いたPLCへの読み書きアクセスパターン"
+        ]
+      },
+      "monitoring": {
+        "description": "S7comm（TCP/102）通信のOT/ITネットワーク境界での監視とPLCへの外部到達性の遮断",
+        "splunk_spl": [
+          "index=ot sourcetype=firewall dest_port=102 dest_ip=* | stats count by src_ip, dest_ip | where count > 10"
+        ],
+        "detection_notes": "インターネットに直接露出したS7系PLCがないかCensys/Shodan等で自組織のIPレンジを確認し、境界ファイアウォールでTCP/102の外部到達を遮断する。CISA AA26-231Aの詳細IOC・緩和策を参照。"
+      },
+      "references": [
+        {
+          "url": "https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-231a",
+          "title": "Defending Against an Active Threat to Siemens S7 Series PLCs",
+          "language": "en",
+          "source": "CISA"
+        },
+        {
+          "url": "https://thehackernews.com/2026/08/ai-generated-exploit-scripts-target.html",
+          "title": "AI-Generated Exploit Scripts Target Siemens S7 PLCs in U.S. Critical Infrastructure",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/us-warns-of-ai-powered-attacks-on-siemens-plcs-in-critical-infrastructure",
+          "title": "US warns of AI-powered attacks on Siemens PLCs in critical infrastructure",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20260821-AIAT-218cdd5c"
+    }
+  ],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-08-21-001",
+      "title": "Atlassian製品群、サードパーティ依存関係の脆弱性109件超を一括パッチ公開",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "γ"
+      ],
+      "priority": "medium",
+      "product_or_service": "Bamboo / Bitbucket / Confluence / Crowd / Fisheye/Crucible / Jira",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "JP",
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SecurityWeek",
+          "date": "2026-08-20T23:50:49+09:00",
+          "description": "Atlassianがサードパーティ依存関係（Axios/Apache Tomcat/Netty等）の脆弱性109件超（Critical 10件・High 162件）を対象に一括セキュリティ公開を実施"
+        }
+      ],
+      "overview": "AtlassianがBamboo・Bitbucket・Confluence・Crowd・Fisheye/Crucible・Jiraの各製品でサードパーティ依存ライブラリの脆弱性を一括パッチした。代表例はAxios（CVE-2026-42043・CVE-2026-40175・CVE-2026-42264）・Apache Tomcat（CVE-2026-41293・CVE-2026-43512・CVE-2026-43515）・Netty（CVE-2026-42584）。個別の実悪用報告は本調査時点で確認されていないが件数が多く定期パッチサイクルとして把握推奨。",
+      "recommended_actions": [
+        "自社Atlassian製品（Confluence/Jira等セルフホスト環境）のバージョンと本バルクリリースの対象バージョンを照合する",
+        "次回メンテナンスウィンドウでのパッチ適用計画を立てる（緊急の単独脆弱性ではなく定期パッチ扱い）"
+      ],
+      "monitoring": {
+        "description": "",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.securityweek.com/atlassian-splunk-patch-dozens-of-critical-high-severity-vulnerabilities/",
+          "title": null,
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "info_id": "20260821-SOCR-1433ebff"
+    },
+    {
+      "rec_id": "SOC-2026-08-21-002",
+      "title": "Elementor Pro（WordPress）の未認証RCE脆弱性、パッチ適用を至急確認",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "α",
+        "δ"
+      ],
+      "priority": "high",
+      "product_or_service": "Elementor Pro (WordPress plugin)",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "JP",
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-08-20T20:36:27+09:00",
+          "description": "CVE-2026-32475（CVSS9.0）としてElementor ProのFormsモジュール File Uploadフィールドの脆弱性を報道。4.2.2未満が対象、2026-08-19に4.2.2で修正済み"
+        }
+      ],
+      "overview": "Elementor Pro（WordPress向け人気ページビルダープラグイン）のFormsモジュール File Uploadフィールドにおいて、拡張子チェックとファイル移動処理が異なるループで動作する不整合を突き、未認証攻撃者が拡張子ブロックリストを回避してPHPファイルを公開ディレクトリへアップロードできる（CVE-2026-32475・CVSS9.0）。ファイルアップロード型フォームを公開しているサイトであれば悪用可能で、ファイル名はuniqid()（時刻ベースで予測可能）から特定されうる。本調査時点でトラックA判定は軸1=7点・軸2=1点で数値上は除外となるが、Elementor Proは国内外含め広く利用されるプラグインであり、パッチ提供済み（4.2.2）のため至急のバージョン確認を推奨する。",
+      "recommended_actions": [
+        "Elementor Proを4.2.2以降へ至急アップデートする",
+        "アップデートが即座に行えない場合は該当サイトのFile Uploadフィールドを含むフォームを一時的に無効化する",
+        "公開ディレクトリ配下に不審なPHPファイルが存在しないか確認する"
+      ],
+      "monitoring": {
+        "description": "",
+        "splunk_spl": [
+          "index=web sourcetype=access_combined uri_path=*wp-content/uploads* method=GET file_ext=php | stats count by src_ip, uri_path"
+        ],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/08/elementor-pro-flaw-could-let.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/critical-elementor-pro-bug-exposes-wordpress-sites-to-rce-attacks/",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20260821-SOCR-f7e58775"
+    },
+    {
+      "rec_id": "SOC-2026-08-21-003",
+      "title": "AIデータ処理・推論基盤ライブラリ（unstructured / LMDeploy）の脆弱性、RAG/AI基盤運用者は要確認",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "β",
+        "γ"
+      ],
+      "priority": "medium",
+      "product_or_service": "unstructured (Pythonライブラリ) / LMDeploy (AIモデル推論デプロイメントフレームワーク)",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "JP",
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "GitHub Advisory Database",
+          "date": "2026-08-20T00:00:00+09:00",
+          "description": "unstructured（RAG/AIデータ取り込みパイプラインで使用）にCVE-2026-71428（SSRF・CVSS9.3）、LMDeploy（AI推論デプロイメント基盤）にCVE-2026-76850（pickleデシリアライゼーションRCE・CVSS9.8）がそれぞれ公開"
+        }
+      ],
+      "overview": "RAG（検索拡張生成）パイプラインで文書取り込みに広く使われるPythonライブラリunstructuredにおいて、partition/partition_html/partition_md関数のurl引数がホスト検証なしで取得されるSSRFが判明した（CVE-2026-71428）。またLLM推論デプロイメント基盤LMDeployでは、disaggregated-serving（分散推論）のピア間通信でpickle.loads()による未検証デシリアライゼーションが行われ、悪意あるピアからのRCEが可能となる欠陥が判明した（CVE-2026-76850）。いずれもAI/RAG基盤特有のコンポーネントで、CVE単体としては実悪用未確認のためSection3では軸1<8点で除外扱いだが、社内でAIエージェント・RAGパイプラインを運用するチームは利用有無の確認を推奨する。",
+      "recommended_actions": [
+        "社内のRAG/AIパイプラインでunstructuredライブラリを使用していないか棚卸しし、最新版へ更新する",
+        "LMDeployのdisaggregated-serving機能を有効化している場合はピア間通信を信頼できるネットワークに限定する"
+      ],
+      "monitoring": {
+        "description": "",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://github.com/advisories",
+          "title": null,
+          "language": "en",
+          "source": "GitHub Advisory Database"
+        }
+      ],
+      "info_id": "20260821-SOCR-7028b3b2"
+    },
+    {
+      "rec_id": "SOC-2026-08-21-004",
+      "title": "isolated-vm（Node.jsサンドボックスライブラリ）にサンドボックスエスケープ、AIエージェント実行基盤は要確認",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "δ"
+      ],
+      "priority": "medium",
+      "product_or_service": "isolated-vm (npmパッケージ)",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-08-20T22:48:24+09:00",
+          "description": "isolated-vmのExternalCopy型混同によりサンドボックス化されたJavaScriptがホストメモリを破壊しRCEへ発展しうる欠陥（GHSA-864f-rcv7-6rh4）を報道。6.2.0/7.0.1で修正済み"
+        }
+      ],
+      "overview": "週間ダウンロード数約100万に上るNode.js製サンドボックスライブラリisolated-vmにおいて、ExternalCopy型の型混同によりサンドボックス化されたJavaScriptコードがホストメモリを破壊し得る欠陥が判明した（CVE番号未採番・GHSA-864f-rcv7-6rh4）。同ライブラリは信頼できないコード（AIエージェントが生成・実行するコード等）の隔離実行に用いられることがあり、サンドボックス脱出はAIエージェント実行基盤の安全性に直結する。6.2.0/7.0.1で修正済み。",
+      "recommended_actions": [
+        "自社のAIエージェント・コード実行基盤でisolated-vmを使用していないか確認し6.2.0/7.0.1以降へ更新する",
+        "サンドボックス実行環境は多層防御（コンテナ/VM分離との併用）を検討する"
+      ],
+      "monitoring": {
+        "description": "",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/08/isolated-vm-flaw-lets-sandboxed.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20260821-SOCR-b40f4887"
+    },
+    {
+      "rec_id": "SOC-2026-08-21-005",
+      "title": "AIエージェント封じ込め新フレームワーク『CUSTODY』の公開",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "γ"
+      ],
+      "priority": "low",
+      "product_or_service": null,
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Dark Reading",
+          "date": "2026-08-21T05:42:18+09:00",
+          "description": "ネットワーク内でAIエージェントの行動範囲を制約する新フレームワーク「CUSTODY」の公開を報道"
+        }
+      ],
+      "overview": "AIエージェントがネットワーク内で実行できる操作範囲を制約するための新しい防御フレームワーク「CUSTODY」が公開された。Agentic AI導入組織におけるガバナンス・封じ込め手法の一つとして参考情報を提供する。",
+      "recommended_actions": [
+        "AIエージェント導入を検討・運用している部門へ本フレームワークの情報を共有し、既存のエージェント権限管理と比較検討する"
+      ],
+      "monitoring": {
+        "description": "",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.darkreading.com/perimeter/new-custody-framework-constrains-ai-agents-inside-network",
+          "title": null,
+          "language": "en",
+          "source": "Dark Reading"
+        }
+      ],
+      "info_id": "20260821-SOCR-cf196c20"
+    }
+  ],
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 1,
+      "reference_a": 1,
+      "reference_b": 4,
+      "excluded": 45,
+      "total_processed": 51
+    },
+    "apt": {
+      "main": 1,
+      "notable": 6,
+      "excluded": 3,
+      "total_processed": 10
+    },
+    "ai_attacks": {
+      "main": 1,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 1,
+      "total_processed": 2,
+      "category_breakdown": {
+        "A": 1,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 1,
+      "medium": 3,
+      "low": 1,
+      "excluded": 0,
+      "total_processed": 5,
+      "perspective_breakdown": {
+        "cve": 2,
+        "zeroday": 0,
+        "ai_attack": 3
+      }
+    }
+  }
+}
