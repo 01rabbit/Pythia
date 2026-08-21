@@ -229,11 +229,15 @@ Pythia 本リポジトリでも 2026-08-18 の窓で同種の欠損を実測し�
 - **EUVD の時刻は UTC として解釈し、窓判定はクライアント側で行う**。EUVD API の
   fromDate/toDate は日付粒度のため前後1日広げて取得し、`datePublished` で窓判定する。
   API はタイムゾーンを明示しないため（NVD 公開時刻との突合で UTC と判断・
-  CVE-2026-72529 で実測）、境界のずれは候補の過剰包含側に倒す
+  CVE-2026-72529 で実測）、仮に解釈がずれていても日次窓は連続しており毎日同じ解釈で
+  フィルタするため、各レコードはいずれか1つの窓に必ず1回だけ入る（恒久的な取りこぼし・
+  二重計上にはならない）。日時が1件も解釈できない場合（形式変更のサイン）は
+  「静かな0件」を防ぐため `euvd.status: failed` に倒す
 - **EUVD の exploited は独立シグナルではない**。大半が CISA KEV 由来の集約のため、
-  KEV 掲載済みCVEの exploited は候補化しない（E1 の正は CISA KEV）。KEV に無い
-  exploited のみ `euvd_exploited_in_window` として候補化し、採用判断時は
-  EUVD が参照する一次ソースを照合する
+  別名のいずれかが KEV 掲載済みのCVEは候補化しない（E1 の正は CISA KEV）。KEV に無い
+  exploited のみ候補化し、悪用開始（exploitedSince）が窓内のものは
+  `euvd_exploited_in_window`、窓外・不明のものは `euvd_published_exploited` と区別する。
+  採用判断時は EUVD が参照する一次ソースを照合する
 
 ### 母集団の処理義務（完全性チェック）
 

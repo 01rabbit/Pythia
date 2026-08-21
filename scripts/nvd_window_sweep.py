@@ -240,37 +240,70 @@ def _euvd_json(path: str, params: dict | None = None, *, attempts: int = 4) -> d
     raise EuvdError(f"EUVD 取得失敗: {url} — {last_err}")
 
 
+_EUVD_MONTHS = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
+                "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12}
+_EUVD_DT_RE = re.compile(
+    r"([A-Za-z]{3}) (\d{1,2}), (\d{4}),? (\d{1,2}):(\d{2}):(\d{2}) (AM|PM)$")
+
+
 def _parse_euvd_dt(text: str | None) -> datetime | None:
     """EUVD の日時（例: "Aug 19, 2026, 4:55:14 PM"）を UTC として解釈する。
 
     NVD 公開時刻との突合（CVE-2026-72529: EUVD 16:55 → NVD 17:21 UTC）から
-    UTC 表記と判断している。API はタイムゾーンを明示しないため、窓の境界判定が
-    数時間ずれる可能性は候補の過剰包含側に倒して吸収する（取りこぼし側に倒さない）。
+    UTC 表記と判断している。仮にこの仮定が誤っていても（実際は CET 等でも）、
+    日次の調査窓は連続しており毎日同じ解釈でフィルタするため、各レコードは
+    いずれか1つの窓に必ず1回だけ入る（境界の数時間ずれは翌日の窓が拾い、
+    恒久的な取りこぼし・二重計上にはならない）。
+
+    月名・AM/PM は自前で解釈する（strptime の %b/%p は LC_TIME に依存し、
+    非英語ロケールでは全件パース失敗＝静かな0件になるため）。
+    形式変更に備えて ISO 8601 フォールバックも持つ。
     """
     if not text:
         return None
     normalized = text.replace("\u202f", " ").replace("\u00a0", " ").strip()  # 特殊空白を正規化
-    for fmt in ("%b %d, %Y, %I:%M:%S %p", "%b %d, %Y %I:%M:%S %p"):
-        try:
-            return datetime.strptime(normalized, fmt).replace(tzinfo=timezone.utc)
-        except ValueError:
-            continue
-    return None
+    m = _EUVD_DT_RE.match(normalized)
+    if m:
+        month = _EUVD_MONTHS.get(m.group(1).title())
+        if month:
+            hour = int(m.group(4)) % 12
+            if m.group(7) == "PM":
+                hour += 12
+            try:
+                return datetime(int(m.group(3)), month, int(m.group(2)),
+                                hour, int(m.group(5)), int(m.group(6)),
+                                tzinfo=timezone.utc)
+            except ValueError:
+                return None
+    try:  # ISO 8601 フォールバック（API の形式変更に備える）
+        dt = datetime.fromisoformat(normalized.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
 
 
-def _euvd_search_all(params: dict, *, max_pages: int = 20) -> list[dict]:
-    """/api/search を page/size でページングし全件取得する（size 上限 100）。"""
+def _euvd_search_all(params: dict, *, max_pages: int = 20) -> tuple[list[dict], bool]:
+    """/api/search を page/size でページングし全件取得する（size 上限 100）。
+
+    → (items, truncated)。truncated=True は max_pages 到達による打ち切り
+    （母集団が不完全な可能性）を示し、呼び出し側が euvd.warnings に記録する。
+    """
     out: list[dict] = []
     page = 0
-    while page < max_pages:
+    while True:
         data = _euvd_json("search", dict(params, size=100, page=page))
         items = data.get("items", []) if isinstance(data, dict) else []
+        total = data.get("total") if isinstance(data, dict) else None
         out.extend(items)
-        total = data.get("total", 0) if isinstance(data, dict) else 0
         page += 1
-        if not items or len(out) >= total:
-            break
-    return out
+        if not items:
+            return out, False
+        if isinstance(total, int) and total > 0 and len(out) >= total:
+            return out, False
+        if page >= max_pages:
+            print(f"  EUVD: ページ上限 {max_pages} 到達（total={total}・取得{len(out)}件）"
+                  "— 以降を打ち切り。母集団が不完全な可能性", file=sys.stderr)
+            return out, True
 
 
 def _euvd_row(item: dict, reason: str) -> dict:
@@ -294,14 +327,27 @@ def _euvd_row(item: dict, reason: str) -> dict:
     }
 
 
+# 候補理由の優先順位（高いほど優先。マージ時に強い理由で上書きする）
+_EUVD_REASON_PRIORITY = {
+    "euvd_published_over_threshold": 0,  # 窓内公開・閾値以上（NVD候補に無い層）
+    "euvd_published_exploited": 1,       # 窓内公開かつ exploited（悪用開始は窓外・不明）
+    "euvd_exploited_in_window": 2,       # exploitedSince が窓内（悪用開始が窓内）
+}
+
+
 def euvd_sweep(window_start: datetime, window_end: datetime, threshold: float,
-               nvd_published_ids: set[str], kev: dict) -> tuple[dict, list[dict], dict]:
+               covered_cve_ids: set[str], kev: dict) -> tuple[dict, list[dict], dict]:
     """EUVD を補完列挙する。→ (euvd_meta, euvd_added候補, cve→euvd_id 対応表)
 
-    - 窓内公開かつ閾値以上（fromScore）→ NVD 窓内母集団に無いものだけ候補化
+    - 窓内公開かつ閾値以上（fromScore）→ NVD/KEV 側の候補集合（covered_cve_ids）に
+      無いものだけ候補化。NVD にレコードはあるが未スコア（vulnStatus=Received）で
+      NVD 候補から漏れた層も EUVD 側スコアで拾う（NVD 分析遅延の冗長化）
     - exploited（窓内公開分 + 最新 exploited フィードの窓内 exploitedSince 分）
-      → CISA KEV 掲載済みCVEは候補化しない（EUVD exploited は大半が KEV 由来の集約）
+      → CISA KEV 掲載済みCVE（別名のいずれかが該当）は候補化しない
+      （EUVD exploited は大半が KEV 由来の集約）。悪用開始が窓内のものだけ
+      `euvd_exploited_in_window`、窓外・不明は `euvd_published_exploited` と区別する
     - CVE エイリアスを持たないレコードは EUVD ID を識別子として候補化する
+    - 日時が1件も解釈できない場合は EuvdError（「静かな0件」を ok 扱いにしない）
     """
     utc_start = window_start.astimezone(timezone.utc)
     utc_end = window_end.astimezone(timezone.utc)
@@ -310,18 +356,35 @@ def euvd_sweep(window_start: datetime, window_end: datetime, threshold: float,
         "fromDate": (utc_start - timedelta(days=1)).strftime("%Y-%m-%d"),
         "toDate": (utc_end + timedelta(days=1)).strftime("%Y-%m-%d"),
     }
+    warnings: list[str] = []
 
     print("EUVD: 窓内公開（閾値以上）を取得中…", file=sys.stderr)
-    over_items = _euvd_search_all(dict(date_params, fromScore=threshold, toScore=10))
+    over_items, truncated = _euvd_search_all(dict(date_params, fromScore=threshold, toScore=10))
+    if truncated:
+        warnings.append("閾値以上の検索がページ上限で打ち切られた（母集団が不完全な可能性）")
     print(f"  閾値以上 {len(over_items)}件（日付粒度・窓判定前）", file=sys.stderr)
 
     print("EUVD: exploited を取得中…", file=sys.stderr)
-    exploited_items = _euvd_search_all(dict(date_params, exploited="true"))
+    exploited_items, truncated = _euvd_search_all(dict(date_params, exploited="true"))
+    if truncated:
+        warnings.append("exploited 検索がページ上限で打ち切られた（母集団が不完全な可能性）")
     latest_exploited = _euvd_json("exploitedvulnerabilities")
     if not isinstance(latest_exploited, list):
         latest_exploited = []
     print(f"  exploited 窓内公開 {len(exploited_items)}件 / 最新フィード {len(latest_exploited)}件",
           file=sys.stderr)
+
+    # 日時解釈の健全性チェック: 取得できたのに1件も解釈できないのは形式変更のサイン。
+    # 静かに「候補0件・status ok」で通すと取りこぼしと区別できないため failed に倒す
+    all_items = over_items + exploited_items + latest_exploited
+    dated = [i for i in all_items if i.get("datePublished")]
+    parse_failures = sum(1 for i in dated if _parse_euvd_dt(i.get("datePublished")) is None)
+    if dated and parse_failures == len(dated):
+        raise EuvdError(
+            f"datePublished を1件も解釈できない（{len(dated)}件全滅）。"
+            "EUVD の日時形式が変更された可能性。_parse_euvd_dt の対応形式を更新すること")
+    if parse_failures:
+        warnings.append(f"datePublished の解釈失敗 {parse_failures}/{len(dated)}件（当該件は窓判定不能）")
 
     def in_window(item: dict) -> bool:
         pub = _parse_euvd_dt(item.get("datePublished"))
@@ -329,7 +392,7 @@ def euvd_sweep(window_start: datetime, window_end: datetime, threshold: float,
 
     start_date, end_date = window_start.date(), window_end.date()
 
-    def exploited_in_window(item: dict) -> bool:
+    def exploited_since_in_window(item: dict) -> bool:
         # exploitedSince は日付粒度（12:00 AM 固定）のため KEV dateAdded と同様に日付で判定する
         since = _parse_euvd_dt(item.get("exploitedSince"))
         return since is not None and start_date <= since.date() <= end_date
@@ -337,27 +400,34 @@ def euvd_sweep(window_start: datetime, window_end: datetime, threshold: float,
     alias_map: dict[str, str] = {}
     candidates: dict[str, dict] = {}
     over_in_window = 0
-    exploited_seen = 0
+    exploited_ids: set[str] = set()
 
     def consider(item: dict, reason: str) -> None:
         row = _euvd_row(item, reason)
         if not row["euvd_id"]:
             return
-        for cve in row["aliases"]:
-            if CVE_RE.fullmatch(cve):
-                alias_map[cve] = row["euvd_id"]
-        if reason == "euvd_exploited_in_window":
-            # KEV 掲載済み（窓内外を問わず）は KEV 側で扱う。独立シグナル扱いしない
-            if row["cve_id"] and row["cve_id"] in kev:
+        cve_aliases = [a for a in row["aliases"] if CVE_RE.fullmatch(a)]
+        for cve in cve_aliases:
+            alias_map[cve] = row["euvd_id"]
+        if reason in ("euvd_exploited_in_window", "euvd_published_exploited"):
+            # 別名のいずれかが KEV 掲載済み（窓内外を問わず）なら KEV 側で扱う。
+            # EUVD exploited は独立シグナル扱いしない
+            if any(cve in kev for cve in cve_aliases):
                 return
-        else:
-            # NVD 窓内母集団と重複するCVEは候補に重複計上しない（冗長化のみが目的）
-            if row["cve_id"] and row["cve_id"] in nvd_published_ids:
-                return
+        # NVD/KEV 側の候補集合に既に居るCVEは候補に重複計上しない（冗長化のみが目的）
+        if any(cve in covered_cve_ids for cve in cve_aliases):
+            return
         existing = candidates.get(row["euvd_id"])
-        if existing is None or reason == "euvd_exploited_in_window":
-            row["sweep_reason"] = reason if existing is None else "euvd_exploited_in_window"
+        if existing is None:
             candidates[row["euvd_id"]] = row
+            return
+        # 同一レコードが複数経路で現れた場合はマージする（行の丸ごと置換はしない。
+        # 最新 exploited フィードは search より情報が薄く、置換すると
+        # cvss_max / cve_id が欠けて突合キーが変わり得る）
+        if _EUVD_REASON_PRIORITY[reason] > _EUVD_REASON_PRIORITY[existing["sweep_reason"]]:
+            existing["sweep_reason"] = reason
+        if row.get("exploited_since") and not existing.get("exploited_since"):
+            existing["exploited_since"] = row["exploited_since"]
 
     for item in over_items:
         if in_window(item):
@@ -365,11 +435,12 @@ def euvd_sweep(window_start: datetime, window_end: datetime, threshold: float,
             consider(item, "euvd_published_over_threshold")
     for item in exploited_items:
         if in_window(item):
-            exploited_seen += 1
-            consider(item, "euvd_exploited_in_window")
+            exploited_ids.add(item.get("id") or "")
+            consider(item, "euvd_exploited_in_window" if exploited_since_in_window(item)
+                     else "euvd_published_exploited")
     for item in latest_exploited:
-        if exploited_in_window(item):
-            exploited_seen += 1
+        if exploited_since_in_window(item):
+            exploited_ids.add(item.get("id") or "")
             consider(item, "euvd_exploited_in_window")
 
     added = sorted(candidates.values(),
@@ -379,9 +450,11 @@ def euvd_sweep(window_start: datetime, window_end: datetime, threshold: float,
         "api": EUVD_API,
         "counts": {
             "over_threshold_in_window": over_in_window,
-            "exploited_seen_in_window": exploited_seen,
+            "exploited_seen_in_window": len(exploited_ids - {""}),
             "added_candidates": len(added),
+            "date_parse_failures": parse_failures,
         },
+        "warnings": warnings,
         "note": "時刻はUTCとして解釈。exploited は大半が CISA KEV 由来の集約であり"
                 "独立した悪用観測シグナルとして扱わない（E1 の正は CISA KEV）",
     }
@@ -482,14 +555,20 @@ def sweep(window_start: datetime, window_end: datetime, threshold: float,
     euvd_meta: dict = {"status": "skipped", "api": EUVD_API}
     euvd_added: list[dict] = []
     if not no_euvd:
+        # 重複除外は「NVD/KEV 側の候補集合」に対して行う（published_ids 全体ではない）。
+        # NVD にレコードはあるが未スコアで NVD 候補から漏れた層を EUVD 側で拾うため
+        covered_cve_ids = {r["cve_id"] for r in over + changed + kev_in_window}
         try:
             euvd_meta, euvd_added, alias_map = euvd_sweep(
-                window_start, window_end, threshold, published_ids, kev)
+                window_start, window_end, threshold, covered_cve_ids, kev)
             for row in over + changed + kev_in_window:
                 if row["cve_id"] in alias_map:
                     row["euvd_id"] = alias_map[row["cve_id"]]
             print(f"EUVD: 追加候補 {len(euvd_added)}件", file=sys.stderr)
-        except EuvdError as err:
+        except Exception as err:  # noqa: BLE001 — EuvdError 以外の想定外例外
+            # （応答形状の変化による KeyError/TypeError 等）でも NVD+KEV と
+            # 共倒れさせない。EUVD 経路は SystemExit を使わないため、ここで
+            # Exception を握れば取得失敗は必ず euvd.status=failed に落ちる
             print(f"EUVD: 取得失敗 — NVD+KEV のみで続行する（{err}）", file=sys.stderr)
             euvd_meta = {"status": "failed", "api": EUVD_API, "error": str(err)}
 
@@ -590,10 +669,8 @@ def reconcile(sweep_data: dict, report_path: str) -> dict:
     seen: set[str] = set()
     unhandled: list[dict] = []
     handled_count = 0
-    all_ids: set[str] = set()
     for row in rows:
         rid = row_id(row)
-        all_ids.add(rid)
         if rid in seen:
             continue
         seen.add(rid)
@@ -605,9 +682,13 @@ def reconcile(sweep_data: dict, report_path: str) -> dict:
 
     groups: dict[str, list[dict]] = {}
     for row in unhandled:
-        if row.get("euvd_id") and not row.get("source_identifier"):
-            continue  # EUVD 由来候補はバッチ集約対象外（下の individual に必ず残る）
-        groups.setdefault(row.get("source_identifier") or "(不明)", []).append(row)
+        src = row.get("source_identifier")
+        if not src:
+            # source_identifier を持たない行（KEV 窓内追加・EUVD 由来候補）は
+            # バッチ集約対象外＝必ず個別判断に回す。KEV は E1 母集団そのもので
+            # 全件把握が的中判定の前提、EUVD は複数ベンダー横断のため
+            continue
+        groups.setdefault(src, []).append(row)
 
     batches = [
         {
@@ -626,7 +707,7 @@ def reconcile(sweep_data: dict, report_path: str) -> dict:
 
     return {
         "report": report_path,
-        "sweep_candidates": len(all_ids),
+        "sweep_candidates": len(seen),
         "handled_in_report": handled_count,
         "unhandled": unhandled,
         "unhandled_batches": batches,
