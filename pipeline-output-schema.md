@@ -133,7 +133,8 @@ raw = "{YYYYMMDD}::{タイトル}::{主URL}"
     "ghsa_origin_over_threshold": 6,
     "euvd": {
       "status": "ok",
-      "added_candidates": 3
+      "in_window_total": 46,
+      "euvd_only": 3
     }
   }
 }
@@ -165,7 +166,7 @@ Step 0.7 の網羅スイープと Step 3.9 の突合結果を記録する（SKIL
 | unhandled | integer | 未処理件数。**Step 4 のコミット時点で 0 であること** |
 | kev_added_in_window | integer | 窓内の CISA KEV 新規追加件数（観測出口クラス E1 の母集団） |
 | ghsa_origin_over_threshold | integer | 閾値以上のうち GHSA 起点の件数（報道系ソースが構造的に落とす層の実測値） |
-| euvd | object | EUVD 補完列挙の結果。`status`: `ok` / `failed`（EUVD のみ失敗・NVD+KEV で続行）/ `skipped`（`--no-euvd` 指定）。`added_candidates`: NVD/KEV に無く母集団へ追加された候補件数（スイープJSON `counts.euvd_added_candidates` を転記）。旧形式スイープ（EUVD 対応前）の再突合では省略可 |
+| euvd | object | EUVD 独立列挙の結果（EUVD は EUVD として全量収集し、NVD/KEV との重なりは注記で保持・突合で精査）。`status`: `ok` / `failed`（EUVD のみ失敗・NVD+KEV で続行）/ `skipped`（`--no-euvd` 指定）。`in_window_total`: EUVD 窓内全量件数（スイープJSON `counts.euvd_in_window_total` を転記）。`euvd_only`: うち NVD/KEV 側に無い件数（同 `counts.euvd_only`・個別判断必須の層）。旧形式スイープ（EUVD 対応前）の再突合では省略可 |
 
 `unhandled` が 0 でないレポートをコミットしてはならない。やむを得ず 0 にできない場合は、
 残件と理由を除外サマリーへ記録したうえで Step 5 サマリーに明記する。

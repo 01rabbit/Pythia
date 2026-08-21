@@ -24,17 +24,26 @@ BleepingComputer / The Hacker News / SecurityWeek には載らないため、
 この母集団の各件を **採用 / 除外（理由付き）/ バッチ集約のいずれかに必ず割り当てる**
 （pipeline-1-cve.md「網羅スイープ」節・SKILL.md Step 0.7 / Step 3.9 参照）。
 
-**EUVD 補完列挙（フェイルソフト）**:
-ENISA の EU Vulnerability Database（EUVD・NIS2指令に基づき運営）を補完ソースとして列挙する。
-EUVD は MITRE CVE / NVD / GHSA / 各国CSIRT を集約しており、NVD の分析遅延・障害時にも
-CNA 提供スコア付きでレコードを提供する（NVD 未反映のCVEを EUVD が先に載せる事例を実測済み）。
-役割は以下に限定する:
+**収集原則: ソース独立・全量収集 → 突合で精査**:
+各情報源（NVD / CISA KEV / EUVD）は互いの差分ではなく、**それぞれ独立に全量列挙して
+ソース別のまま**スイープ JSON に記録する（`over_threshold_published` = NVD、
+`kev_added_in_window` = KEV、`euvd_in_window` = EUVD）。差分だけを残す方式は、
+どのソースが何を見ていたかの記録が失われ、ソース間の反映ラグ・欠損を事後検証
+できなくなるためとらない。同一CVEの重複整理（精査）は突合（reconcile）が
+識別子単位で1回に正規化し、採用判断は Step 1 が行う。
 
-1. NVD 母集団の**冗長化**: 窓内公開の閾値以上を EUVD 側でも列挙し、NVD 側に無いものだけを
-   `euvd_added` 候補として母集団へ追加する（NVD と重複するものは候補に重複計上しない）
-2. **CVE未採番レコードの捕捉**: CVE エイリアスを持たない EUVD-only レコードを候補化する
-3. **exploited フラグの突合**: EUVD の exploited 印は大半が CISA KEV 由来の集約であり
-   **独立した悪用観測シグナルとして扱わない**。KEV 窓内追加に無い exploited のみ候補化する
+**EUVD 独立列挙（フェイルソフト）**:
+ENISA の EU Vulnerability Database（EUVD・NIS2指令に基づき運営）を独立ソースとして
+全量列挙する。EUVD は MITRE CVE / NVD / GHSA / 各国CSIRT を集約しており、
+NVD の分析遅延・障害時にも CNA 提供スコア付きでレコードを提供する
+（NVD 未反映のCVEを EUVD が先に載せる事例を実測済み）。
+
+1. 窓内公開の閾値以上・exploited を**全量**列挙し `euvd_in_window` に記録する。
+   NVD/KEV との重なりは各行の注記（in_nvd_window / in_nvd_candidates / in_kev /
+   euvd_only）で持ち、除外はしない
+2. **CVE未採番レコードの捕捉**: CVE エイリアスを持たないレコードは EUVD ID を識別子とする
+3. **exploited フラグ**: EUVD の exploited 印は大半が CISA KEV 由来の集約であり
+   **独立した悪用観測シグナルとして扱わない**（注記として保持し、E1 の正は CISA KEV）
 
 EUVD の取得失敗は NVD+KEV スイープを止めない（`euvd.status: failed` を記録して続行する）。
 NVD / KEV は従来どおり必須（取得失敗はスイープ全体の失敗）。
@@ -44,7 +53,7 @@ NVD / KEV は従来どおり必須（取得失敗はスイープ全体の失敗�
 
 使い方:
 
-    # 窓内の CVSS 9.0以上 + KEV 窓内追加 + EUVD 補完を全件列挙（JSON保存）
+    # NVD / KEV / EUVD をソース別に全量列挙（JSON保存）
     python3 scripts/nvd_window_sweep.py \
         --window-start "2026-08-17 07:00" --window-end "2026-08-18 07:00" \
         --output ".cache/daily-security-intel/2026-08-18/step1-sweep.json"
@@ -205,7 +214,7 @@ def fetch_kev() -> tuple[dict, str | None]:
 
 
 # --------------------------------------------------------------------------
-# EUVD（ENISA EU Vulnerability Database）— 補完列挙・フェイルソフト
+# EUVD（ENISA EU Vulnerability Database）— 独立列挙（全量収集）・フェイルソフト
 # --------------------------------------------------------------------------
 
 class EuvdError(RuntimeError):
@@ -336,17 +345,26 @@ _EUVD_REASON_PRIORITY = {
 
 
 def euvd_sweep(window_start: datetime, window_end: datetime, threshold: float,
-               covered_cve_ids: set[str], kev: dict) -> tuple[dict, list[dict], dict]:
-    """EUVD を補完列挙する。→ (euvd_meta, euvd_added候補, cve→euvd_id 対応表)
+               nvd_published_ids: set[str], covered_cve_ids: set[str],
+               kev: dict) -> tuple[dict, list[dict], dict]:
+    """EUVD を EUVD として独立に全量列挙する。→ (euvd_meta, euvd_in_window全量, cve→euvd_id 対応表)
 
-    - 窓内公開かつ閾値以上（fromScore）→ NVD/KEV 側の候補集合（covered_cve_ids）に
-      無いものだけ候補化。NVD にレコードはあるが未スコア（vulnStatus=Received）で
-      NVD 候補から漏れた層も EUVD 側スコアで拾う（NVD 分析遅延の冗長化）
-    - exploited（窓内公開分 + 最新 exploited フィードの窓内 exploitedSince 分）
-      → CISA KEV 掲載済みCVE（別名のいずれかが該当）は候補化しない
-      （EUVD exploited は大半が KEV 由来の集約）。悪用開始が窓内のものだけ
-      `euvd_exploited_in_window`、窓外・不明は `euvd_published_exploited` と区別する
-    - CVE エイリアスを持たないレコードは EUVD ID を識別子として候補化する
+    **収集原則: ソース独立・全量収集 → 突合で精査。**
+    EUVD の窓内該当分（閾値以上・exploited）は NVD/KEV との差分ではなく**全量**を
+    ソース別のまま記録する。NVD/KEV との重なりはレコードの注記として持つ:
+
+    - `in_nvd_window`     … 別名CVEのいずれかが NVD 窓内公開にも存在する
+    - `in_nvd_candidates` … 別名CVEのいずれかが NVD/KEV 側の候補集合にも存在する
+    - `in_kev` / `kev_date_added` … 別名CVEのいずれかが CISA KEV 掲載済み
+    - `euvd_only`         … NVD/KEV 側候補にも KEV にも無い＝EUVD だけが見ている層
+                            （個別判断必須。旧 `euvd_added` に相当）
+
+    同一CVEの重複整理（精査）はここでは行わず、突合（reconcile）が識別子単位で
+    1回に正規化する。exploited の扱い:
+    - 大半が CISA KEV 由来の集約のため独立シグナルとしては扱わない（注記のみ）
+    - 悪用開始（exploitedSince）が窓内のものは `euvd_exploited_in_window`、
+      窓外・不明は `euvd_published_exploited` と区別する
+    - CVE エイリアスを持たないレコードは EUVD ID を識別子とする
     - 日時が1件も解釈できない場合は EuvdError（「静かな0件」を ok 扱いにしない）
     """
     utc_start = window_start.astimezone(timezone.utc)
@@ -409,16 +427,17 @@ def euvd_sweep(window_start: datetime, window_end: datetime, threshold: float,
         cve_aliases = [a for a in row["aliases"] if CVE_RE.fullmatch(a)]
         for cve in cve_aliases:
             alias_map[cve] = row["euvd_id"]
-        if reason in ("euvd_exploited_in_window", "euvd_published_exploited"):
-            # 別名のいずれかが KEV 掲載済み（窓内外を問わず）なら KEV 側で扱う。
-            # EUVD exploited は独立シグナル扱いしない
-            if any(cve in kev for cve in cve_aliases):
-                return
-        # NVD/KEV 側の候補集合に既に居るCVEは候補に重複計上しない（冗長化のみが目的）
-        if any(cve in covered_cve_ids for cve in cve_aliases):
-            return
         existing = candidates.get(row["euvd_id"])
         if existing is None:
+            # 全量収集: NVD/KEV との重なりで除外はしない。重なりは注記として持ち、
+            # 精査（突合・Step 1 の採用判断）で同一CVEを1回に正規化する
+            kev_hits = [cve for cve in cve_aliases if cve in kev]
+            row["cve_ids"] = cve_aliases
+            row["in_nvd_window"] = any(cve in nvd_published_ids for cve in cve_aliases)
+            row["in_nvd_candidates"] = any(cve in covered_cve_ids for cve in cve_aliases)
+            row["in_kev"] = bool(kev_hits)
+            row["kev_date_added"] = kev[kev_hits[0]].get("dateAdded") if kev_hits else None
+            row["euvd_only"] = not row["in_nvd_candidates"] and not row["in_kev"]
             candidates[row["euvd_id"]] = row
             return
         # 同一レコードが複数経路で現れた場合はマージする（行の丸ごと置換はしない。
@@ -443,22 +462,28 @@ def euvd_sweep(window_start: datetime, window_end: datetime, threshold: float,
             exploited_ids.add(item.get("id") or "")
             consider(item, "euvd_exploited_in_window")
 
-    added = sorted(candidates.values(),
-                   key=lambda r: (-(r["cvss_max"] or 0), r["cve_id"] or r["euvd_id"]))
+    # EUVD-only（NVD/KEV 側に無い層）を先頭に、以下スコア降順
+    in_window_rows = sorted(
+        candidates.values(),
+        key=lambda r: (not r["euvd_only"], -(r["cvss_max"] or 0), r["cve_id"] or r["euvd_id"]))
+    euvd_only_count = sum(1 for r in in_window_rows if r["euvd_only"])
     meta = {
         "status": "ok",
         "api": EUVD_API,
         "counts": {
+            "in_window_total": len(in_window_rows),
             "over_threshold_in_window": over_in_window,
             "exploited_seen_in_window": len(exploited_ids - {""}),
-            "added_candidates": len(added),
+            "euvd_only": euvd_only_count,
             "date_parse_failures": parse_failures,
         },
         "warnings": warnings,
-        "note": "時刻はUTCとして解釈。exploited は大半が CISA KEV 由来の集約であり"
+        "note": "EUVD は独立に全量列挙し、NVD/KEV との重なりは各行の注記"
+                "（in_nvd_window / in_nvd_candidates / in_kev / euvd_only）で持つ。"
+                "時刻はUTCとして解釈。exploited は大半が CISA KEV 由来の集約であり"
                 "独立した悪用観測シグナルとして扱わない（E1 の正は CISA KEV）",
     }
-    return meta, added, alias_map
+    return meta, in_window_rows, alias_map
 
 
 # --------------------------------------------------------------------------
@@ -551,20 +576,21 @@ def sweep(window_start: datetime, window_end: datetime, threshold: float,
     changed.sort(key=lambda r: (-(r["cvss_max"] or 0), r["cve_id"]))
     kev_in_window.sort(key=lambda r: r["cve_id"])
 
-    # EUVD 補完列挙（フェイルソフト: 失敗しても NVD+KEV の結果で続行する）
+    # EUVD 独立列挙（ソース独立・全量収集。フェイルソフト: 失敗しても NVD+KEV で続行）
     euvd_meta: dict = {"status": "skipped", "api": EUVD_API}
-    euvd_added: list[dict] = []
+    euvd_in_window: list[dict] = []
     if not no_euvd:
-        # 重複除外は「NVD/KEV 側の候補集合」に対して行う（published_ids 全体ではない）。
-        # NVD にレコードはあるが未スコアで NVD 候補から漏れた層を EUVD 側で拾うため
+        # 注記用の照合集合（除外には使わない。EUVD は全量を記録する）
         covered_cve_ids = {r["cve_id"] for r in over + changed + kev_in_window}
         try:
-            euvd_meta, euvd_added, alias_map = euvd_sweep(
-                window_start, window_end, threshold, covered_cve_ids, kev)
+            euvd_meta, euvd_in_window, alias_map = euvd_sweep(
+                window_start, window_end, threshold, published_ids, covered_cve_ids, kev)
             for row in over + changed + kev_in_window:
                 if row["cve_id"] in alias_map:
                     row["euvd_id"] = alias_map[row["cve_id"]]
-            print(f"EUVD: 追加候補 {len(euvd_added)}件", file=sys.stderr)
+            only = sum(1 for r in euvd_in_window if r.get("euvd_only"))
+            print(f"EUVD: 窓内全量 {len(euvd_in_window)}件（うち NVD/KEV 未収載 {only}件）",
+                  file=sys.stderr)
         except Exception as err:  # noqa: BLE001 — EuvdError 以外の想定外例外
             # （応答形状の変化による KeyError/TypeError 等）でも NVD+KEV と
             # 共倒れさせない。EUVD 経路は SystemExit を使わないため、ここで
@@ -591,13 +617,15 @@ def sweep(window_start: datetime, window_end: datetime, threshold: float,
             "over_threshold_modified": len(changed),
             "ghsa_origin_over_threshold": sum(1 for r in over + changed if r["ghsa_origin"]),
             "kev_added_in_window": len(kev_in_window),
-            "euvd_added_candidates": len(euvd_added),
+            "euvd_in_window_total": len(euvd_in_window),
+            "euvd_only": sum(1 for r in euvd_in_window if r.get("euvd_only")),
         },
         "over_threshold_published": over,
         "over_threshold_modified": changed,
         "kev_added_in_window": kev_in_window,
         "euvd": euvd_meta,
-        "euvd_added": euvd_added,
+        # EUVD の窓内全量（ソース独立の記録。NVD/KEV との重なりは行の注記で保持）
+        "euvd_in_window": euvd_in_window,
     }
 
 
@@ -648,14 +676,19 @@ def reconcile(sweep_data: dict, report_path: str) -> dict:
     公開したかたまりは「代表1件＋件数」で1エントリに集約してよい。
 
     AGGREGATOR_CNAS（GHSA / MITRE / VulDB 等の複数ベンダー横断CNA）は件数に
-    関わらず集約せず、必ず個別判断に回す。EUVD 由来の候補（euvd_added）も
-    集約対象外＝必ず個別判断に回す（CVE未採番レコードは EUVD ID で突合する）。
+    関わらず集約せず、必ず個別判断に回す。EUVD 由来の行も集約対象外＝必ず
+    個別判断に回す（CVE未採番レコードは EUVD ID で突合する）。
+
+    突合母集団は**全ソースの和集合**（NVD 閾値以上 + KEV 窓内追加 + EUVD 窓内全量）。
+    複数ソースが同じCVEを見ている場合は識別子単位で1回に正規化する
+    （＝ここが「ソース独立・全量収集 → 突合で精査」の精査にあたる）。
     """
     handled_cves, handled_euvd = ids_in_report(report_path)
     rows = (
         sweep_data.get("over_threshold_published", [])
         + sweep_data.get("kev_added_in_window", [])
-        + sweep_data.get("euvd_added", [])
+        # euvd_in_window が正（全量）。旧形式スイープJSONでは euvd_added（差分）に後退
+        + (sweep_data.get("euvd_in_window") or sweep_data.get("euvd_added") or [])
     )
     if sweep_data.get("include_modified"):
         rows += sweep_data.get("over_threshold_modified", [])
@@ -724,8 +757,10 @@ def _euvd_status_line(data: dict) -> str:
     status = euvd.get("status", "なし（旧形式スイープ）")
     if status == "ok":
         c = euvd.get("counts", {})
-        return (f"実行済み（追加候補 **{c.get('added_candidates', 0)}件** / "
-                f"窓内閾値以上 {c.get('over_threshold_in_window', 0)}件 / "
+        total = c.get("in_window_total", c.get("added_candidates", 0))
+        only = c.get("euvd_only", c.get("added_candidates", 0))
+        return (f"窓内全量 **{total}件**（うち NVD/KEV 未収載 **{only}件** / "
+                f"閾値以上 {c.get('over_threshold_in_window', 0)}件 / "
                 f"exploited {c.get('exploited_seen_in_window', 0)}件）")
     if status == "failed":
         return f"**取得失敗**（NVD+KEV のみで列挙。error: {euvd.get('error', '不明')}）"
@@ -742,7 +777,7 @@ def render_markdown(data: dict) -> str:
         f"- うち GitHub Advisory (GHSA) 起点: **{counts['ghsa_origin_over_threshold']}件**",
         f"- CISA KEV 窓内新規追加: **{counts['kev_added_in_window']}件**",
         f"- KEVカタログ版: {data['kev_catalog_version']}",
-        f"- EUVD 補完: {_euvd_status_line(data)}",
+        f"- EUVD 独立列挙: {_euvd_status_line(data)}",
         "",
         "**この一覧の各CVEは、採用または除外サマリー（理由付き）のいずれかに必ず割り当てること。**",
         "同一CNAが同一窓で5件以上を一括公開したものは、代表1件＋件数で1エントリに集約してよい。",
@@ -790,23 +825,30 @@ def render_markdown(data: dict) -> str:
         lines.append("（該当なし）")
     lines.append("")
 
-    euvd_rows = data.get("euvd_added", [])
+    euvd_rows = data.get("euvd_in_window") or data.get("euvd_added") or []
     if (data.get("euvd") or {}).get("status") in ("ok", "failed") or euvd_rows:
-        lines.extend([f"#### EUVD 補完候補（{len(euvd_rows)}件・NVD/KEV に無いもののみ）", ""])
+        only_count = sum(1 for r in euvd_rows if r.get("euvd_only"))
+        lines.extend([
+            f"#### EUVD 窓内全量（{len(euvd_rows)}件・うち NVD/KEV 未収載 {only_count}件）", ""])
         if euvd_rows:
             lines.extend([
-                "NVD 母集団に無い、または CVE 未採番の EUVD レコード。"
-                "他候補と同様に**採用または除外サマリー（理由付き）へ必ず割り当てること**"
+                "EUVD をソースとして独立に全量列挙したもの。NVD/KEV との重なりは列で示す。"
+                "NVD 側と同一CVEの行は同一事象（突合では1回として扱われる）。"
+                "**NVD/KEV 列がともに「—」の行（EUVD-only）は他ソースに現れないため、"
+                "採用または除外サマリー（理由付き）への割り当てを個別に確認すること**"
                 "（CVE 未採番のものは EUVD ID で記録して突合する）。",
                 "",
-                "| ID | CVE | CVSS | 理由 | CNA | 概要 |",
-                "|---|---|---|---|---|---|",
+                "| ID | CVE | CVSS | 理由 | NVD窓内 | KEV | CNA | 概要 |",
+                "|---|---|---|---|---|---|---|---|",
             ])
             for r in euvd_rows:
                 desc = (r.get("description") or "")[:100].replace("|", "\\|")
+                nvd_mark = "○" if r.get("in_nvd_window") or r.get("in_nvd_candidates") else "—"
+                kev_mark = f"○ {r.get('kev_date_added')}" if r.get("in_kev") else "—"
                 lines.append(
                     f"| {r.get('euvd_id')} | {r.get('cve_id') or '—'} | {r.get('cvss_max') or '—'} |"
-                    f" {r.get('sweep_reason')} | {r.get('assigner') or '—'} | {desc} |"
+                    f" {r.get('sweep_reason')} | {nvd_mark} | {kev_mark} |"
+                    f" {r.get('assigner') or '—'} | {desc} |"
                 )
         else:
             lines.append("（該当なし）")
@@ -888,7 +930,7 @@ def main() -> int:
                         help="窓内に lastModified が更新された既存CVEも列挙する"
                              "（NVDの定常再更新でノイズが支配的。監査目的の任意オプション）")
     parser.add_argument("--no-euvd", action="store_true",
-                        help="EUVD 補完列挙をスキップする（既定は実行。取得失敗時は"
+                        help="EUVD 独立列挙をスキップする（既定は実行。取得失敗時は"
                              "自動的に NVD+KEV のみで続行するため通常は不要）")
     parser.add_argument("--from-json", help="スイープ結果JSONを再読み込みする（API再取得なし）")
     parser.add_argument("--reconcile", metavar="REPORT_JSON",

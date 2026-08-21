@@ -41,7 +41,7 @@ forecaster/forecasts/daily/              ← 日次サイバー脅威予報
 forecaster/verification/                 ← 予報 × 実績の突合記録（月次JSON）
 forecaster/prompts/01〜04.md             ← 4ステージ（正規化・ベースライン・予報・検証）のプロンプト
 forecaster/case-based-retrieval-design.md ← 類似過去事例検索（Case-Based Retrieval）設計書
-scripts/nvd_window_sweep.py              ← ★Step 0.7 網羅スイープ／Step 3.9 突合ゲート（NVD+KEV+EUVD 機械列挙で観測母集団を確定。EUVD はフェイルソフト補完・knowledge/ 非書込・出力は .cache/ のみ）
+scripts/nvd_window_sweep.py              ← ★Step 0.7 網羅スイープ／Step 3.9 突合ゲート（NVD/KEV/EUVD をソース独立に全量列挙し突合で精査。EUVD はフェイルソフト・knowledge/ 非書込・出力は .cache/ のみ）
 scripts/token_usage_report.py            ← 日次実行のトークン量・料金概算を算出（Step 4 で計測・outputs/ へ保存）
 scripts/retrieve_similar_cases.py        ← 予報 Step C'' 類似過去事例検索器（内部実績・読み取り専用）
 scripts/record_retrieval_calibration.py  ← 検証時に retrieval 較正データを収集（design §8・検証ステージのみ書込）
@@ -109,11 +109,14 @@ Claude Code Routines が毎日 07:00 JST に `SKILL.md` のパイプラインを
 
 ## 網羅スイープ（毎回必須）
 
-Step 0.7 で `scripts/nvd_window_sweep.py` を実行し、調査窓内に公開された CVSS 9.0以上のCVEと
-CISA KEV 窓内追加を機械的に全件列挙して観測母集団を確定させる。あわせて EUVD
-（ENISA EU Vulnerability Database）を補完列挙し、NVD に無いレコード（反映遅れ・
-窓内新規公開の GHSA 勧告・CVE未採番）を母集団へ追加する（フェイルソフト:
-EUVD 取得失敗時は NVD+KEV のみで続行し `euvd.status: failed` を記録する）。
+Step 0.7 で `scripts/nvd_window_sweep.py` を実行し、観測母集団を確定させる。
+**収集原則はソース独立・全量収集 → 突合で精査**: NVD（窓内公開 CVSS 9.0以上）・
+CISA KEV（窓内追加）・EUVD（ENISA EU Vulnerability Database・窓内該当分）を
+それぞれ独立に全量列挙してソース別のまま記録し、差分収集はしない。
+同一CVEの重複整理は突合（Step 3.9）が識別子単位で1回に正規化する。
+NVD/KEV に無い EUVD-only 層（反映遅れ・窓内新規公開の GHSA 勧告・CVE未採番）は
+個別判断必須（フェイルソフト: EUVD 取得失敗時は NVD+KEV のみで続行し
+`euvd.status: failed` を記録する）。
 Step 3.9 で `--reconcile` により生成レポートと突合し、**未処理0件を確認してから Step 4 へ進む**。
 
 ```bash

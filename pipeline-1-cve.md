@@ -100,7 +100,8 @@ pipeline-2-trends.md へ引き渡す。後日CVEが採番され製品に紐付�
      EUVD が参照する一次ソースを必ず照合する。観測出口チャネル E1 の正は
      引き続き CISA KEV であり、EUVD exploited を的中判定に使用しない
      （pipeline-forecast-verification.md の hit_criteria を変更しない）。
-   - スイープ（Step 0.7）が EUVD 補完列挙を機械実行する（下記「網羅スイープ」節）。
+   - スイープ（Step 0.7）が EUVD を独立ソースとして機械列挙する（下記「網羅スイープ」節。
+     NVD との差分ではなく全量を収集し、重なりは注記で保持する）。
 5. GitHub Advisory Database: https://github.com/advisories
 6. OSV（OSS脆弱性DB）: https://osv.dev/
    - OSS はエコシステム・パッケージ・バージョン・コミット単位で照合できるため、
@@ -151,7 +152,8 @@ pipeline-2-trends.md へ引き渡す。後日CVEが採番され製品に紐付�
 ### スイープの実行
 
 ```bash
-# 窓内に新規公開された CVSS 9.0以上 + CISA KEV 窓内追加 + EUVD 補完を全件列挙
+# NVD（窓内新規公開 CVSS 9.0以上）/ CISA KEV（窓内追加）/ EUVD（窓内該当分）を
+# ソース別に全量列挙
 python3 scripts/nvd_window_sweep.py \
   --window-start "${WINDOW_START}" --window-end "${WINDOW_END}" \
   --output ".cache/daily-security-intel/${TODAY}/step1-sweep.json"
@@ -220,12 +222,19 @@ Pythia 本リポジトリでも 2026-08-18 の窓で同種の欠損を実測し�
   **まさに取りこぼしたCVEが代表1件の影に消える**（実測で GHSA 採番12件の中に
   Misskey / kotaemon / Flowise / OpenSIPS / Sequelize という無関係な製品が同居していた）。
   単一ベンダーPSIRT が同一窓で5件以上を一括公開したかたまりのみ集約してよい
-- **EUVD 補完列挙はフェイルソフト**。スイープは NVD+KEV に加えて EUVD
-  （ENISA EU Vulnerability Database）を補完列挙し、NVD 窓内母集団に無いレコードのみ
-  `euvd_added` 候補として母集団へ追加する（NVD と重複するCVEは重複計上しない）。
+- **収集原則: ソース独立・全量収集 → 突合で精査**。各情報源（NVD / CISA KEV / EUVD）は
+  互いの差分ではなく、それぞれ独立に全量列挙してソース別のままスイープ JSON に記録する
+  （`over_threshold_published` = NVD / `kev_added_in_window` = KEV / `euvd_in_window` = EUVD）。
+  差分だけを残す方式は、どのソースが何を見ていたかの記録が失われ、ソース間の反映ラグ・
+  欠損を事後検証できなくなるためとらない。同一CVEの重複整理（精査）は突合（Step 3.9）が
+  識別子単位で1回に正規化し、採用判断は Step 1 が行う
+- **EUVD 独立列挙はフェイルソフト**。EUVD（ENISA EU Vulnerability Database）の窓内該当分
+  （閾値以上・exploited）を全量列挙し、NVD/KEV との重なりは各行の注記
+  （`in_nvd_window` / `in_nvd_candidates` / `in_kev` / `euvd_only`）として保持する（除外しない）。
+  `euvd_only`（NVD/KEV 側に無い層）は他ソースに現れないため個別判断必須。
   EUVD の取得失敗はスイープ全体を失敗させず、`euvd.status: failed` を記録して
-  NVD+KEV のみで続行する（`--no-euvd` でスキップも可）。EUVD 候補もバッチ集約禁止
-  （必ず個別判断に回す）。CVE 未採番の候補は **EUVD ID をレポートに記録**して突合を通す
+  NVD+KEV のみで続行する（`--no-euvd` でスキップも可）。EUVD 行もバッチ集約禁止
+  （必ず個別判断に回す）。CVE 未採番の行は **EUVD ID をレポートに記録**して突合を通す
 - **EUVD の時刻は UTC として解釈し、窓判定はクライアント側で行う**。EUVD API の
   fromDate/toDate は日付粒度のため前後1日広げて取得し、`datePublished` で窓判定する。
   API はタイムゾーンを明示しないため（NVD 公開時刻との突合で UTC と判断・
