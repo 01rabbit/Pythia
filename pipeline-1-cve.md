@@ -83,18 +83,36 @@ pipeline-2-trends.md へ引き渡す。後日CVEが採番され製品に紐付�
 2. NVD: https://nvd.nist.gov/
 3. CVE Program（一次レコード）: https://www.cve.org/
    - NVD の分析・スコアリング完了前のレコード確認に使用する（新規採番直後のCVEはNVDに反映が遅れる場合がある）。
-4. GitHub Advisory Database: https://github.com/advisories
-5. OSV（OSS脆弱性DB）: https://osv.dev/
+4. EUVD（ENISA EU Vulnerability Database）: https://euvd.enisa.europa.eu/
+   - ENISA が NIS2 指令に基づき運営する脆弱性DB。MITRE CVE / NVD / GHSA / 各国CSIRT を
+     集約し、独自の EUVD ID（`EUVD-YYYY-NNNNN`）を採番する。API・機械可読データあり
+     （https://euvdservices.enisa.europa.eu/api — 連続アクセスは 403 になるため要スロットリング）。
+   - **用途1（NVD 冗長化）**: NVD の分析遅延・障害時も CNA 提供スコア付きレコードを返すため、
+     NVD 未反映CVEのスコア・影響製品確認に使用する（NVD 反映前のCVEを EUVD が先に
+     掲載する事例を 2026-08-21 に実測済み）。CVSS は引き続き **NVD を正とし**、
+     NVD 未掲載の間のみ EUVD 記載の CNA スコアを暫定値として使用し出典を明記する。
+   - **用途2（GHSA 勧告の窓内変化検出）**: NVD 公開日が古いCVEでも、GHSA 勧告が窓内に
+     新規公開されると EUVD 側の公開日は窓内になる（採用条件 G の変化検出を補完）。
+   - **用途3（CVE未採番レコードの捕捉）**: CVE エイリアスを持たないレコードは
+     EUVD ID を識別子として扱う（報告時も EUVD ID を記録する）。
+   - ★注意: EUVD の exploited フラグは大半が CISA KEV 由来の集約であり、
+     **独立した悪用観測シグナルとして扱わない**。exploitation_stage の根拠には
+     EUVD が参照する一次ソースを必ず照合する。観測出口チャネル E1 の正は
+     引き続き CISA KEV であり、EUVD exploited を的中判定に使用しない
+     （pipeline-forecast-verification.md の hit_criteria を変更しない）。
+   - スイープ（Step 0.7）が EUVD 補完列挙を機械実行する（下記「網羅スイープ」節）。
+5. GitHub Advisory Database: https://github.com/advisories
+6. OSV（OSS脆弱性DB）: https://osv.dev/
    - OSS はエコシステム・パッケージ・バージョン・コミット単位で照合できるため、
      ライブラリ・依存関係系CVEの影響バージョン特定に優先使用する。API・機械可読データあり。
-6. JVN / JVN iPedia（国内製品・国内ベンダー照合）: https://jvn.jp/ / https://jvndb.jvn.jp/
+7. JVN / JVN iPedia（国内製品・国内ベンダー照合）: https://jvn.jp/ / https://jvndb.jvn.jp/
    - 国内製品・国内ベンダーに関わるCVEは JVN iPedia で日本語情報・国内アドバイザリの有無を照合する。
    - プログラム照会には MyJVN API（https://jvndb.jvn.jp/apis/myjvn/index.html）を使用できる。
    - JVN iPedia 新着は security-intel-collector/feeds.json で機械収集済み（data/raw/ を一次入力とする）。
-7. ベンダーアドバイザリ（Fortinet / Palo Alto / Ivanti / Microsoft / Cisco / Oracle 等）
-8. BleepingComputer / The Hacker News / SecurityWeek
-9. PoC情報: GitHub / Exploit-DB / Packet Storm / watchTowr / ProjectDiscovery
-10. EPSS（Exploit Prediction Scoring System・FIRST.org）: https://api.first.org/data/v1/epss?cve=CVE-XXXX-XXXXX
+8. ベンダーアドバイザリ（Fortinet / Palo Alto / Ivanti / Microsoft / Cisco / Oracle 等）
+9. BleepingComputer / The Hacker News / SecurityWeek
+10. PoC情報: GitHub / Exploit-DB / Packet Storm / watchTowr / ProjectDiscovery
+11. EPSS（Exploit Prediction Scoring System・FIRST.org）: https://api.first.org/data/v1/epss?cve=CVE-XXXX-XXXXX
    - 各CVEの「今後30日以内に実悪用が観測される確率」スコア（0〜1）とパーセンタイル（全CVE中の相対順位）を返す較正済みモデル。
    - ★注意: EPSSは【30日窓・グローバル指標】であり、PYTHIAの予報窓（72時間）・国内スコープとは時間軸・地理軸が異なる。
      用途は【確度（高/中）の裏取りアンカー】に限定し、予報の的中判定条件（72h）には絶対に流用しない（M3・pipeline-forecast-verification.md 参照）。
@@ -133,7 +151,7 @@ pipeline-2-trends.md へ引き渡す。後日CVEが採番され製品に紐付�
 ### スイープの実行
 
 ```bash
-# 窓内に新規公開された CVSS 9.0以上 + CISA KEV 窓内追加を全件列挙
+# 窓内に新規公開された CVSS 9.0以上 + CISA KEV 窓内追加 + EUVD 補完を全件列挙
 python3 scripts/nvd_window_sweep.py \
   --window-start "${WINDOW_START}" --window-end "${WINDOW_END}" \
   --output ".cache/daily-security-intel/${TODAY}/step1-sweep.json"
@@ -202,6 +220,20 @@ Pythia 本リポジトリでも 2026-08-18 の窓で同種の欠損を実測し�
   **まさに取りこぼしたCVEが代表1件の影に消える**（実測で GHSA 採番12件の中に
   Misskey / kotaemon / Flowise / OpenSIPS / Sequelize という無関係な製品が同居していた）。
   単一ベンダーPSIRT が同一窓で5件以上を一括公開したかたまりのみ集約してよい
+- **EUVD 補完列挙はフェイルソフト**。スイープは NVD+KEV に加えて EUVD
+  （ENISA EU Vulnerability Database）を補完列挙し、NVD 窓内母集団に無いレコードのみ
+  `euvd_added` 候補として母集団へ追加する（NVD と重複するCVEは重複計上しない）。
+  EUVD の取得失敗はスイープ全体を失敗させず、`euvd.status: failed` を記録して
+  NVD+KEV のみで続行する（`--no-euvd` でスキップも可）。EUVD 候補もバッチ集約禁止
+  （必ず個別判断に回す）。CVE 未採番の候補は **EUVD ID をレポートに記録**して突合を通す
+- **EUVD の時刻は UTC として解釈し、窓判定はクライアント側で行う**。EUVD API の
+  fromDate/toDate は日付粒度のため前後1日広げて取得し、`datePublished` で窓判定する。
+  API はタイムゾーンを明示しないため（NVD 公開時刻との突合で UTC と判断・
+  CVE-2026-72529 で実測）、境界のずれは候補の過剰包含側に倒す
+- **EUVD の exploited は独立シグナルではない**。大半が CISA KEV 由来の集約のため、
+  KEV 掲載済みCVEの exploited は候補化しない（E1 の正は CISA KEV）。KEV に無い
+  exploited のみ `euvd_exploited_in_window` として候補化し、採用判断時は
+  EUVD が参照する一次ソースを照合する
 
 ### 母集団の処理義務（完全性チェック）
 
