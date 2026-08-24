@@ -1,0 +1,159 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-25 07:00 JST
+調査期間: 2026-08-24 07:00 〜 2026-08-25 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Spring Application Framework 一括脆弱性公開（91件・2026年通算200件超）
+観点: CVE関連
+採用契機: alpha, beta
+------------------------------------------------------------
+
+優先度: 中
+対象: Spring Framework / Spring Security / Spring Cloud Config / Spring for GraphQL / Spring AI
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-24] Broadcomが2026-08-20付でSpring関連91件のCVEを一括公開したと報道（2026年通算200件超）
+
+【概要】
+Broadcomが2026-08-20付でSpring関連CVEを91件一括公開し、2026年の累計登録数が200件超（2025年は16件）に急増した。うちCVSS Criticalとして、Spring Security組み込みUnboundID LDAPサーバの認証・改ざん脆弱性（CVE-2026-59270）と、Spring for GraphQLのRCE（CVE-2026-59285）が指摘されている。Spring AIのツール呼び出し機能に関するプロンプトインジェクション経由権限昇格（CVE-2026-59318、medium）も注目される。
+
+【推奨アクション】
+・自社のSpring/Spring Boot依存関係バージョンを棚卸しし、CVE-2026-59270／CVE-2026-59285の該当有無を確認する
+・Spring Securityの組み込みLDAPサーバを本番運用していないか確認する
+・Spring AIのtool-calling機能利用時はプロンプトインジェクション対策の適用状況を確認する
+・次回パッチサイクルで優先適用する（KEV/PoC未確認のため即時対応は不要）
+→ Critical判定の2件（LDAP認証・GraphQL RCE）を優先確認する
+
+【参照】
+https://www.securityweek.com/91-vulnerabilities-patched-in-spring-application-framework/
+https://www.sonatype.com/blog/91-spring-cves-highlight-the-growing-ai-vulnerability-consumption-problem
+
+------------------------------------------------------------
+2. miniOrange WordPress SSOプラグイン 認証バイパスの実悪用確認
+観点: ゼロデイ関連
+採用契機: eta, delta
+------------------------------------------------------------
+
+優先度: 中
+対象: miniOrange SAML 2.0 Single Sign On / miniOrange OAuth SSO（WordPressプラグイン）
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-24] SAML応答署名アルゴリズム誘導とOpenSSL検証エラー誤判定の連鎖によるSAML認証偽造の実悪用をDigitalOceanが2026-08-16に確認したと報道
+
+【概要】
+miniOrangeのWordPress向けSAML SSO/OAuth SSOプラグインにおいて、SAML応答の署名アルゴリズムをHMAC-SHA1へ誘導しIdP公開鍵を共有シークレットとして誤処理させる手法と、OpenSSL検証エラーを成功と誤判定させる手法を連鎖させることで管理者アカウントを乗っ取れる認証バイパスが、7月の修正公開後も実悪用が確認されている（DigitalOcean、2026-08-16初観測）。
+
+【推奨アクション】
+・WordPressサイトでminiOrange SAML SSO/OAuth SSOプラグインの利用有無を棚卸しする
+・利用中の場合は最新版へ即時更新する（安全な回避策なしとの報告あり）
+・SAMLレスポンス署名アルゴリズム改ざん試行・想定外IPからの管理者セッション確立をWAF/アクセスログで監視する
+Splunk SPL: sourcetype=access_combined uri_path="*miniorange*" (uri_query="*SAMLResponse*")
+→ 検知時は該当管理者アカウントの即時パスワードリセット・セッション無効化を行う
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hackers-target-wordpress-sites-in-miniorange-auth-bypass-attacks/
+
+------------------------------------------------------------
+3. WordlistLoader新手法（英単語エンコードシェルコード）とClickFix拡散への注意
+観点: ゼロデイ関連
+採用契機: epsilon, delta
+------------------------------------------------------------
+
+優先度: 中
+対象: 該当なし
+
+【24時間以内の変化】
+[The Hacker News 2026-08-24] ClickFix（偽CAPTCHA→クリップボード貼り付け誘導）経由でWordlistLoaderが投下されAmatera Stealerへ至る新手法を報道
+
+【概要】
+Gen Digitalが報告した新型ローダーWordlistLoaderは、シェルコードを平文の英単語列としてエンコードする新規難読化手法を用い、ClickFix型ソーシャルエンジニアリング経由で配布される。国内でもClickFix手口は確認例があり波及に注意が必要。
+
+【推奨アクション】
+・EDRでWin+Rダイアログ経由のPowerShell/mshta実行、クリップボード経由コマンド実行パターンを監視する
+・従業員向けにCAPTCHA偽装型ClickFix手口の周知を実施する
+・Amatera/ACR Stealer関連IOC（Gen Digital公開分）をEDR/プロキシへ反映する
+Splunk SPL: sourcetype=sysmon EventCode=1 ParentImage="*explorer.exe*" CommandLine="*powershell*" CommandLine="*-w hidden*"
+→ Win+R経由の実行と正規業務利用を切り分けるため直前のクリップボード操作有無を併せて確認する
+
+【参照】
+https://thehackernews.com/2026/08/wordlistloader-delivers-amatera-via.html
+
+------------------------------------------------------------
+4. Windows 8月パッチ既知不具合2件（印刷/PDF出力・ゲーム関連）
+観点: CVE関連
+採用契機: alpha
+------------------------------------------------------------
+
+優先度: 低
+対象: Windows 11 / .NET Framework・WPFアプリ
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-24] 2026年8月パッチ適用後のWPFアプリ印刷/PDF出力異常、Windows 11ゲーム関連不具合をMicrosoftが確認・暫定修正を提供と報道
+
+【概要】
+2026年8月Patch Tuesday適用後、WPFアプリケーションでの印刷・PDF出力異常およびWindows 11のゲーム関連不具合をMicrosoftが既知の問題として確認し、暫定修正を提供している。
+
+【推奨アクション】
+・ヘルプデスク/SOCへ既知問題として周知し、侵害インシデントと誤認しないよう注記する
+
+【参照】
+https://www.bleepingcomputer.com/news/microsoft/microsoft-august-updates-break-printing-pdf-export-in-wpf-apps/
+
+------------------------------------------------------------
+5. SANS ISC「DOUBLECUP」PNGペイロード分析
+観点: ゼロデイ関連
+採用契機: delta
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[SANS Internet Storm Center 2026-08-24] マルウェア「DOUBLECUP」のPNGファイル悪用ペイロードを分析（真のステガノグラフィではないと指摘）
+
+【概要】
+SANS ISCが、マルウェア「DOUBLECUP」がPNGファイルを悪用したペイロード配布手法を分析した記事を公開した。著者は真のステガノグラフィ技術ではないと指摘している。
+
+【推奨アクション】
+・メールゲートウェイ/プロキシでPNG添付ファイルの実行可能コード埋め込みパターン検知ルールの見直しを検討する（把握のみ）
+
+【参照】
+https://isc.sans.edu/diary/rss/33274
+
+------------------------------------------------------------
+6. シャドーAI利用者リスク（AI利用者の一部が未検証ツールを重要業務へ組み込み）
+観点: AI攻撃関連
+採用契機: alpha
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[The Hacker News 2026-08-24] 従業員の一部が未検証AIツールを重要業務プロセスへ組み込む「シャドーAI」リスクを指摘
+
+【概要】
+少数の「AIスーパーアダプター」的従業員が未検証のAIツールを重要業務プロセスに組み込むリスクが指摘されている。ベンダー発信のスポンサー色が強く独立検証データは限定的。
+
+【推奨アクション】
+・CASB/SSPMでAIツール利用状況の可視化状況を確認する（把握のみ）
+
+【参照】
+https://thehackernews.com/2026/08/the-outsized-shadow-why-5-of-ai-users.html
+
+
+[SOC推奨情報 除外]
+・Microsoft Teams外部Bot遮断機能 → インシデント/攻撃事例に紐づかない機能追加告知でα〜η条件に明確に合致せず
+・Calix GS7 XGSルータ 未パッチNAT穴あけ → 米国ISP提供の家庭用CPE機器で国内波及性が低く単一ソースのため除外
+
+本日の集計:
+SOC推奨情報 — 高0件 / 中3件 / 低3件 / 除外2件
+
+========================================
