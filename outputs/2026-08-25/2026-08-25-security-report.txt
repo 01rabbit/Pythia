@@ -1,0 +1,668 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-25 07:00 JST
+調査期間: 2026-08-24 07:00 〜 2026-08-25 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-76070 / Netis NC63 ルータ ファームウェア
+対象: V3.0.0.3327 以下
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.8 (Critical)
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[ozcanpng (researcher blog) 2026-08-24] netis.cgiのログインハンドラでBase64デコード時のスタックバッファオーバーフローPoCとGitHub実証コードを公開
+
+【概要】
+Netis NC63ルータファームウェア（V3.0.0.3327以下）のログインハンドラ（/bin/netis.cgi）に、過大なBase64エンコード済みパスワードを送信することでスタックバッファをオーバーフローさせられる脆弱性が確認された。研究者ozcanpng氏がGitHub PoCと技術解説を公開しており、ベンダーからのパッチ提供は本日時点で確認されていない。
+
+攻撃の流れ:
+1. 攻撃者が過大なBase64エンコード済みパスワードをログインハンドラへ送信
+2. 独自Base64デコード処理がスタックバッファを境界チェックなしにオーバーフロー
+3. スタック状態の書き換えによりRCEへ発展しうる（研究者の記述に基づく推定）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・ベンダー公式情報を随時確認し、対処法公開次第適用する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] Netis NC63へのログイン試行における異常に長いパスワードパラメータ
+Splunk SPL: sourcetype=firewall OR sourcetype=access_combined uri_path="*netis.cgi*" | eval qlen=len(uri_query) | where qlen>500
+→ 通常のログイン試行と比較しクエリ長が極端に大きいリクエストを検知の起点とする
+
+【参照】
+https://github.com/ozcanpng/CVE-2026-76070
+https://ozcanpng.dev/blog/
+https://vulncheck.com/advisories
+
+------------------------------------------------------------
+2. CVE-2026-76071 / Netis NC63 ルータ ファームウェア
+対象: V3.0.0.3327 以下
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.8 (Critical)
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[TheHackerWire 2026-08-24] netis.cgiのipFilterList=mod処理におけるdestHostパラメータのスタックバッファオーバーフローをRCEとして報道
+
+【概要】
+Netis NC63ルータファームウェア（V3.0.0.3327以下）のnetis.cgi内ipFilterList=mod処理で、destHostパラメータをsscanfで幅制限なくコピーする実装によりスタックバッファオーバーフローが発生する。研究者ozcanpng氏がGitHub PoCを公開し、TheHackerWireおよびSC Mediaが root権限RCEとして報道した。ベンダーパッチは本日時点で未確認。
+
+攻撃の流れ:
+1. 攻撃者がipFilterList=mod操作で過大なdestHost値を送信
+2. sscanfによる幅制限なしコピーでスタックバッファがオーバーフロー
+3. root権限でのリモートコード実行（第三者報道による特徴づけ・未検証）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・ベンダー公式情報を随時確認し、対処法公開次第適用する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] Netis NC63へのipFilterList=mod操作リクエストにおける異常なdestHost値
+Splunk SPL: sourcetype=firewall OR access_combined uri_path="*netis.cgi*" uri_query="*ipFilterList=mod*" | eval qlen=len(uri_query) | where qlen>256
+→ 正常なdestHost値の長さから大きく逸脱するリクエストを検知トリガーとする
+
+【参照】
+https://github.com/ozcanpng/CVE-2026-76071
+https://thehackerwire.com/
+https://www.scworld.com/
+
+------------------------------------------------------------
+3. CVE-2026-78167 / ipTIME T16000M
+対象: ファームウェア 14.20.2
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 10.0 (Critical)
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[VulDB 2026-08-24] Session Validation Handler（httpcon_check_session_url関数）の認証不備を新規登録・PoC公開ありと記録
+
+【概要】
+韓国EFM Networks製ルータipTIME T16000M（ファームウェア14.20.2）のセッション検証処理（httpcon_check_session_url）に不適切な認証の脆弱性が確認された。VulDBは公開エクスプロイトが存在すると記録しているが、ベンダーからのパッチ提供は本日時点で確認されていない。ipTIMEは韓国国内で広く使われる家庭用・SOHO向けルータブランドであり、日本国内向けの影響は確認されていない。
+
+攻撃の流れ:
+1. 攻撃者がセッション検証処理の不備を突く細工したリクエストを送信
+2. httpcon_check_session_urlの認証チェックが不適切に通過
+3. 管理インタフェースへの不正アクセス（詳細な影響範囲は原典に技術詳細記載なし）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・ベンダー公式情報を随時確認し、対処法公開次第適用する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] ipTIME管理インタフェースへの想定外セッションでのアクセス
+Splunk SPL: sourcetype=firewall OR access_combined dest_ip=iptime_admin_range uri_path="*httpcon*"
+→ 正規のログインフローを経ないセッション確立の痕跡を確認する
+
+【参照】
+https://vuldb.com/?id.394556
+https://github.com/AdminSafe/CVE/issues/2
+
+------------------------------------------------------------
+4. CVE-2026-78168 / ipTIME T24000M
+対象: ファームウェア 14.20.0 以下
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.8 (Critical)
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[VulDB 2026-08-24] T16000Mと同一系統のSession Validation Handler不備をT24000Mでも新規登録・PoC公開ありと記録
+
+【概要】
+EFM Networks製ipTIME T24000M（ファームウェア14.20.0以下）でも、T16000Mと同一の httpcon_check_session_url によるセッション検証不備が確認された。VulDBは公開エクスプロイトが存在すると記録。ベンダーパッチは本日時点で未確認。韓国国内ブランドであり日本国内への影響は未確認。
+
+攻撃の流れ:
+1. 攻撃者がセッション検証処理の不備を突く細工したリクエストを送信
+2. httpcon_check_session_urlの認証チェックが不適切に通過
+3. 管理インタフェースへの不正アクセス
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・ベンダー公式情報を随時確認し、対処法公開次第適用する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] ipTIME管理インタフェースへの想定外セッションでのアクセス
+Splunk SPL: sourcetype=firewall OR access_combined dest_ip=iptime_admin_range uri_path="*httpcon*"
+→ 正規のログインフローを経ないセッション確立の痕跡を確認する
+
+【参照】
+https://vuldb.com/?id.394557
+https://github.com/AdminSafe/CVE/issues/10
+
+------------------------------------------------------------
+5. CVE-2026-78169 / HiPER 1250GW
+対象: 3.2.7-210907-180535 以下
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.9 (Critical)
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[VulDB 2026-08-24] /goform/aspRemoteApConfTempSendのProfileパラメータ処理でのstrcpyスタックバッファオーバーフローとPoCを新規登録
+
+【概要】
+中国UTT製ルータHiPER 1250GW（3.2.7-210907-180535以下）のHTTPリクエストハンドラ（/goform/aspRemoteApConfTempSend）で、Profile引数の操作によりstrcpyでのスタックバッファオーバーフローが発生する。VulDBは攻撃が可能と記録しているが、CVSSベクタはPR:L（低権限が前提）であり完全な未認証RCEではない。ベンダーパッチは本日時点で未確認。
+
+攻撃の流れ:
+1. 低権限でアクセス可能な攻撃者がProfileパラメータに過大な値を設定
+2. strcpyによる境界チェックなしのコピーでスタックバッファがオーバーフロー
+3. スタック破壊による予期しない挙動・RCEの可能性
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・ベンダー公式情報を随時確認し、対処法公開次第適用する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] HiPER 1250GWのaspRemoteApConfTempSendエンドポイントへの異常なProfile値
+Splunk SPL: sourcetype=firewall OR access_combined uri_path="*aspRemoteApConfTempSend*"
+→ Profileパラメータの長さ・内容が通常運用と乖離するリクエストを検知起点とする
+
+【参照】
+https://github.com/7wkajk/CVE-VUL/blob/main/107.md
+https://vuldb.com/?id.394558
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-73570 / Zimbra Collaboration Suite（zimbra-snmp/swatchdog）
+対象: 10.1.20 未満
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.9 (High)
+状態: KEV登録済み / 実悪用確認
+パッチ提供: 提供済み（10.1.20）
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-24] CISAがKEV登録済みのZimbra SNMP脆弱性についてFCEB機関へ緊急パッチ適用を改めて命令したと報道
+[Security NEXT 2026-08-23] 米当局によるZimbra脆弱性悪用警告を国内向けに紹介（2026年5件目のKEV登録）
+
+【概要】
+Zimbra Collaboration SuiteのSNMP監視コンポーネント（zimbra-snmp/swatchdog）に存在する未認証OSコマンドインジェクション（10.1.20で修正済み）について、CERT PolskaとShadowserverが実悪用（侵害済みインスタンス270台超）を確認したことを受けCISAがKEVカタログへ追加済み。本日、CISAがFCEB機関に対し改めて緊急パッチ適用命令を発出したことが複数ソースで確認され、既報（2026-08-21・当時KEV未登録）からのエスカレーションとして再採用する。
+
+攻撃の流れ:
+1. 攻撃者が未認証でzimbra-snmp/swatchdogコンポーネントへ細工したリクエストを送信
+2. OSコマンドインジェクションによりリモートコード実行
+3. 侵害後のインスタンスがShadowserverにより270台超確認
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] Zimbraサーバに対するSNMP監視コンポーネント経由の異常なコマンド実行
+Splunk SPL: sourcetype=zimbra_logs OR syslog process=zmswatchdog OR process=zimbra-snmp "; " OR "|" OR "`"
+Splunk SPL: sourcetype=access_combined uri_path="*zimbraAdmin*" OR uri_path="*snmp*"
+→ swatchdog/zimbra-snmpプロセスからの不審な子プロセス生成をEDR側でも突合する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/cisa-orders-urgent-patching-of-actively-exploited-zimbra-flaw/
+https://security-next.com/189268
+https://thehackernews.com/2026/08/attackers-exploit-zimbra-snmp-flaw-for.html
+https://www.securityweek.com/hackers-target-zimbra-servers-in-active-exploitation-campaign/
+https://securityaffairs.com/197693
+https://www.cisa.gov/news-events/alerts/2026/08/21
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-33828 / 日立ディスクアレイシステム SVP（Storage Virtualization Platform/Service Processor）ほか91件
+CVSS: 未公開 状態: 確認された悪用兆候なし
+
+【24時間以内の変化】
+[JVN iPedia 2026-08-24] 日立ディスクアレイシステムSVPにおける脆弱性対策情報（2026年6月分・92件一括）を新規公開
+
+【概要】
+日立製作所が、ディスクアレイシステムのSVP（Storage Virtualization Platform/サービスプロセッサ）コンポーネントに関する2026年6月分の脆弱性対策情報をJVNDB-2026-029749として一括公開した。同梱OSS・サードパーティコンポーネント由来とみられる92件のCVEが含まれる。個別のCVSS・悪用状況は本日時点で精査中のため代表CVE（CVE-2026-33828）とともに件数のみ記録する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] 該当なし（ベンダーパッチ適用状況の棚卸しを推奨）
+→ 各CVEの個別重大度はJVNDB-2026-029749を参照して確認する
+
+【参照】
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-029749.html
+
+・CVE-2026-66109 / SKYSEA Client View / SKYMEC IT Manager ほか4件
+CVSS: 未公開 状態: 確認された悪用兆候なし
+
+【24時間以内の変化】
+[JVN 2026-08-24] 国内IT資産管理ソフトSKYSEA Client View/SKYMEC IT Managerの複数脆弱性情報を新規公開（NVD未反映）
+
+【概要】
+国内で広く利用されるIT資産管理ソフトウェアSKYSEA Client View／SKYMEC IT Manager（Sky株式会社）について、JVN経由で5件のCVE（CVE-2026-66109・68062・68959・68960・69665）が新規公開された。本日時点でNVDには未反映のため、CVSS等の詳細情報は確認でき次第追って報告する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] 該当なし（IT資産管理サーバの管理コンソールアクセスログの棚卸しを推奨）
+→ NVD反映後に個別のCVSS・悪用状況を再確認する
+
+【参照】
+https://jvndb.jvn.jp/
+
+・CVE-2026-59561 / サクラエディタ（Sakura Editor）
+CVSS: 7.8 状態: 確認された悪用兆候なし
+
+【24時間以内の変化】
+[NVD 2026-08-24] 国内で広く使われるテキストエディタ「サクラエディタ」のOSコマンドインジェクション脆弱性を新規公開
+
+【概要】
+国内開発者コミュニティで広く利用されるオープンソーステキストエディタ「サクラエディタ」に、細工されたファイル・ディレクトリを開かせることでOSコマンドインジェクションを引き起こせる脆弱性が確認された。ローカルアクセスとユーザー操作（対象ディレクトリでの編集操作）が前提であり、リモート無操作での悪用条件は満たさない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM（Splunk等）] 該当なし（ローカル実行のためエンドポイントEDRでの異常子プロセス生成監視を推奨）
+→ サクラエディタの子プロセスとして想定外のコマンドインタプリタが起動していないか確認する
+
+【参照】
+https://nvd.nist.gov/vuln/detail/CVE-2026-59561
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-21962 / Oracle HTTP Server / Oracle WebLogic Server Proxy Plug-in
+CVSS: 10.0
+Oracle HTTP ServerおよびOracle WebLogic Server Proxy Plug-in（Apache/IIS向け）のアクセス制御不備（CWE-284）が、CISAにより2026-08-24付でKEVカタログへ新規追加された（FCEB期限2026-08-27）。2026年1月のCritical Patch Updateで修正済みの脆弱性だが、CISAは独自の悪用証拠に基づき追加したとみられる。第三者（NetSPI・Sangfor等）はパストラバーサル・ヘッダ操作による認可バイパスとして解説し、公開PoC／プロービング観測が複数ソースで報じられているが、独立した侵害確認は本日時点で得られていない。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] Oracle HTTP Server/IIS/WebLogicアクセスログでのパストラバーサル・想定外バックエンドアクセス
+Splunk SPL: sourcetype=apache_error OR sourcetype=iis "weblogic" (uri_path="*..*" OR uri_path="*%2e%2e*"); sourcetype=weblogic_access status=200 (uri_path="*/console*" OR uri_path="*bea_wls*")
+→ プロキシ経由でのバックエンド直接アクセスパターンを誤検知除外の基準に含める
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+参照: https://www.oracle.com/security-alerts/cpujan2026.html
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-21962
+参照: https://www.netspi.com/blog/
+参照: https://www.fieldeffect.com/blog/
+
+・CVE-2026-71914 / VigorAP シリーズ（複数モデル）
+CVSS: 9.8
+DrayTek VigorAPシリーズ（複数モデル）のdray_apmコンポーネントにおいて、START_SPEED_TESTコマンドに続くUDPメッセージ内容の検証不備により、未認証のリモート攻撃者が任意のOSコマンドを実行できる脆弱性が確認された。DrayTekは2026年8月付アドバイザリで対処済みファームウェアを公開しているが、独立した実悪用・PoC公開は本日時点で確認されていない。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] VigorAP管理・APM機能への想定外UDP通信
+Splunk SPL: sourcetype=firewall app=draytek dest_port=* protocol=udp
+→ 正常なスピードテスト機能利用と異なる送信元・ペイロードパターンを確認する
+
+参照: https://www.draytek.com/support/security-advisory/
+参照: https://vulncheck.com/advisories
+
+・CVE-2026-71921 / VigorSwitch シリーズ（複数モデル）
+CVSS: 9.8
+DrayTek VigorSwitchシリーズ（複数モデル）のsetget.cgiインタフェースにおいて、"pass"フィールドのフィルタ不備により、未認証のリモート攻撃者が任意コマンドを実行できる脆弱性が確認された。DrayTekは2026年8月付アドバイザリで対処済みファームウェアを公開している。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] VigorSwitch管理インタフェースへの想定外リクエスト
+Splunk SPL: sourcetype=access_combined OR firewall uri_path="*setget.cgi*" uri_query="*pass=*"
+→ passフィールドにシェルメタ文字（;|`）が含まれるリクエストを検知起点とする
+
+参照: https://www.draytek.com/support/security-advisory/
+参照: https://vulncheck.com/advisories
+
+・CVE-2026-71933 / VigorSwitch シリーズ（複数モデル）
+CVSS: 9.1
+DrayTek VigorSwitchシリーズ（複数モデル）で、複数のsyslog関連機能に認可チェックが欠如しており、リモート攻撃者が未認証で設定変更・サービス再起動・起動時設定の保存をトリガーできる脆弱性が確認された。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] VigorSwitchのsyslog関連エンドポイントへの未認証アクセス
+Splunk SPL: sourcetype=access_combined uri_path="*syslog*" OR uri_path="*mainfunction.cgi*" method=POST
+→ 認証済みセッションを伴わない設定変更リクエストを検知起点とする
+
+参照: https://www.draytek.com/support/security-advisory/
+参照: https://vulncheck.com/advisories
+
+・CVE-2026-59564 / Zscaler Client Connector
+CVSS: 9.1
+ZTNAクライアントであるZscaler Client Connectorにおいて、通信間の認証バイパスが確認された（CVSS 9.1）。Zscaler公式アドバイザリとして修正版が提供されているが、独立した実悪用・PoC公開は本日時点で確認されていない。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] Zscaler Client Connectorのバージョン棚卸しと更新状況の確認
+Splunk SPL: 該当なし
+→ エンドポイント資産管理台帳と突合しパッチ未適用端末を特定する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-59564
+
+・CVE-2026-59568 / Zscaler Client Connector
+CVSS: 9.1
+ZTNAクライアントであるZscaler Client Connectorにおいて、複数のリモートコード実行脆弱性が確認された（CVSS 9.1）。修正版が提供されているが、独立した実悪用・PoC公開は本日時点で確認されていない。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] Zscaler Client Connectorのバージョン棚卸しと更新状況の確認
+Splunk SPL: 該当なし
+→ エンドポイント資産管理台帳と突合しパッチ未適用端末を特定する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-59568
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸P・軸Qの閾値を満たすAPT活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定） / 青山財産ネットワークスのグループ会社である日本資産総研および子会社日東不動産で、何らかの方法で窃取された認証情報を用いたサーバ環境への不正アクセスとランサムウェア実行が2026-05-09に発生（初報2026-05-14）。第3報として、1%未満のデータ量が外部へ送信された可能性が新たに判明した。攻撃者名・具体的な侵入手口は非公開。コンサル顧客・不動産取引顧客・従業員の氏名/生年月日/住所等が対象。国内組織への侵害確認により注目動向採用。 採用契機: 国内組織侵害確認（参考A昇格トリガー）。帰属信頼度: low。
+推奨アクション: 影響範囲（外部送信の有無）の最終確認結果を注視し、必要に応じて委託先・関連会社への波及を確認する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/24/55996.html
+
+・不明（帰属未確定） / 既報のKDDI傘下ISP事業者向けメールシステム不正アクセス事案（2026-06-17検知・最大1223万件超の情報漏えい）について、個人情報保護委員会による行政指導の実施が本日新たに報じられた。総務省による行政指導（2026-07-29付）に続く規制対応の進展であり、既存キャンペーンの継続として本行を更新する。 採用契機: 国内組織侵害確認（参考A昇格トリガー）。帰属信頼度: low。
+推奨アクション: 自社が同ISP傘下サービスの利用者を含む場合、規制当局対応の進展を踏まえた顧客通知状況を確認する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/24/56000.html
+
+・不明（帰属未確定） / 加賀ソルネットが運営する教育機関向けサービス「アカデミコナビ」への不正アクセスにより、165,587名分の個人情報漏えいが確認されたと本日新規報道された。攻撃者・侵入手口は非公開。国内組織への侵害確認により注目動向採用。 採用契機: 国内組織侵害確認（参考A昇格トリガー）。帰属信頼度: low。
+推奨アクション: 同サービス利用機関は対象者への通知状況・二次被害（フィッシング等）の兆候を確認する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/24/56001.html
+
+・不明（帰属未確定） / 楽天グループ会社である楽天ブックスネットワークにおいて、注文配送先情報を含む従業員PCへの不正アクセスが確認されたと本日新規報道された。詳細な流出範囲・攻撃者は非公開。国内組織への侵害確認により注目動向採用。 採用契機: 国内組織侵害確認（参考A昇格トリガー）。帰属信頼度: low。
+推奨アクション: 対象PCの端末隔離・保有していた配送先情報の範囲確定を優先する。
+参照: https://security-next.com/189254
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] WordlistLoader／SynkLoader — 新型ローダー2種によるマルウェア配布・ClickFix悪用
+Gen Digitalが、シェルコードを平文の英単語列としてエンコードして難読化する新型ローダー「WordlistLoader」を報告した。ClearFake/ClickFix経由でAmatera Stealer（ACR Stealer）を配布し、Heaven's Gate技法によるEDR回避を強化している。並行してExpelが、Microsoft Teams経由のITヘルプデスクなりすましで展開される多言語マルチツール「SynkLoader」（画面ロック型資格情報窃取・SOCKSプロキシ・VNC遠隔操作等のモジュール構成）を報告した。いずれも帰属グループは不明で、48時間以内の独立ソースは2件（The Hacker News・Dark Reading）にとどまり単発シグナル。
+参照: https://thehackernews.com/2026/08/wordlistloader-delivers-amatera-via.html
+参照: https://www.darkreading.com/threat-intelligence/tricky-synkloader-multitool-ransomware
+
+・[トレンド記事] ToxicPanda 2.0 — Androidバンキング型トロイの木馬が標的アプリを16→349件に拡大
+Zimperium zLabsが、Androidバンキング型トロイの木馬「ToxicPanda」の新版（2.0）を報告した。標的とする金融・暗号資産アプリを従来の16件から349件へ大幅に拡大し、Wireless Debugging/ADB経由の権限昇格・永続化機能を新規追加、配布インフラにAWSホスティングバケットを悪用している。標的国・機関に日本の金融機関が含まれるかは本日時点で確認できていない。48時間以内の独立ソースは2件（Dark Reading・BleepingComputer）で単発シグナル。
+参照: https://www.darkreading.com/mobile-security/toxicpanda-banking-trojan-matures-enterprise-threat
+参照: https://www.bleepingcomputer.com/news/security/toxicpanda-android-malware-uses-vpn-permissions-to-block-google-play/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし（観測可能性ゲートM1〜M1-bを満たす一次・二値の的中条件（E1〜E4）を構成できる新規主題を確認できず。KEV追加（CVE-2026-21962・CVE-2026-73570）はいずれも本日既に登録済みでE1初回追加を将来時点で予報する対象にならず、E2/E3はfast_72hの主的中条件として採用禁止〔教訓14・16〕）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-08-24 〜 2026-08-25
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸X・軸Yの閾値を満たすAI攻撃動向なし。MITRE ATLAS/OWASP GenAI/arXiv cs.CR/AI Incident Database等主要ソースを調査済み・採用条件A-P〜A-Y未充足）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日は調査窓（2026-08-24 07:00〜2026-08-25 07:00 JST）内でTemporal Burst Filtering（鮮度・持続性）と採用条件A-P〜A-Yをいずれも満たすAI攻撃関連の新規知見を確認できなかった。主要な既報候補（Claudeモデルジェイルブレイク報道・Zoomsday・RovoBlast等）はいずれも公開日が窓外であることを確認した。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B0件 / 除外0件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）0件 / C（インフラ）0件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Spring Application Framework 一括脆弱性公開（91件・2026年通算200件超）
+観点: CVE関連
+採用契機: alpha, beta
+------------------------------------------------------------
+
+優先度: 中
+対象: Spring Framework / Spring Security / Spring Cloud Config / Spring for GraphQL / Spring AI
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-24] Broadcomが2026-08-20付でSpring関連91件のCVEを一括公開したと報道（2026年通算200件超）
+
+【概要】
+Broadcomが2026-08-20付でSpring関連CVEを91件一括公開し、2026年の累計登録数が200件超（2025年は16件）に急増した。うちCVSS Criticalとして、Spring Security組み込みUnboundID LDAPサーバの認証・改ざん脆弱性（CVE-2026-59270）と、Spring for GraphQLのRCE（CVE-2026-59285）が指摘されている。Spring AIのツール呼び出し機能に関するプロンプトインジェクション経由権限昇格（CVE-2026-59318、medium）も注目される。
+
+【推奨アクション】
+・自社のSpring/Spring Boot依存関係バージョンを棚卸しし、CVE-2026-59270／CVE-2026-59285の該当有無を確認する
+・Spring Securityの組み込みLDAPサーバを本番運用していないか確認する
+・Spring AIのtool-calling機能利用時はプロンプトインジェクション対策の適用状況を確認する
+・次回パッチサイクルで優先適用する（KEV/PoC未確認のため即時対応は不要）
+→ Critical判定の2件（LDAP認証・GraphQL RCE）を優先確認する
+
+【参照】
+https://www.securityweek.com/91-vulnerabilities-patched-in-spring-application-framework/
+https://www.sonatype.com/blog/91-spring-cves-highlight-the-growing-ai-vulnerability-consumption-problem
+
+------------------------------------------------------------
+2. miniOrange WordPress SSOプラグイン 認証バイパスの実悪用確認
+観点: ゼロデイ関連
+採用契機: eta, delta
+------------------------------------------------------------
+
+優先度: 中
+対象: miniOrange SAML 2.0 Single Sign On / miniOrange OAuth SSO（WordPressプラグイン）
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-24] SAML応答署名アルゴリズム誘導とOpenSSL検証エラー誤判定の連鎖によるSAML認証偽造の実悪用をDigitalOceanが2026-08-16に確認したと報道
+
+【概要】
+miniOrangeのWordPress向けSAML SSO/OAuth SSOプラグインにおいて、SAML応答の署名アルゴリズムをHMAC-SHA1へ誘導しIdP公開鍵を共有シークレットとして誤処理させる手法と、OpenSSL検証エラーを成功と誤判定させる手法を連鎖させることで管理者アカウントを乗っ取れる認証バイパスが、7月の修正公開後も実悪用が確認されている（DigitalOcean、2026-08-16初観測）。
+
+【推奨アクション】
+・WordPressサイトでminiOrange SAML SSO/OAuth SSOプラグインの利用有無を棚卸しする
+・利用中の場合は最新版へ即時更新する（安全な回避策なしとの報告あり）
+・SAMLレスポンス署名アルゴリズム改ざん試行・想定外IPからの管理者セッション確立をWAF/アクセスログで監視する
+Splunk SPL: sourcetype=access_combined uri_path="*miniorange*" (uri_query="*SAMLResponse*")
+→ 検知時は該当管理者アカウントの即時パスワードリセット・セッション無効化を行う
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hackers-target-wordpress-sites-in-miniorange-auth-bypass-attacks/
+
+------------------------------------------------------------
+3. WordlistLoader新手法（英単語エンコードシェルコード）とClickFix拡散への注意
+観点: ゼロデイ関連
+採用契機: epsilon, delta
+------------------------------------------------------------
+
+優先度: 中
+対象: 該当なし
+
+【24時間以内の変化】
+[The Hacker News 2026-08-24] ClickFix（偽CAPTCHA→クリップボード貼り付け誘導）経由でWordlistLoaderが投下されAmatera Stealerへ至る新手法を報道
+
+【概要】
+Gen Digitalが報告した新型ローダーWordlistLoaderは、シェルコードを平文の英単語列としてエンコードする新規難読化手法を用い、ClickFix型ソーシャルエンジニアリング経由で配布される。国内でもClickFix手口は確認例があり波及に注意が必要。
+
+【推奨アクション】
+・EDRでWin+Rダイアログ経由のPowerShell/mshta実行、クリップボード経由コマンド実行パターンを監視する
+・従業員向けにCAPTCHA偽装型ClickFix手口の周知を実施する
+・Amatera/ACR Stealer関連IOC（Gen Digital公開分）をEDR/プロキシへ反映する
+Splunk SPL: sourcetype=sysmon EventCode=1 ParentImage="*explorer.exe*" CommandLine="*powershell*" CommandLine="*-w hidden*"
+→ Win+R経由の実行と正規業務利用を切り分けるため直前のクリップボード操作有無を併せて確認する
+
+【参照】
+https://thehackernews.com/2026/08/wordlistloader-delivers-amatera-via.html
+
+------------------------------------------------------------
+4. Windows 8月パッチ既知不具合2件（印刷/PDF出力・ゲーム関連）
+観点: CVE関連
+採用契機: alpha
+------------------------------------------------------------
+
+優先度: 低
+対象: Windows 11 / .NET Framework・WPFアプリ
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-24] 2026年8月パッチ適用後のWPFアプリ印刷/PDF出力異常、Windows 11ゲーム関連不具合をMicrosoftが確認・暫定修正を提供と報道
+
+【概要】
+2026年8月Patch Tuesday適用後、WPFアプリケーションでの印刷・PDF出力異常およびWindows 11のゲーム関連不具合をMicrosoftが既知の問題として確認し、暫定修正を提供している。
+
+【推奨アクション】
+・ヘルプデスク/SOCへ既知問題として周知し、侵害インシデントと誤認しないよう注記する
+
+【参照】
+https://www.bleepingcomputer.com/news/microsoft/microsoft-august-updates-break-printing-pdf-export-in-wpf-apps/
+
+------------------------------------------------------------
+5. SANS ISC「DOUBLECUP」PNGペイロード分析
+観点: ゼロデイ関連
+採用契機: delta
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[SANS Internet Storm Center 2026-08-24] マルウェア「DOUBLECUP」のPNGファイル悪用ペイロードを分析（真のステガノグラフィではないと指摘）
+
+【概要】
+SANS ISCが、マルウェア「DOUBLECUP」がPNGファイルを悪用したペイロード配布手法を分析した記事を公開した。著者は真のステガノグラフィ技術ではないと指摘している。
+
+【推奨アクション】
+・メールゲートウェイ/プロキシでPNG添付ファイルの実行可能コード埋め込みパターン検知ルールの見直しを検討する（把握のみ）
+
+【参照】
+https://isc.sans.edu/diary/rss/33274
+
+------------------------------------------------------------
+6. シャドーAI利用者リスク（AI利用者の一部が未検証ツールを重要業務へ組み込み）
+観点: AI攻撃関連
+採用契機: alpha
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[The Hacker News 2026-08-24] 従業員の一部が未検証AIツールを重要業務プロセスへ組み込む「シャドーAI」リスクを指摘
+
+【概要】
+少数の「AIスーパーアダプター」的従業員が未検証のAIツールを重要業務プロセスに組み込むリスクが指摘されている。ベンダー発信のスポンサー色が強く独立検証データは限定的。
+
+【推奨アクション】
+・CASB/SSPMでAIツール利用状況の可視化状況を確認する（把握のみ）
+
+【参照】
+https://thehackernews.com/2026/08/the-outsized-shadow-why-5-of-ai-users.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2025-36939 (OpenThread (Google)) → 軸1が8点未満・参考A昇格トリガーなし（CVSS9.0以上のみ・KEV/PoC/実悪用なし）
+・CVE-2026-77995 (Joomla miniOrange OAuth Client) → 軸1が8点未満・参考A昇格トリガーなし（CVSS9.0以上+アカウント乗っ取りのみ）
+・CVE-2026-66897 (LXD instance template) → 軸1が8点未満・参考A昇格トリガーなし（コンテナ権限を有する攻撃者前提でPR:L相当・KEV/PoCなし）
+・CVE-2026-19685 (NetworkManager (Red Hat)) → 軸1が8点未満（Red Hat一次スコアはローカル権限前提7.1、NVD二次9.8との乖離あり・KEV/PoC/実悪用なし）
+・CVE-2026-28165 (WordPress plugin Digits) → 軸1が8点未満・参考A昇格トリガーなし（Patchstack自動採番・詳細記載なし）
+・CVE-2026-32558 (WordPress plugin Affiliate Pro) → 軸1が8点未満・参考A昇格トリガーなし（同上）
+・CVE-2026-66587 (WordPress plugin WP Cafe Pro) → 軸1が8点未満・参考A昇格トリガーなし（未認証LFIだがRCE未確認）
+・CVE-2026-66648 (WordPress theme Jawn) → 軸1が8点未満・参考A昇格トリガーなし（同上）
+・CVE-2026-66650 (WordPress theme FreightCo) → 軸1が8点未満・参考A昇格トリガーなし（PHPオブジェクト注入だがガジェットチェーン未確認）
+・CVE-2026-78211 (4MOSAn GCB Doctor) → 軸1が8点未満・参考A昇格トリガーなし（台湾GCB準拠ツール・国内影響未確認）
+・CVE-2026-76840 (RustDesk (Windows clipboard)) → 軸1が8点未満（ユーザー操作(UI:R)前提・KEV/PoC/実悪用なし）
+・CVE-2026-39975 (Combodo iTop) → 軸1が8点未満・参考A昇格トリガーなし（.readonlyファイル削除起点・PoC/実悪用なし）
+・CVE-2026-78207 (exceljs-hardened) → 軸1が8点未満・参考A昇格トリガーなし（プロトタイプ汚染・RCE未確認）
+・CVE-2026-78387 (RansomLook 設定エディタ) → 軸1が8点未満・参考A昇格トリガーなし（要認証(PR:H)・KEV/PoCなし）
+・CVE-2026-78555 (RansomLook APIキー露出) → 軸1が8点未満・参考A昇格トリガーなし（要認証(PR:H)・KEV/PoCなし）
+・CVE-2026-32551 (WordPress plugin Woo Essential) → 軸1が8点未満・参考A昇格トリガーなし（未認証SQLi・KEV/PoCなし）
+・CVE-2026-67602 (phpIPAM REST API) → 軸1が8点未満・参考A昇格トリガーなし（認証バイパスだがKEV/PoC/実悪用なし）
+・CVE-2026-76835 (OAuth2 Proxy (X-Forwarded-Uri)) → 軸1が8点未満・参考A昇格トリガーなし（既定構成での認証スキップ不備・KEV/PoC/実悪用なし）
+・CVE-2026-77994 (Joomla extension Page Builder CK) → 軸1が8点未満・参考A昇格トリガーなし（二次SQLi・KEV/PoCなし）
+・CVE-2026-78365 (Roskus Prospero Flow CRM) → 軸1が8点未満・参考A昇格トリガーなし（要認証IDOR・KEV/PoCなし）
+・CVE-2026-77635 (CakePHP (jsonValue/PostgresDriver)) → 軸1が8点未満・参考A昇格トリガーなし（SQLi・KEV/PoCなし）
+・CVE-2026-78370 (RansomLook レガシーDBエクスポート) → 軸1が8点未満・参考A昇格トリガーなし（未認証アクセスだがKEV/PoCなし）
+・CVE-2026-78372 (RansomLook groups/markets) → 軸1が8点未満・参考A昇格トリガーなし（未認証アクセスだがKEV/PoCなし）
+・CVE-2026-19874 (Konami Metal Gear Online 3) → 軸1が8点未満・参考A昇格トリガーなし（コンシューマゲーム・エンタープライズ影響なし）
+・CVE-2026-77915 (rConfig) → 軸1が8点未満・参考A昇格トリガーなし（未認証アカウント作成だが境界機器非該当・KEV/PoCなし）
+・CVE-2026-32559 (WordPress plugin UltimateAI) → 軸1が8点未満・参考A昇格トリガーなし（Subscriber権限前提・KEV/PoCなし）
+・CVE-2026-32563 (WordPress plugin ACPT (Pro)) → 軸1が8点未満・参考A昇格トリガーなし（同上）
+・CVE-2026-78262 (WordPress plugin WP Project Manager) → 軸1が8点未満・参考A昇格トリガーなし（未認証POI・ガジェットチェーン未確認）
+・CVE-2026-78265 (WordPress plugin The Events Calendar) → 軸1が8点未満（未認証POI・ガジェットチェーン未確認。導入数70万超と規模は大きいが国内被害・KEV/PoCの確認なし）
+・CVE-2026-78267 (WordPress plugin TranslatePress) → 軸1が8点未満・参考A昇格トリガーなし（未認証権限昇格・KEV/PoCなし）
+・CVE-2026-32554 (WordPress plugin WooBeWoo Product Filter Pro) → 軸1が8点未満・参考A昇格トリガーなし（未認証SQLi・KEV/PoCなし）
+・CVE-2026-32555 (WordPress plugin Boost) → 軸1が8点未満・参考A昇格トリガーなし（同上）
+・CVE-2026-78251 (DJI ドローン FTPサービス) → 軸1が8点未満（ハードコード認証情報だが境界機器非該当・国内被害/KEV/PoC未確認）
+・CVE-2026-77337 (CakePHP Authentication plugin) → 軸1が8点未満・参考A昇格トリガーなし（Cookie認証バイパス・KEV/PoCなし）
+・CVE-2026-18963 (Keycloak（パスワードリセット認証バイパス）) → NVD公開日2026-08-18・GitHub Issue開示2026-08-19でいずれも調査窓（2026-08-24 07:00〜2026-08-25 07:00 JST）外。The Hacker News 2026-08-24付記事は既存開示の再報道のみで窓内の新規A〜H変化は確認できず。次回以降の窓での国内影響確認を継続監視する
+・CVE-2026-8037 (Progress Kemp LoadMaster ほか) → 既報（2026-08-10・kev_listed）から窓内の新規変化なし。792件試行等の既知情報のみで新規A〜H条件の充足を確認できず
+・CVE-2026-46817 (Oracle E-Business Suite Payments/File Transmission) → 既報（2026-07-17・active_exploitation）から窓内の新規変化なし
+
+[APT]
+・不明（中国nexus・帰属信頼度: 中） / RIS-2026-QUICSILVER-MyanmarGovBackdoor → 軸P6（新規マルウェア発見+単一ベンダー報告）・軸Q1（単一セクター/限定地域のみ・ミャンマー政府機関限定）で軸P8点未満・参考A昇格トリガーなし。単一ベンダー(Seqrite)報告のみ
+・不明（金銭動機の疑い） / RIS-2026-WordlistLoader-AmateraClickFix → 軸P6（新規マルウェア発見+単一ベンダー報告）・軸Q1（標的セクター/地域不明）で軸P8点未満・参考A昇格トリガーなし。トレンド記事としてtrends.trends_topicへ収録
+・不明（ランサムウェア/IABの可能性、帰属未確定） / RIS-2026-SynkLoader-TeamsITHelpdesk → 軸P6・軸Q1で軸P8点未満・参考A昇格トリガーなし。トレンド記事としてtrends.trends_topicへ収録
+・ShinyHunters（UNC6240・自称） / ShinyHunters-2026-ReliaQuestVishingAttempt → 軸P3（単一ベンダー自社報告のみ・被害企業確認は未遂で実害なし）・軸Q3（複数メディア確認+単一組織限定）で軸P8点未満・参考A昇格トリガーなし。ReliaQuest自身は攻撃者を独自に特定できていないと明記。既存campaign_id ShinyHunters-2026-JulyExtortionWave-EYDentaQuestとの統合要否は人間レビュー対象
+・不明（帰属未確定・攻撃者/侵入手口とも非公表） / RIS-2026-KyodoNews-AccountCompromise → 既報（2026-08-07初報・共同通信社職員アカウント不正利用）と同一事案。本日のScanNetSecurity記事は既報事実（外部からの情報提供による確認）の再報道で新規A〜H変化を確認できず。新規campaign_id作成は行わず既存キーとの重複を回避
+
+本日の集計:
+CVE — ゼロデイ特報5件 / 本編1件 / 参考A3件 / 参考B6件 / 除外37件
+APT — 本編0件 / 注目動向4件 / 除外5件
+AI攻撃 — 本編0件 / 参考A0件 / 参考B0件 / 除外0件
+SOC推奨情報 — 高0件 / 中3件 / 低3件 / 除外2件
+
+
+========================================
