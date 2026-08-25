@@ -1,0 +1,141 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-26 09:30 JST
+調査期間: 2026-08-25 07:00 〜 2026-08-26 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用AI攻撃なし。バースト閾値未達〔3件未満の独立ソース〕のため参考B以下に留めた事案あり）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・NemoClaw: NVIDIA OpenShell/OllamaのDNSリバインディング経由AIモデルポイズニング
+カテゴリ: BB1 採用契機: A-P/A-S
+MITRE ATLAS: AML.T0051/AML.T0043
+OWASP: LLM01
+NVIDIAのオープンソース参照スタック「NemoClaw」（OpenClaw等のエージェントをOpenShellサンドボックス内で稼働させる基盤）が既定でOllamaを全ネットワークインターフェース（OLLAMA_HOST=0.0.0.0:11434）にバインドし、非ループバックアドレスへのバインド時にHost/Originヘッダ検証を行わないため、攻撃者制御Webページに閲覧者を誘導しDNSリバインディングでブラウザに同一オリジンと誤認させることで/api/createエンドポイントを未認証操作でき、改変したGoテンプレートで会話をまたいで持続する隠しシステム指示をモデルへ注入できることをOasis Securityが実証した。macOS/Linuxはv0.0.35で修正済みだが、Windows/WSL経路は2026-08-10のv0.0.106のバインドチェック追加後も回避可能と報告されている。CVE番号は本日時点で未採番。
+監視: ローカルOllamaインスタンスのバインドアドレスとAPIアクセス元を監視する 検知SPL: index=endpoint sourcetype=network_connections dest_port=11434 NOT src_ip="127.0.0.1"
+→ OLLAMA_HOSTを既定のループバックのみに戻すか、リバースプロキシでHost/Origin検証を追加する
+
+参照: https://thehackernews.com/2026/08/a-malicious-webpage-could-poison-your.html
+https://www.darkreading.com/cyber-risk/nemo-claw-networking-llm-poisoning-openclaw
+
+・Marimo Notebook: 編集モードでのMCPコマンド事前実行（CVE-2026-75149）
+カテゴリ: CC3 採用契機: A-R/A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: AG01
+AIノートブック環境Marimoにおいて、細工したノートブックを編集モードで開くと最初のセル実行前に攻撃者指定のModel Context Protocol（MCP）コマンドがローカルサブプロセスとして起動する脆弱性CVE-2026-75149（CVSSv3.1 8.8・CVSSv4 8.7）がVulnCheckのCNAレコードとして2026-08-19公開された。研究者Gregory Tan氏（Grg0rry）が発見し、Marimoはノートブックメタデータを信頼できない入力として扱いMCP・AI・secrets関連設定を制限する強化策とあわせ0.23.15（2026-07-23）で修正済み。
+監視: Marimo実行環境からのサブプロセス起動を監視する 検知SPL: index=endpoint sourcetype=process parent_process_name="*marimo*"
+→ 0.23.15以降へのアップデート状況をまず確認する
+
+参照: https://thehackernews.com/2026/08/marimo-notebook-flaw-could-run-mcp.html
+
+・Amazon Strands Agents Tools: python_replツールのプロンプト経由RCE（CVE-2026-78379）
+カテゴリ: CC1 採用契機: A-R/A-S
+MITRE ATLAS: AML.T0051
+OWASP: LLM01/AG01
+AWSのAIエージェント構築ライブラリ「Strands Agents Tools」のpython_replツールにおいて、LLMへプロンプトとして渡す入力の無害化が不十分なため、細工したプロンプトでガードレールを回避し任意のPythonコードを実行できる脆弱性CVE-2026-78379（CVSSv4 9.2 Critical / CVSSv3.1 8.1 High）が2026-08-25付でNVDおよびAWSセキュリティ速報として公開された。0.8.5で修正済み。
+監視: Strands Agentsのpython_replツール利用状況とプロセス起動を監視する 検知SPL: index=app sourcetype=strands_agents tool="python_repl" | search (subprocess OR os.system OR exec)
+→ 0.8.5以降へのアップデートを最優先で確認する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-78379
+https://aws.amazon.com/security/security-bulletins/2026-089-aws/
+
+・NVIDIA OpenShell: サンドボックスプロビジョニングAPIの脱出脆弱性（CVE-2026-65083/65093）
+カテゴリ: CC1 採用契機: A-R/A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: AG01
+NVIDIAがAIエージェント（OpenClaw/NemoClaw等）の実行環境として提供するサンドボックス基盤「OpenShell」（Linux版）に、サンドボックスプロビジョニングAPIの脆弱性CVE-2026-65083とサンドボックス脱出につながるCVE-2026-65093（いずれもCVSS9.9 Critical）が公開された。詳細な悪用手口・パッチ状況は本日時点の公開情報からは限定的。
+監視: OpenShellサンドボックス外へのプロセス脱出兆候を監視する 検知SPL: なし
+→ NVIDIA公式アドバイザリの続報・パッチ提供状況を確認する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-65083
+
+・Chainlit / QWED-MCP / PraisonAI / Nextcloud MCP Server: AIエージェント・MCP基盤の重大CVE群
+カテゴリ: CC1 採用契機: A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: AG01
+AIエージェント・MCP関連OSSで同日にCriticalクラスのCVEが相次いで公開された。会話型AI構築フレームワークChainlit（CVE-2026-45018・CVSS9.8）、MCPの数式検証ゲートウェイQWED-MCP（CVE-2026-55546・CVSS9.8・verify_math_expression()の脆弱性）、マルチエージェントフレームワークPraisonAI（CVE-2026-55536・CVSS9.1・Browser Server _handle_connectionの脆弱性・4.6.58で修正済み）、Nextcloud MCP Server（CVE-2026-55640・CVSS9.1）の4件で、いずれもKEV未登録・実悪用未確認・国内報道なし。AIエージェント/MCP関連OSSエコシステム全体で脆弱性開示が続いている状況を示す。
+監視: 各プロダクトの修正版適用状況を確認する 検知SPL: なし
+→ MCPサーバ・AIエージェントフレームワークの資産棚卸しとパッチ適用管理を優先する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-45018
+
+・NLTK: pickle/JVMオプション経由の未認証RCE脆弱性群（3件）
+カテゴリ: CC1 採用契機: A-R/A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+AI/自然言語処理分野で広く使われるPythonライブラリNLTKに、allowlisted pickle load経由の未認証RCE（CVE-2026-79657・CVSS9.8）、per-call optionsパラメータ経由のJVMオプション注入（CVE-2026-79675・CVSS9.8）、3.10.0未満に影響する安全でないpickleデシリアライゼーション（CVE-2026-78683・CVSS9.6、3.10.3で修正）の計3件の脆弱性が公開された。いずれもKEV未登録・実悪用未確認だが、NLTKはAI/データサイエンスパイプラインで広く依存関係に含まれるため影響範囲は潜在的に大きい。
+監視: NLTK依存関係のバージョンを棚卸しし3.10.3以降への更新を確認する 検知SPL: なし
+→ サプライチェーン上NLTKに依存するAIパイプラインの影響範囲を特定する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-79657
+
+・DB-GPT: スキルアップロード機能のパス制約不備（CVE-2026-80104）
+カテゴリ: CC1 採用契機: A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: AG01
+自然言語からSQL・データ分析を行うAIデータエージェントフレームワークDB-GPTにおいて、アップロードされたスキルのファイル名から宛先パスを構築する処理にパス制約の不備があり、任意の場所へのファイル書き込みにつながりうる脆弱性CVE-2026-80104（CVSS9.8）が公開された。KEV未登録・実悪用未確認。
+監視: DB-GPTのスキルアップロード機能へのアクセスを監視する 検知SPL: なし
+→ パッチ提供状況を確認しスキルアップロード機能の利用可否を検討する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-80104
+
+・Unit 42「State of AI-Enabled Malware August 2026」レポート
+カテゴリ: AA3 採用契機: A-U
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+Unit 42（Palo Alto Networks）は2026年8月時点のAI利用型マルウェアの動向を「ブランド悪用からエージェント型実行まで」と題して分析したレポートを公開した。既存の振る舞いベース検知・エンドポイント分析技術がAI生成コードの実行前阻止に有効であるとの分析を示している。単一ベンダーの業界レポートであり具体的な新規インシデントの開示はない。
+監視: 既存の振る舞いベースEDR検知ルールの有効性を確認する 検知SPL: なし
+→ レポート内の推奨検知手法をSOC運用へ反映するか検討する
+
+参照: https://unit42.paloaltonetworks.com/ai-enabled-malware-analysis
+
+・不可視HTMLプロンプトによるAIメール要約エージェントへの偽情報混入
+カテゴリ: BB1 採用契機: A-P
+MITRE ATLAS: AML.T0051
+OWASP: LLM01
+Dark Readingは、閲覧者には見えない単純なHTML要素を仕込むことでAI搭載メール要約機能を操作し、実際のメール内容と異なる虚偽の要約を生成させられる間接プロンプトインジェクション手口を報じた。特定製品名・実被害の言及はなく研究的な問題提起の域に留まる。
+監視: AIメール要約機能への入力時にHTML隠しテキストを除去するフィルタの有無を確認する 検知SPL: なし
+→ AI要約機能を業務で利用している場合は原文との突合を促す運用ルールを検討する
+
+参照: https://www.darkreading.com/cyber-risk/hidden-prompts-trick-ai-false-email-summaries
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はAIエージェント基盤・MCPサーバ・AIコーディング/NLPライブラリ関連のCriticalクラスCVE公開が相次いだ一日だった。NVIDIA NemoClaw（Ollama連携）のDNSリバインディング経由モデルポイズニング、Amazon Strands Agentsのプロンプト経由RCE、NLTK/Chainlit/QWED-MCP/PraisonAI/Nextcloud MCP Server等のAI/MCP基盤脆弱性が同日に集中したが、いずれも単独または2ソースに留まりバースト閾値（3件以上）未達のため本編昇格はなし。Unit 42がAI利用型マルウェアの定量分析レポートを公開した。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B9件 / 除外2件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）2件 / C（インフラ）6件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[AI攻撃]
+・WhatsApp複数パスキー・二段階認証強化 → AI攻撃ではなくアカウント保護機能の追加でありA-P〜A-Y非該当のため不採用。
+・TRACE AIランタイム証明のLinux Foundation移管 → 業界ガバナンス発表であり具体的な攻撃・脆弱性・インシデントの開示なし。A-P〜A-Y非該当のため不採用。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B9件 / 除外2件
+
+========================================
