@@ -1,0 +1,631 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-26 09:30 JST
+調査期間: 2026-08-25 07:00 〜 2026-08-26 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-21962 / Oracle HTTP Server / Oracle WebLogic Server Proxy Plug-in (mod_wl_ohs)
+対象: 12.2.1.4.0 / 14.1.1.0.0 / 14.1.2.0.0
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[The Hacker News 2026-08-25] GreyNoise・CloudSEKが実悪用の技術的証拠を確認したと報道し、独立確認によりactive_exploitationへ状態変化。
+[SecurityWeek 2026-08-25] CISAの警告を受け改めて注意喚起記事を公開。
+[Security NEXT 2026-08-25] 国内向けにWebLogic連携モジュール脆弱性の悪用注意を報道。
+
+【概要】
+Oracle HTTP ServerおよびOracle WebLogic Server Proxy Plug-in（mod_wl_ohs）のアクセス制御不備の脆弱性CVE-2026-21962（CVSS10.0）について、2026年1月のCritical Patch Updateで修正済みにもかかわらずCISAが2026-08-24付でKEVカタログへ新規追加し、GreyNoiseとCloudSEKが独立に実悪用の技術的証拠を確認したと2026-08-25付で報じられた。
+
+攻撃の流れ:
+1. 未パッチのOracle HTTP Server/WebLogic Proxy Plug-inへ細工したリクエストを送信しアクセス制御を回避
+2. 重要データの作成・削除・改ざんおよび機密情報への不正アクセスが可能になる
+3. CVE-2020-14882/14883・CVE-2020-2551・CVE-2017-10271等の旧WebLogic RCEと並行して悪用される事例が観測されている
+
+【IoC】
+IP: 193.24.123.42
+
+【監視ポイント】
+・Oracle HTTP Server/WebLogicプロキシのアクセスログにおける不審なリクエストパターンを監視する
+Splunk SPL: index=web sourcetype=weblogic_access (uri="*/console/*" OR uri="*/_async/*" OR uri="*/bea_wls_internal/*") | stats count by src_ip, uri | where count > 20
+Splunk SPL: index=web sourcetype=weblogic_access src_ip="193.24.123.42" OR src_ip IN ("193.24.123.0/24")
+→ 既知の旧WebLogic RCE（CVE-2020-14882等）への同時プロービングも合わせて監視すると誤検知を減らせる
+
+【参照】
+https://thehackernews.com/2026/08/actively-exploited-oracle-weblogic-flaw.html
+https://www.securityweek.com/cisa-warns-of-exploited-oracle-weblogic-vulnerability
+https://www.security-next.com/189315
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-59769 / FA-50（簡易型船舶自動識別装置・AIS）
+CVSS: 9.1 (Critical) 状態: 特記事項なし
+
+【24時間以内の変化】
+[JVN 2026-08-25] JVNVU95422936としてハードコードされた認証情報使用および認証欠如の脆弱性が新規公開された。
+
+【概要】
+古野電気製の簡易型船舶自動識別装置（AIS）FA-50全バージョンに、ハードコードされた認証情報使用および認証欠如の脆弱性CVE-2026-59769がJVNVU95422936として公開された。認証情報を知り同一ネットワークに接続できる攻撃者が機器へ不正アクセス可能になる。国内ベンダー製品であり参考A昇格トリガー（国内ベンダーアドバイザリ・JVN発行）に該当する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・AIS機器への到達可能なネットワークセグメントの分離状況を確認する
+→ 産業用/舶用ネットワークのため一般的なSIEM監視対象外となりやすい点に留意する
+
+【参照】
+https://jvn.jp/vu/JVNVU95422936
+
+・CVE-2026-76835 / OAuth2 Proxy
+CVSS: (v4:9.3) (Critical) 状態: ゼロデイ
+
+【24時間以内の変化】
+[Security NEXT 2026-08-25] 細工したX-Forwarded-Uriヘッダにより認証を回避できる脆弱性が明らかとなったと国内報道。修正版は未提供。
+
+【概要】
+認証プロキシOAuth2 Proxyのリバースプロキシモードにおいて、trusted_proxy_ipを設定していない場合（既定構成含む）に細工したX-Forwarded-Uriヘッダで認証を回避できる脆弱性CVE-2026-76835（CVSS9.3）がSecurity NEXTにより報道された。過去に同種の脆弱性CVE-2026-40575が7.15.2で対策されたが、リバースプロキシ構成では再発している。ソースリポジトリで修正作業が進行中だが修正版は本日時点で未提供。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・OAuth2 Proxy経由のアクセスでX-Forwarded-Uriヘッダの異常値を監視する
+Splunk SPL: index=web sourcetype=access_combined X-Forwarded-Uri=* | stats count by src_ip, X-Forwarded-Uri
+→ 修正版が未提供のためtrusted_proxy_ip設定状況の確認を最優先の暫定対処とする
+
+【参照】
+https://www.security-next.com/189320
+
+・CVE-2026-76017 / Google Chrome (Chromoting)
+CVSS: 非公開 (Critical) 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-08-25] クリティカル1件を含む7件の脆弱性を解消したセキュリティアップデートの提供を報道（CVE-2026-76017〜76023）。
+
+【概要】
+Googleは2026-08-20付でChromeのセキュリティアップデートをリリースし、リモートデスクトップコンポーネントChromotingのUse After Free脆弱性CVE-2026-76017（重要度クリティカル）を含む7件の脆弱性を修正した。実悪用は本日時点で確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Chromeのバージョン配布状況・自動更新の適用状況を確認する
+→ 実悪用未確認のためパッチ適用の確認を優先する
+
+【参照】
+https://www.security-next.com/189386
+
+・CVE-2026-73635 / Apache Struts 2
+CVSS: 7.5 (v4:8.7) (High) 状態: 特記事項なし
+
+【24時間以内の変化】
+[JVN 2026-08-25] JVN08517956としてリソース枯渇の脆弱性が新規公開された。
+[Security NEXT 2026-08-25] メモリ枯渇によるサービス拒否のおそれがあると国内報道。
+
+【概要】
+Apache Struts 2のローカライズメッセージ処理における内部キャッシュの無制限利用に起因するサービス拒否脆弱性CVE-2026-73635（CVSSv4 8.7・CVSSv3 7.5）がJVNおよびSecurity NEXTで報じられた。リクエスト由来のロケール情報でメモリを枯渇させられる。7.3.0/6.11.0で修正済みだが、EOL版（2.5.33/2.3.37以前）は修正予定なし。設定でロケールを固定している環境は影響を受けない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Strutsアプリケーションサーバのメモリ使用率異常を監視する
+→ EOL版利用システムは代替措置（ロケール固定）の適用状況を優先確認する
+
+【参照】
+https://jvn.jp/jp/JVN08517956
+https://www.security-next.com/189348
+
+・CVE-2026-16876 / UNIVERGE IX-R/IX-Vシリーズ ルータ
+CVSS: 非公開 状態: 特記事項なし
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-08-25] WebGUIへ細工したメッセージを送信することで未認証の任意コマンド実行が可能になる脆弱性がIPA/JPCERT/CC経由で公表されたと報道。
+
+【概要】
+NEC製UNIVERGE IX-R/IX-Vシリーズルータの重要な機能に対する認証欠如の脆弱性CVE-2026-16876について、WebGUIへ細工したメッセージを送信することで未認証のまま任意コマンドを実行できるとIPA/JPCERT/CC経由でScanNetSecurityが報じた。開発者提供のソフトウェアアップデートが利用可能であり、適用不可の場合はWebGUIの無効化が推奨されている。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・ルータのWebGUI（管理画面）への外部アクセス可否を確認する
+→ 境界ルータであり侵害時の影響が大きいため優先度を高めに扱う
+
+【参照】
+https://scan.netsecurity.ne.jp/article/2026/08/25/56008.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [UNIVERGE IX-R/IX-Vシリーズルータにおける重要な機能に対する認証欠如の脆弱性] https://scan.netsecurity.ne.jp/article/2026/08/25/56008.html
+
+・CVE未採番 / Metal Gear Online 3
+CVSS: 非公開 状態: 特記事項なし
+
+【24時間以内の変化】
+[JVN 2026-08-25] CERT/CC VU#728712に基づきヒープベースのバッファオーバーフロー脆弱性がJVNVU96980428として新規公開された。
+
+【概要】
+KONAMI製「METAL GEAR ONLINE 3」にヒープベースのバッファオーバーフロー脆弱性がCERT/CCアドバイザリ（VU#728712）に基づきJVNVU96980428として公開された。CVE番号・CVSS・対応状況の詳細は本日時点で非公開。国内ベンダー製品であり参考A昇格トリガー（JVN発行）に該当する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・詳細非公開のため継続監視のみ
+→ CERT/CC公式アドバイザリの続報を確認する
+
+【参照】
+https://jvn.jp/vu/JVNVU96980428
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-73570 / Zimbra Collaboration Suite (ZCS)
+CVSS: 8.9 (High)
+ZimbraのSNMP監視コンポーネント（zimbra-snmpパッケージ・swatchdogサービス）における未認証コマンドインジェクション脆弱性CVE-2026-73570について、既報のCISA KEV登録・FCEB緊急パッチ命令に続き、Shadowserverが2026-08-22時点で侵害済みインスタンス274台を確認し未パッチの露出インスタンスが8,200台超に上ると報じられた。
+IoC: 確認されず
+
+監視: Zimbraのswatchdogプロセスの異常な子プロセス生成とSNMP通知ログを監視する
+Splunk SPL: index=zimbra sourcetype=syslog process=swatchdog | search ("/bin/sh" OR "/bin/bash" OR wget OR curl)
+Splunk SPL: index=zimbra sourcetype=file_events path="/opt/zimbra/jetty*/webapps/*" OR path="/tmp/*" user=zimbra earliest=-30d
+→ zimbraユーザー権限での想定外のファイル作成・サービス再起動を誤検知除外の起点にする
+
+参照: https://www.bleepingcomputer.com/news/security/hackers-breached-over-270-zimbra-servers-in-ongoing-attacks
+
+・CVE-2026-60004 / Gitea (自己ホスト型Gitプラットフォーム)
+CVSS: 9.8 (Critical)
+Giteaのdiffpatch APIエンドポイントにおけるGitフック注入の脆弱性CVE-2026-60004（CVSS9.8）について、既報のPoC公開（2026-07-30）に続き、CISAが2026-08-25付でKEVカタログへ新規追加した。CISAのKEV登録は実悪用の一次証拠だが、KEV登録以外の独立した実悪用報道・新規スキャン増加・48時間以内の攻撃加速は本日時点で確認されていない。
+IoC: 確認されず
+
+監視: Gitea配下リポジトリのhooksディレクトリへの想定外のファイル作成を監視する
+Splunk SPL: index=gitea sourcetype=file_events path="*/hooks/post-index-change" OR path="*/hooks/*" | stats count by repo, user
+→ 自己登録が有効なGiteaインスタンスでは新規アカウント作成直後のリポジトリ作成・パッチ送信の組み合わせに注意する
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+https://thehackernews.com/2026/07/new-gitea-rce-lets-repository-writers.html
+
+・CVE-2026-15981 / miniOrange SAML 2.0 Single Sign On (WordPress プラグイン)
+CVSS: 9.8 (Critical)
+WordPress向けminiOrange SAML 2.0 Single Sign Onプラグインの認証バイパス脆弱性CVE-2026-15981（CVSS9.8・署名検証エラー戻り値-1がtruthyと評価され検証成功扱いになる不備）とCVE-2026-61979（署名アルゴリズム混同による権限昇格・CVSS8.1）が連鎖悪用可能であるとPatchstackが実証し、未認証の攻撃者が細工したSAMLレスポンスで任意のWordPress管理者アカウントへログインできる。6件のIPアドレスからの日和見的スキャンが観測されているが標的型キャンペーンの証跡はない。
+IoC: 確認されず
+
+監視: WordPress管理画面へのSAML経由ログインとプラグインのSSOエンドポイントへのアクセスを監視する
+Splunk SPL: index=web sourcetype=access_combined uri="*/wp-login.php*" OR uri="*saml*" | stats count by src_ip, uri | where count > 10
+→ 管理者アカウントの予期しない新規セッション開始・ロール変更を突合して誤検知を除外する
+
+参照: https://thehackernews.com/2026/08/attackers-target-miniorange-saml-flaws.html
+
+・CVE-2026-77998 / miniOrange SAML SSO (Joomla拡張機能)
+CVSS: 10.0 (Critical)
+Joomla向けminiOrange SAML SSO拡張機能にSAMLResponseパラメータを介した未認証認証バイパスの脆弱性CVE-2026-77998（CVSS10.0）が公開された。同一ベンダー（miniOrange）のWordPress版SAMLプラグインで同日確認された脆弱性群（CVE-2026-15981等）と脆弱性クラスが類似しており、SAML検証ロジックの実装に共通する弱点がある可能性がある（推測）。本日時点でJoomla版の実悪用・PoC公開は確認されていない。
+IoC: 確認されず
+
+監視: Joomla SSOエンドポイントへの細工SAMLレスポンス送信を監視する
+Splunk SPL: index=web sourcetype=access_combined uri="*saml*" method=POST | stats count by src_ip
+→ WordPress版の悪用パターン（miniOrange SAML）と合わせて監視すると効率的
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-77998
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用AI攻撃なし。バースト閾値未達〔3件未満の独立ソース〕のため参考B以下に留めた事案あり）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・NemoClaw: NVIDIA OpenShell/OllamaのDNSリバインディング経由AIモデルポイズニング
+カテゴリ: BB1 採用契機: A-P/A-S
+MITRE ATLAS: AML.T0051/AML.T0043
+OWASP: LLM01
+NVIDIAのオープンソース参照スタック「NemoClaw」（OpenClaw等のエージェントをOpenShellサンドボックス内で稼働させる基盤）が既定でOllamaを全ネットワークインターフェース（OLLAMA_HOST=0.0.0.0:11434）にバインドし、非ループバックアドレスへのバインド時にHost/Originヘッダ検証を行わないため、攻撃者制御Webページに閲覧者を誘導しDNSリバインディングでブラウザに同一オリジンと誤認させることで/api/createエンドポイントを未認証操作でき、改変したGoテンプレートで会話をまたいで持続する隠しシステム指示をモデルへ注入できることをOasis Securityが実証した。macOS/Linuxはv0.0.35で修正済みだが、Windows/WSL経路は2026-08-10のv0.0.106のバインドチェック追加後も回避可能と報告されている。CVE番号は本日時点で未採番。
+監視: ローカルOllamaインスタンスのバインドアドレスとAPIアクセス元を監視する 検知SPL: index=endpoint sourcetype=network_connections dest_port=11434 NOT src_ip="127.0.0.1"
+→ OLLAMA_HOSTを既定のループバックのみに戻すか、リバースプロキシでHost/Origin検証を追加する
+
+参照: https://thehackernews.com/2026/08/a-malicious-webpage-could-poison-your.html
+https://www.darkreading.com/cyber-risk/nemo-claw-networking-llm-poisoning-openclaw
+
+・Marimo Notebook: 編集モードでのMCPコマンド事前実行（CVE-2026-75149）
+カテゴリ: CC3 採用契機: A-R/A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: AG01
+AIノートブック環境Marimoにおいて、細工したノートブックを編集モードで開くと最初のセル実行前に攻撃者指定のModel Context Protocol（MCP）コマンドがローカルサブプロセスとして起動する脆弱性CVE-2026-75149（CVSSv3.1 8.8・CVSSv4 8.7）がVulnCheckのCNAレコードとして2026-08-19公開された。研究者Gregory Tan氏（Grg0rry）が発見し、Marimoはノートブックメタデータを信頼できない入力として扱いMCP・AI・secrets関連設定を制限する強化策とあわせ0.23.15（2026-07-23）で修正済み。
+監視: Marimo実行環境からのサブプロセス起動を監視する 検知SPL: index=endpoint sourcetype=process parent_process_name="*marimo*"
+→ 0.23.15以降へのアップデート状況をまず確認する
+
+参照: https://thehackernews.com/2026/08/marimo-notebook-flaw-could-run-mcp.html
+
+・Amazon Strands Agents Tools: python_replツールのプロンプト経由RCE（CVE-2026-78379）
+カテゴリ: CC1 採用契機: A-R/A-S
+MITRE ATLAS: AML.T0051
+OWASP: LLM01/AG01
+AWSのAIエージェント構築ライブラリ「Strands Agents Tools」のpython_replツールにおいて、LLMへプロンプトとして渡す入力の無害化が不十分なため、細工したプロンプトでガードレールを回避し任意のPythonコードを実行できる脆弱性CVE-2026-78379（CVSSv4 9.2 Critical / CVSSv3.1 8.1 High）が2026-08-25付でNVDおよびAWSセキュリティ速報として公開された。0.8.5で修正済み。
+監視: Strands Agentsのpython_replツール利用状況とプロセス起動を監視する 検知SPL: index=app sourcetype=strands_agents tool="python_repl" | search (subprocess OR os.system OR exec)
+→ 0.8.5以降へのアップデートを最優先で確認する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-78379
+https://aws.amazon.com/security/security-bulletins/2026-089-aws/
+
+・NVIDIA OpenShell: サンドボックスプロビジョニングAPIの脱出脆弱性（CVE-2026-65083/65093）
+カテゴリ: CC1 採用契機: A-R/A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: AG01
+NVIDIAがAIエージェント（OpenClaw/NemoClaw等）の実行環境として提供するサンドボックス基盤「OpenShell」（Linux版）に、サンドボックスプロビジョニングAPIの脆弱性CVE-2026-65083とサンドボックス脱出につながるCVE-2026-65093（いずれもCVSS9.9 Critical）が公開された。詳細な悪用手口・パッチ状況は本日時点の公開情報からは限定的。
+監視: OpenShellサンドボックス外へのプロセス脱出兆候を監視する 検知SPL: なし
+→ NVIDIA公式アドバイザリの続報・パッチ提供状況を確認する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-65083
+
+・Chainlit / QWED-MCP / PraisonAI / Nextcloud MCP Server: AIエージェント・MCP基盤の重大CVE群
+カテゴリ: CC1 採用契機: A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: AG01
+AIエージェント・MCP関連OSSで同日にCriticalクラスのCVEが相次いで公開された。会話型AI構築フレームワークChainlit（CVE-2026-45018・CVSS9.8）、MCPの数式検証ゲートウェイQWED-MCP（CVE-2026-55546・CVSS9.8・verify_math_expression()の脆弱性）、マルチエージェントフレームワークPraisonAI（CVE-2026-55536・CVSS9.1・Browser Server _handle_connectionの脆弱性・4.6.58で修正済み）、Nextcloud MCP Server（CVE-2026-55640・CVSS9.1）の4件で、いずれもKEV未登録・実悪用未確認・国内報道なし。AIエージェント/MCP関連OSSエコシステム全体で脆弱性開示が続いている状況を示す。
+監視: 各プロダクトの修正版適用状況を確認する 検知SPL: なし
+→ MCPサーバ・AIエージェントフレームワークの資産棚卸しとパッチ適用管理を優先する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-45018
+
+・NLTK: pickle/JVMオプション経由の未認証RCE脆弱性群（3件）
+カテゴリ: CC1 採用契機: A-R/A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+AI/自然言語処理分野で広く使われるPythonライブラリNLTKに、allowlisted pickle load経由の未認証RCE（CVE-2026-79657・CVSS9.8）、per-call optionsパラメータ経由のJVMオプション注入（CVE-2026-79675・CVSS9.8）、3.10.0未満に影響する安全でないpickleデシリアライゼーション（CVE-2026-78683・CVSS9.6、3.10.3で修正）の計3件の脆弱性が公開された。いずれもKEV未登録・実悪用未確認だが、NLTKはAI/データサイエンスパイプラインで広く依存関係に含まれるため影響範囲は潜在的に大きい。
+監視: NLTK依存関係のバージョンを棚卸しし3.10.3以降への更新を確認する 検知SPL: なし
+→ サプライチェーン上NLTKに依存するAIパイプラインの影響範囲を特定する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-79657
+
+・DB-GPT: スキルアップロード機能のパス制約不備（CVE-2026-80104）
+カテゴリ: CC1 採用契機: A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: AG01
+自然言語からSQL・データ分析を行うAIデータエージェントフレームワークDB-GPTにおいて、アップロードされたスキルのファイル名から宛先パスを構築する処理にパス制約の不備があり、任意の場所へのファイル書き込みにつながりうる脆弱性CVE-2026-80104（CVSS9.8）が公開された。KEV未登録・実悪用未確認。
+監視: DB-GPTのスキルアップロード機能へのアクセスを監視する 検知SPL: なし
+→ パッチ提供状況を確認しスキルアップロード機能の利用可否を検討する
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-80104
+
+・Unit 42「State of AI-Enabled Malware August 2026」レポート
+カテゴリ: AA3 採用契機: A-U
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+Unit 42（Palo Alto Networks）は2026年8月時点のAI利用型マルウェアの動向を「ブランド悪用からエージェント型実行まで」と題して分析したレポートを公開した。既存の振る舞いベース検知・エンドポイント分析技術がAI生成コードの実行前阻止に有効であるとの分析を示している。単一ベンダーの業界レポートであり具体的な新規インシデントの開示はない。
+監視: 既存の振る舞いベースEDR検知ルールの有効性を確認する 検知SPL: なし
+→ レポート内の推奨検知手法をSOC運用へ反映するか検討する
+
+参照: https://unit42.paloaltonetworks.com/ai-enabled-malware-analysis
+
+・不可視HTMLプロンプトによるAIメール要約エージェントへの偽情報混入
+カテゴリ: BB1 採用契機: A-P
+MITRE ATLAS: AML.T0051
+OWASP: LLM01
+Dark Readingは、閲覧者には見えない単純なHTML要素を仕込むことでAI搭載メール要約機能を操作し、実際のメール内容と異なる虚偽の要約を生成させられる間接プロンプトインジェクション手口を報じた。特定製品名・実被害の言及はなく研究的な問題提起の域に留まる。
+監視: AIメール要約機能への入力時にHTML隠しテキストを除去するフィルタの有無を確認する 検知SPL: なし
+→ AI要約機能を業務で利用している場合は原文との突合を促す運用ルールを検討する
+
+参照: https://www.darkreading.com/cyber-risk/hidden-prompts-trick-ai-false-email-summaries
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はAIエージェント基盤・MCPサーバ・AIコーディング/NLPライブラリ関連のCriticalクラスCVE公開が相次いだ一日だった。NVIDIA NemoClaw（Ollama連携）のDNSリバインディング経由モデルポイズニング、Amazon Strands Agentsのプロンプト経由RCE、NLTK/Chainlit/QWED-MCP/PraisonAI/Nextcloud MCP Server等のAI/MCP基盤脆弱性が同日に集中したが、いずれも単独または2ソースに留まりバースト閾値（3件以上）未達のため本編昇格はなし。Unit 42がAI利用型マルウェアの定量分析レポートを公開した。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B9件 / 除外2件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）2件 / C（インフラ）6件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Mabna Institute （国家帰属: IR / 帰属信頼度: high）
+活動タイプ: official_attribution
+------------------------------------------------------------
+
+標的: energy/defense/healthcare/it/finance/government / North America
+マルウェア: 判明分なし
+
+【24時間以内の変化】
+[The Hacker News 2026-08-25] 米財務省が「Operation Economic Outcast」の一環としてMabna Institute関連の6名（4名はMOIS指揮下のハッキング活動、2名は窃取情報の受領・悪用）に新規制裁を発表したと報道。
+[CyberScoop 2026-08-25] 財務長官が「economic D-Day」と称する制裁パッケージの一部として発表。FBIが2026-08-18付で17名のイラン系サイバー要員を起訴した追加起訴状と連携した措置。
+
+【概要】
+米財務省は2026-08-24付でイラン情報安全保障省（MOIS）指揮下のハッキング作戦に関与したとしてKeyvan Fayyaz Ghareh Blagh・Saber Shahbazi Balujeh・Mohammad Reza Kadkhoda'i・Mojtaba Ghal'eh-Kuhiの4名を含む計6名に制裁を発動した。テヘラン拠点のMabna Instituteが関与し、少なくとも2023年後半以降、エネルギー・防衛・医療・IT・金融の各セクターの米企業から情報を侵害・窃取し、2024年夏には米国の地方・州・連邦政府機関への侵入も確認されたとされる。技術的なマルウェア名・CVE・IOCは本発表内では開示されていない。
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・重要インフラ事業者（エネルギー・防衛・医療・金融・政府機関）はイラン系脅威アクターを想定した境界防御の再確認、外部公開資産の棚卸し、フィッシング耐性のある多要素認証の導入状況を点検する。
+→ 本発表は制裁・起訴という法的措置であり新規の技術的IOC・TTPは開示されていない。今後の技術分析レポート（ベンダー・CISA等）を継続監視する。
+
+【参照】
+https://thehackernews.com/2026/08/us-sanctions-iran-linked-hackers-behind.html
+https://cyberscoop.com/us-treasury-sanctions-iranian-hackers-economic-dday/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定） / 学研メディカルサポートは、同社ウェブ制作事業部が管理する78サイトがWordPressの脆弱性を突かれ不正アクセスを受け、不正なアカウント作成と既存アカウントのパスワード改ざんが発生したことを2026-08-03に確認したと公表した。サイト閲覧障害・個人情報流出は確認されていない。WordPressのアップデートと管理画面への追加認証設定を実施済み。 採用契機: 国内組織侵害確認。帰属信頼度: unconfirmed。
+推奨アクション: 侵害範囲・原因の公式発表を継続確認する。委託先・再委託先を含むアクセス制御・認証情報管理の点検を推奨する。
+参照: https://www.security-next.com/189322
+
+・不明（帰属未確定） / 日本ブラインドサッカー協会（JBFA）は、公式サイトと20周年記念サイトが2026-08-12に第三者による改ざんを受け、Cloudflareを装った偽のセキュリティ認証画面が表示される状態になっていたと公表した。改ざんは同日午前3時から7時にかけて発生し、サイト管理用アカウント情報の不正入手が原因とみられる。個人情報流出は確認されていないが、偽画面の指示に従った利用者へマルウェア感染の確認を呼びかけている。 採用契機: 国内組織侵害確認。帰属信頼度: unconfirmed。
+推奨アクション: 侵害範囲・原因の公式発表を継続確認する。委託先・再委託先を含むアクセス制御・認証情報管理の点検を推奨する。
+参照: https://www.security-next.com/189202
+
+・不明（帰属未確定） / 2025年日本国際博覧会協会（大阪・関西万博運営団体）は、再委託先事業者の従業員が2026-05-13にフィッシング攻撃を受けMicrosoft 365アカウントが不正アクセスされ、協会関係者・万博出演者のメールアドレス・氏名・所属や出演者の肩書・写真・スピーチ原稿等の個人情報が外部に流出した可能性があると公表した。一般来場者情報は含まれない。 採用契機: 国内組織侵害確認。帰属信頼度: unconfirmed。
+推奨アクション: 侵害範囲・原因の公式発表を継続確認する。委託先・再委託先を含むアクセス制御・認証情報管理の点検を推奨する。
+参照: https://www.security-next.com/189193
+
+・不明（帰属未確定） / NTTスマートコネクトは、同社レンタルサーバサービス「スマイルサーバ」の特定設備（jm9.etius.jp・jm10.etius.jp）が2026-07-24に第三者の不正アクセスを受けたことを確認し、被害拡大防止のためサービスを停止したと公表した。利用者データへの影響・二次被害リスクは否定できないとし、外部フォレンジック調査を実施中（8月末完了予定）。9月中旬頃の復旧環境提供開始を目標としている。 採用契機: 国内組織侵害確認。帰属信頼度: unconfirmed。
+推奨アクション: 侵害範囲・原因の公式発表を継続確認する。委託先・再委託先を含むアクセス制御・認証情報管理の点検を推奨する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/25/56017.html
+
+・不明（帰属未確定） / 株式会社ウェブライフは、同社が提供するOEM向けホームページ作成サービスの顧客管理システムでアクセス制御の不備を突かれ2026-08-14〜17に不正アクセスを受け、OEMパートナー経由の顧客最大7,425名分の氏名・住所・メールアドレス・電話番号等が漏えいした可能性があると公表した。アクセス制御の不備は修正済みで対象顧客への通知を進めている。 採用契機: 国内組織侵害確認。帰属信頼度: unconfirmed。
+推奨アクション: 侵害範囲・原因の公式発表を継続確認する。委託先・再委託先を含むアクセス制御・認証情報管理の点検を推奨する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/25/56016.html
+
+・不明（帰属未確定） / 楽天ブックスネットワークは、顧客情報・従業員情報を保存していたPC端末が社外の第三者から不正アクセスを受けたことを2026-04-05に検知し2026-08-21に公表した（既報2026-08-25分「注文配送先情報を含む従業員PCへの不正アクセス」の続報）。楽天ブックス利用者33,333件・取引先担当者2,101件・従業員339件の計約35,773人分の氏名・郵便番号・住所・電話番号等が影響を受けた可能性があることが本日新たに判明した。個人情報保護委員会への報告と顧客通知を実施済み。 採用契機: 国内組織侵害確認。帰属信頼度: unconfirmed。
+推奨アクション: 侵害範囲・原因の公式発表を継続確認する。委託先・再委託先を含むアクセス制御・認証情報管理の点検を推奨する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/25/56015.html
+
+・不明（帰属未確定・ブルートフォース攻撃の可能性） / 病児保育等を手がけるル・アンジェは、業務連絡ツール「BAND」への不正アクセスを2026-07-15に認識し2026-08-06に公表した。発生は2026-07-10で、原因はブルートフォース攻撃による可能性が高いと同社は判断している。二段階認証の導入等の再発防止策を実施した。 採用契機: 国内組織侵害確認。帰属信頼度: unconfirmed。
+推奨アクション: 侵害範囲・原因の公式発表を継続確認する。委託先・再委託先を含むアクセス制御・認証情報管理の点検を推奨する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/25/56014.html
+
+・不明（帰属未確定） / ナイス株式会社は、同社が管理するメールアドレス「info@e-house.co.jp」への不正アクセスによる個人情報漏えいを2026-07-22の不審な挙動確認を端緒に2026-08-06公表した。氏名・メールアドレス・電話番号・会社名・会社住所を含む約2,400件が影響を受けた可能性がある。管理用パスワード変更・外部アクセス遮断の応急措置を実施済み。 採用契機: 国内組織侵害確認。帰属信頼度: unconfirmed。
+推奨アクション: 侵害範囲・原因の公式発表を継続確認する。委託先・再委託先を含むアクセス制御・認証情報管理の点検を推奨する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/25/56013.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] ノルウェー政府共通デジタル基盤への大規模DDoS攻撃
+ノルウェー政府の共通デジタル基盤が2026-08-24（月）以降大規模なDDoS攻撃を受け、公共部門が利用する複数サービスに障害が発生していると報じられた。攻撃者・帰属は本日時点で公表されていない。
+参照: https://www.bleepingcomputer.com/news/security/massive-ddos-attack-disrupts-norways-government-digital-services
+
+・[トレンド記事] Mirage2FAフィッシングキャンペーンが米欧4,500社のMicrosoft 365アカウントを標的化
+Telegram等で販売される商用PhaaSキット「Mirage2FA」が2024年から2026年にかけて米欧の4,500社に影響を与え、正規のMicrosoft 365ログインフローを悪用し二要素認証をバイパスしていることがANY.RUNの分析で判明した。標的メールアドレスの48%はセキュリティ対策が不十分な小規模組織とされる。
+参照: https://thehackernews.com/2026/08/mirage2fa-surge-hits-4500-us-and-eu.html
+
+・[トレンド記事] 24件のnpmパッケージがunpkgミラーを悪用しClickFix型偽CAPTCHAページをホスト
+24件のnpmパッケージが無料のフィッシングインフラとしてunpkgミラーを悪用し、ClickFix型の偽Cloudflare CAPTCHAページへリダイレクトするキャンペーンが確認された。パッケージ自体はHTMLページ1枚のみで構成されダウンロード時点では直接の害はないが、リダイレクト先で偽装コマンドの実行を誘導する。
+参照: https://thehackernews.com/2026/08/24-npm-packages-abuse-unpkg-mirrors-to.html
+
+・[トレンド記事] E4del・PINHOLE: FTPバナーをデッドドロップに悪用する新型RAT2種
+FTPバナーをデッドドロップリゾルバ（DDR）として悪用しC2コマンドを配信する新型RAT「E4del」「PINHOLE」の存在が確認された。正規サービスを悪用したC2インフラ秘匿手口の一種として報告されている。
+参照: https://thehackernews.com/2026/08/e4del-and-pinhole-rats-turn-ftp-banners.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・予報1: miniOrange SAML SSO（WordPress/Joomla）未パッチ環境は、SAMLレスポンス検証不備を突く管理者アカウント乗っ取りを前提に緊急パッチ適用を優先すべき
+Tier: 1
+確度: low
+観測出口クラス: E1
+検証窓: fast_72h（72時間）
+根拠:
+  Evidence: [The Hacker News 2026-08-25] Patchstackの実証としてCVE-2026-15981（署名検証不備）とCVE-2026-61979（署名アルゴリズム混同）を連鎖させ、細工したSAMLレスポンスで任意のWordPress管理者アカウントへログインできることを確認・6件のIPアドレスからの日和見的スキャンを観測。
+  過去パターン: 類似型（outcome_channel=E1・exploitation_stage=active_exploitation・forecast_class=fast_72h・tier=T1）は過去に複数回発行されており、Zimbra CVE-2026-73570（2026-08-21予報）等で経験的的中率40%（n=5）。
+  脅威情報: PoC・スキャン活動は確認されているが標的型キャンペーンの証跡はなく、KEVは本日時点で未登録。
+  確度アンカー: EPSS percentile 0.54354 / KEV registered False / SSVC Attend / Automatable yes / EPSS算出日 2026-08-25
+推定部分: （推測）実悪用スキャンが観測されているWordPressプラグインの脆弱性がCISA KEVへ追加されるまでの一般的な傾向から72時間以内の追加を見込むが、CISAの個別選定プロセスは非公開であり、本CVE固有の追加時期を裏付ける直接証拠はない。
+先回り監視: 自組織のWordPress管理画面への異常なSSOログイン・新規管理者アカウント作成、miniOrange SAMLプラグインのSSOエンドポイントへの細工SAMLレスポンス送信。
+的中判定: CISAがCVE-2026-15981またはCVE-2026-61979をCISA KEVカタログ本体（known_exploited_vulnerabilities.json）へ初回追加した場合（dateAddedが2026-08-27〜2026-08-29の間）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Mirage2FAフィッシングキット: M365 AiTM攻撃への警戒強化
+観点: ゼロデイ関連
+採用契機: δ/ε
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft 365
+
+【24時間以内の変化】
+[The Hacker News 2026-08-25] PhaaSキットMirage2FAが米欧4,500社を標的化と報道。
+
+【概要】
+Adversary-in-the-Middle型のPhaaSキット「Mirage2FA」がMicrosoft 365の正規ログインフローを悪用し二要素認証をバイパスしていると報告された。標的の約半数はセキュリティ対策が手薄な中小組織であり、国内でも同種のAiTMフィッシングキットが波及するリスクがある。
+
+【推奨アクション】
+・Microsoft 365のサインインログでAiTM特有の異常な条件付きアクセス失敗・トークン再利用を確認する
+・フィッシング耐性のある認証方式（FIDO2/パスキー）への移行を優先度高で検討する
+・[SIEM] Azure AD Identity Protectionの危険なサインイン検知アラートを重点監視する
+Splunk SPL: index=azure_ad sourcetype=signinlogs riskLevel=high OR conditionalAccessStatus=failure
+→ 同一セッショントークンが複数拠点から短時間で使用される事例に注意
+
+【参照】
+https://thehackernews.com/2026/08/mirage2fa-surge-hits-4500-us-and-eu.html
+
+------------------------------------------------------------
+2. ClickFix型偽CAPTCHA配布インフラとしてのnpmパッケージ悪用
+観点: ゼロデイ関連
+採用契機: ε/δ
+------------------------------------------------------------
+
+優先度: 中
+対象: npm / unpkg
+
+【24時間以内の変化】
+[The Hacker News 2026-08-25] 24件のnpmパッケージがunpkgミラー経由でClickFix型偽CAPTCHAをホストしていると報道。
+
+【概要】
+ClickFix型の偽CAPTCHA/偽エラー画面によるコマンド実行誘導は国内でも継続的に観測される攻撃パターンであり、配布インフラとしてnpm/unpkgのような正規CDNが悪用される事例が確認された。エンドポイントでのクリップボード経由コマンド実行検知の強化が有効。
+
+【推奨アクション】
+・従業員向けにClickFix型偽CAPTCHA/偽エラー画面への注意喚起を実施する
+・[EDR] Win+R実行やクリップボード貼り付け直後のPowerShell/cmd起動を検知ルールに追加する
+Splunk SPL: index=endpoint sourcetype=sysmon EventCode=1 ParentImage="*explorer.exe" Image IN ("*powershell.exe","*cmd.exe") CommandLine="*mshta*"
+→ ユーザー教育と組み合わせて誤検知率の高いルールを補完する
+
+【参照】
+https://thehackernews.com/2026/08/24-npm-packages-abuse-unpkg-mirrors-to.html
+
+------------------------------------------------------------
+3. E4del/PINHOLE RAT: FTPバナーデッドドロップ型C2の検知観点
+観点: ゼロデイ関連
+採用契機: ε
+------------------------------------------------------------
+
+優先度: 低
+
+【24時間以内の変化】
+[The Hacker News 2026-08-25] FTPバナーをデッドドロップに悪用する新型RAT2種の存在が報告された。
+
+【概要】
+正規サービス（本件はFTPバナー）をC2コマンド配信のデッドドロップとして悪用する手口は、通常のC2通信検知ルールをすり抜けやすい。新規TTPとして監視ルールへの反映を推奨する。
+
+【推奨アクション】
+・外向きFTP接続（21番ポート）のバナー取得挙動を異常検知の対象に加える
+・エンドポイントでの未知プロセスによるFTPクライアント的挙動を監視する
+
+【参照】
+https://thehackernews.com/2026/08/e4del-and-pinhole-rats-turn-ftp-banners.html
+
+------------------------------------------------------------
+4. 複数セイコーエプソン製プリンタ/スキャナで失効ルート証明書が残存
+観点: CVE関連
+採用契機: η
+------------------------------------------------------------
+
+優先度: 低
+対象: セイコーエプソン製プリンタ/スキャナ複数機種
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-08-25] 複数のセイコーエプソン製プリンタおよびスキャナに失効したルート証明書が残存している問題が報告された。
+
+【概要】
+複数のセイコーエプソン製プリンタ・スキャナ機種で失効済みルート証明書が残存しており、TLS通信の信頼性検証に影響しうる問題が報告された。直接的な悪用手口の公表はないが、証明書ライフサイクル管理の観点でSOCが把握すべき事案。
+
+【推奨アクション】
+・対象機種の資産棚卸しとファームウェア/証明書ストア更新の要否を確認する
+・エプソン公式アドバイザリの続報を確認する
+
+【参照】
+https://scan.netsecurity.ne.jp/article/2026/08/25/56007.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-76193 (Adobe Campaign Classic (ACC)) → SSRF・CVSS10.0。同一アドバイザリ内のCVE-2026-76195・CVE-2026-76197とあわせ3件。KEV未登録・実悪用未確認・PoC未公開・国内報道なし・軸1=3点で除外。
+・CVE-2026-76195 (Adobe Campaign Classic (ACC)) → 特殊要素の不適切な無害化・CVSS10.0。CVE-2026-76193と同一アドバイザリ内の複合脆弱性。KEV/PoC/実悪用いずれも未確認のため軸1=3点で除外。
+・CVE-2026-76197 (Adobe Campaign Classic (ACC)) → 特殊要素の不適切な無害化・CVSS10.0。CVE-2026-76193と同一アドバイザリ内の複合脆弱性。KEV/PoC/実悪用いずれも未確認のため軸1=3点で除外。
+・CVE-2026-32559 (UltimateAI (WordPressプラグイン)) → Subscriber権限前提の任意ファイルアップロード・CVSS9.9。認証済み低権限アカウントが前提でKEV/PoC/実悪用/国内報道いずれもなく軸1が閾値未満のため除外。
+・CVE-2026-65083 (NVIDIA OpenShell (Linux)) → サンドボックスプロビジョニングAPIの脆弱性・CVSS9.9。KEV/PoC/実悪用未確認・国内報道なしのため軸1が閾値未満で除外。AI基盤関連のためSection1 AI攻撃動向で関連技術を別途言及。
+・CVE-2026-65093 (NVIDIA OpenShell (Linux)) → サンドボックス脱出の脆弱性・CVSS9.9。CVE-2026-65083と同一製品の複合脆弱性。KEV/PoC/実悪用未確認のため軸1が閾値未満で除外。AI基盤関連のためSection1 AI攻撃動向で関連技術を別途言及。
+・CVE-2022-51000 (Nokogiri (Ruby libxml2バンドル)) → 2022年公開の脆弱性がVulnCheckにより本日スコア確定・CVSS9.8。CVE-2024-58378・CVE-2025-71407・CVE-2024-58377と同種のNokogiri/libxml2バンドル脆弱性群（VulnCheckによる遡及的スコアリング）。長期間パッチ提供済みで実悪用未確認のため軸1が閾値未満で除外。
+・CVE-2024-58378 (Nokogiri (Ruby libxml2バンドル)) → 2024年公開の脆弱性がVulnCheckにより本日スコア確定・CVSS9.8。CVE-2022-51000と同種。パッチ提供済み・実悪用未確認のため除外。
+・CVE-2025-71407 (Nokogiri (Ruby libxml2バンドル)) → libxml2 DTDエラー報告時のスタックバッファオーバーフロー・CVSS9.8。VulnCheckスコア確定分。パッチ提供済み・実悪用未確認のため除外。
+・CVE-2024-58377 (Nokogiri (Ruby libxml2バンドル)) → libxml2 2.12.6バンドルに起因するCVE-2024-34459・CVSS9.3。VulnCheckスコア確定分。パッチ提供済み・実悪用未確認のため除外。
+・CVE-2026-13214 (Zephyr RTOS (OCPP 1.6クライアント)) → スタックバッファオーバーフロー・CVSS9.8。組込/IoT向けRTOSコンポーネント。KEV/PoC/実悪用未確認・国内報道なしのため除外。
+・CVE-2026-16286 (TRtek Technological Products (コンピュータ製品)) → 危険なファイル種別の無制限アップロード・CVSS9.8。ベンダー詳細不明・KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-32563 (ACPT (Pro) - Custom Post Types Plugin (WordPress)) → Subscriber権限前提のPHPオブジェクトインジェクション・CVSS9.8。認証済み低権限アカウント前提でKEV/PoC/実悪用未確認のため除外。
+・CVE-2026-45018 (Chainlit (会話型AIアプリ構築フレームワーク)) → CVSS9.8。KEV/PoC/実悪用未確認・国内報道なしのため軸1が閾値未満で除外。AI開発フレームワーク関連のためSection1 AI攻撃動向で関連動向を別途言及。
+・CVE-2026-49845 (Apache Hive Metastore) → direct SQL partition-name解決処理のSQLインジェクション・CVSS9.8。広く使われるOSSだがKEV/PoC/実悪用未確認・国内報道なしのため軸1=7点で除外。
+・CVE-2026-55546 (QWED-MCP (MCP検証ゲートウェイ)) → verify_math_expression()の脆弱性・CVSS9.8。KEV/PoC/実悪用未確認・国内報道なしのため軸1が閾値未満で除外。MCP/AIエージェント基盤関連のためSection1 AI攻撃動向で関連動向を別途言及。
+・CVE-2026-56705 (Adminer (DB管理ツール)) → PDO DSN文字列構築時のサニタイズ不備・CVSS9.8。広く使われる開発ツールだがKEV/PoC/実悪用未確認のため軸1=7点で除外。
+・CVE-2026-56710 (Grav Login plugin) → 対象アカウントの権限レベル検証不備・CVSS9.8。CVE-2026-72699・CVE-2026-72702と同一Grav CMSエコシステムの複合脆弱性群。KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-63586 (産業用機器（CERT@VDE経由・ベンダー名非開示）) → 改変uhttpdサーバ経由のHTTP Basic認証回避・CVSS9.8。OT/産業用機器でありKEV/PoC/実悪用未確認・国内報道なしのため軸1=6点で除外。
+・CVE-2026-78262 (WP Project Manager (WordPressプラグイン)) → 未認証PHPオブジェクトインジェクション・CVSS9.8。CVE-2026-78265・78267・78477・78568・78570とあわせWordPressプラグイン群として同種脆弱性が同日6件公開。KEV/PoC/実悪用未確認のため各々軸1が閾値未満で除外。
+・CVE-2026-78265 (The Events Calendar (WordPressプラグイン)) → 未認証PHPオブジェクトインジェクション・CVSS9.8。CVE-2026-78262と同種のWordPressプラグイン脆弱性群。広く使われるプラグインだがKEV/PoC/実悪用未確認のため除外。
+・CVE-2026-78267 (TranslatePress (WordPressプラグイン)) → 未認証権限昇格・CVSS9.8。CVE-2026-78262と同種のWordPressプラグイン脆弱性群。KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-78477 (Jawn theme (WordPressテーマ)) → 権限昇格・CVSS9.8。CVE-2026-78262と同種のWordPressプラグイン脆弱性群。ニッチなテーマでKEV/PoC/実悪用未確認のため除外。
+・CVE-2026-78568 (Total Donations (WordPressプラグイン)) → SQLインジェクション・CVSS9.8。CVE-2026-78570と同一プラグインの複合脆弱性。KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-78570 (Total Donations (WordPressプラグイン)) → 権限昇格・CVSS9.8。CVE-2026-78568と同一プラグインの複合脆弱性。KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-78676 (GitPython (Python開発ツール)) → 複数行git-config値の安全でない再シリアライズ・CVSS9.8。広く使われる開発ツールだが直接的な未認証RCEではなくKEV/PoC/実悪用未確認のため軸1=4点で除外。
+・CVE-2026-79657 (NLTK (自然言語処理ライブラリ)) → allowlisted pickle load経由のRCE・CVSS9.8。CVE-2026-79675・CVE-2026-78683と同一NLTKライブラリの複合脆弱性群（計3件）。KEV/PoC/実悪用未確認のため軸1が閾値未満で除外。AI/NLP基盤関連のためSection1 AI攻撃動向で関連動向を別途言及。
+・CVE-2026-79675 (NLTK (自然言語処理ライブラリ)) → per-call optionsパラメータ経由のJVMオプション注入・CVSS9.8。CVE-2026-79657と同一NLTKの複合脆弱性。KEV/PoC/実悪用未確認のため除外。AI/NLP基盤関連のためSection1で関連動向を別途言及。
+・CVE-2026-78683 (NLTK (自然言語処理ライブラリ)) → 安全でないpickleデシリアライゼーション・CVSS9.6。CVE-2026-79657と同一NLTKの複合脆弱性（3.10.0未満）。KEV/PoC/実悪用未確認のため除外。AI/NLP基盤関連のためSection1で関連動向を別途言及。
+・CVE-2026-79787 (Alluxio (データオーケストレーション基盤)) → S3 REST proxyのAWS SigV4署名検証不備・CVSS9.8。KEV/PoC/実悪用未確認・国内報道なしのため軸1=6点で除外。
+・CVE-2026-80104 (DB-GPT (AIデータエージェントフレームワーク)) → アップロードスキルのパス制約不備・CVSS9.8。KEV/PoC/実悪用未確認・国内報道なしのため軸1が閾値未満で除外。AIエージェント基盤関連のためSection1 AI攻撃動向で関連動向を別途言及。
+・CVE-2026-77136 (TYPO3拡張機能 (フォームフィールド処理)) → 細工されたフォームフィールド値の処理不備・CVSS9.5。CVE-2026-77138と同一TYPO3拡張機能エコシステムの複合脆弱性。KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-57909 (WatchGuard Agent) → パストラバーサル（隣接ネットワークからの未認証攻撃者が前提）・CVSS9.4。CVE-2026-57910と同一アドバイザリ内の複合脆弱性（計2件）。リモート直接悪用ではなく隣接ネットワーク前提・KEV/PoC/実悪用未確認・国内報道なしのため軸1=7点で除外。
+・CVE-2026-32554 (WooBeWoo Product Filter Pro (WordPressプラグイン)) → 未認証SQLインジェクション・CVSS9.3。CVE-2026-32555と同種のWordPressプラグインSQLi脆弱性群。KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-32555 (Boost (WordPressプラグイン)) → 未認証SQLインジェクション・CVSS9.3。CVE-2026-32554と同種のWordPressプラグインSQLi脆弱性群。KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-57910 (WatchGuard Agent) → 不適切な認証（隣接ネットワーク前提）・CVSS9.3。CVE-2026-57909と同一アドバイザリの複合脆弱性。KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-72699 (Grav Login plugin) → メールアドレス列挙・CVSS9.3。CVE-2026-56710と同一Grav CMSエコシステムの複合脆弱性群。KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-72702 (Grav CMS) → Uri::referrer()/Pages::referrer()のオリジン検証バイパス・CVSS9.3。CVE-2026-56710と同一Grav CMSエコシステムの複合脆弱性群。KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-77138 (TYPO3拡張機能 (Cookie処理)) → 攻撃者制御Cookieの安全でない処理・CVSS9.3。CVE-2026-77136と同一TYPO3拡張機能の複合脆弱性。KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-79774 (Winter CMS) → Twigサンドボックス脱出の不完全な修正・CVSS9.3。ニッチなCMSでKEV/PoC/実悪用未確認・国内報道なしのため除外。
+・CVE-2026-79782 (rclone (クラウドストレージCLIツール)) → S3リダイレクト時のX-Amz-Security-Tokenヘッダ非除去によるトークン漏洩・CVSS9.3。情報漏洩系でRCE直結ではなくKEV/PoC/実悪用未確認のため軸1=4点で除外。
+・CVE-2026-78379 (Amazon Strands Agents Tools (python_repl)) → プロンプト経由のLLM入力無害化不備によるRCE・CVSSv4 9.2/CVSSv3.1 8.1。0.8.5で修正済み・KEV/PoC/実悪用未確認・国内報道なしのため軸1が閾値未満で除外。AIエージェントフレームワーク関連のためSection1 AI攻撃動向を主掲載先として別途扱う。
+・CVE-2026-55536 (PraisonAI (マルチエージェントフレームワーク)) → Browser Server _handle_connectionの脆弱性・CVSS9.1。4.6.58で修正済み・KEV/PoC/実悪用未確認のため軸1が閾値未満で除外。AIエージェント基盤関連のためSection1 AI攻撃動向で関連動向を別途言及。
+・CVE-2026-55640 (Nextcloud MCP Server) → MCPサーバ経由のNextcloudアクセス脆弱性・CVSS9.1。KEV/PoC/実悪用未確認・国内報道なしのため軸1が閾値未満で除外。MCP/AIエージェント基盤関連のためSection1 AI攻撃動向で関連動向を別途言及。
+・CVE-2026-77337 (CakePHP Authentication plugin) → PSR-7ベース認証プラグインの脆弱性・CVSS9.1。KEV/PoC/実悪用未確認・国内報道なしのため軸1が閾値未満で除外。
+・CVE-2026-79664 (Ech0) → 無期限アクセストークンの失効処理不備・CVSS9.1。4.7.3で修正済み・KEV/PoC/実悪用未確認のため除外。
+・CVE-2026-48853 (gRPC (Erlang パッケージ)) → 攻撃者制御gRPCペイロードによるRCE・CVSS9.2（EUVD独立列挙・NVD/KEV未収載＝euvd_only）。Erlang/Elixirエコシステム向けの比較的ニッチなパッケージでKEV/PoC/実悪用未確認・国内報道なしのため除外。
+・CVE-2026-49757 (AshAuthentication (Elixir Ash Framework)) → メールアドレス照合によるOAuth2/OIDCアカウント乗っ取り・CVSS9.2（EUVD独立列挙・NVD/KEV未収載＝euvd_only）。Elixir Ash Frameworkエコシステム向けでKEV/PoC/実悪用未確認・国内報道なしのため除外。
+・CVE-2026-59568 (Zscaler Client Connector) → 2026-08-25分レポートで既報・参考B採用済み（CVE-2026-59564とともに）。本日のSecurity NEXT記事は既報のJPCERT/Zscaler公式アドバイザリの遅延二次報道で新規状態変化なし。CVE-2026-59565/59566/59567も同一アドバイザリ内の複合脆弱性。
+・CVE-2026-66109 (SKYSEA Client View / SKYMEC IT Manager) → 2026-08-25分レポートで既報・参考A採用済み（「ほか4件」代表として既に集約記録）。本日のSecurity NEXT記事は同一JVN公開情報の遅延二次報道で新規状態変化なし。
+・CVE-2026-66358 (acmailer (CGI版/DB版)) → 2026-08-20分レポートで既報・参考A採用済み（CVE-2026-70408とともにJVN#47716829として）。本日のScanNetSecurity記事は同一JVN公開情報の遅延二次報道で新規状態変化なし。
+
+[APT]
+・アフリカ系サイバー犯罪ネットワーク（22カ国合同捜査） /  → BleepingComputer報道の国際共同摘発（22カ国・263名特定・58名逮捕）。pipeline-1b-apt.mdによりEuropol/FBI IC3等の法執行・摘発情報は日次収集対象外（週次検証ステージへ移管）のため不採用。
+
+[AI攻撃]
+・WhatsApp複数パスキー・二段階認証強化 → AI攻撃ではなくアカウント保護機能の追加でありA-P〜A-Y非該当のため不採用。
+・TRACE AIランタイム証明のLinux Foundation移管 → 業界ガバナンス発表であり具体的な攻撃・脆弱性・インシデントの開示なし。A-P〜A-Y非該当のため不採用。
+
+本日の集計:
+CVE — 本編1件 / 参考A6件 / 参考B4件 / 除外51件
+APT — 本編1件 / 注目動向8件 / 除外1件
+SOC推奨情報 — 高0件 / 中2件 / 低2件 / 除外0件
+
+========================================
