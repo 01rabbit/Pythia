@@ -1,0 +1,288 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-27 09:45 JST
+調査期間: 2026-08-26 07:00 〜 2026-08-27 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-79911 / N600R（無線LANルータ）
+対象: ファームウェア 4.3.0cu.7647_B20210106（EOL・後継修正未確認）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 10.0 (Critical)
+状態: ゼロデイ / PoC公開
+パッチ提供: 未提供 / 提供時期未定
+
+【24時間以内の変化】
+[TheHackerWire/VulDB 2026-08-26] setSystemConfigのHostname引数を悪用したスタックバッファオーバーフローPoCが新規公開された
+
+【概要】
+TOTOLINK N600Rのcgi-bin/cstecgi.cgi setSystemConfigアクションにおいて、Hostname引数の長さ検証が不十分なためスタックバッファオーバーフローが発生し、未認証のリモート攻撃者が任意コードを実行できる。CVSS 10.0（Critical）。当該ファームウェアはEOL製品でありベンダーからの修正パッチは本調査時点で確認されていない（未確認であり「提供なし」の公式表明ではない・推測を含む）。TOTOLINK製ルータは過去にMirai系IoTボットネットの標的として広く悪用された実績があり、同様の大量スキャン・自動悪用に発展する可能性がある（推測）。
+
+攻撃の流れ:
+1. 未認証でcgi-bin/cstecgi.cgiのsetSystemConfigエンドポイントへ細工したHostnameパラメータを送信
+2. スタックバッファオーバーフローにより制御フローを奪取
+3. 任意コード実行によりルータの完全掌握・ボットネット組み込み等が可能（推測）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・インターネット側からの管理画面/CGIアクセスを遮断する
+・WAN側管理機能を無効化する
+・EOL製品のため代替機器への更新を検討する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・TOTOLINKルータのCGIアクセスログ・WAN側管理ポートへの接続を監視する
+Splunk SPL: sourcetype=network_firewall dest_port=80 OR dest_port=8080 uri_path="*cstecgi.cgi*" action=allowed | stats count by src_ip dest_ip
+→ Hostnameパラメータに異常な長さ・バイナリ列を含むリクエストを重点確認する。WAN側管理を無効化済みなら本SPLはヒットしないはずであり、ヒットは設定不備の兆候でもある
+
+【参照】
+https://www.thehackerwire.com/totolink-n600r-remote-stack-buffer-overflow-cve-2026-79911/
+https://vulmon.com/searchpage?q=totolink
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-8452 / NetScaler ADC / NetScaler Gateway
+対象: 14.1 / 13.1 / 13.1-FIPS/NDcPP系（Citrix公式アドバイザリ参照）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[CISA KEV 2026-08-26] CISAがCVE-2026-8452をKEVカタログへ新規追加（FCEB期限2026-08-29・短期限）。exploitation_stageをpoc_public→kev_listedへ状態遷移
+
+【概要】
+Citrix NetScaler ADC/Gatewayのメモリオーバーフロー脆弱性（既報・初報2026-08-16）が2026-08-26にCISA KEVへ新規追加された。境界機器（VPN/ゲートウェイ）に影響し、既にPoCが公開済み・実悪用が確認されている。FCEB機関への対応期限は2026-08-29と短く設定されており、緊急度が高い状態が継続している。
+
+攻撃の流れ:
+1. 境界機器のNetScaler ADC/Gatewayへリモートから細工したリクエストを送信
+2. メモリオーバーフローにより異常動作を誘発
+3. 既報の悪用チェーンにより認証回避・内部ネットワークへの侵入起点として悪用（既報内容の継続）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・NetScaler ADC/Gatewayの認証ログ・異常メモリ使用量を監視する
+Splunk SPL: sourcetype=citrix:netscaler:* SAML SignedInfo PrefixList anomalies | stats count by src_ip
+Splunk SPL: sourcetype=citrix:netscaler:aaa (failure OR anomaly) | stats count by src_ip user
+→ KEV追加を機に境界機器全体の棚卸し・パッチ適用状況の再確認を推奨する
+
+【参照】
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+------------------------------------------------------------
+2. CVE-2026-55040 / Microsoft SharePoint Server（Subscription Edition / 2019 / Enterprise Server 2016、オンプレミス）
+対象: オンプレミス版全て（2026年7月修正済み・パッチ未適用環境が対象）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.1 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[Defused/BleepingComputer/The Hacker News 2026-08-25] 本CVE（JWTトークン検証の認証バイパス）とCVE-2026-63520（未認証RCE）を連鎖させる攻撃をハニーポットで観測。管理者アカウントの大規模な列挙・探索を確認（完全なコード実行の確認には未到達）
+
+【概要】
+2026年7月に修正済みのSharePoint JWTトークン検証バイパス（本CVE、KEV登録済み・2026-08-18追加）について、2026-08-25にDefusedがハニーポット観測で、CVE-2026-63520（Business Connectivity Servicesの未認証RCE、パッチ未適用環境が対象）と連鎖させた本格的な攻撃活動を新規確認した。従来は単体の認証バイパスの悪用観測にとどまっていたが、RCEチェーンへの連鎖により侵害の深刻度が段階的に上昇している。管理者アカウントの大規模列挙が確認されており、完全なコード実行の確認には至っていないが警戒レベルを引き上げる必要がある。
+
+攻撃の流れ:
+1. JWTトークン検証不備を悪用し認証をバイパス（本CVE）
+2. CVE-2026-63520（Business Connectivity Services未認証RCE）と連鎖させ、管理者アカウントを大規模に列挙
+3. 完全なコード実行への到達は本調査時点で未確認だが、探索段階から実攻撃段階への移行が進行中
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・SharePoint認証ログ・BCS（Business Connectivity Services）へのアクセスログを監視する
+Splunk SPL: sourcetype=iis access_combined uri_path="*_layouts*" OR uri_path="*bdc*" | stats count by c_ip cs_uri_stem
+Splunk SPL: sourcetype=WinEventLog:Security EventCode=4625 OR EventCode=4648 host=*sharepoint* | stats count by Account_Name src_ip
+→ 管理者アカウント名を用いた列挙的アクセス（短時間の連続失敗・成功パターン）を重点確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hackers-target-microsoft-sharepoint-rce-chain-with-poc-exploit/
+https://thehackernews.com/2026/08/attackers-exploit-sharepoint.html
+https://securityaffairs.com/197137/hacking/sharepoint-cve-2026-55040-comes-under-attack-following-public-exploit.html
+
+------------------------------------------------------------
+3. CVE-2026-63520 / Microsoft SharePoint Server（Subscription Edition / 2019 / Enterprise Server 2016、オンプレミス、Business Connectivity Services）
+対象: オンプレミス版全て（2026年8月Patch Tuesdayで修正済み・パッチ未適用環境が対象）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.1 (High)
+状態: 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[Defused/VulnCheck 2026-08-25] VulnCheckが2026-08-24に公開したPoCを用い、CVE-2026-55040と連鎖させた実攻撃（管理者アカウント大規模列挙）がハニーポットで観測された
+
+【概要】
+Business Connectivity Servicesの安全でない.NET型インスタンス化に起因する未認証RCE。単体では2026-08-12の初報時点でPoC公開・参考B採用だったが、2026-08-24にVulnCheckが実用的なPoCを公開したことを受け、CVE-2026-55040（認証バイパス・KEV登録済み）と連鎖させた本格攻撃がDefusedのハニーポットで観測された。本CVE単体はCISA KEV未登録だが、連鎖先の55040が既にKEV登録・実悪用確認済みであり、チェーン全体としての緊急度は本編相当に引き上げる。
+
+攻撃の流れ:
+1. CVE-2026-55040による認証バイパスで内部APIへのアクセス権を取得
+2. Business Connectivity Servicesの安全でない型インスタンス化（本CVE）を突いて未認証RCEへ連鎖
+3. 管理者アカウントの大規模列挙まで観測（完全なコード実行の確認は本調査時点で未達）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・CVE-2026-55040と同一（SharePoint認証ログ・BCSアクセスログ）
+Splunk SPL: sourcetype=iis access_combined uri_path="*bdc*" OR uri_path="*BusinessData*" | stats count by c_ip cs_uri_stem
+→ CVE-2026-55040の検知観点と併用し、55040→63520の連鎖パターン（短時間内の複数エンドポイントアクセス）を重点確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hackers-target-microsoft-sharepoint-rce-chain-with-poc-exploit/
+https://thehackernews.com/2026/08/attackers-exploit-sharepoint.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A相当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2019-1068 / SQL Server
+CVSS: 8.8
+2019年に修正済みのSQL Server内部関数処理の不備によるRCEが、2026-08-26にCISA KEVへ新規追加された。長期間放置された古いパッチ未適用環境でのみ有効。
+IoC: 確認されず
+
+監視: 当該製品のアクセスログ・実行ログを監視する
+Splunk SPL: sourcetype=mssql:audit unusual internal function invocation patterns
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+・CVE-2021-23758 / Ajax.NET Professional (ajaxpro.2)
+CVSS: 未算出
+任意.NETクラスのデシリアライゼーションによるRCEが2026-08-26にCISA KEVへ新規追加。EPSSパーセンタイル99.8%と極めて高く広範なスキャン対象と推測される（推測）。
+IoC: 確認されず
+
+監視: 当該製品のアクセスログ・実行ログを監視する
+Splunk SPL: sourcetype=iis access_combined uri_path=*ajaxpro* anomalous POST payloads
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+・CVE-2022-0995 / Linux Kernel (watch_queue通知サブシステム)
+CVSS: 7.8
+watch_queueのOOB書き込みによるローカル権限昇格/DoSが2026-08-26にCISA KEVへ新規追加された。
+IoC: 確認されず
+
+監視: 当該製品のアクセスログ・実行ログを監視する
+Splunk SPL: sourcetype=linux_audit auditd kernel oops/crash correlated with unprivileged process syscalls
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+・CVE-2026-60004 / Gitea（自己ホスト型Gitプラットフォーム）
+CVSS: 9.8
+diffpatch APIのコードインジェクションによるRCE（既報・kev_listed）について、2026-08-26にThe Hacker News/SOC Primeが独立した実悪用事例（cryptocurrency-miner風ペイロード展開）を新規確認したと報道。開放登録+REQUIRE_SIGNIN_VIEW=false構成が悪用条件。exploitation_stageをkev_listed→active_exploitationへ更新。
+IoC: 確認されず
+
+監視: 当該製品のアクセスログ・実行ログを監視する
+Splunk SPL: sourcetype=gitea:access diffpatch endpoint anomalous double-submit; process creation spikes CPU>70% on git server host
+
+参照: https://thehackernews.com/2026/08/critical-gitea-rce-actively-exploited.html
+
+・CVE-2026-77537 / UniFi Protect Application ほか21件（Ubiquiti Security Advisory Bulletin 066一括開示・代表CVE）
+CVSS: 10.0
+Ubiquiti Security Advisory Bulletin 066にて、UniFi Protect/Talk/Access/Network/OS/Connect Display Cast Pro/AI Key/Enterprise Audio-Video Bridge・EdgeMAX EdgeSwitch・UID Enterprise Agentにまたがるコマンドインジェクション・アクセス制御不備・権限昇格22件（CVSS 9.0〜10.0）が一括公開された。単一ベンダーPSIRTによる同一窓内一括公開のため代表CVEに集約（他21件はexclusionsに列挙）。現時点で独立した実悪用報道・公開PoCは未確認（ベンダー自己開示・パッチ提供済み）。
+IoC: 確認されず
+
+監視: 当該製品のアクセスログ・実行ログを監視する
+Splunk SPL: sourcetype=unifi:protect anomalous command execution in host logs post-update
+
+参照: https://securityaffairs.com/194978/security/ubiquiti-patches-critical-unifi-os-flaws-allowing-command-injection-and-privilege-escalation.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2015-3246 (Libuser) → CISA KEV新規追加(2015年の古いローカル権限昇格・symlink攻撃)だが軸1=5点(未認証RCEでない・PoC未確認・CVSS未算出)で閾値8点未満・国内トリガーなし
+・CVE-2015-5287 (Automatic Bug Reporting Tool) → CISA KEV新規追加(2015年の古いローカル権限昇格・symlink攻撃)だが軸1=5点で閾値未満・国内トリガーなし
+・CVE-2026-16639 (Drupal Internationalization Single Sign-On) → 軸1=7点(認証バイパス+3・CVSS9+3・広く使われる+1)で閾値8点未満・国内トリガーなし
+・CVE-2026-16641 (Drupal Commerce Elavon) → アドバイザリ記述が簡素で脆弱性種別不明瞭・軸1=3点(CVSS9.8のみ)で閾値未満・国内トリガーなし
+・CVE-2026-16644 (Drupal Webform REST) → 軸1=7点(認可不備+3・CVSS9+3・広く使われる+1)で閾値未満・国内トリガーなし
+・CVE-2026-16645 (Drupal PhotoSwipe) → 軸1=6点・ニッチなギャラリーモジュールで低優先度フラグ相当・国内トリガーなし
+・CVE-2026-18080 (ERP: Complete HR, Accounting & CRM Suite (WordPress plugin)) → 軸1=7点(ファイルアップロード+3・CVSS9+3・広く使われる+1)で閾値未満・国内トリガーなし
+・CVE-2026-18431 (Avada theme + Fusion Builder (WordPress)) → 軸1=7点(ファイル書込+3・CVSS9+3・広く使われる+1)で閾値未満・国内トリガーなし
+・CVE-2026-19632 (TranslatePress (WordPress plugin)) → 情報漏洩のみでRCE加点なし・軸1=4点で閾値未満・国内トリガーなし
+・CVE-2026-54569 (SENAITE.CORE) → 未認証RCE(CVSS9.8)だがニッチな臨床検査室LIMSで広く使われる製品加点なし・軸1=6点で閾値未満・国内トリガーなし
+・CVE-2026-54523 (Kyverno) → 軸1=7点(認可バイパス+3・CVSS9+3・広く使われる+1)で閾値未満・国内トリガーなし
+・CVE-2026-62862 (Typebot) → 軸1=6点・ニッチなチャットボットビルダーで広く使われる加点なし・国内トリガーなし
+・CVE-2026-58095 (FreeBSD ppp(8) mp_Enddisc) → 軸1=6点(バッファオーバーフロー+3・CVSS9+3)・広く使われる加点なし・国内トリガーなし
+・CVE-2026-58096 (FreeBSD ppp(8) LcpDecodeConfig) → CVE-2026-58095と連鎖する脆弱性・軸1=6点で閾値未満・国内トリガーなし
+・CVE-2026-59682 (OpenRGB (SAVE_PROFILE任意ファイル上書き)) → 軸1=6点・広く使われる製品加点なし・国内トリガーなし
+・CVE-2026-59683 (OpenRGB (拡張版・root権限完全侵害)) → 軸1=6点・国内トリガーなし
+・CVE-2026-65637 (Apache Tomcat (HTTP/2 SNI検証バイパス)) → ASF自己評価はModerateでNVD CVSS9.8と乖離・軸1=7点(認証バイパス+3・CVSS9+3・広く使われる+1)で閾値未満・国内トリガーなし
+・CVE-2026-65905 (Apache Tomcat (DIGEST認証リプレイ)) → 軸1=7点で閾値未満・国内トリガーなし
+・CVE-2026-65182 (Apache Tomcat (セキュリティ制約評価順序)) → 軸1=7点で閾値未満・国内トリガーなし
+・CVE-2026-68525 (Apache Tomcat (FORM認証バイパス)) → 軸1=7点で閾値未満・国内トリガーなし
+・CVE-2026-78619 (Punk::Plugin::TOTP (リカバリコード比較不備)) → 2FAバイパスだがニッチなPerl CPANモジュール・軸1=6点で閾値未満・国内トリガーなし
+・CVE-2026-78655 (Punk::Plugin::TOTP (セッションリプレイ)) → 軸1=6点で閾値未満・国内トリガーなし
+・CVE-2026-80138 (ClipBucket V5 (Web installer command injection)) → 未認証RCEだが利用の少ない動画プラットフォーム・軸1=6点で閾値未満・国内トリガーなし
+・CVE-2026-80203 (grav-plugin-api (UsersController)) → 軸1=6点・国内トリガーなし
+・CVE-2026-80204 (grav-plugin-api (BlueprintController)) → CVE-2026-80203と同一プラグインの別エンドポイント・軸1=6点で閾値未満・国内トリガーなし
+・CVE-2026-80235 (EFence) → 台湾ベンダー固有製品・軸1=6点で閾値未満・国内トリガーなし
+・CVE-2026-80349 (TarsWeb) → Tencent社内OSSでニッチ・軸1=6点で閾値未満・国内トリガーなし
+・CVE-2026-80428 (ILIAS (Shibboleth back-channel logout)) → 軸1=7点(デシリアライズRCE+3・CVSS9+3・広く使われる+1)で閾値未満・国内トリガーなし
+・CVE-2026-81032 (NebulaGraph) → ニッチなグラフDB・軸1=6点で閾値未満・国内トリガーなし
+・CVE-2026-12717 (BigQuery Data Transfer Service (CData JDBC連携)) → 認証済みユーザーのみ悪用可能(未認証RCE加点なし)・軸1=4点で閾値未満・国内トリガーなし
+・CVE-2026-19485 (Vertex AI Search for Commerce (BigQuery Import Staging)) → 軸1=7点(未認証アクセス+3・CVSS9+3・広く使われる+1)で閾値未満・国内トリガーなし
+・CVE-2026-75062 (Google langfun (lf.query Eval Injection)) → 未認証RCEだがAI研究用ライブラリでニッチ・軸1=6点で閾値未満・国内トリガーなし
+・CVE-2026-80202 (Kimai) → 認証済みロール間のアクセス制御不備(認証バイパスではない)・軸1=3点で閾値未満・国内トリガーなし
+・CVE-2026-15203 (iC7-Automation SP / iC7-Marine / iC7-Hybrid GR3) → 産業用可変速ドライブのデバッグ/エンジニアリングインターフェースのアクセス制御不備・軸1=6点で閾値未満・国内トリガーなし（CISA ICSA未確認）
+・CVE-2026-70419 (Cloud Disaster Recovery) → 高権限攻撃者が前提(未認証ではない)・軸1=4点で閾値未満・国内トリガーなし
+・CVE-2026-75896 (Liderahenk) → トルコ国立研究機関(TÜBİTAK BİLGEM)向け資産管理ソフトウェアで国内利用実績未確認・軸1=6点で閾値未満・国内トリガーなし（調査エージェントが低優先度フラグ付与）
+・CVE-2026-59769 (FA-50（簡易AIS/船舶自動識別装置、古野電気）) → reported-cves.mdに2026-08-26付で既報(参考A採用・exploitation_stage: none)。JVNVU#95422936の内容は本調査窓(2026-08-26 07:00〜2026-08-27 07:00)内に変化なし
+・CVE-2026-67578 (FA-50（簡易AIS）認証欠如) → CVE-2026-59769と同一JVNVU#95422936(公開は前回調査窓以前)の併記脆弱性・CVSS7.5・軸1=2点相当でスコア閾値未満
+・CVE-2026-77550 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77554 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77533 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77534 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77536 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77543 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77546 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77547 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77548 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77553 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77552 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77557 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77532 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77535 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77539 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77540 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77541 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77542 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77545 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77549 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+・CVE-2026-77551 (UniFi/EdgeMAX系製品群) → Ubiquiti Security Advisory Bulletin 066の一括開示バッチ。代表CVE-2026-77537(reference_b採用)に集約（単一ベンダーPSIRTの同一窓内5件以上一括公開のためpipeline-1-cve.mdの規定によりバッチ集約）
+
+
+本日の集計:
+CVE — ゼロデイ特報1件 / 本編3件 / 参考A0件 / 参考B5件 / 除外59件
+APT — 本編0件 / 注目動向0件 / 除外1件
+AI攻撃 — 本編0件 / 参考A0件 / 参考B0件 / 除外2件
+SOC推奨情報 — 高0件 / 中0件 / 低0件 / 除外1件
+
+========================================
