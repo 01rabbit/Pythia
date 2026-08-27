@@ -13,10 +13,11 @@ import glob
 import os
 import statistics
 from collections import defaultdict, Counter
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TODAY = date(2026, 8, 27)  # currentDate context
+JST = timezone(timedelta(hours=9))
+TODAY = datetime.now(JST).date()  # JST 実行日（currentDate context）
 
 # ---------------------------------------------------------------------------
 # 1. 観測データ読み込み

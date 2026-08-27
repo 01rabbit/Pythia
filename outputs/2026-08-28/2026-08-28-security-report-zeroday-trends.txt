@@ -1,0 +1,149 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-28 09:30 JST
+調査期間: 2026-08-27 07:00 〜 2026-08-28 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし。Track-B候補はPaperCut NG/MF未採番ゼロデイを含め下記【注目CVE（リスト外）】参照）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Nimbus Manticore（別名: GalaxyGato・Mirage Kitten・Screening Serpens・Smoke Sandstorm・Subtle Snail・UNC1549 / 国家帰属: IR / 帰属信頼度: 高）
+活動タイプ: new_malware / ttp_update / active_campaign
+------------------------------------------------------------
+
+標的: defense, it / Middle East, Europe, North America, Africa, South Asia
+マルウェア: TWOSTROKE-like backdoor・unnamed SSH tunneling utility
+
+【24時間以内の変化】
+[Group-IB 2026-08-26] Group-IB初報（The Hacker News 2026-08-26経由）: Nimbus Manticore（IRGC関連、帰属信頼度: 高）がTWOSTROKE類似のC++バックドアと新規SSHトンネリングユーティリティを投入。両者ともWindows Terminal Server SDK DLL（wtsapi32.dll）を偽装したDLLサイドローディングで展開。'Dream Job'型ソーシャルエンジニアリングを用い、防衛・航空宇宙・IT・軍事機関を中東・欧州・米国・アフリカ・南アジアで標的化。C2: 172.86.98[.]113:443
+
+【概要】
+Group-IBがIran IRGC関連の脅威クラスタNimbus Manticore（別名GalaxyGato/Mirage Kitten/Screening Serpens/Smoke Sandstorm/Subtle Snail/UNC1549）による新規ツールセットを報告した。既知のTWOSTROKEバックドアに類似したC++製インプラントと新規SSHトンネリングユーティリティの2種を確認し、いずれもWindows Terminal Server SDKのAPI DLL（wtsapi32.dll）を偽装してDLLサイドローディングで展開される。求人詐称（Dream Job）型ソーシャルエンジニアリングを初期侵入の起点とし、防衛・航空宇宙・IT・軍事関連組織を中東・欧州・米国・アフリカ・南アジアで標的化している。（注：Group-IBは本グループをScreening Serpens等の別名でも言及しており、既報RIS-2026-NimbusManticore-NightLedger（Kaspersky命名・NightLedgerバックドア）およびScreeningSerpens-2026-EpicFury-MiniUpdate（Unit 42追跡・MiniUpdate/MiniJunk）とのcampaign_id重複・統合可能性については、ベンダー間のアクタークラスタ対応関係の確認を要するため自動統合せず人間レビューを提案する。）
+
+攻撃の流れ（判明分）:
+1. Dream Job型求人詐称ソーシャルエンジニアリングで標的にコンタクト
+2. wtsapi32.dllを偽装したTWOSTROKE類似バックドアをDLLサイドローディングで展開
+3. HTTPS C2（172.86.98.113:443）で遠隔操作、必要に応じ同様に偽装したSSHトンネリングユーティリティでリバーストンネルを確立し内部到達性を確保
+
+【新規TTP】
+・[T1574.002] DLL Side-Loading — Windows Terminal Server SDKのAPI DLL（wtsapi32.dll）を偽装したファイル名でバックドア・SSHトンネリングツールを配布・実行（Group-IB原典明示）
+
+【IoC】
+IP: 172.86.98.113
+Filename: wtsapi32.dll
+
+【推奨アクション】
+・システム上のwtsapi32.dllについて、正規パス（C:\Windows\System32）外からのロードや不審な発行元・ハッシュを監視する。172.86.98.113向けの443/SSH通信を遮断・監視対象に追加する。防衛・航空宇宙・IT・軍事関連組織では求人詐称型スピアフィッシングへの注意喚起を強化する。
+Splunk SPL: index=sysmon (EventCode=7) ImageLoaded="*wtsapi32.dll" NOT ImageLoaded="C:\\Windows\\System32\\*" | stats count by Computer,Image,ImageLoaded,Hashes
+Splunk SPL: index=firewall (dest_ip="172.86.98.113") | stats count by src_ip,dest_ip,dest_port,action
+→ 正規のwtsapi32.dllはC:\Windows\System32配下からロードされる。それ以外のパス・プロセスからのロードは高精度シグナルとなる。宛先IP単体の遮断ログのみでは誤検知（スキャン等）と区別できないため、DLLロードイベントとの相関を優先する。
+
+【参照】
+https://thehackernews.com/2026/08/nimbus-manticore-expands-toolset-with.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Dark Caracal / Arctic WolfがDark Caracal（レバノン系サイバースパイグループとして過去に文献で指摘されているが本レポートでの再言及なし・帰属信頼度は中）に新規Go製マルウェアフレームワーク「GoCaracal」を中確度で関連付けたと報告した。軽量版はホスト情報収集・暗号化C2チャネル・対話型シェル・ペイロード取得実行・シェルコードインジェクションを備え、拡張版はさらにブラウザCookie窃取・キーロギング・WebRTC遠隔デスクトップ・SOCKS5プロキシ機能を追加する。特筆すべきは、拡張版がプライマリC2への到達に繰り返し失敗した場合、パブリックのEthereum JSON-RPCエンドポイントへeth_getStorageAtリクエストを送信し、あらかじめ設定したスマートコントラクトに格納された代替C2アドレスを取得する点で、バイナリを再配布せずにC2アドレスを更新できる。金融・税務テーマのSVG添付ファイルによるフィッシングで配信される。2026年6月にベネズエラの通信事業者への侵入で確認されたほか、ブラジル・エクアドル・チリ・コロンビア・エルサルバドル・ウルグアイでも活動の可能性が中程度の確度で指摘されている（推定 — 確認済み被害はベネズエラの1組織のみで、他地域は同社の中確度分析に基づく）。
+帰属信頼度: 中
+推奨アクション: エンドポイントからパブリックEthereum RPCエンドポイント（Infura/Alchemy等）へのJSON-RPC呼び出しのうち、ブラウザ・ウォレットアプリ以外のプロセスからの発信を優先的に精査する。メール添付のSVGファイル（特に金融/税務テーマ）を検疫・サンドボックス解析対象に加える。
+参照: https://thehackernews.com/2026/08/gocaracal-malware-uses-ethereum-smart.html; https://www.darkreading.com/cyberattacks-data-breaches/dark-caracal-adds-new-malware-cyber-espionage-arsenal
+
+・不明（帰属未確定） / 全日空商事が運営する法人向けデジタルギフトサービス「選べるe-GIFT」のシステムが第三者による不正アクセスを受け、利用企業の従業員氏名・会社名・法人ID・ログイン情報・メールアドレスの一部が数分間閲覧可能な状態にあったことが判明した。一部顧客では不正なギフト交換も確認されている。警察および個人情報保護委員会へ報告済みで、対象企業・従業員へは2026-08-24から順次通知している。現時点で流出情報の悪用報告はない。攻撃者・侵入手口の詳細は非公開。
+帰属信頼度: 未確定
+推奨アクション: 同サービス利用企業は対象従業員へのフィッシング・なりすまし警戒を強化し、ログイン情報の変更を検討する。
+参照: https://www.security-next.com/189424; https://scan.netsecurity.ne.jp/article/2026/08/27/56047.html
+
+・不明（帰属未確定・ランサムウェア） / 株式会社フェースが、外部通信用VPN機器を経由した第三者の不正侵入を起点とするランサムウェア攻撃の調査結果を公表した。2026-06-18深夜に侵入が発生し、翌19日にランサムウェアによるシステム障害を検知、複数サーバ・PC内のデータが暗号化・削除された。侵害対象サーバには顧客の氏名・生年月日・性別・住所・電話番号・メールアドレス・ログインID・パスワードが保存されていたが、外部への具体的な持出し痕跡は確認されていない（完全な否定はできないとしている）。EC受注業務は6/19〜24に停止、8/7に概ね通常運用へ復旧、全面復旧は2026-10-31見込み。攻撃者名・悪用された脆弱性の詳細は非公開。
+帰属信頼度: 未確定
+推奨アクション: VPN機器のファームウェア更新・多要素認証導入状況を確認する。パスワードを保存していた顧客に対する注意喚起・パスワード変更案内を検討する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/27/56048.html
+
+・不明（帰属未確定・ランサムウェア） / ニデックの台湾子会社ニデックCCI（Nidec Chaun Choung Technology Corp.）が、2026-06-22に発生した不正アクセス・一部サーバのランサムウェア感染について続報を公表した。攻撃者は被害サーバのフォルダ・ファイル名一覧をダークウェブ上で公開したが、ファイル実体の公開は確認されていない。フォレンジック調査ではログ等による外部情報流出の技術的証拠は得られていないが、外部への情報漏えいの可能性を完全には否定できないとしている。事業運営への影響はなく財務影響も軽微と説明。攻撃者名は非公開。なお、既報RIS-2026-Nidec-WebsiteBreach（親会社ウェブサイトのソフトウェア脆弱性起因、会員28,000名等の情報漏えい可能性）とは標的（台湾子会社サーバ vs 親会社ウェブサイト）・手口（ランサムウェア vs ウェブ脆弱性悪用）が異なる別事案として区別して登録する。
+帰属信頼度: 未確定
+推奨アクション: グループ会社間で類似のランサムウェア侵害が短期間に複数発生していないか横断的に確認する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/27/56043.html
+
+・不明（帰属未確定） / 原田産業株式会社が運営するECサイト「ビールの縁側」が第三者の不正アクセスを受け、一部顧客の個人情報が漏えいした可能性があることを公表した。サイトは一時閉鎖され外部専門家による調査を実施中。漏えいの有無・原因・影響を受けた可能性のある顧客範囲は本日時点で調査中・未確定。攻撃者・侵入手口の詳細は非公開。
+帰属信頼度: 未確定
+推奨アクション: 同サイト利用顧客は続報を確認し、指示があればパスワード変更等を実施する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/26/56034.html
+
+・不明（帰属未確定・決済ページ改ざん） / 害虫駆除用品ECサイト「虫退治ドットコム」（運営: 環境機器株式会社）の決済ページに不正プログラムが設置され、2026-08-11 14:49から08-18 14:00まで稼働していたことが判明した。決済ページに到達した顧客15名のうち6名のクレジットカード情報（カード番号・有効期限・セキュリティコード・名義）、8名の氏名・住所・電話番号・メールアドレス・注文情報、決済未完了1名が対象となる可能性がある。サーバログでは外部への情報送信を技術的に確認できなかったが、同社は全件を漏えいの可能性ありとして対象顧客へ個別連絡した。不正プログラムは既に除去、脆弱性も修正済み。攻撃者の詳細は非公開。
+帰属信頼度: 未確定
+推奨アクション: 対象期間中に同サイトで決済したカードは利用明細を確認し、必要に応じてカード会社へ連絡・再発行を依頼する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/26/56033.html
+
+・不明（帰属未確定・サイト改ざん） / 東海大学山中湖セミナーハウスのウェブサイトが第三者不正アクセスにより改ざんされたことが2026-04-22に確認された（公表は3か月超後の2026-08-05）。サーバに保存されていた2022-05-09〜2026-04-22の宿泊予約関連情報（氏名・電話番号・メールアドレス・FAX番号・学籍/職員番号・所属組織・学部等）約274名分が漏えいした可能性を否定できないとしている。外部への情報持出しは確認されていない。攻撃者・侵入手口の詳細は非公開。
+帰属信頼度: 未確定
+推奨アクション: 対象期間中に予約情報を提供した関係者へ注意喚起を継続する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/26/56029.html
+
+・不明（帰属未確定・サポート詐欺） / 東北文化学園大学の教員がサポート詐欺（偽のセキュリティ警告表示）の被害に遭い、業務用PCが外部から遠隔操作可能な状態になった事案について、フォレンジック調査結果の第三報が公表された。個人情報を含むファイルへの不審なアクセスおよび外部への情報流出の痕跡は確認されなかった。既報の杏林大学教員事案（RIS-2026-KyorinUniv-TechSupportScam）・那覇市立学校教員事案（RIS-2026-NahaTeacher-TechSupportScam）と同種のサポート詐欺パターン。攻撃者・手口の技術的詳細は非公開。
+帰属信頼度: 未確定
+推奨アクション: 教職員向けにサポート詐欺（偽セキュリティ警告からの遠隔操作誘導）に関する注意喚起・訓練を継続する。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/27/56046.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[ゼロデイ特報格] CVE未採番 / PaperCut NG / PaperCut MF（現在サポートされている全バージョン）
+状態: 実悪用確認 / ゼロデイ
+PaperCut NG/MF（プリント管理ソフトウェア）の現在サポートされている全バージョンに影響する認証バイパスの脆弱性が実環境で悪用されていることをPaperCut自身が確認し、2026-08-27に緊急勧告を公開、約16時間後の2026-08-28 01:10 JSTにv25/v26系統向けの緊急アウトオブサイクルビルドをリリースした。認証バイパスは未認証リモートコード実行につながるとされ、CVE番号は本レポート時点（2026-08-28 07:00 JST）で未採番。大学組織の顧客からの通報を契機にベンダーが脆弱性を再現・確認しており、少なくとも1件の実被害環境が存在する。同社の過去のCVE-2023-27350はClop・LockBitランサムウェアやイラン国家系グループに悪用された前例があり、印刷管理サーバは教育・官公庁・大企業で広く使われるため影響範囲は大きいと考えられる（推定）。
+IoC: 確認されず
+参照: https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/; https://www.bleepingcomputer.com/news/security/papercut-warns-of-ng-mf-flaw-exploited-in-zero-day-attacks/; https://www.helpnetsecurity.com/2026/08/27/papercut-ng-mf-vulnerability-attack/; https://cybersecuritynews.com/papercut-ng-mf-vulnerability-actively-exploited/
+
+・[トレンド記事] Manchester Airports Group、最大890万人分の顧客データ流出（Wi-Fi登録・駐車場予約情報等）
+英Manchester Airports Group（マンチェスター・スタンステッド・イーストミッドランド3空港運営）がシステム侵害を公表し、空港Wi-Fi登録・駐車場/ラウンジ/ファストトラック予約に紐づく氏名・メールアドレス・電話番号・車両登録番号・郵便番号が窃取された（決済情報は含まれず、空港運営への影響もなし）。地元報道では最大890万人分が露出した可能性があるとされる。同社はオンライン予約管理サービスを一時停止し電話対応に切替え、外部専門家・法執行機関と連携中。記事執筆時点でランサムウェア・データ恐喝グループの犯行声明は確認されていない（推測 — 攻撃手法・侵入経路は未公表であり原因は不明）。
+参照: https://www.bleepingcomputer.com/news/security/manchester-airports-group-says-hackers-stole-travelers-data/; https://www.theregister.com/security/2026/08/27/cybercrooks-jet-off-with-manchester-airports-group-customer-data/5292943; https://www.infosecurity-magazine.com/news/manchester-airports-data-breach/
+
+・[トレンド記事] SLEEPWALKER: ESET Management Agentへのサイドロードで潜伏するWindows向け新型パッシブバックドア（研究者発表）
+マルウェア研究者Dominik Reichel氏が、特定のネットワークパケット受信までメモリ上で沈黙し続けるWindows向け64bitパッシブバックドア「SLEEPWALKER」を発表した。ESET Management Agent（ERAAgent.exe）の正規プロセスにdpapi.dllを偽装してサイドロードし、TCP/UDP/ICMP/SMB等複数プロトコルに対応した独自の23命令バイトコード言語でコード実行・データ持ち出し等を行う。固定のC2への通信を行わないため通信ベースの検知をすり抜けやすい。単一の検体のみが入手されており収集経緯（配布元・被害者）が不明なため既知の攻撃グループへの帰属はできていない（推測ではなく研究者自身が明言）。ローカル管理者権限を既に持つ攻撃者による侵害後ツールと見られ、実配備の有無は未確認。24時間以内に6件以上の独立ソース（The Hacker News/The Register/SC World/Cybernews/Slashdot等）が報道しバースト検出閾値を超過した。
+参照: https://thehackernews.com/2026/08/newly-sleepwalker-backdoor-waits-for.html; https://www.theregister.com/security/2026/08/24/you-dont-want-this-sleepwalker-backdoor-on-your-windows-machine/5292021; https://r136a1.dev/2026/08/24/sleepwalker-a-passive-backdoor-with-its-own-command-language/
+
+・[トレンド記事] 米大統領令14420、電力系統の外国製産業制御システム機器を国家非常事態として規制
+トランプ大統領は2026-08-26、外国製バルクパワーシステム電力機器（産業制御システム・分散制御システム・安全計装システムを含む）がもたらすサイバーリスクを理由に国家非常事態を宣言する大統領令14420に署名した。特定の「懸念国」に紐づく機器・関連ソフトウェア/ファームウェア/遠隔保守サービスの新規調達・設置を原則禁止し、既設機器についてもエネルギー長官の判断で条件付与・隔離・監視・切断・交換・撤去を命令できる権限を付与する。サイバー攻撃そのものではなく規制・サプライチェーン政策の変更だが、電力事業者のICS/OT資産管理・サプライヤ選定に直接影響する（推測 — 対象となる「懸念国」・機器の具体的リストは今後エネルギー省が定める運用規則で明確化される見込み）。
+参照: https://www.whitehouse.gov/fact-sheets/2026/08/fact-sheet-president-donald-j-trump-declares-a-national-emergency-to-secure-americas-bulk-power-system/; https://www.energy.gov/ceser/securing-united-states-bulk-power-system-executive-order
+
+・[トレンド記事] 2026年7月フィッシング報告状況、Amazonをかたるフィッシングが全体の約37%に急増
+フィッシング対策協議会が2026年7月分のフィッシング報告状況を公表し（2026-08-17発表分がScanNetSecurityにより2026-08-27に紹介）、報告件数は66,119件（前月比6,251件減）、悪用ブランド件数は101件（前月比3件増）だった。ブランド別ではAmazonをかたるフィッシングが約37.0%と突出して急増し全報告の最大シェアを占め、Apple（約11.8%）、セゾンカード（約7.7%）が続き上位5ブランドで全体の約68.6%を占めた。なりすましフィッシングメールの割合は約26.5%に増加、DMARC認証成功メールの割合も約94.7%に上昇しており、送信ドメイン認証をすり抜けない手口へのシフトが継続している。
+参照: https://scan.netsecurity.ne.jp/article/2026/08/27/56042.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】APT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・QTFY-2026-FBIInfrastructureDisruption (QTFY（Nanjing Xinjiuwei Network Technology・中国MSS/PLA関連）) → low_score — FBI/DOJによるQScan/QTRouterインフラ差押え・摘発の公式発表（Lumen Black Lotus Labs技術分析付随）。法執行・摘発情報（FBI主体の disruption action）はpipeline-1b-apt.md規定により日次収集対象外とし週次検証ステージへ移行する。技術的インテリジェンス（QScan/QTRouter/Fast Labyrinth、CVE-2024-8190/8963武器化、qt-proxy[.]org等IOC）は充実しているため週次検証時の参照材料として記録
+・MoYu-2026-DoFunHeadUnitBotnet (MoYu Group) → no_change — Dark Reading 2026-08-26「Android Malware Hijacks Update System for Car Head Units」は既報MoYu-2026-DoFunHeadUnitBotnet（Kaspersky初報2026-08-21・2026-08-23既報）と同一事案（DoFun車載ヘッドユニット・JarService・Zhima・BADBOXエコシステム）の遅延二次報道。新規技術情報・IOC追加なし
+・MabnaInstitute-2026-TreasurySanctions (Mabna Institute) → already_reported — The Hacker News 2026-08-27報道は既報の米財務省2026-08-24付Mabna Institute制裁（初報2026-08-26）と同一事案の直接報道。制裁対象個人としてBehzad MesriおよびArman Kahzadianの氏名が新たに判明（既報は「等」で6名中4名のみ明示）し、Kahzadianによる約3万ドル相当ビットコイン窃取（2023年夏）の詳細も判明。技術的マルウェア名・CVE・IOCの新規開示はなし。軸P/Qを変えるほどの新規性はないため本日のapt_main/apt_notableには計上せず、reported_apts_updatesで既存行への追記のみ行う
+・RIS-2026-E4delPinhole-FTPBannerDeadDrop (不明（帰属未確定・単一ソース技術分析）) → low_score — SOCRadar/MalwareHunterTeam技術分析（The Hacker News 2026-08-25経由）。E4del/PINHOLE新規RAT2種・FTPバナーをデッドドロップに使う新規手法を確認するも、脅威アクター名の帰属なし・スペイン語ルアーで地域限定・PINHOLE FTP統計パネルで実行イベント11件のみと初期段階。軸P3（新規マルウェア発見+3のみ）/軸Q1（限定地域・小規模）のため除外・継続監視対象
+・RIS-2026-NovaCookies-DocusignAitM (不明（帰属未確定・Sneaky 2FA亜種）) → low_score — Island初報・Proofpoint亜種評価（The Hacker News 2026-08-26経由）。DocuSign正規通知を悪用するAitMフィッシングキット「NovaCookies」（月額320ドルのPhaaS）。米英加独イスラエルUAE数百組織標的も脅威アクター名の帰属なし。軸P6（単一ベンダー帰属+3・新規ツール発見+3）/軸Q3（複数地域複数業種+3）で軸P<8・国内昇格トリガーなしのため除外・継続監視対象（SOC推奨情報での個別掲載を別途検討）
+・RIS-2026-Mirage2FA-M365PhaaSSurge (不明（帰属未確定・PhaaS運営者）) → low_score — ANY.RUN初報（The Hacker News 2026-08-25経由）。Microsoft 365標的AiTM型PhaaS「Mirage2FA」が4,532組織・9,000件超の侵害イベントを検知（米国63.7%中心）も脅威アクター名の帰属なし・具体的IOC非公開。軸P3（単一ベンダー帰属+3）/軸Q5（複数地域+3・複数メディア確認は不明のため+0、多数組織+? は具体的組織侵害確認ではなく検知件数のため計上せず暫定+2）で軸P<8・国内昇格トリガーなしのため除外・継続監視対象（SOC推奨情報での個別掲載を別途検討）
+
+
+
+網羅スイープ: 候補62件 / 未処理0件 / KEV窓内追加3件 / EUVD窓内54件（うちEUVD限定0件）
+本日の集計:
+APT — 本編1件 / 注目動向8件 / 除外6件
+========================================
