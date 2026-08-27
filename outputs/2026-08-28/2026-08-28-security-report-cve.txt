@@ -1,0 +1,172 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-28 09:30 JST
+調査期間: 2026-08-27 07:00 〜 2026-08-28 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-19874 / METAL GEAR ONLINE 3（KONAMI）
+CVSS: 9.1 状態: 特記事項なし
+
+【24時間以内の変化】
+[JVN iPedia（JVNVU#96980428）/ ScanNetSecurity 2026-08-27] CERT/CCアドバイザリ（VU#728712）を基にJVNVU#96980428として国内公表。前日（2026-08-26）時点ではCVE番号未採番として既報だったが、本日CVE-2026-19874として採番されたことを確認（reported-cves.md備考に移行記録）
+
+【概要】
+Steamマッチメイキングを用いたMETAL GEAR ONLINE 3のロビー機能において、キック対象プレイヤーのリスト（kick_num・kicked_id_%iフィールド）の処理に入力検証不備があり、ロビーホストが細工したロビーメタデータを配信することでロビー参加者クライアント側でヒープベースのバッファオーバーフローを引き起こし任意コード実行に至る脆弱性。研究者Alice CecchettoがCERT/CCへ報告し、KONAMIはv1.1.2.9で修正済み。本日時点で実悪用・PoC公開いずれも確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+ゲームクライアント側の異常プロセス生成・ネットワーク接続を監視する（コンシューマ向け製品のためエンタープライズSIEM監視の優先度は低い）
+Splunk SPL: index=edr process_name="MGO3*.exe" OR process_name="*MetalGear*" parent_process_name!=explorer.exe | stats count by host, process_name, parent_process_name
+→ 個人ユーザー向けゲームタイトルのため企業SOC監視対象になるケースは限定的。パッチ適用（v1.1.2.9）の周知が最優先の対策
+
+【参照】
+https://kb.cert.org/vuls/id/728712
+https://jvn.jp/vu/JVNVU96980428
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-19874 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2023-49105 / ownCloud core（WebDAV API）
+CVSS: 9.8
+ownCloud core のWebDAV APIにおいて、ユーザーの署名鍵（signing-key）が未設定の場合でも事前署名URL（pre-signed URL）が有効なものとして受理されてしまう認証バイパスの脆弱性。ユーザー名が既知であれば未認証の攻撃者が任意のファイルへアクセス・改変・削除できる。2023年11月の開示直後からPoCエクスプロイト（ambionics/owncloud-exploits）が公開されており継続的にスキャン・悪用の対象となってきたが、CISAが2026-08-27付で改めてKEVカタログへ追加したことで、パッチ未適用インスタンスへの実悪用が現在も継続していることが示唆される。
+IoC: 確認されず
+
+監視: ownCloud WebDAV APIへの署名パラメータ欠落・不正な事前署名URLリクエストを監視する
+Splunk SPL: index=web_proxy sourcetype=access_combined uri_path="*/remote.php/dav/*" OR uri_path="*/remote.php/webdav/*" | search NOT uri_query="*OC-Signature=*" | stats count by clientip, uri_path
+→ 署名パラメータ(OC-Signature等)を伴わない/remote.php/webdav配下への大量リクエストは事前署名URL悪用試行の可能性。正規クライアントの初回同期トラフィックとの誤検知に注意
+
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog; https://www.greynoise.io/blog/cve-2023-49105-webdav-api-authentication-bypass-in-owncloud; https://github.com/ambionics/owncloud-exploits
+
+・CVE-2026-53362 / Linux Kernel（ipv6 __ip6_append_data / フラグメントギャップ会計処理）
+CVSS: 7.8
+__ip6_append_data() のpaged-allocation分岐（MSG_MORE / NETIF_F_SG / 大きなfraglen条件）でalloclen・pagedlenの算出にfraggapが正しく反映されず、UDPv6ソケット経由でヒープ破壊を引き起こせる脆弱性。Red Hatはこれを「ipv6_frag_escape」（RHSB-2026-009）としてコンテナエスケープの文脈で扱っており、コンテナ内の非特権ユーザーがホストへエスケープしSELinuxの強制アクセス制御を回避してroot権限を取得しうると警告している。CISAのKEV登録は実悪用の証拠があることを示すが、独立した第三者による攻撃観測の報道は本日時点で確認できていない。
+IoC: 確認されず
+
+監視: コンテナ内からの異常な特権昇格・ホストプロセスとしての予期しないroot権限取得を監視する
+Splunk SPL: index=linux_audit sourcetype=auditd type=SYSCALL syscall=setuid OR syscall=setns | stats count by hostname, exe, container_id
+→ コンテナランタイム（Falco等）のカーネルイベント監視と組み合わせ、コンテナ名前空間外への予期しないアクセスを重点的に確認する。SELinux監査ログのAVC denyバイパスにも注意
+
+参照: https://access.redhat.com/security/vulnerabilities/RHSB-2026-009; https://ubuntu.com/security/CVE-2026-53362
+
+・CVE-2026-74232 / Zbtlink L3_V2_8 / WE826-T2 / ZBT-7628 / ZBT-ZBT7621ほかルータファームウェア（"DarkLantern"実装バックドア）
+CVSS: 9.8
+VulnCheckの調査により、Zbtlink製および同社がOEM供給するMoreQuick/AP52xxブランドの複数ルータ機種の出荷ファームウェアに、開発者が意図的に組み込んだとみられる未文書化のバックドア"DarkLantern"が発見された。当該機能は設置先ネットワークの情報収集を容易にする設計になっているとVulnCheckは指摘している。これらのルータはAmazon・Alibaba上でZBT・ZBTWiFi・Wiflyerのブランド名でも広く販売されている。ベンダーZbtlinkはVulnCheckの指摘に対し「アフターサービス保守用の機能」と説明したが、対象ファームウェアのダウンロードページを「ファームウェアのセキュリティ脆弱性」を理由に取り下げている（推定—ベンダー対応の詳細動機は非公表）。同一調査では別バックドア"SpeakingStone"（CVE-2026-74233）も同時に報告されている。修正パッチは本日時点で未提供。
+IoC: 確認されず
+
+監視: Zbtlink/MoreQuick系ルータからの不審な外向き通信・管理インタフェース以外からのアクセスを監視する
+Splunk SPL: index=network_traffic src_category=router_zbtlink | stats count by dest_ip, dest_port | where count > 100
+→ 対象機種の存在自体をまず資産台帳・ネットワークスキャンで棚卸しすることが優先。ベンダーが公式な修正パッチを提供していないため、当面は当該機種のネットワーク隔離・交換を推奨
+
+参照: http://vulncheck.com/blog/zbt-darklantern-speakingstone; https://thehackernews.com/2026/08/chinese-made-zbtlink-routers-ship-with.html
+
+・CVE-2026-74233 / Zbtlink WE1326/WE357/WE5926/WE826-Q/WE826-T2/WE826-WD/WG108/WG3526ほかルータファームウェア（"SpeakingStone"監視インプラント）
+CVSS: 9.8
+CVE-2026-74232（DarkLantern）と同一のVulnCheck調査で報告された、Zbtlink製ルータの別ブランチのバックドア。VulnCheckは"SpeakingStone"を「監視インプラント（surveillance implant）」と表現しており、ネットワークトラフィックのリダイレクトも可能とされ、DarkLanternよりもさらに大きなセキュリティリスクを生む可能性があると指摘している。対象機種はCTN720-W1・LF-1541・MT7620Nベースの複数OEM製品を含む。修正パッチは本日時点で未提供。
+IoC: 確認されず
+
+監視: CVE-2026-74232と同様、対象機種の資産棚卸しと不審な通信の監視を実施する
+Splunk SPL: index=network_traffic src_category=router_zbtlink dest_port!=80 dest_port!=443 | stats count by src_ip, dest_ip, dest_port
+→ トラフィックリダイレクト機能が疑われるため、DNS応答改ざん・意図しないルーティング変更の兆候にも注意する
+
+参照: http://vulncheck.com/blog/zbt-darklantern-speakingstone; https://securityboulevard.com/2026/08/vulncheck-warns-that-chinese-zbtlink-routers-include-a-backdoor/
+
+・CVE-2026-81934 / Redis Server（TLS構成時のtlsProcessPendingData処理）
+CVSS: 9.8
+RedisをTLS構成で稼働させている場合、tlsProcessPendingData()が管理するTLS保留データリストの反復処理に、ネストされたイベントループ処理中のノード削除に対する保護が欠けている。接続がコマンド実行中に切断されると、そのリストノードは解放されるが、外側のループが解放済みノードへの参照を保持し続けるためUse-After-Freeが発生する。未認証のリモート攻撃者がこれを悪用し、redis-serverプロセスの権限で任意のコマンドを実行できる。研究者グループv12-securityはLuaオブジェクトのアドレスリーク・保留リスト内の接続順序操作・解放済みノードの再利用による1ビット書き込みプリミティブ化・Luaテーブルの再構築による読み書きプリミティブ確立・バイナリのメモリレイアウト特定・再起動機構の悪用という7段階のエクスプロイトチェーンをPoCとして公開している。影響を受けるのはRedis 8.8.0でTLSを有効化した構成であり、8.2.9/8.4.6/8.6.6/8.8.2/8.10.1で修正済み。本日時点で在野での実悪用の確認報道はない。
+IoC: 確認されず
+
+監視: TLS有効化したRedisインスタンスへの異常な接続パターン・予期しないRedisプロセス再起動を監視する
+Splunk SPL: index=redis_logs sourcetype=redis_server ("Ready to accept connections" OR "Server initialized") | transaction host maxspan=5m | where eventcount > 3
+Splunk SPL: index=network_traffic dest_port=6379 OR dest_port=6380 | stats count dc(src_ip) as unique_sources by dest_ip | where unique_sources > 20
+→ 短時間での繰り返しRedis再起動ログはUAFエクスプロイトの試行失敗（クラッシュ）の兆候である可能性がある。TLSポートへの接続元多様性の急増にも注意
+
+参照: https://github.com/redis/redis/commit/6d088c335d5c3ec49a6c28486140b498e70b7834; https://www.thehackerwire.com/redis-use-after-free-rce-in-tls-handling-cve-2026-81934/; https://github.com/v12-security/pocs/tree/main/redis/server_ssl
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外CVEサマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-18885 (ServiceNow AI Platform) → low_score — CVSSv4.0 10.0 CRITICAL・未認証コード注入（psirt@servicenow.comが自社SaaS基盤へ既にセキュリティ更新を展開済み、顧客オンプレ相当分も提供済み）。軸1=CVSS9以上+3/未認証コード実行+3/広く使われる製品+1=7点で参考B閾値(8点)未達。KEV未登録・PoC未確認・実悪用の独立した報道なし・国内報道なし。ServiceNowはホスト型SaaSのため多くの顧客環境は既にベンダー側で修正済み。僅差での除外のためSOC推奨情報候補として付記（notes_for_soc_agent参照）
+・CVE-2026-18886 (ServiceNow AI Platform) → low_score — CVSSv4.0 10.0 CRITICAL・未認証アクセス制御不備（同一disclosure内、KB3152242）。軸1=7点（CVE-2026-18885と同一算定根拠）で参考B閾値未達。KEV未登録・PoC未確認・実悪用未確認・国内報道なし
+・CVE-2026-74820 (ServiceNow AI Platform) → low_score — CVSSv4.0 10.0 CRITICAL・未認証SQLインジェクション（同一disclosure内、KB3152242）。軸1=7点（同上算定根拠）で参考B閾値未達。KEV未登録・PoC未確認・実悪用未確認・国内報道なし。3件同時開示のためAI基盤関連としてnotes_for_ai_agentにも付記
+・CVE-2026-65956 (KubePi（Kubernetes多クラスタ管理パネル）) → low_score — CVSSv4.0 10.0 CRITICAL・SSO/OIDC/SAML設定APIが認可チェックなしで到達可能（GHSA-wjrh-4j52-c664、1Panel-dev/KubePi、v1.6.15以下、v2.0.0で修正）。軸1=CVSS9以上+3/未認証アクセス制御バイパス+3/広く使われる製品+1=7点で参考B閾値未達。KEV未登録・第三者PoC未確認・実悪用未確認・国内報道なし。Kubernetes多クラスタ管理基盤のSSO設定を乗っ取られるとクラスタ横断の影響があり得るため僅差での除外。SOC推奨情報候補として付記
+・CVE-2026-81735 (UI-TARS-desktop mcp-http-server（bytedance）) → low_score — CVSSv3.1/v4.0 10.0 CRITICAL・startServer.tsが既定で全インタフェース(::)にバインドし認証ミドルウェアが任意適用のため、MCPコマンド実行ツール(@agent-infra/mcp-server-commands)が未認証で到達可能（VulnCheck disclosure、GHSA未確認、bytedance/UI-TARS-desktop）。軸1=CVSS9以上+3/未認証コマンド実行+3/広く使われる製品(AIエージェントデスクトップツールとして一定の採用)+1=7点で参考B閾値未達。KEV未登録・実悪用未確認・国内報道なし。AI/MCPエージェントインフラ関連のためnotes_for_ai_agentに付記
+・CVE-2026-19092 (Tutor LMS（WordPressプラグイン）) → low_score — CVSSv3.1 9.8 CRITICAL・リクエストデータによる内部変数上書きで未認証ユーザーが任意のゼロ引数PHP関数を呼び出し可能（WPScan、v4.0.6未満）。軸1=CVSS9以上+3/未認証+3/広く使われるプラグイン(導入数十万規模)+1=7点で参考B閾値未達。KEV未登録・PoC未確認・実悪用未確認・国内報道なし
+・CVE-2026-32566 (ACPT (Pro) - Custom Post Types Plugin（WordPressプラグイン）) → low_score — CVSSv3.1 9.8 CRITICAL・未認証権限昇格（Patchstack、v2.0.63以下）。軸1=CVSS9以上+3/未認証+3=6点。有料ニッチプラグインのため広く使われる製品加点なし。参考A昇格トリガー該当なし・国内報道なし・KEV未登録・PoC未確認
+・CVE-2026-47884 (Spring Framework（XsltView SSRF/RCE ほかSpring/VMware同時開示4件、計5件）) → low_score — 単一ベンダー(VMware/Spring)が同一窓で5件を一括公開したため集約: CVE-2026-47884(XsltView SSRF/RCE, CVSS3.1 9.8)・CVE-2026-47890(MVC/WebFlux SSEストリーム破損, CVSS3.1 9.8)・CVE-2026-47891(WebFlux+Aalto XMLパーサ maxInMemorySize不備, CVSS3.1 9.8)・CVE-2026-59354(Spring Security OAuth2 Authorization Server 動的クライアント登録検証不備, CVSS3.1 9.6)・CVE-2026-59270(Spring Security組込UnboundID LDAPサーバの既定資格情報・全インタフェースバインド, CVSS3.1 9.4)。最重要のCVE-2026-47884はXsltViewの利用かつ"/**"マッピングでview名未指定という特定条件を要する限定的な実悪用条件（Spring公式アドバイザリも実運用リスクは限定的と評価）。軸1=CVSS9以上+3/広く使われるフレームワーク+1=4点で参考B閾値未達（未認証RCEボーナスは条件付きのため不算入）。5件いずれもKEV未登録・PoC未確認・実悪用未確認・国内報道なし。Spring Frameworkの広範な採用実績を踏まえSOC推奨情報候補として付記
+・CVE-2026-78286 (Geo Controller（WordPressプラグイン）) → low_score — CVSSv3.1 9.8 CRITICAL・未認証PHPオブジェクトインジェクション（Patchstack、v8.9.8以下）。軸1=CVSS9以上+3/未認証+3=6点。ニッチプラグインのため広く使われる製品加点なし。参考Aトリガー該当なし・KEV未登録・PoC未確認・実悪用未確認
+・CVE-2026-78292 (Hash Form（WordPressプラグイン）) → low_score — CVSSv3.1 9.8 CRITICAL・未認証PHPオブジェクトインジェクション（Patchstack、v1.4.1以下）。軸1=6点（CVE-2026-78286と同一算定根拠）。KEV未登録・PoC未確認・実悪用未確認・国内報道なし
+・CVE-2026-77016 (Workeera（WordPressプラグイン、求人プラットフォーム）) → low_score — CVSSv3.1 9.6 CRITICAL・候補者ロールを持つ認証済みユーザーが自身のプロフィールへ任意値を書き込み・任意パス削除が可能（WPScan、v1.0.6未満）。認証済み低権限ユーザーが前提のため未認証加点なし。軸1=CVSS9以上+3のみ=3点。KEV未登録・PoC未確認・実悪用未確認・国内報道なし
+・CVE-2026-77991 (Joomla Event Manager（Joomla拡張機能）) → low_score — CVSSv4.0 9.4 CRITICAL・管理者ロール前提の特権RCE（危険なファイル種別のアップロード許容、v5.0.1未満）。管理者権限が前提のため未認証加点なし。軸1=CVSS9以上+3のみ=3点。KEV未登録・PoC未確認・実悪用未確認・国内報道なし
+・CVE-2026-16279 (3DSwymer / 3DPassport（Dassault Systèmes 3DEXPERIENCE Platform）) → low_score — CVSSv3.1 9.3 CRITICAL・不適切な認可により一部ユーザーアカウントへアクセス可能（3DS PSIRT、R2023x〜R2026x）。軸1=CVSS9以上+3/製造業向けPLM基盤として一定の広範利用+1=4点で参考B閾値未達。詳細な攻撃条件・悪用可能性の技術詳細が非公開のため評価に限界あり。KEV未登録・PoC未確認・実悪用未確認・国内報道なし
+・CVE-2026-32479 (Visitor Traffic Real Time Statistics Pro（WordPressプラグイン）) → low_score — CVSSv3.1 9.3 CRITICAL・未認証SQLインジェクション（Patchstack、v11.17以下）。軸1=CVSS9以上+3/未認証SQLi+3=6点。ニッチ有料プラグインのため広く使われる製品加点なし。参考Aトリガー該当なし・KEV未登録・PoC未確認・実悪用未確認
+・CVE-2026-48996 (Trilium（オープンソース階層型ノートアプリ）) → low_score — CVSSv4.0 9.3 CRITICAL・既定有効の"Safe import"フィルタがノートタイトルを無害化せず、GeoMapノートビューがマーカーのタイトルを未加工でinnerHTMLへ描画（GHSA-7qfw-c9gj-2xq2、v0.103.0以下）。攻撃者供給のインポートアーカイブによる保存型XSS。軸1=CVSS9以上+3/広く使われる製品(個人向けOSSノートアプリとして一定の採用)+1=4点で参考B閾値未達。同日disclosure内にCVE-2026-53578・CVE-2026-53579あり（別インポートベクタの同種脆弱性）。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-53578 (Trilium（オープンソース階層型ノートアプリ）) → low_score — CVSSv4.0 9.3 CRITICAL・"Safe import"フィルタがmindMapノートタイプを除外しJSONコンテンツが無害化されない（GHSA-rj57-j38v-3577、v0.103.0以下）。CVE-2026-48996と同一disclosure内の複合脆弱性。軸1=4点（同一算定根拠）。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-53579 (Trilium（オープンソース階層型ノートアプリ）) → low_score — CVSSv4.0 9.3 CRITICAL・"Safe import"フィルタがbookノートタイプを除外しHTMLとして描画される（GHSA-h7w4-cjfg-cvj8、v0.103.0以下）。CVE-2026-48996/53578と同一disclosure内の複合脆弱性。軸1=4点（同一算定根拠）。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-65641 (Veeam（サービスアカウント経由のSMB認証強制、KB4905）) → low_score — CVSSv4.0 9.3 CRITICAL・未認証ネットワーク攻撃者がサービスアカウントからのSMB認証を強制可能（HackerOne経由、Veeam KB4905）。NTLMリレー等の追加インフラを要する認証強制プリミティブであり単体では直接侵害に至らない。軸1=CVSS9以上+3/広く使われる製品(Veeamはランサムウェア標的として過去に繰り返し悪用実績あり)+1=4点で参考B閾値未達。KEV未登録・PoC未確認・実悪用未確認・国内報道なし。Veeamの過去の標的実績を踏まえSOC推奨情報候補として付記
+・CVE-2026-78251 (DJIドローン各機種（FTPサービスのハードコード認証情報）) → low_score — CVSSv4.0 9.3 CRITICAL・複数機種で共有されるハードコード認証情報を用いてFTP経由で**/blackbox/upgrade/**配下へファイルサイズ・件数無制限でアップロード・既存ファイル上書きが可能。認証情報自体はハードコードで事実上公知に近いため未認証相当として+3算入。軸1=CVSS9以上+3/未認証相当+3/広く使われる製品(DJIはドローン市場シェア最大手)+1=7点で参考B閾値未達。KEV未登録・第三者による実悪用未確認・国内報道なし。ファームウェア改ざん・物理デバイス経由の悪用可能性がありSOC推奨情報候補として付記（僅差での除外）
+・CVE-2026-78260 (Epayco（WordPressプラグイン、決済連携）) → low_score — CVSSv3.1 9.3 CRITICAL・未認証SQLインジェクション（Patchstack、v8.4.6以下）。軸1=CVSS9以上+3/未認証SQLi+3=6点。中南米市場中心のニッチ決済プラグインのため広く使われる製品加点なし。KEV未登録・PoC未確認・実悪用未確認・国内報道なし
+・CVE-2026-78288 (Beautiful Taxonomy Filters（WordPressプラグイン）) → low_score — CVSSv3.1 9.3 CRITICAL・未認証SQLインジェクション（Patchstack、v2.4.6以下）。軸1=6点（同一算定根拠）。KEV未登録・PoC未確認・実悪用未確認・国内報道なし
+・CVE-2026-81094 (mcp-router CLI（MCPアグリゲータ）) → low_score — CVSSv4.0 9.1/v3.1 9.1 CRITICAL・serveコマンドが既定で全インタフェースへバインドし、トークン認証はフラグ指定時のみ強制（VulnCheck disclosure、GHSA-rx55-5c7h-r56r、v0.6.3未満で修正）。既定起動でMCPアグリゲータおよび配下の全MCPサーバが未認証で外部到達可能。軸1=CVSS9以上+3/未認証アクセス+3/AIツールエコシステムでの採用拡大+1=7点で参考B閾値未達。KEV未登録・実悪用未確認・国内報道なし。AI/MCPインフラ関連のためnotes_for_ai_agentに付記
+・CVE-2026-81096 (ToolUniverse（mims-harvard、AIツール実行基盤）) → low_score — CVSSv3.1 10.0/v4.0 9.3 CRITICAL・python_code_executorツールのサンドボックスがdunder属性到達を許し、かつサーバ側認証が不要（VulnCheck disclosure、GHSA-pxwq-22vf-87fm、v1.2.6以下）。サンドボックスエスケープと認証欠如の複合で未認証RCEに至る。軸1=CVSS9以上+3/未認証RCE+3/AI研究コミュニティでの一定の採用+1=7点で参考B閾値未達。KEV未登録・実悪用未確認・国内報道なし。AI/MCPインフラ関連のためnotes_for_ai_agentに付記
+・CVE-2026-81098 (Telnyx MCPサーバ) → low_score — CVSSv4.0 9.3/v3.1 9.1 CRITICAL・HTTPトランスポートが全インタフェースへバインドし認証ヘッダ欠如時もディスパッチが完了（VulnCheck disclosure、GHSA-46jp-xr2h-fw7h）。軸1=CVSS9以上+3/未認証アクセス+3/通信API事業者提供ツールとして一定の採用+1=7点で参考B閾値未達。KEV未登録・実悪用未確認・国内報道なし。AI/MCPインフラ関連のためnotes_for_ai_agentに付記
+・CVE-2026-81672 (TOOOLS iSquad（'/ws/apiprensa/getVideoSubcanal'エンドポイント、スペイン地方メディア系プラットフォーム）) → low_score — CVSSv4.0 9.3 CRITICAL・id_videoパラメータ経由の未認証SQLインジェクション（INCIBE-CERT、multiple-vulnerabilities-toools-isquad）。軸1=CVSS9以上+3/未認証SQLi+3=6点。スペイン国内向けニッチメディア配信基盤のため広く使われる製品加点なし。同一advisory内にCVE-2026-81673/81674/81675あり（アグリゲータCNAのためバッチ集約せず個別記録）。KEV未登録・PoC未確認・実悪用未確認・国内報道なし
+・CVE-2026-81673 (TOOOLS iSquad（'/ws/apitribuna/setVisita'エンドポイント）) → low_score — CVSSv4.0 9.3 CRITICAL・id_video/id_ambitoパラメータ経由の未認証SQLインジェクション（INCIBE-CERT）。CVE-2026-81672と同一advisory内。軸1=6点（同一算定根拠）。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-81674 (TOOOLS iSquad（'/ws/apiprensa/getVideoNextPrev'エンドポイント）) → low_score — CVSSv4.0 9.3 CRITICAL・id_ambitoパラメータ経由の未認証SQLインジェクション（INCIBE-CERT）。同一advisory内。軸1=6点（同一算定根拠）。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-81675 (TOOOLS iSquad（'/ws/apiprensa/getVideoUltimasSeccion'エンドポイント）) → low_score — CVSSv4.0 9.3 CRITICAL・id_seccionパラメータ経由の未認証SQLインジェクション（INCIBE-CERT）。同一advisory内。軸1=6点（同一算定根拠）。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-81698 (openssl_encrypt / pip openssl-encrypt（Python製暗号化CLIツール）ほか14件・計15件) → low_score — 単一プロジェクト(openssl_encrypt、VulnCheck disclosure)が同一窓で15件を一括公開したため代表1件（infoコマンドのシェルインジェクション、CVSSv4.0 9.3/v3.1 7.5）に集約: CVE-2026-81680・CVE-2026-81681・CVE-2026-81685・CVE-2026-81694・CVE-2026-81695・CVE-2026-81696・CVE-2026-81698・CVE-2026-81700・CVE-2026-81701・CVE-2026-81702・CVE-2026-81706・CVE-2026-81707・CVE-2026-81714・CVE-2026-81717・CVE-2026-81719（v1.4.9未満、内容は封筒形式の復旧スロット改ざん・USBワークスペース処理・信頼できないドライブ名サニタイズ・key_id/制御文字ターミナルエスケープ・infoコマンドのシェルインジェクション・GPG署名検証・拒否リスト回避・フィンガープリント再導出・識別子名前空間衝突・サフィックス許容マッチング・USBワークスペース複合弱点・サードパーティプラグイン実行等、多岐にわたる個別修正）。軸1=CVSS9以上+3/シェルインジェクションによるRCE相当+3=6点。個人開発のニッチなPython CLIツールのため広く使われる製品加点なし。KEV未登録・第三者による実悪用未確認・国内報道なし
+・CVE-2026-75329 (super-diamond-server（Netty設定配信サービス、ポート8283）) → low_score — CVSSv3.1 9.8 CRITICAL・Netty設定配信サービスが認証機構を持たずDB資格情報・APIキー等の全設定を取得可能（GitHub個人研究者公開、fangtang7/CVE、v1.3.3以下）。軸1=CVSS9以上+3のみ=3点。中国国内の小規模OSSプロジェクトで実導入規模不明・ベンダー公式アドバイザリなし。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-75330 (super-diamond-server（プレビューエンドポイントのSQLインジェクション）) → low_score — CVSSv3.1 9.8 CRITICAL・moduleパラメータのStringUtils.split()経由のSQL文字列結合によるSQLインジェクション（GitHub個人研究者公開、v1.3.3以下）。CVE-2026-75329と同一プロジェクト・同一研究者による公開。軸1=3点（同一算定根拠）。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-75332 (Zyplayer-Doc（WikiPageWebService.download経由のSSRF）) → low_score — CVSSv3.1 9.1 CRITICAL・WikiPageWebService.download()経由のSSRF（GitHub個人研究者公開、v1.0.0以下）。軸1=CVSS9以上+3のみ=3点。実導入規模不明・ベンダー公式アドバイザリなし。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-75336 (Funiture（/sys/tool/select.json等のSQLインジェクション）) → low_score — CVSSv3.1 9.8 CRITICAL・バックエンドツールインタフェースのSQLインジェクション（GitHub個人研究者公開、v1.0.0）。軸1=3点（同一算定根拠）。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-75338 (disconf（分散設定管理プラットフォーム）) → low_score — CVSSv3.1 9.8 CRITICAL・設定取得APIが未認証で到達可能（GitHub個人研究者公開、v2.6.36）。軸1=CVSS9以上+3のみ=3点。実導入規模不明・ベンダー公式アドバイザリなし。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-75340 (jetlinks community（デバイスメタデータインポートエンドポイントのSSRF）) → low_score — CVSSv3.1 9.1 CRITICAL・/device/instance/{productId}/property-metadata/importエンドポイントのSSRF（GitHub個人研究者公開、v2.11）。軸1=CVSS9以上+3のみ=3点。実導入規模不明・ベンダー公式アドバイザリなし。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-57499 (Liman（サーバ管理ソフトウェア）) → low_score — CVSSv3.1 9.1 CRITICAL・ログローテーション設定エンドポイントのip_addressパラメータ経由OSコマンドインジェクション（GHSA-3jrp-54r2-9g63、v2.2.2-1103未満）。認証済み管理者権限が前提のため未認証加点なし。軸1=CVSS9以上+3のみ=3点。KEV未登録・PoC未確認・実悪用未確認・国内報道なし
+・CVE-2026-78274 (Fluent Boards Pro（WordPressプラグイン）) → low_score — CVSSv3.1 9.1 CRITICAL・Editorロールの認証済みユーザーによる任意ファイルアップロード（Patchstack、v2.0.11以下）。Editor権限が前提のため未認証加点なし。軸1=CVSS9以上+3のみ=3点。KEV未登録・PoC未確認・実悪用未確認・国内報道なし
+・CVE-2026-81826 (Flowintel（CIRCL、脅威インテル分析プラットフォーム）) → low_score — CVSSv4.0 9.1 CRITICAL・パスワード変更時に既存セッションが失効しない（CIRCL disclosure）。軸1=CVSS9以上+3のみ=3点。KEV未登録・実悪用未確認・国内報道なし
+・CVE-2026-66384 (JFrog Artifactory（Dockerキャッシュパス制限不備）) → low_score — CVSSv3.1 5.3 MEDIUM・認証済みユーザーが特定のリモートリポジトリ条件下でDockerキャッシュパス外へ書き込み可能（CISA KEVカタログへ2026-08-27付で新規追加、FCEB期限2026-09-10）。KEV登録済みでE1観測イベントとして処理したが、認証済みユーザー前提かつCVSS5.3 MEDIUMと実害度は限定的。軸1=KEV/実悪用確認+5/広く使われる製品(JFrog Artifactoryは企業DevOps基盤として広く利用)+1=6点で参考B閾値未達。参考: NVD参照リストに2026年7月のOpenAI/Hugging Faceインシデント技術報告書(別クラスタのCVE-2026-65617等9件が関連、本CVEとの直接的関連は未確認)が含まれるが、本CVEが同インシデントで実際に使用されたかは確認できていない（憶測を避け明記しない）。国内報道なし
+・CVE-2026-59561 (サクラエディタ) → already_reported — 2026-08-25初報・参考A採用済み。本日ScanNetSecurityが再度取り上げたが（JVN#74538868の内容を踏襲した記事）、新規ファクトなし。窓内追加調査ソース（security-intel-collector RSS）で発見
+・CVE-2026-59769 (FA-50（古野電気製AIS、ハードコード認証情報）) → already_reported — 2026-08-26初報・参考A採用済み。本日のScanNetSecurity記事は同一JVNVU#95422936の内容の再掲で新規ファクトなし。窓内追加調査ソースで発見
+・CVE-2026-67578 (FA-50（古野電気製AIS、認証欠如）) → already_reported — 2026-08-26分レポートJSONに既収録（CVE-2026-59769と同一JVNVU#95422936内の複合脆弱性）。窓内変化なし
+・CVE-2026-18431 (Avada（WordPressテーマ、Fusion Builder連携ゼロクリックRCEチェーン）) → already_reported — CVE公開2026-08-26T07:16 UTC・BleepingComputer報道2026-08-26T21:33 UTCはいずれも前回調査窓（2026-08-26 07:00〜2026-08-27 07:00 JST）内であり2026-08-27分レポートJSONに既収録。本日窓内（2026-08-27 07:00 JST以降）の新規進展は確認できず。窓内追加調査ソースで発見
+・CVE-2026-73635 (Apache Struts 2（リソース枯渇）) → already_reported — 2026-08-26初報・参考A採用済み。本日のScanNetSecurity/JVN記事は同一内容の再掲。窓内追加調査ソースで発見
+・CVE-2026-69414 (Microsoft Defender "ShieldBreak") → already_reported — 2026-08-18初報・ゼロデイ特報採用済み（RoguePlanet修正バイパス）。窓内新規進展なし。本日のScanNetSecurity記事は別CVE（CVE-2026-33825 BlueHammer）に関する内容で、当初「Microsoft Defender特権昇格」という見出しから同一事案と誤認しかけたが確認の結果別件と判明
+・CVE-2026-33825 (Microsoft Defender Antimalware Platform（BlueHammer）) → already_reported — 2026-06-30初報・2026-07-01本編採用済み。本日ScanNetSecurityが改めて技術詳細（EICAR検知トリガーによるVSS作成→ハッシュ読み取り手口）を報じたが2026年4月修正済みの既知事案で新規ファクトなし。窓内追加調査ソースで発見
+・CVE-2026-8452 (Citrix NetScaler ADC / NetScaler Gateway) → already_reported — 2026-08-16初報・本編採用済み（watchTowr Labs SAML SignedInfo PrefixList RCE再分類）。CISAが2026-08-26付でKEV追加（FCEB期限2026-08-29）した件は2026-08-27分レポートで既に反映済み（exploitation_stage poc_public→active_exploitation更新済み）。本日Security NEXTが「SQL Server/NetScalerなど既知脆弱性6件」として再度取り上げたが新規ファクトなし。窓内追加調査ソースで発見
+・CVE-2019-1068 (Microsoft SQL Server) → already_reported — 2026-08-27分レポートで既に参考B採用済み（CISAが2026-08-26付でKEV追加）。本日Security NEXTの再掲記事は新規ファクトなし
+・CVE-2021-23758 (Ajax.NET Professional) → already_reported — 2026-08-27分レポートで既に参考B採用済み（CISAが2026-08-26付でKEV追加、UAT-10147キャンペーン関連）。本日Security NEXTの再掲記事は新規ファクトなし
+・CVE-2022-0995 (Linux Kernel（watch_queue通知サブシステム）) → already_reported — 2026-08-27分レポートで既に参考B採用済み（CISAが2026-08-26付でKEV追加、UAT-10147キャンペーン関連）。本日Security NEXTの再掲記事は新規ファクトなし
+・CVE-2015-5287 (Red Hat Automatic Bug Reporting Tool (ABRT)) → already_reported — 2026-08-27分レポートで既に除外サマリー記録済み（軸1=5点で閾値未満と判定済み）。CISAが2026-08-26付でKEV追加した点自体は事実だが軸1再計算しても閾値未達（本日はKEV再追加ではなく既報の反復のみ）。窓内追加調査ソースで発見・新規ファクトなし
+・CVE-2015-3246 (Red Hat Libuser) → already_reported — 2026-08-27分レポートで既に除外サマリー記録済み（軸1=5点で閾値未満と判定済み）。本日Security NEXTの再掲記事は新規ファクトなし
+
+
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A1件 / 参考B5件 / 除外52件
+========================================
