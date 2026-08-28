@@ -1,0 +1,271 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-29 11:00 JST
+調査期間: 2026-08-28 07:00 〜 2026-08-29 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-82078 / PaperCut NG / PaperCut MF（現在サポートされている全バージョン）
+対象: 現在サポート対象の全バージョン（v24/v25/v26系統）。v25/v26は2026-08-28 10:10 JST、v24は同日中に緊急アウトオブサイクルビルドで修正
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: v4: 9.4 (Critical)
+状態: 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[PaperCut 2026-08-28] CVE-2026-82078（データベース接続ユーティリティの安全でない動的クラスロード、CVSSv4 9.4）とCVE-2026-81578（Webマネジメントインタフェースの認可不備）を正式にCVE採番し詳細を公開。両者の連鎖で未認証攻撃者が任意コード実行に至ると確認
+[PaperCut 2026-08-28] v25/v26系統向け緊急アウトオブサイクルビルド（Windows/Linux/macOS）をリリース。同日中にv24系統向けビルドも追加公開
+[The Hacker News / Rapid7 / Huntress / Help Net Security / cybersecuritynews.com 2026-08-28] 複数のセキュリティベンダーが実悪用の技術的詳細（事前認証チェーン・侵害後挙動）を独立に報告。バースト検出閾値超過（6ソース以上）
+
+【概要】
+PaperCut NG/MF（印刷管理ソフトウェア）の現在サポートされている全バージョンに影響する2件の脆弱性（Webマネジメントインタフェースの認可不備CVE-2026-81578とデータベース接続ユーティリティの安全でない動的クラスロードCVE-2026-82078）が実環境で悪用されていることを2026-08-27にPaperCut自身が確認し、翌08-28にCVE番号を正式採番のうえ緊急アウトオブサイクルビルドを公開した（既報2026-08-28分レポートではCVE未採番のトラックB「注目CVE」扱いだったが、本日CVE採番・製品特定によりトラックAへ帰属し直した）。2件を連鎖させると未認証の攻撃者が任意コード実行に至る。同社の過去のCVE-2023-27350はClop・LockBitランサムウェアやイラン国家系グループに悪用された前例があり、印刷管理サーバは教育・官公庁・大企業で広く使われるため影響範囲は大きいと考えられる（推定）。本日時点で独立した公開PoCは確認されていない。
+
+攻撃の流れ:
+1. インターネットに公開されたPaperCut Application ServerのWebマネジメントインタフェースへ未認証でアクセスし、CVE-2026-81578の認可不備を悪用して設定変更を行う
+2. 変更した設定を起点にCVE-2026-82078のデータベース接続ユーティリティにおける安全でない動的クラスロードを悪用し、任意コードを実行する
+3. pc-app.exeプロセスからの不審な後続動作・server.logの欠落や切り詰めなどログ隠蔽の痕跡が報告事例で観測されている（侵害後の最終被害は本日時点で未確認）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・インターネットに公開されたPaperCut Application ServerのWebインタフェースへのアクセスをファイアウォールで信頼済みIPアドレスのみに制限する
+・緊急アウトオブサイクルビルド（v24/v25/v26、2026-08-28公開）へ直ちにアップグレードする
+・pc-app.exeの異常な子プロセス生成やserver.logの欠落・切り詰めを監視する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] pc-app.exeプロセスからの不審な後続動作、server.logの欠落・切り詰め、Webマネジメントインタフェースへの異常な設定変更リクエストの有無を確認する
+Splunk SPL: index=* sourcetype=papercut* ("No suitable driver found" OR "Database error looking up cardID") | stats count by host, sourcetype
+Splunk SPL: index=edr OR index=sysmon (parent_process_name="pc-app.exe" OR process_name="pc-app.exe") child_process_name!=pc-*.exe | stats count by host, process_name, parent_process_name, child_process_name
+→ インターネット公開されたPaperCut Application Serverの棚卸しを最優先で行い、アクセス制限と緊急ビルド適用状況を確認する。CVE-2023-27350の悪用実績（Clop/LockBit/イラン国家系）を踏まえ悪用の急拡大に備えた監視強化を推奨する
+
+【参照】
+https://www.papercut.com/kb/Main/security-bulletin-27-aug-2026-urgent-security-advisory/
+https://www.bleepingcomputer.com/news/security/papercut-warns-of-ng-mf-flaw-exploited-in-zero-day-attacks/
+https://thehackernews.com/2026/08/papercut-zero-day-exploited-in-attacks.html
+https://www.rapid7.com/blog/post/etr-papercut-ng-mf-critical-zero-day-exploited-in-the-wild/
+https://www.huntress.com/blog/papercut-actively-exploited
+https://www.helpnetsecurity.com/2026/08/27/papercut-ng-mf-vulnerability-attack/
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（本日窓内で軸1≧8点かつ軸2≧4点の新規事象なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Security NEXT / JPCERT / IPA / JVN 発行等 国内報道・注意喚起
+
+・CVE-2026-78032 / SOYシリーズ（SOY CMS / SOY Calendar / SOY Gallery、斉藤威私氏開発）
+CVSS: v3: 9.3 状態: 状態情報なし
+
+【24時間以内の変化】
+[JVN（JVN#04485476） 2026-08-28] SOYシリーズの複数脆弱性（CVE-2026-78032ほか計4件）がJVN（JPCERT/CCがCNA）として新規公開された
+
+【概要】
+国産OSS「SOYシリーズ」（SOY CMS/SOY Calendar/SOY Gallery）に、未認証で任意コードをWebサーバ権限で実行できる安全でないデシリアライゼーション（CVE-2026-78032、CVSSv3 9.3〜9.8相当）を含む計4件の脆弱性がJVN（JPCERT/CCがCNA）として公開された。他3件（CVE-2026-73827/77838/78238）はログイン済みユーザーによる格納型XSS。開発者提供情報に基づく最新版へのアップデートが呼びかけられている。本日時点で実悪用・PoC公開は未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] SOY CMS/Calendar/Galleryを公開運用しているWebサーバのアクセスログでシリアライズ化データを想起させる異常なPOSTペイロードの有無を確認する
+Splunk SPL: index=web sourcetype=access_combined uri_path=*soy* method=POST | stats count by clientip, uri_path
+→ 未認証デシリアライゼーションのため、Webサーバプロセスからの想定外の子プロセス生成も併せて監視する
+
+【参照】
+https://jvn.jp/jp/JVN04485476
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: SOYシリーズにおける複数の脆弱性 https://jvn.jp/jp/JVN04485476
+昇格理由: Security NEXT / JPCERT / IPA / JVN 発行等 国内報道・注意喚起
+
+・CVE-2026-76148 / CorvusSKK（国産日本語IME、SASAKI Nobuyuki氏開発）
+CVSS: 非公開 状態: 状態情報なし
+
+【24時間以内の変化】
+[JVN（JVN#18496672） 2026-08-26] CorvusSKKの複数脆弱性（任意コード実行CVE-2026-76148・辞書ファイル改ざんCVE-2026-76149）がJVNとして公開され、Security NEXT/ScanNetSecurityが2026-08-28に国内向けに報道した
+
+【概要】
+国内で広く使われるオープンソース日本語IME「CorvusSKK」に、Lua機能を悪用した任意コード実行（CVE-2026-76148）と辞書ファイルへの不正書き込み（CVE-2026-76149）の脆弱性が確認された。開発元はv3.3.4でLua機能の無効化とtarファイルサイズの符号付き32bit整数オーバーフロー修正により対応済み。CVSSスコアは本日時点でJVN上に明記されていないが、任意コード実行の影響度から高deverityと評価する。実悪用・PoC公開はいずれも本日時点で未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] CorvusSKKを導入した端末でLua経由の異常なプロセス生成・辞書ファイル（.dic等）への予期しない書き込みを監視する
+Splunk SPL: index=edr (process_name="corvusskk*" OR parent_process_name="corvusskk*") | stats count by host, process_name, parent_process_name
+→ 開発者配布元以外から入手した辞書・スキン・Luaスクリプトの実行有無を優先確認する
+
+【参照】
+https://scan.netsecurity.ne.jp/article/2026/08/28/56057.html
+https://jvn.jp/jp/JVN18496672
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: CorvusSKKにおける複数の脆弱性 https://jvn.jp/jp/JVN18496672
+昇格理由: Security NEXT / JPCERT / IPA / JVN 発行等 国内報道・注意喚起
+
+・CVE-2026-73335 / マイナポイント（Androidアプリ、デジタル庁提供）
+CVSS: v3: 5.3 / v4: 4.6 状態: 状態情報なし
+
+【24時間以内の変化】
+[JVN（JVN#67155805） / Security NEXT / ScanNetSecurity 2026-08-27] デジタル庁提供Androidアプリ「マイナポイント」のCustom URL Schemeハンドラーにおけるアクセス制限不備（CVE-2026-73335）がJVNとして公開され、Security NEXT/ScanNetSecurity/Yahoo!ニュースが国内向けに報道した
+
+【概要】
+デジタル庁が提供するAndroidアプリ「マイナポイント」（v2.0.6以前）のCustom URL Schemeハンドラーにアクセス制限不備の脆弱性が確認された。同一端末にインストールされた悪意あるアプリからIntent経由で当該アプリの機能が悪用され、任意のJavaScriptが実行される可能性がある。GMO Flatt Security社のRyotaK氏が報告。CVSSスコアは中程度（v3.0: 5.3）だが、政府提供の国民向けアプリであり周知の必要性が高いため参考A採用とした。実悪用は本日時点で未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] モバイル端末管理（MDM）を導入している組織は、マイナポイントアプリの最新版適用状況・不審な外部アプリ導入有無を確認する
+→ 一般利用者向けアプリのため組織的なログ監視より最新版アップデート周知が主対策
+
+【参照】
+https://www.security-next.com/189468
+https://jvn.jp/jp/JVN67155805
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: Androidアプリ「マイナポイント」におけるアクセス制限不備の脆弱性 https://jvn.jp/jp/JVN67155805
+昇格理由: Security NEXT / JPCERT / IPA / JVN 発行等 国内報道・注意喚起
+
+・CVE-2026-59781 / Zabbix agent（Windows版、Zabbix LLC製）
+CVSS: v3: 6.7 / v4: 5.4 状態: 状態情報なし
+
+【24時間以内の変化】
+[JVN（JVN#42011956） 2026-08-28] Zabbix agent（Windows版）のインストール時ファイルアクセス権限不備によるDLL読み込みの脆弱性（CVE-2026-59781）がJVNとして公開された
+
+【概要】
+国内でも広く利用される監視ツールZabbixのWindows版エージェントにおいて、インストール時のファイルアクセス権限設定不備（CWE-276）により、ローカルユーザーが不正なDLLを読み込ませ管理者権限で任意コードを実行できる脆弱性が確認された。7.0.24/7.4.8で修正済み。実悪用・PoC公開は本日時点で未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] Zabbix agent (Windows) インストールディレクトリの書き込み権限設定・想定外DLL配置の有無を確認する
+Splunk SPL: index=edr ImageLoaded="*\\zabbix*" AND NOT ImageLoaded IN ("*\\Program Files\\Zabbix Agent*") | stats count by host, ImageLoaded
+→ 監視基盤自体の権限昇格リスクのため、Zabbix agent稼働ホストの棚卸しを優先する
+
+【参照】
+https://jvn.jp/jp/JVN42011956
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: Zabbix agentにおけるDLL読み込みに関する脆弱性 https://jvn.jp/jp/JVN42011956
+昇格理由: Security NEXT / JPCERT / IPA / JVN 発行等 国内報道・注意喚起
+
+・CVE-2026-53620 / GROWI（国産OSSチームWiki、株式会社WESEEK製）
+CVSS: v3: 6.3 / v4: 5.3 状態: 状態情報なし
+
+【24時間以内の変化】
+[JVN（JVN#42348352） 2026-08-28] GROWIのブックマークフォルダAPIにおけるユーザー識別子操作を伴う認可バイパス（CVE-2026-53620）とブックマーク一覧取得APIの認可不備（CVE-2026-68951）がJVNとして公開された
+
+【概要】
+国内で広く使われるOSSチームWiki「GROWI」に、ブックマークフォルダAPIでの認可バイパス（認証済み攻撃者が他ユーザーのブックマークへアクセス・改変・削除可能、CVE-2026-53620）とブックマーク一覧取得APIの認可不備（未認証攻撃者が他ユーザーのブックマーク情報を閲覧可能、CVE-2026-68951）の脆弱性が確認された。v8.0.1で修正済み。深刻度は中程度で実悪用・PoC公開は未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] GROWI管理者はv8.0.1への更新状況とブックマークAPIへの異常アクセスパターンを確認する
+→ 社内Wikiのため外部公開有無に応じて優先度を判断する
+
+【参照】
+https://jvn.jp/jp/JVN42348352
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: GROWIにおける複数の脆弱性 https://jvn.jp/jp/JVN42348352
+昇格理由: Security NEXT / JPCERT / IPA / JVN 発行等 国内報道・注意喚起
+
+・CVE-2026-77537 / UniFi Protect Application ほかUbiquiti製品群22件（SAB-066一括開示・継続）
+CVSS: v3: 10.0 状態: 状態情報なし
+
+【24時間以内の変化】
+[Security NEXT 2026-08-28] 既報（2026-08-27、参考B採用）のUbiquiti Security Advisory Bulletin 066（UniFi Protect/Talk/Access/Network/OS等22件、うち21件クリティカル）についてSecurity NEXTが日本語で報道し国内周知が図られた
+
+【概要】
+Ubiquiti Security Advisory Bulletin 066で一括公開されたUniFi Protect/Talk/Access/Network/OS等22件の脆弱性（うち21件がCVSS 9.0〜10.0のクリティカル）について、Security NEXTが2026-08-28に日本語記事で国内向けに報道したことを確認した。参考A昇格トリガー（Security NEXT国内報道）に該当するため、既報2026-08-27の参考B採用から参考Aへ更新する。実悪用・公開PoCは本日時点でも未確認。単一ベンダーPSIRTの一括公開バッチのため代表CVEのみ記載する（他21件はCVE-2026-77550/77554/77533/77534/77536/77543/77546/77547/77548/77553/77552/77557/77532/77535/77539/77540/77541/77542/77545/77549/77551）。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] UniFi OS/Protect/Talk/Access/Network製品の管理コンソールアクセスログと最新ファームウェア適用状況を確認する
+→ 22件一括のため対象製品棚卸しとファームウェア適用状況の確認を優先する
+
+【参照】
+https://www.security-next.com/189538
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-77537 — 24時間窓内に発行確認されず
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-19313 / WatchGuard Fireware OS（iked） / Dimension / EPM（レガシー）
+CVSS: v3: 9.3
+境界VPN/ファイアウォール機器であるWatchGuard Fireware OSのikedプロセス（IKE/IPsec VPN処理）に、リモート未認証攻撃者が細工したネットワークトラフィック送信のみでコード実行に至りうる脆弱性3件（ヒープオーバーフロー・型混同・EAP-MSCHAPv2ペイロード起点のスタックオーバーフロー、いずれもCVSS9.3）が確認された。同時にレガシーEPMサービスのスタックオーバーフロー1件、DimensionのセッションID平文記録1件も公開された。パッチ提供済みだが本日時点で独立した実悪用報告・国内報道は確認されていない。
+IoC: 確認されず
+
+監視: [ログソース / SIEM] 境界のWatchGuard Firebox/XTMアプライアンスのIKE/IPsecサービス（UDP 500/4500）宛の異常なパケットサイズ・再送パターンを監視する
+Splunk SPL: index=firewall sourcetype=watchguard* (dst_port=500 OR dst_port=4500) | stats count by src_ip, dst_ip, dst_port
+→ 外部公開しているVPNサービスの棚卸しとパッチ適用状況の確認を最優先とする
+
+参照: https://psirt.watchguard.com/CVE-2026-19315
+参照: https://securityonline.info/watchguard-fireware-rce/
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-55565 (Yamcs（衛星地上局ミッション制御フレームワーク、ほかCVE-2026-55559/55511と同一GHSAアドバイザリ計3件）) → GHSA起点・軸1=6点（CVSS9.9+認可不備）/軸2=0点。ニッチな衛星地上局向けOSSで国内利用実績未確認・PoC/実悪用とも未確認のため除外。3件は同一アドバイザリ内の複合脆弱性として集約
+・CVE-2026-55634 (Pimcore（PIM/DXPプラットフォーム、CVE-2026-55220と同一アドバイザリ計2件）) → GHSA起点・軸1=6点/軸2=1点。国内利用実績未確認・PoC/実悪用未確認のため除外
+・CVE-2026-71187 (Ebyte製ゲートウェイ機器（CVE-2026-73125/76179と同一ベンダー計3件）) → 産業用LoRa/無線モジュールメーカーEbyte製品のクライアント側認証ロジック複製による認証回避。軸1=6点/軸2=0点。国内利用実績未確認・PoC/実悪用未確認のため除外。3件は同一ベンダー内の複合脆弱性として集約
+・CVE-2026-75337 (（AI関連のためSection1へ振替）Yu AI Code Mother v4.3) → AIコーディング支援ツールの静的リソースインタフェースにおけるパストラバーサル。AIプラットフォームCVE（C1）としてpipeline-ai-2.mdの軸X×軸Y評価によりSection1 AI攻撃-参考Bへ計上（重複計上を避けるためSection3では除外扱い）
+・CVE-2026-76943 (Xiiaozet LK100Wt（CVE-2026-78239と同一ベンダー計2件）) → 軸1=6点（管理サービス認証不備・CVSS9.8）/軸2=0点。国内流通実績未確認・PoC/実悪用未確認のため除外
+・CVE-2026-82082 (NUMail（Green-Computing製、台湾TWCERT経由）) → 未認証OSコマンドインジェクション・CVSS9.3。台湾国内向け製品で国内流通実績未確認・PoC/実悪用未確認のため除外
+・CVE-2026-82266 (Redpanda（分散ストリーミングプラットフォーム）) → Admin APIが既定でadmin_api_require_auth=falseのまま全インタフェース(0.0.0.0:9644)にバインドされる既定設定不備。軸1=6点（CVSS9.3+広く使われるOSS+1点=7点）/軸2=0点。PoC/実悪用未確認・国内報道未確認のため除外。SOC観点では『既定値のまま公開運用しない』一般的なハードニング事項として別途注意喚起価値はあるが、本日はSection3の数値基準で除外に整理
+・CVE-2026-82277 (Argo Rollouts（KubernetesプログレッシブデリバリーGitOpsツール）) → ダッシュボードが全インタフェースにバインドされRolloutの変更操作が未認証で可能な既定設定不備。軸1=7点/軸2=0点。PoC/実悪用未確認・国内報道未確認のため除外
+・CVE-2026-82329 (JFrog Artifactory（内部リクエスト処理の認証不備、CVE-2026-66384のKEV追加とは別のCVE）) → 既定構成下で権限昇格につながりうる認証処理の弱点。軸1=7点/軸2=0点。CISAが2026-08-27付でKEVへ追加したのは別CVE(CVE-2026-66384、窓外・既報)であり本CVEは別事案。PoC/実悪用未確認のため除外
+・CVE-2026-54754 (Klever-Go（Kleverブロックチェーンプロトコル実装、CVE-2026-54755と同一アドバイザリ計2件）) → マーケットプレイス署名検証不備等。軸1=6点/軸2=0点。国内利用実績未確認・PoC/実悪用未確認のため除外
+・CVE-2026-82244 (Budibase（ローコード開発プラットフォーム）) → プラグイン処理における未認証RCE。軸1=6点/軸2=1点。PoC/実悪用未確認・国内報道未確認のため除外
+・CVE-2026-55068 (free5GC（オープンソース5Gコアネットワーク実装）) → NRF Registration処理の脆弱性。軸1=6点/軸2=0点。研究・実験用途中心のOSSで国内商用利用実績未確認・PoC/実悪用未確認のため除外
+・CVE-2026-55378 (JS Recon（JavaScript列挙・SAST支援ツール）) → PRブランチ処理の脆弱性。軸1=6点/軸2=0点。開発者向けニッチツールでPoC/実悪用未確認のため除外
+・CVE-2026-82090 (Pocket（"Save to Pocket"機能、Mozilla関連）) → 外部HTML注入によるXSS。軸1=3点（CVSS9.0以上のみ、RCE等の加点なし）/軸2=1点。PoC/実悪用未確認のため除外
+・CVE-2026-18717 (ASE2000) → 証明書検証不備。製品詳細・国内利用実績とも確認できず、軸1=6点/軸2=0点。PoC/実悪用未確認のため除外
+・CVE-2026-18918 (Eclipse Lyo（OSLC実装、Eclipse Foundation）) → OAuthサーバー認可チェックのバイパス。軸1=6点/軸2=1点。国内利用実績未確認・PoC/実悪用未確認のため除外
+・CVE-2026-42007 (Open-Xchange（Sieveスクリプトeditheader拡張、メールサーバ）) → 認証済みユーザーによるSieveスクリプト経由のトリガー。軸1=3点（認証要のため未認証RCE加点なし+CVSS9.0以上）/軸2=0点。PoC/実悪用未確認・国内利用実績未確認のため除外
+・CVE-2026-50152 (Ceph（オープンソース分散ストレージ）) → NVD記述が本日時点で詳細まで取得できず脆弱性種別を断定できないため保守的に評価。軸1=4点（CVSS9.0以上+広く使われるOSS）/軸2=0点。PoC/実悪用未確認のため除外。次回検証時に詳細確認を推奨
+・CVE-2026-55247 (plone.app.event（PloneのイベントコンテンツタイプアドオンOSS、CVE-2026-55248と同一アドバイザリ計2件）) → iCal処理関連の脆弱性。軸1=6点/軸2=0点。国内利用実績未確認・PoC/実悪用未確認のため除外
+・CVE-2026-61800 (Wazuh（オープンソースXDR/SIEMプラットフォーム）) → クラスタワーカー間のファイル同期処理でsafe_join()の宛先検証不備によりクラスタ鍵保有者がroot権限で任意ファイル書き込み・RCEに至りうる（cluster keyという認証情報の保有が前提のため単純な未認証RCEではない）。軸1=4点（CVSS9.1+広く使われるセキュリティOSS。認証情報前提のため未認証RCE加点なし）/軸2=0点。PoC/実悪用未確認・国内報道未確認のため除外。SIEM/XDR自体の脆弱性であり監視基盤運用者は認識推奨
+・CVE-2026-40541 (Synology（製品名詳細未特定、XSS）) → Web画面生成時の入力不備によるXSS。軸1=3点（CVSS9.0以上のみ）/軸2=0点。Synology製品は国内NAS利用者多数だが本日時点で対象製品・国内報道とも確認できずのため除外
+・CVE-2026-69658 (MQTT実装（製品・ベンダー名がNVD記述から特定できず）) → MQTT認証情報・制御トラフィックの平文送信。中間者攻撃前提でNVD記述からは具体的な製品・ベンダー名を特定できなかったため対象製品未特定のまま除外
+・CVE-2026-76581 (WPMU DEV Dashboard（WordPressプラグイン）) → 全バージョンに影響する認証バイパス。軸1=7点（CVSS9.8+認証バイパス+広く使われるOSS。KEV/PoC/実悪用いずれも未確認のため8点未達）/軸2=0点。国内報道未確認のため除外。深刻度は高いため次回以降のPoC公開・実悪用動向を継続監視
+・CVE-2026-73125 (Ebyte製ゲートウェイ機器（CVE-2026-71187/76179と同一ベンダー、上記に集約記載）) → CVE-2026-71187のエントリに集約（同一ベンダー3件）
+・CVE-2026-76179 (Ebyte製ゲートウェイ機器（CVE-2026-71187/73125と同一ベンダー、上記に集約記載）) → CVE-2026-71187のエントリに集約（同一ベンダー3件）
+・CVE-2026-78239 (Xiiaozet LK100W（CVE-2026-76943と同一ベンダー、上記に集約記載）) → CVE-2026-76943のエントリに集約（同一ベンダー2件）
+・CVE-2026-54755 (Klever-Go（CVE-2026-54754と同一アドバイザリ、上記に集約記載）) → CVE-2026-54754のエントリに集約（同一アドバイザリ2件）
+・CVE-2026-55220 (Pimcore（CVE-2026-55634と同一アドバイザリ、上記に集約記載）) → CVE-2026-55634のエントリに集約（同一アドバイザリ2件）
+・CVE-2026-55511 (Yamcs（CVE-2026-55565/55559と同一アドバイザリ、上記に集約記載）) → CVE-2026-55565のエントリに集約（同一アドバイザリ3件）
+・CVE-2026-55559 (Yamcs（CVE-2026-55565/55511と同一アドバイザリ、上記に集約記載）) → CVE-2026-55565のエントリに集約（同一アドバイザリ3件）
+・CVE-2026-55248 (plone.app.portlets（CVE-2026-55247と同一アドバイザリ、上記に集約記載）) → CVE-2026-55247のエントリに集約（同一アドバイザリ2件）
+・CVE-2026-82222 (GiveWP（WordPress寄付/募金プラグイン）) → 未認証PHPオブジェクトインジェクション連鎖によるRCE、CVSS10.0。軸1=7点（RCE+CVSS9.0以上+広く使われるOSS。KEV/PoC/実悪用いずれも未確認のため8点未達）/軸2=0点。国内報道未確認のため除外。深刻度は高いため継続監視対象
+・CVE-2026-6876 (ServiceNow Now Platform（サンドボックスエスケープ、CVE-2026-18885/18886/74820と同一パッチ群4件）) → 2026-08-27にServiceNowが公表したNow Platform/AI Platformの脆弱性4件（High: 6876サンドボックスエスケープ、Critical: 18885/18886コードインジェクション・SQLi 74820）。ServiceNow自身が『悪用の兆候は確認していない』と明言。軸1=7点（RCE/SQLi+CVSS10.0×3件+広く使われるSaaS。KEV/PoC/実悪用いずれも未確認のため8点未達）/軸2=0点。国内報道未確認のため除外。クラウド版は同日中にパッチ済み・自己ホスト版は個別適用要
+
+本日の集計:
+CVE — ゼロデイ特報1件 / 本編0件 / 参考A6件 / 参考B1件 / 除外33件
+
+
+========================================
