@@ -143,6 +143,42 @@ def main():
     assert_true(_check({"organization": "CISA", "url": "https://www.cisa.gov/kev"}).violations,
                 "evidence_id と citation_basis が無い primary_reference を拒否する")
 
+    # スキーマが実際に強制されている（置くだけで検証されない状態を作らない）
+    import json_schema_lite as jsl
+    import validate_tactical_schemas as vts
+    state_schema = json.load(open(os.path.join(
+        ROOT, "forecaster", "schema", "tactical-state.schema.json"), encoding="utf-8"))
+    state_props = state_schema["properties"]["states"]["items"]["properties"]
+    assert_true("post_exploit_evidence" in state_props,
+                "状態スキーマが post_exploit_evidence を宣言している")
+    good = {"_schema_version": "2.0", "_as_of_date": "2026-08-30",
+            "_cutoff_at_utc": "2026-08-30T00:00:00Z",
+            "states": [{"state_id": "s1", "subject_type": "vulnerability",
+                        "subject_id": "CVE-2026-99999", "as_of_utc": "2026-08-30T00:00:00Z",
+                        "current_state": "DISCLOSED", "state_confidence": "confirmed",
+                        "observation_ids": [], "post_exploit_evidence": False}]}
+    assert_true(not jsl.validate(good, state_schema), "正しい状態ファイルはスキーマを通る")
+    bad = json.loads(json.dumps(good))
+    bad["states"][0]["post_exploit_evidence"] = "yes"
+    bad["states"][0]["state_confidence"] = "very_sure"
+    assert_true(len(jsl.validate(bad, state_schema)) == 2,
+                "型違反と enum 違反を検出する（スキーマからのドリフトを止める）")
+    assert_true(all(os.path.exists(os.path.join(ROOT, "forecaster", "schema", name))
+                    for name, _glob in vts.SCHEMA_TARGETS),
+                "検証対象に列挙したスキーマがすべて実在する")
+
+    # 昇格ゲートは未算出（None）指標で例外にならず fail-closed になる
+    import validate_model_promotion as vmp
+    gates = json.load(open(os.path.join(ROOT, "forecaster", "config", "promotion-gates.json"),
+                           encoding="utf-8"))["gates"]
+    empty = {"resolved_n": 0, "positive_events": 0, "brier_skill_score": None,
+             "auc_lower_95": None, "calibration_slope": None, "calibration_intercept": None,
+             "evidence_coverage": None, "temporal_integrity_errors": 0}
+    ok_flag, named = vmp.passes(empty, gates, "discriminative")
+    assert_true(ok_flag is False and not named["brier_skill_score"]
+                and not named["evidence_coverage"],
+                "未算出の指標を満たしたとみなさない（None で例外を投げない）")
+
     # 被覆記録が日次パイプラインへ接続されている
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     skill = open(os.path.join(repo_root, "SKILL.md"), encoding="utf-8").read()
@@ -208,7 +244,7 @@ def main():
                             {}, {})
     assert_true(event1 == event2 and event1["summary_fact"] == malicious["summary"],
                 "入力内の命令文を実行せず単なる不変データとして保存する")
-    print("\nTactical v3 adversarial tests: 22 passed")
+    print("\nTactical v3 adversarial tests: 27 passed")
     return 0
 
 

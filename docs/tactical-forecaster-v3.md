@@ -55,6 +55,20 @@ hit にしない。`aggregator_news` と `unattributed` で不発になった件
 被覆記録は Evidence Ledger から導出し（`record_source_coverage.py --from-evidence`）、
 `derived_from` に evidence_id を残す。被覆記録が1件も無い間はモデル昇格を拒否する。
 
+## スキーマの強制
+
+`forecaster/schema/*.json` は `validate_tactical_schemas.py` が
+`json_schema_lite`（標準ライブラリのみの最小検証器）で**実際に検証する**。
+スキーマを置いても読むコードが無ければ契約ではなく文書であり、実際
+`post_exploit_evidence` の追加はスキーマを素通りしていた。
+
+除外台帳に載る成果物（`PRE_TEMPORAL_CONTRACT`）は検査しない。契約導入前に
+生成され監査用に保持しているものであり、遡及改変しないためである（原則D）。
+
+`format` は検証しない。`date-time` 等を自前正規表現で判定すると正しい値を
+誤って落とす危険のほうが大きいので、形式検査は各スキーマの `pattern` か
+呼び出し側の個別検証で行う。
+
 ## 現在の予報対象
 
 TF-1は脆弱性の `DISCLOSED → POC_PUBLIC → LIMITED_EXPLOITATION →
