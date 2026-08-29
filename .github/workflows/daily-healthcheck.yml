@@ -27,8 +27,15 @@ jobs:
           echo "prev=$(TZ=Asia/Tokyo date -d '1 day ago' +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
       # 当日分に加えて前日分も確認する。
-      # 当日分は「未マージPRに成果物あり」ならアラートを抑止するため、
-      # PRがマージされないまま放置された場合を翌日の再確認で拾えるようにする。
+      # 当日分は「未マージPR／未マージブランチに成果物あり」ならアラートを抑止するため、
+      # マージされないまま放置された場合を翌日の再確認で拾えるようにする。
+      #
+      # ★2026-08-29 追加: PR の無い未マージブランチも走査する。
+      # 日次パイプラインは Step 4 で初めて PR を作るため、Step 3（JSON生成）まで到達して
+      # 途中で落ちた場合、成果物は WIP コミットとしてブランチにだけ残り PR は存在しない。
+      # 実際に 2026-08-22 分がこの状態で見落とされ、「未実行・復旧不能」と誤って
+      # 記録された（Issue #158）。PR だけを見ていると「起動しなかった」と
+      # 「起動したが完走しなかった」を区別できない。
       - name: Check deliverables and alert if genuinely missing
         uses: actions/github-script@v7
         env:
@@ -64,6 +71,11 @@ jobs:
             const openPRs = await github.paginate(github.rest.pulls.list, {
               owner, repo, state: 'open', per_page: 50,
             });
+            // PR の有無を問わず、default ブランチ以外のブランチも走査対象にする。
+            const defaultBranch = context.payload.repository?.default_branch || 'main';
+            const branches = (await github.paginate(github.rest.repos.listBranches, {
+              owner, repo, per_page: 100,
+            })).filter((branch) => branch.name !== defaultBranch);
 
             for (const date of dates) {
               const missing = deliverablesFor(date).filter((path) => !fs.existsSync(path));
@@ -98,6 +110,30 @@ jobs:
                 continue;
               }
 
+              // PR が無い未マージブランチも確認する。Step 4（PR作成）到達前に落ちた場合、
+              // 成果物は WIP コミットとしてブランチにだけ残る。この場合は「未実行」ではなく
+              // 「途中で失敗」であり、成果物が復旧可能なので、その事実をアラートに載せる。
+              let pendingBranch = null;
+              const pendingBranchPaths = [];
+              for (const branch of branches) {
+                for (const path of missing) {
+                  if (await existsOnRef(path, branch.commit.sha)) {
+                    pendingBranch = branch;
+                    pendingBranchPaths.push(path);
+                  }
+                }
+                if (pendingBranch) break;
+              }
+
+              // 全成果物がブランチ上に揃っているならPRと同じ扱い（マージ待ち）。
+              if (pendingBranch && pendingBranchPaths.length === missing.length) {
+                core.notice(
+                  `${date}: all deliverables found on unmerged branch ${pendingBranch.name} (no PR). ` +
+                  'Pipeline ran but the branch was never merged — alert suppressed, will re-check tomorrow.'
+                );
+                continue;
+              }
+
               const isToday = date === dates[0];
               const body = [
                 '## 日次パイプライン未完了アラート',
@@ -106,10 +142,23 @@ jobs:
                   ? `09:00 JST 時点で、${date} の日次パイプライン成果物が main に見つかりませんでした。`
                   : `翌日 09:00 JST 時点でも、${date} の日次パイプライン成果物が main に見つかりませんでした。`,
                 '07:00 JST の Routines 実行が起動しなかった、または途中で失敗した可能性があります。',
-                '未マージPR上にも成果物は見つかりませんでした（マージ待ちではありません）。',
+                pendingBranch
+                  ? `未マージPRはありませんが、**未マージブランチ \`${pendingBranch.name}\` に一部の成果物が残っています**（下記）。` +
+                    'Routines は起動しており、途中で中断したとみられます。'
+                  : '未マージPR・未マージブランチのいずれにも成果物は見つかりませんでした（マージ待ちではありません）。',
                 '',
                 '### 不足している成果物',
                 missing.map((path) => `- \`${path}\``).join('\n'),
+                ...(pendingBranch
+                  ? [
+                      '',
+                      `### 未マージブランチ \`${pendingBranch.name}\` に残っている成果物（復旧候補）`,
+                      pendingBranchPaths.map((path) => `- \`${path}\``).join('\n'),
+                      '',
+                      'このブランチにはPRが作られていないため、通常のマージ待ち判定では検知されません。',
+                      '内容を確認し、取り込むか破棄するかを判断してください。',
+                    ]
+                  : []),
                 '',
                 '### 確認・復旧手順',
                 '1. Routines 画面で当日の日次実行の起動状況・ログを確認する',
