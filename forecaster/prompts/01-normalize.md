@@ -26,11 +26,11 @@
 
 `forecaster/observations/YYYY/MM/YYYY-MM-DD.json`
 
-形式: **wrapper 形式に一本化する（スキーマ v1.1）**。素の JSON 配列 `[]` や独自形式での出力は禁止。
+形式: **wrapper 形式に一本化する（スキーマ v1.2）**。素の JSON 配列 `[]` や独自形式での出力は禁止。
 
 ```json
 {
-  "_schema_version": "1.1",
+  "_schema_version": "1.2",
   "_observation_date": "YYYY-MM-DD",
   "_normalization_mode": "source_explicit_all",
   "_normalization_note": "（任意の注記）",
@@ -40,7 +40,9 @@
 }
 ```
 
-- `_schema_version` と `observations` は必須。`_schema_version` は `"1.1"` 固定。
+- `_schema_version` と `observations` は必須。`_schema_version` は `"1.2"` 固定。
+- 正規化直後に `scripts/stamp_observation_availability.py` を実行し、推測ではなく
+  実時計測の `available_at_utc` とEvidence Ledger参照を各observationへ付ける。
 - `_observation_date` はファイル名の日付と一致させる。
 - observation オブジェクトの構造は `forecaster/schema/observation.schema.json` の `$defs/observation` に従う。
 - 書き出し後は `python3 scripts/validate_observations.py --date YYYY-MM-DD` で検証し、違反ゼロを確認してからコミットする。
@@ -159,16 +161,17 @@ IoC を `iocs` に記録する場合:
 
 1. 入力 JSON の各エントリを読み込む。
 2. 各エントリに対して上記ルールに従い observation オブジェクトを生成する。
-3. 全オブジェクトを wrapper 形式（`_schema_version: "1.1"` + `observations` 配列）にまとめ `forecaster/observations/YYYY/MM/YYYY-MM-DD.json` に書き出す。
+3. 全オブジェクトを wrapper 形式（`_schema_version: "1.1"` + `observations` 配列）に一旦まとめ `forecaster/observations/YYYY/MM/YYYY-MM-DD.json` に書き出す。
 4. ディレクトリが存在しない場合は作成する。
-5. `python3 scripts/validate_observations.py --date YYYY-MM-DD` を実行し、違反があれば修正して再実行する（違反ゼロになるまでコミットしない）。
-6. 処理件数（生成 observation 数）とバリデータ結果をチャットに報告する。
+5. `python3 scripts/stamp_observation_availability.py --date YYYY-MM-DD` でv1.2へ固定する。
+6. `python3 scripts/validate_observations.py --date YYYY-MM-DD` を実行し、違反があれば修正して再実行する（違反ゼロになるまでコミットしない）。
+7. 処理件数（生成 observation 数）とバリデータ結果をチャットに報告する。
 
 ---
 
 ## 品質チェック（出力前に確認）
 
-- [ ] 出力が wrapper 形式（`_schema_version: "1.1"` + `observations` 配列）になっているか（素の配列は禁止）
+- [ ] 最終出力が wrapper 形式（`_schema_version: "1.2"` + `observations` 配列）になっているか（素の配列は禁止）
 - [ ] `techniques` に ATT&CK 以外の ID（ATLAS 等）が含まれていないか
 - [ ] `technique_id` にサブテクニックID（T1566.001 等）を直書きしていないか（サブテクニックは `sub_technique_id` へ、`technique_id` と前方一致）
 - [ ] 各 technique に情報源由来の `evidence`（1文）が付いているか（推測付与でないか）

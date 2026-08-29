@@ -25,6 +25,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from datetime import date, datetime, timezone
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCRIPTS = os.path.join(REPO_ROOT, "scripts")
@@ -36,6 +37,9 @@ from tactical_states import (  # noqa: E402
 )
 import validate_transition_claims as vtc  # noqa: E402
 import verify_tactical_forecasts as vtf  # noqa: E402
+import build_reference_rates as brr  # noqa: E402
+import build_tactical_state as bts  # noqa: E402
+import generate_tactical_candidates as gtc  # noqa: E402
 
 PASS, FAIL = [], []
 
@@ -87,15 +91,67 @@ def run_validator(candidates):
 
 
 def main():
+    # 0-a. date-only の同日観測は当日 cutoff より後に利用可能とみなし、未来混入を防ぐ
+    same_day = {"ingested_date": "2026-08-29"}
+    cutoff = datetime(2026, 8, 28, 22, 0, tzinfo=timezone.utc)  # 08-29 07:00 JST
+    available = bts.observation_available_at(same_day, {})
+    (ok("時刻のない同日観測を当日 cutoff の入力に使わない")
+     if available > cutoff else
+     ng("時刻のない同日観測を当日 cutoff の入力に使わない",
+        f"available={available.isoformat()} cutoff={cutoff.isoformat()}"))
+
+    # 0-b. 同一CVE・同日・同状態の転載は一つのリスク単位へ統合する
+    raw_points = [
+        (date(2026, 8, 1), POC_PUBLIC, "obs-a"),
+        (date(2026, 8, 1), POC_PUBLIC, "obs-b"),
+        (date(2026, 8, 3), ACTIVE_EXPLOITATION, "obs-c"),
+    ]
+    timeline = brr.collapse_episode_timeline(raw_points)
+    (ok("同一CVE・同日・同状態を一つのリスク単位へ統合する")
+     if len(timeline) == 2 else
+     ng("同一CVE・同日・同状態を一つのリスク単位へ統合する", str(timeline)))
+
+    # 0-c. reference key は target event を含み、異なるCOAを同じ確率にしない
+    post_key = gtc.reference_key(
+        ACTIVE_EXPLOITATION, "TF1_POST_EXPLOIT_ACTIVITY_PUBLICATION",
+        POST_EXPLOIT_ACTIVITY, 3)
+    broad_key = gtc.reference_key(
+        ACTIVE_EXPLOITATION, "TF1_BROAD_CAMPAIGN", "BROAD_CAMPAIGN", 3)
+    (ok("target event ごとに別 reference key を使う") if post_key != broad_key else
+     ng("target event ごとに別 reference key を使う", post_key))
+
+    # 0-d. 複数CVE記事のscope不明Techniqueを全CVEへ伝播しない
+    multi = {
+        "cve": ["CVE-2026-1111", "CVE-2026-2222"],
+        "exploitation_stage": "poc_public",
+        "techniques": [{"technique_id": "T1078", "tactic": "defense-evasion",
+                         "evidence": "campaign-level evidence"}],
+    }
+    scoped_state, _ = derive_state(multi, subject_id="CVE-2026-1111")
+    (ok("scope不明Techniqueを複数CVEへ伝播しない")
+     if scoped_state == POC_PUBLIC else
+     ng("scope不明Techniqueを複数CVEへ伝播しない", str(scoped_state)))
+
     # 1. 確率の決定論（同一入力から同じ確率が出る）
-    out1 = subprocess.run(
-        [sys.executable, os.path.join(SCRIPTS, "generate_tactical_candidates.py"),
-         "--date", "2026-08-29", "--print-only"],
-        capture_output=True, text=True).stdout
-    out2 = subprocess.run(
-        [sys.executable, os.path.join(SCRIPTS, "generate_tactical_candidates.py"),
-         "--date", "2026-08-29", "--print-only"],
-        capture_output=True, text=True).stdout
+    state_doc = {
+        "_cutoff_at_utc": "2026-08-29T00:00:00Z",
+        "states": [{
+            "state_id": "state-fixture", "subject_type": "vulnerability",
+            "subject_id": "CVE-2026-99999", "current_state": DISCLOSED,
+            "state_confidence": "confirmed", "observation_ids": ["obs-fixture"],
+        }],
+    }
+    rates = {}
+    for h, p in ((3, 0.1), (7, 0.2), (30, 0.3)):
+        key = gtc.reference_key(DISCLOSED, "TF1_POC_PUBLICATION", POC_PUBLIC, h)
+        rates[key] = {
+            "status": "measured", "observed": {"n": 50, "events": 5},
+            "estimate": {"posterior_mean": p, "lower": p / 2, "upper": p * 1.5},
+            "pooled_from": None,
+        }
+    args = (date(2026, 8, 29), state_doc, rates, "2026-08-29T01:00:00Z")
+    out1 = json.dumps(gtc.build(*args), sort_keys=True)
+    out2 = json.dumps(gtc.build(*args), sort_keys=True)
     if out1 == out2 and out1.strip():
         ok("同一入力から候補と確率が再現する（LLM が確率を書かない）")
     else:
@@ -175,9 +231,16 @@ def main():
 
     # 9/10. 採点値の集合と右打ち切り
     idx = {"CVE-2026-99999": []}
-    from datetime import date
-    verdicts = vtf.score(base_candidate(), idx, date(2026, 8, 30))
-    allowed_verdicts = {"hit", "miss", "pending", "unobservable", "abstained"}
+    candidate = base_candidate()
+    candidate["target_event"]["matching_rule_version"] = "tf1-exploitation-v2"
+    verdicts = vtf.score(
+        candidate, idx,
+        datetime(2026, 8, 30, tzinfo=timezone.utc),
+        {"tf1-exploitation-v2": {"negative_outcome_allowed": False}},
+    )
+    allowed_verdicts = {
+        "hit", "miss", "pending", "not_observed", "unobservable", "abstained", "invalid_rule"
+    }
     (ok("採点値が二値＋pending/unobservable/abstained のみ（partial を作らない）")
      if set(verdicts.values()) <= allowed_verdicts
      else ng("採点値の集合", str(verdicts)))

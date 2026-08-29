@@ -223,10 +223,15 @@ def main():
         else ("content_sha256 の決定論", f"{a} != {b}"))
 
     # 11. 既存履歴が変更されていない
-    dirty = subprocess.run(
+    status_lines = subprocess.run(
         ["git", "-C", REPO_ROOT, "status", "--porcelain",
          "forecaster/verification", "forecaster/forecasts"],
-        capture_output=True, text=True).stdout.strip()
+        capture_output=True, text=True).stdout.splitlines()
+    # tactical/ は新v3の名前空間。既存の制度予報検証記録を不変に保つ契約とは分離する。
+    dirty = "\n".join(
+        line for line in status_lines
+        if not line.startswith("?? forecaster/verification/tactical/")
+    ).strip()
     if dirty:
         FAIL.append(("既存の検証記録・予報が変更されていない", dirty))
     else:

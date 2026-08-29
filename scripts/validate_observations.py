@@ -27,16 +27,17 @@ from datetime import datetime
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OBSERVATIONS_DIR = os.path.join(REPO_ROOT, "forecaster", "observations")
 
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "1.2"
 # フィールド構造が同一の後方互換バージョン（例: 2026-07-01 以前の wrapper 形式ファイル）。
 # 新規出力は 01-normalize.md により "1.1" 固定だが、既存の "1.0" wrapper ファイルは
 # 構造が本バリデータの検査内容と一致する限り許容する。
-ALLOWED_SCHEMA_VERSIONS = {"1.0", "1.1"}
+ALLOWED_SCHEMA_VERSIONS = {"1.0", "1.1", "1.2"}
 
 # wrapper で許可するトップレベルキー
 ALLOWED_TOP_KEYS = {
     "_schema_version",
     "_observation_date",
+    "_generated_at_utc",
     "_normalization_mode",
     "_normalization_note",
     "_retro_normalized",
@@ -68,6 +69,8 @@ ALLOWED_OBS_KEYS = set(REQUIRED_OBS_KEYS) | {
     "iocs",
     "related_forecast_id",
     "tags",
+    "available_at_utc",
+    "evidence_ids",
 }
 
 ALLOWED_TECHNIQUE_KEYS = {"technique_id", "sub_technique_id", "tactic", "evidence"}
@@ -422,7 +425,7 @@ def check_file(rep, path, seen_ids):
         rep.add(
             fname, "-", "_schema_version",
             f"バージョン不一致: {data['_schema_version']!r}"
-            f"（許可値: {sorted(ALLOWED_SCHEMA_VERSIONS)}、新規出力は '1.1' 固定）",
+            f"（許可値: {sorted(ALLOWED_SCHEMA_VERSIONS)}、新規出力は '1.2' 固定）",
         )
 
     if "observations" not in data:
@@ -439,6 +442,23 @@ def check_file(rep, path, seen_ids):
             fname, "-", "_observation_date",
             f"日付形式 YYYY-MM-DD ではない: {data['_observation_date']!r}",
         )
+    if data.get("_schema_version") == "1.2":
+        try:
+            datetime.fromisoformat(str(data.get("_generated_at_utc", "")).replace("Z", "+00:00"))
+        except ValueError:
+            rep.add(fname, "-", "_generated_at_utc", "v1.2ではUTC date-timeが必須")
+        for obs in data.get("observations") or []:
+            oid = obs.get("observation_id", "-") if isinstance(obs, dict) else "-"
+            if not isinstance(obs, dict):
+                continue
+            try:
+                dt = datetime.fromisoformat(str(obs.get("available_at_utc", "")).replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    raise ValueError
+            except ValueError:
+                rep.add(fname, oid, "available_at_utc", "v1.2ではtimezone付きdate-timeが必須")
+            if not isinstance(obs.get("evidence_ids"), list):
+                rep.add(fname, oid, "evidence_ids", "v1.2では配列が必須")
     if "_retro_normalized" in data and not isinstance(data["_retro_normalized"], bool):
         rep.add(fname, "-", "_retro_normalized", f"boolean ではない: {data['_retro_normalized']!r}")
     if "_retro_note" in data and not isinstance(data["_retro_note"], str):
@@ -466,7 +486,7 @@ def collect_files(date=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="forecaster/observations/ の observation ファイルをスキーマ v1.1 に照らして検査する。"
+        description="forecaster/observations/ の observation ファイルをスキーマ v1.2 に照らして検査する。"
     )
     parser.add_argument("--date", help="単日指定（YYYY-MM-DD）。省略時は全件検査。")
     args = parser.parse_args()

@@ -1,189 +1,239 @@
 #!/usr/bin/env python3
-"""TF-1 の target_event を決定論的に採点する（設計 §9 / §12 第1段階の完了条件）。
+"""TF-1候補を固定matching ruleと実時刻で決定論的に検証する。
 
-第1段階の完了条件のひとつが「target event をコードで採点できる」ことである。
-本スクリプトはその実装であり、**自然言語の解釈を一切挟まない**。
-
-採点規則:
-  発火 = 予報窓内に、同じ subject について next_state 以上の状態を導出できる観測が
-        存在すること。状態の導出は scripts/tactical_states.py の derive_state()
-        （候補生成・参照率測定と同一実装）を使う。
-        ★候補生成側と採点側で状態の解釈がずれると測定系が壊れるため、実装は共有する。
-
-判定値:
-  hit            … 窓内に発火した
-  miss           … 窓が満了し、発火しなかった
-  pending        … 窓が未満了（右打ち切り）。miss にしない（設計 §9.3）
-  unobservable   … visibility=low。非観測が非発生を意味しないため採点しない
-  abstained      … 候補生成時に棄権済み。分子にも分母にも入れない
-
-★複合命題を partial で逃がさない（設計 §9.2）。判定は二値のみである。
+対象は「現実に悪用が起きたか」ではなく、予報時に宣言したsource universeで
+確認できたかである。bounded open worldでは未確認をmissにせずnot_observedとする。
 
 使い方:
-    python3 scripts/verify_tactical_forecasts.py --date 2026-08-29
-    python3 scripts/verify_tactical_forecasts.py --all
+  python3 scripts/verify_tactical_forecasts.py --all --as-of-utc 2026-09-30T00:00:00Z
+  python3 scripts/verify_tactical_forecasts.py --date 2026-08-30 --write
 """
 
 import argparse
 import glob
 import json
+import math
 import os
 import sys
 from collections import Counter, defaultdict
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from tactical_states import (  # noqa: E402
-    HORIZONS_DAYS, HORIZON_LABELS, STATE_RANK, derive_state,
+from tactical_states import HORIZONS_DAYS, HORIZON_LABELS, derive_state, transition_fired  # noqa: E402
+from tactical_time import (  # noqa: E402
+    JST, conservative_date_availability, iso_utc, load_evidence_index,
+    observation_available_at, parse_utc,
 )
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OBS_GLOB = os.path.join(REPO_ROOT, "forecaster", "observations", "*", "*", "*.json")
-CAND_GLOB = os.path.join(REPO_ROOT, "forecaster", "candidates", "tactical", "*.json")
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OBS_GLOB = os.path.join(ROOT, "forecaster", "observations", "*", "*", "*.json")
+CAND_GLOB = os.path.join(ROOT, "forecaster", "candidates", "tactical", "*.json")
+UNIVERSES = os.path.join(ROOT, "forecaster", "knowledge", "source-universes.json")
+EXCLUSIONS = os.path.join(ROOT, "forecaster", "verification", "tactical", "exclusions.json")
+OUT_ROOT = os.path.join(ROOT, "forecaster", "verification", "tactical")
+COVERAGE_GLOB = os.path.join(ROOT, "forecaster", "evidence", "source-coverage", "*.json")
+UTC = timezone.utc
 JST = timezone(timedelta(hours=9))
 
 
+def load_universes():
+    with open(UNIVERSES, encoding="utf-8") as f:
+        return json.load(f)["universes"]
+
+
+def excluded_paths():
+    if not os.path.exists(EXCLUSIONS):
+        return set()
+    with open(EXCLUSIONS, encoding="utf-8") as f:
+        return {x["artifact"] for x in json.load(f).get("exclusions", [])}
+
+
+def load_coverage():
+    rows = []
+    for path in sorted(glob.glob(COVERAGE_GLOB)):
+        try:
+            with open(path, encoding="utf-8") as f:
+                rows.append(json.load(f))
+        except (OSError, json.JSONDecodeError):
+            continue
+    return rows
+
+
+def source_coverage_proven(records, rule, universe, start, deadline):
+    """各必須sourceについて成功区間が予報窓を切れ目なく覆うか。"""
+    for source in universe.get("sources") or []:
+        intervals = []
+        for row in records:
+            if row.get("matching_rule_version") != rule:
+                continue
+            if (row.get("sources") or {}).get(source) != "ok":
+                continue
+            try:
+                intervals.append((parse_utc(row["window_start_utc"]),
+                                  parse_utc(row["window_end_utc"])))
+            except (KeyError, ValueError):
+                continue
+        cursor = start
+        for lo, hi in sorted(intervals):
+            if hi <= cursor:
+                continue
+            if lo > cursor:
+                break
+            cursor = max(cursor, hi)
+            if cursor >= deadline:
+                break
+        if cursor < deadline:
+            return False
+    return True
+
+
 def load_subject_states():
-    """subject_id -> [(observed_date, state)] を返す（採点用の全期間インデックス）。"""
+    """subject -> [(available_at,event_day_start,state,id,source_type)] を返す。"""
     per = defaultdict(list)
-    latest = date.min
+    evidence = load_evidence_index(ROOT)
     for path in sorted(glob.glob(OBS_GLOB)):
         try:
             with open(path, encoding="utf-8") as f:
                 doc = json.load(f)
         except (OSError, json.JSONDecodeError):
             continue
-        for o in doc.get("observations", []):
-            st, _b = derive_state(o)
-            d = o.get("observed_date")
-            if not st or not d:
-                continue
-            try:
-                dd = date.fromisoformat(d)
-            except ValueError:
-                continue
-            latest = max(latest, dd)
-            for cve in (o.get("cve") or []):
-                per[cve].append((dd, st))
-    return {k: sorted(set(v)) for k, v in per.items()}, latest
+        for obs in doc.get("observations", []):
+            available = observation_available_at(obs, evidence)
+            # date-onlyの事象は同日内の前後を証明できない。日初を下限とする。
+            event_start = conservative_date_availability(obs["observed_date"]) - timedelta(days=1)
+            source_type = (obs.get("source") or {}).get("type")
+            for cve in obs.get("cve") or []:
+                state, _basis = derive_state(obs, subject_id=cve)
+                if state:
+                    per[cve].append((available, event_start, state,
+                                     obs.get("observation_id"), source_type))
+    return {key: sorted(set(values)) for key, values in per.items()}
 
 
-def score(candidate, index, corpus_end):
-    """1候補を時間軸ごとに採点し {horizon: verdict} を返す。"""
-    sel = candidate["selection"]
-    if sel["status"] == "abstained":
-        return {HORIZON_LABELS[h]: "abstained" for h in HORIZONS_DAYS}
-
-    te = candidate["target_event"]
+def score(candidate, index, as_of, universes, coverage_records=None):
+    labels = [HORIZON_LABELS[h] for h in HORIZONS_DAYS]
+    if candidate.get("selection", {}).get("status") == "abstained":
+        return {label: "abstained" for label in labels}
+    te = candidate.get("target_event") or {}
+    universe = universes.get(te.get("matching_rule_version"))
+    if not universe:
+        return {label: "invalid_rule" for label in labels}
     if te.get("visibility_model") == "low":
-        return {HORIZON_LABELS[h]: "unobservable" for h in HORIZONS_DAYS}
+        return {label: "unobservable" for label in labels}
 
-    start = date.fromisoformat(candidate["issued_at_utc"][:10])
+    start = parse_utc(candidate["issued_at_utc"])
     subject = candidate["subject"]["id"]
-    target_rank = STATE_RANK.get(te["next_state"], 99)
     points = index.get(subject, [])
-
+    accepted_types = set(universe.get("accepted_observation_source_types") or [])
     out = {}
-    for h in HORIZONS_DAYS:
-        deadline = start + timedelta(days=h)
+    for horizon in HORIZONS_DAYS:
+        label = HORIZON_LABELS[horizon]
+        deadline = start + timedelta(days=horizon)
         fired = any(
-            start < d <= deadline and STATE_RANK.get(s, -1) >= target_rank
-            for d, s in points
+            start < event_start and start < available <= deadline
+            and (not accepted_types or source_type in accepted_types)
+            and transition_fired(te.get("event_type"), state, te.get("next_state"))
+            for available, event_start, state, _oid, source_type in points
         )
         if fired:
-            out[HORIZON_LABELS[h]] = "hit"
-        elif deadline > corpus_end:
-            out[HORIZON_LABELS[h]] = "pending"
+            out[label] = "hit"
+        elif as_of < deadline:
+            out[label] = "pending"
+        elif universe.get("negative_outcome_allowed") is True:
+            out[label] = "miss"
+        elif (universe.get("negative_outcome_allowed") == "coverage_proven"
+              and source_coverage_proven(coverage_records or [], te.get("matching_rule_version"),
+                                         universe, start, deadline)):
+            out[label] = "miss"
         else:
-            out[HORIZON_LABELS[h]] = "miss"
+            out[label] = "not_observed"
     return out
 
 
-def brier(pairs):
-    """(probability, outcome01) から Brier score を返す。"""
-    if not pairs:
+def metric(pairs, fn):
+    return round(sum(fn(p, y) for p, y in pairs) / len(pairs), 6) if pairs else None
+
+
+def auc(pairs):
+    pos = [p for p, y in pairs if y == 1]
+    neg = [p for p, y in pairs if y == 0]
+    if not pos or not neg:
         return None
-    return round(sum((p - y) ** 2 for p, y in pairs) / len(pairs), 4)
+    wins = sum(1 if p > n else 0.5 if p == n else 0 for p in pos for n in neg)
+    return round(wins / (len(pos) * len(neg)), 6)
 
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--date", help="対象日 YYYY-MM-DD")
-    ap.add_argument("--all", action="store_true", help="全候補ファイルを採点する")
-    ap.add_argument("--json", action="store_true", help="機械可読出力")
+    ap.add_argument("--date")
+    ap.add_argument("--all", action="store_true")
+    ap.add_argument("--as-of-utc", help="採点時点。既定は現在UTC")
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--write", action="store_true")
     args = ap.parse_args()
-
+    as_of = parse_utc(args.as_of_utc) if args.as_of_utc else datetime.now(UTC)
     if args.all:
         paths = sorted(glob.glob(CAND_GLOB))
     else:
         target = args.date or datetime.now(JST).date().isoformat()
-        p = os.path.join(REPO_ROOT, "forecaster", "candidates", "tactical", f"{target}.json")
-        if not os.path.exists(p):
-            print(f"[skip] 候補ファイルがない: {p}")
-            return 0
-        paths = [p]
-
-    index, corpus_end = load_subject_states()
-    rows, tally = [], defaultdict(Counter)
-    scored = defaultdict(list)
-
+        paths = [os.path.join(ROOT, "forecaster", "candidates", "tactical", f"{target}.json")]
+    exclusions = excluded_paths()
+    paths = [p for p in paths if os.path.exists(p) and os.path.relpath(p, ROOT) not in exclusions]
+    index, universes, coverage = load_subject_states(), load_universes(), load_coverage()
+    rows, tally, scored = [], defaultdict(Counter), defaultdict(list)
     for path in paths:
         with open(path, encoding="utf-8") as f:
             doc = json.load(f)
-        for c in doc.get("candidates", []):
-            verdicts = score(c, index, corpus_end)
-            rows.append({"candidate_id": c["candidate_id"],
-                         "subject": c["subject"]["id"],
-                         "current_state": c["current_state"],
-                         "event_type": (c.get("target_event") or {}).get("event_type"),
-                         "verdicts": verdicts})
-            for hl, v in verdicts.items():
-                tally[hl][v] += 1
-                if v in ("hit", "miss") and c.get("probability_by_horizon"):
-                    prob = c["probability_by_horizon"].get(hl)
-                    if prob is not None:
-                        scored[hl].append((prob, 1 if v == "hit" else 0))
-
+        for candidate in doc.get("candidates", []):
+            verdicts = score(candidate, index, as_of, universes, coverage)
+            rows.append({
+                "candidate_id": candidate["candidate_id"],
+                "content_sha256": candidate.get("content_sha256"),
+                "matching_rule_version": (candidate.get("target_event") or {}).get("matching_rule_version"),
+                "verdicts": verdicts,
+            })
+            for label, verdict in verdicts.items():
+                tally[label][verdict] += 1
+                probability = (candidate.get("probability_by_horizon") or {}).get(label)
+                if verdict in {"hit", "miss"} and probability is not None:
+                    scored[label].append((probability, int(verdict == "hit")))
     result = {
-        "_comment": "TF-1 候補の決定論的採点（設計 §9）。partial 判定は作らない。",
-        "_corpus_end": corpus_end.isoformat(),
+        "_schema_version": "2.0",
+        "_generated_at_utc": iso_utc(as_of),
         "_candidate_files": len(paths),
+        "_excluded_files": sorted(exclusions),
         "by_horizon": {},
         "entries": rows,
     }
-    for hl in [HORIZON_LABELS[h] for h in HORIZONS_DAYS]:
-        t = tally[hl]
-        n = t["hit"] + t["miss"]
-        # ★右打ち切りの誤読を防ぐ（設計 §13）。窓が未満了の候補が残っている間、
-        #   hit は先に判明し miss は後から判明するため、hit/(hit+miss) は上方に偏る。
-        #   窓が全件満了するまで的中率を「確定値」として出さない。
-        censored = t["pending"] > 0
-        result["by_horizon"][hl] = {
-            **{k: t[k] for k in ("hit", "miss", "pending", "unobservable", "abstained")},
-            "scored_n": n,
-            "right_censored": censored,
-            "hit_rate": round(t["hit"] / n, 4) if n else None,
-            "hit_rate_is_provisional": censored,
-            "brier": brier(scored[hl]),
-            "_censoring_note": (
-                "窓未満了の候補が残っているため、この的中率と Brier は暫定値であり"
-                "上方に偏る（外れは窓が満了して初めて判明する）。確定は全件満了後。"
-                if censored else None
-            ),
+    for label in [HORIZON_LABELS[h] for h in HORIZONS_DAYS]:
+        counts = tally[label]
+        pairs = scored[label]
+        result["by_horizon"][label] = {
+            **{k: counts[k] for k in (
+                "hit", "miss", "pending", "not_observed", "unobservable", "abstained", "invalid_rule")},
+            "scored_n": len(pairs),
+            "brier": metric(pairs, lambda p, y: (p - y) ** 2),
+            "log_loss": metric(pairs, lambda p, y: -(y * math.log(max(p, 1e-15)) +
+                                                       (1-y) * math.log(max(1-p, 1e-15)))),
+            "auc": auc(pairs),
+            "coverage": round(len(pairs) / sum(counts.values()), 6) if sum(counts.values()) else None,
+            "right_censored": counts["pending"] > 0,
         }
-
+    if args.write:
+        stamp = as_of.strftime("%Y%m%dT%H%M%SZ")
+        out = os.path.join(OUT_ROOT, f"verification-{stamp}.json")
+        os.makedirs(OUT_ROOT, exist_ok=True)
+        with open(out, "w", encoding="utf-8") as f:
+            json.dump(result, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        print(f"[out] {out}")
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        return 0
-
-    print(f"=== TF-1 決定論採点（コーパス終端 {corpus_end}）===")
-    for hl, v in result["by_horizon"].items():
-        mark = "（暫定・上方バイアス）" if v["right_censored"] else "（確定）"
-        print(f"  {hl:4s} 的中{v['hit']:4d} 外れ{v['miss']:4d} 窓未満了{v['pending']:4d} "
-              f"観測不能{v['unobservable']:4d} 棄権{v['abstained']:4d}"
-              f"  → n={v['scored_n']} 的中率={v['hit_rate']} Brier={v['brier']} {mark}")
-    print("\n★窓未満了は miss に数えない（右打ち切り・設計 §9.3）。"
-          "観測不能（visibility=low）は分子にも分母にも入れない。")
+    else:
+        print(f"TF-1 verification as_of={iso_utc(as_of)} files={len(paths)}")
+        for label, row in result["by_horizon"].items():
+            print(f"  {label}: {row}")
+        print("未確認はbounded open worldではnot_observed。missへ変換しない。")
     return 0
 
 

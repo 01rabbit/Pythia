@@ -1,0 +1,45 @@
+name: Tactical Forecaster v3 Validation
+
+on:
+  pull_request:
+    paths:
+      - 'forecaster/**'
+      - 'scripts/**tactical**'
+      - 'scripts/build_event_store.py'
+      - 'scripts/build_case_library.py'
+      - 'scripts/build_episodes.py'
+      - 'scripts/generate_tactical_candidates.py'
+      - 'scripts/build_reference_rates.py'
+      - 'scripts/record_source_coverage.py'
+      - '.github/workflows/tactical-v3-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile tactical pipeline
+        run: python3 -m py_compile scripts/*.py
+      - name: Run tactical regression tests
+        run: |
+          python3 scripts/test_tf1_shadow.py
+          python3 scripts/test_tactical_v3.py
+          python3 scripts/validate_tactical_schemas.py
+      - name: Validate committed tactical artifacts
+        run: |
+          python3 scripts/validate_tactical_integrity.py --all
+          python3 scripts/validate_transition_claims.py --all
+          python3 scripts/validate_model_promotion.py
+      - name: Ensure reference rates are reproducible
+        run: |
+          cp forecaster/models/reference-rates.json /tmp/reference-rates.before.json
+          python3 scripts/build_reference_rates.py
+          diff -u /tmp/reference-rates.before.json forecaster/models/reference-rates.json

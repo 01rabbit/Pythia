@@ -101,14 +101,23 @@ KEV スナップショットは内容ハッシュ名で重複排除されるた�
 Step 3.5 の正規化が終わった後に実行する。**第1段階では発行しない**（全件 shadow）。
 
 ```bash
-python3 scripts/build_tactical_state.py --date "${TODAY}"
-python3 scripts/generate_tactical_candidates.py --date "${TODAY}"
+python3 scripts/stamp_observation_availability.py --date "${TODAY}"
+python3 scripts/build_event_store.py --date "${TODAY}"
+TACTICAL_CUTOFF_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+python3 scripts/build_tactical_state.py --date "${TODAY}" \
+  --cutoff-at-utc "${TACTICAL_CUTOFF_UTC}"
+TACTICAL_ISSUED_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+python3 scripts/generate_tactical_candidates.py --date "${TODAY}" \
+  --issued-at-utc "${TACTICAL_ISSUED_UTC}"
+python3 scripts/validate_tactical_integrity.py --date "${TODAY}" # fail-closed
 python3 scripts/validate_transition_claims.py --date "${TODAY}"   # fail-closed
+python3 scripts/render_tactical_forecast_section.py --date "${TODAY}" \
+  --inject-report "outputs/${TODAY}/${TODAY}-security-report.json"
 ```
 
 **なぜ shadow から始めるか**: TF-1 が予報したい状態遷移は、コーパス全体で
-**前進遷移が36件しか観測されていない**（同一CVEが2日以上に出現するのは664件中122件）。
-`exploitation_stage` を持つ観測が481件あることは、遷移が481件観測されたことを
+**バックフィル除外・episode統合後の前進遷移は13件しか観測されていない**（2026-08-29時点）。
+`exploitation_stage` を持つ観測件数は、独立した遷移件数を
 意味しない。参照率を内部実績だけから点推定できる段階ではないため、
 shadow 運用の目的は**この母集団を前向きに作ること**である。
 
