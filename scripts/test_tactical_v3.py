@@ -17,6 +17,7 @@ import verify_tactical_forecasts as vtf  # noqa: E402
 from tactical_integrity import hash_without  # noqa: E402
 from tactical_states import DISCLOSED, POC_PUBLIC  # noqa: E402
 from tactical_states import ACTIVE_EXPLOITATION, transition_fired  # noqa: E402
+from tactical_time import parse_utc  # noqa: E402
 
 
 def assert_true(condition, message):
@@ -47,6 +48,7 @@ def fixture():
 
 
 def main():
+    repo_root_for_skill = ROOT
     state, rates = fixture()
     candidates = gtc.build(date(2026, 8, 29), state, rates, "2026-08-29T01:00:00Z")
     candidate = candidates[0]
@@ -205,11 +207,102 @@ def main():
         backdate_rejected = True
     assert_true(backdate_rejected, "取得時点と違うJST日付へ証跡を記録できない")
 
+    # 被覆はチャネル別の実区間だけを使い、監視していない時間帯を覆わない
+    import record_source_coverage as rsc_mod
+    import tempfile as _tempfile
+    import shutil as _shutil
+
+    def _coverage_fixture(vendor_feeds):
+        """cert 00:00→翌10:00 / vendor 09:00→翌20:00 / telemetry 10:00→翌11:00 を作る。"""
+        root = _tempfile.mkdtemp()
+        cert = ["JPCERT/CC", "JPCERT/CC Eyes", "JVN", "JVN iPedia 新着",
+                "IPA 重要なセキュリティ情報"]
+        tele = ["SANS Internet Storm Center"]
+
+        def write(day, cert_at, vendor_at, tele_at):
+            entries = []
+            for i, name in enumerate(cert):
+                entries.append(_ev(f"ev-{day.replace('-', '')}-c{i}", "cert", cert_at, name))
+            for i, name in enumerate(vendor_feeds):
+                entries.append(_ev(f"ev-{day.replace('-', '')}-v{i}", "vendor", vendor_at, name))
+            for i, name in enumerate(tele):
+                entries.append(_ev(f"ev-{day.replace('-', '')}-t{i}", "telemetry", tele_at, name))
+            path = os.path.join(root, "m", day[:4], day[5:7])
+            os.makedirs(path, exist_ok=True)
+            with open(os.path.join(path, f"{day}.json"), "w", encoding="utf-8") as fh:
+                json.dump({"_schema_version": "1.0", "_evidence_date": day,
+                           "evidence": entries}, fh)
+
+        write("2026-08-29", "2026-08-29T00:00:00Z", "2026-08-29T09:00:00Z", "2026-08-29T10:00:00Z")
+        write("2026-08-30", "2026-08-30T10:00:00Z", "2026-08-30T20:00:00Z", "2026-08-30T11:00:00Z")
+        return root
+
+    def _ev(eid, stype, at, feed):
+        return {"evidence_id": eid, "source_url": "https://example.invalid/f",
+                "source_type": stype, "retrieved_at_utc": at, "content_sha256": "0" * 64,
+                "parser_version": "channel-feed-v1", "extract": {"feed_name": feed}}
+
+    all_vendor = ["Unit 42", "watchTowr Labs", "Google Threat Intelligence (Mandiant)"]
+    original_glob = rsc_mod.MANIFEST_GLOB
+    root = _coverage_fixture(all_vendor)
+    try:
+        rsc_mod.MANIFEST_GLOB = os.path.join(root, "m", "*", "*", "*.json")
+        chans = rsc_mod.derive_from_evidence("tf1-exploitation-v3", "2026-08-30")
+    finally:
+        rsc_mod.MANIFEST_GLOB = original_glob
+        _shutil.rmtree(root)
+    assert_true(chans["vendor"]["window_start_utc"] == "2026-08-29T09:00:00Z"
+                and chans["telemetry_provider"]["window_start_utc"] == "2026-08-29T10:00:00Z"
+                and chans["cert"]["window_start_utc"] == "2026-08-29T00:00:00Z",
+                "被覆区間をチャネルごとに保持する（共通の単一窓にまとめない）")
+    records = [{"matching_rule_version": "tf1-exploitation-v3", "channels": chans}]
+    universe_all = {"sources": ["vendor", "cert", "telemetry_provider"]}
+    assert_true(not vtf.source_coverage_proven(
+        records, "tf1-exploitation-v3", universe_all,
+        parse_utc("2026-08-29T09:30:00Z"), parse_utc("2026-08-30T09:00:00Z")),
+        "telemetry の取得前を含む窓を被覆済みにしない")
+    assert_true(vtf.source_coverage_proven(
+        records, "tf1-exploitation-v3", universe_all,
+        parse_utc("2026-08-29T12:00:00Z"), parse_utc("2026-08-30T09:00:00Z")),
+        "全チャネルの区間が重なる窓では被覆が成立する")
+
+    root = _coverage_fixture(["Unit 42"])
+    try:
+        rsc_mod.MANIFEST_GLOB = os.path.join(root, "m", "*", "*", "*.json")
+        partial = rsc_mod.derive_from_evidence("tf1-exploitation-v3", "2026-08-30")
+    finally:
+        rsc_mod.MANIFEST_GLOB = original_glob
+        _shutil.rmtree(root)
+    assert_true(partial["vendor"]["status"] == "partial"
+                and "window_start_utc" not in partial["vendor"],
+                "宣言フィードの一部しか取れないチャネルは partial とし区間を出さない")
+    assert_true(not vtf.source_coverage_proven(
+        [{"matching_rule_version": "tf1-exploitation-v3", "channels": partial}],
+        "tf1-exploitation-v3", universe_all,
+        parse_utc("2026-08-29T12:00:00Z"), parse_utc("2026-08-30T09:00:00Z")),
+        "partial のチャネルを miss の根拠にしない")
+    assert_true(not vtf.source_coverage_proven(
+        [{"matching_rule_version": "tf1-exploitation-v3",
+          "sources": {"vendor": "ok", "cert": "ok", "telemetry_provider": "ok"},
+          "window_start_utc": "2026-08-01T00:00:00Z",
+          "window_end_utc": "2026-09-01T00:00:00Z"}],
+        "tf1-exploitation-v3", universe_all,
+        parse_utc("2026-08-29T12:00:00Z"), parse_utc("2026-08-30T09:00:00Z")),
+        "チャネル別区間を持たない旧形式の被覆記録は使わない（fail-closed）")
+
+    # 収集は 06:00 JST の日次ジョブが行い、予報時刻には取得しない
+    workflow = open(os.path.join(repo_root_for_skill, ".github", "workflows",
+                                 "daily-pipeline.yml"), encoding="utf-8").read()
+    assert_true("collect_channel_evidence.py" in workflow
+                and "record_source_coverage.py" in workflow,
+                "06:00 JST の日次ジョブが証跡と被覆を固定する")
+    assert_true("forecaster/evidence/" in workflow,
+                "固定した証跡を日次ジョブがコミットする")
+
     # 被覆記録が日次パイプラインへ接続されている
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    skill = open(os.path.join(repo_root, "SKILL.md"), encoding="utf-8").read()
-    assert_true("record_source_coverage.py" in skill and "--from-evidence" in skill,
-                "日次パイプラインが取得証跡から被覆を記録する")
+    skill = open(os.path.join(repo_root_for_skill, "SKILL.md"), encoding="utf-8").read()
+    assert_true("--verify-only" in skill and "取得は行わない" in skill,
+                "予報側は取得せず、朝に固定された証跡を検証するだけ")
     assert_true("check_verification_health.py" in skill,
                 "日次パイプラインが採点の成立を監視する")
 
@@ -242,9 +335,9 @@ def main():
     }
     coverage = [{
         "matching_rule_version": "tf1-poc-v3",
-        "window_start_utc": "2026-08-29T01:00:00Z",
-        "window_end_utc": "2026-10-01T01:00:00Z",
-        "sources": {"github": "ok"},
+        "channels": {"github": {"status": "ok",
+                                "window_start_utc": "2026-08-29T01:00:00Z",
+                                "window_end_utc": "2026-10-01T01:00:00Z"}},
     }]
     verdicts = vtf.score(candidate, {"CVE-2026-99999": []}, after_window,
                          {"tf1-poc-v3": covered_universe}, coverage)
@@ -270,7 +363,7 @@ def main():
                             {}, {})
     assert_true(event1 == event2 and event1["summary_fact"] == malicious["summary"],
                 "入力内の命令文を実行せず単なる不変データとして保存する")
-    print("\nTactical v3 adversarial tests: 33 passed")
+    print("\nTactical v3 adversarial tests: 40 passed")
     return 0
 
 

@@ -33,15 +33,29 @@ jobs:
           cd security-intel-collector
           python watcher.py
 
+      - name: Freeze evidence and source coverage
+        # ★07:30 JST の予報が入力にできるのは「この時点で固定された証跡」だけである。
+        #   予報時刻に取り直すと、予報後に取得した証拠を予報が使ったことになり、
+        #   先見性の主張が崩れる。よって取得はここ（06:00 JST）で完結させる。
+        #   フィード取得の失敗は日次を止めない。そのチャネルの被覆が不成立になり、
+        #   未確認は miss ではなく not_observed のまま残る（fail-closed）。
+        run: |
+          TODAY=$(TZ=Asia/Tokyo date +%F)
+          python3 scripts/snapshot_sources.py --date "${TODAY}"
+          python3 scripts/collect_channel_evidence.py --date "${TODAY}" || true
+          python3 scripts/record_source_coverage.py --rule tf1-exploitation-v3 --from-evidence "${TODAY}"
+          python3 scripts/record_source_coverage.py --rule tf1-poc-v3 --from-evidence "${TODAY}"
+          python3 scripts/snapshot_sources.py --date "${TODAY}" --verify-only
+
       - name: Commit collected feeds
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add security-intel-collector/data/
+          git add security-intel-collector/data/ forecaster/evidence/
           if git diff --cached --quiet; then
             echo "No new feeds collected."
           else
             DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d)
-            git commit -m "collect: rss feeds ${DATE}"
+            git commit -m "collect: rss feeds + evidence ${DATE}"
             git push
           fi

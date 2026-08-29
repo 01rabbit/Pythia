@@ -79,13 +79,13 @@ Section 4: SOC推奨情報
 
 判定に使う一次ソースを、**取得時刻と内容ハッシュ付き**で Evidence Ledger へ固定する。
 
-```bash
-python3 scripts/snapshot_sources.py --date "${TODAY}"
+**取得は行わない。** 証跡と被覆記録は 06:00 JST の `daily-pipeline.yml` が固定済みで、
+ここではその存在と整合を検証するだけである。予報時刻に取り直すと、**予報後に取得した
+証拠を予報が使った**ことになり先見性の主張が崩れる。
 
-# ★確認チャネルの監視。宣言済みフィード（channel-feeds.json）を取得して証跡化する。
-#   これが無いと vendor / telemetry_provider の被覆が永久に error になり、
-#   coverage_proven が成立せず miss が1件も立たない。
-python3 scripts/collect_channel_evidence.py --date "${TODAY}"
+```bash
+# 朝に固定された証跡の整合を検証する（取得はしない）
+python3 scripts/snapshot_sources.py --date "${TODAY}" --verify-only
 
 python3 scripts/run_manifest.py --date "${TODAY}" --step snapshot_sources --status ok \
   --output "forecaster/evidence/manifests/${TODAY:0:4}/${TODAY:5:2}/${TODAY}.json" \
@@ -118,10 +118,7 @@ python3 scripts/generate_tactical_candidates.py --date "${TODAY}" \
 python3 scripts/validate_tactical_integrity.py --date "${TODAY}" # fail-closed
 python3 scripts/validate_transition_claims.py --date "${TODAY}"   # fail-closed
 
-# ★監視の成否を Evidence Ledger（Step 0.5 の取得証跡）から導出して記録する。
-#   これが無いと窓満了後の未確認を miss にできない。手で ok を打ってはならない。
-python3 scripts/record_source_coverage.py --rule tf1-exploitation-v3 --from-evidence "${TODAY}"
-python3 scripts/record_source_coverage.py --rule tf1-poc-v3 --from-evidence "${TODAY}"
+# 被覆記録は 06:00 JST の daily-pipeline.yml が固定済み。ここでは作らない。
 
 # ★採点が実際に成立しているかを監視する（沈黙を正常と区別する）
 mkdir -p ".cache/daily-security-intel/${TODAY}"
