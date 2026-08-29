@@ -70,7 +70,8 @@
   `source.primary_reference` に
   `{organization, url, evidence_id, citation_basis, published_at_utc?}` を入れる。
 - **`evidence_id` は必須**である。原典を Evidence Ledger へ取得（スナップショット）して
-  その `evidence_id` を書く。証跡の `source_url` ホストが `url` と一致しない場合、
+  その `evidence_id` を書く。証跡の `source_url` が `url` と一致しない場合（URL fragment
+  は除く）、
   および証跡が存在しない場合は昇格しない（`primary_reference_unverified`）。
   **許可ホストのURLを書くだけでは hit を作れない。**
 - `citation_basis` には「記事中のどの記述が原典を指しているか」を書く。

@@ -104,7 +104,13 @@ def main():
         "evidence_id": "ev-20260829-aaaaa", "citation_basis": "x"}}
     assert_true(sc.resolve(mismatched, table, evidence)
                 == ("aggregator_news", "primary_reference_unverified"),
-                "証跡のURLホストと一致しない原典URLでは昇格しない")
+                "証跡のURLと一致しない原典URLでは昇格しない")
+    same_host_different_url = {**aggregator, "primary_reference": {
+        "organization": "CISA", "url": "https://www.cisa.gov/unrelated",
+        "evidence_id": "ev-20260829-aaaaa", "citation_basis": "x"}}
+    assert_true(sc.resolve(same_host_different_url, table, evidence)
+                == ("aggregator_news", "primary_reference_unverified"),
+                "同一ホストでも別URLの証跡では昇格しない")
 
     # observation validator が primary_reference を受け付け、不備を検出する
     import validate_observations as vo
@@ -182,7 +188,7 @@ def main():
                             {}, {})
     assert_true(event1 == event2 and event1["summary_fact"] == malicious["summary"],
                 "入力内の命令文を実行せず単なる不変データとして保存する")
-    print("\nTactical v3 adversarial tests: 21 passed")
+    print("\nTactical v3 adversarial tests: 22 passed")
     return 0
 
 

@@ -38,7 +38,7 @@ hit にしない。`aggregator_news` と `unattributed` で不発になった件
 検証出力の `blocked_by_channel` に必ず記録し、沈黙させない。集約ニュース掲載でも
 記事が一次公表の原典URLを明示している場合は `source.primary_reference` に構造化して
 残せば受理できる。ただし**受理には Evidence Ledger の取得証跡（`evidence_id`）が必須**で、
-証跡の `source_url` ホストが `url` と一致しなければ昇格しない。許可ホストのURLを
+証跡の `source_url` が `url` と一致しなければ昇格しない（URL fragment は除く）。許可ホストのURLを
 書くだけで hit を作れないようにするためである。証跡の無いものは
 `primary_reference_unverified`、原典URL自体が無いものは
 `aggregator_news_citing_primary` として区別する。

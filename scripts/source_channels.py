@@ -26,7 +26,7 @@
 import glob
 import json
 import os
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REGISTRY = os.path.join(REPO_ROOT, "forecaster", "knowledge", "source-channels.json")
@@ -91,6 +91,24 @@ def host_of(url):
         return ""
 
 
+def canonical_url(url):
+    """比較用に URL を正規化する（fragment は取得内容に影響しないため除く）。
+
+    Evidence Ledger は「その URL の内容を取得した」証跡である。ホストだけを
+    比較すると、同じ組織ドメイン上の無関係なページを原典として差し込めてしまう。
+    そのため scheme / host / path / query まで一致させる。URL の fragment は HTTP
+    リクエストに送られないので比較から除外する。
+    """
+    try:
+        parsed = urlparse(url or "")
+        if not parsed.scheme or not parsed.netloc:
+            return ""
+        return urlunparse((parsed.scheme.lower(), parsed.netloc.lower(), parsed.path,
+                           parsed.params, parsed.query, ""))
+    except ValueError:
+        return ""
+
+
 def _channel_of_url(url, table):
     return table["hosts"].get(host_of(url))
 
@@ -105,7 +123,7 @@ def evidence_backs_reference(reference, evidence):
 
     要件（すべて満たすときのみ昇格を許す）:
       1. reference.evidence_id が Ledger に存在する
-      2. その証跡の source_url のホストが reference.url のホストと一致する
+      2. その証跡の source_url が reference.url と一致する（fragment を除く）
       3. 証跡に取得時刻がある（load_evidence_records が保証）
     """
     if not evidence:
@@ -113,7 +131,7 @@ def evidence_backs_reference(reference, evidence):
     record = evidence.get((reference or {}).get("evidence_id"))
     if not record:
         return False
-    return host_of(record["source_url"]) == host_of(reference.get("url"))
+    return canonical_url(record["source_url"]) == canonical_url(reference.get("url"))
 
 
 def resolve(source, table=None, evidence=None):
