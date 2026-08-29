@@ -69,23 +69,14 @@
 - 集約ニュース掲載の記事でも、**記事が一次公表の原典URLを明示している**場合は
   `source.primary_reference` に
   `{organization, url, evidence_id, citation_basis, published_at_utc?}` を入れる。
-- **`evidence_id` は必須**である。原典を Evidence Ledger へ取得（スナップショット）して
-  その `evidence_id` を書く。取得は次で行う（出力の最終行が使うべき `evidence_id`）:
-
-  ```bash
-  python3 scripts/snapshot_sources.py --date "${TODAY}" \
-    --capture-url "<一次公表の原典URL>" --source-type cert   # vendor / telemetry など
-  ```
-証跡の `source_url` が `url` と一致しない場合（URL fragment
-  は除く）、
+- **`evidence_id` は必須**である。自動collectorが原典を Evidence Ledger へ取得
+  （スナップショット）した場合だけ、その `evidence_id` を書く。証跡の `source_url` が
+  `url` と一致しない場合（URL fragment は除く）、
   および証跡が存在しない場合は昇格しない（`primary_reference_unverified`）。
   **許可ホストのURLを書くだけでは hit を作れない。**
-- `snapshot_sources.py --capture-url` がリダイレクトした場合、証跡の正本は**最終URL**である。
-  出力された manifest の `source_url` を `primary_reference.url` に転記する。最初に指定した
-  URLのままでは URL 単位の照合を通さない。
 - `citation_basis` には「記事中のどの記述が原典を指しているか」を書く。
 - **本文からの推測で埋めてはならない**（原則1）。原典URLが記事に無い、または
-  原典を取得できない場合は `primary_reference` ごと省略する。
+  自動取得証跡が無い場合は `primary_reference` ごと省略する。
   省略時は掲載元ホストで判定され、集約ニュースなら hit にならない（fail-closed）。
 
 ## 正規化ルール（厳守）

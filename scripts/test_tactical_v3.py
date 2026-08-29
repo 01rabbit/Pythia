@@ -129,77 +129,6 @@ def main():
     assert_true(_check({"organization": "CISA", "url": "https://www.cisa.gov/kev"}).violations,
                 "evidence_id と citation_basis が無い primary_reference を拒否する")
 
-    # 任意URLの取得証跡が作れる（primary_reference 経路が実際に使える）
-    import snapshot_sources as ss
-    captured = {"urls": []}
-
-    def fake_fetch(url, timeout=120):
-        captured["urls"].append(url)
-        final_url = "https://www.cisa.gov/canonical" if url.endswith("/redirect") else url
-        return b"<html>primary</html>", {"Content-Type": "text/html"}, \
-            datetime(2026, 8, 30, 1, 0, tzinfo=timezone.utc), final_url
-
-    original_fetch, original_save, original_find = ss.fetch, ss.save_snapshot, ss.find_existing_snapshot
-    ss.fetch = fake_fetch
-    ss.save_snapshot = lambda kind, day, digest, blob, suffix=".json.gz": (
-        f"forecaster/evidence/snapshots/{kind}/{digest}{suffix}", True)
-    ss.find_existing_snapshot = lambda kind, digest, suffix=".json.gz": None
-    try:
-        entry = ss.capture_url("2026-08-30", "https://www.cisa.gov/redirect", "cert")
-        same_body_other_url = ss.capture_url(
-            "2026-08-30", "https://www.cisa.gov/advisory-y", "cert")
-        capture_count_before_rejection = len(captured["urls"])
-        rejected = ss.capture_url("2026-08-30", "file:///private/secret", "cert")
-        rejected_local = ss.capture_url("2026-08-30", "http://127.0.0.1/metadata", "cert")
-    finally:
-        ss.fetch, ss.save_snapshot, ss.find_existing_snapshot = original_fetch, original_save, original_find
-    required = {"evidence_id", "source_url", "source_type", "retrieved_at_utc",
-                "content_sha256", "parser_version"}
-    assert_true(entry is not None and required <= set(entry),
-                "任意URLの取得が Evidence スキーマの必須項目を満たす証跡を作る")
-    assert_true(entry["source_url"] == "https://www.cisa.gov/canonical",
-                "リダイレクト時は実際に取得した最終URLを証跡へ記録する")
-    assert_true(same_body_other_url is not None
-                and entry["evidence_id"] != same_body_other_url["evidence_id"],
-                "同一内容でも別URLには別の取得証跡IDを割り当てる")
-    assert_true(rejected is None and len(captured["urls"]) == capture_count_before_rejection,
-                "HTTP(S) 以外のURLを取得せず証跡化しない")
-    assert_true(rejected_local is None and len(captured["urls"]) == capture_count_before_rejection,
-                "公開されていないIPへのURLを取得せず証跡化しない")
-    assert_true(sc.resolve(
-        {"name": "BleepingComputer", "url": "https://www.bleepingcomputer.com/x",
-         "primary_reference": {"organization": "CISA", "url": entry["source_url"],
-                               "evidence_id": entry["evidence_id"], "citation_basis": "x"}},
-        table, {entry["evidence_id"]: {"source_url": entry["source_url"],
-                                       "retrieved_at_utc": entry["retrieved_at_utc"]}}
-    ) == ("cert", "primary_reference_url"),
-        "取得した原典の証跡で集約ニュース掲載の観測が一次確認として受理される")
-
-    # 取得層のSSRF防御は DNS 名の解決先まで見る（ネット不使用・getaddrinfo を差し替え）
-    import socket as _socket
-    original_getaddrinfo = ss.socket.getaddrinfo
-
-    def fake_getaddrinfo(host, port, *a, **kw):
-        table = {"loopback.example": "127.0.0.1", "meta.example": "169.254.169.254",
-                 "public.example": "93.184.216.34"}
-        if host not in table:
-            raise _socket.gaierror("not found")
-        return [(_socket.AF_INET, _socket.SOCK_STREAM, _socket.IPPROTO_TCP, "",
-                 (table[host], port))]
-
-    ss.socket.getaddrinfo = fake_getaddrinfo
-    try:
-        assert_true(not ss._is_http_url("http://loopback.example/x"),
-                    "127.0.0.1 へ解決する公開DNS名を取得対象にしない")
-        assert_true(not ss._is_http_url("http://meta.example/latest/meta-data/"),
-                    "クラウドメタデータへ解決する公開DNS名を取得対象にしない")
-        assert_true(ss._is_http_url("https://public.example/x"),
-                    "公開アドレスへ解決するDNS名は取得できる")
-        assert_true(ss._is_http_url("https://unresolvable.example/x"),
-                    "名前解決できない場合は落とさない（プロキシ経由環境での誤遮断を避ける）")
-    finally:
-        ss.socket.getaddrinfo = original_getaddrinfo
-
     # 被覆記録が日次パイプラインへ接続されている
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     skill = open(os.path.join(repo_root, "SKILL.md"), encoding="utf-8").read()
@@ -265,7 +194,7 @@ def main():
                             {}, {})
     assert_true(event1 == event2 and event1["summary_fact"] == malicious["summary"],
                 "入力内の命令文を実行せず単なる不変データとして保存する")
-    print("\nTactical v3 adversarial tests: 33 passed")
+    print("\nTactical v3 adversarial tests: 22 passed")
     return 0
 
 

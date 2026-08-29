@@ -41,13 +41,10 @@
 import argparse
 import gzip
 import hashlib
-import ipaddress
 import json
 import os
-import socket
 import sys
 import urllib.error
-import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
@@ -114,7 +111,7 @@ def write_manifest(day, doc):
 
 
 def fetch(url, timeout=120):
-    """URL を取得し (body_bytes, headers, retrieved_at_utc, final_url) を返す。
+    """URL を取得し (body_bytes, headers, retrieved_at_utc) を返す。
 
     retrieved_at_utc は**取得完了後**に記録する。取得開始時刻ではない理由は、
     証拠として保証したいのが「この時点でこの内容が存在した」ことだからである。
@@ -123,21 +120,18 @@ def fetch(url, timeout=120):
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         body = resp.read()
         headers = dict(resp.headers)
-        # urllib はリダイレクトを追随する。証跡には要求URLではなく、実際に内容を
-        # 取得した最終URLを残さなければ URL 単位の原典照合が成立しない。
-        final_url = resp.geturl()
-    return body, headers, utcnow(), final_url
+    return body, headers, utcnow()
 
 
-def snapshot_relpath(kind, day, digest, suffix=".json.gz"):
+def snapshot_relpath(kind, day, digest):
     return os.path.join(
-        "forecaster", "evidence", "snapshots", kind, day[:4], day[5:7], f"{digest}{suffix}"
+        "forecaster", "evidence", "snapshots", kind, day[:4], day[5:7], f"{digest}.json.gz"
     )
 
 
-def save_snapshot(kind, day, digest, blob, suffix=".json.gz"):
+def save_snapshot(kind, day, digest, blob):
     """内容ハッシュ名で圧縮保存する。既存なら書かずにパスだけ返す（重複排除）。"""
-    rel = snapshot_relpath(kind, day, digest, suffix)
+    rel = snapshot_relpath(kind, day, digest)
     abs_path = os.path.join(REPO_ROOT, rel)
     if os.path.exists(abs_path):
         return rel, False
@@ -147,135 +141,19 @@ def save_snapshot(kind, day, digest, blob, suffix=".json.gz"):
     return rel, True
 
 
-def find_existing_snapshot(kind, digest, suffix=".json.gz"):
+def find_existing_snapshot(kind, digest):
     """同一ハッシュのスナップショットが過去日に既にあればそのパスを返す。"""
     base = os.path.join(SNAPSHOT_DIR, kind)
     if not os.path.isdir(base):
         return None
-    name = f"{digest}{suffix}"
     for root, _dirs, files in os.walk(base):
-        if name in files:
-            return os.path.relpath(os.path.join(root, name), REPO_ROOT)
+        if f"{digest}.json.gz" in files:
+            return os.path.relpath(os.path.join(root, f"{digest}.json.gz"), REPO_ROOT)
     return None
 
 
-def _resolves_to_non_global(host, port):
-    """DNS 名が非公開アドレスへ解決するか。判定できないときは False を返す。
-
-    ★IP直指定だけを弾いても素通りする。`localtest.me` は実在する公開DNS名で
-      127.0.0.1 に解決し、`*.nip.io` は任意のIPを名前で表現できる。名前を解決せずに
-      通すと、取得した内容がスナップショットとしてコミットされる。
-
-    ★限界を明示する: これは解決→検査→取得の間に応答が変わる DNS rebinding を
-      防がない。解決自体が失敗した場合も通す（プロキシ経由でのみ名前解決できる
-      環境で正当なURLを一律に落とさないため）。取得層の最低限の防御であり、
-      証跡の受理は source-channels の人間レビュー済み host 登録簿が別途 fail-closed
-      に行う。
-    """
-    try:
-        infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
-    except (socket.gaierror, UnicodeError, ValueError):
-        return False
-    for info in infos:
-        try:
-            if not ipaddress.ip_address(info[4][0]).is_global:
-                return True
-        except ValueError:
-            continue
-    return False
-
-
-def _is_http_url(url):
-    """原典取得に許可する公開 HTTP(S) URL か。
-
-    原典URLは外部公開の一次ソースに限る。LLM が記事本文に含まれるURLを扱う経路でも
-    あるため、file:// だけでなく loopback / private / link-local を拒否する。
-    IP直指定に加えて **DNS 名の解決先も検査する**（上の _resolves_to_non_global 参照）。
-    """
-    try:
-        parsed = urllib.parse.urlparse(url or "")
-    except ValueError:
-        return False
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc or not parsed.hostname:
-        return False
-    host = parsed.hostname.lower()
-    if host == "localhost" or host.endswith(".localhost"):
-        return False
-    try:
-        return ipaddress.ip_address(host).is_global
-    except ValueError:
-        pass
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    return not _resolves_to_non_global(host, port)
-
-
-def capture_url(day, url, source_type):
-    """任意の一次公表URLを取得し evidence エントリを作る。
-
-    ★なぜ必要か:
-      observation の source.primary_reference は、集約ニュース掲載の記事から
-      一次公表を確認したと主張するための構造化フィールドで、受理には
-      Evidence Ledger の取得証跡（evidence_id）が必須である
-      （source_channels.evidence_backs_reference が URL 単位で突合する）。
-      KEV しか取得できないと、この経路は書けるが実際には使えない。
-
-    ★内容は本文を解釈せず生バイトのまま保存する。ここは「この時刻にこのURLに
-      この内容があった」ことだけを保証する層であり、意味づけは正規化の仕事である。
-    """
-    if not _is_http_url(url):
-        print(f"[warn] HTTP(S) ではないURLは取得しない: {url!r}", file=sys.stderr)
-        return None
-    try:
-        body, headers, at, final_url = fetch(url)
-    except (urllib.error.URLError, urllib.error.HTTPError, OSError) as exc:
-        print(f"[warn] 取得失敗 {url}: {exc}", file=sys.stderr)
-        return None
-    if not _is_http_url(final_url):
-        print(f"[warn] リダイレクト先が HTTP(S) ではないため証跡化しない: {final_url!r}",
-              file=sys.stderr)
-        return None
-
-    digest = sha256_bytes(body)
-    existing = find_existing_snapshot("primary", digest, ".bin.gz")
-    if existing:
-        rel, wrote = existing, False
-    else:
-        rel, wrote = save_snapshot("primary", day, digest, body, ".bin.gz")
-    redirect_note = f" final={final_url}" if final_url != url else ""
-    print(f"[primary] {url}{redirect_note} bytes={len(body)} sha256={digest[:12]}… "
-          f"snapshot={'新規保存' if wrote else '既存を再利用'}")
-
-    return {
-        # 同一内容でも URL が異なれば別の「そのURLを取得した」証跡である。
-        # スナップショット本体は content_sha256 で共有し、台帳上のIDだけ分離する。
-        "evidence_id": evidence_id(day, digest, final_url),
-        "source_url": final_url,
-        "source_type": source_type,
-        "retrieved_at_utc": iso(at),
-        "content_sha256": digest,
-        "http_etag": headers.get("ETag"),
-        "http_last_modified": headers.get("Last-Modified"),
-        "snapshot_path": rel,
-        "extract": {
-            "content_type": headers.get("Content-Type"),
-            "content_length": len(body),
-            "_note": "本文は解釈せず生バイトで保存している。意味づけは正規化が行う。",
-        },
-        "parser_version": "raw-capture-v1",
-    }
-
-
-def evidence_id(day, digest, source_url=None):
-    """Evidence ID を返す。
-
-    KEV の既存IDは content hash だけから作られているため、source_url 未指定時は
-    その形式を維持する。任意原典は同一内容が複数URLで配布され得るので、URLも
-    シードに含め、URL単位の原典照合で後者が参照不能になる衝突を防ぐ。
-    """
-    seed = digest
-    if source_url is not None:
-        seed = hashlib.sha256(f"{digest}\n{source_url}".encode("utf-8")).hexdigest()
-    return f"ev-{day.replace('-', '')}-{seed[:5]}"
+def evidence_id(day, digest):
+    return f"ev-{day.replace('-', '')}-{digest[:5]}"
 
 
 def load_kev_snapshot(evidence_entry):
@@ -321,7 +199,7 @@ def capture_kev(day):
     load_kev_snapshot() でスナップショットから読む。
     """
     try:
-        body, headers, at, final_url = fetch(KEV_FEED_URL)
+        body, headers, at = fetch(KEV_FEED_URL)
     except (urllib.error.URLError, urllib.error.HTTPError, OSError) as exc:
         print(f"[warn] CISA KEV 取得失敗: {exc}", file=sys.stderr)
         return None
@@ -342,7 +220,7 @@ def capture_kev(day):
 
     return {
         "evidence_id": evidence_id(day, digest),
-        "source_url": final_url,
+        "source_url": KEV_FEED_URL,
         "source_type": "cisa_kev",
         "published_at_utc": catalog.get("dateReleased"),
         "retrieved_at_utc": iso(at),
@@ -409,16 +287,6 @@ def main():
         help="取得するソースのカンマ区切り（現状 cisa_kev のみ実装）",
     )
     ap.add_argument(
-        "--capture-url",
-        help="任意の一次公表URLを取得して evidence 化する"
-             "（observation の source.primary_reference から参照するため）",
-    )
-    ap.add_argument(
-        "--source-type",
-        choices=["vendor", "cert", "nvd", "epss", "news", "telemetry"],
-        help="--capture-url で取得する原典の種別",
-    )
-    ap.add_argument(
         "--verify-only",
         action="store_true",
         help="取得せず、既存 manifest とスナップショットの整合だけ検査する",
@@ -433,23 +301,6 @@ def main():
     doc = load_manifest(day)
     known = {e["evidence_id"] for e in doc["evidence"]}
     added_now = 0
-
-    if args.capture_url:
-        if not args.source_type:
-            ap.error("--capture-url には --source-type が必要")
-        ev = capture_url(day, args.capture_url, args.source_type)
-        if ev is None:
-            return 1
-        if ev["evidence_id"] in known:
-            print(f"[skip] {ev['evidence_id']}: 同日に同一内容を取得済み")
-        else:
-            doc["evidence"].append(ev)
-            added_now += 1
-        path = write_manifest(day, doc)
-        print(f"\n[out] {path}  （新規 {added_now} 件 / 累計 {len(doc['evidence'])} 件）")
-        print(f"[evidence_id] {ev['evidence_id']}"
-              "  ← observation の source.primary_reference.evidence_id に書く")
-        return 0
 
     for src in [s.strip() for s in args.sources.split(",") if s.strip()]:
         if src == "cisa_kev":

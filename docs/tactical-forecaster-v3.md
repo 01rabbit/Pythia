@@ -43,22 +43,11 @@ hit にしない。`aggregator_news` と `unattributed` で不発になった件
 `primary_reference_unverified`、原典URL自体が無いものは
 `aggregator_news_citing_primary` として区別する。
 
-原典を `snapshot_sources.py --capture-url` で取得した際にリダイレクトが起きた場合は、
-実際に取得した最終URLが台帳の `source_url` になる。`primary_reference.url` にはその
-最終URLを使う。ローカルファイル、localhost、private／link-local等の公開されていない
-IPアドレスは取得・証跡化しない。
+原典URLの取得証跡は、将来の自動collectorが作る。手動のURL取得入口は設けず、証跡が
+無い集約ニュース記事は `primary_reference_unverified` として残し、hit にはしない。
 
 候補が宣言する `verification_sources` は採点宇宙の `sources` から単一生成する。
 二重管理すると宣言と hit 判定が食い違う。
-
-原典の取得は `snapshot_sources.py --capture-url <URL> --source-type <種別>` で行う。
-取得対象は公開 HTTP(S) に限り、loopback / private / link-local はIP直指定でも
-**DNS 名の解決先**でも拒否する（`localtest.me` のような公開DNS名が 127.0.0.1 へ
-解決するため、IP直指定の検査だけでは素通りする）。名前解決できない場合は落とさない
-（プロキシ経由環境での誤遮断を避けるため）。DNS rebinding は防がない。
-取得は
-本文を解釈せず生バイトのまま内容ハッシュ名で保存する。この層が保証するのは
-「この時刻にこのURLにこの内容があった」ことだけで、意味づけは正規化の仕事である。
 
 被覆記録は Evidence Ledger から導出し（`record_source_coverage.py --from-evidence`）、
 `derived_from` に evidence_id を残す。被覆記録が1件も無い間はモデル昇格を拒否する。
