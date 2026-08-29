@@ -41,10 +41,12 @@
 import argparse
 import gzip
 import hashlib
+import ipaddress
 import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
 
@@ -111,7 +113,7 @@ def write_manifest(day, doc):
 
 
 def fetch(url, timeout=120):
-    """URL を取得し (body_bytes, headers, retrieved_at_utc) を返す。
+    """URL を取得し (body_bytes, headers, retrieved_at_utc, final_url) を返す。
 
     retrieved_at_utc は**取得完了後**に記録する。取得開始時刻ではない理由は、
     証拠として保証したいのが「この時点でこの内容が存在した」ことだからである。
@@ -120,7 +122,10 @@ def fetch(url, timeout=120):
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         body = resp.read()
         headers = dict(resp.headers)
-    return body, headers, utcnow()
+        # urllib はリダイレクトを追随する。証跡には要求URLではなく、実際に内容を
+        # 取得した最終URLを残さなければ URL 単位の原典照合が成立しない。
+        final_url = resp.geturl()
+    return body, headers, utcnow(), final_url
 
 
 def snapshot_relpath(kind, day, digest, suffix=".json.gz"):
@@ -153,6 +158,30 @@ def find_existing_snapshot(kind, digest, suffix=".json.gz"):
     return None
 
 
+def _is_http_url(url):
+    """原典取得に許可する公開 HTTP(S) URL か。
+
+    原典URLは外部公開の一次ソースに限る。LLM が記事本文に含まれるURLを扱う経路でも
+    あるため、file:// だけでなく loopback / private / link-local 等のIP直指定を
+    拒否し、ローカル資源やクラウドメタデータを証跡へ取り込まない。
+    """
+    try:
+        parsed = urllib.parse.urlparse(url or "")
+    except ValueError:
+        return False
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc or not parsed.hostname:
+        return False
+    host = parsed.hostname.lower()
+    if host == "localhost" or host.endswith(".localhost"):
+        return False
+    try:
+        return ipaddress.ip_address(host).is_global
+    except ValueError:
+        # DNS名は公開性をこの層で断定しない。最終的な受理は source-channels の
+        # 人間レビュー済み host 登録簿で fail-closed に行う。
+        return True
+
+
 def capture_url(day, url, source_type):
     """任意の一次公表URLを取得し evidence エントリを作る。
 
@@ -166,10 +195,17 @@ def capture_url(day, url, source_type):
     ★内容は本文を解釈せず生バイトのまま保存する。ここは「この時刻にこのURLに
       この内容があった」ことだけを保証する層であり、意味づけは正規化の仕事である。
     """
+    if not _is_http_url(url):
+        print(f"[warn] HTTP(S) ではないURLは取得しない: {url!r}", file=sys.stderr)
+        return None
     try:
-        body, headers, at = fetch(url)
+        body, headers, at, final_url = fetch(url)
     except (urllib.error.URLError, urllib.error.HTTPError, OSError) as exc:
         print(f"[warn] 取得失敗 {url}: {exc}", file=sys.stderr)
+        return None
+    if not _is_http_url(final_url):
+        print(f"[warn] リダイレクト先が HTTP(S) ではないため証跡化しない: {final_url!r}",
+              file=sys.stderr)
         return None
 
     digest = sha256_bytes(body)
@@ -178,12 +214,15 @@ def capture_url(day, url, source_type):
         rel, wrote = existing, False
     else:
         rel, wrote = save_snapshot("primary", day, digest, body, ".bin.gz")
-    print(f"[primary] {url} bytes={len(body)} sha256={digest[:12]}… "
+    redirect_note = f" final={final_url}" if final_url != url else ""
+    print(f"[primary] {url}{redirect_note} bytes={len(body)} sha256={digest[:12]}… "
           f"snapshot={'新規保存' if wrote else '既存を再利用'}")
 
     return {
-        "evidence_id": evidence_id(day, digest),
-        "source_url": url,
+        # 同一内容でも URL が異なれば別の「そのURLを取得した」証跡である。
+        # スナップショット本体は content_sha256 で共有し、台帳上のIDだけ分離する。
+        "evidence_id": evidence_id(day, digest, final_url),
+        "source_url": final_url,
         "source_type": source_type,
         "retrieved_at_utc": iso(at),
         "content_sha256": digest,
@@ -199,8 +238,17 @@ def capture_url(day, url, source_type):
     }
 
 
-def evidence_id(day, digest):
-    return f"ev-{day.replace('-', '')}-{digest[:5]}"
+def evidence_id(day, digest, source_url=None):
+    """Evidence ID を返す。
+
+    KEV の既存IDは content hash だけから作られているため、source_url 未指定時は
+    その形式を維持する。任意原典は同一内容が複数URLで配布され得るので、URLも
+    シードに含め、URL単位の原典照合で後者が参照不能になる衝突を防ぐ。
+    """
+    seed = digest
+    if source_url is not None:
+        seed = hashlib.sha256(f"{digest}\n{source_url}".encode("utf-8")).hexdigest()
+    return f"ev-{day.replace('-', '')}-{seed[:5]}"
 
 
 def load_kev_snapshot(evidence_entry):
@@ -246,7 +294,7 @@ def capture_kev(day):
     load_kev_snapshot() でスナップショットから読む。
     """
     try:
-        body, headers, at = fetch(KEV_FEED_URL)
+        body, headers, at, final_url = fetch(KEV_FEED_URL)
     except (urllib.error.URLError, urllib.error.HTTPError, OSError) as exc:
         print(f"[warn] CISA KEV 取得失敗: {exc}", file=sys.stderr)
         return None
@@ -267,7 +315,7 @@ def capture_kev(day):
 
     return {
         "evidence_id": evidence_id(day, digest),
-        "source_url": KEV_FEED_URL,
+        "source_url": final_url,
         "source_type": "cisa_kev",
         "published_at_utc": catalog.get("dateReleased"),
         "retrieved_at_utc": iso(at),

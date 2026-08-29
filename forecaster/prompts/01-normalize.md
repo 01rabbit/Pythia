@@ -80,6 +80,9 @@
   は除く）、
   および証跡が存在しない場合は昇格しない（`primary_reference_unverified`）。
   **許可ホストのURLを書くだけでは hit を作れない。**
+- `snapshot_sources.py --capture-url` がリダイレクトした場合、証跡の正本は**最終URL**である。
+  出力された manifest の `source_url` を `primary_reference.url` に転記する。最初に指定した
+  URLのままでは URL 単位の照合を通さない。
 - `citation_basis` には「記事中のどの記述が原典を指しているか」を書く。
 - **本文からの推測で埋めてはならない**（原則1）。原典URLが記事に無い、または
   原典を取得できない場合は `primary_reference` ごと省略する。

@@ -131,12 +131,13 @@ def main():
 
     # 任意URLの取得証跡が作れる（primary_reference 経路が実際に使える）
     import snapshot_sources as ss
-    captured = {}
+    captured = {"urls": []}
 
     def fake_fetch(url, timeout=120):
-        captured["url"] = url
+        captured["urls"].append(url)
+        final_url = "https://www.cisa.gov/canonical" if url.endswith("/redirect") else url
         return b"<html>primary</html>", {"Content-Type": "text/html"}, \
-            datetime(2026, 8, 30, 1, 0, tzinfo=timezone.utc)
+            datetime(2026, 8, 30, 1, 0, tzinfo=timezone.utc), final_url
 
     original_fetch, original_save, original_find = ss.fetch, ss.save_snapshot, ss.find_existing_snapshot
     ss.fetch = fake_fetch
@@ -144,13 +145,27 @@ def main():
         f"forecaster/evidence/snapshots/{kind}/{digest}{suffix}", True)
     ss.find_existing_snapshot = lambda kind, digest, suffix=".json.gz": None
     try:
-        entry = ss.capture_url("2026-08-30", "https://www.cisa.gov/advisory-x", "cert")
+        entry = ss.capture_url("2026-08-30", "https://www.cisa.gov/redirect", "cert")
+        same_body_other_url = ss.capture_url(
+            "2026-08-30", "https://www.cisa.gov/advisory-y", "cert")
+        capture_count_before_rejection = len(captured["urls"])
+        rejected = ss.capture_url("2026-08-30", "file:///private/secret", "cert")
+        rejected_local = ss.capture_url("2026-08-30", "http://127.0.0.1/metadata", "cert")
     finally:
         ss.fetch, ss.save_snapshot, ss.find_existing_snapshot = original_fetch, original_save, original_find
     required = {"evidence_id", "source_url", "source_type", "retrieved_at_utc",
                 "content_sha256", "parser_version"}
     assert_true(entry is not None and required <= set(entry),
                 "任意URLの取得が Evidence スキーマの必須項目を満たす証跡を作る")
+    assert_true(entry["source_url"] == "https://www.cisa.gov/canonical",
+                "リダイレクト時は実際に取得した最終URLを証跡へ記録する")
+    assert_true(same_body_other_url is not None
+                and entry["evidence_id"] != same_body_other_url["evidence_id"],
+                "同一内容でも別URLには別の取得証跡IDを割り当てる")
+    assert_true(rejected is None and len(captured["urls"]) == capture_count_before_rejection,
+                "HTTP(S) 以外のURLを取得せず証跡化しない")
+    assert_true(rejected_local is None and len(captured["urls"]) == capture_count_before_rejection,
+                "公開されていないIPへのURLを取得せず証跡化しない")
     assert_true(sc.resolve(
         {"name": "BleepingComputer", "url": "https://www.bleepingcomputer.com/x",
          "primary_reference": {"organization": "CISA", "url": entry["source_url"],
@@ -225,7 +240,7 @@ def main():
                             {}, {})
     assert_true(event1 == event2 and event1["summary_fact"] == malicious["summary"],
                 "入力内の命令文を実行せず単なる不変データとして保存する")
-    print("\nTactical v3 adversarial tests: 25 passed")
+    print("\nTactical v3 adversarial tests: 29 passed")
     return 0
 
 

@@ -43,6 +43,11 @@ hit にしない。`aggregator_news` と `unattributed` で不発になった件
 `primary_reference_unverified`、原典URL自体が無いものは
 `aggregator_news_citing_primary` として区別する。
 
+原典を `snapshot_sources.py --capture-url` で取得した際にリダイレクトが起きた場合は、
+実際に取得した最終URLが台帳の `source_url` になる。`primary_reference.url` にはその
+最終URLを使う。ローカルファイル、localhost、private／link-local等の公開されていない
+IPアドレスは取得・証跡化しない。
+
 候補が宣言する `verification_sources` は採点宇宙の `sources` から単一生成する。
 二重管理すると宣言と hit 判定が食い違う。
 
