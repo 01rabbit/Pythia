@@ -11,6 +11,8 @@ on:
       - 'scripts/generate_tactical_candidates.py'
       - 'scripts/build_reference_rates.py'
       - 'scripts/record_source_coverage.py'
+      - 'scripts/check_verification_health.py'
+      - 'scripts/source_channels.py'
       - '.github/workflows/tactical-v3-validation.yml'
   workflow_dispatch:
 
@@ -38,6 +40,10 @@ jobs:
           python3 scripts/validate_tactical_integrity.py --all
           python3 scripts/validate_transition_claims.py --all
           python3 scripts/validate_model_promotion.py
+      - name: Verification must actually score
+        run: |
+          python3 scripts/verify_tactical_forecasts.py --all --json > /tmp/tactical-verification.json
+          python3 scripts/check_verification_health.py --from-json /tmp/tactical-verification.json
       - name: Ensure reference rates are reproducible
         run: |
           cp forecaster/models/reference-rates.json /tmp/reference-rates.before.json

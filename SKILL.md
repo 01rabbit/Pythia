@@ -111,9 +111,37 @@ python3 scripts/generate_tactical_candidates.py --date "${TODAY}" \
   --issued-at-utc "${TACTICAL_ISSUED_UTC}"
 python3 scripts/validate_tactical_integrity.py --date "${TODAY}" # fail-closed
 python3 scripts/validate_transition_claims.py --date "${TODAY}"   # fail-closed
+
+# ★監視の成否を記録する。これが無いと窓満了後の未確認を miss にできない
+python3 scripts/record_source_coverage.py --rule tf1-exploitation-v3 \
+  --window-start-utc "${TACTICAL_LAST_COVERAGE_UTC:-${TACTICAL_CUTOFF_UTC}}" \
+  --window-end-utc "${TACTICAL_ISSUED_UTC}" \
+  --source-status "vendor=ok" --source-status "cert=ok" \
+  --source-status "telemetry_provider=ok"
+python3 scripts/record_source_coverage.py --rule tf1-poc-v3 \
+  --window-start-utc "${TACTICAL_LAST_COVERAGE_UTC:-${TACTICAL_CUTOFF_UTC}}" \
+  --window-end-utc "${TACTICAL_ISSUED_UTC}" \
+  --source-status "vendor=ok" --source-status "cert=ok"
+
+# ★採点が実際に成立しているかを監視する（沈黙を正常と区別する）
+mkdir -p ".cache/daily-security-intel/${TODAY}"
+python3 scripts/verify_tactical_forecasts.py --all --json \
+  > ".cache/daily-security-intel/${TODAY}/tactical-verification.json"
+python3 scripts/check_verification_health.py \
+  --from-json ".cache/daily-security-intel/${TODAY}/tactical-verification.json"
+
 python3 scripts/render_tactical_forecast_section.py --date "${TODAY}" \
   --inject-report "outputs/${TODAY}/${TODAY}-security-report.json"
 ```
+
+**収集に失敗したソースは `=error` で記録する**（例: `--source-status "vendor=error"`）。
+成功と記録した区間だけが窓を覆ったとみなされ、覆えた場合にのみ未確認を miss にできる。
+成否を記録しない限り miss は永久に0件のままで、
+**「予報が当たっている」と「miss を記録できない」が区別できなくなる**。
+
+`check_verification_health.py` は、窓が満了した候補があるのに hit も miss も0件のとき、
+および not_observed が resolved の大半を占めるときに落ちる。
+`blocked_by_channel`（事象は起きたが宣言チャネルで確認できなかった件数）も警告する。
 
 **なぜ shadow から始めるか**: TF-1 が予報したい状態遷移は、コーパス全体で
 **バックフィル除外・episode統合後の前進遷移は13件しか観測されていない**（2026-08-29時点）。

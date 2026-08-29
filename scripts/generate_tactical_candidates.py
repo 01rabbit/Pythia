@@ -52,11 +52,11 @@ JST = timezone(timedelta(hours=9))
 
 MODEL_VERSION = "tf1-reference-only-v1"
 MATCHING_RULE_BY_EVENT = {
-    "TF1_POC_PUBLICATION": "tf1-poc-v2",
-    "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": "tf1-exploitation-v2",
-    "TF1_BROADER_EXPLOITATION_CONFIRMATION": "tf1-exploitation-v2",
-    "TF1_POST_EXPLOIT_ACTIVITY_PUBLICATION": "tf1-exploitation-v2",
-    "TF1_BROAD_CAMPAIGN": "tf1-exploitation-v2",
+    "TF1_POC_PUBLICATION": "tf1-poc-v3",
+    "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": "tf1-exploitation-v3",
+    "TF1_BROADER_EXPLOITATION_CONFIRMATION": "tf1-exploitation-v3",
+    "TF1_POST_EXPLOIT_ACTIVITY_PUBLICATION": "tf1-exploitation-v3",
+    "TF1_BROAD_CAMPAIGN": "tf1-exploitation-v3",
 }
 
 # 一次確認源（設計 §7 verification_sources）。event type ごとに固定する。

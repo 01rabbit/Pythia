@@ -24,6 +24,7 @@ from tactical_time import (  # noqa: E402
     JST, conservative_date_availability, iso_utc, load_evidence_index,
     observation_available_at, parse_utc,
 )
+from source_channels import load_registry, resolve_channel  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OBS_GLOB = os.path.join(ROOT, "forecaster", "observations", "*", "*", "*.json")
@@ -88,9 +89,16 @@ def source_coverage_proven(records, rule, universe, start, deadline):
 
 
 def load_subject_states():
-    """subject -> [(available_at,event_day_start,state,id,source_type)] を返す。"""
+    """subject -> [(available_at,event_day_start,state,id,channel)] を返す。
+
+    ★5番目は source.type ではなく解決済みの確認チャネルである（Blocker 1a）。
+      source.type は媒体種別ではなく記事内容で付与されており、同一媒体でも値が割れる。
+      type を採用条件に使うと一次機関の記録が型の誤りで検証から外れるため、
+      source_channels.resolve_channel() で構造化フィールドから決定論的に解決する。
+    """
     per = defaultdict(list)
     evidence = load_evidence_index(ROOT)
+    channels = load_registry()
     for path in sorted(glob.glob(OBS_GLOB)):
         try:
             with open(path, encoding="utf-8") as f:
@@ -101,16 +109,22 @@ def load_subject_states():
             available = observation_available_at(obs, evidence)
             # date-onlyの事象は同日内の前後を証明できない。日初を下限とする。
             event_start = conservative_date_availability(obs["observed_date"]) - timedelta(days=1)
-            source_type = (obs.get("source") or {}).get("type")
+            channel = resolve_channel(obs.get("source"), channels)
             for cve in obs.get("cve") or []:
                 state, _basis = derive_state(obs, subject_id=cve)
                 if state:
                     per[cve].append((available, event_start, state,
-                                     obs.get("observation_id"), source_type))
+                                     obs.get("observation_id"), channel))
     return {key: sorted(set(values)) for key, values in per.items()}
 
 
-def score(candidate, index, as_of, universes, coverage_records=None):
+def score(candidate, index, as_of, universes, coverage_records=None, diagnostics=None):
+    """1候補を時間軸ごとに採点する。
+
+    diagnostics に dict を渡すと、「窓内に状態が前進し target も成立したが、
+    確認した観測のチャネルが universe の宣言集合に無いため発火しなかった」件数を
+    horizon 別に記録する。これを沈黙させると hit 0 の原因が測れない（Blocker 1a）。
+    """
     labels = [HORIZON_LABELS[h] for h in HORIZONS_DAYS]
     if candidate.get("selection", {}).get("status") == "abstained":
         return {label: "abstained" for label in labels}
@@ -124,17 +138,25 @@ def score(candidate, index, as_of, universes, coverage_records=None):
     start = parse_utc(candidate["issued_at_utc"])
     subject = candidate["subject"]["id"]
     points = index.get(subject, [])
-    accepted_types = set(universe.get("accepted_observation_source_types") or [])
+    # ★fail-closed: universe が確認チャネルを宣言していなければ何も受理しない。
+    accepted_channels = set(universe.get("sources") or [])
     out = {}
     for horizon in HORIZONS_DAYS:
         label = HORIZON_LABELS[horizon]
         deadline = start + timedelta(days=horizon)
-        fired = any(
-            start < event_start and start < available <= deadline
-            and (not accepted_types or source_type in accepted_types)
-            and transition_fired(te.get("event_type"), state, te.get("next_state"))
-            for available, event_start, state, _oid, source_type in points
-        )
+        fired = False
+        blocked = []
+        for available, event_start, state, _oid, channel in points:
+            if not (start < event_start and start < available <= deadline):
+                continue
+            if not transition_fired(te.get("event_type"), state, te.get("next_state")):
+                continue
+            if channel in accepted_channels:
+                fired = True
+                break
+            blocked.append(channel)
+        if diagnostics is not None and not fired and blocked:
+            diagnostics.setdefault(label, Counter()).update(blocked)
         if fired:
             out[label] = "hit"
         elif as_of < deadline:
@@ -181,11 +203,12 @@ def main():
     paths = [p for p in paths if os.path.exists(p) and os.path.relpath(p, ROOT) not in exclusions]
     index, universes, coverage = load_subject_states(), load_universes(), load_coverage()
     rows, tally, scored = [], defaultdict(Counter), defaultdict(list)
+    blocked = {}
     for path in paths:
         with open(path, encoding="utf-8") as f:
             doc = json.load(f)
         for candidate in doc.get("candidates", []):
-            verdicts = score(candidate, index, as_of, universes, coverage)
+            verdicts = score(candidate, index, as_of, universes, coverage, blocked)
             rows.append({
                 "candidate_id": candidate["candidate_id"],
                 "content_sha256": candidate.get("content_sha256"),
@@ -218,6 +241,11 @@ def main():
             "auc": auc(pairs),
             "coverage": round(len(pairs) / sum(counts.values()), 6) if sum(counts.values()) else None,
             "right_censored": counts["pending"] > 0,
+            # ★窓内に target が成立したのに、確認観測のチャネルが universe の宣言集合に
+            #   無いため発火しなかった件数。hit 0 の原因を「起きなかった」と
+            #   「確認チャネルに載らなかった」に分離するための計器（Blocker 1a）。
+            "blocked_by_channel": sum(blocked.get(label, Counter()).values()),
+            "blocked_channels": dict(blocked.get(label, Counter())),
         }
     if args.write:
         stamp = as_of.strftime("%Y%m%dT%H%M%SZ")
@@ -234,6 +262,7 @@ def main():
         for label, row in result["by_horizon"].items():
             print(f"  {label}: {row}")
         print("未確認はbounded open worldではnot_observed。missへ変換しない。")
+        print("blocked_by_channel > 0 は、事象は起きたが宣言チャネルで確認できなかったことを示す。")
     return 0
 
 

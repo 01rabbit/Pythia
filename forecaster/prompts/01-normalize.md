@@ -58,6 +58,23 @@
 - ★R3・R4 の evidence-based 原則は厳守する。情報源が技術・帰属を明示していない場合は `techniques: []` / `actor_group: null` とし、推測による付与は引き続き禁止。「明示」の操作的定義（具体的な手口・挙動の記述があれば付与する）は R3 を参照。
 - ATT&CK 以外の体系（ATLAS 等）の技術は `techniques`（ATT&CK 専用）に入れない。該当する ATT&CK 技術が情報源から導ける場合のみ付与する（例: 盗用コンピュート悪用 → T1496 Resource Hijacking）。
 
+### R6: 一次確認チャネルを構造化して残す（source.primary_channel）
+
+報道記事は一次組織の報告を中継していることが多い（例: BleepingComputer が Defused の
+ハニーポット観測を伝える）。この一次組織は検証で「宣言した確認チャネルで確認できたか」を
+判定する唯一の根拠になるが、`source.type` は媒体種別ではなく記事内容で付与されるため
+判定に使えない（同一媒体で news / vendor_report / advisory が割れる）。
+
+- 記事が一次組織を**明示している**場合、`source.name` に
+  `「媒体名 / 一次組織名」`の形で残す（既存の慣行どおり）。
+- さらに `source.primary_channel` に `cert` / `vendor` / `telemetry_provider` /
+  `aggregator_news` のいずれかを入れてよい（任意）。
+- **本文からの推測で埋めてはならない**（原則1）。一次組織が明示されていない記事では
+  省略する。省略時は `forecaster/knowledge/source-channels.json` により
+  `source.name` から機械的に解決され、解決できなければ `unattributed` として
+  hit にしない（fail-closed）。
+
+
 ---
 
 ## 正規化ルール（厳守）

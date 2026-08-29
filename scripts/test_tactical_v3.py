@@ -55,7 +55,7 @@ def main():
     tampered["probability_by_horizon"]["7d"] = .99
     assert_true(tampered["content_sha256"] != hash_without(tampered, "content_sha256"),
                 "発行後の確率改変を検知する")
-    assert_true(candidate["target_event"]["matching_rule_version"] == "tf1-poc-v2",
+    assert_true(candidate["target_event"]["matching_rule_version"] == "tf1-poc-v3",
                 "PoC予報が専用source universeを固定する")
     assert_true(not transition_fired("TF1_POC_PUBLICATION", ACTIVE_EXPLOITATION, POC_PUBLIC),
                 "後続の悪用確認からPoC公開を逆推論しない")
@@ -66,33 +66,46 @@ def main():
     after_window = datetime(2026, 10, 1, tzinfo=timezone.utc)
     verdicts = vtf.score(
         candidate, {"CVE-2026-99999": []}, after_window,
-        {"tf1-poc-v2": {"negative_outcome_allowed": False}},
+        {"tf1-poc-v3": {"negative_outcome_allowed": False}},
     )
     assert_true(set(verdicts.values()) == {"not_observed"},
                 "open-world未確認をmissへ変換しない")
 
     news_point = [(datetime(2026, 9, 1, tzinfo=timezone.utc),
-                   datetime(2026, 9, 1, tzinfo=timezone.utc), POC_PUBLIC, "obs-news", "news")]
+                   datetime(2026, 9, 1, tzinfo=timezone.utc), POC_PUBLIC, "obs-news",
+                   "aggregator_news")]
+    diagnostics = {}
     verdicts = vtf.score(
         candidate, {"CVE-2026-99999": news_point}, after_window,
-        {"tf1-poc-v2": {"negative_outcome_allowed": False,
-                         "accepted_observation_source_types": ["osint"]}},
+        {"tf1-poc-v3": {"negative_outcome_allowed": False, "sources": ["vendor", "cert"]}},
+        None, diagnostics,
     )
     assert_true(set(verdicts.values()) == {"not_observed"},
                 "source universe外の二次記事をhitにしない")
+    assert_true(sum(sum(c.values()) for c in diagnostics.values()) == 3,
+                "チャネル不一致による不発を沈黙させず計数する")
+
+    primary_point = [(datetime(2026, 9, 1, tzinfo=timezone.utc),
+                      datetime(2026, 9, 1, tzinfo=timezone.utc), POC_PUBLIC, "obs-cert",
+                      "cert")]
+    verdicts = vtf.score(
+        candidate, {"CVE-2026-99999": primary_point}, after_window,
+        {"tf1-poc-v3": {"negative_outcome_allowed": False, "sources": ["vendor", "cert"]}},
+    )
+    assert_true(set(verdicts.values()) == {"hit"},
+                "宣言チャネルの一次記録は媒体種別によらずhitになる")
 
     covered_universe = {
         "negative_outcome_allowed": "coverage_proven", "sources": ["github"],
-        "accepted_observation_source_types": ["osint"],
     }
     coverage = [{
-        "matching_rule_version": "tf1-poc-v2",
+        "matching_rule_version": "tf1-poc-v3",
         "window_start_utc": "2026-08-29T01:00:00Z",
         "window_end_utc": "2026-10-01T01:00:00Z",
         "sources": {"github": "ok"},
     }]
     verdicts = vtf.score(candidate, {"CVE-2026-99999": []}, after_window,
-                         {"tf1-poc-v2": covered_universe}, coverage)
+                         {"tf1-poc-v3": covered_universe}, coverage)
     assert_true(set(verdicts.values()) == {"miss"},
                 "全source監視区間が窓を覆う場合だけ未確認をmissにする")
 
@@ -115,7 +128,7 @@ def main():
                             {}, {})
     assert_true(event1 == event2 and event1["summary_fact"] == malicious["summary"],
                 "入力内の命令文を実行せず単なる不変データとして保存する")
-    print("\nTactical v3 adversarial tests: 10 passed")
+    print("\nTactical v3 adversarial tests: 12 passed")
     return 0
 
 
