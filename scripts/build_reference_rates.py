@@ -5,14 +5,20 @@
 
 ★実測してわかった最重要の制約（2026-08-29）:
   observations は 865 件あり exploitation_stage を持つものは 481 件あるが、
-  **同一CVEが2日以上に出現するのは 469 CVE 中 54 件だけ**で、
-  **前進した状態遷移は全コーパスで 10 件しか観測されていない**
-  （最大セルの poc_public→active_exploitation でも n=6）。
+  **同一CVEが2日以上に出現するのは 664 CVE 中 122 件だけ**で、
+  **前進した状態遷移は全コーパスで 36 件しか観測されていない**。
 
   つまり「stage ラベルが 481 件ある」ことは「遷移が 481 件観測された」ことを
   意味しない。TF-1 の参照率を内部実績だけから点推定することは現時点では
   できない。これは TF-1 を shadow で始める判断（設計 §12 第1段階）を裏づける
   事実であり、shadow 運用の目的そのものが**この母集団を作ること**である。
+
+  なお、侵入後 tactic の Technique から POST_EXPLOIT_ACTIVITY を導出する規則
+  （tactical_states.derive_state）を入れる前は、exploitation_stage だけを見ていたため
+  観測できる遷移は 10 件（stage付きCVE 469・複数観測 54）にとどまっていた。
+  導出規則により 36 件へ増え、ACTIVE_EXPLOITATION → POST_EXPLOIT_ACTIVITY が
+  測定可能になった。数値は本ファイルの _corpus が常に正であり、
+  この docstring は説明のための参考値である。
 
 したがって本スクリプトは:
   - 観測できたセルは Beta-Binomial 事後分布（平均と 80% 信用区間）で出す
