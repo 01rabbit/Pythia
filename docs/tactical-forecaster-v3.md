@@ -51,7 +51,12 @@ IPアドレスは取得・証跡化しない。
 候補が宣言する `verification_sources` は採点宇宙の `sources` から単一生成する。
 二重管理すると宣言と hit 判定が食い違う。
 
-原典の取得は `snapshot_sources.py --capture-url <URL> --source-type <種別>` で行い、
+原典の取得は `snapshot_sources.py --capture-url <URL> --source-type <種別>` で行う。
+取得対象は公開 HTTP(S) に限り、loopback / private / link-local はIP直指定でも
+**DNS 名の解決先**でも拒否する（`localtest.me` のような公開DNS名が 127.0.0.1 へ
+解決するため、IP直指定の検査だけでは素通りする）。名前解決できない場合は落とさない
+（プロキシ経由環境での誤遮断を避けるため）。DNS rebinding は防がない。
+取得は
 本文を解釈せず生バイトのまま内容ハッシュ名で保存する。この層が保証するのは
 「この時刻にこのURLにこの内容があった」ことだけで、意味づけは正規化の仕事である。
 

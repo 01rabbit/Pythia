@@ -175,6 +175,31 @@ def main():
     ) == ("cert", "primary_reference_url"),
         "取得した原典の証跡で集約ニュース掲載の観測が一次確認として受理される")
 
+    # 取得層のSSRF防御は DNS 名の解決先まで見る（ネット不使用・getaddrinfo を差し替え）
+    import socket as _socket
+    original_getaddrinfo = ss.socket.getaddrinfo
+
+    def fake_getaddrinfo(host, port, *a, **kw):
+        table = {"loopback.example": "127.0.0.1", "meta.example": "169.254.169.254",
+                 "public.example": "93.184.216.34"}
+        if host not in table:
+            raise _socket.gaierror("not found")
+        return [(_socket.AF_INET, _socket.SOCK_STREAM, _socket.IPPROTO_TCP, "",
+                 (table[host], port))]
+
+    ss.socket.getaddrinfo = fake_getaddrinfo
+    try:
+        assert_true(not ss._is_http_url("http://loopback.example/x"),
+                    "127.0.0.1 へ解決する公開DNS名を取得対象にしない")
+        assert_true(not ss._is_http_url("http://meta.example/latest/meta-data/"),
+                    "クラウドメタデータへ解決する公開DNS名を取得対象にしない")
+        assert_true(ss._is_http_url("https://public.example/x"),
+                    "公開アドレスへ解決するDNS名は取得できる")
+        assert_true(ss._is_http_url("https://unresolvable.example/x"),
+                    "名前解決できない場合は落とさない（プロキシ経由環境での誤遮断を避ける）")
+    finally:
+        ss.socket.getaddrinfo = original_getaddrinfo
+
     # 被覆記録が日次パイプラインへ接続されている
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     skill = open(os.path.join(repo_root, "SKILL.md"), encoding="utf-8").read()
@@ -240,7 +265,7 @@ def main():
                             {}, {})
     assert_true(event1 == event2 and event1["summary_fact"] == malicious["summary"],
                 "入力内の命令文を実行せず単なる不変データとして保存する")
-    print("\nTactical v3 adversarial tests: 29 passed")
+    print("\nTactical v3 adversarial tests: 33 passed")
     return 0
 
 

@@ -44,6 +44,7 @@ import hashlib
 import ipaddress
 import json
 import os
+import socket
 import sys
 import urllib.error
 import urllib.parse
@@ -158,12 +159,38 @@ def find_existing_snapshot(kind, digest, suffix=".json.gz"):
     return None
 
 
+def _resolves_to_non_global(host, port):
+    """DNS 名が非公開アドレスへ解決するか。判定できないときは False を返す。
+
+    ★IP直指定だけを弾いても素通りする。`localtest.me` は実在する公開DNS名で
+      127.0.0.1 に解決し、`*.nip.io` は任意のIPを名前で表現できる。名前を解決せずに
+      通すと、取得した内容がスナップショットとしてコミットされる。
+
+    ★限界を明示する: これは解決→検査→取得の間に応答が変わる DNS rebinding を
+      防がない。解決自体が失敗した場合も通す（プロキシ経由でのみ名前解決できる
+      環境で正当なURLを一律に落とさないため）。取得層の最低限の防御であり、
+      証跡の受理は source-channels の人間レビュー済み host 登録簿が別途 fail-closed
+      に行う。
+    """
+    try:
+        infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
+    except (socket.gaierror, UnicodeError, ValueError):
+        return False
+    for info in infos:
+        try:
+            if not ipaddress.ip_address(info[4][0]).is_global:
+                return True
+        except ValueError:
+            continue
+    return False
+
+
 def _is_http_url(url):
     """原典取得に許可する公開 HTTP(S) URL か。
 
     原典URLは外部公開の一次ソースに限る。LLM が記事本文に含まれるURLを扱う経路でも
-    あるため、file:// だけでなく loopback / private / link-local 等のIP直指定を
-    拒否し、ローカル資源やクラウドメタデータを証跡へ取り込まない。
+    あるため、file:// だけでなく loopback / private / link-local を拒否する。
+    IP直指定に加えて **DNS 名の解決先も検査する**（上の _resolves_to_non_global 参照）。
     """
     try:
         parsed = urllib.parse.urlparse(url or "")
@@ -177,9 +204,9 @@ def _is_http_url(url):
     try:
         return ipaddress.ip_address(host).is_global
     except ValueError:
-        # DNS名は公開性をこの層で断定しない。最終的な受理は source-channels の
-        # 人間レビュー済み host 登録簿で fail-closed に行う。
-        return True
+        pass
+    port = parsed.port or (443 if parsed.scheme == "https" else 80)
+    return not _resolves_to_non_global(host, port)
 
 
 def capture_url(day, url, source_type):
