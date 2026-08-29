@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""モデル昇格が前向き評価ゲートに裏付けられているかfail-closed検証する。"""
+"""モデル昇格が前向き評価ゲートに裏付けられているかfail-closed検証する。
+
+★被覆記録が1件も無い間は昇格を許さない（PR #175 レビュー指摘2）。
+  negative_outcome_allowed=coverage_proven の universe で被覆記録が無ければ
+  miss は原理的に立たず、Brier も AUC も hit だけで計算されることになる。
+  その状態の指標で昇格させてはならない。
+"""
 
 import glob
 import json
@@ -10,6 +16,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REGISTRY = os.path.join(ROOT, "forecaster", "models", "model-registry.json")
 GATES = os.path.join(ROOT, "forecaster", "config", "promotion-gates.json")
 SUMMARIES = os.path.join(ROOT, "forecaster", "verification", "tactical", "promotion-*.json")
+COVERAGE_GLOB = os.path.join(ROOT, "forecaster", "evidence", "source-coverage", "*.json")
 
 
 def load(path):
@@ -42,6 +49,12 @@ def main():
         row = load(path)
         summaries[(row.get("model_version"), row.get("forecast_family"), row.get("horizon"))] = row
     errors = []
+    approved = [m for m in registry.get("models", []) if m.get("approved_for_publication")]
+    if approved and not glob.glob(COVERAGE_GLOB):
+        errors.append(
+            "被覆記録（forecaster/evidence/source-coverage/）が1件も無いのに"
+            "approved_for_publication のモデルがある。miss が立たない状態の指標では昇格できない"
+        )
     for model in registry.get("models", []):
         if not model.get("approved_for_publication"):
             continue

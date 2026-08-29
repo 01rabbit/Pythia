@@ -71,6 +71,25 @@ def main():
     assert_true(set(verdicts.values()) == {"not_observed"},
                 "open-world未確認をmissへ変換しない")
 
+    # 掲載元が集約ニュースなら、記事が一次組織を引用していてもhitにしない
+    import source_channels as sc
+    table = sc.load_registry()
+    assert_true(sc.resolve({"name": "CISA / BleepingComputer",
+                            "url": "https://www.bleepingcomputer.com/x"}, table)[0]
+                == "aggregator_news",
+                "名前が一次組織を挙げていても掲載元ホストが集約ニュースなら昇格しない")
+    assert_true(sc.resolve({"name": "BleepingComputer",
+                            "url": "https://www.bleepingcomputer.com/x",
+                            "primary_reference": {"organization": "CISA",
+                                                  "url": "https://www.cisa.gov/y"}}, table)
+                == ("cert", "primary_reference_url"),
+                "構造化された原典URLがあれば一次確認として受理する")
+    universes = gtc._load_universes()
+    assert_true(all(gtc.verification_sources_for(event)
+                    == universes[gtc.MATCHING_RULE_BY_EVENT[event]]["sources"]
+                    for event in gtc.MATCHING_RULE_BY_EVENT),
+                "候補のverification_sourcesが採点宇宙から単一生成される")
+
     news_point = [(datetime(2026, 9, 1, tzinfo=timezone.utc),
                    datetime(2026, 9, 1, tzinfo=timezone.utc), POC_PUBLIC, "obs-news",
                    "aggregator_news")]
@@ -128,7 +147,7 @@ def main():
                             {}, {})
     assert_true(event1 == event2 and event1["summary_fact"] == malicious["summary"],
                 "入力内の命令文を実行せず単なる不変データとして保存する")
-    print("\nTactical v3 adversarial tests: 12 passed")
+    print("\nTactical v3 adversarial tests: 15 passed")
     return 0
 
 

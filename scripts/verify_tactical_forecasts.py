@@ -24,7 +24,9 @@ from tactical_time import (  # noqa: E402
     JST, conservative_date_availability, iso_utc, load_evidence_index,
     observation_available_at, parse_utc,
 )
-from source_channels import load_registry, resolve_channel  # noqa: E402
+from source_channels import (  # noqa: E402
+    load_registry, needs_primary_reference, resolve,
+)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OBS_GLOB = os.path.join(ROOT, "forecaster", "observations", "*", "*", "*.json")
@@ -94,7 +96,8 @@ def load_subject_states():
     ★5番目は source.type ではなく解決済みの確認チャネルである（Blocker 1a）。
       source.type は媒体種別ではなく記事内容で付与されており、同一媒体でも値が割れる。
       type を採用条件に使うと一次機関の記録が型の誤りで検証から外れるため、
-      source_channels.resolve_channel() で構造化フィールドから決定論的に解決する。
+      source_channels.resolve() が掲載元ホスト（または構造化された原典URL）から
+      決定論的に解決する。source.name の組織名の言及では昇格させない。
     """
     per = defaultdict(list)
     evidence = load_evidence_index(ROOT)
@@ -109,7 +112,11 @@ def load_subject_states():
             available = observation_available_at(obs, evidence)
             # date-onlyの事象は同日内の前後を証明できない。日初を下限とする。
             event_start = conservative_date_availability(obs["observed_date"]) - timedelta(days=1)
-            channel = resolve_channel(obs.get("source"), channels)
+            channel, _basis = resolve(obs.get("source"), channels)
+            if needs_primary_reference(obs.get("source"), channels):
+                # 集約ニュース掲載だが一次組織を引用しており、原典URLが未記録。
+                # 昇格はしないが、構造化すれば受理できることを診断で示す。
+                channel = "aggregator_news_citing_primary"
             for cve in obs.get("cve") or []:
                 state, _basis = derive_state(obs, subject_id=cve)
                 if state:

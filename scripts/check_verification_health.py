@@ -15,7 +15,10 @@
   3. [W] blocked_by_channel > 0（事象は起きたが宣言チャネルで確認できなかった）
   4. [W] source coverage の記録が1件も無い（record_source_coverage.py 未接続）
 
-`--effective-from` より前の日付では [E] を [W] に落とす（接続作業の猶予）。
+`--effective-from` より前では [E] を [W] に落とす（接続作業の猶予）。
+★判定の基準日は**実行日ではなく採点時点 `as_of`**（検証出力の `_generated_at_utc`）である。
+  実行日を使うと `--as-of-utc` を指定した再現テストや過去時点の監査が壊れる
+  （PR #175 レビュー指摘4）。`--enforce` / `--no-enforce` で明示的に上書きできる。
 
 使い方:
     python3 scripts/verify_tactical_forecasts.py --all --json > /tmp/v.json
@@ -54,11 +57,18 @@ def main():
     ap.add_argument("--as-of-utc")
     ap.add_argument("--max-not-observed-ratio", type=float, default=DEFAULT_MAX_NOT_OBSERVED)
     ap.add_argument("--effective-from", default=DEFAULT_EFFECTIVE_FROM,
-                    help="この日以降は警告をエラーへ昇格する")
+                    help="採点時点 as_of がこの日以降なら警告をエラーへ昇格する")
+    mode = ap.add_mutually_exclusive_group()
+    mode.add_argument("--enforce", dest="enforce", action="store_true", default=None,
+                      help="effective-from によらず必ずエラーにする")
+    mode.add_argument("--no-enforce", dest="enforce", action="store_false",
+                      help="effective-from によらず警告に留める")
     args = ap.parse_args()
 
     result = load_result(args)
-    enforce = date.today().isoformat() >= args.effective_from
+    # ★基準は実行日ではなく採点時点。--as-of-utc 指定の再現テストが実行日で揺れないようにする。
+    as_of = (result.get("_generated_at_utc") or "")[:10] or date.today().isoformat()
+    enforce = args.enforce if args.enforce is not None else (as_of >= args.effective_from)
     errors, warnings = [], []
 
     if not glob.glob(COVERAGE_GLOB):
@@ -87,7 +97,9 @@ def main():
         if row.get("blocked_by_channel"):
             warnings.append(
                 f"{label}: 窓内に target が成立したが宣言チャネルで確認できなかった候補が"
-                f" {row['blocked_by_channel']} 件（{row.get('blocked_channels')}）"
+                f" {row['blocked_by_channel']} 件（{row.get('blocked_channels')}）。"
+                "aggregator_news_citing_primary は source.primary_reference を"
+                "構造化すれば受理できる"
             )
 
     for m in errors:
@@ -95,7 +107,7 @@ def main():
     for m in warnings:
         print(f"  [W] {m}")
     print(f"\n検証健全性: エラー {len(errors)} 件 / 警告 {len(warnings)} 件"
-          f"（enforce={enforce} / effective_from={args.effective_from}）")
+          f"（as_of={as_of} / enforce={enforce} / effective_from={args.effective_from}）")
     return 1 if errors else 0
 
 

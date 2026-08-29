@@ -1,92 +1,125 @@
 #!/usr/bin/env python3
 """観測の情報源を、予報 universe が宣言する確認チャネルへ決定論的に解決する。
 
-★なぜ source.type を使わないか（Blocker 1a）:
-  source.type は媒体種別ではなく記事内容で付与されており、同一媒体でも値が割れる。
-  実測: 「The Hacker News」= news 79 / vendor_report 3 / advisory 4、
-        「Security NEXT」  = news 87 / vendor_report 3 / advisory 4。
-  type を採用条件に使うと、一次機関の記録が媒体種別の誤りで検証から外れる。
-  実際 `CISA KEV` を名乗る観測155件のうち4件が news 型になっており、
-  そのうち1件（CVE-2026-8452）は唯一の前進確認だった。
+★判定は「掲載元ホスト」で行う。組織名の言及では一次情報にしない。
 
-★なぜ本文から推定しないか:
-  原則1（ハルシネーション厳禁）。解決根拠は構造化フィールド（source.name および
-  任意の source.primary_channel）のみで、summary からのキーワード推定は行わない。
+  なぜ source.type を使わないか:
+    source.type は媒体種別ではなく記事内容で付与されており、同一媒体でも値が割れる。
+    実測: 「The Hacker News」= news 79 / vendor_report 3 / advisory 4。
+    type を受理条件に使うと、一次機関の記録が型の誤りで検証から外れる。
 
-★fail-closed:
-  登録簿にない組織は "unattributed" を返す。unattributed は hit にしない。
+  なぜ source.name のトークンで昇格させないか:
+    複合表記の一次組織を根拠にすると、実際の掲載元が集約ニュースでも hit になる。
+    実測: 「CISA / BleepingComputer」の URL ホストは www.bleepingcomputer.com、
+          「Microsoft Threat Intelligence / The Hacker News」は thehackernews.com、
+          「CERT.PL / SecurityWeek」は www.securityweek.com。
+    これらを cert / vendor として受理すると「二次報道を確認事実にしない」契約が壊れる。
+    そのため name は診断（primary_reference の欠落警告）にのみ使う。
+
+  なぜ本文から推定しないか:
+    原則1（ハルシネーション厳禁）。根拠は構造化フィールドの URL だけである。
+
+★fail-closed: 登録簿にないホストは "unattributed" を返し、hit にしない。
   ただし「解決できなかった」ことは呼び出し側で計数し、沈黙させない。
 """
 
 import json
 import os
-import re
+from urllib.parse import urlparse
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REGISTRY = os.path.join(REPO_ROOT, "forecaster", "knowledge", "source-channels.json")
 
 UNATTRIBUTED = "unattributed"
 AGGREGATOR = "aggregator_news"
-SPLIT_RE = re.compile(r"[/／,、()（）\[\]【】]")
 _CACHE = {}
 
 
 def load_registry(path=REGISTRY):
-    """組織名（小文字）→チャネルの辞書を返す。"""
+    """{"hosts": {host: channel}, "orgs": {name_lower: channel}} を返す。"""
     if path in _CACHE:
         return _CACHE[path]
     with open(path, encoding="utf-8") as f:
         doc = json.load(f)
-    table = {}
-    for channel, names in doc["channels"].items():
+    hosts = {}
+    for channel, names in doc["hosts"].items():
+        for host in names:
+            hosts[host.lower()] = channel
+    orgs = {}
+    for channel, names in (doc.get("organizations") or {}).items():
+        if channel.startswith("_"):
+            continue
         for name in names:
-            table[name.lower()] = channel
+            orgs[name.lower()] = channel
+    table = {"hosts": hosts, "orgs": orgs}
     _CACHE[path] = table
     return table
 
 
-def tokenize(name):
-    """複合表記の情報源名を組織トークンへ分解する。"""
-    return [t.strip() for t in SPLIT_RE.split(name or "") if t.strip()]
+def host_of(url):
+    try:
+        return (urlparse(url or "").netloc or "").lower()
+    except ValueError:
+        return ""
 
 
-def _match(token, table):
-    """1トークンをチャネルへ解決する。完全一致→前方一致の順。"""
-    low = token.lower()
-    if low in table:
-        return table[low]
-    for key, channel in table.items():
-        # 「CISA Cybersecurity Advisory AA23-061A」→ cert のように、
-        # 組織名で始まる長い表記を拾う。誤爆を避けるため4文字以上のキーに限る。
-        if len(key) >= 4 and low.startswith(key) and not low[len(key):len(key) + 1].isalnum():
-            return channel
-    return None
+def _channel_of_url(url, table):
+    return table["hosts"].get(host_of(url))
 
 
 def resolve_channel(source, table=None):
-    """observation.source から確認チャネルを返す。
+    """observation.source から確認チャネルを返す（後方互換のため文字列を返す）。"""
+    return resolve(source, table)[0]
 
-    優先順位:
-      1. source.primary_channel（正規化時に構造化されていればそれが正本）
-      2. source.name のトークン解決。非 aggregator が1つでもあればそれを採る
-      3. aggregator_news しか出なければ aggregator_news
-      4. 何も解決しなければ UNATTRIBUTED
+
+def resolve(source, table=None):
+    """(channel, basis) を返す。
+
+    解決順:
+      1. source.primary_reference.url のホスト（非 aggregator のときのみ採用）
+         — 集約ニュースが一次公表の原典URLを構造化して持っている場合の昇格経路
+      2. source.url のホスト
+      3. どちらも登録簿に無ければ UNATTRIBUTED
     """
     table = load_registry() if table is None else table
     source = source or {}
-    declared = source.get("primary_channel")
-    if declared:
-        return declared
-    name = source.get("name")
-    # 「JPCERT/CC」のように組織名自体が区切り文字を含む場合があるため、
-    # 分割前の全体名も候補に入れる。非 aggregator 優先の規則は後段で共通に効く。
-    candidates = [_match(name or "", table)]
-    candidates += [_match(t, table) for t in tokenize(name)]
-    found = [c for c in candidates if c]
-    for channel in found:
-        if channel != AGGREGATOR:
-            return channel
-    return AGGREGATOR if found else UNATTRIBUTED
+
+    reference = source.get("primary_reference") or {}
+    ref_channel = _channel_of_url(reference.get("url"), table)
+    if ref_channel and ref_channel != AGGREGATOR:
+        return ref_channel, "primary_reference_url"
+
+    channel = _channel_of_url(source.get("url"), table)
+    if channel:
+        return channel, "publication_host"
+    return UNATTRIBUTED, "unknown_host"
+
+
+def cited_primary_organizations(source, table=None):
+    """source.name が言及している一次組織を返す（診断専用・昇格には使わない）。
+
+    集約ニュースの掲載でも一次組織を引用している場合に、
+    「primary_reference を構造化すれば受理できる」ことを示すために使う。
+    """
+    table = load_registry() if table is None else table
+    name = (source or {}).get("name") or ""
+    low = name.lower()
+    found = []
+    for org, channel in table["orgs"].items():
+        if org in low:
+            found.append((org, channel))
+    return found
+
+
+def needs_primary_reference(source, table=None):
+    """掲載元が集約ニュースだが一次組織を引用しており、原典URLが未記録か。"""
+    table = load_registry() if table is None else table
+    channel, _basis = resolve(source, table)
+    if channel != AGGREGATOR:
+        return False
+    if (source or {}).get("primary_reference", {}).get("url"):
+        return False
+    return bool(cited_primary_organizations(source, table))
 
 
 def accepted_by(universe, channel):
