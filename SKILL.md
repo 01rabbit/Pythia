@@ -79,8 +79,14 @@ Section 4: SOC推奨情報
 
 判定に使う一次ソースを、**取得時刻と内容ハッシュ付き**で Evidence Ledger へ固定する。
 
+**取得は行わない。** 証跡と被覆記録は 06:00 JST の `daily-pipeline.yml` が固定済みで、
+ここではその存在と整合を検証するだけである。予報時刻に取り直すと、**予報後に取得した
+証拠を予報が使った**ことになり先見性の主張が崩れる。
+
 ```bash
-python3 scripts/snapshot_sources.py --date "${TODAY}"
+# 朝に固定された証跡の整合を検証する（取得はしない）
+python3 scripts/snapshot_sources.py --date "${TODAY}" --verify-only
+
 python3 scripts/run_manifest.py --date "${TODAY}" --step snapshot_sources --status ok \
   --output "forecaster/evidence/manifests/${TODAY:0:4}/${TODAY:5:2}/${TODAY}.json" \
   --version "snapshot_sources/1.0"
@@ -112,10 +118,7 @@ python3 scripts/generate_tactical_candidates.py --date "${TODAY}" \
 python3 scripts/validate_tactical_integrity.py --date "${TODAY}" # fail-closed
 python3 scripts/validate_transition_claims.py --date "${TODAY}"   # fail-closed
 
-# ★監視の成否を Evidence Ledger（Step 0.5 の取得証跡）から導出して記録する。
-#   これが無いと窓満了後の未確認を miss にできない。手で ok を打ってはならない。
-python3 scripts/record_source_coverage.py --rule tf1-exploitation-v3 --from-evidence "${TODAY}"
-python3 scripts/record_source_coverage.py --rule tf1-poc-v3 --from-evidence "${TODAY}"
+# 被覆記録は 06:00 JST の daily-pipeline.yml が固定済み。ここでは作らない。
 
 # ★採点が実際に成立しているかを監視する（沈黙を正常と区別する）
 mkdir -p ".cache/daily-security-intel/${TODAY}"
@@ -129,7 +132,9 @@ python3 scripts/render_tactical_forecast_section.py --date "${TODAY}" \
 ```
 
 被覆は**取得証跡から導出する**（`--from-evidence`）。Evidence Ledger に取得記録が無い
-チャネルは自動的に `error` になり、被覆を主張しない。導出元の `evidence_id` は
+チャネルは自動的に `error` になり、被覆を主張しない。証跡は Step 0.5 の
+`collect_channel_evidence.py` が `forecaster/knowledge/channel-feeds.json` の
+宣言フィードを取得して作る。導出元の `evidence_id` は
 `derived_from` に残るので、「監視できていた」という主張は後から検証できる。
 手で `--source-status` を打つのは証跡が取れない例外時のみで、その記録は
 `derivation: "manual"` として区別される。
@@ -139,9 +144,13 @@ python3 scripts/render_tactical_forecast_section.py --date "${TODAY}" \
 **「予報が当たっている」と「miss を記録できない」が区別できなくなる**。
 被覆記録が1件も無い間は `validate_model_promotion.py` がモデル昇格も拒否する。
 
-現状 Step 0.5 が取得証跡を残すのは CISA KEV（`cert`）だけなので、
-`vendor` / `telemetry_provider` は `error` になり `coverage_proven` は成立しない。
-これは正しい状態であり、**miss を立てるにはベンダー/テレメトリの collector 接続が要る**。
+**被覆が証明するのは「宣言したフィードを取得できた」ことだけ**で、
+「そのチャネルの全発信者を監視できた」ことではない。現在 vendor は3フィード、
+telemetry_provider は1フィードにすぎず、miss は「宣言したフィードに載らなかった」
+という意味である（真の非発生ではない）。フィードの増減は `channel-feeds.json` で行い、
+検証記録から遡って「その時点で何を監視していたか」を再現できるようにする。
+
+初回取得の窓は長さ0なので、**被覆の連鎖は2日目から成立する**。
 
 集約ニュース経由の一次原典は、将来の**自動collectorが取得証跡を残した場合だけ**
 `source.primary_reference` に記録できる。手動のURL取得入口は設けない。証跡が無ければ

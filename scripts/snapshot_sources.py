@@ -81,6 +81,21 @@ def manifest_path(day):
     return os.path.join(MANIFEST_DIR, f"{day[:4]}", f"{day[5:7]}", f"{day}.json")
 
 
+def assert_date_is_today(day, what="--date"):
+    """証跡を後付けの日付へ書かせない。
+
+    ★Evidence Ledger は「いつ監視できていたか」の台帳で、被覆窓はこの日付と
+      retrieved_at_utc から導かれる。取得している“今”と違う日付へ書けると、
+      監視していなかった期間を監視していたことにできてしまう。
+      build_tactical_state.py が cutoff に対して行っているのと同じ種類のガード。
+    """
+    today = datetime.now(JST).date().isoformat()
+    if day != today:
+        raise SystemExit(
+            f"[fatal] {what} {day} は取得時点のJST日付 {today} と一致しない。"
+            "証跡を後付けの日付へ記録することはできない")
+
+
 def load_manifest(day):
     path = manifest_path(day)
     if os.path.exists(path):
@@ -123,15 +138,20 @@ def fetch(url, timeout=120):
     return body, headers, utcnow()
 
 
-def snapshot_relpath(kind, day, digest):
+def snapshot_relpath(kind, day, digest, suffix=".json.gz"):
     return os.path.join(
-        "forecaster", "evidence", "snapshots", kind, day[:4], day[5:7], f"{digest}.json.gz"
+        "forecaster", "evidence", "snapshots", kind, day[:4], day[5:7], f"{digest}{suffix}"
     )
 
 
-def save_snapshot(kind, day, digest, blob):
-    """内容ハッシュ名で圧縮保存する。既存なら書かずにパスだけ返す（重複排除）。"""
-    rel = snapshot_relpath(kind, day, digest)
+def save_snapshot(kind, day, digest, blob, suffix=".json.gz"):
+    """内容ハッシュ名で圧縮保存する。既存なら書かずにパスだけ返す（重複排除）。
+
+    suffix は RSS/Atom など JSON 以外を保存するための引数で、既定は KEV 用の
+    .json.gz のまま。★これは宣言済みフィードを取る collector のための保存層であり、
+    任意URLの取得入口ではない（c145a48 で撤回した方針は維持する）。
+    """
+    rel = snapshot_relpath(kind, day, digest, suffix)
     abs_path = os.path.join(REPO_ROOT, rel)
     if os.path.exists(abs_path):
         return rel, False
@@ -141,14 +161,15 @@ def save_snapshot(kind, day, digest, blob):
     return rel, True
 
 
-def find_existing_snapshot(kind, digest):
+def find_existing_snapshot(kind, digest, suffix=".json.gz"):
     """同一ハッシュのスナップショットが過去日に既にあればそのパスを返す。"""
     base = os.path.join(SNAPSHOT_DIR, kind)
     if not os.path.isdir(base):
         return None
+    name = f"{digest}{suffix}"
     for root, _dirs, files in os.walk(base):
-        if f"{digest}.json.gz" in files:
-            return os.path.relpath(os.path.join(root, f"{digest}.json.gz"), REPO_ROOT)
+        if name in files:
+            return os.path.relpath(os.path.join(root, name), REPO_ROOT)
     return None
 
 
@@ -296,8 +317,10 @@ def main():
     day = args.date or datetime.now(JST).date().isoformat()
 
     if args.verify_only:
+        # 過去日の台帳を検査するだけなので日付ガードの対象外。
         return verify_manifest(day)
 
+    assert_date_is_today(day)
     doc = load_manifest(day)
     known = {e["evidence_id"] for e in doc["evidence"]}
     added_now = 0

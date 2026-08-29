@@ -63,17 +63,28 @@ def load_coverage():
 
 
 def source_coverage_proven(records, rule, universe, start, deadline):
-    """各必須sourceについて成功区間が予報窓を切れ目なく覆うか。"""
+    """各必須sourceについて、**そのチャネル自身の**成功区間が予報窓を切れ目なく覆うか。
+
+    ★チャネル別の区間だけを使う。全チャネル共通の単一窓を使うと、取得時刻の
+      早いチャネルの区間が、まだ取得していないチャネルにも適用され、監視して
+      いない時間帯を根拠に miss を記録できてしまう（PR #177 レビュー指摘）。
+
+    ★status が ok の区間だけを使う。partial（宣言フィードの一部しか取得できて
+      いない）は可視化のために記録するが、miss の根拠には使わない。
+
+    ★チャネル別区間を持たない古い形式の記録は使わない（fail-closed）。
+    """
     for source in universe.get("sources") or []:
         intervals = []
         for row in records:
             if row.get("matching_rule_version") != rule:
                 continue
-            if (row.get("sources") or {}).get(source) != "ok":
+            channel = (row.get("channels") or {}).get(source)
+            if not channel or channel.get("status") != "ok":
                 continue
             try:
-                intervals.append((parse_utc(row["window_start_utc"]),
-                                  parse_utc(row["window_end_utc"])))
+                intervals.append((parse_utc(channel["window_start_utc"]),
+                                  parse_utc(channel["window_end_utc"])))
             except (KeyError, ValueError):
                 continue
         cursor = start

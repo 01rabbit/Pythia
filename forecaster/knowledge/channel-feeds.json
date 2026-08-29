@@ -1,0 +1,48 @@
+{
+  "_schema_version": "1.0",
+  "_comment": "確認チャネルの『監視』を構成するフィードの宣言。被覆証明の対象範囲そのもの。",
+  "_why": [
+    "record_source_coverage.py --from-evidence は Evidence Ledger の取得証跡から",
+    "channel ごとの成否を導出する。KEV しか取得していなければ cert しか ok にならず、",
+    "tf1-exploitation-v3（vendor / cert / telemetry_provider）の coverage_proven は",
+    "永久に成立しない＝ miss が立たない＝検証が反証不能になる。",
+    "この登録簿は、その監視を実際に行うフィード集合を宣言する。"
+  ],
+  "_scope_limitation": [
+    "★被覆が証明するのは『ここに宣言したフィードを取得できた』ことだけである。",
+    "『そのチャネルの全発信者を監視できた』ことではない。vendor は3フィード、",
+    "telemetry_provider は1フィードにすぎない。miss は『宣言したフィードに載らなかった』",
+    "という意味であり、真の非発生ではない（設計 §9.3 の visibility の問題）。",
+    "フィードを増やすほど miss の意味は強くなる。増減は必ずこのファイルで行い、",
+    "検証記録から遡って『その時点で何を監視していたか』を再現できるようにする。"
+  ],
+  "_governance": [
+    "行動原則5に従い自動書き換えを禁止する。追加・変更は PR と人間レビューを経ること。",
+    "フィードのホストは source-channels.json の hosts に登録済みでなければならない",
+    "（監視チャネルと受理チャネルの判定を同じ登録簿に揃えるため）。"
+  ],
+  "channels": {
+    "cert": [
+      {"name": "JPCERT/CC", "url": "https://www.jpcert.or.jp/rss/jpcert.rdf"},
+      {"name": "JPCERT/CC Eyes", "url": "https://blogs.jpcert.or.jp/ja/atom.xml"},
+      {"name": "JVN", "url": "https://jvn.jp/rss/jvn.rdf"},
+      {"name": "JVN iPedia 新着", "url": "https://jvndb.jvn.jp/ja/rss/jvndb_new.rdf"},
+      {"name": "IPA 重要なセキュリティ情報", "url": "https://www.ipa.go.jp/security/rss/alert.rdf"}
+    ],
+    "vendor": [
+      {"name": "Unit 42", "url": "https://unit42.paloaltonetworks.com/feed/"},
+      {"name": "watchTowr Labs", "url": "https://labs.watchtowr.com/rss/"},
+      {"name": "Google Threat Intelligence (Mandiant)", "url": "https://cloudblog.withgoogle.com/topics/threat-intelligence/rss/"}
+    ],
+    "telemetry_provider": [
+      {"name": "SANS Internet Storm Center", "url": "https://isc.sans.edu/rssfeed.xml"}
+    ]
+  },
+  "_excluded_feeds": [
+    {
+      "name": "CISA Advisories",
+      "url": "https://www.cisa.gov/cybersecurity-advisories/all.xml",
+      "reason": "WAF により HTTP 403（User-Agent を変えても同じ）。取得できないものを監視していると主張しない。CISA KEV の JSON フィードは snapshot_sources.py が別途取得しており cert の被覆に寄与する。"
+    }
+  ]
+}
