@@ -123,15 +123,15 @@ def fetch(url, timeout=120):
     return body, headers, utcnow()
 
 
-def snapshot_relpath(kind, day, digest):
+def snapshot_relpath(kind, day, digest, suffix=".json.gz"):
     return os.path.join(
-        "forecaster", "evidence", "snapshots", kind, day[:4], day[5:7], f"{digest}.json.gz"
+        "forecaster", "evidence", "snapshots", kind, day[:4], day[5:7], f"{digest}{suffix}"
     )
 
 
-def save_snapshot(kind, day, digest, blob):
+def save_snapshot(kind, day, digest, blob, suffix=".json.gz"):
     """内容ハッシュ名で圧縮保存する。既存なら書かずにパスだけ返す（重複排除）。"""
-    rel = snapshot_relpath(kind, day, digest)
+    rel = snapshot_relpath(kind, day, digest, suffix)
     abs_path = os.path.join(REPO_ROOT, rel)
     if os.path.exists(abs_path):
         return rel, False
@@ -141,15 +141,62 @@ def save_snapshot(kind, day, digest, blob):
     return rel, True
 
 
-def find_existing_snapshot(kind, digest):
+def find_existing_snapshot(kind, digest, suffix=".json.gz"):
     """同一ハッシュのスナップショットが過去日に既にあればそのパスを返す。"""
     base = os.path.join(SNAPSHOT_DIR, kind)
     if not os.path.isdir(base):
         return None
+    name = f"{digest}{suffix}"
     for root, _dirs, files in os.walk(base):
-        if f"{digest}.json.gz" in files:
-            return os.path.relpath(os.path.join(root, f"{digest}.json.gz"), REPO_ROOT)
+        if name in files:
+            return os.path.relpath(os.path.join(root, name), REPO_ROOT)
     return None
+
+
+def capture_url(day, url, source_type):
+    """任意の一次公表URLを取得し evidence エントリを作る。
+
+    ★なぜ必要か:
+      observation の source.primary_reference は、集約ニュース掲載の記事から
+      一次公表を確認したと主張するための構造化フィールドで、受理には
+      Evidence Ledger の取得証跡（evidence_id）が必須である
+      （source_channels.evidence_backs_reference が URL 単位で突合する）。
+      KEV しか取得できないと、この経路は書けるが実際には使えない。
+
+    ★内容は本文を解釈せず生バイトのまま保存する。ここは「この時刻にこのURLに
+      この内容があった」ことだけを保証する層であり、意味づけは正規化の仕事である。
+    """
+    try:
+        body, headers, at = fetch(url)
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError) as exc:
+        print(f"[warn] 取得失敗 {url}: {exc}", file=sys.stderr)
+        return None
+
+    digest = sha256_bytes(body)
+    existing = find_existing_snapshot("primary", digest, ".bin.gz")
+    if existing:
+        rel, wrote = existing, False
+    else:
+        rel, wrote = save_snapshot("primary", day, digest, body, ".bin.gz")
+    print(f"[primary] {url} bytes={len(body)} sha256={digest[:12]}… "
+          f"snapshot={'新規保存' if wrote else '既存を再利用'}")
+
+    return {
+        "evidence_id": evidence_id(day, digest),
+        "source_url": url,
+        "source_type": source_type,
+        "retrieved_at_utc": iso(at),
+        "content_sha256": digest,
+        "http_etag": headers.get("ETag"),
+        "http_last_modified": headers.get("Last-Modified"),
+        "snapshot_path": rel,
+        "extract": {
+            "content_type": headers.get("Content-Type"),
+            "content_length": len(body),
+            "_note": "本文は解釈せず生バイトで保存している。意味づけは正規化が行う。",
+        },
+        "parser_version": "raw-capture-v1",
+    }
 
 
 def evidence_id(day, digest):
@@ -287,6 +334,16 @@ def main():
         help="取得するソースのカンマ区切り（現状 cisa_kev のみ実装）",
     )
     ap.add_argument(
+        "--capture-url",
+        help="任意の一次公表URLを取得して evidence 化する"
+             "（observation の source.primary_reference から参照するため）",
+    )
+    ap.add_argument(
+        "--source-type",
+        choices=["vendor", "cert", "nvd", "epss", "news", "telemetry"],
+        help="--capture-url で取得する原典の種別",
+    )
+    ap.add_argument(
         "--verify-only",
         action="store_true",
         help="取得せず、既存 manifest とスナップショットの整合だけ検査する",
@@ -301,6 +358,23 @@ def main():
     doc = load_manifest(day)
     known = {e["evidence_id"] for e in doc["evidence"]}
     added_now = 0
+
+    if args.capture_url:
+        if not args.source_type:
+            ap.error("--capture-url には --source-type が必要")
+        ev = capture_url(day, args.capture_url, args.source_type)
+        if ev is None:
+            return 1
+        if ev["evidence_id"] in known:
+            print(f"[skip] {ev['evidence_id']}: 同日に同一内容を取得済み")
+        else:
+            doc["evidence"].append(ev)
+            added_now += 1
+        path = write_manifest(day, doc)
+        print(f"\n[out] {path}  （新規 {added_now} 件 / 累計 {len(doc['evidence'])} 件）")
+        print(f"[evidence_id] {ev['evidence_id']}"
+              "  ← observation の source.primary_reference.evidence_id に書く")
+        return 0
 
     for src in [s.strip() for s in args.sources.split(",") if s.strip()]:
         if src == "cisa_kev":

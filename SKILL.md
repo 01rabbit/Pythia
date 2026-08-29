@@ -143,6 +143,17 @@ python3 scripts/render_tactical_forecast_section.py --date "${TODAY}" \
 `vendor` / `telemetry_provider` は `error` になり `coverage_proven` は成立しない。
 これは正しい状態であり、**miss を立てるにはベンダー/テレメトリの collector 接続が要る**。
 
+集約ニュース掲載の記事から一次公表を確認した場合は、**その原典を先に取得証跡化する**:
+
+```bash
+python3 scripts/snapshot_sources.py --date "${TODAY}" \
+  --capture-url "<一次公表の原典URL>" --source-type cert
+```
+
+出力の `evidence_id` を観測の `source.primary_reference.evidence_id` に書く。
+証跡が無ければ `primary_reference` は書かない（書いても `primary_reference_unverified`
+として昇格しない）。
+
 `check_verification_health.py` は、窓が満了した候補があるのに hit も miss も0件のとき、
 および not_observed が resolved の大半を占めるときに落ちる。
 `blocked_by_channel`（事象は起きたが宣言チャネルで確認できなかった件数）も警告する。

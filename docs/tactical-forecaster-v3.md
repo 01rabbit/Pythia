@@ -46,6 +46,10 @@ hit にしない。`aggregator_news` と `unattributed` で不発になった件
 候補が宣言する `verification_sources` は採点宇宙の `sources` から単一生成する。
 二重管理すると宣言と hit 判定が食い違う。
 
+原典の取得は `snapshot_sources.py --capture-url <URL> --source-type <種別>` で行い、
+本文を解釈せず生バイトのまま内容ハッシュ名で保存する。この層が保証するのは
+「この時刻にこのURLにこの内容があった」ことだけで、意味づけは正規化の仕事である。
+
 被覆記録は Evidence Ledger から導出し（`record_source_coverage.py --from-evidence`）、
 `derived_from` に evidence_id を残す。被覆記録が1件も無い間はモデル昇格を拒否する。
 

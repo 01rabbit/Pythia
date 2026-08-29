@@ -15,6 +15,10 @@ on:
       - 'scripts/source_channels.py'
       - 'scripts/validate_observations.py'
       - 'SKILL.md'
+      - 'scripts/validate_forecasts.py'
+      - 'scripts/validate_temporal_integrity.py'
+      - 'scripts/snapshot_sources.py'
+      - 'scripts/test_phase0_measurement.py'
       - '.github/workflows/tactical-v3-validation.yml'
   workflow_dispatch:
 
@@ -27,6 +31,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          # 変更された成果物の日付を base との差分から拾うため全履歴が要る
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -39,6 +46,39 @@ jobs:
           python3 scripts/validate_tactical_schemas.py
       - name: Validate observations against the schema
         run: python3 scripts/validate_observations.py
+      - name: Phase 0 gates
+        # 時刻順序・予報スキーマの fail-closed ゲート本体。これまで CI では
+        # 一度も実行されておらず、違反はマージ時点で検出できなかった。
+        run: |
+          python3 scripts/validate_forecasts.py
+          python3 scripts/validate_temporal_integrity.py --all
+          python3 scripts/test_phase0_measurement.py
+      - name: Consistency checks on artifacts this PR changes
+        # ★全期間ではなく「この PR が触れた日付」だけを検査する。
+        #   既存履歴にはレポート整合11件・旧予報整合12件が残っているが、
+        #   発行済みの判定を遡及改変しない方針（原則D・教訓12）のため
+        #   歴史を赤にせず、新規・変更分だけをゲートする。
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base" ]; then
+            echo "PR コンテキストではないので比較対象がない（workflow_dispatch 等）"
+            exit 0
+          fi
+          # ★grep は無一致で exit 1 を返す。GitHub Actions の既定は bash -e なので
+          #   `|| true` が無いとこのステップ自体が落ちる。
+          dates=$(git diff --name-only "$base"...HEAD -- outputs forecaster/forecasts \
+                  | grep -oE '[0-9]{4}-[0-9]{2}-[0-9]{2}' | sort -u || true)
+          if [ -z "$dates" ]; then
+            echo "この PR は日次成果物を変更していない"
+            exit 0
+          fi
+          rc=0
+          for d in $dates; do
+            echo "--- $d ---"
+            python3 scripts/check_report_consistency.py --date "$d" || rc=1
+            python3 scripts/check_forecast_consistency.py --date "$d" || rc=1
+          done
+          exit $rc
       - name: Validate committed tactical artifacts
         run: |
           python3 scripts/validate_tactical_integrity.py --all
