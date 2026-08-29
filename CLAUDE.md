@@ -57,6 +57,20 @@ forecaster/knowledge/kev-hazard-stats.json ← E1窓内発生率の母集団別�
 forecaster/knowledge/epss-kev-calibration.json ← EPSS×KEV較正統計（M3のEPSS条件の感度実測・P(KEV|EPSS高)の根拠には使用禁止。全件監査証跡は epss-kev-calibration-entries.json に分離）
 scripts/check_knowledge_untouched.py     ← 日次コミット前の knowledge/ 無変更チェック（行動原則5の機械的ガード・SKILL.md Step 4 で実行）
 scripts/check_report_consistency.py      ← 日次コミット前の JSON×派生テキスト整合チェック（書き起こし乖離の機械的ガード・読み取り専用・SKILL.md Step 4 で実行）
+# ★戦術予報 TF-1（設計正本「戦術予報士 v2」第1段階・2026-08-29 追加・shadow運用）
+#   Pythia の中核予報は「CISA が何をするか」ではなく「敵が次にどの状態へ進むか」である。
+#   E1（KEV初回追加）は外部機関の反応を測る補助計器（IF-1）として残すが中核には置かない。
+scripts/tactical_states.py               ← TF-1 の状態機械と許可遷移の唯一の定義（候補生成・採点・参照率測定が共有）。LLMは状態名を自由生成しない
+scripts/build_reference_rates.py         ← 参照クラス事前確率を観測から実測（Beta-Binomial・標本不足は上位へ部分プーリング・PR経由で再生成）
+forecaster/models/reference-rates.json   ← TF-1 参照率。★前進遷移の観測は全コーパスで36件しかない。_limitations 厳守
+scripts/build_tactical_state.py          ← observations から現在戦術状態を構成（構造化フィールドのみ・本文キーワード推定は禁止）
+forecaster/state/tactical/YYYY/MM/       ← 日次の戦術状態
+scripts/generate_tactical_candidates.py  ← 許可遷移からCOA候補を全件生成。★棄権も理由付きで保存（分母操作の防止）
+forecaster/candidates/tactical/          ← 全候補台帳（第1段階は全件shadow・発行しない）
+scripts/verify_tactical_forecasts.py     ← target_event の決定論採点。partial を作らない・右打ち切りを miss にしない
+scripts/validate_transition_claims.py    ← placeholder遷移／許可外遷移／後退遷移／根拠なきactor固有予報を拒否する fail-closed ゲート
+scripts/test_tf1_shadow.py               ← 第1段階の受入基準を検査するテスト（ネット不使用）
+
 # ★測定固定（改善計画 Phase 0・2026-08-29 追加）— 予報の先見性を反証可能にする
 forecaster/schema/evidence.schema.json   ← Evidence Ledger のスキーマ（取得時刻・内容ハッシュ必須・URLだけの保存は禁止）
 forecaster/evidence/manifests/YYYY/MM/   ← 日次の証拠台帳。予報が参照できるのはここに載っている証拠だけ

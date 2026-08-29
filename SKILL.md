@@ -96,6 +96,29 @@ KEV スナップショットは内容ハッシュ名で重複排除されるた�
 増えない。**「その時点でこの CVE は KEV 未収載だった」という負の事実**を後から
 再検証できることが目的であり、URL だけの記録では代替できない。
 
+### Step 3.6: 戦術予報 TF-1（shadow・第1段階）
+
+Step 3.5 の正規化が終わった後に実行する。**第1段階では発行しない**（全件 shadow）。
+
+```bash
+python3 scripts/build_tactical_state.py --date "${TODAY}"
+python3 scripts/generate_tactical_candidates.py --date "${TODAY}"
+python3 scripts/validate_transition_claims.py --date "${TODAY}"   # fail-closed
+```
+
+**なぜ shadow から始めるか**: TF-1 が予報したい状態遷移は、コーパス全体で
+**前進遷移が36件しか観測されていない**（同一CVEが2日以上に出現するのは664件中122件）。
+`exploitation_stage` を持つ観測が481件あることは、遷移が481件観測されたことを
+意味しない。参照率を内部実績だけから点推定できる段階ではないため、
+shadow 運用の目的は**この母集団を前向きに作ること**である。
+
+**棄権も全件保存する**。当たりそうな候補だけを残すと precision はいくらでも作れる。
+`_coverage` に shadow / 棄権 / 発行 の件数と棄権理由の内訳を必ず残す。
+
+`validate_transition_claims.py` は placeholder 遷移（`technique-chains.json` の
+`transition_matrix` は初期推定値のまま）・許可外遷移・後退遷移・established でない
+actor への actor 固有予報を拒否する。1件でもあれば戦術予報を出さない。
+
 ### Step 0.7: 網羅スイープ（必須・Step 1 の前）
 
 Step 1 の収集を始める**前に**、調査窓内のCVE母集団を機械列挙で確定させる。
