@@ -27,16 +27,17 @@ from datetime import datetime
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OBSERVATIONS_DIR = os.path.join(REPO_ROOT, "forecaster", "observations")
 
-SCHEMA_VERSION = "1.1"
+SCHEMA_VERSION = "1.2"
 # フィールド構造が同一の後方互換バージョン（例: 2026-07-01 以前の wrapper 形式ファイル）。
 # 新規出力は 01-normalize.md により "1.1" 固定だが、既存の "1.0" wrapper ファイルは
 # 構造が本バリデータの検査内容と一致する限り許容する。
-ALLOWED_SCHEMA_VERSIONS = {"1.0", "1.1"}
+ALLOWED_SCHEMA_VERSIONS = {"1.0", "1.1", "1.2"}
 
 # wrapper で許可するトップレベルキー
 ALLOWED_TOP_KEYS = {
     "_schema_version",
     "_observation_date",
+    "_generated_at_utc",
     "_normalization_mode",
     "_normalization_note",
     "_retro_normalized",
@@ -68,6 +69,8 @@ ALLOWED_OBS_KEYS = set(REQUIRED_OBS_KEYS) | {
     "iocs",
     "related_forecast_id",
     "tags",
+    "available_at_utc",
+    "evidence_ids",
 }
 
 ALLOWED_TECHNIQUE_KEYS = {"technique_id", "sub_technique_id", "tactic", "evidence"}
@@ -76,7 +79,10 @@ REQUIRED_TECHNIQUE_KEYS = ["technique_id", "tactic", "evidence"]
 ALLOWED_IOC_KEYS = {"value", "type", "defanged", "note"}
 REQUIRED_IOC_KEYS = ["value", "type"]
 
-ALLOWED_SOURCE_KEYS = {"name", "url", "type"}
+ALLOWED_SOURCE_KEYS = {"name", "url", "type", "primary_reference"}
+REQUIRED_PRIMARY_REFERENCE_KEYS = ("organization", "url", "evidence_id", "citation_basis")
+ALLOWED_PRIMARY_REFERENCE_KEYS = set(REQUIRED_PRIMARY_REFERENCE_KEYS) | {"published_at_utc"}
+EVIDENCE_ID_RE = re.compile(r"^ev-\d{8}-[0-9a-f]{5}$")
 REQUIRED_SOURCE_KEYS = ["name", "url", "type"]
 
 # enum 定義（observation.schema.json に準拠）
@@ -170,6 +176,37 @@ def check_string_array(rep, fname, obs_id, obj, key):
             rep.add(fname, obs_id, f"{key}[{i}]", f"文字列ではない: {item!r}")
 
 
+def check_primary_reference(rep, fname, obs_id, reference):
+    """一次公表の原典（source.primary_reference）を検証する。
+
+    ★受理には Evidence Ledger の取得証跡が要る。許可ホストのURLを書くだけで
+      hit を作れると計測が汚染されるため、evidence_id と citation_basis を必須にする。
+      証跡との実際の突合（URLホスト一致）は verify_tactical_forecasts 側で行う。
+    """
+    field = "source.primary_reference"
+    if not isinstance(reference, dict):
+        rep.add(fname, obs_id, field, f"オブジェクトではない: {type(reference).__name__}")
+        return
+    for key in REQUIRED_PRIMARY_REFERENCE_KEYS:
+        if not reference.get(key):
+            rep.add(fname, obs_id, f"{field}.{key}", "必須フィールドが欠落")
+    for key in reference:
+        if key not in ALLOWED_PRIMARY_REFERENCE_KEYS:
+            rep.add(fname, obs_id, f"{field}.{key}", "スキーマに定義されていないフィールド")
+    for key in ("organization", "url", "citation_basis"):
+        if key in reference and not isinstance(reference[key], str):
+            rep.add(fname, obs_id, f"{field}.{key}",
+                    f"文字列ではない: {reference[key]!r}")
+    eid = reference.get("evidence_id")
+    if isinstance(eid, str) and not EVIDENCE_ID_RE.match(eid):
+        rep.add(fname, obs_id, f"{field}.evidence_id",
+                f"形式違反（ev-YYYYMMDD-xxxxx）: {eid!r}")
+    published = reference.get("published_at_utc")
+    if published is not None and not isinstance(published, str):
+        rep.add(fname, obs_id, f"{field}.published_at_utc",
+                f"文字列でも null でもない: {published!r}")
+
+
 def check_source(rep, fname, obs_id, source):
     if not isinstance(source, dict):
         rep.add(fname, obs_id, "source", f"オブジェクトではない: {type(source).__name__}")
@@ -184,6 +221,8 @@ def check_source(rep, fname, obs_id, source):
         rep.add(fname, obs_id, "source.name", f"文字列ではない: {source['name']!r}")
     if "url" in source and not isinstance(source["url"], str):
         rep.add(fname, obs_id, "source.url", f"文字列ではない: {source['url']!r}")
+    if "primary_reference" in source:
+        check_primary_reference(rep, fname, obs_id, source["primary_reference"])
     if "type" in source and source["type"] not in ENUM_SOURCE_TYPE:
         rep.add(
             fname, obs_id, "source.type",
@@ -422,7 +461,7 @@ def check_file(rep, path, seen_ids):
         rep.add(
             fname, "-", "_schema_version",
             f"バージョン不一致: {data['_schema_version']!r}"
-            f"（許可値: {sorted(ALLOWED_SCHEMA_VERSIONS)}、新規出力は '1.1' 固定）",
+            f"（許可値: {sorted(ALLOWED_SCHEMA_VERSIONS)}、新規出力は '1.2' 固定）",
         )
 
     if "observations" not in data:
@@ -439,6 +478,23 @@ def check_file(rep, path, seen_ids):
             fname, "-", "_observation_date",
             f"日付形式 YYYY-MM-DD ではない: {data['_observation_date']!r}",
         )
+    if data.get("_schema_version") == "1.2":
+        try:
+            datetime.fromisoformat(str(data.get("_generated_at_utc", "")).replace("Z", "+00:00"))
+        except ValueError:
+            rep.add(fname, "-", "_generated_at_utc", "v1.2ではUTC date-timeが必須")
+        for obs in data.get("observations") or []:
+            oid = obs.get("observation_id", "-") if isinstance(obs, dict) else "-"
+            if not isinstance(obs, dict):
+                continue
+            try:
+                dt = datetime.fromisoformat(str(obs.get("available_at_utc", "")).replace("Z", "+00:00"))
+                if dt.tzinfo is None:
+                    raise ValueError
+            except ValueError:
+                rep.add(fname, oid, "available_at_utc", "v1.2ではtimezone付きdate-timeが必須")
+            if not isinstance(obs.get("evidence_ids"), list):
+                rep.add(fname, oid, "evidence_ids", "v1.2では配列が必須")
     if "_retro_normalized" in data and not isinstance(data["_retro_normalized"], bool):
         rep.add(fname, "-", "_retro_normalized", f"boolean ではない: {data['_retro_normalized']!r}")
     if "_retro_note" in data and not isinstance(data["_retro_note"], str):
@@ -466,7 +522,7 @@ def collect_files(date=None):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="forecaster/observations/ の observation ファイルをスキーマ v1.1 に照らして検査する。"
+        description="forecaster/observations/ の observation ファイルをスキーマ v1.2 に照らして検査する。"
     )
     parser.add_argument("--date", help="単日指定（YYYY-MM-DD）。省略時は全件検査。")
     args = parser.parse_args()

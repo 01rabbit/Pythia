@@ -3,22 +3,14 @@
 
 出力: forecaster/models/reference-rates.json
 
-★実測してわかった最重要の制約（2026-08-29）:
-  observations は 865 件あり exploitation_stage を持つものは 481 件あるが、
-  **同一CVEが2日以上に出現するのは 664 CVE 中 122 件だけ**で、
-  **前進した状態遷移は全コーパスで 36 件しか観測されていない**。
+★実測してわかった最重要の制約:
+  記事件数は遷移件数ではない。同一CVE・同日の再報道を一つのepisode entryへ統合し、
+  日をまたぐ前進だけを遷移として数える。正確な最新値は出力の `_corpus` を正とする。
 
   つまり「stage ラベルが 481 件ある」ことは「遷移が 481 件観測された」ことを
   意味しない。TF-1 の参照率を内部実績だけから点推定することは現時点では
   できない。これは TF-1 を shadow で始める判断（設計 §12 第1段階）を裏づける
   事実であり、shadow 運用の目的そのものが**この母集団を作ること**である。
-
-  なお、侵入後 tactic の Technique から POST_EXPLOIT_ACTIVITY を導出する規則
-  （tactical_states.derive_state）を入れる前は、exploitation_stage だけを見ていたため
-  観測できる遷移は 10 件（stage付きCVE 469・複数観測 54）にとどまっていた。
-  導出規則により 36 件へ増え、ACTIVE_EXPLOITATION → POST_EXPLOIT_ACTIVITY が
-  測定可能になった。数値は本ファイルの _corpus が常に正であり、
-  この docstring は説明のための参考値である。
 
 したがって本スクリプトは:
   - 観測できたセルは Beta-Binomial 事後分布（平均と 80% 信用区間）で出す
@@ -45,7 +37,8 @@ from datetime import date, datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tactical_states import (  # noqa: E402
-    HORIZONS_DAYS, HORIZON_LABELS, STATE_RANK, derive_state, is_forward,
+    HORIZONS_DAYS, HORIZON_LABELS, STATE_RANK, allowed_transitions,
+    derive_state, is_forward, reference_key, transition_fired,
 )
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -117,10 +110,12 @@ def load_cve_timelines():
                 doc = json.load(f)
         except (OSError, json.JSONDecodeError):
             continue
+        if doc.get("_retro_normalized") or str(doc.get("_normalization_mode", "")).startswith(
+                "machine_backfill"):
+            continue
         for o in doc.get("observations", []):
-            st, _basis = derive_state(o)
             d = o.get("observed_date")
-            if not st or not d:
+            if not d:
                 continue
             try:
                 dd = date.fromisoformat(d)
@@ -128,32 +123,67 @@ def load_cve_timelines():
                 continue
             latest = max(latest, dd)
             for cve in (o.get("cve") or []):
-                per[cve].append((dd, st, o["observation_id"]))
-    return {c: sorted(set(v)) for c, v in per.items()}, latest
+                st, _basis = derive_state(o, subject_id=cve)
+                if st:
+                    per[cve].append((dd, st, o["observation_id"]))
+    return {c: collapse_episode_timeline(v) for c, v in per.items()}, latest
+
+
+def collapse_episode_timeline(points):
+    """同一CVEの報道を、日次・単調な状態entryへ統合する。
+
+    同日同状態の複数記事は一単位。同日の複数状態は順序不明なので最上位の状態だけを
+    その日のスナップショットとして残し、同日内遷移は学習しない。後退・同一状態の
+    再報道は新しいリスク単位にしない。
+    """
+    by_day = defaultdict(list)
+    for dd, state, oid in points:
+        by_day[dd].append((state, oid))
+
+    out, current_rank = [], -1
+    for dd in sorted(by_day):
+        rows = by_day[dd]
+        state = max((s for s, _oid in rows), key=lambda s: STATE_RANK.get(s, -1))
+        rank = STATE_RANK.get(state, -1)
+        if rank <= current_rank:
+            continue
+        ids = tuple(sorted({oid for s, oid in rows if s == state}))
+        out.append((dd, state, ids))
+        current_rank = rank
+    return out
 
 
 def measure(timelines, corpus_end):
-    """from-state ごとに、各時間軸での前進遷移の発生率を数える。
+    """from-state×target-eventごとに、各時間軸の発生率を数える。
 
-    右打ち切りの扱い: 起点観測日 + horizon が corpus_end を超える区間は、
-    「起きなかった」ことを確認できないためリスク集合から外す（設計 §9.3）。
+    全時間軸で同じリスク集合を使う。起点 + 最大時間軸が corpus_end を超える区間は、
+    どの時間軸でも「起きなかった」と確認できないため全セルから外す（設計 §9.3）。
+
+    この共有リスク集合により、各セルの n は horizon 間で同じになり、累積event数は
+    72h <= 7d <= 30d となる。生成時に確率をクランプして整合させるのではなく、
+    測定定義そのものが累積確率の前提を満たすようにする。
     """
-    cells = defaultdict(lambda: defaultdict(lambda: {"n": 0, "events": 0}))
+    cells = defaultdict(lambda: {"n": 0, "events": 0})
     censored = defaultdict(int)
 
     for cve, points in timelines.items():
         for i, (d0, s0, _oid) in enumerate(points):
             later = [(d, s) for d, s in ((p[0], p[1]) for p in points[i + 1:])]
-            for h in HORIZONS_DAYS:
-                if d0 + timedelta(days=h) > corpus_end:
-                    censored[(s0, h)] += 1
-                    continue
-                cells[s0][h]["n"] += 1
-                fired = any(
-                    (d - d0).days <= h and is_forward(s0, s) for d, s in later
-                )
-                if fired:
-                    cells[s0][h]["events"] += 1
+            for event_type, next_state, visibility in allowed_transitions(s0):
+                fully_observed = d0 + timedelta(days=max(HORIZONS_DAYS)) <= corpus_end
+                for h in HORIZONS_DAYS:
+                    cell = (s0, event_type, next_state, visibility, h)
+                    if not fully_observed:
+                        censored[cell] += 1
+                        continue
+                    cells[cell]["n"] += 1
+                    fired = any(
+                        0 < (d - d0).days <= h
+                        and transition_fired(event_type, s, next_state)
+                        for d, s in later
+                    )
+                    if fired:
+                        cells[cell]["events"] += 1
     return cells, censored
 
 
@@ -161,70 +191,72 @@ def build(cells, censored, timelines, corpus_end):
     # コーパス中で実際に導出できた状態の集合。ある from_state の許可遷移先が
     # ひとつも導出できないなら、そのセルの 0 発火は「起きなかった」ではなく
     # 「観測手段がない」である。両者を混同すると偽の低確率を作る。
-    from tactical_states import allowed_transitions
     derived_states = {s for v in timelines.values() for _d, s, _o in v}
     family_totals = defaultdict(lambda: {"n": 0, "events": 0})
-    for s0, per_h in cells.items():
-        for h, v in per_h.items():
-            family_totals[h]["n"] += v["n"]
-            family_totals[h]["events"] += v["events"]
+    for (_s0, event_type, next_state, visibility, h), v in cells.items():
+        pool_key = (event_type, next_state, visibility, h)
+        family_totals[pool_key]["n"] += v["n"]
+        family_totals[pool_key]["events"] += v["events"]
 
     rates = {}
-    for s0 in sorted(cells, key=lambda s: STATE_RANK.get(s, 99)):
-        for h in HORIZONS_DAYS:
-            v = cells[s0].get(h, {"n": 0, "events": 0})
-            key = f"TF1|{s0}|{HORIZON_LABELS[h]}"
-            entry = {
-                "from_state": s0,
-                "horizon_days": h,
-                "observed": {"n": v["n"], "events": v["events"]},
-                "right_censored_excluded": censored.get((s0, h), 0),
-            }
-            reachable = [nxt for _et, nxt, _vis in allowed_transitions(s0)
-                         if nxt in derived_states]
-            if not allowed_transitions(s0):
-                entry["status"] = "no_forecastable_transition"
-                entry["estimate"] = None
-                entry["pooled_from"] = None
-                entry["_note"] = (
-                    f"{s0} は TF-1 の許可遷移を持たない終端状態であり、"
-                    "この状態を起点とする予報候補は作らない。発生率は参照しない。"
-                )
-            elif allowed_transitions(s0) and not reachable:
-                entry["status"] = "structurally_unobservable"
-                entry["estimate"] = None
-                entry["pooled_from"] = None
-                entry["_unobservable_note"] = (
-                    f"{s0} からの許可遷移先（"
-                    + ", ".join(nxt for _e, nxt, _v in allowed_transitions(s0))
-                    + "）は、現行の観測スキーマからひとつも導出できない。"
-                    f"発火0件は『起きなかった』ではなく『観測手段がない』である。"
-                    "参照率として使ってはならず、shadow で観測手段を作ることが先。"
-                )
-            elif v["n"] >= MIN_N_FOR_CELL:
-                entry["status"] = "measured"
-                entry["estimate"] = beta_summary(v["events"], v["n"])
-                entry["pooled_from"] = None
-            else:
-                ft = family_totals[h]
-                entry["status"] = "insufficient_sample"
-                entry["estimate"] = beta_summary(ft["events"], ft["n"])
-                entry["pooled_from"] = f"TF1|ALL_STATES|{HORIZON_LABELS[h]}"
-                entry["_pooling_note"] = (
-                    f"セル標本 n={v['n']} が最小標本 {MIN_N_FOR_CELL} 未満のため、"
-                    f"forecast family 全体（n={ft['n']}・events={ft['events']}）へ"
-                    "部分プーリングした推定値を使う。セル固有の点推定は出さない。"
-                )
-            rates[key] = entry
+    from_states = sorted({cell[0] for cell in cells}, key=lambda s: STATE_RANK.get(s, 99))
+    for s0 in from_states:
+        for event_type, next_state, visibility in allowed_transitions(s0):
+            for h in HORIZONS_DAYS:
+                cell = (s0, event_type, next_state, visibility, h)
+                v = cells.get(cell, {"n": 0, "events": 0})
+                key = reference_key(s0, event_type, next_state, h)
+                entry = {
+                    "from_state": s0,
+                    "event_type": event_type,
+                    "next_state": next_state,
+                    "visibility": visibility,
+                    "horizon_days": h,
+                    "observed": {"n": v["n"], "events": v["events"]},
+                    "right_censored_excluded": censored.get(cell, 0),
+                }
+                if next_state not in derived_states:
+                    entry["status"] = "structurally_unobservable"
+                    entry["estimate"] = None
+                    entry["pooled_from"] = None
+                    entry["_unobservable_note"] = (
+                        f"{s0} からの遷移先 {next_state} は、現行の観測スキーマから"
+                        "導出できない。"
+                        f"発火0件は『起きなかった』ではなく『観測手段がない』である。"
+                        "参照率として使ってはならず、shadow で観測手段を作ることが先。"
+                    )
+                elif v["n"] >= MIN_N_FOR_CELL:
+                    entry["status"] = "measured"
+                    entry["estimate"] = beta_summary(v["events"], v["n"])
+                    entry["pooled_from"] = None
+                else:
+                    pool_key = (event_type, next_state, visibility, h)
+                    ft = family_totals[pool_key]
+                    entry["status"] = "insufficient_sample"
+                    entry["estimate"] = beta_summary(ft["events"], ft["n"])
+                    entry["pooled_from"] = "|".join((
+                        "TF1", "ALL_STATES", event_type, next_state, HORIZON_LABELS[h]))
+                    entry["_pooling_note"] = (
+                        f"セル標本 n={v['n']} が最小標本 {MIN_N_FOR_CELL} 未満のため、"
+                        f"forecast family 全体（n={ft['n']}・events={ft['events']}）へ"
+                        "部分プーリングした推定値を使う。セル固有の点推定は出さない。"
+                    )
+                rates[key] = entry
 
-    for h in HORIZONS_DAYS:
-        ft = family_totals[h]
-        rates[f"TF1|ALL_STATES|{HORIZON_LABELS[h]}"] = {
+    for (event_type, next_state, visibility, h), ft in family_totals.items():
+        pool_name = "|".join((
+            "TF1", "ALL_STATES", event_type, next_state, HORIZON_LABELS[h]))
+        observable = next_state in derived_states
+        rates[pool_name] = {
             "from_state": "ALL_STATES",
+            "event_type": event_type,
+            "next_state": next_state,
+            "visibility": visibility,
             "horizon_days": h,
             "observed": {"n": ft["n"], "events": ft["events"]},
-            "status": "measured" if ft["n"] >= MIN_N_FOR_CELL else "insufficient_sample",
-            "estimate": beta_summary(ft["events"], ft["n"]),
+            "status": ("measured" if ft["n"] >= MIN_N_FOR_CELL else "insufficient_sample")
+                      if observable else "structurally_unobservable",
+            "estimate": beta_summary(ft["events"], ft["n"]) if observable else None,
             "pooled_from": None,
         }
 
@@ -238,9 +270,10 @@ def build(cells, censored, timelines, corpus_end):
     return {
         "_comment": (
             "TF-1（悪用状態遷移）の参照クラス事前確率。設計 §4.3 の prior_key = "
-            "forecast_family × current_state × horizon に対応する。"
+            "forecast_family × current_state × target_event × next_state × horizon "
+            "に対応する。バックフィルは除外する。"
         ),
-        "_schema_version": "1.0",
+        "_schema_version": "2.0",
         "_machine_generated": True,
         "_generator": "scripts/build_reference_rates.py",
         "_generated_on": datetime.now(timezone.utc).date().isoformat(),
@@ -251,12 +284,12 @@ def build(cells, censored, timelines, corpus_end):
         "_corpus": {
             "observation_end": corpus_end.isoformat(),
             "cve_with_stage": len(timelines),
-            "cve_with_multiple_observations": multi,
+            "cve_with_multiple_state_entries": multi,
             "forward_transitions_observed": forward,
         },
         "_limitations": [
             "★最重要: 前進した状態遷移は全コーパスで "
-            f"{forward} 件しか観測されていない（同一CVEが2日以上に出現するのは "
+            f"{forward} 件しか観測されていない（同一CVEに複数の状態entryがあるのは "
             f"{len(timelines)} CVE 中 {multi} 件）。exploitation_stage を持つ観測が"
             "多いことは遷移が多く観測されたことを意味しない。TF-1 の参照率を内部実績"
             "だけから点推定することは現時点ではできず、shadow 運用でこの母集団を"
@@ -287,7 +320,7 @@ def main():
     doc = build(cells, censored, timelines, corpus_end)
 
     print(f"[corpus] stage付きCVE {doc['_corpus']['cve_with_stage']} / "
-          f"複数観測 {doc['_corpus']['cve_with_multiple_observations']} / "
+          f"複数状態entry {doc['_corpus']['cve_with_multiple_state_entries']} / "
           f"前進遷移 {doc['_corpus']['forward_transitions_observed']} 件 "
           f"（終端 {corpus_end}）")
     NOTE = {

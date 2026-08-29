@@ -36,6 +36,7 @@ outputs/YYYY-MM-DD/
   "apt_main": [ APTエントリ ],
   "apt_notable": [ APTエントリ ],
   "forecasts": [ 予報エントリ ],
+  "tactical_forecast": { 戦況・戦術予報v2 },
   "ai_attacks_main": [ AI攻撃エントリ ],
   "ai_attacks_reference_b": [ AI攻撃エントリ ],
   "ai_attacks_reference_a": [ AI攻撃エントリ ],
@@ -49,6 +50,16 @@ outputs/YYYY-MM-DD/
   "statistics": { ... }
 }
 ```
+
+`forecasts` は後方互換の制度予報（主にCISA KEV初回追加）である。戦術展開予報は
+`tactical_forecast` を正とし、両者を同じ精度母集団へ混ぜない。
+
+### tactical_forecast（戦況・戦術予報v2）
+
+`mode` / `cutoff_at_utc` / `operational_picture` / `published_forecasts` /
+`shadow_evaluation` / `caveat` を持つ。`mode=shadow` の間は
+`published_forecasts=[]` とし、個別shadow候補をレポートへ露出させない。
+個別候補は凍結済みの `forecaster/candidates/tactical/` だけに保存する。
 
 `trends` はトップレベルの新設セクションであり、pipeline-1-cve.md のトラック B（`section_route: trends` タグ付きCVE）と
 pipeline-2-trends.md が収集する一般トレンド記事（CVE未採番のゼロデイ・APT以外のキャンペーン動向等）を格納する。

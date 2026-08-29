@@ -1,0 +1,82 @@
+{
+  "_schema_version": "1.0",
+  "universes": {
+    "tf1-exploitation-v2": {
+      "observability": "bounded_open_world",
+      "sources": [
+        "vendor",
+        "cert",
+        "telemetry_provider"
+      ],
+      "accepted_observation_source_types": [
+        "vendor_report",
+        "advisory",
+        "osint"
+      ],
+      "negative_outcome_allowed": "coverage_proven",
+      "minimum_source_success_rate": 1.0,
+      "comment": "未確認はmissではなくnot_observed。 ★v2は accepted_observation_source_types（source.type）で受理判定していたため、一次機関の記録が型の誤りで検証から外れた。発行済み候補が無いうちにv3へ移行する。",
+      "superseded_by": "tf1-exploitation-v3"
+    },
+    "tf1-poc-v2": {
+      "observability": "bounded_open_world",
+      "sources": [
+        "github",
+        "exploit_db",
+        "metasploit",
+        "packet_storm"
+      ],
+      "accepted_observation_source_types": [
+        "vendor_report",
+        "advisory",
+        "osint"
+      ],
+      "negative_outcome_allowed": "coverage_proven",
+      "minimum_source_success_rate": 1.0,
+      "comment": "専用collectorの全源成功証明が未実装のため、現時点の未確認はnot_observed。 ★v2は accepted_observation_source_types（source.type）で受理判定していたため、一次機関の記録が型の誤りで検証から外れた。発行済み候補が無いうちにv3へ移行する。",
+      "superseded_by": "tf1-poc-v3"
+    },
+    "if1-kev-v2": {
+      "observability": "closed_world",
+      "sources": [
+        "cert"
+      ],
+      "accepted_observation_source_types": [
+        "advisory"
+      ],
+      "negative_outcome_allowed": true,
+      "minimum_source_success_rate": 1.0,
+      "channel_registry": "forecaster/knowledge/source-channels.json"
+    },
+    "tf1-exploitation-v3": {
+      "observability": "bounded_open_world",
+      "sources": [
+        "vendor",
+        "cert",
+        "telemetry_provider"
+      ],
+      "negative_outcome_allowed": "coverage_proven",
+      "minimum_source_success_rate": 1.0,
+      "channel_registry": "forecaster/knowledge/source-channels.json",
+      "comment": "受理判定は source.type ではなく source_channels.resolve_channel() が返す確認チャネルで行う。aggregator_news / unattributed は hit にしない。未確認はmissではなくnot_observed。"
+    },
+    "tf1-poc-v3": {
+      "observability": "bounded_open_world",
+      "sources": [
+        "vendor",
+        "cert"
+      ],
+      "unconnected_sources": [
+        "github",
+        "exploit_db",
+        "metasploit",
+        "packet_storm"
+      ],
+      "negative_outcome_allowed": "coverage_proven",
+      "minimum_source_success_rate": 1.0,
+      "channel_registry": "forecaster/knowledge/source-channels.json",
+      "comment": "PoC公開専用venue（unconnected_sources）のcollectorは未接続である。現状 Pythia が実際に観測できるのはベンダー/CERTの記録経由のPoC公開のみなので、sources にはそれだけを宣言する。専用collector接続時に v4 として sources を拡張する。"
+    }
+  },
+  "governance": "matching ruleの窓途中で変更禁止。変更は新versionを追加する。 受理チャネルの定義は forecaster/knowledge/source-channels.json に置き、追加・変更は PR と人間レビューを経る（行動原則5）。"
+}

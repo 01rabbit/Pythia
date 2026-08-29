@@ -26,11 +26,11 @@
 
 `forecaster/observations/YYYY/MM/YYYY-MM-DD.json`
 
-形式: **wrapper 形式に一本化する（スキーマ v1.1）**。素の JSON 配列 `[]` や独自形式での出力は禁止。
+形式: **wrapper 形式に一本化する（スキーマ v1.2）**。素の JSON 配列 `[]` や独自形式での出力は禁止。
 
 ```json
 {
-  "_schema_version": "1.1",
+  "_schema_version": "1.2",
   "_observation_date": "YYYY-MM-DD",
   "_normalization_mode": "source_explicit_all",
   "_normalization_note": "（任意の注記）",
@@ -40,7 +40,9 @@
 }
 ```
 
-- `_schema_version` と `observations` は必須。`_schema_version` は `"1.1"` 固定。
+- `_schema_version` と `observations` は必須。`_schema_version` は `"1.2"` 固定。
+- 正規化直後に `scripts/stamp_observation_availability.py` を実行し、推測ではなく
+  実時計測の `available_at_utc` とEvidence Ledger参照を各observationへ付ける。
 - `_observation_date` はファイル名の日付と一致させる。
 - observation オブジェクトの構造は `forecaster/schema/observation.schema.json` の `$defs/observation` に従う。
 - 書き出し後は `python3 scripts/validate_observations.py --date YYYY-MM-DD` で検証し、違反ゼロを確認してからコミットする。
@@ -56,7 +58,26 @@
 - ★R3・R4 の evidence-based 原則は厳守する。情報源が技術・帰属を明示していない場合は `techniques: []` / `actor_group: null` とし、推測による付与は引き続き禁止。「明示」の操作的定義（具体的な手口・挙動の記述があれば付与する）は R3 を参照。
 - ATT&CK 以外の体系（ATLAS 等）の技術は `techniques`（ATT&CK 専用）に入れない。該当する ATT&CK 技術が情報源から導ける場合のみ付与する（例: 盗用コンピュート悪用 → T1496 Resource Hijacking）。
 
----
+### R6: 一次公表の原典を構造化して残す（source.primary_reference）
+
+報道記事は一次組織の報告を中継していることが多い（例: BleepingComputer が CISA の
+勧告を伝える）。検証で「宣言した確認チャネルで確認できたか」を判定する根拠は
+**掲載元ホスト**であり、`source.name` に一次組織名を書いても昇格しない。
+
+- 実測: `「CISA / BleepingComputer」`の URL ホストは `www.bleepingcomputer.com` であり
+  `cisa.gov` ではない。名前の言及で受理すると二次報道が確認事実になってしまう。
+- 集約ニュース掲載の記事でも、**記事が一次公表の原典URLを明示している**場合は
+  `source.primary_reference` に
+  `{organization, url, evidence_id, citation_basis, published_at_utc?}` を入れる。
+- **`evidence_id` は必須**である。自動collectorが原典を Evidence Ledger へ取得
+  （スナップショット）した場合だけ、その `evidence_id` を書く。証跡の `source_url` が
+  `url` と一致しない場合（URL fragment は除く）、
+  および証跡が存在しない場合は昇格しない（`primary_reference_unverified`）。
+  **許可ホストのURLを書くだけでは hit を作れない。**
+- `citation_basis` には「記事中のどの記述が原典を指しているか」を書く。
+- **本文からの推測で埋めてはならない**（原則1）。原典URLが記事に無い、または
+  自動取得証跡が無い場合は `primary_reference` ごと省略する。
+  省略時は掲載元ホストで判定され、集約ニュースなら hit にならない（fail-closed）。
 
 ## 正規化ルール（厳守）
 
@@ -159,16 +180,17 @@ IoC を `iocs` に記録する場合:
 
 1. 入力 JSON の各エントリを読み込む。
 2. 各エントリに対して上記ルールに従い observation オブジェクトを生成する。
-3. 全オブジェクトを wrapper 形式（`_schema_version: "1.1"` + `observations` 配列）にまとめ `forecaster/observations/YYYY/MM/YYYY-MM-DD.json` に書き出す。
+3. 全オブジェクトを wrapper 形式（`_schema_version: "1.1"` + `observations` 配列）に一旦まとめ `forecaster/observations/YYYY/MM/YYYY-MM-DD.json` に書き出す。
 4. ディレクトリが存在しない場合は作成する。
-5. `python3 scripts/validate_observations.py --date YYYY-MM-DD` を実行し、違反があれば修正して再実行する（違反ゼロになるまでコミットしない）。
-6. 処理件数（生成 observation 数）とバリデータ結果をチャットに報告する。
+5. `python3 scripts/stamp_observation_availability.py --date YYYY-MM-DD` でv1.2へ固定する。
+6. `python3 scripts/validate_observations.py --date YYYY-MM-DD` を実行し、違反があれば修正して再実行する（違反ゼロになるまでコミットしない）。
+7. 処理件数（生成 observation 数）とバリデータ結果をチャットに報告する。
 
 ---
 
 ## 品質チェック（出力前に確認）
 
-- [ ] 出力が wrapper 形式（`_schema_version: "1.1"` + `observations` 配列）になっているか（素の配列は禁止）
+- [ ] 最終出力が wrapper 形式（`_schema_version: "1.2"` + `observations` 配列）になっているか（素の配列は禁止）
 - [ ] `techniques` に ATT&CK 以外の ID（ATLAS 等）が含まれていないか
 - [ ] `technique_id` にサブテクニックID（T1566.001 等）を直書きしていないか（サブテクニックは `sub_technique_id` へ、`technique_id` と前方一致）
 - [ ] 各 technique に情報源由来の `evidence`（1文）が付いているか（推測付与でないか）

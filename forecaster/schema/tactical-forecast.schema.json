@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pythia Tactical Candidate File",
+  "type": "object",
+  "required": ["_schema_version", "_candidate_date", "_cutoff_at_utc", "_issued_at_utc", "_coverage", "candidates"],
+  "additionalProperties": true,
+  "properties": {
+    "_schema_version": {"const": "2.0"},
+    "_candidate_date": {"type": "string", "format": "date"},
+    "_cutoff_at_utc": {"type": "string", "format": "date-time"},
+    "_issued_at_utc": {"type": "string", "format": "date-time"},
+    "_ledger_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "_coverage": {"type": "object"},
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["candidate_id", "issued_at_utc", "cutoff_at_utc", "forecast_family", "subject", "current_state", "selection", "model_version"],
+        "additionalProperties": true,
+        "properties": {
+          "candidate_id": {"type": "string"},
+          "issued_at_utc": {"type": "string", "format": "date-time"},
+          "cutoff_at_utc": {"type": "string", "format": "date-time"},
+          "forecast_family": {"enum": ["TF-1", "TF-VULN", "TF-CAMPAIGN", "TF-TARGET", "TF-INFRA", "TF-IMPACT"]},
+          "target_mode": {"enum": ["observable_confirmation", "latent_world_event"]},
+          "probability_type": {"enum": ["observable_confirmation", "latent_world_event"]},
+          "probability_status": {"enum": ["shadow_unvalidated", "calibrated", "abstained"]},
+          "coa_set_id": {"type": "string"},
+          "subject": {"type": "object", "required": ["type", "id"]},
+          "current_state": {"type": "string"},
+          "target_event": {"type": ["object", "null"]},
+          "probability_by_horizon": {"type": ["object", "null"]},
+          "reference_class": {"type": ["object", "null"]},
+          "model_version": {"type": "string"},
+          "evidence_ids": {"type": "array", "items": {"type": "string"}},
+          "alternative_coas": {"type": "array"},
+          "counterevidence": {"type": "array"},
+          "falsifiers": {"type": "array"},
+          "early_warning_signals": {"type": "array"},
+          "defensive_implication": {"type": "array"},
+          "selection": {
+            "type": "object",
+            "required": ["status", "reason_code", "reason"],
+            "properties": {
+              "status": {"enum": ["shadow", "abstained", "published"]},
+              "reason_code": {"type": ["string", "null"]},
+              "reason": {"type": "string"},
+              "utility_score": {"type": ["number", "null"], "minimum": 0, "maximum": 1}
+            }
+          },
+          "content_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        }
+      }
+    }
+  }
+}

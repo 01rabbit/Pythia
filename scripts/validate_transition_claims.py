@@ -37,7 +37,8 @@ from datetime import datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tactical_states import (  # noqa: E402
-    VISIBILITY_CLASSES, allowed_transitions, is_forward,
+    HORIZONS_DAYS, HORIZON_LABELS, VISIBILITY_CLASSES, allowed_transitions, is_forward,
+    reference_key,
 )
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -124,6 +125,22 @@ def check_candidate(c, actors, placeholder, errors, warnings):
 
     if c.get("state_confidence") == "uncertain" and sel.get("status") == "shadow":
         warnings.append(f"{cid}: state_confidence=uncertain のまま shadow に残っている")
+
+    if c.get("model_version") == "tf1-reference-only-v1":
+        required = ("alternative_coas", "counterevidence", "falsifiers",
+                    "early_warning_signals", "defensive_implication", "content_sha256")
+        for field in required:
+            if field not in c:
+                errors.append(f"{cid}: v1契約の必須field {field} がない")
+        if te.get("matching_rule_version") not in {"tf1-poc-v2", "tf1-exploitation-v2"}:
+            errors.append(f"{cid}: v1候補のmatching ruleが未固定または旧版")
+        if cur and nxt:
+            for horizon in HORIZONS_DAYS:
+                row = (c.get("reference_class") or {}).get(HORIZON_LABELS[horizon]) or {}
+                expected = reference_key(cur, te.get("event_type"), nxt, horizon)
+                if row.get("key") != expected:
+                    errors.append(
+                        f"{cid}: {HORIZON_LABELS[horizon]} の参照率がtarget event固有でない")
 
 
 def main():
