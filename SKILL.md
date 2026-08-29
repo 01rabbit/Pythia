@@ -262,8 +262,15 @@ Pythia では加えて**観測母集団の偏りがベースライン・base_rat
   - 単価改定・新モデル追加時は `scripts/token_usage_report.py` の `PRICES_USD_PER_MTOK` を更新する
 - コミット直前に `python3 scripts/check_reported.py`・`python3 scripts/validate_observations.py`・
   `python3 scripts/validate_forecasts.py`・`python3 scripts/check_knowledge_untouched.py`・
-  `python3 scripts/check_report_consistency.py --date ${TODAY}` を
+  `python3 scripts/check_report_consistency.py --date ${TODAY}`・
+  `python3 scripts/check_forecast_consistency.py --date ${TODAY}` を
   実行し、違反があれば修正してからコミットする
+  （check_forecast_consistency は当日発行分の予報について、hit_criteria の日付範囲が
+  `[forecast_date, deadline_date]` と一致するか〔M4-b・Issue #162〕、E3 の的中条件が
+  固定一次ソースを名指ししているか〔Issue #132 所見1〕、`related_observation_ids` が
+  実在かつ主題と一致する観測を指しているか〔同 所見2〕を機械検査する。読み取り専用。
+  **`--date` を付けずに全履歴を検査すると発行済み予報の既知違反で非ゼロ終了する**
+  — 発行済み予報は当時の記録であり修正しない〔原則D〕ため、日次では必ず `--date` を付ける）
   （check_report_consistency は JSON と派生テキスト5種の食い違いを機械検査する。
   **テキストにあって JSON に無い CVE ID** はエラーになる — テキスト側だけに書かれた情報は
   観測へ取り込まれず、人が読む記録と機械が学習する記録が乖離するため、

@@ -57,6 +57,7 @@ forecaster/knowledge/kev-hazard-stats.json ← E1窓内発生率の母集団別�
 forecaster/knowledge/epss-kev-calibration.json ← EPSS×KEV較正統計（M3のEPSS条件の感度実測・P(KEV|EPSS高)の根拠には使用禁止。全件監査証跡は epss-kev-calibration-entries.json に分離）
 scripts/check_knowledge_untouched.py     ← 日次コミット前の knowledge/ 無変更チェック（行動原則5の機械的ガード・SKILL.md Step 4 で実行）
 scripts/check_report_consistency.py      ← 日次コミット前の JSON×派生テキスト整合チェック（書き起こし乖離の機械的ガード・読み取り専用・SKILL.md Step 4 で実行）
+scripts/check_forecast_consistency.py    ← 日次コミット前の予報サイドカーJSON整合チェック（hit_criteria の日付範囲＝M4-b／E3の固定一次ソース／related_observation_ids の誤参照・読み取り専用・SKILL.md Step 4 で `--date` 付きで実行）
 scripts/build_zeroday_itw_priors.py      ← Google Project Zero「0-day ITW」からゼロデイ過去分布を抽出（cited・検知バイアス明記・PR経由でのみ再生成）
 scripts/backfill_cisa_advisories.py      ← CISA AA勧告（Wayback経由）から過去APT観測を機械バックフィル（Technique/actorは明示分のみ・観測のみ・ベースライン対象外）
 forecaster/knowledge/zeroday-itw-priors.json ← P0由来ゼロデイ過去分布（Section2文脈付け・Step C'''参照・予測確率の直接根拠には使用禁止）
