@@ -33,7 +33,7 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from tactical_states import STATE_RANK, derive_state  # noqa: E402
+from tactical_states import STATE_RANK, derive_state, has_post_exploit_evidence  # noqa: E402
 from tactical_time import (  # noqa: E402
     iso_utc, load_evidence_index, observation_available_at as _observation_available_at,
     parse_utc,
@@ -146,6 +146,7 @@ def build_states(as_of, observations, cutoff_at_utc, event_lineage=None):
 
         targets = {"sectors": set(), "geos": set()}
         techniques, unknowns = set(), []
+        post_exploit_evidence = False
         for _d, _s, _b, o in points:
             t = o.get("target") or {}
             targets["sectors"].update(t.get("sectors") or [])
@@ -156,6 +157,7 @@ def build_states(as_of, observations, cutoff_at_utc, event_lineage=None):
                 applies = (scope == cve) if scope else (len(cves) == 1 and cves[0] == cve)
                 if applies and tech.get("technique_id"):
                     techniques.add(tech["technique_id"])
+            post_exploit_evidence = post_exploit_evidence or has_post_exploit_evidence(o, cve)
             if o.get("techniques_note"):
                 unknowns.append(o["techniques_note"])
 
@@ -179,6 +181,9 @@ def build_states(as_of, observations, cutoff_at_utc, event_lineage=None):
             "state_confidence": confidence,
             "known_targets": {k: sorted(v) for k, v in targets.items()},
             "known_techniques": sorted(techniques),
+            # ATT&CK tactic は状態を上書きしない。戦況説明で利用できる別チャネルとして
+            # 保持し、POST_EXPLOIT_ACTIVITY の観測・採点根拠には使わない。
+            "post_exploit_evidence": post_exploit_evidence,
             "unknowns": unknowns,
             "_contradictory_same_day_states": sorted(same_day_states) if contradictory else [],
         })

@@ -43,8 +43,13 @@ STAGE_TO_STATE = {
 }
 INSTITUTIONAL_STAGES = {"kev_listed"}
 
-# 侵入後活動と判定してよい ATT&CK tactic。これらが同一CVEに紐づく観測で
-# 確認されている場合のみ POST_EXPLOIT_ACTIVITY へ進める。
+# 侵入後活動を示す ATT&CK tactic。これは状態を昇格させる入力ではなく、
+# 「状態とは別に確認された侵入後活動の証拠」を表すためだけに使う。
+#
+# ATT&CK technique は手口の記述であり、その記述だけから exploitation_stage を
+# 上書きすると、同じ記事に付いた technique が「状態遷移を観測した」ことになる。
+# その混同は状態系列・参照率・検証を一度に歪めるため、TF-1 の状態は必ず
+# exploitation_stage の明示値だけから導く。
 POST_EXPLOIT_TACTICS = {
     "persistence", "privilege-escalation", "lateral-movement",
     "credential-access", "collection", "exfiltration", "impact",
@@ -126,19 +131,24 @@ def transition_fired(event_type, observed_state, next_state):
 def derive_state(observation, subject_id=None):
     """1観測から TF-1 の状態を導く。(state, basis) を返す。導けなければ (None, None)。
 
-    ★機械的な対応のみで、本文からのキーワード推定は行わない（原則1）。
-    根拠は2つだけ:
-      1. exploitation_stage の機械的対応（STAGE_TO_STATE）
-      2. 侵入後 tactic の Technique が付いていれば POST_EXPLOIT_ACTIVITY
-         — Technique は 01-normalize.md R3 により「情報源が具体的手口を記述して
-           いる場合のみ」付与されているので、これは推測ではなく記録された事実である
-
-    両方が導ける場合は前進度の高い方を採る（後退はしない）。
+    ★状態の根拠は exploitation_stage の機械的対応だけである。本文キーワード、
+    ATT&CK tactic、推測による昇格は行わない（原則1）。侵入後 tactic の証拠は
+    ``has_post_exploit_evidence`` で別チャネルに記録する。
     """
     stage = observation.get("exploitation_stage")
     base = STAGE_TO_STATE.get(stage)
     basis = ("institutional_kev" if stage in INSTITUTIONAL_STAGES
              else "exploitation_stage") if base else None
+    return base, basis
+
+
+def has_post_exploit_evidence(observation, subject_id=None):
+    """同一subjectに紐づく侵入後 tactic の証拠があるかを返す。
+
+    これは ``POST_EXPLOIT_ACTIVITY`` への状態昇格には使わない。観測に明示された
+    tactic を戦況説明・収集要求へ残すための補助シグナルであり、複数CVE記事の
+    scope不明 technique を各CVEへ伝播しない。
+    """
 
     cves = observation.get("cve") or []
     tactics = set()
@@ -153,8 +163,4 @@ def derive_state(observation, subject_id=None):
             # 複数CVE記事のcampaign-level Techniqueを全CVEへ伝播しない。
             continue
         tactics.add(t.get("tactic"))
-    if tactics & POST_EXPLOIT_TACTICS:
-        # 侵入後 tactic が確認されている ＝ 悪用が成立して次段階に進んでいる
-        if base is None or STATE_RANK[POST_EXPLOIT_ACTIVITY] > STATE_RANK[base]:
-            return POST_EXPLOIT_ACTIVITY, "post_exploit_technique"
-    return base, basis
+    return bool(tactics & POST_EXPLOIT_TACTICS)

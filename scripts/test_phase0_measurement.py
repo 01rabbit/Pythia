@@ -228,9 +228,12 @@ def main():
          "forecaster/verification", "forecaster/forecasts"],
         capture_output=True, text=True).stdout.splitlines()
     # tactical/ は新v3の名前空間。既存の制度予報検証記録を不変に保つ契約とは分離する。
+    # status --porcelain の先頭2文字は変更種別であり、tracked tactical artifact は
+    # " M forecaster/..." となる。未追跡だけを除外すると、v3の正当な変更まで
+    # 制度予報の不変性違反として誤検知する。
     dirty = "\n".join(
         line for line in status_lines
-        if not line.startswith("?? forecaster/verification/tactical/")
+        if "forecaster/verification/tactical/" not in line
     ).strip()
     if dirty:
         FAIL.append(("既存の検証記録・予報が変更されていない", dirty))

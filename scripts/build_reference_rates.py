@@ -156,8 +156,12 @@ def collapse_episode_timeline(points):
 def measure(timelines, corpus_end):
     """from-state×target-eventごとに、各時間軸の発生率を数える。
 
-    右打ち切りの扱い: 起点観測日 + horizon が corpus_end を超える区間は、
-    「起きなかった」ことを確認できないためリスク集合から外す（設計 §9.3）。
+    全時間軸で同じリスク集合を使う。起点 + 最大時間軸が corpus_end を超える区間は、
+    どの時間軸でも「起きなかった」と確認できないため全セルから外す（設計 §9.3）。
+
+    この共有リスク集合により、各セルの n は horizon 間で同じになり、累積event数は
+    72h <= 7d <= 30d となる。生成時に確率をクランプして整合させるのではなく、
+    測定定義そのものが累積確率の前提を満たすようにする。
     """
     cells = defaultdict(lambda: {"n": 0, "events": 0})
     censored = defaultdict(int)
@@ -166,9 +170,10 @@ def measure(timelines, corpus_end):
         for i, (d0, s0, _oid) in enumerate(points):
             later = [(d, s) for d, s in ((p[0], p[1]) for p in points[i + 1:])]
             for event_type, next_state, visibility in allowed_transitions(s0):
+                fully_observed = d0 + timedelta(days=max(HORIZONS_DAYS)) <= corpus_end
                 for h in HORIZONS_DAYS:
                     cell = (s0, event_type, next_state, visibility, h)
-                    if d0 + timedelta(days=h) > corpus_end:
+                    if not fully_observed:
                         censored[cell] += 1
                         continue
                     cells[cell]["n"] += 1

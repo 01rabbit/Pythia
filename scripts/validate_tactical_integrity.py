@@ -5,6 +5,7 @@ import argparse
 import glob
 import json
 import os
+import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -18,11 +19,78 @@ CAND_ROOT = os.path.join(ROOT, "forecaster", "candidates", "tactical")
 EXCLUSIONS = os.path.join(ROOT, "forecaster", "verification", "tactical", "exclusions.json")
 
 
-def excluded_paths():
+REQUIRED_EXCLUSION_FIELDS = {
+    "artifact", "model_version", "reason_code", "reason", "excluded_from", "approved_at_utc",
+}
+ALLOWED_EXCLUSION_TARGETS = {"calibration", "discrimination", "promotion_gate"}
+
+
+def load_exclusions():
     if not os.path.exists(EXCLUSIONS):
-        return set()
+        return []
     with open(EXCLUSIONS, encoding="utf-8") as f:
-        return {x["artifact"] for x in json.load(f).get("exclusions", [])}
+        return json.load(f).get("exclusions", [])
+
+
+def artifact_last_changed_at(path):
+    """git履歴上、artifactが最後に変更されたcommit時刻をUTCで返す。
+
+    exclusion は発行済みartifactの例外であり、例外をartifactより前に承認したことには
+    できない。生成時刻の無い旧artifactにも適用できる保守的な監査下限として、最後の
+    変更commit時刻を使う。履歴を読めないCIでは検証を通さない。
+    """
+    try:
+        result = subprocess.run(
+            ["git", "log", "-1", "--format=%cI", "--", path],
+            cwd=ROOT, check=True, capture_output=True, text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError(f"git履歴を取得できない: {exc}") from exc
+    value = result.stdout.strip()
+    if not value:
+        raise ValueError("artifactのgit履歴がない")
+    return parse_utc(value)
+
+
+def validate_exclusions(entries, errors):
+    """例外台帳の完全性と、承認がartifact変更後であることを検証する。"""
+    seen = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            errors.append("exclusions: entryがobjectではない")
+            continue
+        missing = sorted(REQUIRED_EXCLUSION_FIELDS - set(entry))
+        if missing:
+            errors.append(f"exclusions: 必須項目なし {missing}")
+            continue
+        artifact = entry.get("artifact")
+        if not isinstance(artifact, str) or not artifact.startswith("forecaster/"):
+            errors.append(f"exclusions: artifactが不正 {artifact!r}")
+            continue
+        if artifact in seen:
+            errors.append(f"exclusions: artifactが重複 {artifact}")
+        seen.add(artifact)
+        if not entry.get("reason_code") or not entry.get("reason"):
+            errors.append(f"exclusions: {artifact}: reason_code/reasonが空")
+        targets = entry.get("excluded_from")
+        if not isinstance(targets, list) or not targets or not set(targets) <= ALLOWED_EXCLUSION_TARGETS:
+            errors.append(f"exclusions: {artifact}: excluded_fromが不正")
+        absolute = os.path.join(ROOT, artifact)
+        if not os.path.isfile(absolute):
+            errors.append(f"exclusions: artifactが存在しない {artifact}")
+            continue
+        try:
+            approved = parse_utc(entry.get("approved_at_utc"))
+            changed = artifact_last_changed_at(artifact)
+        except ValueError as exc:
+            errors.append(f"exclusions: {artifact}: {exc}")
+            continue
+        if approved < changed:
+            errors.append(
+                f"exclusions: {artifact}: approved_at_utc {entry['approved_at_utc']} が "
+                f"artifact最終変更 {changed.isoformat()} より前"
+            )
+    return seen
 
 
 def rel(path):
@@ -86,7 +154,8 @@ def main():
     ap.add_argument("--date")
     args = ap.parse_args()
     errors, skipped = [], []
-    exclusions = excluded_paths()
+    exclusion_entries = load_exclusions()
+    exclusions = validate_exclusions(exclusion_entries, errors)
     if args.all:
         state_paths = sorted(glob.glob(os.path.join(STATE_ROOT, "*", "*", "*.json")))
         cand_paths = sorted(glob.glob(os.path.join(CAND_ROOT, "*.json")))

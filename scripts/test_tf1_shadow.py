@@ -33,7 +33,7 @@ sys.path.insert(0, SCRIPTS)
 
 from tactical_states import (  # noqa: E402
     ACTIVE_EXPLOITATION, DISCLOSED, POC_PUBLIC, POST_EXPLOIT_ACTIVITY,
-    allowed_transitions, derive_state, is_forward,
+    has_post_exploit_evidence, allowed_transitions, derive_state, is_forward,
 )
 import validate_transition_claims as vtc  # noqa: E402
 import verify_tactical_forecasts as vtf  # noqa: E402
@@ -131,6 +131,44 @@ def main():
     (ok("scope不明Techniqueを複数CVEへ伝播しない")
      if scoped_state == POC_PUBLIC else
      ng("scope不明Techniqueを複数CVEへ伝播しない", str(scoped_state)))
+
+    # 0-e. ATT&CK tactic は状態を昇格させず、別の戦況証拠としてのみ保持する
+    post_tactic = {
+        "cve": ["CVE-2026-1111"], "exploitation_stage": "kev_listed",
+        "techniques": [{"technique_id": "T1059", "tactic": "execution",
+                        "scope_ref": "CVE-2026-1111"},
+                       {"technique_id": "T1021", "tactic": "lateral-movement",
+                        "scope_ref": "CVE-2026-1111"}],
+    }
+    tactic_state, tactic_basis = derive_state(post_tactic, subject_id="CVE-2026-1111")
+    (ok("侵入後tacticが明示stageを上書きしない")
+     if (tactic_state, tactic_basis) == (ACTIVE_EXPLOITATION, "institutional_kev") else
+     ng("侵入後tacticが明示stageを上書きしない", str((tactic_state, tactic_basis))))
+    no_stage_state, _ = derive_state({**post_tactic, "exploitation_stage": None},
+                                     subject_id="CVE-2026-1111")
+    (ok("stageなしの侵入後tacticから状態を推測しない") if no_stage_state is None else
+     ng("stageなしの侵入後tacticから状態を推測しない", str(no_stage_state)))
+    (ok("侵入後tacticを別チャネルの証拠として残す")
+     if has_post_exploit_evidence(post_tactic, "CVE-2026-1111") else
+     ng("侵入後tacticを別チャネルの証拠として残す", "false"))
+
+    # 0-f. horizon間で同じリスク集合を採る。後処理クランプで単調に見せない。
+    measurement = {"CVE-2026-3333": [
+        (date(2026, 8, 1), POC_PUBLIC, ("obs-poc",)),
+        (date(2026, 8, 3), ACTIVE_EXPLOITATION, ("obs-active",)),
+    ]}
+    cells, _censored = brr.measure(measurement, date(2026, 9, 15))
+    risk_rows = [cells[(POC_PUBLIC, "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION",
+                       "LIMITED_EXPLOITATION", "medium", h)] for h in (3, 7, 30)]
+    (ok("全horizonで共有リスク集合を使う")
+     if [r["n"] for r in risk_rows] == [1, 1, 1] and [r["events"] for r in risk_rows] == [1, 1, 1]
+     else ng("全horizonで共有リスク集合を使う", str(risk_rows)))
+    try:
+        gtc.monotonic({3: .2, 7: .1, 30: .3})
+    except ValueError:
+        ok("非単調な参照率をクランプせず拒否する")
+    else:
+        ng("非単調な参照率をクランプせず拒否する", "例外が出なかった")
 
     # 1. 確率の決定論（同一入力から同じ確率が出る）
     state_doc = {

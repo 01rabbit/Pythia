@@ -24,14 +24,21 @@ def load(path):
         return json.load(f)
 
 
-def passes(metrics, gates):
+def passes(metrics, gates, profile):
     slope = metrics.get("calibration_slope")
     lo, hi = gates["calibration_slope_range"]
+    reference_only = profile == "reference_only_calibration"
     checks = {
         "resolved_n": metrics.get("resolved_n", 0) >= gates["minimum_resolved_n"],
         "positive_events": metrics.get("positive_events", 0) >= gates["minimum_positive_events"],
         "brier_skill_score": metrics.get("brier_skill_score", -999) > gates["minimum_brier_skill_score"],
-        "auc_lower_95": metrics.get("auc_lower_95", 0) > gates["minimum_auc_lower_95"],
+        # reference-only は特徴量で候補を順位付けするモデルではない。AUCを0等として
+        # 擬似的にfailさせず、not applicable を明示する。ただし registry の
+        # public_forecast_eligible=false により公開昇格は別途禁止する。
+        "auc_lower_95": (
+            metrics.get("metric_status", {}).get("auc_lower_95") == "not_applicable_reference_only"
+            if reference_only else metrics.get("auc_lower_95", 0) > gates["minimum_auc_lower_95"]
+        ),
         "calibration_intercept": abs(metrics.get("calibration_intercept", 999)) <=
                                    gates["maximum_calibration_intercept_abs"],
         "calibration_slope": slope is not None and lo <= slope <= hi,
@@ -56,15 +63,24 @@ def main():
             "approved_for_publication のモデルがある。miss が立たない状態の指標では昇格できない"
         )
     for model in registry.get("models", []):
-        if not model.get("approved_for_publication"):
-            continue
         matched = [row for key, row in summaries.items()
                    if key[0] == model.get("model_version") and key[1] == model.get("forecast_family")]
+        expected_horizons = {"72h", "7d", "30d"}
         if not matched:
-            errors.append(f"{model.get('model_version')}: promotion summaryがない")
+            errors.append(f"{model.get('model_version')}: promotion summaryがない（生成経路未接続）")
             continue
+        got_horizons = {row.get("horizon") for row in matched}
+        if got_horizons != expected_horizons:
+            errors.append(f"{model.get('model_version')}: promotion summaryのhorizonが不完全 {sorted(got_horizons)}")
+        if not model.get("approved_for_publication"):
+            continue
+        if not model.get("public_forecast_eligible", True):
+            errors.append(
+                f"{model.get('model_version')}: {model.get('evaluation_profile')} は"
+                "弁別モデルではないため公開予報へ昇格できない"
+            )
         for row in matched:
-            ok, checks = passes(row, gates)
+            ok, checks = passes(row, gates, model.get("evaluation_profile", "discriminative"))
             if not ok:
                 failed = sorted(name for name, passed in checks.items() if not passed)
                 errors.append(f"{model.get('model_version')}:{row.get('horizon')}: gate未達 {failed}")

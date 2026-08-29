@@ -96,14 +96,22 @@ def load_rates():
 
 
 def monotonic(probs):
-    """P72h <= P7d <= P30d を強制する（設計 §5.4）。"""
+    """累積確率の単調性を検証してラベル付けする。値は一切変更しない。
+
+    単調性は ``build_reference_rates.py`` の共有リスク集合で保証する契約である。
+    ここでクランプすると、測定値と発行値の差異を隠してしまうため fail-closed とする。
+    """
     out, prev = {}, 0.0
     for h in HORIZONS_DAYS:
         p = probs.get(h)
         if p is None:
             out[HORIZON_LABELS[h]] = None
             continue
-        p = max(p, prev)
+        if p < prev:
+            raise ValueError(
+                f"参照率が累積確率として非単調: {HORIZON_LABELS[h]}={p} < {prev}。"
+                "参照率のリスク集合または入力を修正すること"
+            )
         out[HORIZON_LABELS[h]] = round(p, 4)
         prev = p
     return out

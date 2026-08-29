@@ -20,7 +20,10 @@ Pythiaは脆弱性ニュースの要約器ではなく、観測済み事実か�
 
 人間承認だけでも昇格できない。`promotion-gates.json` の前向き標本数、陽性数、
 Brier skill、AUC下限、較正、Evidence被覆率、時間整合性をfamily×horizon別に満たした
-promotion summaryが必要である。違反時はCIが拒否する。
+promotion summaryが必要である。summaryは `build_promotion_summary.py` が候補台帳と
+固定時刻の検証結果から再生成し、CIはコミット済みの値との一致も検査する。違反時はCIが拒否する。
+現行の `tf1-reference-only-v1` は参照クラス確率だけの較正用shadowモデルであり、AUCを
+主張しない。弁別モデルを登録するまで `public_forecast_eligible=false` として公開昇格を禁止する。
 
 ## 確認チャネル
 
@@ -55,7 +58,9 @@ hit にしない。`aggregator_news` と `unattributed` で不発になった件
 ## 現在の予報対象
 
 TF-1は脆弱性の `DISCLOSED → POC_PUBLIC → LIMITED_EXPLOITATION →
-ACTIVE_EXPLOITATION → POST_EXPLOIT_ACTIVITY` を扱う。`BROAD_CAMPAIGN`は現行データで
+ACTIVE_EXPLOITATION → POST_EXPLOIT_ACTIVITY` を扱う。状態は明示された
+`exploitation_stage` だけから導く。ATT&CKの侵入後tacticは状態を上書きせず、
+`post_exploit_evidence` として戦況説明・追加収集の証拠に残す。`BROAD_CAMPAIGN`は現行データで
 構造的に観測できないため、0件を低確率へ変換せず棄権する。
 
 Actor・標的・インフラ・影響への展開予報はEvent/Case/Episodeを蓄積した後に、別family、

@@ -10,6 +10,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 
 import build_event_store as bes  # noqa: E402
+import build_promotion_summary as bps  # noqa: E402
 import generate_tactical_candidates as gtc  # noqa: E402
 import select_forecast_portfolio as sfp  # noqa: E402
 import verify_tactical_forecasts as vtf  # noqa: E402
@@ -59,6 +60,19 @@ def main():
                 "PoC予報が専用source universeを固定する")
     assert_true(not transition_fired("TF1_POC_PUBLICATION", ACTIVE_EXPLOITATION, POC_PUBLIC),
                 "後続の悪用確認からPoC公開を逆推論しない")
+    assert_true(bps.auc_lower_95([(0.9, 1), (0.8, 1), (0.1, 0), (0.2, 0)]) is not None,
+                "昇格用AUC下限は凍結候補のhit/missから決定論的に算出する")
+    try:
+        bps.summary_rows(
+            {"models": [{"model_version": "m", "forecast_family": "TF-1"}]},
+            {"entries": [{"candidate_id": "c", "content_sha256": "old", "verdicts": {}}]},
+            {"c": {"candidate_id": "c", "content_sha256": "new"}},
+            datetime(2026, 8, 29, tzinfo=timezone.utc),
+        )
+    except ValueError:
+        assert_true(True, "候補台帳と検証entryのhash不一致を昇格指標へ混ぜない")
+    else:
+        assert_true(False, "候補台帳と検証entryのhash不一致を昇格指標へ混ぜない")
     assert_true(any(x["event_type"] == "NO_TARGET_CONFIRMATION"
                     for x in candidate["alternative_coas"]),
                 "target非確認の補確率を代替COAとして保持する")
