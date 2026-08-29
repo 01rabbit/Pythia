@@ -1,15 +1,21 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "CyberThreatForecastFile",
-  "description": "サイバー脅威予報データファイル（forecaster/forecasts/daily/YYYY-MM-DD.json）のスキーマ v1.0。同日の Markdown 予報（forecaster/forecasts/daily/YYYY-MM-DD.md）のサイドカーとして出力する二重出力形式。Markdown は人間向け正本、本JSONは検証（04-verify.md）・確度別集計・期限管理の機械可読正本。wrapper 形式（_schema_version + forecasts 配列）に一本化。forecast 本体は $defs/forecast を参照。1予報 = 1オブジェクト。",
+  "description": "サイバー脅威予報データファイル（forecaster/forecasts/daily/YYYY-MM-DD.json）のスキーマ。_schema_version \"1.0\" と \"2.0\" を受け付ける。★2.0 は改善計画 Phase 0（測定固定）で追加した版であり、発行時刻・入力上限時刻・予報本文ハッシュ・構造化 target_event・数値確率を必須にする。1.0 は 2026-08-29 以前に発行した既存予報のための読み取り専用の版であり、新規発行に使ってはならない（既存履歴は遡及修正しない＝原則D）。Markdown は人間向け正本、本JSONは検証（04-verify.md）・集計・期限管理の機械可読正本。",
   "type": "object",
-  "required": ["_schema_version", "forecasts"],
+  "required": [
+    "_schema_version",
+    "forecasts"
+  ],
   "additionalProperties": false,
   "properties": {
     "_schema_version": {
       "type": "string",
-      "enum": ["1.0"],
-      "description": "スキーマバージョン。新規出力は \"1.0\" 固定。"
+      "enum": [
+        "1.0",
+        "2.0"
+      ],
+      "description": "スキーマバージョン。新規発行は \"2.0\" 固定。\"1.0\" は既存履歴専用（新規発行禁止）。"
     },
     "_forecast_date": {
       "type": "string",
@@ -24,13 +30,15 @@
       "type": "array",
       "description": "forecast オブジェクトの配列。1日最大2件（pipeline-forecast-verification.md の絞り込みルール）。",
       "maxItems": 2,
-      "items": { "$ref": "#/$defs/forecast" }
+      "items": {
+        "$ref": "#/$defs/forecast_any"
+      }
     }
   },
   "$defs": {
     "forecast": {
       "title": "CyberThreatForecast",
-      "description": "サイバー脅威予報1件の構造化オブジェクト。Markdown本文の同一予報と内容が一致すること（二重出力の同期）。",
+      "description": "サイバー脅威予報1件の構造化オブジェクト。Markdown本文の同一予報と内容が一致すること（二重出力の同期）。 ★v1.0 用。2026-08-29 以降の新規発行では $defs/forecast_v2 を使う。",
       "type": "object",
       "required": [
         "forecast_id",
@@ -66,17 +74,28 @@
         "tier": {
           "type": "string",
           "description": "予報のTier分類（pipeline-forecast-verification.md 準拠）。T1=進行中攻撃の継続、T2=既知TTPの新規攻撃面への適用、T3=新規PoC/KEV追加からの急拡大予測。",
-          "enum": ["T1", "T2", "T3"]
+          "enum": [
+            "T1",
+            "T2",
+            "T3"
+          ]
         },
         "confidence": {
           "type": "string",
           "description": "確度。3値のみ。高=high・中=medium・低=low（低は高/中の適用条件A〜Dを満たさないがM1〜M4の発行前ゲートを通過した予報に適用する積極的分類）。",
-          "enum": ["high", "medium", "low"]
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
         },
         "forecast_class": {
           "type": "string",
           "description": "検証窓トラック（M2）。fast_72h=E1〜E4の一次・二値イベントを的中条件とする72時間窓。slow_7d=外部報道依存等・72時間で外部可視化されない主題向けの7日以上窓。",
-          "enum": ["fast_72h", "slow_7d"]
+          "enum": [
+            "fast_72h",
+            "slow_7d"
+          ]
         },
         "forecast_class_rationale": {
           "type": "string",
@@ -85,12 +104,20 @@
         "outcome_channel": {
           "type": "string",
           "description": "観測出口クラス（M1）。的中条件はこのいずれかの一次イベントに紐付ける。E1=CISA KEV初回追加、E2=ベンダー/PSIRTによる新規IOC初回公開、E3=JPCERT/CC・IPA・CERT/CCの初回注意喚起、E4=PoC/エクスプロイトコード公開。E5（スキャン/悪用キャンペーンの新規タグ・有意増）は第3段階まで的中主条件に使わず先回り監視止まりのため本フィールドでは選択不可。",
-          "enum": ["E1", "E2", "E3", "E4"]
+          "enum": [
+            "E1",
+            "E2",
+            "E3",
+            "E4"
+          ]
         },
         "window": {
           "type": "string",
           "description": "検証窓の実時間区分。forecast_class=fast_72h は fast_72h、forecast_class=slow_7d は slow_7d を指定する（forecast_class と同値を冗長記録し検証スクリプトの単純化に用いる）。",
-          "enum": ["fast_72h", "slow_7d"]
+          "enum": [
+            "fast_72h",
+            "slow_7d"
+          ]
         },
         "deadline_date": {
           "type": "string",
@@ -115,7 +142,10 @@
           "type": "object",
           "description": "base_rate_estimate の導出に使った実測アンカー（2026-08-07 追加）。主観値のままでは「的が小さすぎる主題を撃っている」ことが発行時に検知されないため導入した（教訓16: E3 は記録平均0.24に対し実測0.015）。検証ステージがアンカーと実績の乖離を月次で突合する。",
           "additionalProperties": false,
-          "required": ["source_file", "value"],
+          "required": [
+            "source_file",
+            "value"
+          ],
           "properties": {
             "source_file": {
               "type": "string",
@@ -159,16 +189,29 @@
               "description": "対象CVE番号。"
             },
             "date_added": {
-              "type": ["string", "null"],
+              "type": [
+                "string",
+                "null"
+              ],
               "description": "KEVカタログの dateAdded（YYYY-MM-DD）。未登録の場合は null。"
             },
             "ransomware_flag": {
-              "type": ["string", "null"],
-              "enum": ["Known", "Unknown", null],
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "Known",
+                "Unknown",
+                null
+              ],
               "description": "Known Ransomware Campaign Use の値。未登録・不明時は null。"
             },
             "reference_set_hash": {
-              "type": ["string", "null"],
+              "type": [
+                "string",
+                "null"
+              ],
               "description": "参照セットの差分検知用の記録（ハッシュ値・件数・URL列挙のいずれか運用しやすい形式の文字列）。検証時に新規参照追加の有無を判定するために用いる。"
             }
           }
@@ -183,28 +226,53 @@
           "additionalProperties": false,
           "properties": {
             "epss_percentile": {
-              "type": ["number", "null"],
+              "type": [
+                "number",
+                "null"
+              ],
               "minimum": 0,
               "maximum": 1,
               "description": "EPSSパーセンタイル。取得不能な場合は null。"
             },
             "epss_model_date": {
-              "type": ["string", "null"],
+              "type": [
+                "string",
+                "null"
+              ],
               "format": "date",
               "description": "EPSSスコア算出日。"
             },
             "kev_registered": {
-              "type": ["boolean", "null"],
+              "type": [
+                "boolean",
+                "null"
+              ],
               "description": "発行時点でのKEV登録有無。"
             },
             "ssvc_decision": {
-              "type": ["string", "null"],
-              "enum": ["Act", "Attend", "Track", "Track*", null],
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "Act",
+                "Attend",
+                "Track",
+                "Track*",
+                null
+              ],
               "description": "SSVC決定。確度=高にはAct/Attendが必要（D2）。"
             },
             "automatable": {
-              "type": ["string", "null"],
-              "enum": ["yes", "no", null],
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "yes",
+                "no",
+                null
+              ],
               "description": "SSVC Automatable軸。noの場合は確度=高から確度=中へ自動降格（Automatable降格ルール）。"
             }
           }
@@ -218,7 +286,10 @@
           }
         },
         "related_group": {
-          "type": ["string", "null"],
+          "type": [
+            "string",
+            "null"
+          ],
           "description": "関連する攻撃者グループ名（名寄せ後の canonical / parent_group）。Step B/C起点の予報のみ記入。該当なしは null。"
         },
         "estimated_portion": {
@@ -226,12 +297,24 @@
           "description": "推定部分の明示（原則3）。Evidence（確認済み事実）と推定を分離し「〇〇という根拠から〇〇を推測するが、〇〇という留保がある」形式で記述する。T1の純粋な継続予報等、推定部分がない場合は省略可。"
         },
         "verified_outcome": {
-          "type": ["string", "null"],
-          "enum": ["hit", "partial", "miss", "unverifiable", null],
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "hit",
+            "partial",
+            "miss",
+            "unverifiable",
+            null
+          ],
           "description": "予報との突合結果。初期は必ず null。検証ステージ（04-verify.md）のみが書き込む。予報生成段階では変更禁止（CLAUDE.md 行動原則4）。"
         },
         "retrieval": {
-          "type": ["object", "null"],
+          "type": [
+            "object",
+            "null"
+          ],
           "description": "類似過去事例検索（Case-Based Retrieval・03-forecast.md Step C''／forecaster/case-based-retrieval-design.md）の結果サマリー。scripts/retrieve_similar_cases.py が生成した aggregate を発行時に記録する監査証跡。予報の直接根拠（base_rate_estimate の較正）に使えるのは observed_gate_passed=true の集計のみ。確度の引き上げには使わない（降格方向のみ・design §6）。該当検索を実施しない予報では省略または null 可。",
           "additionalProperties": false,
           "properties": {
@@ -240,11 +323,26 @@
               "minimum": 0,
               "description": "類似度閾値を超えた過去事例の件数（上位N件に絞った後）。"
             },
-            "n_hit": { "type": "integer", "minimum": 0, "description": "類似事例のうち的中（hit）件数。" },
-            "n_partial": { "type": "integer", "minimum": 0, "description": "類似事例のうち部分的中（partial）件数。" },
-            "n_miss": { "type": "integer", "minimum": 0, "description": "類似事例のうち外れ（miss）件数。" },
+            "n_hit": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "類似事例のうち的中（hit）件数。"
+            },
+            "n_partial": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "類似事例のうち部分的中（partial）件数。"
+            },
+            "n_miss": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "類似事例のうち外れ（miss）件数。"
+            },
             "empirical_hit_rate": {
-              "type": ["number", "null"],
+              "type": [
+                "number",
+                "null"
+              ],
               "minimum": 0,
               "maximum": 1,
               "description": "(n_hit + n_partial) / n_cases。類似事例が0件のとき null。"
@@ -255,7 +353,10 @@
             },
             "matched_forecast_ids": {
               "type": "array",
-              "items": { "type": "string", "pattern": "^fc-\\d{8}-\\d+$" },
+              "items": {
+                "type": "string",
+                "pattern": "^fc-\\d{8}-\\d+$"
+              },
               "description": "類似と判定した過去予報の forecast_id リスト（監査証跡）。"
             },
             "external_cases": {
@@ -264,18 +365,540 @@
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["source_name", "source_url", "relevance"],
+                "required": [
+                  "source_name",
+                  "source_url",
+                  "relevance"
+                ],
                 "properties": {
-                  "source_name": { "type": "string", "description": "一次ソース名（CERT/ベンダー/CISA等）。" },
-                  "source_url": { "type": "string", "format": "uri", "description": "出典URL（一次ソース）。" },
-                  "published_date": { "type": ["string", "null"], "format": "date", "description": "事案の公開日（判れば）。" },
-                  "relevance": { "type": "string", "description": "当該事案との類似点（製品カテゴリ・TTP・攻撃者等）と、そこから読み取れる示唆の要約。推測は「（推測）」と明記する。" }
+                  "source_name": {
+                    "type": "string",
+                    "description": "一次ソース名（CERT/ベンダー/CISA等）。"
+                  },
+                  "source_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "出典URL（一次ソース）。"
+                  },
+                  "published_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date",
+                    "description": "事案の公開日（判れば）。"
+                  },
+                  "relevance": {
+                    "type": "string",
+                    "description": "当該事案との類似点（製品カテゴリ・TTP・攻撃者等）と、そこから読み取れる示唆の要約。推測は「（推測）」と明記する。"
+                  }
                 }
               }
             }
           }
         }
       }
+    },
+    "forecast_v2": {
+      "title": "CyberThreatForecastV2",
+      "description": "予報1件（スキーマ v2.0）。v1.0 に対し、先見性を反証可能にするための時刻・ハッシュ証跡と、採点を決定論にするための構造化 target_event、人間向けラベルから分離した数値確率を追加した。★なぜ必要か: 2026-08-29 の監査で E1 的中6件すべて KEV dateAdded が予報日と同日であり、dateAdded は日付であって時刻ではないため『結果より前に予報を固定した』ことをデータだけからは立証できなかった（改善計画 §4.3）。",
+      "type": "object",
+      "required": [
+        "forecast_id",
+        "forecast_index",
+        "subject",
+        "tier",
+        "confidence",
+        "forecast_class",
+        "outcome_channel",
+        "window",
+        "deadline_date",
+        "hit_criteria",
+        "exclusions",
+        "related_observation_ids",
+        "issued_at_utc",
+        "cutoff_at_utc",
+        "content_sha256",
+        "target_event",
+        "forecast_probability",
+        "reference_base_rate",
+        "model_version",
+        "evidence_ids"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "forecast_id": {
+          "type": "string",
+          "description": "予報ID。形式: fc-YYYYMMDD-N（N=当日連番・1始まり）。全ファイル横断で一意。発行日（YYYYMMDD部分）はファイル名の日付と一致すること。",
+          "pattern": "^fc-\\d{8}-\\d+$"
+        },
+        "forecast_index": {
+          "type": "integer",
+          "description": "当日の予報連番（1始まり）。forecast_id の N と一致すること。Markdown本文の「予報N」見出しの N と対応する。",
+          "minimum": 1
+        },
+        "subject": {
+          "type": "string",
+          "description": "予報主題（1行）。Markdown本文の「・予報N: [タイトル]」と対応する要約。"
+        },
+        "tier": {
+          "type": "string",
+          "description": "予報のTier分類（pipeline-forecast-verification.md 準拠）。T1=進行中攻撃の継続、T2=既知TTPの新規攻撃面への適用、T3=新規PoC/KEV追加からの急拡大予測。",
+          "enum": [
+            "T1",
+            "T2",
+            "T3"
+          ]
+        },
+        "confidence": {
+          "type": "string",
+          "description": "確度。3値のみ。高=high・中=medium・低=low（低は高/中の適用条件A〜Dを満たさないがM1〜M4の発行前ゲートを通過した予報に適用する積極的分類）。",
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "forecast_class": {
+          "type": "string",
+          "description": "検証窓トラック（M2）。fast_72h=E1〜E4の一次・二値イベントを的中条件とする72時間窓。slow_7d=外部報道依存等・72時間で外部可視化されない主題向けの7日以上窓。",
+          "enum": [
+            "fast_72h",
+            "slow_7d"
+          ]
+        },
+        "forecast_class_rationale": {
+          "type": "string",
+          "description": "forecast_class の割当根拠（1行）。slow_7d を割り当てた場合は incident-visibility-timelines.json の median_days_to_external_report 等の根拠を明記する（M2）。発行後のトラック移動は禁止のため、検証時にこの記録と突合する。"
+        },
+        "outcome_channel": {
+          "type": "string",
+          "description": "観測出口クラス（M1）。的中条件はこのいずれかの一次イベントに紐付ける。E1=CISA KEV初回追加、E2=ベンダー/PSIRTによる新規IOC初回公開、E3=JPCERT/CC・IPA・CERT/CCの初回注意喚起、E4=PoC/エクスプロイトコード公開。E5（スキャン/悪用キャンペーンの新規タグ・有意増）は第3段階まで的中主条件に使わず先回り監視止まりのため本フィールドでは選択不可。",
+          "enum": [
+            "E1",
+            "E2",
+            "E3",
+            "E4"
+          ]
+        },
+        "window": {
+          "type": "string",
+          "description": "検証窓の実時間区分。forecast_class=fast_72h は fast_72h、forecast_class=slow_7d は slow_7d を指定する（forecast_class と同値を冗長記録し検証スクリプトの単純化に用いる）。",
+          "enum": [
+            "fast_72h",
+            "slow_7d"
+          ]
+        },
+        "deadline_date": {
+          "type": "string",
+          "format": "date",
+          "description": "検証確定期限日（YYYY-MM-DD）。fast_72hは発行日+3日。slow_7dは03-forecast.mdの分類別ルール（incident-visibility-timelines.json の median_days_to_external_report 準拠。例: credential_leak_to_attack_report=+14日・domestic_incident_media_report=+10日・apt_geographic_spillover=+21日、該当分類なしは+7日をフォールバック）に従う。期限超過の未確定は自動で「外れ」に倒す（pipeline-forecast-verification.md ★4ガード2）。発行日以降の日付であること。"
+        },
+        "hit_criteria": {
+          "type": "string",
+          "description": "的中条件。二値判定可能な形で記述する具体的かつ測定可能な条件（例: 「CISAがCVE-2026-XXXXをKEVカタログへ初回追加した場合（dateAddedが発行日以降と一致）」）。「国内被害報道」「KEV再登録」「悪用拡大（曖昧）」を的にする表現は禁止（M1）。"
+        },
+        "exclusions": {
+          "type": "string",
+          "description": "的中とみなさない条件。例: 「他機関リストへの追加や既存エントリ更新は的中とみなさない」「dateAdded同一・ランサムフラグ同一・新規参照なしの再登録は非的中（M4）」。"
+        },
+        "base_rate_estimate": {
+          "type": "number",
+          "description": "この的中条件が偶然（予報のスキルなしに）成立する確率（0〜1）。ベースレート対比の予報スキルを事後測定するための記録。★2026-08-07 改訂: 主観値ではなく実測アンカー（base_rate_anchor）からの導出を必須とする。起点値から2倍を超えて上振れさせる場合は base_rate_rationale の記載が必須。記入手順は03-forecast.md「base_rate_estimate」の手順1〜4を参照。",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "base_rate_anchor": {
+          "type": "object",
+          "description": "base_rate_estimate の導出に使った実測アンカー（2026-08-07 追加）。主観値のままでは「的が小さすぎる主題を撃っている」ことが発行時に検知されないため導入した（教訓16: E3 は記録平均0.24に対し実測0.015）。検証ステージがアンカーと実績の乖離を月次で突合する。",
+          "additionalProperties": false,
+          "required": [
+            "source_file",
+            "value"
+          ],
+          "properties": {
+            "source_file": {
+              "type": "string",
+              "description": "アンカー値の出典ファイル。",
+              "enum": [
+                "forecaster/knowledge/kev-hazard-stats.json",
+                "forecaster/knowledge/advisory-cadence-stats.json",
+                "forecaster/knowledge/kev-leadtime-stats.json",
+                "forecaster/verification/retrieval-calibration.json"
+              ]
+            },
+            "source_key": {
+              "type": "string",
+              "description": "出典ファイル内の参照キー（例: era_2023_plus_recommended.pct_within_3d、channels.E3.combined.kev_overlap.hazard_by_observation_lag.by_k_days.1.hazard）。"
+            },
+            "value": {
+              "type": "number",
+              "description": "アンカーの起点値（実測ハザード・0〜1）。",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "observation_lag_days": {
+              "type": "integer",
+              "description": "起点イベント（KEV追加日・ベンダー勧告日・PoC公開日のうち hit_criteria が依存する事象）から予報発行日までの日数 k。ハザードは k に強く依存する（E3 は k=0 で 0.097・k=1 で 0.015）ため必ず数えて記録する。",
+              "minimum": 0
+            }
+          }
+        },
+        "base_rate_rationale": {
+          "type": "string",
+          "description": "base_rate_estimate をアンカー起点値の2倍を超えて上振れさせた場合の理由（1行）。★これは異常検知ではなく「予報のスキル主張の明文化義務」である（教訓17）。アンカーは広い候補母集団のベースレート（例: E1 で 0.0003）であり、実悪用証拠を伴う個別CVEが数百倍〜千倍に上振れるのは正常。その場合も「この主題がなぜ一般の候補と桁違いに発火が近いのか」を述べること。2倍以内の調整および下振れ方向の調整では省略可。"
+        },
+        "kev_snapshot": {
+          "type": "object",
+          "description": "発行時点のCISA KEV状態のスナップショット（M4）。該当CVEがある予報（特にoutcome_channel=E1）で記録する。KEV未登録の場合も date_added: null で記録してよい。",
+          "additionalProperties": false,
+          "properties": {
+            "cve": {
+              "type": "string",
+              "pattern": "^CVE-\\d{4}-\\d{4,}$",
+              "description": "対象CVE番号。"
+            },
+            "date_added": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "KEVカタログの dateAdded（YYYY-MM-DD）。未登録の場合は null。"
+            },
+            "ransomware_flag": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "Known",
+                "Unknown",
+                null
+              ],
+              "description": "Known Ransomware Campaign Use の値。未登録・不明時は null。"
+            },
+            "reference_set_hash": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "参照セットの差分検知用の記録（ハッシュ値・件数・URL列挙のいずれか運用しやすい形式の文字列）。検証時に新規参照追加の有無を判定するために用いる。"
+            }
+          }
+        },
+        "evidence": {
+          "type": "string",
+          "description": "根拠となる具体的なソース名と日付（原則1: Evidence起点の義務化）。「[ソース名 YYYY-MM-DD] 〇〇を確認」形式を推奨。"
+        },
+        "anchor": {
+          "type": "object",
+          "description": "確度=高のEPSS+SSVC定量アンカー（M3）。確度=high の場合は記録必須。medium/low でも参考値として記録してよい。",
+          "additionalProperties": false,
+          "properties": {
+            "epss_percentile": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1,
+              "description": "EPSSパーセンタイル。取得不能な場合は null。"
+            },
+            "epss_model_date": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "format": "date",
+              "description": "EPSSスコア算出日。"
+            },
+            "kev_registered": {
+              "type": [
+                "boolean",
+                "null"
+              ],
+              "description": "発行時点でのKEV登録有無。"
+            },
+            "ssvc_decision": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "Act",
+                "Attend",
+                "Track",
+                "Track*",
+                null
+              ],
+              "description": "SSVC決定。確度=高にはAct/Attendが必要（D2）。"
+            },
+            "automatable": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "yes",
+                "no",
+                null
+              ],
+              "description": "SSVC Automatable軸。noの場合は確度=高から確度=中へ自動降格（Automatable降格ルール）。"
+            }
+          }
+        },
+        "related_observation_ids": {
+          "type": "array",
+          "description": "この予報の根拠となった observation_id のリスト（forecaster/observations/ 内）。",
+          "items": {
+            "type": "string",
+            "pattern": "^obs-\\d{4}-\\d{4}-\\d{3}$"
+          }
+        },
+        "related_group": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "関連する攻撃者グループ名（名寄せ後の canonical / parent_group）。Step B/C起点の予報のみ記入。該当なしは null。"
+        },
+        "estimated_portion": {
+          "type": "string",
+          "description": "推定部分の明示（原則3）。Evidence（確認済み事実）と推定を分離し「〇〇という根拠から〇〇を推測するが、〇〇という留保がある」形式で記述する。T1の純粋な継続予報等、推定部分がない場合は省略可。"
+        },
+        "verified_outcome": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "hit",
+            "partial",
+            "miss",
+            "unverifiable",
+            null
+          ],
+          "description": "予報との突合結果。初期は必ず null。検証ステージ（04-verify.md）のみが書き込む。予報生成段階では変更禁止（CLAUDE.md 行動原則4）。"
+        },
+        "retrieval": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "類似過去事例検索（Case-Based Retrieval・03-forecast.md Step C''／forecaster/case-based-retrieval-design.md）の結果サマリー。scripts/retrieve_similar_cases.py が生成した aggregate を発行時に記録する監査証跡。予報の直接根拠（base_rate_estimate の較正）に使えるのは observed_gate_passed=true の集計のみ。確度の引き上げには使わない（降格方向のみ・design §6）。該当検索を実施しない予報では省略または null 可。",
+          "additionalProperties": false,
+          "properties": {
+            "n_cases": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "類似度閾値を超えた過去事例の件数（上位N件に絞った後）。"
+            },
+            "n_hit": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "類似事例のうち的中（hit）件数。"
+            },
+            "n_partial": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "類似事例のうち部分的中（partial）件数。"
+            },
+            "n_miss": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "類似事例のうち外れ（miss）件数。"
+            },
+            "empirical_hit_rate": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 0,
+              "maximum": 1,
+              "description": "(n_hit + n_partial) / n_cases。類似事例が0件のとき null。"
+            },
+            "observed_gate_passed": {
+              "type": "boolean",
+              "description": "n_cases が最小サンプル数（既定3）以上か。false の場合は base_rate_estimate の自動較正に使わず参考表示に留める（design §6 ガード3）。"
+            },
+            "matched_forecast_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "pattern": "^fc-\\d{8}-\\d+$"
+              },
+              "description": "類似と判定した過去予報の forecast_id リスト（監査証跡）。"
+            },
+            "external_cases": {
+              "type": "array",
+              "description": "外部（インターネット上）の類似過去事案の監査証跡（03-forecast.md Step C'''・Phase D）。一次ソースに出典URLを明示できる事案のみ記録する（原則1）。内部実績（上記 n_* 集計）とは別軸であり、base_rate_estimate の直接根拠には使わない（参考・防御行動の補強のみ）。",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "source_name",
+                  "source_url",
+                  "relevance"
+                ],
+                "properties": {
+                  "source_name": {
+                    "type": "string",
+                    "description": "一次ソース名（CERT/ベンダー/CISA等）。"
+                  },
+                  "source_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "出典URL（一次ソース）。"
+                  },
+                  "published_date": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "format": "date",
+                    "description": "事案の公開日（判れば）。"
+                  },
+                  "relevance": {
+                    "type": "string",
+                    "description": "当該事案との類似点（製品カテゴリ・TTP・攻撃者等）と、そこから読み取れる示唆の要約。推測は「（推測）」と明記する。"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "issued_at_utc": {
+          "type": "string",
+          "format": "date-time",
+          "description": "予報を固定した実時刻（UTC）。この時刻以降に取得した証拠は入力にできない。"
+        },
+        "cutoff_at_utc": {
+          "type": "string",
+          "format": "date-time",
+          "description": "入力として利用可能な証拠の上限時刻（UTC）。通常は issued_at_utc と同じかそれ以前。evidence_ids が指す証拠の retrieved_at_utc はすべてこの時刻以前でなければならない。"
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "予報本文の canonical JSON（content_sha256 と verified_outcome を除き、キーをソートし区切りを固定した JSON）の SHA-256。発行後に本文が書き換えられていないことを示す。"
+        },
+        "candidate_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "候補台帳（forecaster/candidates/daily/）への参照。Phase 1 で必須化する。"
+        },
+        "cluster_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "同一CVE・同一キャンペーンの相関集約ID。評価時に独立試行として二重計上しないために使う。既定は対象CVEをソートして連結したもの。"
+        },
+        "model_version": {
+          "type": "string",
+          "description": "予報ロジックまたはモデルの版（例: e1-scorecard-v1 / human-v1）。評価は policy_version/model_version ごとに分けて集計する。"
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^ev-\\d{8}-[0-9a-f]{5}$"
+          },
+          "description": "発行時点で利用した証拠のID（Evidence Ledger）。★URLではなくIDで参照する。空配列は許さない。",
+          "minItems": 1
+        },
+        "forecast_probability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "target_event が窓内に発火する予測確率。人間向けラベル confidence を置き換える主表示値。"
+        },
+        "reference_base_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "スキルがない参照母集団の発火率。forecast_probability との比が予報の情報量（lift）。★旧 base_rate_estimate は意味が曖昧だったため、この2つへ分離した。"
+        },
+        "legacy_probability_semantics": {
+          "type": "boolean",
+          "description": "旧 base_rate_estimate の意味論で記録された値を含むことを示す。移行期の別集計用。"
+        },
+        "policy_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "発行時に適用していた発行ルールの版（pipeline-forecast-verification.md の改定単位）。ルール改定をまたいだ集計の混在を防ぐ。"
+        },
+        "target_event": {
+          "type": "object",
+          "description": "何が起きれば的中かを構造化したもの。★採点はこのオブジェクトだけで行い、自然言語 hit_criteria は表示用に留める（改善計画 §4.3）。",
+          "required": [
+            "channel",
+            "entity_id",
+            "event_type",
+            "window_start_utc",
+            "window_end_utc",
+            "primary_source",
+            "matching_rule_version"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "channel": {
+              "type": "string",
+              "enum": [
+                "E1",
+                "E2",
+                "E3",
+                "E4"
+              ]
+            },
+            "entity_id": {
+              "type": "string",
+              "description": "対象エンティティ（通常は CVE ID）。"
+            },
+            "event_type": {
+              "type": "string",
+              "enum": [
+                "cisa_kev_initial_add",
+                "vendor_ioc_initial_publish",
+                "cert_initial_advisory",
+                "public_exploit_publish"
+              ]
+            },
+            "window_start_utc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "window_end_utc": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "primary_source": {
+              "type": "string",
+              "format": "uri",
+              "description": "判定に使う固定の一次ソースURL。"
+            },
+            "matching_rule_version": {
+              "type": "string",
+              "description": "突合ルールの版（例: e1-initial-add-v2）。"
+            }
+          }
+        }
+      }
+    },
+    "forecast_any": {
+      "description": "v1.0 と v2.0 の両方を受け付ける。どちらの必須集合を課すかは _schema_version で決まるが、JSON Schema 単体では wrapper の版を参照できないため、実際の版別チェックは scripts/validate_forecasts.py が行う（同スクリプトが本スキーマの正準実装）。",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/forecast_v2"
+        },
+        {
+          "$ref": "#/$defs/forecast"
+        }
+      ]
     }
   }
 }

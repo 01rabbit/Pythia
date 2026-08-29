@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pythia Evidence Ledger (daily manifest)",
+  "description": "予報・観測・戦況が参照した一次証拠を、取得時刻と内容ハッシュ付きで固定する不変台帳。★URLだけの保存は禁止する（改善計画 §4.1）。予報の先見性は『発行時刻より前に取得された証拠だけを使った』ことで初めて立証できるため、retrieved_at_utc と content_sha256 は必須である。★リポジトリ肥大について: スナップショットは内容ハッシュ名で重複排除されるため、CISA が KEV を更新した回数分しか増えない（実測 1件あたり約180KB・更新は週2〜3回のため年間およそ25MB）。負の事実（『その時点で未収載だった』）の再検証はこのスナップショットだけが担うため、保持期間を縮める判断は人間レビューで行う。",
+  "type": "object",
+  "required": ["_schema_version", "_evidence_date", "evidence"],
+  "additionalProperties": false,
+  "properties": {
+    "_schema_version": {
+      "type": "string",
+      "enum": ["1.0"],
+      "description": "スキーマバージョン。新規出力は \"1.0\" 固定。"
+    },
+    "_evidence_date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "この manifest が対象とする JST の日付。ファイル名の日付と一致させる。"
+    },
+    "_generated_at_utc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "manifest を書き出した実時刻（UTC・秒精度以上）。"
+    },
+    "_generator": {
+      "type": "string",
+      "description": "生成したスクリプト（例: scripts/snapshot_sources.py）。"
+    },
+    "evidence": {
+      "type": "array",
+      "description": "その日に取得した証拠のリスト。予報が参照できるのはここに載っているものだけ。",
+      "items": { "$ref": "#/$defs/evidence" }
+    }
+  },
+  "$defs": {
+    "evidence": {
+      "title": "Evidence",
+      "type": "object",
+      "required": [
+        "evidence_id",
+        "source_url",
+        "source_type",
+        "retrieved_at_utc",
+        "content_sha256",
+        "parser_version"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "evidence_id": {
+          "type": "string",
+          "pattern": "^ev-\\d{8}-[0-9a-f]{5}$",
+          "description": "証拠ID。ev-YYYYMMDD-xxxxx（xxxxx は content_sha256 の先頭5桁）。同一内容を同日に二重取得しても同じIDになる。"
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "取得した一次URL。"
+        },
+        "source_type": {
+          "type": "string",
+          "enum": ["cisa_kev", "vendor", "cert", "nvd", "epss", "news", "telemetry"],
+          "description": "情報源の種別。"
+        },
+        "published_at_utc": {
+          "type": ["string", "null"],
+          "description": "情報源自身が示す公開時刻（UTC）。不明なら null。★これが古くても、取得が予報発行後なら入力に使ってはならない（判定は retrieved_at_utc で行う）。"
+        },
+        "retrieved_at_utc": {
+          "type": "string",
+          "format": "date-time",
+          "description": "取得が完了した実時刻（UTC）。予報の cutoff_at_utc より後の証拠はその予報から参照できない。"
+        },
+        "content_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "取得応答（または正規化抽出）のSHA-256。同一内容の再取得を検出し、スナップショットを重複保存しないためのキーでもある。"
+        },
+        "http_etag": {
+          "type": ["string", "null"],
+          "description": "取得時の ETag ヘッダ。取得できなければ null。"
+        },
+        "http_last_modified": {
+          "type": ["string", "null"],
+          "description": "取得時の Last-Modified ヘッダ。取得できなければ null。"
+        },
+        "snapshot_path": {
+          "type": ["string", "null"],
+          "description": "保存した圧縮スナップショットのリポジトリ相対パス。内容ハッシュが既存と同じ場合は既存パスを指す（重複保存しない）。保存対象外の情報源では null。"
+        },
+        "extract": {
+          "type": "object",
+          "description": "判定に使う最小限の構造化事実。全文ではなく、後から負の事実（未収載など）を再検証できるだけの情報を置く。",
+          "additionalProperties": true
+        },
+        "parser_version": {
+          "type": "string",
+          "description": "extract を作った抽出器のバージョン（例: kev-extract-v1）。抽出ロジックを変えたら上げる。"
+        },
+        "note": {
+          "type": "string",
+          "description": "運用上の注記（取得失敗のフェイルソフト記録など）。"
+        }
+      }
+    }
+  }
+}

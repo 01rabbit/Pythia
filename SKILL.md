@@ -75,6 +75,27 @@ Section 4: SOC推奨情報
 - Web 検索は data/raw に無い情報の補完としてのみ使用する（再現性確保のため）
 - data/raw が取得できない・空の場合はその旨をレポート meta に記録し、Web 検索へフォールバックする
 
+### Step 0.5: 証拠のスナップショット（必須・すべての収集の前）
+
+判定に使う一次ソースを、**取得時刻と内容ハッシュ付き**で Evidence Ledger へ固定する。
+
+```bash
+python3 scripts/snapshot_sources.py --date "${TODAY}"
+python3 scripts/run_manifest.py --date "${TODAY}" --step snapshot_sources --status ok \
+  --output "forecaster/evidence/manifests/${TODAY:0:4}/${TODAY:5:2}/${TODAY}.json" \
+  --version "snapshot_sources/1.0"
+```
+
+**なぜ最初に置くか**: 予報の先見性は「発行時刻より前に取得した証拠だけを使った」ことで
+初めて立証できる。収集を始めた後に取得した KEV を後から参照すると、
+結果を見てから予報を作ったのか区別できなくなる。Step 3.5 の予報は
+`evidence_ids` でここに載った証拠だけを参照し、`cutoff_at_utc` より後に取得された
+証拠は使えない（`validate_temporal_integrity.py` が機械的に落とす）。
+
+KEV スナップショットは内容ハッシュ名で重複排除されるため、CISA が更新した回数分しか
+増えない。**「その時点でこの CVE は KEV 未収載だった」という負の事実**を後から
+再検証できることが目的であり、URL だけの記録では代替できない。
+
 ### Step 0.7: 網羅スイープ（必須・Step 1 の前）
 
 Step 1 の収集を始める**前に**、調査窓内のCVE母集団を機械列挙で確定させる。
@@ -263,8 +284,15 @@ Pythia では加えて**観測母集団の偏りがベースライン・base_rat
 - コミット直前に `python3 scripts/check_reported.py`・`python3 scripts/validate_observations.py`・
   `python3 scripts/validate_forecasts.py`・`python3 scripts/check_knowledge_untouched.py`・
   `python3 scripts/check_report_consistency.py --date ${TODAY}`・
-  `python3 scripts/check_forecast_consistency.py --date ${TODAY}` を
+  `python3 scripts/check_forecast_consistency.py --date ${TODAY}`・
+  `python3 scripts/validate_temporal_integrity.py --date ${TODAY}`・
+  `python3 scripts/run_manifest.py --date ${TODAY} --verify` を
   実行し、違反があれば修正してからコミットする
+  （validate_temporal_integrity は「結果より前に予報を固定した」ことを反証可能にする
+  fail-closed ゲート。証拠の取得時刻が cutoff より後／発行時点で既に KEV 収載済み／
+  検証窓が発行時刻より前に始まる／予報本文のハッシュ不一致 のいずれかがあれば
+  **予報を公開しない**。詳細は pipeline-forecast-verification.md「M5 時刻順序ゲート」。
+  ★戦況・観測の成果物は予報ゲートが落ちても生成・コミットしてよい）
   （check_forecast_consistency は当日発行分の予報について、hit_criteria の日付範囲が
   `[forecast_date, deadline_date]` と一致するか〔M4-b・Issue #162〕、E3 の的中条件が
   固定一次ソースを名指ししているか〔Issue #132 所見1〕、`related_observation_ids` が

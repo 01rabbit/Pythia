@@ -42,6 +42,7 @@ M1-b 頻度ゲート・ゲートE・base_rate 実測アンカー（2026-08-07 �
 
 import argparse
 import glob
+import hashlib
 import json
 import os
 import re
@@ -52,8 +53,51 @@ from datetime import datetime
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FORECASTS_DIR = os.path.join(REPO_ROOT, "forecaster", "forecasts", "daily")
 
-SCHEMA_VERSION = "1.0"
-ALLOWED_SCHEMA_VERSIONS = {"1.0"}
+SCHEMA_VERSION = "2.0"
+ALLOWED_SCHEMA_VERSIONS = {"1.0", "2.0"}
+
+# 新規発行に v1.0 を使ってよい最終日。これ以降の発行日は v2.0 必須。
+# ★既存履歴（〜2026-08-29）は遡及修正しない（原則D）ため、この日以前は 1.0 を許す。
+V2_REQUIRED_FROM = "2026-08-30"
+
+# v2.0 で追加された測定固定フィールド（改善計画 Phase 0 §4.3）
+REQUIRED_V2_KEYS = [
+    "issued_at_utc",
+    "cutoff_at_utc",
+    "content_sha256",
+    "target_event",
+    "forecast_probability",
+    "reference_base_rate",
+    "model_version",
+    "evidence_ids",
+]
+
+OPTIONAL_V2_KEYS = {
+    "candidate_id",
+    "cluster_id",
+    "legacy_probability_semantics",
+    "policy_version",
+}
+
+REQUIRED_TARGET_EVENT_KEYS = [
+    "channel",
+    "entity_id",
+    "event_type",
+    "window_start_utc",
+    "window_end_utc",
+    "primary_source",
+    "matching_rule_version",
+]
+
+ENUM_EVENT_TYPE = {
+    "cisa_kev_initial_add",
+    "vendor_ioc_initial_publish",
+    "cert_initial_advisory",
+    "public_exploit_publish",
+}
+
+RE_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+RE_EVIDENCE_ID = re.compile(r"^ev-\d{8}-[0-9a-f]{5}$")
 
 MAX_FORECASTS_PER_DAY = 2
 
@@ -83,7 +127,7 @@ REQUIRED_FORECAST_KEYS = [
 ]
 
 # forecast で許可するキー（additionalProperties: false 相当）
-ALLOWED_FORECAST_KEYS = set(REQUIRED_FORECAST_KEYS) | {
+ALLOWED_FORECAST_KEYS = set(REQUIRED_FORECAST_KEYS) | set(REQUIRED_V2_KEYS) | OPTIONAL_V2_KEYS | {
     "forecast_class_rationale",
     "kev_snapshot",
     "evidence",
@@ -581,7 +625,129 @@ def check_base_rate_anchor(rep, fname, fc_id, forecast):
         )
 
 
-def check_forecast(rep, fname, forecast, seen_ids, file_date, day_count):
+def canonical_forecast_hash(forecast):
+    """予報本文の content_sha256 を計算する。
+
+    ハッシュ対象から除くのは content_sha256 自身と、発行後に検証ステージが書き込む
+    verified_outcome の2つだけ。キーをソートし区切りを固定した canonical JSON を
+    UTF-8 でハッシュする。発行後に本文が書き換えられていないことを示すための値である。
+    """
+    payload = {k: v for k, v in forecast.items()
+               if k not in ("content_sha256", "verified_outcome")}
+    blob = json.dumps(payload, ensure_ascii=False, sort_keys=True,
+                      separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(blob).hexdigest()
+
+
+def parse_utc(value):
+    """ISO 8601（末尾 Z 可）を aware datetime にする。失敗したら None。"""
+    if not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def check_target_event(rep, fname, fc_id, forecast):
+    """構造化 target_event を検査する（採点はこのオブジェクトだけで行うため）。"""
+    te = forecast.get("target_event")
+    if not isinstance(te, dict):
+        rep.add(fname, fc_id, "target_event", f"オブジェクトではない: {te!r}")
+        return
+    for key in REQUIRED_TARGET_EVENT_KEYS:
+        if key not in te:
+            rep.add(fname, fc_id, f"target_event.{key}", "必須フィールドが欠落")
+    for key in te:
+        if key not in REQUIRED_TARGET_EVENT_KEYS:
+            rep.add(fname, fc_id, f"target_event.{key}", "スキーマに定義されていないフィールド")
+
+    if te.get("channel") not in ENUM_OUTCOME_CHANNEL:
+        rep.add(fname, fc_id, "target_event.channel",
+                f"enum 違反: {te.get('channel')!r}")
+    if te.get("event_type") not in ENUM_EVENT_TYPE:
+        rep.add(fname, fc_id, "target_event.event_type",
+                f"enum 違反: {te.get('event_type')!r}（許可値: {sorted(ENUM_EVENT_TYPE)}）")
+    if te.get("channel") and forecast.get("outcome_channel") \
+            and te["channel"] != forecast["outcome_channel"]:
+        rep.add(fname, fc_id, "target_event.channel",
+                f"outcome_channel（{forecast['outcome_channel']}）と不一致: {te['channel']}")
+
+    start = parse_utc(te.get("window_start_utc"))
+    end = parse_utc(te.get("window_end_utc"))
+    if te.get("window_start_utc") is not None and start is None:
+        rep.add(fname, fc_id, "target_event.window_start_utc",
+                f"ISO 8601 として解釈できない: {te.get('window_start_utc')!r}")
+    if te.get("window_end_utc") is not None and end is None:
+        rep.add(fname, fc_id, "target_event.window_end_utc",
+                f"ISO 8601 として解釈できない: {te.get('window_end_utc')!r}")
+    if start and end and end <= start:
+        rep.add(fname, fc_id, "target_event.window_end_utc",
+                f"窓の終端が始端以前: {end.isoformat()} <= {start.isoformat()}")
+
+    issued = parse_utc(forecast.get("issued_at_utc"))
+    if start and issued and start < issued:
+        # 発行より前に始まる窓は、発行時点で既に発火済みの事象を的中に数えうる。
+        rep.add(fname, fc_id, "target_event.window_start_utc",
+                f"検証窓が発行時刻より前に始まっている（{start.isoformat()} < {issued.isoformat()}）。"
+                "発行前に起きた事象を的中に数えてはならない")
+
+
+def check_v2_fields(rep, fname, fc_id, forecast):
+    """v2.0 の測定固定フィールドを検査する（改善計画 Phase 0）。"""
+    for key in REQUIRED_V2_KEYS:
+        if key not in forecast:
+            rep.add(fname, fc_id, key, "v2.0 の必須フィールドが欠落")
+
+    issued = parse_utc(forecast.get("issued_at_utc"))
+    cutoff = parse_utc(forecast.get("cutoff_at_utc"))
+    if forecast.get("issued_at_utc") is not None and issued is None:
+        rep.add(fname, fc_id, "issued_at_utc",
+                f"ISO 8601 として解釈できない: {forecast['issued_at_utc']!r}")
+    if forecast.get("cutoff_at_utc") is not None and cutoff is None:
+        rep.add(fname, fc_id, "cutoff_at_utc",
+                f"ISO 8601 として解釈できない: {forecast['cutoff_at_utc']!r}")
+    if issued and cutoff and cutoff > issued:
+        rep.add(fname, fc_id, "cutoff_at_utc",
+                f"入力上限が発行時刻より後（{cutoff.isoformat()} > {issued.isoformat()}）。"
+                "発行後に取得した証拠を入力にできてしまう")
+
+    digest = forecast.get("content_sha256")
+    if digest is not None:
+        if not (isinstance(digest, str) and RE_SHA256.match(digest)):
+            rep.add(fname, fc_id, "content_sha256", f"SHA-256 の形式ではない: {digest!r}")
+        else:
+            actual = canonical_forecast_hash(forecast)
+            if actual != digest:
+                rep.add(fname, fc_id, "content_sha256",
+                        f"予報本文のハッシュが一致しない（記録={digest[:12]}… 実体={actual[:12]}…）。"
+                        "発行後に本文が変更された可能性がある")
+
+    for key in ("forecast_probability", "reference_base_rate"):
+        if key in forecast:
+            v = forecast[key]
+            if not isinstance(v, (int, float)) or isinstance(v, bool) or not (0 <= v <= 1):
+                rep.add(fname, fc_id, key, f"0〜1 の数値ではない: {v!r}")
+
+    if "model_version" in forecast and not isinstance(forecast["model_version"], str):
+        rep.add(fname, fc_id, "model_version",
+                f"文字列ではない: {forecast['model_version']!r}")
+
+    ev = forecast.get("evidence_ids")
+    if ev is not None:
+        if not isinstance(ev, list) or not ev:
+            rep.add(fname, fc_id, "evidence_ids",
+                    "1件以上の証拠IDが必要（URLではなく Evidence Ledger のIDで参照する）")
+        else:
+            for i, e in enumerate(ev):
+                if not (isinstance(e, str) and RE_EVIDENCE_ID.match(e)):
+                    rep.add(fname, fc_id, f"evidence_ids[{i}]",
+                            f"パターン ^ev-\\d{{8}}-[0-9a-f]{{5}}$ に不一致: {e!r}")
+
+    check_target_event(rep, fname, fc_id, forecast)
+
+
+def check_forecast(rep, fname, forecast, seen_ids, file_date, day_count, schema_version="1.0"):
     """forecast 1件を検査する。seen_ids は全ファイル横断の {forecast_id: ファイル名}。"""
     if not isinstance(forecast, dict):
         rep.add(fname, "-", "forecasts[]", f"オブジェクトではない: {forecast!r}")
@@ -590,10 +756,24 @@ def check_forecast(rep, fname, forecast, seen_ids, file_date, day_count):
     raw_id = forecast.get("forecast_id")
     fc_id = raw_id if isinstance(raw_id, str) and raw_id else "-"
 
-    # 必須フィールド
+    # 必須フィールド（版で分岐）
     for key in REQUIRED_FORECAST_KEYS:
+        if key == "base_rate_estimate" and schema_version != "1.0":
+            # v2 では forecast_probability / reference_base_rate へ分離したため必須から外す
+            continue
         if key not in forecast:
             rep.add(fname, fc_id, key, "必須フィールドが欠落")
+
+    if schema_version == "2.0":
+        check_v2_fields(rep, fname, fc_id, forecast)
+    else:
+        # v1.0 で v2 専用フィールドを部分的に混ぜると、測定固定の保証がないまま
+        # 固定されているように見えるため拒否する。
+        for key in REQUIRED_V2_KEYS:
+            if key in forecast:
+                rep.add(fname, fc_id, key,
+                        "v2.0 専用フィールドが _schema_version=1.0 のファイルに含まれている"
+                        "（版を 2.0 に上げるか、フィールドを削除する）")
 
     # additionalProperties: false
     for key in forecast:
@@ -804,7 +984,23 @@ def check_file(rep, path, seen_ids):
         rep.add(
             fname, "-", "_schema_version",
             f"バージョン不一致: {data['_schema_version']!r}"
-            f"（許可値: {sorted(ALLOWED_SCHEMA_VERSIONS)}、新規出力は '1.0' 固定）",
+            f"（許可値: {sorted(ALLOWED_SCHEMA_VERSIONS)}、新規発行は '2.0' 固定）",
+        )
+
+    # 2026-08-30 以降の発行日は v2.0 必須（Phase 0 の測定固定）。
+    # それ以前の既存履歴は 1.0 のまま据え置く（遡及修正しない＝原則D）。
+    fdate = data.get("_forecast_date") or file_date
+    if (
+        isinstance(fdate, str)
+        and is_valid_date(fdate)
+        and fdate >= V2_REQUIRED_FROM
+        and data.get("_schema_version") != "2.0"
+    ):
+        rep.add(
+            fname, "-", "_schema_version",
+            f"{V2_REQUIRED_FROM} 以降の発行日は _schema_version='2.0' が必須"
+            f"（発行時刻・入力上限時刻・本文ハッシュ・target_event を固定するため）。"
+            f"現在: {data.get('_schema_version')!r}",
         )
 
     if "forecasts" not in data:
@@ -839,7 +1035,8 @@ def check_file(rep, path, seen_ids):
                 "（pipeline-forecast-verification.md 絞り込みルール）",
             )
         for forecast in data["forecasts"]:
-            check_forecast(rep, fname, forecast, seen_ids, file_date, day_count)
+            check_forecast(rep, fname, forecast, seen_ids, file_date, day_count,
+                           schema_version=data.get("_schema_version", "1.0"))
 
 
 def collect_files(date=None):
