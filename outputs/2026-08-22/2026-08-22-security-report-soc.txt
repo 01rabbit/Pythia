@@ -1,0 +1,162 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-22 09:30 JST
+調査期間: 2026-08-21 07:00 〜 2026-08-22 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Firefox 154公開、脆弱性58件に対応(High20件含む・サンドボックス回避1件)
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: Mozilla Firefox / Firefox ESR
+
+【24時間以内の変化】
+[Security NEXT 2026-08-21] Mozillaが8月18日付でFirefox 154を公開、CVEベースで58件の脆弱性（Critical 0・High 20・Moderate 26・Low 12）に対応したと報道。ESR版153.1/140.14/115.39でも計52・31・13件を修正
+
+【概要】
+Mozilla FoundationがFirefox 154（2026-08-18公開）でCVEベース58件の脆弱性に対応した。最も重要度が高いのはRemote Settings Clientのサンドボックス回避に関するCVE-2026-75874で、他にJavaScript・グラフィックス・権限昇格・サイト分離不備・情報漏洩・メモリ破壊等複数カテゴリにまたがる。個別の実悪用報告は本調査時点で確認されていないが、High評価20件を含む定期パッチサイクルとして把握推奨。ローカルネットワークアクセスに対する保護機能も追加された。
+
+【推奨アクション】
+・社内配布・BYOD含むFirefox/Firefox ESR利用端末のバージョンを154（ESRは153.1/140.14/115.39）以降へ更新する
+・サンドボックス回避（CVE-2026-75874）の技術詳細を確認し、拡張機能・サイト分離依存のセキュリティ制御に影響がないか確認する
+・次回定例パッチサイクルでの適用を計画する（緊急の単独脆弱性ではなく定期パッチ扱い）
+
+【参照】
+https://www.security-next.com/189191
+
+------------------------------------------------------------
+2. PostgreSQL、脆弱性28件・バグ110件超を修正する定例アップデートを公開
+観点: CVE関連
+採用契機: β/γ
+------------------------------------------------------------
+
+優先度: 中
+対象: PostgreSQL
+
+【24時間以内の変化】
+[Security NEXT 2026-08-21] PostgreSQL開発チームが8月13日付で脆弱性28件・バグ110件超を修正するアップデートを公開したと報道。CVSSv3.1が9.0以上のものは含まれないが18件が7.0以上（うち14件が8.8）
+
+【概要】
+PostgreSQL開発チームが2026年8月13日、脆弱性28件および110件超のバグを修正するアップデートを公開した。CVSSv3.1が9.0以上のものは含まれないが、18件が7.0以上、うち14件が8.8と評価されている。正規表現処理でのヒープバッファオーバーフロー（CVE-2026-14664）、to_charの脆弱性（CVE-2026-14669）、plperlの脆弱性（CVE-2026-14670）、SQLインジェクション（CVE-2026-15741）等、任意コード実行につながり得る脆弱性が含まれる。pg_stat_statements・pg_dump等の管理機能にも影響があり、DB管理者権限を持つ運用担当者への影響が大きい。
+
+【推奨アクション】
+・自社運用のPostgreSQLインスタンス（オンプレミス・クラウドマネージド問わず）のバージョンを確認し、修正版への適用計画を次回メンテナンスウィンドウで検討する
+・CVE-2026-15741（SQLインジェクション）・CVE-2026-14670（plperl）等、権限昇格や任意コード実行につながる項目を優先的にレビューする
+・pg_stat_statements / pg_dump 等の管理系拡張機能を使用している場合は個別に影響有無を確認する
+
+【参照】
+https://www.security-next.com/189206
+
+------------------------------------------------------------
+3. Microsoft Defenderの正規ドライバBTR.sysが起動時のセキュリティ製品無効化に悪用可能と判明(CVE未割当)
+観点: ゼロデイ関連
+採用契機: η
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft Defender (BTR.sys / Boot Time Removal Tool)
+
+【24時間以内の変化】
+[The Hacker News 2026-08-22] Check Point Researchの研究者Jiří Vinopal氏がBlack Hat USA/DEF CON 34（2026年8月）で発表した、Defender内蔵の正規署名済みカーネルドライバBTR.sysの独自RC4暗号方式リバースエンジニアリングによる悪用手法を報道
+
+【概要】
+Check Point Researchの研究者がMicrosoft Defenderの構成要素MpEngine.dllに組み込まれた正規署名済みカーネルドライバ「BTR.sys」（Boot Time Removal Tool）の独自RC4暗号化トランザクションプロトコルをリバースエンジニアリングし、Windows 7以降全バージョンで不変のハードコード256バイト鍵を用いて有効な暗号化設定を構築できることを示した。Service Control Managerを経由せずレジストリへ直接エントリを書き込みBTR.sysをサービスとしてインストールし、次回起動時の操作をキューイングすることで、Tamper Protection有効時でもDefenderをカーネルレベルで完全に無効化・削除できる。CVEは割り当てられておらず、Microsoft Security Response Centerは「SeLoadDriverPrivilegeを持つ管理者権限を前提とするため即時対応基準に該当しない」と判断している。Check Pointは実悪用の証跡は確認していないとしている。
+
+【推奨アクション】
+・SeLoadDriverPrivilegeの割り当てを必要最小限のアカウントに制限する
+・Sysmon（イベントID 15・12・13・11・23・6）で「.sys:changelist」ストリームおよび「Boot Bus Extender」サービスグループへの不審な操作を監視対象に追加する
+・Tamper Protectionに加え、Defenderの状態を外部EDR/SIEM側からも独立監視し、単一製品の無効化に依存しない多層防御構成を確認する
+・BTR.sysの不正インストール・キュー操作を狙ったレジストリ直接書き込みとサービス登録の検知
+Splunk SPL: index=sysmon (EventCode=12 OR EventCode=13) TargetObject="*Boot Bus Extender*" | table _time, ComputerName, TargetObject, Details
+→ SeLoadDriverPrivilegeを保有しないはずの端末・アカウントでのドライバサービス登録操作、.sys:changelistストリームへの書き込みは特に優先確認
+
+【参照】
+https://thehackernews.com/2026/08/microsoft-defenders-own-driver-can-be.html
+
+------------------------------------------------------------
+4. SANS ISC、Microsoft Graph PowerShellでMFA未登録アカウントを洗い出す手法を公開
+観点: CVE関連
+採用契機: γ
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft Entra ID / Microsoft 365
+
+【24時間以内の変化】
+[SANS Internet Storm Center 2026-08-21] SANS ISCハンドラーRob VandenBrink氏が、Microsoft.Graph.Beta.Reportsモジュールを用いてMFA未登録アカウントを一括抽出するPowerShell手法を公開
+
+【概要】
+SANS ISCハンドラーがEntra ID環境でのMFA展開状況を監査するPowerShell手法を公開した。Microsoft.Graph.Beta.ReportsモジュールのGet-MgBetaReportAuthenticationMethodUserRegistrationDetailコマンドを用い、Web管理画面で数千アカウントを手動確認する代わりに、MFA未登録アカウントを一括抽出できる。SMS等特定のMFA方式に依存しているユーザーの洗い出しにも応用可能で、監査要件（SMSベースMFAの廃止等）への対応にも使える。CVEや特定の攻撃事案に紐づくものではなく、ID・アクセス管理の可視化を目的とした運用手法の提示である。
+
+【推奨アクション】
+・自社Entra ID/M365テナントでGet-MgBetaReportAuthenticationMethodUserRegistrationDetailを実行し、MFA未登録アカウント・特権アカウントの登録状況を棚卸しする
+・SMS等の非推奨MFA方式に依存しているアカウントを特定し、フィッシング耐性の高い認証方式（FIDO2/パスキー等）への移行を優先順位付けする
+・MFA未登録アカウントが判明した場合は条件付きアクセスポリシーでの一時制限を検討する
+・Entra IDの認証方式登録状況・MFA未登録アカウントの定期棚卸し
+→ Microsoft Graph API/PowerShellでの棚卸し結果をSIEM側の特権アカウント台帳と突合し、MFA未登録の特権アカウントを最優先で是正する
+
+【参照】
+https://isc.sans.edu/diary/rss/33272
+
+------------------------------------------------------------
+5. OWASP、エージェント型AIの「スキル」に潜むリスクを整理した新ガイダンス「Agentic Skills Top 10」を公開
+観点: AI攻撃関連
+採用契機: ζ
+------------------------------------------------------------
+
+優先度: 低
+
+【24時間以内の変化】
+[Dark Reading 2026-08-22] OWASPが、Claude Code（SKILL.md）・Cursor/Codex（manifest.json）・VS Code（package.json）等のエージェント型AIエコシステムで再利用される「スキル」に潜むセキュリティリスクを整理した新フレームワーク「OWASP Agentic Skills Top 10」を公開したと報道
+
+【概要】
+OWASPが、エージェント型AIが実世界での操作能力を得るために利用する再利用可能な「スキル」（Claude CodeのSKILL.md、Cursor/Codexのmanifest.json、VS Codeのpackage.json等の形式で配布されるワークフロー定義）に固有のセキュリティリスクを10項目に整理した新ガイダンス「OWASP Agentic Skills Top 10」を公開した。既存の「OWASP Top 10 for Agentic Applications」（目標ハイジャック・ツール誤用・権限濫用・ガードレール不備等）を補完する形で、スキル配布・実行エコシステム特有のリスクに焦点を当てている。社内でAIコーディングエージェント・カスタムスキル/プラグインの導入を進める組織にとって、サプライチェーン観点でのレビュー基準策定に資する新規標準化動向である。
+
+【推奨アクション】
+・社内で導入・許可しているAIエージェント向けスキル/プラグイン（SKILL.md、Cursor/Codexのmanifest.json等）の棚卸しを行い、出所不明なものがないか確認する
+・新規スキル・プラグインの導入審査プロセスにOWASP Agentic Skills Top 10のリスク項目を評価基準として組み込むことを検討する（今回は把握のみ、緊急対応は不要）
+
+【参照】
+https://www.darkreading.com/application-security/owasp-flags-top-ai-skill-risks-security-blueprint
+
+------------------------------------------------------------
+6. フィッシングツールキット「iAuthFlow V2」、パスキー登録悪用でパスワードリセット後も持続アクセス
+観点: ゼロデイ関連
+採用契機: δ/ε
+------------------------------------------------------------
+
+優先度: 中
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-21] Abnormal Securityの研究者が、ロシア語圏サイバー犯罪フォーラムで1万ドルで販売されているフィッシングツールキット「iAuthFlow V2」の分析結果を公表。攻撃者制御下のパスキーを被害者アカウントへ登録し、パスワード変更・セッション無効化後も持続アクセスを維持できる手口を報道
+
+【概要】
+ロシア語圏サイバー犯罪フォーラムで初めて確認されたフィッシングツールキット「iAuthFlow V2」は、フィッシングセッション中に攻撃者制御下のパスキーを被害者アカウントへ登録させる「passkeyモジュール」を備える。これにより、被害者がパスワードを変更しアクティブセッションを無効化しても、攻撃者は登録済みパスキーを用いて「別の方法でログイン」を選択するだけでパスワードなしにアクセスを継続できる。基本ツールキットは1万ドルで販売され、追加モジュールも別売りされている。Abnormal Securityの研究者は、販売者のフォーラム投稿・デモ情報をもとにGmailアカウントへの適用を分析しており、実ツールの入手・実行による検証ではない点に留意が必要。パスキーはフィッシング耐性の高い認証方式として推奨されてきたが、初回登録プロセス自体がフィッシングされた場合の防御が課題として浮上した。国内での観測報告は本調査時点でないが、パスキー普及が進む国内金融・ITサービスへの波及が見込まれる手口である（推測）。
+
+【推奨アクション】
+・パスキー・WebAuthnクレデンシャルの新規登録イベントを、通常のログインイベントと同等以上の重要度で監視対象に追加する
+・フィッシング後の異常なパスキー登録を検知するため、短時間内のパスワードリセット/セッション無効化操作とパスキー新規登録の相関を確認する
+・ヘルプデスク・従業員向けに、パスキー登録画面を装ったフィッシングページのスクリーンショット等を用いた注意喚起を行う
+・WebAuthn/パスキー新規登録イベントとパスワードリセット・セッション無効化イベントの相関監視
+Splunk SPL: index=idp (eventtype=passkey_registration OR eventtype=webauthn_credential_created) | stats count by user, src_ip, _time | where count>0
+→ パスワードリセット直後（数分〜数十分以内）のパスキー新規登録、普段と異なるIP/デバイスからのパスキー登録は要確認
+
+【参照】
+https://www.securityweek.com/new-phishing-toolkit-uses-passkeys-to-maintain-access-after-password-resets
+
+[SOC推奨情報]
+・Wazuh and AI For Enhanced SOC Workflows（The Hacker News寄稿記事） → Wazuhからの寄稿広告記事であることが本文に明記されたベンダー製品プロモーション。独自の新規データ・検証を伴わないため観点3の採用条件（α〜η）を満たす具体的事象がなく不採用。
+・米当局(CISA)、TrueConf Serverの脆弱性2件を悪用リストへ追加（Security NEXT記事189174ほか） → CVE-2026-72529/CVE-2026-72530のCISA KEV追加は2026-08-20付でreported-cves.mdに記録済み（前日レポートで参考B再採用済み）。本日分は同一事象の追報でありSection3/2のCVEトラックで継続管理対象、SOCセクションでの新規性なし。
+・Cisco、Crosswork/Secure Workloadの9件の脆弱性を修正(5件がCVSS10.0)（The Hacker News記事） → 代表CVE-2026-20030はreported-cves.mdに2026-08-21分として参考A採用済み（Security NEXT記事189122/189109・SecurityWeek報道と合わせて既報）。本記事は同一事象の英語圏追報でありCVEトラックの管理対象。
+・GitLab CVE-2026-19478、公開から数日で実悪用開始（The Hacker News記事） → CVE-2026-19478はreported-cves.mdに2026-08-21分として参考B採用済み。本記事は実悪用進展の追報でありCVEトラックの継続管理対象、SOCセクションでの別立ては不要。
+
+本日の集計:
+SOC推奨情報 — 高0件 / 中5件 / 低1件 / 除外4件
