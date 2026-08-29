@@ -144,7 +144,10 @@ def check_candidate_file(path, errors):
                 c.get("current_state"), te.get("event_type"), te.get("next_state"), h)
             if ref.get("key") != expected:
                 errors.append(f"{cid}: target-event参照率key不一致({HORIZON_LABELS[h]})")
-        if te.get("matching_rule_version") not in {"tf1-poc-v2", "tf1-exploitation-v2"}:
+        if te.get("matching_rule_version") not in {
+            "tf1-poc-v2", "tf1-exploitation-v2",
+            "tf1-poc-v3", "tf1-exploitation-v3",
+        }:
             errors.append(f"{cid}: 未固定または旧matching rule")
 
 
