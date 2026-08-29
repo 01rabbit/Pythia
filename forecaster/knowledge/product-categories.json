@@ -6,6 +6,29 @@
   "_usage": "解決手順: (1) 対象CVEが cve_overrides にあればそのカテゴリを採用（最優先）。(2) なければ、そのCVEを含む observation の summary / source 文字列に対して product_keyword_map のキーワードをエッジ条件付き境界一致で走査し、一致したキーワードのカテゴリを採用（複数一致は全採用＝集合）。(3) いずれも一致しなければカテゴリ空集合（この要素の類似度スコアは0）。キーワード照合は大文字小文字を無視する。照合は scripts/product_categories.py に一元実装する（retrieve_similar_cases.py / build_kev_leadtime_stats.py / build_zeroday_itw_priors.py が共有）。",
   "_matching_note": "エッジ条件付き境界一致を用いる（2026-07 に単純部分一致から変更）。境界アサーションはキーワードの当該エッジ文字が ASCII 英数のときだけ適用する: 先頭が ASCII英数なら左境界、末尾が ASCII英数なら右境界を付ける。単純部分一致は英語混じり文で偽陽性を生む（sap→WhatsApp/Sapphire Sleet、unifi→Cisco Unified、nsd→Firefox nsDocShell）。逆に両端一律の ASCII 境界は日本語キーワード＋ASCII接尾辞で正当一致を落とす（rpgツクールMV→rpgツクール が不一致）。エッジ条件付きにより両問題を解消する。実測（全observation summary）: 単純部分一致に対し偽陽性6件（Cisco Unified×4・Sapphire Sleet×2）を排除、正当な一致の喪失0件・カテゴリの誤増加0件。既知の限界: 末尾がASCII英字のキーワードは直後に数字が連結するバージョン表記（FortiOS7.4 等）に一致しない（空白区切りは一致）。現行コーパスでは実害0。",
   "_scope_note": "初期収録は observations/ に既出の製品カテゴリのみ（design §4.3）。未収録CVE/製品はカテゴリ空で扱い、キーワードを機械推論で増やさない。新規製品カテゴリの追加は観測に出現した実績にもとづき PR で追記する。",
+  "_addition_log": [
+    {
+      "date": "2026-08-29",
+      "issue": 157,
+      "reason": "直近のE1予報10件（2026-08-12〜08-21発行分）のうち6件が本辞書に未収録で、製品カテゴリ別の類似事例検索・リードタイム分析の判断材料にできなかった（Issue #157 の主要な指摘）。observations/ に実際に出現している製品に限り追記した。",
+      "added_categories": {
+        "virtualization_platform": "observations/ 内の出現実績: vCenter 6ファイル・ESXi 2ファイル。既存カテゴリのいずれとも攻撃面が異なる（管理面1台の侵害で多数VMを一括制御）ため新設。",
+        "collaboration_platform": "observations/ 内の出現実績: TrueConf 4ファイル・Zoom 3ファイル・Microsoft Teams 1ファイル。mail_server（メール/メッセージング基盤）とは配備形態・攻撃面が異なるため分離。ただしキーワードとして採ったのは trueconf と cisco webex のみである（下記 excluded_keywords 参照）。"
+      },
+      "added_keywords_rationale": {
+        "zimbra": "Zimbra Collaboration Suite。名称は Collaboration だが、観測・KEV での実悪用文脈は一貫してメール/webmail 基盤（SNMP通知処理・webmail）であり、類似事例照合の相手として有用なのは Exchange/OWA 群であるため mail_server とした。",
+        "adobe commerce / magento / woocommerce": "ECプラットフォームを独立カテゴリにすると現行コーパスでは各1〜2件の孤立カテゴリになり類似照合が成立しない。悪用の力学（インターネット公開のPHPウェブ基盤＋拡張エコシステムに対する大量自動悪用）が cms_plugin と同型であり、WordPress/Joomla 群と照合できる方が有用なため cms_plugin とした。★決済情報窃取（Magecart型）を独立に扱う必要が出た時点で ecommerce_platform への分離を再検討する。",
+        "schneider electric / powerlogic": "PowerLogic P5 は電力系保護リレー。iot_embedded の定義に「産業用機器」が含まれるため新設せず既存カテゴリへ収めた。",
+        "trueconf": "TrueConf Server（オンプレ設置のWeb会議サーバ）。collaboration_platform へ。",
+        "mlflow": "MLflow（ML実験管理プラットフォーム）。ai_ml_tooling の定義「AI/ML開発フレームワーク」に該当。"
+      },
+      "excluded_keywords": {
+        "microsoft teams": "唯一の出現（obs-2026-0731-009）が『Teams を使ったビッシングで初期侵入した』という攻撃ベクタとしての言及であり、Teams 自体の脆弱性ではない。本辞書は『どの製品カテゴリの脆弱性か』を解決するためのものなので、この一致はカテゴリ判定にとって偽陽性になる。採らない。",
+        "zoom": "同様に、会議ツールを騙る手口の文脈で現れる可能性が高く、また短い英単語で他語への偽陽性リスクがある。実際の脆弱性観測が現れた時点で追記を検討する。"
+      },
+      "verification": "追記後に observations/ 全件（2026-01〜08・判定1234件）へ scripts/product_categories.py の resolver を新旧辞書で適用して差分を取った。既存キーワードによる分類結果の喪失0件（新規キーワードが既存の一致を奪っていない）。新規付与は32件（virtualization_platform 10・mail_server 8・collaboration_platform 6・iot_embedded 4・cms_plugin 2・ai_ml_tooling 2）で、全件を目視し当該製品の脆弱性・実悪用の記述に対する正当な一致であることを確認した。偽陽性は microsoft teams の1件のみで、これは上記 excluded_keywords のとおり採用を見送った。未分類は 906→876 件へ減少。"
+    }
+  ],
   "categories": {
     "vpn_remote_access_gateway": "SSL-VPN・リモートアクセスGW・SSO認証ゲートウェイ（インターネット直接露出・初期侵入の主経路）",
     "network_security_appliance": "ファイアウォール・IPS・NAC・SD-WAN・サンドボックス等のネットワークセキュリティ機器",
@@ -23,7 +46,9 @@
     "iot_embedded": "IoT機器・組込み機器・プリンタ・カメラ・産業用機器・組込みライブラリ",
     "container_platform": "コンテナ管理・オーケストレーション・コンテナランタイム基盤",
     "media_codec": "メディアコーデック・ファイルパーサライブラリ",
-    "remote_support_tool": "リモートサポート・遠隔操作・リピータ等の運用ツール"
+    "remote_support_tool": "リモートサポート・遠隔操作・リピータ等の運用ツール",
+    "virtualization_platform": "ハイパーバイザおよび仮想化基盤の管理サーバ（1台の侵害で多数のVMを一括制御できるためランサムの高価値標的）",
+    "collaboration_platform": "Web会議・チャット・グループウェア等のコラボレーション基盤（オンプレ設置で外部公開されやすい）"
   },
   "cve_overrides": {
     "_comment": "product_keyword_map で誤分類・未分類になる個別CVEをここで明示上書きする。現時点では空。運用中に誤分類が判明したものを PR で追記する。"
@@ -76,6 +101,20 @@
     "microsoft exchange": "mail_server",
     "outlook web access": "mail_server",
     "synology mailplus": "mail_server",
+    "zimbra": "mail_server",
+    "vmware vcenter": "virtualization_platform",
+    "vcenter": "virtualization_platform",
+    "vmware esxi": "virtualization_platform",
+    "esxi": "virtualization_platform",
+    "vsphere": "virtualization_platform",
+    "trueconf": "collaboration_platform",
+    "cisco webex": "collaboration_platform",
+    "adobe commerce": "cms_plugin",
+    "magento": "cms_plugin",
+    "woocommerce": "cms_plugin",
+    "mlflow": "ai_ml_tooling",
+    "schneider electric": "iot_embedded",
+    "powerlogic": "iot_embedded",
     "fluentd": "enterprise_app",
     "nsd": "dns_server",
     "name server daemon": "dns_server",
