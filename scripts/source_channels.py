@@ -123,15 +123,22 @@ def evidence_backs_reference(reference, evidence):
 
     要件（すべて満たすときのみ昇格を許す）:
       1. reference.evidence_id が Ledger に存在する
-      2. その証跡の source_url が reference.url と一致する（fragment を除く）
-      3. 証跡に取得時刻がある（load_evidence_records が保証）
+      2. 双方の URL が正規化できる（解析不能なら受理しない）
+      3. その証跡の source_url が reference.url と一致する（fragment を除く）
+      4. 証跡に取得時刻がある（load_evidence_records が保証）
     """
     if not evidence:
         return False
     record = evidence.get((reference or {}).get("evidence_id"))
     if not record:
         return False
-    return canonical_url(record["source_url"]) == canonical_url(reference.get("url"))
+    evidence_url = canonical_url(record["source_url"])
+    reference_url = canonical_url(reference.get("url"))
+    # ★canonical_url は解析不能なURLで空文字を返す。両方が空なら「一致」になってしまうので、
+    #   正規化できなかった時点で受理しない（fail-closed）。
+    if not evidence_url or not reference_url:
+        return False
+    return evidence_url == reference_url
 
 
 def resolve(source, table=None, evidence=None):

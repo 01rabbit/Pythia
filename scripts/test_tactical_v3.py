@@ -112,6 +112,12 @@ def main():
                 == ("aggregator_news", "primary_reference_unverified"),
                 "同一ホストでも別URLの証跡では昇格しない")
 
+    assert_true(not sc.evidence_backs_reference(
+                    {"evidence_id": "ev-20260829-ccccc", "url": "not-a-url"},
+                    {"ev-20260829-ccccc": {"source_url": "also-not-a-url",
+                                           "retrieved_at_utc": "2026-08-29T05:00:00Z"}}),
+                "正規化できないURL同士を一致とみなさない（fail-closed）")
+
     # observation validator が primary_reference を受け付け、不備を検出する
     import validate_observations as vo
     def _check(reference):
@@ -188,7 +194,7 @@ def main():
                             {}, {})
     assert_true(event1 == event2 and event1["summary_fact"] == malicious["summary"],
                 "入力内の命令文を実行せず単なる不変データとして保存する")
-    print("\nTactical v3 adversarial tests: 22 passed")
+    print("\nTactical v3 adversarial tests: 23 passed")
     return 0
 
 
