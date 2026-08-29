@@ -1,0 +1,87 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-08-30 07:50 JST
+調査期間: 2026-08-29 07:00 〜 2026-08-30 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. ShinyHunters（別名: UNC6240 / 国家帰属: 不明 / 帰属信頼度: low）
+活動タイプ: active_campaign/ioc_release
+------------------------------------------------------------
+
+標的: healthcare / North America
+マルウェア: 判明分なし
+
+【24時間以内の変化】
+[BleepingComputer 2026-08-29] McKesson社が2026-08-28にSEC Form 8-Kで不正アクセス被害を開示。ShinyHuntersが約2億8400万件のデータ窃取を主張し身代金5,520万ドルを要求（攻撃者主張のみ・McKesson未検証）
+
+【概要】
+米大手医療品卸McKesson社が2026-08-21〜25にかけ約1TBのデータを窃取されたと2026-08-28にSEC提出書類で開示した。ShinyHunters（UNC6240）を名乗る恐喝グループが約2億8400万件（氏名・住所・生年月日・SSN・患者ID・処方箋情報等）の窃取を主張し身代金5,520万ドル・72時間の回答期限を提示している。McKesson社はこの主張内容を独自に検証していないと述べている。
+
+攻撃の流れ（判明分）:
+1. 複数従業員に対するボイスフィッシング（vishing）でヘルプデスクを装ったmckesson[.]claimsドメインを使用
+2. 窃取した認証情報でOktaシングルサインオンアカウントを侵害し内部システムへ横展開
+3. SalesforceおよびSnowflake環境へアクセスし大量データを外部へ持ち出し
+
+【新規TTP】
+・[T1566] Phishing: Spearphishing Voice — BleepingComputer(2026-08-28)が複数従業員へのボイスフィッシングとmckesson[.]claimsドメイン使用を報じた
+・[T1078] Valid Accounts — 同記事がOktaシングルサインオンアカウントの侵害・悪用を報じた
+・[T1530] Data from Cloud Storage — 同記事がSalesforceおよびSnowflake環境からのデータ持ち出しを報じた
+
+【IoC】
+Domain: mckesson.claims
+
+【推奨アクション】
+・Okta等SSO基盤でのフィッシング耐性MFA（FIDO2/WebAuthn）強制、ヘルプデスク経由のパスワード/MFAリセット要求に対する本人確認手順の再徹底、Salesforce/Snowflakeへの異常アクセス（大量エクスポート・未知IP/未知デバイスからのアクセス）監視強化。
+・[SIEM] Splunk SPL: index=okta sourcetype=OktaIM2:log eventType=user.mfa.factor.deactivate OR eventType=user.account.reset_password | stats count by actor.alternateId,client.ipAddress
+・[SIEM] Splunk SPL: index=cloudtrail sourcetype=aws:cloudtrail (eventSource=snowflake* OR eventSource=salesforce*) | stats count by userIdentity.arn,sourceIPAddress | where count>100
+→ ヘルプデスク騙り攻撃はMFAリセット直後の異常ログインとの時系列相関で検知精度が上がる。既存の正規リセット運用と誤検知を切り分けるため、リセット申請者の内線折り返し確認有無を要件化する。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/mckesson-discloses-breach-after-shinyhunters-claims-patient-data-theft
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+・[トレンド記事] WordPressプラグイン・テーマの重大脆弱性5件が集約報道
+The Hacker Newsが2026-08-29(UTC)、WordPress向け複数プラグイン・テーマにおけるCVSS9.8〜10.0の認証バイパス・任意ファイル書き込み・PHPオブジェクトインジェクション等5件を集約して報道した。個別のCVE公開日はいずれも調査窓（2026-08-29 07:00〜2026-08-30 07:00 JST）より前（NVD公開日は2026-08-15〜08-28）であり、本日時点で新たな技術的変化（KEV追加・PoC公開・実悪用確認）は確認されていない。既存脆弱性の集約再報道にとどまるためSection 3個別エントリとしては採用せず、動向情報としてのみ記録する。
+参照: https://thehackernews.com/2026/08/five-critical-wordpress-plugin-and.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし（観測可能性ゲート(M1)を満たす候補事象なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+該当なし
+
+本日の集計:
+APT — 本編0件 / 注目動向1件 / 除外0件
+========================================

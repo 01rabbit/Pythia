@@ -132,7 +132,10 @@ def check_candidate(c, actors, placeholder, errors, warnings):
         for field in required:
             if field not in c:
                 errors.append(f"{cid}: v1契約の必須field {field} がない")
-        if te.get("matching_rule_version") not in {"tf1-poc-v2", "tf1-exploitation-v2"}:
+        if te.get("matching_rule_version") not in {
+            "tf1-poc-v2", "tf1-exploitation-v2",
+            "tf1-poc-v3", "tf1-exploitation-v3",
+        }:
             errors.append(f"{cid}: v1候補のmatching ruleが未固定または旧版")
         if cur and nxt:
             for horizon in HORIZONS_DAYS:
