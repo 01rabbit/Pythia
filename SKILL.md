@@ -81,6 +81,12 @@ Section 4: SOC推奨情報
 
 ```bash
 python3 scripts/snapshot_sources.py --date "${TODAY}"
+
+# ★確認チャネルの監視。宣言済みフィード（channel-feeds.json）を取得して証跡化する。
+#   これが無いと vendor / telemetry_provider の被覆が永久に error になり、
+#   coverage_proven が成立せず miss が1件も立たない。
+python3 scripts/collect_channel_evidence.py --date "${TODAY}"
+
 python3 scripts/run_manifest.py --date "${TODAY}" --step snapshot_sources --status ok \
   --output "forecaster/evidence/manifests/${TODAY:0:4}/${TODAY:5:2}/${TODAY}.json" \
   --version "snapshot_sources/1.0"
@@ -129,7 +135,9 @@ python3 scripts/render_tactical_forecast_section.py --date "${TODAY}" \
 ```
 
 被覆は**取得証跡から導出する**（`--from-evidence`）。Evidence Ledger に取得記録が無い
-チャネルは自動的に `error` になり、被覆を主張しない。導出元の `evidence_id` は
+チャネルは自動的に `error` になり、被覆を主張しない。証跡は Step 0.5 の
+`collect_channel_evidence.py` が `forecaster/knowledge/channel-feeds.json` の
+宣言フィードを取得して作る。導出元の `evidence_id` は
 `derived_from` に残るので、「監視できていた」という主張は後から検証できる。
 手で `--source-status` を打つのは証跡が取れない例外時のみで、その記録は
 `derivation: "manual"` として区別される。
@@ -139,9 +147,13 @@ python3 scripts/render_tactical_forecast_section.py --date "${TODAY}" \
 **「予報が当たっている」と「miss を記録できない」が区別できなくなる**。
 被覆記録が1件も無い間は `validate_model_promotion.py` がモデル昇格も拒否する。
 
-現状 Step 0.5 が取得証跡を残すのは CISA KEV（`cert`）だけなので、
-`vendor` / `telemetry_provider` は `error` になり `coverage_proven` は成立しない。
-これは正しい状態であり、**miss を立てるにはベンダー/テレメトリの collector 接続が要る**。
+**被覆が証明するのは「宣言したフィードを取得できた」ことだけ**で、
+「そのチャネルの全発信者を監視できた」ことではない。現在 vendor は3フィード、
+telemetry_provider は1フィードにすぎず、miss は「宣言したフィードに載らなかった」
+という意味である（真の非発生ではない）。フィードの増減は `channel-feeds.json` で行い、
+検証記録から遡って「その時点で何を監視していたか」を再現できるようにする。
+
+初回取得の窓は長さ0なので、**被覆の連鎖は2日目から成立する**。
 
 集約ニュース経由の一次原典は、将来の**自動collectorが取得証跡を残した場合だけ**
 `source.primary_reference` に記録できる。手動のURL取得入口は設けない。証跡が無ければ

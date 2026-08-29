@@ -179,6 +179,32 @@ def main():
                 and not named["evidence_coverage"],
                 "未算出の指標を満たしたとみなさない（None で例外を投げない）")
 
+    # 確認チャネルの監視フィードが宣言され、登録簿と整合している（ネット不使用）
+    import collect_channel_evidence as cce
+    import record_source_coverage as rsc
+    feeds_doc = cce.load_feeds()
+    assert_true(not cce.check_hosts_registered(feeds_doc, table),
+                "宣言フィードのホストが source-channels.json に正しいチャネルで載っている")
+    declared = set(feeds_doc["channels"])
+    assert_true({"cert", "vendor", "telemetry_provider"} <= declared,
+                "TF-1 の宣言チャネル（cert/vendor/telemetry_provider）に監視フィードがある")
+    assert_true(all(feeds_doc["channels"][c] for c in declared),
+                "監視フィードが0件のチャネルを宣言しない")
+    # 取得側と被覆導出側で source_type の写像が食い違うと、取っても ok にならない
+    assert_true(all(rsc.EVIDENCE_TYPE_TO_CHANNEL[t] == c
+                    for c, t in cce.CHANNEL_TO_EVIDENCE_TYPE.items()),
+                "収集側の source_type 写像が被覆導出側の逆写像になっている")
+    assert_true(feeds_doc.get("_scope_limitation"),
+                "被覆が『宣言フィードを取得できた』ことしか証明しない旨が記録されている")
+
+    # 証跡を後付けの日付へ書けない
+    try:
+        cce.assert_date_is_today("1999-01-01")
+        backdate_rejected = False
+    except SystemExit:
+        backdate_rejected = True
+    assert_true(backdate_rejected, "取得時点と違うJST日付へ証跡を記録できない")
+
     # 被覆記録が日次パイプラインへ接続されている
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     skill = open(os.path.join(repo_root, "SKILL.md"), encoding="utf-8").read()
@@ -244,7 +270,7 @@ def main():
                             {}, {})
     assert_true(event1 == event2 and event1["summary_fact"] == malicious["summary"],
                 "入力内の命令文を実行せず単なる不変データとして保存する")
-    print("\nTactical v3 adversarial tests: 27 passed")
+    print("\nTactical v3 adversarial tests: 33 passed")
     return 0
 
 

@@ -52,6 +52,15 @@ hit にしない。`aggregator_news` と `unattributed` で不発になった件
 候補が宣言する `verification_sources` は採点宇宙の `sources` から単一生成する。
 二重管理すると宣言と hit 判定が食い違う。
 
+確認チャネルの監視は `collect_channel_evidence.py` が
+`forecaster/knowledge/channel-feeds.json` の宣言フィードを取得して行う。任意URLの
+取得入口は設けない。**被覆が証明するのは「宣言したフィードを取得できた」ことだけ**で、
+そのチャネルの全発信者を監視できたことではない。miss は「宣言したフィードに
+載らなかった」という意味であり、真の非発生ではない。
+
+証跡は取得時点の JST 日付にしか記録できない（後付けの日付は fail-closed で拒否）。
+被覆窓は前回取得から今回取得までで、初回は長さ0なので連鎖は2日目から成立する。
+
 被覆記録は Evidence Ledger から導出し（`record_source_coverage.py --from-evidence`）、
 `derived_from` に evidence_id を残す。被覆記録が1件も無い間はモデル昇格を拒否する。
 
