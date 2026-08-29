@@ -31,6 +31,7 @@
   [E] outcome_channel=E3 の hit_criteria が E3 の固定一次ソース（JPCERT/CC・IPA・CERT/CC）の
       いずれかを発行主体として名指ししている
   [E] related_observation_ids が実在する観測 ID を指している
+  [E] 新証拠なしに同一CVEを再予報していない（改善計画 §5.1・--all 時のみ）
   [W] E1 の範囲が「YYYY-MM-DD 以降」のように終点を明示していない
   [W] E3 の hit_criteria に米国機関名が併記されている（文脈言及か的中条件かの確認を促す）
   [W] related_observation_ids の参照先観測が予報の主題（CVE番号）と一致しない
@@ -319,6 +320,49 @@ def check_file(path):
     return errors, warnings
 
 
+def check_reforecast(paths, effective_from="2026-08-30"):
+    """新証拠なしの同一CVE再予報を検出する（改善計画 §5.1・§11 の fail-closed 条件）。
+
+    同じCVEを翌日以降にもう一度予報すると、当たるまで試行を繰り返すのと同じになり、
+    予報件数が独立試行でなくなる。実測では E1 24件のうち3組が同一CVEの再予報で、
+    いずれも両方とも外れだった（CVE-2026-20896 / -59310 / -71362）。
+
+    「新証拠」の判定は evidence_ids の差分で行う。前回の予報が参照していない
+    evidence_id が1件以上含まれていれば新証拠ありとみなす。evidence_ids を持たない
+    v1.0 の予報は判定材料がないため対象外（遡及して violation にしない・原則D）。
+    """
+    errors = []
+    seen = {}  # cve -> (forecast_date, forecast_id, frozenset(evidence_ids))
+    for path in paths:
+        try:
+            with open(path, encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            continue
+        if data.get("_schema_version") != "2.0":
+            continue
+        fdate = data.get("_forecast_date") or os.path.basename(path)[:10]
+        if fdate < effective_from:
+            continue
+        for fc in data.get("forecasts", []):
+            te = fc.get("target_event") or {}
+            entity = te.get("entity_id")
+            if not entity:
+                continue
+            ev = frozenset(fc.get("evidence_ids") or [])
+            prev = seen.get(entity)
+            if prev and not (ev - prev[2]):
+                errors.append(
+                    f"{os.path.basename(path)}: {fc.get('forecast_id')}: "
+                    f"{entity} は {prev[0]}（{prev[1]}）で予報済みで、新しい証拠がない。"
+                    "新情報は既存予報の証拠更新として扱い、期限を延長せずに再予報しない"
+                    "（改善計画 §5.1）"
+                )
+            if not prev or (ev - prev[2]):
+                seen[entity] = (fdate, fc.get("forecast_id"), ev | (prev[2] if prev else frozenset()))
+    return errors
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--date", help="検査対象日 YYYY-MM-DD（既定: JST の本日）")
@@ -346,6 +390,16 @@ def main():
             print(f"  [W] {m}")
         total_e += len(errors)
         total_w += len(warnings)
+
+    # 再予報の検査は日をまたいだ比較が要るため、常に全履歴を走査する
+    # （--date 指定でも、その日の予報が過去の再予報でないかを見る必要がある）。
+    all_paths = sorted(glob.glob(os.path.join(FORECAST_DIR, "*.json")))
+    reforecast = check_reforecast(all_paths)
+    if reforecast:
+        print("\n=== 再予報の検査（新証拠なしの同一CVE再予報）===")
+        for m in reforecast:
+            print(f"  [E] {m}")
+        total_e += len(reforecast)
 
     print(f"\n検査ファイル数 {len(paths)} / エラー {total_e} 件 / 警告 {total_w} 件")
     return 1 if total_e else 0

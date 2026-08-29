@@ -456,6 +456,31 @@ apt_geographic_spillover（中央値21日）など、外部可視化までの中
 
 **M4 KEVスナップショット**: 各予報に発行時点のKEV状態（dateAdded / ランサムフラグ / 参照セット）を `kev_snapshot` として記録し、検証時に再登録（変化なし）を非的中判別できるようにする。
 
+**M5 測定固定フィールド（2026-08-30 発行分から必須・改善計画 Phase 0）**
+
+新規予報は `_schema_version: "2.0"` で出力し、次を必ず埋める。1つでも欠けると
+`validate_forecasts.py` / `validate_temporal_integrity.py` が予報の公開を止める。
+
+| フィールド | 内容 |
+|---|---|
+| `issued_at_utc` | 予報を固定した実時刻（UTC） |
+| `cutoff_at_utc` | 入力に使える証拠の上限時刻。`issued_at_utc` 以前 |
+| `content_sha256` | 予報本文の canonical JSON ハッシュ（`content_sha256` と `verified_outcome` を除く） |
+| `evidence_ids` | Step 0.5 の Evidence Ledger のID。**URLではなくIDで参照する**。1件以上必須 |
+| `target_event` | 構造化した的中条件。**採点はこれだけで行う**（`hit_criteria` は表示用） |
+| `forecast_probability` | 窓内発火の予測確率（0〜1）。**主表示** |
+| `reference_base_rate` | スキルなしの参照母集団の発火率（0〜1） |
+| `model_version` | 予報ロジックの版（人手選別なら `human-v1`） |
+
+- **E1 予報には `source_type: cisa_kev` の証拠を必ず含める**。発行時点のスナップショットが
+  無いと「その時点で未収載だった」ことを後から再検証できず、ゲートが落とす。
+- 発行時点で既に KEV 収載済みの CVE は E1 対象にできない（初回追加は起こりえない）。
+- `confidence` は移行期のあいだ **`low` を上限**とし、並び替え・Tier昇格・通知制御に
+  使わない（実測で弁別力ゼロ・逆転しているため。詳細は
+  `pipeline-forecast-verification.md`「確率とラベルの分離」）。
+- **新証拠なしに同一CVEを再予報しない**。新情報は既存予報の証拠更新として扱い、
+  最初の期限を延長しない（実測で E1 24件中3組が再予報・いずれも両方外れ）。
+
 **M4-b hit_criteria の日付範囲の記述規則（2026-08-29 追加・Issue #162）**
 
 E1 予報の `hit_criteria` に書く `dateAdded` の判定範囲は、次の一意な形で機械的に記述する。

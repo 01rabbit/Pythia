@@ -75,6 +75,50 @@ Section 4: SOC推奨情報
 - Web 検索は data/raw に無い情報の補完としてのみ使用する（再現性確保のため）
 - data/raw が取得できない・空の場合はその旨をレポート meta に記録し、Web 検索へフォールバックする
 
+### Step 0.5: 証拠のスナップショット（必須・すべての収集の前）
+
+判定に使う一次ソースを、**取得時刻と内容ハッシュ付き**で Evidence Ledger へ固定する。
+
+```bash
+python3 scripts/snapshot_sources.py --date "${TODAY}"
+python3 scripts/run_manifest.py --date "${TODAY}" --step snapshot_sources --status ok \
+  --output "forecaster/evidence/manifests/${TODAY:0:4}/${TODAY:5:2}/${TODAY}.json" \
+  --version "snapshot_sources/1.0"
+```
+
+**なぜ最初に置くか**: 予報の先見性は「発行時刻より前に取得した証拠だけを使った」ことで
+初めて立証できる。収集を始めた後に取得した KEV を後から参照すると、
+結果を見てから予報を作ったのか区別できなくなる。Step 3.5 の予報は
+`evidence_ids` でここに載った証拠だけを参照し、`cutoff_at_utc` より後に取得された
+証拠は使えない（`validate_temporal_integrity.py` が機械的に落とす）。
+
+KEV スナップショットは内容ハッシュ名で重複排除されるため、CISA が更新した回数分しか
+増えない。**「その時点でこの CVE は KEV 未収載だった」という負の事実**を後から
+再検証できることが目的であり、URL だけの記録では代替できない。
+
+### Step 3.6: 戦術予報 TF-1（shadow・第1段階）
+
+Step 3.5 の正規化が終わった後に実行する。**第1段階では発行しない**（全件 shadow）。
+
+```bash
+python3 scripts/build_tactical_state.py --date "${TODAY}"
+python3 scripts/generate_tactical_candidates.py --date "${TODAY}"
+python3 scripts/validate_transition_claims.py --date "${TODAY}"   # fail-closed
+```
+
+**なぜ shadow から始めるか**: TF-1 が予報したい状態遷移は、コーパス全体で
+**前進遷移が36件しか観測されていない**（同一CVEが2日以上に出現するのは664件中122件）。
+`exploitation_stage` を持つ観測が481件あることは、遷移が481件観測されたことを
+意味しない。参照率を内部実績だけから点推定できる段階ではないため、
+shadow 運用の目的は**この母集団を前向きに作ること**である。
+
+**棄権も全件保存する**。当たりそうな候補だけを残すと precision はいくらでも作れる。
+`_coverage` に shadow / 棄権 / 発行 の件数と棄権理由の内訳を必ず残す。
+
+`validate_transition_claims.py` は placeholder 遷移（`technique-chains.json` の
+`transition_matrix` は初期推定値のまま）・許可外遷移・後退遷移・established でない
+actor への actor 固有予報を拒否する。1件でもあれば戦術予報を出さない。
+
 ### Step 0.7: 網羅スイープ（必須・Step 1 の前）
 
 Step 1 の収集を始める**前に**、調査窓内のCVE母集団を機械列挙で確定させる。
@@ -263,8 +307,15 @@ Pythia では加えて**観測母集団の偏りがベースライン・base_rat
 - コミット直前に `python3 scripts/check_reported.py`・`python3 scripts/validate_observations.py`・
   `python3 scripts/validate_forecasts.py`・`python3 scripts/check_knowledge_untouched.py`・
   `python3 scripts/check_report_consistency.py --date ${TODAY}`・
-  `python3 scripts/check_forecast_consistency.py --date ${TODAY}` を
+  `python3 scripts/check_forecast_consistency.py --date ${TODAY}`・
+  `python3 scripts/validate_temporal_integrity.py --date ${TODAY}`・
+  `python3 scripts/run_manifest.py --date ${TODAY} --verify` を
   実行し、違反があれば修正してからコミットする
+  （validate_temporal_integrity は「結果より前に予報を固定した」ことを反証可能にする
+  fail-closed ゲート。証拠の取得時刻が cutoff より後／発行時点で既に KEV 収載済み／
+  検証窓が発行時刻より前に始まる／予報本文のハッシュ不一致 のいずれかがあれば
+  **予報を公開しない**。詳細は pipeline-forecast-verification.md「M5 時刻順序ゲート」。
+  ★戦況・観測の成果物は予報ゲートが落ちても生成・コミットしてよい）
   （check_forecast_consistency は当日発行分の予報について、hit_criteria の日付範囲が
   `[forecast_date, deadline_date]` と一致するか〔M4-b・Issue #162〕、E3 の的中条件が
   固定一次ソースを名指ししているか〔Issue #132 所見1〕、`related_observation_ids` が
