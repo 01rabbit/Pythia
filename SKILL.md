@@ -111,9 +111,45 @@ python3 scripts/generate_tactical_candidates.py --date "${TODAY}" \
   --issued-at-utc "${TACTICAL_ISSUED_UTC}"
 python3 scripts/validate_tactical_integrity.py --date "${TODAY}" # fail-closed
 python3 scripts/validate_transition_claims.py --date "${TODAY}"   # fail-closed
+
+# ★監視の成否を Evidence Ledger（Step 0.5 の取得証跡）から導出して記録する。
+#   これが無いと窓満了後の未確認を miss にできない。手で ok を打ってはならない。
+python3 scripts/record_source_coverage.py --rule tf1-exploitation-v3 --from-evidence "${TODAY}"
+python3 scripts/record_source_coverage.py --rule tf1-poc-v3 --from-evidence "${TODAY}"
+
+# ★採点が実際に成立しているかを監視する（沈黙を正常と区別する）
+mkdir -p ".cache/daily-security-intel/${TODAY}"
+python3 scripts/verify_tactical_forecasts.py --all --json \
+  > ".cache/daily-security-intel/${TODAY}/tactical-verification.json"
+python3 scripts/check_verification_health.py \
+  --from-json ".cache/daily-security-intel/${TODAY}/tactical-verification.json"
+
 python3 scripts/render_tactical_forecast_section.py --date "${TODAY}" \
   --inject-report "outputs/${TODAY}/${TODAY}-security-report.json"
 ```
+
+被覆は**取得証跡から導出する**（`--from-evidence`）。Evidence Ledger に取得記録が無い
+チャネルは自動的に `error` になり、被覆を主張しない。導出元の `evidence_id` は
+`derived_from` に残るので、「監視できていた」という主張は後から検証できる。
+手で `--source-status` を打つのは証跡が取れない例外時のみで、その記録は
+`derivation: "manual"` として区別される。
+
+成功と記録した区間だけが窓を覆ったとみなされ、覆えた場合にのみ未確認を miss にできる。
+成否を記録しない限り miss は永久に0件のままで、
+**「予報が当たっている」と「miss を記録できない」が区別できなくなる**。
+被覆記録が1件も無い間は `validate_model_promotion.py` がモデル昇格も拒否する。
+
+現状 Step 0.5 が取得証跡を残すのは CISA KEV（`cert`）だけなので、
+`vendor` / `telemetry_provider` は `error` になり `coverage_proven` は成立しない。
+これは正しい状態であり、**miss を立てるにはベンダー/テレメトリの collector 接続が要る**。
+
+集約ニュース経由の一次原典は、将来の**自動collectorが取得証跡を残した場合だけ**
+`source.primary_reference` に記録できる。手動のURL取得入口は設けない。証跡が無ければ
+`primary_reference` は書かない（書いても `primary_reference_unverified` として昇格しない）。
+
+`check_verification_health.py` は、窓が満了した候補があるのに hit も miss も0件のとき、
+および not_observed が resolved の大半を占めるときに落ちる。
+`blocked_by_channel`（事象は起きたが宣言チャネルで確認できなかった件数）も警告する。
 
 **なぜ shadow から始めるか**: TF-1 が予報したい状態遷移は、コーパス全体で
 **バックフィル除外・episode統合後の前進遷移は13件しか観測されていない**（2026-08-29時点）。

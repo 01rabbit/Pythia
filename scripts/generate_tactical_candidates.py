@@ -52,21 +52,29 @@ JST = timezone(timedelta(hours=9))
 
 MODEL_VERSION = "tf1-reference-only-v1"
 MATCHING_RULE_BY_EVENT = {
-    "TF1_POC_PUBLICATION": "tf1-poc-v2",
-    "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": "tf1-exploitation-v2",
-    "TF1_BROADER_EXPLOITATION_CONFIRMATION": "tf1-exploitation-v2",
-    "TF1_POST_EXPLOIT_ACTIVITY_PUBLICATION": "tf1-exploitation-v2",
-    "TF1_BROAD_CAMPAIGN": "tf1-exploitation-v2",
+    "TF1_POC_PUBLICATION": "tf1-poc-v3",
+    "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": "tf1-exploitation-v3",
+    "TF1_BROADER_EXPLOITATION_CONFIRMATION": "tf1-exploitation-v3",
+    "TF1_POST_EXPLOIT_ACTIVITY_PUBLICATION": "tf1-exploitation-v3",
+    "TF1_BROAD_CAMPAIGN": "tf1-exploitation-v3",
 }
 
-# 一次確認源（設計 §7 verification_sources）。event type ごとに固定する。
-VERIFICATION_SOURCES = {
-    "TF1_POC_PUBLICATION": ["vendor", "exploit_db", "github"],
-    "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": ["vendor", "cert", "telemetry_provider"],
-    "TF1_BROADER_EXPLOITATION_CONFIRMATION": ["vendor", "cert", "telemetry_provider"],
-    "TF1_POST_EXPLOIT_ACTIVITY_PUBLICATION": ["vendor", "cert"],
-    "TF1_BROAD_CAMPAIGN": ["vendor", "cert"],
-}
+# ★verification_sources は matching rule の universe から単一生成する。
+#   候補が宣言する確認源と、採点側が受理する確認源を二重管理すると必ず食い違う
+#   （PR #175 レビュー指摘3: 候補は vendor/exploit_db/github、採点は vendor/cert だった）。
+UNIVERSES_PATH = os.path.join(REPO_ROOT, "forecaster", "knowledge", "source-universes.json")
+
+
+def _load_universes():
+    with open(UNIVERSES_PATH, encoding="utf-8") as f:
+        return json.load(f)["universes"]
+
+
+def verification_sources_for(event_type, universes=None):
+    """採点宇宙が宣言する確認チャネルを、そのまま候補の verification_sources にする。"""
+    universes = _load_universes() if universes is None else universes
+    universe = universes.get(MATCHING_RULE_BY_EVENT[event_type], {})
+    return list(universe.get("sources") or [])
 
 
 def load_states(day):
@@ -194,7 +202,7 @@ def build(day, state_doc, rates, issued_at_utc):
                     "window_start_utc": issued_s,
                     "window_end_utc": (issued + timedelta(days=max(HORIZONS_DAYS)))
                         .isoformat().replace("+00:00", "Z"),
-                    "verification_sources": VERIFICATION_SOURCES.get(event_type, []),
+                    "verification_sources": verification_sources_for(event_type),
                     "matching_rule_version": MATCHING_RULE_BY_EVENT[event_type],
                     "visibility_model": visibility,
                 },

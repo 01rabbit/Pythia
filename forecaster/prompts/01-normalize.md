@@ -58,7 +58,26 @@
 - ★R3・R4 の evidence-based 原則は厳守する。情報源が技術・帰属を明示していない場合は `techniques: []` / `actor_group: null` とし、推測による付与は引き続き禁止。「明示」の操作的定義（具体的な手口・挙動の記述があれば付与する）は R3 を参照。
 - ATT&CK 以外の体系（ATLAS 等）の技術は `techniques`（ATT&CK 専用）に入れない。該当する ATT&CK 技術が情報源から導ける場合のみ付与する（例: 盗用コンピュート悪用 → T1496 Resource Hijacking）。
 
----
+### R6: 一次公表の原典を構造化して残す（source.primary_reference）
+
+報道記事は一次組織の報告を中継していることが多い（例: BleepingComputer が CISA の
+勧告を伝える）。検証で「宣言した確認チャネルで確認できたか」を判定する根拠は
+**掲載元ホスト**であり、`source.name` に一次組織名を書いても昇格しない。
+
+- 実測: `「CISA / BleepingComputer」`の URL ホストは `www.bleepingcomputer.com` であり
+  `cisa.gov` ではない。名前の言及で受理すると二次報道が確認事実になってしまう。
+- 集約ニュース掲載の記事でも、**記事が一次公表の原典URLを明示している**場合は
+  `source.primary_reference` に
+  `{organization, url, evidence_id, citation_basis, published_at_utc?}` を入れる。
+- **`evidence_id` は必須**である。自動collectorが原典を Evidence Ledger へ取得
+  （スナップショット）した場合だけ、その `evidence_id` を書く。証跡の `source_url` が
+  `url` と一致しない場合（URL fragment は除く）、
+  および証跡が存在しない場合は昇格しない（`primary_reference_unverified`）。
+  **許可ホストのURLを書くだけでは hit を作れない。**
+- `citation_basis` には「記事中のどの記述が原典を指しているか」を書く。
+- **本文からの推測で埋めてはならない**（原則1）。原典URLが記事に無い、または
+  自動取得証跡が無い場合は `primary_reference` ごと省略する。
+  省略時は掲載元ホストで判定され、集約ニュースなら hit にならない（fail-closed）。
 
 ## 正規化ルール（厳守）
 

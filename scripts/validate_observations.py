@@ -79,7 +79,10 @@ REQUIRED_TECHNIQUE_KEYS = ["technique_id", "tactic", "evidence"]
 ALLOWED_IOC_KEYS = {"value", "type", "defanged", "note"}
 REQUIRED_IOC_KEYS = ["value", "type"]
 
-ALLOWED_SOURCE_KEYS = {"name", "url", "type"}
+ALLOWED_SOURCE_KEYS = {"name", "url", "type", "primary_reference"}
+REQUIRED_PRIMARY_REFERENCE_KEYS = ("organization", "url", "evidence_id", "citation_basis")
+ALLOWED_PRIMARY_REFERENCE_KEYS = set(REQUIRED_PRIMARY_REFERENCE_KEYS) | {"published_at_utc"}
+EVIDENCE_ID_RE = re.compile(r"^ev-\d{8}-[0-9a-f]{5}$")
 REQUIRED_SOURCE_KEYS = ["name", "url", "type"]
 
 # enum 定義（observation.schema.json に準拠）
@@ -173,6 +176,37 @@ def check_string_array(rep, fname, obs_id, obj, key):
             rep.add(fname, obs_id, f"{key}[{i}]", f"文字列ではない: {item!r}")
 
 
+def check_primary_reference(rep, fname, obs_id, reference):
+    """一次公表の原典（source.primary_reference）を検証する。
+
+    ★受理には Evidence Ledger の取得証跡が要る。許可ホストのURLを書くだけで
+      hit を作れると計測が汚染されるため、evidence_id と citation_basis を必須にする。
+      証跡との実際の突合（URLホスト一致）は verify_tactical_forecasts 側で行う。
+    """
+    field = "source.primary_reference"
+    if not isinstance(reference, dict):
+        rep.add(fname, obs_id, field, f"オブジェクトではない: {type(reference).__name__}")
+        return
+    for key in REQUIRED_PRIMARY_REFERENCE_KEYS:
+        if not reference.get(key):
+            rep.add(fname, obs_id, f"{field}.{key}", "必須フィールドが欠落")
+    for key in reference:
+        if key not in ALLOWED_PRIMARY_REFERENCE_KEYS:
+            rep.add(fname, obs_id, f"{field}.{key}", "スキーマに定義されていないフィールド")
+    for key in ("organization", "url", "citation_basis"):
+        if key in reference and not isinstance(reference[key], str):
+            rep.add(fname, obs_id, f"{field}.{key}",
+                    f"文字列ではない: {reference[key]!r}")
+    eid = reference.get("evidence_id")
+    if isinstance(eid, str) and not EVIDENCE_ID_RE.match(eid):
+        rep.add(fname, obs_id, f"{field}.evidence_id",
+                f"形式違反（ev-YYYYMMDD-xxxxx）: {eid!r}")
+    published = reference.get("published_at_utc")
+    if published is not None and not isinstance(published, str):
+        rep.add(fname, obs_id, f"{field}.published_at_utc",
+                f"文字列でも null でもない: {published!r}")
+
+
 def check_source(rep, fname, obs_id, source):
     if not isinstance(source, dict):
         rep.add(fname, obs_id, "source", f"オブジェクトではない: {type(source).__name__}")
@@ -187,6 +221,8 @@ def check_source(rep, fname, obs_id, source):
         rep.add(fname, obs_id, "source.name", f"文字列ではない: {source['name']!r}")
     if "url" in source and not isinstance(source["url"], str):
         rep.add(fname, obs_id, "source.url", f"文字列ではない: {source['url']!r}")
+    if "primary_reference" in source:
+        check_primary_reference(rep, fname, obs_id, source["primary_reference"])
     if "type" in source and source["type"] not in ENUM_SOURCE_TYPE:
         rep.add(
             fname, obs_id, "source.type",
