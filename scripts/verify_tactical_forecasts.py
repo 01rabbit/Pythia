@@ -25,7 +25,7 @@ from tactical_time import (  # noqa: E402
     observation_available_at, parse_utc,
 )
 from source_channels import (  # noqa: E402
-    load_registry, needs_primary_reference, resolve,
+    load_evidence_records, load_registry, needs_primary_reference, resolve,
 )
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -102,6 +102,7 @@ def load_subject_states():
     per = defaultdict(list)
     evidence = load_evidence_index(ROOT)
     channels = load_registry()
+    ev_records = load_evidence_records()
     for path in sorted(glob.glob(OBS_GLOB)):
         try:
             with open(path, encoding="utf-8") as f:
@@ -112,8 +113,11 @@ def load_subject_states():
             available = observation_available_at(obs, evidence)
             # date-onlyの事象は同日内の前後を証明できない。日初を下限とする。
             event_start = conservative_date_availability(obs["observed_date"]) - timedelta(days=1)
-            channel, _basis = resolve(obs.get("source"), channels)
-            if needs_primary_reference(obs.get("source"), channels):
+            channel, basis = resolve(obs.get("source"), channels, ev_records)
+            if basis == "primary_reference_unverified":
+                # 原典URLはあるが Evidence Ledger の取得証跡が無い。昇格させない。
+                channel = "primary_reference_unverified"
+            elif needs_primary_reference(obs.get("source"), channels, ev_records):
                 # 集約ニュース掲載だが一次組織を引用しており、原典URLが未記録。
                 # 昇格はしないが、構造化すれば受理できることを診断で示す。
                 channel = "aggregator_news_citing_primary"

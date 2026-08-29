@@ -129,10 +129,12 @@
               "type": "object",
               "required": [
                 "organization",
-                "url"
+                "url",
+                "evidence_id",
+                "citation_basis"
               ],
               "additionalProperties": false,
-              "description": "集約ニュース経由の記事が引用している一次公表の原典（任意）。確認チャネルの判定は掲載元ホストで行うため、集約ニュース掲載の記事を一次確認として受理させたい場合はここに原典URLを構造化して残す。本文からの推測で埋めてはならない（原則1）。記事が原典を明示している場合のみ。",
+              "description": "集約ニュース経由の記事が引用している一次公表の原典（任意）。確認チャネルの判定は掲載元ホストで行うため、集約ニュース掲載の記事を一次確認として受理させたい場合はここに原典を構造化して残す。★受理には Evidence Ledger の取得証跡（evidence_id）が必須で、その証跡の source_url ホストが url と一致していなければ昇格しない。許可ホストのURLを書くだけでは hit を作れない。本文からの推測で埋めてはならない（原則1）。",
               "properties": {
                 "organization": {
                   "type": "string",
@@ -143,19 +145,21 @@
                   "format": "uri",
                   "description": "一次公表の原典URL。このホストでチャネルを判定する"
                 },
+                "evidence_id": {
+                  "type": "string",
+                  "pattern": "^ev-\\\\d{8}-[0-9a-f]{5}$",
+                  "description": "原典を取得した Evidence Ledger の evidence_id。取得時刻と内容ハッシュはここで担保する"
+                },
+                "citation_basis": {
+                  "type": "string",
+                  "description": "引用根拠。記事中のどの記述が原典を指しているか"
+                },
                 "published_at_utc": {
                   "type": [
                     "string",
                     "null"
                   ],
                   "description": "一次公表の発行日時（記事が明示している場合のみ）"
-                },
-                "citation_basis": {
-                  "type": [
-                    "string",
-                    "null"
-                  ],
-                  "description": "引用根拠（記事中のどの記述に基づくか）"
                 }
               }
             }

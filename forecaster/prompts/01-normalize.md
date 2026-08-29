@@ -67,9 +67,15 @@
 - 実測: `「CISA / BleepingComputer」`の URL ホストは `www.bleepingcomputer.com` であり
   `cisa.gov` ではない。名前の言及で受理すると二次報道が確認事実になってしまう。
 - 集約ニュース掲載の記事でも、**記事が一次公表の原典URLを明示している**場合は
-  `source.primary_reference` に `{organization, url, published_at_utc, citation_basis}`
-  を入れる。判定はその URL のホストで行う。
-- **本文からの推測で埋めてはならない**（原則1）。原典URLが記事に無ければ省略する。
+  `source.primary_reference` に
+  `{organization, url, evidence_id, citation_basis, published_at_utc?}` を入れる。
+- **`evidence_id` は必須**である。原典を Evidence Ledger へ取得（スナップショット）して
+  その `evidence_id` を書く。証跡の `source_url` ホストが `url` と一致しない場合、
+  および証跡が存在しない場合は昇格しない（`primary_reference_unverified`）。
+  **許可ホストのURLを書くだけでは hit を作れない。**
+- `citation_basis` には「記事中のどの記述が原典を指しているか」を書く。
+- **本文からの推測で埋めてはならない**（原則1）。原典URLが記事に無い、または
+  原典を取得できない場合は `primary_reference` ごと省略する。
   省略時は掲載元ホストで判定され、集約ニュースなら hit にならない（fail-closed）。
 
 ## 正規化ルール（厳守）

@@ -23,16 +23,44 @@
   ただし「解決できなかった」ことは呼び出し側で計数し、沈黙させない。
 """
 
+import glob
 import json
 import os
 from urllib.parse import urlparse
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REGISTRY = os.path.join(REPO_ROOT, "forecaster", "knowledge", "source-channels.json")
+MANIFEST_GLOB = os.path.join(REPO_ROOT, "forecaster", "evidence", "manifests",
+                             "*", "*", "*.json")
 
 UNATTRIBUTED = "unattributed"
 AGGREGATOR = "aggregator_news"
 _CACHE = {}
+
+
+def load_evidence_records(pattern=MANIFEST_GLOB):
+    """evidence_id -> {source_url, retrieved_at_utc} を返す。
+
+    ★primary_reference を一次確認として受理するには、その原典が Evidence Ledger に
+      取得証跡（URL と取得時刻）付きで存在しなければならない。許可ホストのURLを
+      書くだけで hit を作れると、計測が汚染される（PR #175 レビュー指摘）。
+    """
+    if pattern in _CACHE:
+        return _CACHE[pattern]
+    out = {}
+    for path in sorted(glob.glob(pattern)):
+        try:
+            with open(path, encoding="utf-8") as f:
+                doc = json.load(f)
+        except (OSError, json.JSONDecodeError):
+            continue
+        for ev in doc.get("evidence", []):
+            eid = ev.get("evidence_id")
+            if eid and ev.get("source_url") and ev.get("retrieved_at_utc"):
+                out[eid] = {"source_url": ev["source_url"],
+                            "retrieved_at_utc": ev["retrieved_at_utc"]}
+    _CACHE[pattern] = out
+    return out
 
 
 def load_registry(path=REGISTRY):
@@ -67,17 +95,34 @@ def _channel_of_url(url, table):
     return table["hosts"].get(host_of(url))
 
 
-def resolve_channel(source, table=None):
+def resolve_channel(source, table=None, evidence=None):
     """observation.source から確認チャネルを返す（後方互換のため文字列を返す）。"""
-    return resolve(source, table)[0]
+    return resolve(source, table, evidence)[0]
 
 
-def resolve(source, table=None):
+def evidence_backs_reference(reference, evidence):
+    """primary_reference が Evidence Ledger の取得証跡に裏づけられているか。
+
+    要件（すべて満たすときのみ昇格を許す）:
+      1. reference.evidence_id が Ledger に存在する
+      2. その証跡の source_url のホストが reference.url のホストと一致する
+      3. 証跡に取得時刻がある（load_evidence_records が保証）
+    """
+    if not evidence:
+        return False
+    record = evidence.get((reference or {}).get("evidence_id"))
+    if not record:
+        return False
+    return host_of(record["source_url"]) == host_of(reference.get("url"))
+
+
+def resolve(source, table=None, evidence=None):
     """(channel, basis) を返す。
 
     解決順:
-      1. source.primary_reference.url のホスト（非 aggregator のときのみ採用）
-         — 集約ニュースが一次公表の原典URLを構造化して持っている場合の昇格経路
+      1. source.primary_reference.url のホスト
+         — ただし **Evidence Ledger の取得証跡に裏づけられている場合のみ**。
+           許可ホストのURLを書くだけでは昇格しない（計測汚染の防止）。
       2. source.url のホスト
       3. どちらも登録簿に無ければ UNATTRIBUTED
     """
@@ -85,9 +130,14 @@ def resolve(source, table=None):
     source = source or {}
 
     reference = source.get("primary_reference") or {}
-    ref_channel = _channel_of_url(reference.get("url"), table)
-    if ref_channel and ref_channel != AGGREGATOR:
-        return ref_channel, "primary_reference_url"
+    if reference:
+        ref_channel = _channel_of_url(reference.get("url"), table)
+        if ref_channel and ref_channel != AGGREGATOR:
+            if evidence_backs_reference(reference, evidence):
+                return ref_channel, "primary_reference_url"
+            # 証跡が無い原典URLは昇格させない。掲載元ホストへ落とす。
+            fallback = _channel_of_url(source.get("url"), table)
+            return (fallback or UNATTRIBUTED), "primary_reference_unverified"
 
     channel = _channel_of_url(source.get("url"), table)
     if channel:
@@ -111,10 +161,10 @@ def cited_primary_organizations(source, table=None):
     return found
 
 
-def needs_primary_reference(source, table=None):
+def needs_primary_reference(source, table=None, evidence=None):
     """掲載元が集約ニュースだが一次組織を引用しており、原典URLが未記録か。"""
     table = load_registry() if table is None else table
-    channel, _basis = resolve(source, table)
+    channel, _basis = resolve(source, table, evidence)
     if channel != AGGREGATOR:
         return False
     if (source or {}).get("primary_reference", {}).get("url"):

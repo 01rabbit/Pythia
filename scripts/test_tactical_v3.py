@@ -78,17 +78,52 @@ def main():
                             "url": "https://www.bleepingcomputer.com/x"}, table)[0]
                 == "aggregator_news",
                 "名前が一次組織を挙げていても掲載元ホストが集約ニュースなら昇格しない")
-    assert_true(sc.resolve({"name": "BleepingComputer",
-                            "url": "https://www.bleepingcomputer.com/x",
-                            "primary_reference": {"organization": "CISA",
-                                                  "url": "https://www.cisa.gov/y"}}, table)
-                == ("cert", "primary_reference_url"),
-                "構造化された原典URLがあれば一次確認として受理する")
     universes = gtc._load_universes()
     assert_true(all(gtc.verification_sources_for(event)
                     == universes[gtc.MATCHING_RULE_BY_EVENT[event]]["sources"]
                     for event in gtc.MATCHING_RULE_BY_EVENT),
                 "候補のverification_sourcesが採点宇宙から単一生成される")
+
+    # primary_reference は Evidence Ledger の取得証跡に裏づけられたときだけ昇格する
+    evidence = {"ev-20260829-aaaaa": {"source_url": "https://www.cisa.gov/kev",
+                                      "retrieved_at_utc": "2026-08-29T05:00:00Z"}}
+    aggregator = {"name": "BleepingComputer", "url": "https://www.bleepingcomputer.com/x"}
+    backed = {**aggregator, "primary_reference": {
+        "organization": "CISA", "url": "https://www.cisa.gov/kev",
+        "evidence_id": "ev-20260829-aaaaa", "citation_basis": "記事末尾のCISA勧告リンク"}}
+    assert_true(sc.resolve(backed, table, evidence) == ("cert", "primary_reference_url"),
+                "取得証跡に裏づけられた原典URLは一次確認として受理する")
+    unbacked = {**aggregator, "primary_reference": {
+        "organization": "CISA", "url": "https://www.cisa.gov/kev",
+        "evidence_id": "ev-20260829-bbbbb", "citation_basis": "x"}}
+    assert_true(sc.resolve(unbacked, table, evidence)
+                == ("aggregator_news", "primary_reference_unverified"),
+                "取得証跡の無い原典URLでは昇格しない（許可ホストのURLだけでhitを作れない）")
+    mismatched = {**aggregator, "primary_reference": {
+        "organization": "X", "url": "https://www.microsoft.com/y",
+        "evidence_id": "ev-20260829-aaaaa", "citation_basis": "x"}}
+    assert_true(sc.resolve(mismatched, table, evidence)
+                == ("aggregator_news", "primary_reference_unverified"),
+                "証跡のURLホストと一致しない原典URLでは昇格しない")
+
+    # observation validator が primary_reference を受け付け、不備を検出する
+    import validate_observations as vo
+    def _check(reference):
+        rep = vo.Reporter()
+        vo.check_primary_reference(rep, "f", "o", reference)
+        return rep
+    assert_true(not _check(backed["primary_reference"]).violations,
+                "完全な primary_reference が observation 検証を通る")
+    assert_true(_check({"organization": "CISA", "url": "https://www.cisa.gov/kev"}).violations,
+                "evidence_id と citation_basis が無い primary_reference を拒否する")
+
+    # 被覆記録が日次パイプラインへ接続されている
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    skill = open(os.path.join(repo_root, "SKILL.md"), encoding="utf-8").read()
+    assert_true("record_source_coverage.py" in skill and "--from-evidence" in skill,
+                "日次パイプラインが取得証跡から被覆を記録する")
+    assert_true("check_verification_health.py" in skill,
+                "日次パイプラインが採点の成立を監視する")
 
     news_point = [(datetime(2026, 9, 1, tzinfo=timezone.utc),
                    datetime(2026, 9, 1, tzinfo=timezone.utc), POC_PUBLIC, "obs-news",
@@ -147,7 +182,7 @@ def main():
                             {}, {})
     assert_true(event1 == event2 and event1["summary_fact"] == malicious["summary"],
                 "入力内の命令文を実行せず単なる不変データとして保存する")
-    print("\nTactical v3 adversarial tests: 15 passed")
+    print("\nTactical v3 adversarial tests: 21 passed")
     return 0
 
 
