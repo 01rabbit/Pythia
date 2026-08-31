@@ -1,0 +1,76 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-01 11:00 JST
+調査期間: 2026-08-31 07:00 〜 2026-09-01 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+[1]. 「フリーLLMエンドポイント」偽装ハニーポットでコーディングエージェントのセッション情報が窃取される手口をSANSが報告
+観点: AI攻撃関連
+採用契機: ε
+------------------------------------------------------------
+
+優先度: 中
+対象: コーディングエージェント（opencode等のターミナル型AIコーディングツール）／LLM推論エンドポイント
+
+【24時間以内の変化】
+[SANS Internet Storm Center 2026-08-31] 著者が運用するインターネット公開推論ハニーポットが2026-08-30、FOFA等のスキャナ経由で「fofa-ds-NNNNN」等の命名規則により発見・偽装され、認証情報 Bearer free として配布される『無料LLMバックエンド』インフラに組み込まれていたことを確認・報告。実際のコーディングエージェント（opencode）セッションが誤ってルーティングされ、91秒間に210リクエスト、ユーザー名・ディレクトリ構成・PowerShell出力・ツールマニフェスト（bash/read/write等11ツール定義）を含む88メッセージの完全トランスクリプトが流出した実例を提示
+
+【概要】
+攻撃者（または悪意ある仲介インフラ運営者）が、正規のモデル名を騙る『無料LLMエンドポイント』を用意し、開発者が設定するモデルbaseURLの誤設定・誤ルーティングを悪用してコーディングエージェントのセッションを乗っ取る手口が実測された。エンドポイント側はエージェントが送信するツールマニフェスト（bash実行・ファイル読み書き権限等）を参照し、tool_choice=autoの設定次第では.aws/credentialsやSSH鍵の読み取りなど任意のコマンド実行を要求できる構造的リスクを持つ。国内でもAIコーディングツールの業務利用が拡大しており、信頼できないbaseURL・無料/野良LLMエンドポイントの利用がサプライチェーン的な資格情報漏えい経路になり得る。
+
+【推奨アクション】
+・開発者・エンジニアに対し、コーディングエージェントのモデルbaseURLは「curl | sudo bash」と同等の実行リスクを持つものとして扱い、契約済み・検証済みのプロバイダ以外への接続を禁止する
+・bash実行・ファイル読み書き等の破壊的操作を伴うツール呼び出しは自動承認（--autoフラグ等）を無効化し、都度承認を必須にする
+・エージェント関連の設定ファイル・環境変数（モデルエンドポイントURL、APIキー）の棚卸しを行い、承認済みプロバイダ外のURLが設定されていないか確認する
+・SOC/IT部門でAIコーディングツールの利用実態（ツール名・接続先エンドポイント）を把握していない場合は利用実態調査を実施する
+Splunk SPL: index=proxy OR index=firewall dest_port=443 | search NOT dest_domain IN ("api.anthropic.com","api.openai.com","<approved_provider_domains>") user_agent="*opencode*" OR user_agent="*coding-agent*" | stats count by src_ip dest_domain user_agent
+→ モデル名フィールドが 'fofa-*' / 'shodan-*' / 'auto/*' 等IPオクテット由来の命名になっている、または認証ヘッダに 'Bearer free' 等の値が使われている通信は高リスクシグナルとして扱う
+
+【参照】
+https://isc.sans.edu/diary/rss/33298
+
+------------------------------------------------------------
+[2]. Anthropic、Claude Code向けCompliance APIを拡張しAIエージェントのローカル可視性とアイデンティティガバナンスを強化
+観点: AI攻撃関連
+採用契機: γ, η
+------------------------------------------------------------
+
+優先度: 中
+対象: Claude Code（Anthropic）／AIコーディングエージェント全般のガバナンスツール
+
+【24時間以内の変化】
+[The Hacker News 2026-08-31] 2026-08-11に追加されたClaude Code Compliance APIのローカルセッション用エンドポイント（セッション一覧・個別セッション取得・メッセージトランスクリプト取得）を軸に、Managed Settings・Compliance API・エンドポイント側収集の3層構成と『Identity Governance』（所有者・目的・認証情報・権限・アクセス経路の紐付け）の運用ガイダンスを新たに整理した解説記事が公開された
+
+【概要】
+Claude Codeはファイル読み書き・シェルコマンド実行・MCPツール呼び出しを開発者の資格情報で実行できるため、セキュリティチームにとって可視性の空白になりやすい。Anthropicが提供するCompliance APIはセッションのテキスト・tool_use・tool_resultをすべて記録し、bashコマンドやMCPサーバー利用状況を後から解析できるようにする。ただし記事は『テレメトリは何が起きたかを示すが、それをエージェントの所有者・目的・認証情報・権限・アクセス経路に結び付けるガバナンスがなければ不十分』と指摘しており、単純な監視API有効化だけでは不足する点に注意が必要。国内でもAIコーディングエージェントの業務導入が進む中、資格情報漏えいや権限逸脱の検知体制整備の参考になる。
+
+【推奨アクション】
+・組織内で稼働するClaude Code（および他のAIコーディングエージェント）のインベントリを作成し、利用スキル・MCPサーバー接続先を棚卸しする
+・MDM/レジストリ経由でManaged Settings（MCPサーバーのホワイトリスト化、bashコマンドの正規表現フィルタ、スキル実行制限）を配布し、未承認拡張の利用を制限する
+・Compliance APIのローカルセッションエンドポイントを有効化し、セッショントランスクリプト（既定30日保持）から機密情報露出や不審なプラグイン使用の検知ルールを整備する
+・エージェントの目的終了時に権限を失効させる運用（Identity Governance）を、既存のIAM/PAMポリシーと連携させる形で検討する
+→ 単一の不正スキル・MCPサーバーが検知された場合、同一スキルが組織内のどのエージェントで使用されているかの横展開状況（ヒートマップ）を確認し、影響範囲を特定する
+
+【参照】
+https://thehackernews.com/2026/08/securing-claude-code-new-compliance-api.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（SOC推奨情報）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・Microsoft asks users to ignore 'Antivirus is turned off' errors（BleepingComputer） → Defenderアップデート後の誤警告というMicrosoft側の運用上の不具合であり、CVE・ゼロデイ・AI攻撃のいずれの観点（pipeline-soc-recommend.md 観点1〜3）にも該当しない。脆弱性でも攻撃でもなくSOC推奨情報の収集対象定義から外れる
+・Nightmare Eclipse Drops 'HardBreacher' Kaspersky Product Exploit（SecurityWeek） → セキュリティ製品（Kaspersky Endpoint Security）の脆弱性悪用でη条件に該当し得るが、Nightmare Eclipseという特定APTグループの活動として帰属されており、pipeline-soc-recommend.mdの除外ルール（トラックB/APT活動に帰属した情報はSOCセクションで扱わない）によりSection 2 APT活動側の管轄とする
+・Aurora Ransomware Operators Use Cursor AI in Attacks Against 10 Targets（The Hacker News）／Anthropic Warns Claude Users of Infostealer Malware Infections（SecurityWeek）／Anthropic Users Hit by Infostealer Attacks, Session Thefts（Dark Reading） → 攻撃者によるAI活用・AIサービス利用者への実攻撃であり、Section 1 AI攻撃動向（pipeline-ai-1.md）の収集対象そのものに該当するため、SOC推奨情報（Section1〜3不採用分の受け皿）では扱わない
+・North Korean Job Fraud Expands Beyond IT Into Healthcare and Sales（The Hacker News）／China-Linked Fire Ant Hijacks Cisco Routers（The Hacker News）／Chinese Fire Ant hackers turn Cisco routers into spying platforms（BleepingComputer）／ValleyRAT Backdoor Hides in Signed Adware（The Hacker News、Silver Fox帰属） → 国家主体（北朝鮮）または特定グループ（Fire Ant／Silver Fox）に帰属された活動であり、Section 2 APT活動（Step 1b）の管轄。SOC推奨情報の除外ルール（トラックB/APT帰属情報の除外）に該当
+・「Langflow」に複数の深刻な脆弱性 - 修正版が公開（Security NEXT）／Critical Ruby on Rails Vulnerability in Attackers' Crosshairs（SecurityWeek）／ServiceNow Patches 3 Critical Code Injection Vulnerabilities（SecurityWeek） → 採番済みCVEを伴う深刻度の高い脆弱性でありpipeline-1-cve.mdのトラックA/B判定対象。SOC推奨情報の観点1はSection3不採用分（CVSS 9.0未満・KEV未登録・PoC未公開等）に限定されるため、これらはCVEパイプライン側の管轄とし対象外とする
+
+本日の集計:
+SOC推奨情報 — 高0件 / 中2件 / 低0件 / 除外5件
+
+========================================

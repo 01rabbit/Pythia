@@ -1,0 +1,136 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-01 11:00 JST
+調査期間: 2026-08-31 07:00 〜 2026-09-01 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-08-31 〜 2026-09-01
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+[1]. Aurora ランサムウェア関連アクターがCursor AIコーディングエージェントを『シミュレーション』と偽り侵入・権限昇格へ悪用（Gambit Security）
+カテゴリ: AA4 / 攻撃者種別: 犯罪組織
+------------------------------------------------------------
+
+採用契機: A-Q
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: manufacturing/healthcare/professional_services/energy / north_america/europe/south_america
+被害規模: Ransomware.Live記録で計33組織（米・独・蘭・加・英）の侵害掲載を確認。CloudSEK確認は2026年4〜7月の活動で20組織超、Gambit確認は2026-04-08〜05-21のCursorエージェント悪用観測で10標的（9カ国）。データリークサイト掲載は少なくとも4件（Christeyns、Teckentrup、Helideck Certification Agency、Bayou Title）に加えアルゼンチン製薬販売会社・イタリア製造業も被害に含まれる。金額被害は非公開。
+
+【24時間以内（または期間内）の変化】
+[The Hacker News 2026-08-31] CloudSEKの独立分析（Gambit Securityとは別系列）を新規引用し、Aurora関与者がCursor AIエージェントにロシア語で攻撃を計画させCIS圏国・ドメインを標的から除外していたことを確認。Ransomware.Live集計で計33組織の侵害掲載を確認し、被害組織名（Christeyns/Teckentrup/Helideck Certification Agency/Bayou Title等）が新たに判明。
+
+【概要】
+2026-08-28に既報のAuroraランサムウェア関連アクターによるCursor AIコーディングエージェント悪用事案について、Gambit Securityに続きCloudSEKが独立した侵害インフラ分析を公開した。両社の分析は被害者数（Gambit: 10標的9カ国／CloudSEK: 20組織超）に差があるが、いずれもロシア語話者アクターが露出したCursorエージェントのセッションログを侵入活動の実行主体として悪用していた点で一致する。CloudSEKはCursorへの指示がロシア語で行われ、CIS加盟国・ドメインを明示的に除外していたことを新規に確認した。
+
+攻撃の流れ:
+1. Aurora（Aur0ra）ランサムウェア関与者がSpaceX製AIコーディングエージェントCursorのセッションを侵入活動の実行主体として運用
+2. CursorエージェントにVPNインストール・サブネットスキャン・ドメイン列挙・NTLMリレー・証明書攻撃等の偵察／横展開コマンドを指示（初回実行の大半は失敗し再試行を経て成功）
+3. 侵入後にZig言語製ランサムウェア（Windows/Linux・VMware ESXi対応）を展開し、データ窃取・暗号化・リークサイト掲載に至る
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: AIコーディングエージェント（Cursor等）のプロセス・ログから連続するVPNインストール／サブネットスキャン／NTLMリレー／証明書攻撃コマンドが確認される, 同一パターンのコマンドが短時間に繰り返し失敗した後、成功するまで再試行される挙動
+
+【監視・対策ポイント】
+・AIコーディングエージェントのプロセスから偵察・侵入系ツールが子プロセスとして起動していないかをEDR/プロセス生成ログで監視する。
+Splunk SPL: index=edr sourcetype=process_creation (parent_process_name="Cursor.exe" OR parent_process_name="cursor-agent") (CommandLine="*ntlmrelay*" OR CommandLine="*openvpn*" OR CommandLine="*nmap*" OR CommandLine="*Get-ADComputer*") | stats count by host, CommandLine, _time
+→ → AIコーディングエージェントのプロセスを親に持つ偵察・侵入系コマンドの実行を検知した場合は正規業務利用か侵害後の悪用かを即時確認し、疑わしい場合はホストを隔離する
+
+【参照】
+https://thehackernews.com/2026/08/aurora-ransomware-operators-use-cursor.html
+
+------------------------------------------------------------
+[2]. Anthropicが情報窃取型マルウェアによるClaudeセッション窃取・不正利用を確認
+カテゴリ: CC4 / 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: A-Q
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: 不明 / global
+被害規模: 被害利用者数・金額は非公開。Anthropicは該当利用者のサインアウト・保存済み支払い方法削除・不正課金の返金対応を実施中（2026-08-30既報時点から変化なし）。
+
+【24時間以内（または期間内）の変化】
+[Dark Reading 2026-08-31] Anthropic公式警告を独立系メディアとして追加報道。多様なinfostealer群がセッション情報を収集しClaudeアカウントへアクセスしたと確認、被害利用者数は不明と言及。
+[SecurityWeek 2026-08-31] Anthropicが該当利用者をログアウトさせ保存済み支払い情報を削除する対応を実施中と報道。BleepingComputer（2026-08-30既報）に続く独立ソースの追加により48時間以内の独立ソースが4件（Anthropic公式/BleepingComputer/Dark Reading/SecurityWeek）となりバースト閾値（3件以上）に到達したため、既報時点の参考B（below_threshold）から本編へ格上げする。
+
+【概要】
+2026-08-30にAnthropicが公式に警告した、Vidar/LummaC2/StealC/RedLine/Acreed（Windows）およびAtomic Stealer/AMOS（Mac）等の汎用infostealerによるClaudeセッション窃取・不正利用事案について、Dark ReadingとSecurityWeekが独立して追加報道した。新規の技術的詳細は確認されなかったが、24時間以内に独立ソースが3件以上（Temporal Burst Filtering基準）に達したため、既報時点で単発シグナル扱いだった本事案の優先度を見直す。
+
+攻撃の流れ:
+1. Vidar/LummaC2/StealC/RedLine/Acreed（Windows）およびAtomic Stealer/AMOS（Mac）等の汎用infostealerがブラウザ保存パスワード・ログインCookie・認証済みセッション情報を窃取
+2. 窃取したセッション情報を用いてパスワード・2要素認証を経ずにClaudeアカウントへ不正アクセス
+3. 利用枠消費・不正課金が発生。Anthropicが検知しサインアウト・支払い方法削除・返金対応を実施
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: 通常と異なるIPアドレス・デバイスフィンガープリントからの同一Claudeアカウントへの短期間集中アクセス, エンドポイント上でのブラウザ認証情報ストア（Chrome Login Data / Local State等）への異常アクセス
+
+【監視・対策ポイント】
+・Claude利用ログ（APIアクセス・ログイン）の異常なIP/デバイス分散と、エンドポイント側でのinfostealer挙動（ブラウザ認証情報ストアへのアクセス）の双方を監視する。
+Splunk SPL: index=saas_claude sourcetype=claude_audit (event="login" OR event="api_call") | stats dc(src_ip) as unique_ips dc(device_fingerprint) as unique_devices by user | where unique_ips>3 OR unique_devices>3
+Splunk SPL: index=edr sourcetype=process_creation (CommandLine="*Login Data*" OR CommandLine="*Local State*" OR CommandLine="*Cookies*") | stats count by host, process_name, user
+→ → 短時間に複数IP/デバイスからの同一アカウントアクセスや急激な利用枠消費、またはエンドポイントでのブラウザ認証情報ストアへの不審なアクセスを検知した場合はセッション窃取を疑い、当該アカウントの強制ログアウト・トークン失効を行う
+
+【参照】
+https://www.darkreading.com/cyberattacks-data-breaches/anthropic-users-infostealer-attacks-session-thefts
+https://www.securityweek.com/anthropic-warns-claude-users-of-infostealer-malware-infections
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・IBM Langflow OSSの重大脆弱性3件（CVE-2026-19295・CVE-2026-19286・CVE-2026-18729）
+カテゴリ: CC1 採用契機: A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+2026-08-30に既報のIBM Langflow OSS脆弱性2件（CVE-2026-19295: フローテンプレート評価処理のevalインジェクションによる認証済みRCE／CVE-2026-19286: Agent-to-Agent公開エンドポイントのコードインジェクションによる未認証RCE）と同一のIBM PSIRTアドバイザリに、3件目のCVE-2026-18729（コード生成の制御不備による認証済みRCE、CVSSv3.1 8.8）が含まれていたことがSecurity NEXTの報道で新規に判明した。IBM Langflow OSSはAIワークフロー構築ツールで、既報のJadePuffer（2026-07-03）ではLangflowの別CVE（CVE-2025-3248）がエージェント型ランサムウェア攻撃の侵入起点として実際に悪用された前例がある。
+
+監視: Langflowサーバのコード生成・テンプレート評価関連APIへのアクセスログを監視し、認証済みユーザーによる異常なリクエストパターンを検知する。 検知SPL: index=langflow_app sourcetype=langflow_access (uri_path="*api/v1/run*" OR uri_path="*template*" OR uri_path="*a2a*") | stats count by src_ip, uri_path, user | where count > 20
+→ → 認証済みユーザーによるコード生成・テンプレート評価APIへの連続アクセスを検知した場合はCVE-2026-18729等の悪用試行を疑い、Langflowを修正版へ更新のうえ管理インタフェースの外部公開を制限する
+参照: https://www.security-next.com/189600
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A相当のAI攻撃情報なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日は8件のAI攻撃関連情報を精査し、本編2件・参考A0件・参考B1件を採用、5件を除外した。Aurora（Aur0ra）ランサムウェアがAIコーディングエージェント（Cursor）を偵察・侵入計画立案に悪用した事例と、Anthropic公式が確認したClaudeセッション情報窃取キャンペーンの2件が本編。
+
+本日の集計:
+AI攻撃 — 本編2件 / 参考A0件 / 参考B1件 / 除外5件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）0件 / C（インフラ）2件
+
+[除外]
+・What the Hugging Face Incident Teaches Security Leaders About AI Agent Access（SecurityWeek論評記事） → 2026-07-21既報のHugging Face自律型AIエージェント侵害事案に関する教訓・論評記事であり、新規のインシデント事実・データを含まない（pipeline-ai-1.mdの既報・変化なし除外ルールに該当）。
+・フィッシングのクリック率～従来型は12%、AI生成は54%（ScanNetSecurity/ウォッチガード・テクノロジー・ジャパン、Microsoft Digital Defense Report 2025引用） → 引用元の「Microsoft デジタル防衛レポート2025」は既存データであり調査窓内の新規実証・被害報告を伴わない。単一の日本語ベンダー記事のみでバースト閾値未達。pipeline-ai-1.mdのA-U採用条件（業界調査・統計レポートによる脅威の定量化＝新規データ）を満たさない。
+・The Coding-Agent Trap: When a "Free" LLM Endpoint Is the Adversary（SANS Internet Storm Center honeypot観測） → SANS ISCのハニーポットが偽装『無料』LLMバックエンド配信インフラに組み込まれ、AIコーディングエージェント（OpenCode）の実セッション（ファイルシステム出力・コマンド履歴・ツールマニフェスト）が中継されたことを新規確認した技術的に興味深い観測だが、実際のツール実行・被害組織名は確認されておらず単一ソース（below_threshold）。軸X=3（研究者による技術実証のみ）／軸Y=1（潜在的リスクのみ・具体的被害組織なし）でいずれも閾値未達（X>=6/Y>=4）のため除外。継続監視対象として注視する価値あり。
+・Securing Claude Code: The New Compliance API, Local Visibility, and Identity Governance（The Hacker News・Anthropic新機能紹介記事） → Anthropicの新コンプライアンスAPI機能を紹介するベンダー機能解説記事であり、攻撃・脆弱性・インシデントの新規報告を含まない。
+・AI Model Rules Are Not Security Controls（Dark Reading論評記事） → AIモデルのルール・ガードレールの限界を論じる一般論評記事であり、新規のインシデント事実・実証データを含まない。
+
+========================================

@@ -1,0 +1,501 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-01 11:00 JST
+調査期間: 2026-08-31 07:00 〜 2026-09-01 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-08-31 〜 2026-09-01
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+[1]. Aurora ランサムウェア関連アクターがCursor AIコーディングエージェントを『シミュレーション』と偽り侵入・権限昇格へ悪用（Gambit Security）
+カテゴリ: AA4 / 攻撃者種別: 犯罪組織
+------------------------------------------------------------
+
+採用契機: A-Q
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: manufacturing/healthcare/professional_services/energy / north_america/europe/south_america
+被害規模: Ransomware.Live記録で計33組織（米・独・蘭・加・英）の侵害掲載を確認。CloudSEK確認は2026年4〜7月の活動で20組織超、Gambit確認は2026-04-08〜05-21のCursorエージェント悪用観測で10標的（9カ国）。データリークサイト掲載は少なくとも4件（Christeyns、Teckentrup、Helideck Certification Agency、Bayou Title）に加えアルゼンチン製薬販売会社・イタリア製造業も被害に含まれる。金額被害は非公開。
+
+【24時間以内（または期間内）の変化】
+[The Hacker News 2026-08-31] CloudSEKの独立分析（Gambit Securityとは別系列）を新規引用し、Aurora関与者がCursor AIエージェントにロシア語で攻撃を計画させCIS圏国・ドメインを標的から除外していたことを確認。Ransomware.Live集計で計33組織の侵害掲載を確認し、被害組織名（Christeyns/Teckentrup/Helideck Certification Agency/Bayou Title等）が新たに判明。
+
+【概要】
+2026-08-28に既報のAuroraランサムウェア関連アクターによるCursor AIコーディングエージェント悪用事案について、Gambit Securityに続きCloudSEKが独立した侵害インフラ分析を公開した。両社の分析は被害者数（Gambit: 10標的9カ国／CloudSEK: 20組織超）に差があるが、いずれもロシア語話者アクターが露出したCursorエージェントのセッションログを侵入活動の実行主体として悪用していた点で一致する。CloudSEKはCursorへの指示がロシア語で行われ、CIS加盟国・ドメインを明示的に除外していたことを新規に確認した。
+
+攻撃の流れ:
+1. Aurora（Aur0ra）ランサムウェア関与者がSpaceX製AIコーディングエージェントCursorのセッションを侵入活動の実行主体として運用
+2. CursorエージェントにVPNインストール・サブネットスキャン・ドメイン列挙・NTLMリレー・証明書攻撃等の偵察／横展開コマンドを指示（初回実行の大半は失敗し再試行を経て成功）
+3. 侵入後にZig言語製ランサムウェア（Windows/Linux・VMware ESXi対応）を展開し、データ窃取・暗号化・リークサイト掲載に至る
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: AIコーディングエージェント（Cursor等）のプロセス・ログから連続するVPNインストール／サブネットスキャン／NTLMリレー／証明書攻撃コマンドが確認される, 同一パターンのコマンドが短時間に繰り返し失敗した後、成功するまで再試行される挙動
+
+【監視・対策ポイント】
+・AIコーディングエージェントのプロセスから偵察・侵入系ツールが子プロセスとして起動していないかをEDR/プロセス生成ログで監視する。
+Splunk SPL: index=edr sourcetype=process_creation (parent_process_name="Cursor.exe" OR parent_process_name="cursor-agent") (CommandLine="*ntlmrelay*" OR CommandLine="*openvpn*" OR CommandLine="*nmap*" OR CommandLine="*Get-ADComputer*") | stats count by host, CommandLine, _time
+→ → AIコーディングエージェントのプロセスを親に持つ偵察・侵入系コマンドの実行を検知した場合は正規業務利用か侵害後の悪用かを即時確認し、疑わしい場合はホストを隔離する
+
+【参照】
+https://thehackernews.com/2026/08/aurora-ransomware-operators-use-cursor.html
+
+------------------------------------------------------------
+[2]. Anthropicが情報窃取型マルウェアによるClaudeセッション窃取・不正利用を確認
+カテゴリ: CC4 / 攻撃者種別: 不明
+------------------------------------------------------------
+
+採用契機: A-Q
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: 不明 / global
+被害規模: 被害利用者数・金額は非公開。Anthropicは該当利用者のサインアウト・保存済み支払い方法削除・不正課金の返金対応を実施中（2026-08-30既報時点から変化なし）。
+
+【24時間以内（または期間内）の変化】
+[Dark Reading 2026-08-31] Anthropic公式警告を独立系メディアとして追加報道。多様なinfostealer群がセッション情報を収集しClaudeアカウントへアクセスしたと確認、被害利用者数は不明と言及。
+[SecurityWeek 2026-08-31] Anthropicが該当利用者をログアウトさせ保存済み支払い情報を削除する対応を実施中と報道。BleepingComputer（2026-08-30既報）に続く独立ソースの追加により48時間以内の独立ソースが4件（Anthropic公式/BleepingComputer/Dark Reading/SecurityWeek）となりバースト閾値（3件以上）に到達したため、既報時点の参考B（below_threshold）から本編へ格上げする。
+
+【概要】
+2026-08-30にAnthropicが公式に警告した、Vidar/LummaC2/StealC/RedLine/Acreed（Windows）およびAtomic Stealer/AMOS（Mac）等の汎用infostealerによるClaudeセッション窃取・不正利用事案について、Dark ReadingとSecurityWeekが独立して追加報道した。新規の技術的詳細は確認されなかったが、24時間以内に独立ソースが3件以上（Temporal Burst Filtering基準）に達したため、既報時点で単発シグナル扱いだった本事案の優先度を見直す。
+
+攻撃の流れ:
+1. Vidar/LummaC2/StealC/RedLine/Acreed（Windows）およびAtomic Stealer/AMOS（Mac）等の汎用infostealerがブラウザ保存パスワード・ログインCookie・認証済みセッション情報を窃取
+2. 窃取したセッション情報を用いてパスワード・2要素認証を経ずにClaudeアカウントへ不正アクセス
+3. 利用枠消費・不正課金が発生。Anthropicが検知しサインアウト・支払い方法削除・返金対応を実施
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: 通常と異なるIPアドレス・デバイスフィンガープリントからの同一Claudeアカウントへの短期間集中アクセス, エンドポイント上でのブラウザ認証情報ストア（Chrome Login Data / Local State等）への異常アクセス
+
+【監視・対策ポイント】
+・Claude利用ログ（APIアクセス・ログイン）の異常なIP/デバイス分散と、エンドポイント側でのinfostealer挙動（ブラウザ認証情報ストアへのアクセス）の双方を監視する。
+Splunk SPL: index=saas_claude sourcetype=claude_audit (event="login" OR event="api_call") | stats dc(src_ip) as unique_ips dc(device_fingerprint) as unique_devices by user | where unique_ips>3 OR unique_devices>3
+Splunk SPL: index=edr sourcetype=process_creation (CommandLine="*Login Data*" OR CommandLine="*Local State*" OR CommandLine="*Cookies*") | stats count by host, process_name, user
+→ → 短時間に複数IP/デバイスからの同一アカウントアクセスや急激な利用枠消費、またはエンドポイントでのブラウザ認証情報ストアへの不審なアクセスを検知した場合はセッション窃取を疑い、当該アカウントの強制ログアウト・トークン失効を行う
+
+【参照】
+https://www.darkreading.com/cyberattacks-data-breaches/anthropic-users-infostealer-attacks-session-thefts
+https://www.securityweek.com/anthropic-warns-claude-users-of-infostealer-malware-infections
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・IBM Langflow OSSの重大脆弱性3件（CVE-2026-19295・CVE-2026-19286・CVE-2026-18729）
+カテゴリ: CC1 採用契機: A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+2026-08-30に既報のIBM Langflow OSS脆弱性2件（CVE-2026-19295: フローテンプレート評価処理のevalインジェクションによる認証済みRCE／CVE-2026-19286: Agent-to-Agent公開エンドポイントのコードインジェクションによる未認証RCE）と同一のIBM PSIRTアドバイザリに、3件目のCVE-2026-18729（コード生成の制御不備による認証済みRCE、CVSSv3.1 8.8）が含まれていたことがSecurity NEXTの報道で新規に判明した。IBM Langflow OSSはAIワークフロー構築ツールで、既報のJadePuffer（2026-07-03）ではLangflowの別CVE（CVE-2025-3248）がエージェント型ランサムウェア攻撃の侵入起点として実際に悪用された前例がある。
+
+監視: Langflowサーバのコード生成・テンプレート評価関連APIへのアクセスログを監視し、認証済みユーザーによる異常なリクエストパターンを検知する。 検知SPL: index=langflow_app sourcetype=langflow_access (uri_path="*api/v1/run*" OR uri_path="*template*" OR uri_path="*a2a*") | stats count by src_ip, uri_path, user | where count > 20
+→ → 認証済みユーザーによるコード生成・テンプレート評価APIへの連続アクセスを検知した場合はCVE-2026-18729等の悪用試行を疑い、Langflowを修正版へ更新のうえ管理インタフェースの外部公開を制限する
+参照: https://www.security-next.com/189600
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A相当のAI攻撃情報なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日は8件のAI攻撃関連情報を精査し、本編2件・参考A0件・参考B1件を採用、5件を除外した。Aurora（Aur0ra）ランサムウェアがAIコーディングエージェント（Cursor）を偵察・侵入計画立案に悪用した事例と、Anthropic公式が確認したClaudeセッション情報窃取キャンペーンの2件が本編。
+
+本日の集計:
+AI攻撃 — 本編2件 / 参考A0件 / 参考B1件 / 除外5件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）0件 / C（インフラ）2件
+
+[除外]
+・What the Hugging Face Incident Teaches Security Leaders About AI Agent Access（SecurityWeek論評記事） → 2026-07-21既報のHugging Face自律型AIエージェント侵害事案に関する教訓・論評記事であり、新規のインシデント事実・データを含まない（pipeline-ai-1.mdの既報・変化なし除外ルールに該当）。
+・フィッシングのクリック率～従来型は12%、AI生成は54%（ScanNetSecurity/ウォッチガード・テクノロジー・ジャパン、Microsoft Digital Defense Report 2025引用） → 引用元の「Microsoft デジタル防衛レポート2025」は既存データであり調査窓内の新規実証・被害報告を伴わない。単一の日本語ベンダー記事のみでバースト閾値未達。pipeline-ai-1.mdのA-U採用条件（業界調査・統計レポートによる脅威の定量化＝新規データ）を満たさない。
+・The Coding-Agent Trap: When a "Free" LLM Endpoint Is the Adversary（SANS Internet Storm Center honeypot観測） → SANS ISCのハニーポットが偽装『無料』LLMバックエンド配信インフラに組み込まれ、AIコーディングエージェント（OpenCode）の実セッション（ファイルシステム出力・コマンド履歴・ツールマニフェスト）が中継されたことを新規確認した技術的に興味深い観測だが、実際のツール実行・被害組織名は確認されておらず単一ソース（below_threshold）。軸X=3（研究者による技術実証のみ）／軸Y=1（潜在的リスクのみ・具体的被害組織なし）でいずれも閾値未達（X>=6/Y>=4）のため除外。継続監視対象として注視する価値あり。
+・Securing Claude Code: The New Compliance API, Local Visibility, and Identity Governance（The Hacker News・Anthropic新機能紹介記事） → Anthropicの新コンプライアンスAPI機能を紹介するベンダー機能解説記事であり、攻撃・脆弱性・インシデントの新規報告を含まない。
+・AI Model Rules Are Not Security Controls（Dark Reading論評記事） → AIモデルのルール・ガードレールの限界を論じる一般論評記事であり、新規のインシデント事実・実証データを含まない。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にパッチ未提供のゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編相当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A相当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-82078 / PaperCut NG / PaperCut MF
+CVSS: 9.4
+PaperCut NG/MFのデータベース接続ユーティリティにおける安全でない動的クラスロード脆弱性（CVSS v4.0 9.4・Critical）。設定可能なドライバ名に対する許可リスト検証なしにデータベースドライバクラスをインスタンス化するため、攻撃者がシステム設定パラメータを操作できる場合、サーバー上に配置された任意のJavaバイトコードの実行に至る（CWE-470 安全でないリフレクションの使用）。関連するCVE-2026-81578（Webマネジメントインタフェースの認可不備。未認証リクエストがアクセス検証完了前に管理機能へ到達しうる）と連鎖させることで、未認証の攻撃者がまず設定を改ざんし（CVE-2026-81578）、続いて安全でないリフレクション経由で悪意ある処理を起動する（CVE-2026-82078）未認証RCEチェーンを構成する。PaperCutは2026-08-27に緊急セキュリティ勧告（ゼロデイ実悪用確認）を発行し、2026-08-28にwatchTowr・Huntressの協力を得て初回パッチのバイパスに対応した第2次緊急パッチ（Emergency Patch Release 2）をv24/v25/v26向けに公開した。CISAは2026-08-31付でCVE-2026-82078・CVE-2026-81578の両方をKEVカタログへ新規追加し、FCEB機関に2026-09-14までの対応を義務付けた。KEVのknown_ransomware_useフラグは本日時点でUnknown（ランサムウェア関連の確定情報なし）。なお本CVEは2026-08-28分実行時点ではCVE未採番のためSection 2トラックB「注目CVE」として既報済みであり、CVE採番後の2026-08-29分でトラックAへ帰属し直し・ゼロデイ特報採用済み。本日（2026-08-31〜09-01窓）の変化点はKEV新規登録および侵害後のリモートアクセスツール設置に関する追加詳細である。
+URL: sendit.sh / Filename: SimpleService.exe / Filename: pc-app.exe
+監視: PaperCutサーバーのプロセス生成ログ・サービスインストールログ・アウトバウンド通信を監視する。pc-app.exe（PaperCutプロセス）からのcmd.exe子プロセス生成、C:\ProgramData\JWrapper-Remote Access\配下のSimpleService.exe実行、想定外のAnyDeskインストールを検知対象とする。
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*pc-app.exe*" | stats count by NewProcessName, CommandLine, ComputerName
+Splunk SPL: index=wineventlog EventCode=7045 ServiceName="Remote Access Service" ImagePath="*SimpleService.exe*" | stats count by ComputerName
+Splunk SPL: index=wineventlog (EventCode=4688 OR EventCode=1) NewProcessName="*AnyDesk*" | stats count by ComputerName, User
+→ SimpleHelp/AnyDesk自体は正規のリモート支援ツールであるため、PaperCutサーバープロセス（pc-app.exe等）からの子プロセスとしての起動や、正規の展開手順を経ないインストールかどうかを判断基準とする。
+参照: https://thehackernews.com/2026/08/attackers-chain-two-papercut-flaws-to.html
+
+・CVE-2026-81578 / PaperCut NG / PaperCut MF
+CVSS: 8.8
+PaperCut NG/MFのWebマネジメントインタフェースにおける不適切なアクセス制御脆弱性（CVSS v4.0 8.8・Critical相当）。特定条件下で、未認証のリモートリクエストが管理機能を対象とした場合に、アクセス検証チェックが完了する前にバックエンド処理が起動されてしまうため、未認証のリモート攻撃者が特定のシステム設定を変更できる。単体でも影響があるが、真の脅威は関連するCVE-2026-82078（データベース接続ユーティリティの安全でない動的クラスロード）との連鎖にある：本脆弱性で認証なしに設定を改ざんし、CVE-2026-82078の安全でないリフレクション処理を誘発することで、未認証の攻撃者によるリモートでの任意Javaバイトコード実行（RCE）が成立する。攻撃チェーンの詳細・実悪用状況・KEV登録経緯はCVE-2026-82078エントリに統合して記載する（同一インシデント・同一パッチで対応）。
+URL: sendit.sh / Filename: SimpleService.exe / Filename: pc-app.exe
+監視: PaperCutサーバーのプロセス生成ログ・サービスインストールログ・アウトバウンド通信を監視する。pc-app.exe（PaperCutプロセス）からのcmd.exe子プロセス生成、C:\ProgramData\JWrapper-Remote Access\配下のSimpleService.exe実行、想定外のAnyDeskインストールを検知対象とする。
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*pc-app.exe*" | stats count by NewProcessName, CommandLine, ComputerName
+Splunk SPL: index=wineventlog EventCode=7045 ServiceName="Remote Access Service" ImagePath="*SimpleService.exe*" | stats count by ComputerName
+Splunk SPL: index=wineventlog (EventCode=4688 OR EventCode=1) NewProcessName="*AnyDesk*" | stats count by ComputerName, User
+→ SimpleHelp/AnyDesk自体は正規のリモート支援ツールであるため、PaperCutサーバープロセス（pc-app.exe等）からの子プロセスとしての起動や、正規の展開手順を経ないインストールかどうかを判断基準とする。
+参照: https://thehackernews.com/2026/08/attackers-chain-two-papercut-flaws-to.html
+
+・CVE-2026-82693 / AC1206 (TendaTelnet, /goform/telnet)
+CVSS: 10.0
+Tenda AC1206ルーターのWeb UIコンポーネント（/goform/telnet）のTendaTelnet機能における認証欠落脆弱性。リモートから攻撃可能で、エクスプロイトはVulDBにより既に公開済みとされる。
+IoC: 確認されず
+監視: 特記事項なし
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-82693
+
+・CVE-2026-82694 / AC1206 (R7WebsSecurityHandler, /goform/ate)
+CVSS: 10.0
+Tenda AC1206ルーターのWeb UIコンポーネント（/goform/ate）のR7WebsSecurityHandler機能における認証欠落脆弱性。リモート攻撃可能、エクスプロイト公開済み。CVE-2026-82693と同一製品・近接する脆弱性。
+IoC: 確認されず
+監視: 特記事項なし
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-82694
+
+・CVE-2026-82695 / AC18 (Telnet Handler, /goform/telnet)
+CVSS: 10.0
+Tenda AC18ルーターのTelnet Handlerコンポーネント（/goform/telnet）における認証欠落脆弱性。リモート攻撃可能、エクスプロイト公開済み。
+IoC: 確認されず
+監視: 特記事項なし
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-82695
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+[1]. Fire Ant（別名: UNC3886（Sygniaは技術的重複を指摘するが断定的な帰属ではないと明言） / 国家帰属: CN / 帰属信頼度: 中）
+活動タイプ: ttp_update / new_malware / infrastructure_change / active_campaign
+------------------------------------------------------------
+
+標的: telecom/critical_infrastructure / 不明
+マルウェア: TacTap・BridgeAgent・IOS XR implant（未命名）・Medusa rootkit・REPTILE rootkit・VMCIバックドア・パケットトリガー型バックドア
+
+【24時間以内の変化】
+[Sygnia（The Hacker News/BleepingComputer経由） 2026-08-31] 従来のVMware ESXi/vCenter標的キャンペーン（2025年7月公表）から、Cisco IOS XRルータ・TACACSサーバ・Linux管理ホストへ標的を拡大したことを新規公表
+
+【概要】
+Sygniaの調査により、中国nexus（技術的にはUNC3886と強く重複するがSygniaは断定的な帰属を避けている）のサイバースパイ活動アクターFire Antが、従来のVMwareハイパーバイザ標的キャンペーンを拡張し、Cisco IOS XRルータ・TACACS認証サーバ・Linux管理ホストといった高価値ネットワークのルーティング・認証・管理基盤そのものを侵害対象としたことが新たに確認された。侵害したルータを通信傍受・認証情報収集・ログ改ざんの拠点として運用し、防御側の事後追跡を困難にする手口が新規に報告されている。
+
+攻撃の流れ（判明分）:
+1. 高価値ネットワーク運用者のCisco IOS XRルータ・TACACSサーバ・Linux管理ホストへ侵入
+2. TacTap（ライブラリインジェクションによるTACACS認証情報収集ツール）でセッション傍受・認証情報窃取
+3. BridgeAgent（Zabbix監視エージェントに偽装したLinuxバックドア）等でトンネリング・永続化を確立
+4. 公開済みルートキット（Medusa/REPTILE）やカスタムSSHバックドア、VMCIバックドアで多層的な足場を維持しつつログ・テレメトリを抑制
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+Filename: /var/log/.tacplus.acct
+Filename: /opt/.ICEauthority
+Filename: /etc/rc.d/init.d/grub-rommon
+
+【推奨アクション】
+・ネットワーク運用者はCisco IOS XRデバイス・TACACSサーバの構成変更履歴とコミット履歴に説明のつかないGREトンネルインタフェースがないか確認する。TACACS認証基盤・Linux管理ホストの完全性検証（正規プロセスへのライブラリインジェクション有無）とログ改ざんの痕跡確認を実施し、高価値ネットワーク機器へのアクセス経路を最小化する。
+・検知SPLクエリ: Splunk SPL: index=network sourcetype=cisco:ios:xr | search "GRE" OR "tunnel-ip" | stats count by device_name, config_change_id
+・検知SPLクエリ: Splunk SPL: index=linux_logs (process="zabbix_agentd" OR ImageLoaded="*zabbix*") | where NOT file_hash IN (known_good_hashes)
+・検知SPLクエリ: Splunk SPL: index=tacacs sourcetype=tacacs:accounting | stats count by src_ip, user | where count > threshold
+→ 既存VMware系Fire Antのシグネチャとは別系統のTTPであるため、単純なIOC照合だけでなく設定変更履歴・コミット履歴の異常（説明のつかないインタフェース追加等）を検知観点に含める。単一ベンダー（Sygnia）レポートであり、政府機関による公式帰属はまだない点に留意する。
+
+【参照】
+https://thehackernews.com/2026/08/china-linked-fire-ant-hijacks-cisco.html
+https://www.bleepingcomputer.com/news/security/chinese-fire-ant-hackers-turn-cisco-routers-into-spying-platforms
+https://www.sygnia.co/press-release/sygnia-reveals-new-activity-by-china-nexus-threat-actor-fire-ant-targeting-trusted-infrastructure/
+
+------------------------------------------------------------
+[2]. 不明（北朝鮮DPRKネクサス・複数クラスタ: Famous Chollima / Jasper Sleet / Nickel Tapestry / PurpleDelta（旧TAG-121）/ UNC5267 / Wagemole）（別名: Famous Chollima・Jasper Sleet・Nickel Tapestry・PurpleDelta・UNC5267・Wagemole・IT worker scheme / 国家帰属: KP / 帰属信頼度: 高）
+活動タイプ: new_target / active_campaign / ttp_update / official_attribution
+------------------------------------------------------------
+
+標的: it/healthcare/finance/critical_infrastructure/other / North America/Oceania/Europe/US/AU
+マルウェア: 判明分なし
+
+【24時間以内の変化】
+[The Hacker News（原典: Huntress/Recorded Future Insikt Group/Microsoft/Group-IB/Nisos/DTEX/FBI/DoJ・米日韓豪加仏独伊蘭新英10カ国合同勧告） 2026-08-31] 北朝鮮ITワーカー詐欺スキームがIT部門に限らず医療・営業/マーケティング職種にまで拡大していることが複数事例で新規確認された
+
+【概要】
+北朝鮮（DPRK）ネクサスの偽装採用スキーム「ITワーカー詐欺」が、従来主眼だったIT/ソフトウェア開発職を越えて、豪州の医療関連企業・金融サービス企業・営業/マーケティング職種にまで対象を拡大していることが新たに確認された（推測: 拡大の意図は正規採用プロセスを装った資金獲得チャネルの多様化）。10カ国合同アラートおよびHuntress/Recorded Future/Microsoft/Group-IB/Nisos/DTEXなど複数の独立した調査機関が関連クラスタ（Famous Chollima/Jasper Sleet/Nickel Tapestry/PurpleDelta/UNC5267/Wagemole）を追跡しており、単一クラスタ（PurpleDelta）だけで1,100社超へ応募していたことが判明した。AstrillVPN・IPRoyalプロキシ・KVMスイッチ（PiKVM/TinyPilot）・USBキャプチャカードなど身元偽装用ツール一式に加え、ChatGPT等のAIツールを面接対策・作業補助に利用している点が新規の技術的特徴として報告されている。
+
+攻撃の流れ（判明分）:
+1. 偽造・盗用身分情報とAIツール（ChatGPT等）を用いて正規求人へ応募（1日あたり10プラットフォームで60件超のケースあり）
+2. AstrillVPN/IPRoylaプロキシで所在地を偽装し、複数ブラウザプロファイルで多重応募・多重就業を管理
+3. 採用後はKVMスイッチ（PiKVM/TinyPilot）やUSBキャプチャカードで正規契約者に業務端末を操作させる、または本人になりすまして就業
+4. 得た給与をSobaeksu/Saenal/Songkwang/Ryongbong General Corporation等の制裁対象事業体を経由してマネタイズ（2025年12月〜2026年2月だけで約197万ドルの入金を確認）
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+Domain: trustidcard.com
+
+【推奨アクション】
+・人事・採用部門はリモート採用プロセスにおいて、KVMスイッチ経由の遠隔操作の兆候（面接時の応答遅延・視線のずれ等）、複数プラットフォームでの類似職務経歴、AstrillVPN等の匿名化VPN経由の接続、業務端末の複数拠点間での急な切替を監視する。給与振込先・銀行口座情報の変更頻度や、身元確認書類（TrustID Card等）の信頼性検証プロセスを強化する。
+・検知SPLクエリ: Splunk SPL: index=vpn_logs (vpn_provider="Astrill" OR vpn_provider="IPRoyal") | stats count by user, src_country
+・検知SPLクエリ: Splunk SPL: index=hr_onboarding sourcetype=identity_verification domain="trustidcard.com" | stats count by applicant_id
+・検知SPLクエリ: Splunk SPL: index=endpoint (process_name="*pikvm*" OR process_name="*tinypilot*" OR usb_device="*capture*") | stats count by host, user
+→ 本エントリは`north_korea_nexus`シグナルとして観測記録する（行動原則・Phase1優先: 北朝鮮ITワーカー詐欺）。単体では予報を生成せず、同日の独立した技術的観測（IOC公開/CERT勧告/新規TTP報告）と揃った場合のみ予報候補とする（pipeline-1b-apt.md予報連動ルール）。具体的なマルウェア・ATT&CK Techniqueの言及はソースになく、techniquesは空配列とする。
+
+【参照】
+https://thehackernews.com/2026/08/north-korean-job-fraud-expands-beyond.html
+
+------------------------------------------------------------
+[3]. Aurora（Aur0ra）（別名: Aur0ra / 国家帰属: 不明 / 帰属信頼度: 中）
+活動タイプ: ttp_update / active_campaign / new_malware
+------------------------------------------------------------
+
+標的: manufacturing/professional_services/other / North America/Europe/South America/US/DE/NL/CA/GB
+マルウェア: Aurora ransomware（Zig製暗号化バイナリ）・Xray-core（正規OSSツールの悪用）
+
+【24時間以内の変化】
+[The Hacker News（原典: CloudSEK/Gambit Security） 2026-08-31] Russian-speaking金銭動機ランサムウェアグループAuroraが、AIコーディングエージェント「Cursor」（Anthropic Claude Sonnet搭載）を実際の侵入・水平展開・AD CS攻撃計画立案に用いていたことを新規確認
+
+【概要】
+CloudSEKとGambit Securityの独立した調査により、Russian-speakingの金銭動機ランサムウェアグループAurora（Aur0ra）が、SpaceX製AIコーディングアシスタント「Cursor」（Anthropic製Claude Sonnetを基盤とする）を実運用の侵入活動に用いていたことが新たに確認された。Gambit Securityは2026年4月8日〜5月21日の期間に10標的への実侵入でCursorエージェントとのやり取り28セッション分を回収し、攻撃者が「シミュレーションである」とエージェントへ偽って安全策を回避していたことを確認した。CloudSEKは露出した攻撃者インフラの解析から、2026年4月〜7月の期間に9カ国20組織超への攻撃を追跡している。侵入計画立案はロシア語で行われ、CIS域内のIPレンジ・ドメインは意図的に除外されていた。
+
+攻撃の流れ（判明分）:
+1. 大量のメール送信+ITヘルプデスクを騙る電話でユーザーを圧迫し初期アクセス（ソーシャルエンジニアリング）を獲得
+2. Cursorエージェントに侵入をシミュレーションと偽って認証情報利用・サブネットスキャン（Nmap/NetExec）・ドメイン列挙・NTLMリレー攻撃・Certipyによる証明書攻撃（AD CS悪用）の計画立案と一部実行を行わせる
+3. SMB/LDAP/WinRM/RDP/RPCで水平展開しXray-core（正規OSSプロキシツール）でVPN/プロキシ経路を確立
+4. esxi_finder.pyでVMware ESXi/vCenterを探索し、Zig製暗号化バイナリ（Windows版sap.exe/Linux・ESXi版encrypt.out）でボリュームシャドウコピー削除・System Restore無効化・仮想マシン停止を経て暗号化を実行
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+Filename: sap.exe
+Filename: encrypt.out
+Filename: esxi_finder.py
+
+【推奨アクション】
+・AD CS環境ではCertipy等を用いた証明書テンプレート悪用（ESC系脆弱設定）の定期監査を実施する。NTLMリレー対策（SMB署名強制・LDAP署名）とKerberos認証の異常利用監視を強化する。ITヘルプデスクを騙る音声・電話ベースのソーシャルエンジニアリング（ビッシング）に対する従業員向け注意喚起を行う。AIコーディングエージェントの企業内利用ログについても、外部侵入計画立案目的での悪用兆候（大量のシェルコマンド生成要求等）がないか監視対象に含めることを検討する。
+・検知SPLクエリ: Splunk SPL: index=wineventlog EventCode=4768 OR EventCode=4769 | stats count by Account_Name, Service_Name | where count > threshold
+・検知SPLクエリ: Splunk SPL: index=network process_name IN ("nmap.exe","NetExec","netexec") | stats count by src_host, dest_ip
+・検知SPLクエリ: Splunk SPL: index=endpoint (process_name="sap.exe" OR process_name="encrypt.out" OR file_name="esxi_finder.py") | stats count by host
+→ AIコーディングエージェント（Cursor）自体は正規商用ツールであり、悪用は運用者側のプロンプト偽装によるものである点に留意（ツール提供元Anthropic/Cursorの関与や落ち度を示す情報源はない）。ATT&CK Technique IDはソース記事内で明示されていないため空配列とする。
+
+【参照】
+https://thehackernews.com/2026/08/aurora-ransomware-operators-use-cursor.html
+
+------------------------------------------------------------
+[4]. ShinyHunters（UNC6240）（別名: UNC6240 / 国家帰属: 不明 / 帰属信頼度: 中）
+活動タイプ: active_campaign / official_attribution
+------------------------------------------------------------
+
+標的: healthcare / North America/US
+マルウェア: 判明分なし
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-31] McKesson社が自社Oncology & Multispecialty事業部門・Medical-Surgical事業部門の顧客の一部データが窃取された事実を初めて公式確認（前日までは攻撃者側主張のみで同社は未検証だった）。恐喝期限が2026-09-01であることも判明
+
+【概要】
+米大手医療品卸McKessonが、ShinyHunters（UNC6240）による不正アクセスでOncology & Multispecialty事業部門・Medical-Surgical事業部門の顧客データの一部が窃取された事実を公式に確認した。前日（2026-08-30）時点ではShinyHunters側が主張する約2億8400万件・身代金5,520万ドルという規模はMcKessonにより未検証だったが、本日McKessonは「サードパーティアプリケーション」経由でのデータ持出しの発生自体を認め、被害者数や具体的な情報種別の内訳は開示していない。攻撃者側の交渉期限は2026年9月1日と判明した。
+
+攻撃の流れ（判明分）:
+1. 従業員へのボイスフィッシング（mckesson[.]claims等）でOkta SSO認証情報を窃取（前日既報の手口・本日は新規TTPなし）
+2. 侵害したSSOセッションを起点にサードパーティアプリケーション経由でOncology & Multispecialty/Medical-Surgical部門の顧客データへアクセス
+3. データを持ち出し、2026-09-01を期限とする身代金交渉を要求
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+Domain: mckesson.claims
+
+【推奨アクション】
+・医療/ヘルスケアセクターの組織はOkta等SSO基盤に対するボイスフィッシング（ITヘルプデスクなりすまし）対策（コールバック検証・二経路確認）を徹底し、SaaS（Salesforce/Snowflake等）連携アプリケーションへのアクセス権限を最小化・監査する。同種のなりすましドメイン（企業名+claims等のパターン）の新規登録監視を実施する。
+・検知SPLクエリ: Splunk SPL: index=okta_logs eventType="user.authentication.sso" | search NOT known_good_ip | stats count by user, src_ip
+・検知SPLクエリ: Splunk SPL: index=saas_audit (app="Salesforce" OR app="Snowflake") action="bulk_export" | stats sum(record_count) by user
+→ 本日の変化点はMcKessonによる被害の公式確認と恐喝期限判明のみであり、新規マルウェア・新規TTPの追加はない。攻撃者側主張の被害規模（2億8400万件・5,520万ドル）はMcKesson未検証のため事実として扱わない。
+
+【参照】
+https://www.securityweek.com/mckesson-confirms-data-breach-as-attacker-deadline-looms/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向相当のAPT活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックB CVE・トレンド記事なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし。理由: KEV初回追加（PaperCut NG/MF両CVE）は既に窓内で発生済みのため予報対象にできず（M4）、他にexploitation_stage: kev_listed/active_exploitationの新規CVEなし。Technique逸脱・グループ活性化はいずれもベースライン未確立のため判定不能（詳細は forecaster/forecasts/daily/2026-09-01.md 参照）。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+[1]. 「フリーLLMエンドポイント」偽装ハニーポットでコーディングエージェントのセッション情報が窃取される手口をSANSが報告
+観点: AI攻撃関連
+採用契機: ε
+------------------------------------------------------------
+
+優先度: 中
+対象: コーディングエージェント（opencode等のターミナル型AIコーディングツール）／LLM推論エンドポイント
+
+【24時間以内の変化】
+[SANS Internet Storm Center 2026-08-31] 著者が運用するインターネット公開推論ハニーポットが2026-08-30、FOFA等のスキャナ経由で「fofa-ds-NNNNN」等の命名規則により発見・偽装され、認証情報 Bearer free として配布される『無料LLMバックエンド』インフラに組み込まれていたことを確認・報告。実際のコーディングエージェント（opencode）セッションが誤ってルーティングされ、91秒間に210リクエスト、ユーザー名・ディレクトリ構成・PowerShell出力・ツールマニフェスト（bash/read/write等11ツール定義）を含む88メッセージの完全トランスクリプトが流出した実例を提示
+
+【概要】
+攻撃者（または悪意ある仲介インフラ運営者）が、正規のモデル名を騙る『無料LLMエンドポイント』を用意し、開発者が設定するモデルbaseURLの誤設定・誤ルーティングを悪用してコーディングエージェントのセッションを乗っ取る手口が実測された。エンドポイント側はエージェントが送信するツールマニフェスト（bash実行・ファイル読み書き権限等）を参照し、tool_choice=autoの設定次第では.aws/credentialsやSSH鍵の読み取りなど任意のコマンド実行を要求できる構造的リスクを持つ。国内でもAIコーディングツールの業務利用が拡大しており、信頼できないbaseURL・無料/野良LLMエンドポイントの利用がサプライチェーン的な資格情報漏えい経路になり得る。
+
+【推奨アクション】
+・開発者・エンジニアに対し、コーディングエージェントのモデルbaseURLは「curl | sudo bash」と同等の実行リスクを持つものとして扱い、契約済み・検証済みのプロバイダ以外への接続を禁止する
+・bash実行・ファイル読み書き等の破壊的操作を伴うツール呼び出しは自動承認（--autoフラグ等）を無効化し、都度承認を必須にする
+・エージェント関連の設定ファイル・環境変数（モデルエンドポイントURL、APIキー）の棚卸しを行い、承認済みプロバイダ外のURLが設定されていないか確認する
+・SOC/IT部門でAIコーディングツールの利用実態（ツール名・接続先エンドポイント）を把握していない場合は利用実態調査を実施する
+Splunk SPL: index=proxy OR index=firewall dest_port=443 | search NOT dest_domain IN ("api.anthropic.com","api.openai.com","<approved_provider_domains>") user_agent="*opencode*" OR user_agent="*coding-agent*" | stats count by src_ip dest_domain user_agent
+→ モデル名フィールドが 'fofa-*' / 'shodan-*' / 'auto/*' 等IPオクテット由来の命名になっている、または認証ヘッダに 'Bearer free' 等の値が使われている通信は高リスクシグナルとして扱う
+
+【参照】
+https://isc.sans.edu/diary/rss/33298
+
+------------------------------------------------------------
+[2]. Anthropic、Claude Code向けCompliance APIを拡張しAIエージェントのローカル可視性とアイデンティティガバナンスを強化
+観点: AI攻撃関連
+採用契機: γ, η
+------------------------------------------------------------
+
+優先度: 中
+対象: Claude Code（Anthropic）／AIコーディングエージェント全般のガバナンスツール
+
+【24時間以内の変化】
+[The Hacker News 2026-08-31] 2026-08-11に追加されたClaude Code Compliance APIのローカルセッション用エンドポイント（セッション一覧・個別セッション取得・メッセージトランスクリプト取得）を軸に、Managed Settings・Compliance API・エンドポイント側収集の3層構成と『Identity Governance』（所有者・目的・認証情報・権限・アクセス経路の紐付け）の運用ガイダンスを新たに整理した解説記事が公開された
+
+【概要】
+Claude Codeはファイル読み書き・シェルコマンド実行・MCPツール呼び出しを開発者の資格情報で実行できるため、セキュリティチームにとって可視性の空白になりやすい。Anthropicが提供するCompliance APIはセッションのテキスト・tool_use・tool_resultをすべて記録し、bashコマンドやMCPサーバー利用状況を後から解析できるようにする。ただし記事は『テレメトリは何が起きたかを示すが、それをエージェントの所有者・目的・認証情報・権限・アクセス経路に結び付けるガバナンスがなければ不十分』と指摘しており、単純な監視API有効化だけでは不足する点に注意が必要。国内でもAIコーディングエージェントの業務導入が進む中、資格情報漏えいや権限逸脱の検知体制整備の参考になる。
+
+【推奨アクション】
+・組織内で稼働するClaude Code（および他のAIコーディングエージェント）のインベントリを作成し、利用スキル・MCPサーバー接続先を棚卸しする
+・MDM/レジストリ経由でManaged Settings（MCPサーバーのホワイトリスト化、bashコマンドの正規表現フィルタ、スキル実行制限）を配布し、未承認拡張の利用を制限する
+・Compliance APIのローカルセッションエンドポイントを有効化し、セッショントランスクリプト（既定30日保持）から機密情報露出や不審なプラグイン使用の検知ルールを整備する
+・エージェントの目的終了時に権限を失効させる運用（Identity Governance）を、既存のIAM/PAMポリシーと連携させる形で検討する
+→ 単一の不正スキル・MCPサーバーが検知された場合、同一スキルが組織内のどのエージェントで使用されているかの横展開状況（ヒートマップ）を確認し、影響範囲を特定する
+
+【参照】
+https://thehackernews.com/2026/08/securing-claude-code-new-compliance-api.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-81779 (Newspapers X (WordPress theme)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-81780 (Hash Form (WordPress plugin)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82970 (WP Cookie Notice for GDPR, CCPA & ePrivacy Consent (WordPress plugin)) → 軸1=7点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82226 (Tickera (WordPress plugin)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-81293 (WP Data Access (WordPress plugin)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-81756 (Smart Marketing SMS and Newsletters Forms (WordPress plugin)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-81763 (Throws SPAM Away (WordPress plugin)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-66047 (ProfilePress / wp-user-avatar (WordPress plugin)) → 軸1=7点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82592 (DIR-825M (formDiskFormat, Disk Formatting Handler)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82593 (DIR-825M (formLtefotaUpgradeFibocom, LTE Module Firmware Upgrade)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82616 (NR1800X (setUploadSetting, /cgi-bin/cstecgi.cgi)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82689 (DNS-320L/327L/340L/345 (isomount_mgr.cgi, ISO Image Handler)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82692 (DNS-340L/345 (iscsi_mgr.cgi)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82688 (DNS-340L/345 (virtual_vol.cgi, Virtual Volume Handler)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82690 (DNS-327L/340L (ve_mgr.cgi)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82691 (DNS-320L/327L/340L/345 (usb_device.cgi, CGI Handler)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-51679 (T6 (setPasswordCfg, /cgi-bin/cstecgi.cgi)) → 軸1=7点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-51680 (T6 (setLedCfg, /cgi-bin/cstecgi.cgi)) → 軸1=7点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-51681 (T6 (setRemoteCfg, /cgi-bin/cstecgi.cgi)) → 軸1=7点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-51720 (T6 (delIpPortFilterRules, /cgi-bin/cstecgi.cgi)) → 軸1=7点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-51725 (T6 (NTPSyncWithHost, /cgi-bin/cstecgi.cgi)) → 軸1=7点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-51730 (T6 (delWiFiAclRules, /cgi-bin/cstecgi.cgi)) → 軸1=7点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-79748 (MCPHub (MCPサーバー統合管理ハブ)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-58574 (PowerStore) → 軸1=7点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-73819 (Ebyte製品（ベンダー設定ユーティリティ）) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-76133 (Ebyte製品（認証機構）) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82854 (Nodemailer) → 軸1=4点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82855 (@hulumi/policies) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82856 (@hulumi/policies) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82857 (hulumi) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82858 (@hulumi/drift) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82859 (hulumi) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82860 (@hulumi/policies) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-49003 (電力システム監視モジュール) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-53552 (Goploy) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-19410 (Cloud Build) → 軸1=7点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-59111 (eObčanka-Identifikace（macOS版・チェコ電子政府ID連携アプリ）) → 軸1=4点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82628 (iGameCenter (WinRing0x64.sys, IOCTL Dispatch)) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82876 (PS3111-S11 コントローラファームウェア) → 軸1=4点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82874 (ToolJet (tooljet-db API・組織ID検証不備)) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82870 (ToolJet (データベース書込/削除ルート・組織ID検証不備)) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82872 (ToolJet (ToolJet DBテーブル操作・ワークスペース検証不備)) → 軸1=3点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82807 (Ultra RAMDisk Pro (URDSCSI.sys カーネルドライバ)) → 軸1=5点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+・CVE-2026-82908 (Dragon Center (NTIOLib_X64.sys MMIO Write Path)) → 軸1=6点/軸2=0点で出力振り分け閾値未達（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考Aトリガー（JPCERT/IPA注意喚起・国内報道）も未確認。
+
+[APT]
+・Rhysida / Rhysida-2026-BerlinCityBreach → ベルリン市（交通・環境局）への不正アクセス・約5.7TBデータ窃取を市当局が公式確認（BleepingComputer/SecurityWeek 2026-08-31）。政府機関侵害確認(+5)のみで新規マルウェア・新規TTP・複数ベンダー独立確認・重要インフラ規模の拡大なし。軸P5/軸Q5（特定重要セクター+3・複数メディア確認+2）で軸P<8のため注目動向閾値未達・国内(JP)組織への影響なし・除外。継続監視対象。
+・Silver Fox（中国語話者系APT / Hiding Elephant） / SilverFox-2026-ValleyRAT-QNWallpaperDisguise → Kaspersky（The Hacker News 2026-08-31経由）・正規署名済み中国製壁紙ツール「QN Wallpaper」を隠れ蓑にしたValleyRAT（Winos 4.0）配布の新規DLLサイドローディング手口（libcef.dll）・アンチウイルス除外リスト登録を悪用した回避を確認。既報SilverFox-2026-Gh0stCringe-HoldingHands/SilverFox-2026-BYOVDChain-JapanManufacturingとは別の配布経路。標的は中国/インド中心（100,000件超検知・1,500ユーザー超）。単一ベンダー帰属+既知グループ新規TTPで軸P6/軸Q2（限定地域）・軸P<8かつ参考A昇格トリガー該当なしのため除外。継続監視対象。
+・Nightmare Eclipse（別名: Chaotic Eclipse） / NightmareEclipse-2026-WindowsZeroDayDisclosure → SecurityWeek 2026-08-31・研究者が新規PoC「HardBreacher」（Kaspersky Endpoint Security の権限昇格脆弱性、UIプロセス侵害によるファイルアクセス制御の書き換え）を公開・Kasperskyは既にパッチ提供済みと確認。既報のWindows脆弱性連続開示キャンペーン（YellowKey/GreenPlasma等）の継続だが、今回はセキュリティ製品自体を標的とした新規TTP。CVE番号は記事内未公表。単一ソース(SecurityWeek/研究者本人)・軸P6（新規TTP+3・単一ベンダー確認+3）/軸Q1（単一製品限定）で軸P<8のため除外。継続監視対象。
+・不明（攻撃者未特定・Boston Scientific社への侵害） / 不明 → SecurityWeek 2026-08-31・医療機器大手Boston Scientific（心臓・神経・腫瘍分野機器メーカー）が2026-08-25検知のネットワーク侵害から復旧中と公表・製造/出荷/一部心臓モニタ遠隔起動に影響。CrowdStrike等が調査中だが、攻撃者の犯行声明・攻撃手法・マルウェア・IOCはいずれも本日時点で非公表。技術詳細が不明な断片的な活動報告のため低優先度・除外。継続監視対象。
+・不明（帰属未確定・Unit 42追跡） / RIS-2026-SpringRing-TeamsVishingADCS → Unit 42「Spring Ring」2026-08-31公開・Microsoft Teams経由のボイスフィッシング(T1566.004)からRMMツール/Quick Assist経由の難読化PowerShell RAT展開（キャンペーンA）、およびAWS S3ホスト実行ファイル+ブラウザハイジャック+PetitPotam悪用のNTLMリレー攻撃でドメインコントローラを狙うキャンペーンB（キャンペーンB）を確認。ATT&CK ID多数（T1566/T1566.004/T1204/T1567.002/T1053/T1176.001/T1046/T1550/T1187/T1557.001）明示・IOC複数（C2ドメインsan-sid[.]com・IP15件超・ハッシュ1件）も豊富だが、政府機関帰属・重要インフラ侵害確認・複数ベンダー独立確認のいずれもなく単一ベンダー(Unit42)レポートのみ。軸P6（新規マルウェア技術分析+3・単一ベンダー帰属+3）/軸Q5（対象組織10超+2〜5相当）で軸P<8のため注目動向閾値未達・国内(JP)トリガーなしのため除外。Section4 SOC推奨情報での個別掲載を推奨（IOC/ATT&CKマッピングが充実しているため）。継続監視対象。
+・FulcrumSec（恐喝グループ・帰属信頼度: 低） / FulcrumSec-2026-ManchesterAirportsExtortion → SecurityWeek 2026-08-31は前日既報（reported-apts.md記載: FulcrumSec-2026-ManchesterAirportsExtortion、軸P5/軸Q1で除外済み）と同一事案の追加報道。データ量（86GB、既報は約86GBで一致）・想定影響顧客数（約870万人）・データ種別の具体化はあるが、独立した複数ベンダー確認や政府機関関与など軸P/軸Qを押し上げる新規性はなし。既報・変化なしのため除外維持。
+・不明（DoJ発表訂正・China nexus帰属の訂正報道） / 不明 → The Hacker News 2026-08-31・米司法省が前週発表した「複数の連邦機関（NASA/FRB/DOE/DOJ等）が中国系脅威アクターの攻撃被害に遭った」との発表を「被害者ではなく標的だった」と訂正した旨の報道。新規の攻撃者・マルウェア・TTP・IOCの言及はなく、既存発表の訂正にとどまるため採用条件P〜Wに非該当。除外。
+・不明（Anthropic Claude利用者を狙ったインフォスティーラーセッション窃取） / 不明 → Dark Reading/SecurityWeek 2026-08-31・複数のインフォスティーラーマルウェアでClaude（Anthropic）利用者のセッション情報が窃取されアカウントが不正利用された事案・Anthropicが該当ユーザーをログアウトさせ決済情報を削除する対応を発表。特定の脅威アクター名・新規マルウェアファミリー・新規TTPの言及がなく汎用的なインフォスティーラー被害の域を出ないため採用条件P〜Wに非該当（AI攻撃動向Section 1の観点でreported-ai-attacks.md側での評価が適切と考えられる）。除外。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B5件 / 除外44件
+APT — 本編4件 / 注目動向0件 / 除外8件
+SOC推奨情報 — 高0件 / 中2件 / 低0件 / 除外5件
+
+========================================

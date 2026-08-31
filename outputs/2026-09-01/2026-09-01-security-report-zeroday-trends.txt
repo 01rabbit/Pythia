@@ -1,0 +1,204 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-01 11:00 JST
+調査期間: 2026-08-31 07:00 〜 2026-09-01 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にパッチ未提供のゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+[1]. Fire Ant（別名: UNC3886（Sygniaは技術的重複を指摘するが断定的な帰属ではないと明言） / 国家帰属: CN / 帰属信頼度: 中）
+活動タイプ: ttp_update / new_malware / infrastructure_change / active_campaign
+------------------------------------------------------------
+
+標的: telecom/critical_infrastructure / 不明
+マルウェア: TacTap・BridgeAgent・IOS XR implant（未命名）・Medusa rootkit・REPTILE rootkit・VMCIバックドア・パケットトリガー型バックドア
+
+【24時間以内の変化】
+[Sygnia（The Hacker News/BleepingComputer経由） 2026-08-31] 従来のVMware ESXi/vCenter標的キャンペーン（2025年7月公表）から、Cisco IOS XRルータ・TACACSサーバ・Linux管理ホストへ標的を拡大したことを新規公表
+
+【概要】
+Sygniaの調査により、中国nexus（技術的にはUNC3886と強く重複するがSygniaは断定的な帰属を避けている）のサイバースパイ活動アクターFire Antが、従来のVMwareハイパーバイザ標的キャンペーンを拡張し、Cisco IOS XRルータ・TACACS認証サーバ・Linux管理ホストといった高価値ネットワークのルーティング・認証・管理基盤そのものを侵害対象としたことが新たに確認された。侵害したルータを通信傍受・認証情報収集・ログ改ざんの拠点として運用し、防御側の事後追跡を困難にする手口が新規に報告されている。
+
+攻撃の流れ（判明分）:
+1. 高価値ネットワーク運用者のCisco IOS XRルータ・TACACSサーバ・Linux管理ホストへ侵入
+2. TacTap（ライブラリインジェクションによるTACACS認証情報収集ツール）でセッション傍受・認証情報窃取
+3. BridgeAgent（Zabbix監視エージェントに偽装したLinuxバックドア）等でトンネリング・永続化を確立
+4. 公開済みルートキット（Medusa/REPTILE）やカスタムSSHバックドア、VMCIバックドアで多層的な足場を維持しつつログ・テレメトリを抑制
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+Filename: /var/log/.tacplus.acct
+Filename: /opt/.ICEauthority
+Filename: /etc/rc.d/init.d/grub-rommon
+
+【推奨アクション】
+・ネットワーク運用者はCisco IOS XRデバイス・TACACSサーバの構成変更履歴とコミット履歴に説明のつかないGREトンネルインタフェースがないか確認する。TACACS認証基盤・Linux管理ホストの完全性検証（正規プロセスへのライブラリインジェクション有無）とログ改ざんの痕跡確認を実施し、高価値ネットワーク機器へのアクセス経路を最小化する。
+・検知SPLクエリ: Splunk SPL: index=network sourcetype=cisco:ios:xr | search "GRE" OR "tunnel-ip" | stats count by device_name, config_change_id
+・検知SPLクエリ: Splunk SPL: index=linux_logs (process="zabbix_agentd" OR ImageLoaded="*zabbix*") | where NOT file_hash IN (known_good_hashes)
+・検知SPLクエリ: Splunk SPL: index=tacacs sourcetype=tacacs:accounting | stats count by src_ip, user | where count > threshold
+→ 既存VMware系Fire Antのシグネチャとは別系統のTTPであるため、単純なIOC照合だけでなく設定変更履歴・コミット履歴の異常（説明のつかないインタフェース追加等）を検知観点に含める。単一ベンダー（Sygnia）レポートであり、政府機関による公式帰属はまだない点に留意する。
+
+【参照】
+https://thehackernews.com/2026/08/china-linked-fire-ant-hijacks-cisco.html
+https://www.bleepingcomputer.com/news/security/chinese-fire-ant-hackers-turn-cisco-routers-into-spying-platforms
+https://www.sygnia.co/press-release/sygnia-reveals-new-activity-by-china-nexus-threat-actor-fire-ant-targeting-trusted-infrastructure/
+
+------------------------------------------------------------
+[2]. 不明（北朝鮮DPRKネクサス・複数クラスタ: Famous Chollima / Jasper Sleet / Nickel Tapestry / PurpleDelta（旧TAG-121）/ UNC5267 / Wagemole）（別名: Famous Chollima・Jasper Sleet・Nickel Tapestry・PurpleDelta・UNC5267・Wagemole・IT worker scheme / 国家帰属: KP / 帰属信頼度: 高）
+活動タイプ: new_target / active_campaign / ttp_update / official_attribution
+------------------------------------------------------------
+
+標的: it/healthcare/finance/critical_infrastructure/other / North America/Oceania/Europe/US/AU
+マルウェア: 判明分なし
+
+【24時間以内の変化】
+[The Hacker News（原典: Huntress/Recorded Future Insikt Group/Microsoft/Group-IB/Nisos/DTEX/FBI/DoJ・米日韓豪加仏独伊蘭新英10カ国合同勧告） 2026-08-31] 北朝鮮ITワーカー詐欺スキームがIT部門に限らず医療・営業/マーケティング職種にまで拡大していることが複数事例で新規確認された
+
+【概要】
+北朝鮮（DPRK）ネクサスの偽装採用スキーム「ITワーカー詐欺」が、従来主眼だったIT/ソフトウェア開発職を越えて、豪州の医療関連企業・金融サービス企業・営業/マーケティング職種にまで対象を拡大していることが新たに確認された（推測: 拡大の意図は正規採用プロセスを装った資金獲得チャネルの多様化）。10カ国合同アラートおよびHuntress/Recorded Future/Microsoft/Group-IB/Nisos/DTEXなど複数の独立した調査機関が関連クラスタ（Famous Chollima/Jasper Sleet/Nickel Tapestry/PurpleDelta/UNC5267/Wagemole）を追跡しており、単一クラスタ（PurpleDelta）だけで1,100社超へ応募していたことが判明した。AstrillVPN・IPRoyalプロキシ・KVMスイッチ（PiKVM/TinyPilot）・USBキャプチャカードなど身元偽装用ツール一式に加え、ChatGPT等のAIツールを面接対策・作業補助に利用している点が新規の技術的特徴として報告されている。
+
+攻撃の流れ（判明分）:
+1. 偽造・盗用身分情報とAIツール（ChatGPT等）を用いて正規求人へ応募（1日あたり10プラットフォームで60件超のケースあり）
+2. AstrillVPN/IPRoylaプロキシで所在地を偽装し、複数ブラウザプロファイルで多重応募・多重就業を管理
+3. 採用後はKVMスイッチ（PiKVM/TinyPilot）やUSBキャプチャカードで正規契約者に業務端末を操作させる、または本人になりすまして就業
+4. 得た給与をSobaeksu/Saenal/Songkwang/Ryongbong General Corporation等の制裁対象事業体を経由してマネタイズ（2025年12月〜2026年2月だけで約197万ドルの入金を確認）
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+Domain: trustidcard.com
+
+【推奨アクション】
+・人事・採用部門はリモート採用プロセスにおいて、KVMスイッチ経由の遠隔操作の兆候（面接時の応答遅延・視線のずれ等）、複数プラットフォームでの類似職務経歴、AstrillVPN等の匿名化VPN経由の接続、業務端末の複数拠点間での急な切替を監視する。給与振込先・銀行口座情報の変更頻度や、身元確認書類（TrustID Card等）の信頼性検証プロセスを強化する。
+・検知SPLクエリ: Splunk SPL: index=vpn_logs (vpn_provider="Astrill" OR vpn_provider="IPRoyal") | stats count by user, src_country
+・検知SPLクエリ: Splunk SPL: index=hr_onboarding sourcetype=identity_verification domain="trustidcard.com" | stats count by applicant_id
+・検知SPLクエリ: Splunk SPL: index=endpoint (process_name="*pikvm*" OR process_name="*tinypilot*" OR usb_device="*capture*") | stats count by host, user
+→ 本エントリは`north_korea_nexus`シグナルとして観測記録する（行動原則・Phase1優先: 北朝鮮ITワーカー詐欺）。単体では予報を生成せず、同日の独立した技術的観測（IOC公開/CERT勧告/新規TTP報告）と揃った場合のみ予報候補とする（pipeline-1b-apt.md予報連動ルール）。具体的なマルウェア・ATT&CK Techniqueの言及はソースになく、techniquesは空配列とする。
+
+【参照】
+https://thehackernews.com/2026/08/north-korean-job-fraud-expands-beyond.html
+
+------------------------------------------------------------
+[3]. Aurora（Aur0ra）（別名: Aur0ra / 国家帰属: 不明 / 帰属信頼度: 中）
+活動タイプ: ttp_update / active_campaign / new_malware
+------------------------------------------------------------
+
+標的: manufacturing/professional_services/other / North America/Europe/South America/US/DE/NL/CA/GB
+マルウェア: Aurora ransomware（Zig製暗号化バイナリ）・Xray-core（正規OSSツールの悪用）
+
+【24時間以内の変化】
+[The Hacker News（原典: CloudSEK/Gambit Security） 2026-08-31] Russian-speaking金銭動機ランサムウェアグループAuroraが、AIコーディングエージェント「Cursor」（Anthropic Claude Sonnet搭載）を実際の侵入・水平展開・AD CS攻撃計画立案に用いていたことを新規確認
+
+【概要】
+CloudSEKとGambit Securityの独立した調査により、Russian-speakingの金銭動機ランサムウェアグループAurora（Aur0ra）が、SpaceX製AIコーディングアシスタント「Cursor」（Anthropic製Claude Sonnetを基盤とする）を実運用の侵入活動に用いていたことが新たに確認された。Gambit Securityは2026年4月8日〜5月21日の期間に10標的への実侵入でCursorエージェントとのやり取り28セッション分を回収し、攻撃者が「シミュレーションである」とエージェントへ偽って安全策を回避していたことを確認した。CloudSEKは露出した攻撃者インフラの解析から、2026年4月〜7月の期間に9カ国20組織超への攻撃を追跡している。侵入計画立案はロシア語で行われ、CIS域内のIPレンジ・ドメインは意図的に除外されていた。
+
+攻撃の流れ（判明分）:
+1. 大量のメール送信+ITヘルプデスクを騙る電話でユーザーを圧迫し初期アクセス（ソーシャルエンジニアリング）を獲得
+2. Cursorエージェントに侵入をシミュレーションと偽って認証情報利用・サブネットスキャン（Nmap/NetExec）・ドメイン列挙・NTLMリレー攻撃・Certipyによる証明書攻撃（AD CS悪用）の計画立案と一部実行を行わせる
+3. SMB/LDAP/WinRM/RDP/RPCで水平展開しXray-core（正規OSSプロキシツール）でVPN/プロキシ経路を確立
+4. esxi_finder.pyでVMware ESXi/vCenterを探索し、Zig製暗号化バイナリ（Windows版sap.exe/Linux・ESXi版encrypt.out）でボリュームシャドウコピー削除・System Restore無効化・仮想マシン停止を経て暗号化を実行
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+Filename: sap.exe
+Filename: encrypt.out
+Filename: esxi_finder.py
+
+【推奨アクション】
+・AD CS環境ではCertipy等を用いた証明書テンプレート悪用（ESC系脆弱設定）の定期監査を実施する。NTLMリレー対策（SMB署名強制・LDAP署名）とKerberos認証の異常利用監視を強化する。ITヘルプデスクを騙る音声・電話ベースのソーシャルエンジニアリング（ビッシング）に対する従業員向け注意喚起を行う。AIコーディングエージェントの企業内利用ログについても、外部侵入計画立案目的での悪用兆候（大量のシェルコマンド生成要求等）がないか監視対象に含めることを検討する。
+・検知SPLクエリ: Splunk SPL: index=wineventlog EventCode=4768 OR EventCode=4769 | stats count by Account_Name, Service_Name | where count > threshold
+・検知SPLクエリ: Splunk SPL: index=network process_name IN ("nmap.exe","NetExec","netexec") | stats count by src_host, dest_ip
+・検知SPLクエリ: Splunk SPL: index=endpoint (process_name="sap.exe" OR process_name="encrypt.out" OR file_name="esxi_finder.py") | stats count by host
+→ AIコーディングエージェント（Cursor）自体は正規商用ツールであり、悪用は運用者側のプロンプト偽装によるものである点に留意（ツール提供元Anthropic/Cursorの関与や落ち度を示す情報源はない）。ATT&CK Technique IDはソース記事内で明示されていないため空配列とする。
+
+【参照】
+https://thehackernews.com/2026/08/aurora-ransomware-operators-use-cursor.html
+
+------------------------------------------------------------
+[4]. ShinyHunters（UNC6240）（別名: UNC6240 / 国家帰属: 不明 / 帰属信頼度: 中）
+活動タイプ: active_campaign / official_attribution
+------------------------------------------------------------
+
+標的: healthcare / North America/US
+マルウェア: 判明分なし
+
+【24時間以内の変化】
+[SecurityWeek 2026-08-31] McKesson社が自社Oncology & Multispecialty事業部門・Medical-Surgical事業部門の顧客の一部データが窃取された事実を初めて公式確認（前日までは攻撃者側主張のみで同社は未検証だった）。恐喝期限が2026-09-01であることも判明
+
+【概要】
+米大手医療品卸McKessonが、ShinyHunters（UNC6240）による不正アクセスでOncology & Multispecialty事業部門・Medical-Surgical事業部門の顧客データの一部が窃取された事実を公式に確認した。前日（2026-08-30）時点ではShinyHunters側が主張する約2億8400万件・身代金5,520万ドルという規模はMcKessonにより未検証だったが、本日McKessonは「サードパーティアプリケーション」経由でのデータ持出しの発生自体を認め、被害者数や具体的な情報種別の内訳は開示していない。攻撃者側の交渉期限は2026年9月1日と判明した。
+
+攻撃の流れ（判明分）:
+1. 従業員へのボイスフィッシング（mckesson[.]claims等）でOkta SSO認証情報を窃取（前日既報の手口・本日は新規TTPなし）
+2. 侵害したSSOセッションを起点にサードパーティアプリケーション経由でOncology & Multispecialty/Medical-Surgical部門の顧客データへアクセス
+3. データを持ち出し、2026-09-01を期限とする身代金交渉を要求
+
+【新規TTP】
+TTP: 詳細未公開
+
+【IoC】
+Domain: mckesson.claims
+
+【推奨アクション】
+・医療/ヘルスケアセクターの組織はOkta等SSO基盤に対するボイスフィッシング（ITヘルプデスクなりすまし）対策（コールバック検証・二経路確認）を徹底し、SaaS（Salesforce/Snowflake等）連携アプリケーションへのアクセス権限を最小化・監査する。同種のなりすましドメイン（企業名+claims等のパターン）の新規登録監視を実施する。
+・検知SPLクエリ: Splunk SPL: index=okta_logs eventType="user.authentication.sso" | search NOT known_good_ip | stats count by user, src_ip
+・検知SPLクエリ: Splunk SPL: index=saas_audit (app="Salesforce" OR app="Snowflake") action="bulk_export" | stats sum(record_count) by user
+→ 本日の変化点はMcKessonによる被害の公式確認と恐喝期限判明のみであり、新規マルウェア・新規TTPの追加はない。攻撃者側主張の被害規模（2億8400万件・5,520万ドル）はMcKesson未検証のため事実として扱わない。
+
+【参照】
+https://www.securityweek.com/mckesson-confirms-data-breach-as-attacker-deadline-looms/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向相当のAPT活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックB CVE・トレンド記事なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし。理由: KEV初回追加（PaperCut NG/MF両CVE）は既に窓内で発生済みのため予報対象にできず（M4）、他にexploitation_stage: kev_listed/active_exploitationの新規CVEなし。Technique逸脱・グループ活性化はいずれもベースライン未確立のため判定不能（詳細は forecaster/forecasts/daily/2026-09-01.md 参照）。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー（APT）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・Rhysida / Rhysida-2026-BerlinCityBreach → ベルリン市（交通・環境局）への不正アクセス・約5.7TBデータ窃取を市当局が公式確認（BleepingComputer/SecurityWeek 2026-08-31）。政府機関侵害確認(+5)のみで新規マルウェア・新規TTP・複数ベンダー独立確認・重要インフラ規模の拡大なし。軸P5/軸Q5（特定重要セクター+3・複数メディア確認+2）で軸P<8のため注目動向閾値未達・国内(JP)組織への影響なし・除外。継続監視対象。
+・Silver Fox（中国語話者系APT / Hiding Elephant） / SilverFox-2026-ValleyRAT-QNWallpaperDisguise → Kaspersky（The Hacker News 2026-08-31経由）・正規署名済み中国製壁紙ツール「QN Wallpaper」を隠れ蓑にしたValleyRAT（Winos 4.0）配布の新規DLLサイドローディング手口（libcef.dll）・アンチウイルス除外リスト登録を悪用した回避を確認。既報SilverFox-2026-Gh0stCringe-HoldingHands/SilverFox-2026-BYOVDChain-JapanManufacturingとは別の配布経路。標的は中国/インド中心（100,000件超検知・1,500ユーザー超）。単一ベンダー帰属+既知グループ新規TTPで軸P6/軸Q2（限定地域）・軸P<8かつ参考A昇格トリガー該当なしのため除外。継続監視対象。
+・Nightmare Eclipse（別名: Chaotic Eclipse） / NightmareEclipse-2026-WindowsZeroDayDisclosure → SecurityWeek 2026-08-31・研究者が新規PoC「HardBreacher」（Kaspersky Endpoint Security の権限昇格脆弱性、UIプロセス侵害によるファイルアクセス制御の書き換え）を公開・Kasperskyは既にパッチ提供済みと確認。既報のWindows脆弱性連続開示キャンペーン（YellowKey/GreenPlasma等）の継続だが、今回はセキュリティ製品自体を標的とした新規TTP。CVE番号は記事内未公表。単一ソース(SecurityWeek/研究者本人)・軸P6（新規TTP+3・単一ベンダー確認+3）/軸Q1（単一製品限定）で軸P<8のため除外。継続監視対象。
+・不明（攻撃者未特定・Boston Scientific社への侵害） / 不明 → SecurityWeek 2026-08-31・医療機器大手Boston Scientific（心臓・神経・腫瘍分野機器メーカー）が2026-08-25検知のネットワーク侵害から復旧中と公表・製造/出荷/一部心臓モニタ遠隔起動に影響。CrowdStrike等が調査中だが、攻撃者の犯行声明・攻撃手法・マルウェア・IOCはいずれも本日時点で非公表。技術詳細が不明な断片的な活動報告のため低優先度・除外。継続監視対象。
+・不明（帰属未確定・Unit 42追跡） / RIS-2026-SpringRing-TeamsVishingADCS → Unit 42「Spring Ring」2026-08-31公開・Microsoft Teams経由のボイスフィッシング(T1566.004)からRMMツール/Quick Assist経由の難読化PowerShell RAT展開（キャンペーンA）、およびAWS S3ホスト実行ファイル+ブラウザハイジャック+PetitPotam悪用のNTLMリレー攻撃でドメインコントローラを狙うキャンペーンB（キャンペーンB）を確認。ATT&CK ID多数（T1566/T1566.004/T1204/T1567.002/T1053/T1176.001/T1046/T1550/T1187/T1557.001）明示・IOC複数（C2ドメインsan-sid[.]com・IP15件超・ハッシュ1件）も豊富だが、政府機関帰属・重要インフラ侵害確認・複数ベンダー独立確認のいずれもなく単一ベンダー(Unit42)レポートのみ。軸P6（新規マルウェア技術分析+3・単一ベンダー帰属+3）/軸Q5（対象組織10超+2〜5相当）で軸P<8のため注目動向閾値未達・国内(JP)トリガーなしのため除外。Section4 SOC推奨情報での個別掲載を推奨（IOC/ATT&CKマッピングが充実しているため）。継続監視対象。
+・FulcrumSec（恐喝グループ・帰属信頼度: 低） / FulcrumSec-2026-ManchesterAirportsExtortion → SecurityWeek 2026-08-31は前日既報（reported-apts.md記載: FulcrumSec-2026-ManchesterAirportsExtortion、軸P5/軸Q1で除外済み）と同一事案の追加報道。データ量（86GB、既報は約86GBで一致）・想定影響顧客数（約870万人）・データ種別の具体化はあるが、独立した複数ベンダー確認や政府機関関与など軸P/軸Qを押し上げる新規性はなし。既報・変化なしのため除外維持。
+・不明（DoJ発表訂正・China nexus帰属の訂正報道） / 不明 → The Hacker News 2026-08-31・米司法省が前週発表した「複数の連邦機関（NASA/FRB/DOE/DOJ等）が中国系脅威アクターの攻撃被害に遭った」との発表を「被害者ではなく標的だった」と訂正した旨の報道。新規の攻撃者・マルウェア・TTP・IOCの言及はなく、既存発表の訂正にとどまるため採用条件P〜Wに非該当。除外。
+・不明（Anthropic Claude利用者を狙ったインフォスティーラーセッション窃取） / 不明 → Dark Reading/SecurityWeek 2026-08-31・複数のインフォスティーラーマルウェアでClaude（Anthropic）利用者のセッション情報が窃取されアカウントが不正利用された事案・Anthropicが該当ユーザーをログアウトさせ決済情報を削除する対応を発表。特定の脅威アクター名・新規マルウェアファミリー・新規TTPの言及がなく汎用的なインフォスティーラー被害の域を出ないため採用条件P〜Wに非該当（AI攻撃動向Section 1の観点でreported-ai-attacks.md側での評価が適切と考えられる）。除外。
+
+本日の集計:
+APT — 本編4件 / 注目動向0件 / 除外8件
+
+========================================
