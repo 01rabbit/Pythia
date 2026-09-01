@@ -1,0 +1,2816 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-09-02",
+    "generated_at": "2026-09-02T07:48:41+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-09-01T07:00:00+09:00",
+      "to": "2026-09-02T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.09.01",
+      "candidates": 32,
+      "handled": 32,
+      "unhandled": 0,
+      "kev_added_in_window": 0,
+      "ghsa_origin_over_threshold": 0,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 31,
+        "euvd_only": 1
+      }
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [
+    {
+      "cve_id": "CVE-2026-82078",
+      "product": "PaperCut NG / PaperCut MF",
+      "vendor": "PaperCut Software",
+      "affected_versions": null,
+      "priority": "critical",
+      "cvss_v3": null,
+      "cvss_v4": 9.4,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-502"
+      ],
+      "epss": {
+        "score": 0.00926,
+        "percentile": 0.58022,
+        "model_date": "2026-09-01"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "24.x/25.x/26.x（緊急アウトオブサイクルビルド）",
+        "eta": null
+      },
+      "fceb_deadline": "2026-09-14",
+      "kev_date_added": "2026-08-31",
+      "axis1_score": 16,
+      "axis2_score": 6,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-09-01T20:53:23+09:00",
+          "description": "パッチ適用済みのPaperCut NG/MFに対し、認可不備(CVE-2026-81578)とDB接続ユーティリティの安全でない動的クラスロード(CVE-2026-82078)を連鎖させたデータ窃取型の実悪用が拡大していると報道"
+        },
+        {
+          "source": "Security NEXT",
+          "date": "2026-09-01T09:00:11+09:00",
+          "description": "印刷管理ソフト「PaperCut NG/MF」の深刻な脆弱性について悪用の確認を国内向けに報道"
+        }
+      ],
+      "overview": "PaperCut NG/MFのWeb管理インタフェースにおける認可不備（CVE-2026-81578）とデータベース接続ユーティリティの安全でない動的クラスロード（CVE-2026-82078）を連鎖させることで未認証RCEが成立する。2026-08-27頃から実悪用が確認されベンダーが緊急アウトオブサイクルビルドを公開したが、CISAは2026-08-31付で両CVEをKEVへ追加した。直近の攻撃は偵察段階からDerby内蔵データベースのテーブルを標的とした実際のデータ持ち出しへ移行しており、Security NEXTも国内向けに実悪用の確認を報じた。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証で管理Webインタフェースの認可不備を突く"
+        },
+        {
+          "step": 2,
+          "description": "DB接続ユーティリティの動的クラスロードで任意コード実行"
+        },
+        {
+          "step": 3,
+          "description": "Derby内蔵データベースのテーブルを列挙・抽出してデータを持ち出す"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "[BleepingComputer 2026-09-01] 認可不備を起点とした未認証RCEの連鎖悪用が確認されたため T1190 を付与"
+        },
+        {
+          "technique_id": "T1005",
+          "sub_technique_id": null,
+          "tactic": "collection",
+          "evidence": "[BleepingComputer 2026-09-01] Derby内蔵データベースのテーブルを標的としたデータ抽出が確認されたため T1005 を付与"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "PaperCutサーバのアクセスログ・アプリケーションログ・DB接続ユーティリティの異常な例外を監視する",
+        "splunk_spl": [
+          "index=papercut sourcetype=papercut_app_log (\"api/\" OR \"setupcompleted\") status=200 | stats count by src_ip, uri_path",
+          "index=papercut sourcetype=papercut_derby_log \"SELECT\" OR \"export\" | stats count by src_ip"
+        ],
+        "detection_notes": "通常運用で発生しないDerbyテーブルへの大量クエリ・管理APIへの未認証アクセスパターンを重点確認する"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/recently-patched-papercut-zero-days-used-in-data-theft-attacks/",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://www.security-next.com/189686",
+          "title": "印刷管理ソフト「PaperCut NG/MF」に深刻な脆弱性 - 悪用も確認",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "professional_services",
+        "education",
+        "government"
+      ],
+      "region_impact": [
+        "global",
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260902-CVEP-129b6201"
+    },
+    {
+      "cve_id": "CVE-2026-81578",
+      "product": "PaperCut NG / PaperCut MF",
+      "vendor": "PaperCut Software",
+      "affected_versions": null,
+      "priority": "critical",
+      "cvss_v3": null,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [
+        "CWE-284"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "24.x/25.x/26.x（緊急アウトオブサイクルビルド）",
+        "eta": null
+      },
+      "fceb_deadline": "2026-09-14",
+      "kev_date_added": "2026-08-31",
+      "axis1_score": 15,
+      "axis2_score": 6,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-09-01T20:53:23+09:00",
+          "description": "CVE-2026-82078と連鎖するWeb管理インタフェースの認可不備について、データ窃取型の実悪用拡大が報じられた"
+        }
+      ],
+      "overview": "PaperCut NG/MFのWeb管理インタフェースにおける不適切なアクセス制御。CVE-2026-82078（DB接続ユーティリティの動的クラスロード）と連鎖して未認証RCEに至る。詳細な攻撃の流れ・監視観点はCVE-2026-82078のエントリに統合して記載する。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Web管理インタフェースの認可チェックを回避"
+        },
+        {
+          "step": 2,
+          "description": "CVE-2026-82078と連鎖して未認証RCEに至る"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "[BleepingComputer 2026-09-01] CVE-2026-82078と連鎖する認可不備の実悪用が確認されたため T1190 を付与"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "監視観点はCVE-2026-82078のエントリを参照",
+        "splunk_spl": [],
+        "detection_notes": ""
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/recently-patched-papercut-zero-days-used-in-data-theft-attacks/",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "professional_services",
+        "education",
+        "government"
+      ],
+      "region_impact": [
+        "global",
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260902-CVEP-7408f53c"
+    },
+    {
+      "cve_id": "CVE-2026-66066",
+      "product": "Ruby on Rails（Active Storage）",
+      "vendor": "Ruby on Rails / Rails Core Team",
+      "affected_versions": null,
+      "priority": "critical",
+      "cvss_v3": null,
+      "cvss_v4": 9.5,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-434"
+      ],
+      "epss": {
+        "score": 0.27861,
+        "percentile": 0.97954,
+        "model_date": "2026-09-01"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "7.2.3.2/8.0.5.1/8.1.3.1",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 12,
+      "axis2_score": 5,
+      "jpcert_ipa": {
+        "issued": true,
+        "entries": [
+          {
+            "title": "Ruby on RailsのActive Storageにおけるリモートコード実行につながる脆弱性（CVE-2026-66066）に関する注意喚起",
+            "url": "https://www.jpcert.or.jp/at/2026/at260021.html"
+          }
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-01T16:22:30+09:00",
+          "description": "Langflowの脆弱性CVE-2026-0768と併せ、Active Storageのlibvips未フズ化ハンドラを突く実悪用が認証情報窃取・C2活動の一環として観測されたと報道"
+        }
+      ],
+      "overview": "Ruby on Rails Active Storageのlibvips未フズ化ハンドラの脆弱性CVE-2026-66066が、Langflowの脆弱性CVE-2026-0768と同一の攻撃キャンペーンの一環として実悪用されていることをThe Hacker Newsが報じた。JPCERT/CCは注意喚起(at260021)を継続掲載しており、GMOサイバーセキュリティ byイエラエ等が国内Rails利用組織への個別案内を実施済み。既報時点ではPoC公開のみが確認されていたが、本日実悪用が新たに確認された。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証でActive Storageの画像処理ハンドラへ細工ファイルを送信"
+        },
+        {
+          "step": 2,
+          "description": "libvips未フズ化ハンドラ経由で任意ファイル読み取り"
+        },
+        {
+          "step": 3,
+          "description": "secret_key_base等の窃取からRCEへ発展"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "[The Hacker News 2026-09-01] libvips未フズ化ハンドラを突く未認証攻撃の実悪用が確認されたため T1190 を付与"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Railsアプリケーションログでの異常なActive Storageアップロードリクエスト・secret_key_base等の環境変数アクセス試行を監視する",
+        "splunk_spl": [
+          "index=rails_app sourcetype=rails_log uri_path=\"*active_storage*\" | stats count by src_ip, status"
+        ],
+        "detection_notes": "通常想定しないファイル形式・サイズでのActive Storageアップロード試行を重点確認する"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-exploit-critical-langflow-and.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.jpcert.or.jp/at/2026/at260021.html",
+          "title": null,
+          "language": "ja",
+          "source": "JPCERT/CC"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "professional_services"
+      ],
+      "region_impact": [
+        "global",
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260902-CVEP-e93acd3e"
+    }
+  ],
+  "reference_a": [
+    {
+      "cve_id": "CVE-2026-81302",
+      "product": "PALLET CONTROL（航空貨物パレット管理システム）",
+      "vendor": "JALデジタル株式会社",
+      "affected_versions": null,
+      "priority": "low",
+      "cvss_v3": null,
+      "cvss_v4": null,
+      "cvss_severity": null,
+      "cwe_ids": [
+        "CWE-276"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": null,
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 1,
+      "axis2_score": 4,
+      "jpcert_ipa": {
+        "issued": true,
+        "entries": [
+          {
+            "title": "PALLET CONTROL製品におけるアクセス制御不備の脆弱性",
+            "url": "https://jvn.jp/jp/JVN84094853/"
+          }
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "JVN / JVN iPedia",
+          "date": "2026-09-01T12:00:00+09:00",
+          "description": "情報セキュリティ早期警戒パートナーシップに基づきIPA・JPCERT/CCが開発者との調整を行った上でJVN発行"
+        }
+      ],
+      "overview": "JALデジタル株式会社が提供する航空貨物パレット管理システム「PALLET CONTROL」において、バックグラウンドで稼働する複数のサービスプログラムとの通信にアクセス制御の不備（CWE-276）があり、管理者権限を持たない一般ユーザーがアクセス可能な状態にあることが判明した。情報セキュリティ早期警戒パートナーシップに基づきGMOサイバーセキュリティ byイエラエの研究者が報告し、IPA・JPCERT/CCが開発者との調整を行った。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "管理者権限のない一般ユーザーがプログラム間通信にアクセス"
+        },
+        {
+          "step": 2,
+          "description": "サービスプログラムの機能を不正に操作"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "PALLET CONTROLのサービスプログラム間通信ログでの権限外アクセス試行を監視する",
+        "splunk_spl": [],
+        "detection_notes": "対象は業務システム内部ネットワークからのアクセスに限定されるため、内部不正・侵害後の横展開の文脈で確認する"
+      },
+      "references": [
+        {
+          "url": "https://jvn.jp/jp/JVN84094853/",
+          "title": "PALLET CONTROL製品におけるアクセス制御不備の脆弱性",
+          "language": "ja",
+          "source": "JVN"
+        },
+        {
+          "url": "https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-000126.html",
+          "title": null,
+          "language": "ja",
+          "source": "JVN iPedia 新着"
+        }
+      ],
+      "sector_impact": [
+        "other"
+      ],
+      "region_impact": [
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a",
+      "info_id": "20260902-CVEP-8f154340"
+    },
+    {
+      "cve_id": "CVE-2026-79687",
+      "product": "Dell PowerStore SDNAS",
+      "vendor": "Dell",
+      "affected_versions": null,
+      "priority": "medium",
+      "cvss_v3": null,
+      "cvss_v4": null,
+      "cvss_severity": null,
+      "cwe_ids": [
+        "CWE-306"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": null,
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 6,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-09-01T14:52:51+09:00",
+          "description": "Dellがストレージ製品「Dell PowerStore」のセキュリティアドバイザリを更新し対象脆弱性を2件追加したことを報道"
+        }
+      ],
+      "overview": "DellはストレージアプライアンスDell PowerStoreのSDNASコンポーネントに関するセキュリティアドバイザリを更新し、重要な機能に対する認証欠如の脆弱性CVE-2026-79687を含む脆弱性を新たに対象へ追加した。未認証のリモート攻撃者がファイルシステムへアクセスできる可能性がある。Security NEXTが国内向けに報道した。実悪用・PoC公開は本日時点で未確認。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証のリモート攻撃者がSDNAS機能へアクセス"
+        },
+        {
+          "step": 2,
+          "description": "ファイルシステムへの不正アクセス"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "PowerStore管理インタフェース・SDNASアクセスログでの未認証アクセス試行を監視する",
+        "splunk_spl": [],
+        "detection_notes": ""
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/189686",
+          "title": "「Dell PowerStore」のアドバイザリ更新 - アップデート対象を拡大",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global",
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a",
+      "info_id": "20260902-CVEP-0d98be93"
+    }
+  ],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-0768",
+      "product": "Langflow",
+      "vendor": "Langflow AI（OSS）",
+      "affected_versions": null,
+      "priority": "high",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-94"
+      ],
+      "epss": {
+        "score": 0.02338,
+        "percentile": 0.82417,
+        "model_date": "2026-09-01"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "1.4.2より後の版",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 12,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-09-02T02:54:22+09:00",
+          "description": "VulnCheckのハニーポットで週末に50件以上、直近では360件超の実悪用試行を観測したと報道"
+        }
+      ],
+      "overview": "2026年1月に修正済みのLangflow（OSSのAIアプリ開発プラットフォーム）における未認証コード実行脆弱性CVE-2026-0768が、VulnCheckのハニーポットで大規模な実悪用試行として観測された。攻撃はLangflowのスーパーユーザー認証情報・AWSシークレット・OpenAI APIキー等の環境変数を狙った偵察が中心で、送信元はロシアが主体と報告されている。同日Ruby on Rails Active Storageの脆弱性CVE-2026-66066も同一の攻撃キャンペーンの一部として悪用が確認された。KEV未登録・国内報道は本日時点で未確認。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証でvalidateエンドポイントのcodeパラメータへ細工Pythonコードを送信"
+        },
+        {
+          "step": 2,
+          "description": "root権限でのコード実行"
+        },
+        {
+          "step": 3,
+          "description": "環境変数(secret_key/AWSシークレット/OpenAI APIキー)を窃取"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "[BleepingComputer 2026-09-02] validateエンドポイントのcodeパラメータ経由の未認証コード実行が実悪用されたため T1190 を付与"
+        },
+        {
+          "technique_id": "T1552",
+          "sub_technique_id": "T1552.001",
+          "tactic": "credential-access",
+          "evidence": "[BleepingComputer 2026-09-02] secret_key・AWSシークレット・OpenAI APIキー等の環境変数・設定ファイルからの認証情報窃取が確認されたため T1552.001 を付与"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Langflowサーバの外部公開状況・validateエンドポイントへのアクセスログを監視する",
+        "splunk_spl": [
+          "index=langflow sourcetype=langflow_app uri_path=\"*/validate*\" | stats count by src_ip"
+        ],
+        "detection_notes": "root権限でのPythonコード実行を伴う異常なvalidateリクエストを重点確認する"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/critical-langflow-flaw-exploited-to-steal-openai-and-aws-keys/",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-exploit-critical-langflow-and.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260902-CVEP-d4ddd653"
+    },
+    {
+      "cve_id": "CVE-2026-82329",
+      "product": "JFrog Artifactory",
+      "vendor": "JFrog",
+      "affected_versions": null,
+      "priority": "high",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-287"
+      ],
+      "epss": {
+        "score": 0.0038,
+        "percentile": 0.30675,
+        "model_date": "2026-09-01"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "7.161.20",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 12,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-02T02:53:11+09:00",
+          "description": "既定構成下でJFrog Access内の認証不備を突き攻撃者が管理者トークンを不正発行する実悪用を確認したと報道"
+        }
+      ],
+      "overview": "JFrogは2026-08-28にArtifactory Access内の認証不備CVE-2026-82329（既定構成で未認証攻撃者が管理者権限を取得可能）を公開しバージョン7.161.20で修正した。公開からわずか数日後の2026-09-01、攻撃者が管理者トークンを不正発行しユーザー・グループ・認証情報セット・連携アクセス構成を列挙する実悪用が複数ソースで確認された。Artifactoryはバイナリ・ビルド成果物を保持するため、悪用が拡大すればサプライチェーン汚染に発展するリスクがある。KEV未登録・国内報道は本日時点で未確認。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証で認証弱点を突き管理者トークンを不正発行"
+        },
+        {
+          "step": 2,
+          "description": "取得した管理者権限でユーザー・グループ・認証情報セットを列挙"
+        },
+        {
+          "step": 3,
+          "description": "リポジトリ・ビルド成果物への不正アクセス"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "[The Hacker News 2026-09-02] 認証不備を突いた未認証の管理者トークン不正発行が実悪用されたため T1190 を付与"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Artifactoryのアクセスログ・管理者トークン発行イベントを監視する",
+        "splunk_spl": [
+          "index=artifactory sourcetype=artifactory_access \"CREATE_TOKEN\" admin=true | stats count by src_ip"
+        ],
+        "detection_notes": "通常運用で発生しない管理者トークンの新規発行・列挙系APIコールを重点確認する"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-exploit-critical-jfrog.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.securityweek.com/critical-jfrog-artifactory-vulnerability-reportedly-exploited-in-the-wild/",
+          "title": null,
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260902-CVEP-eeeea721"
+    },
+    {
+      "cve_id": "CVE-2026-82971",
+      "product": "QVidium Opera11",
+      "vendor": "QVidium（事業終了・パッチ提供元なし）",
+      "affected_versions": null,
+      "priority": "medium",
+      "cvss_v3": 10.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-77"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": false
+      },
+      "patch_info": {
+        "available": false,
+        "version": null,
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 8,
+      "axis2_score": 0,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "NVD/EUVD（網羅スイープ）",
+          "date": "2026-09-01T07:00:00+09:00",
+          "description": "CGIスクリプト経由の未認証コマンドインジェクションとしてCVE採番・公開エクスプロイトの存在を確認"
+        }
+      ],
+      "overview": "放送設備ベンダーQVidiumのOpera11に、CGIスクリプト(net_tr.cgi)のipaddr引数処理に起因する未認証コマンドインジェクション脆弱性CVE-2026-82971が確認された。エクスプロイトは既に公開されている。ベンダーは事業を終了しており、パッチは提供されない見込み。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証でCGIスクリプトのipaddr引数へ細工文字列を送信"
+        },
+        {
+          "step": 2,
+          "description": "任意コマンド実行"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "対象製品は事業終了ベンダー製のため、外部露出資産の棚卸し・隔離を優先する",
+        "splunk_spl": [],
+        "detection_notes": ""
+      },
+      "references": [
+        {
+          "url": "https://euvd.enisa.europa.eu/enisa/EUVD-2026-68911",
+          "title": null,
+          "language": "en",
+          "source": "EUVD"
+        }
+      ],
+      "sector_impact": [
+        "telecom"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260902-CVEP-b55e41cb"
+    },
+    {
+      "cve_id": "CVE-2026-83524",
+      "product": "RedPort Optimizer（衛星通信最適化アプライアンス）",
+      "vendor": "Global Marine Networks",
+      "affected_versions": null,
+      "priority": "medium",
+      "cvss_v3": 9.9,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-77"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": false
+      },
+      "patch_info": {
+        "available": false,
+        "version": null,
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 8,
+      "axis2_score": 0,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "NVD/EUVD（網羅スイープ）",
+          "date": "2026-09-01T07:00:00+09:00",
+          "description": "システムクロック設定機能のcgi処理に起因する未認証コマンドインジェクションとしてCVE採番・公開エクスプロイトの存在を確認"
+        }
+      ],
+      "overview": "海事・遠隔地向け衛星通信最適化アプライアンスRedPort Optimizer wXa-203/213/223に、システムクロック設定用CGI処理に起因する未認証コマンドインジェクション脆弱性CVE-2026-83524が確認された。エクスプロイトは既に公開されている。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証でシステムクロック設定CGIへ細工引数を送信"
+        },
+        {
+          "step": 2,
+          "description": "任意コマンド実行"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "衛星通信アプライアンスの管理インタフェース露出状況を確認する",
+        "splunk_spl": [],
+        "detection_notes": ""
+      },
+      "references": [
+        {
+          "url": "https://euvd.enisa.europa.eu/enisa/EUVD-2026-68912",
+          "title": null,
+          "language": "en",
+          "source": "EUVD"
+        }
+      ],
+      "sector_impact": [
+        "telecom"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260902-CVEP-7ada1c2c"
+    },
+    {
+      "cve_id": "CVE-2026-83772",
+      "product": "Cobham SATCOM VSAT7090（海事衛星ルータ）",
+      "vendor": "Cobham SATCOM",
+      "affected_versions": null,
+      "priority": "medium",
+      "cvss_v3": 9.9,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-77"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": false
+      },
+      "patch_info": {
+        "available": false,
+        "version": null,
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 8,
+      "axis2_score": 0,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "NVD/EUVD（網羅スイープ）",
+          "date": "2026-09-01T07:00:00+09:00",
+          "description": "メール通知機能のJSONパース処理に起因する未認証コマンドインジェクションとしてCVE採番・公開エクスプロイトの存在を確認"
+        }
+      ],
+      "overview": "海事衛星ルータCobham SATCOM VSAT7090に、メール通知機能（mail-report.sh）のJSONパース処理に起因する未認証コマンドインジェクション脆弱性CVE-2026-83772が確認された。エクスプロイトは既に公開されている。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証でメール通知機能のsender/recipients引数へ細工JSONを送信"
+        },
+        {
+          "step": 2,
+          "description": "任意コマンド実行"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "海事衛星ルータの管理インタフェース露出状況を確認する",
+        "splunk_spl": [],
+        "detection_notes": ""
+      },
+      "references": [
+        {
+          "url": "https://euvd.enisa.europa.eu/enisa/EUVD-2026-68984",
+          "title": null,
+          "language": "en",
+          "source": "EUVD"
+        }
+      ],
+      "sector_impact": [
+        "telecom"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260902-CVEP-a80a758b"
+    }
+  ],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-09-02-001",
+        "title": "BGP乗っ取りでVirtualizor VPS管理ソフトへ悪意ある更新を配信するサプライチェーン攻撃",
+        "summary": "VPS仮想化管理ソフトVirtualizorの更新配信基盤（Hetzner系IPブロック、Softaculousの更新・課金ポータル）が2026-08-28 20:57 UTC〜08-30 06:10 UTCの間BGPハイジャックを受け、攻撃者は正規のTLS証明書を取得した上でトラフィックを迂回させ悪意ある更新パッケージを配信した。Virtualizorの更新クライアントはパッケージの暗号署名検証を行っておらず、BGP乗っ取り＋有効なTLS証明書だけでroot権限のコード実行が可能だった。ホスティング事業者はVirtualizorでKVM/Xen/LXC/OpenVZ/Proxmoxの数百台規模の仮想化サーバを一括管理するため、汚染された更新はホスティングスタックの上位に位置する深刻なサプライチェーンリスクとなる。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-09-01T23:53:00+09:00",
+            "description": "AS62390(NexonHost)がAS6204(Zet.net)経由でHetzner系IPブロック162.55.80.0/24を乗っ取り、悪意あるVirtualizor更新を一部インストールへ配信したと報道"
+          }
+        ],
+        "sector_impact": [
+          "it",
+          "professional_services"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/hackers-push-malicious-virtualizor-update-in-bgp-hijacking-attack/",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://www.virtualizor.com/blog/security-incident-bgp-hijacking/",
+            "title": null,
+            "language": "en",
+            "source": "Virtualizor公式ブログ"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260902-TRND-5783d0fd"
+      },
+      {
+        "topic_id": "TREND-2026-09-02-002",
+        "title": "米国医療機関で大規模データ侵害が相次いで判明（Aesto Health・Novocure・Nutex Health）",
+        "summary": "米国の医療関連組織で複数のデータ侵害が新たに公表された。医療サービス提供者Aesto Healthは950万人超の患者に影響するデータ侵害を公表、がん治療機器メーカーNovocureは1,400人超の患者への影響を公表、Nutex Healthはランサムウェアグループによる侵害主張を受けている。いずれも侵害手口の詳細・攻撃者の帰属は本日時点で個別記事からは確認できていない。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer/SecurityWeek",
+            "date": "2026-09-01T23:28:17+09:00",
+            "description": "Aesto Health・Novocure・Nutex Healthの3件の医療機関データ侵害が同日相次いで報道された"
+          }
+        ],
+        "sector_impact": [
+          "healthcare"
+        ],
+        "region_impact": [
+          "US"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/aesto-health-says-data-breach-affects-over-9-5-million-patients/",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/novocure-data-breach-affects-more-than-1400-cancer-patients/",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://www.securityweek.com/ransomware-gang-claims-nutex-health-data-breach/",
+            "title": null,
+            "language": "en",
+            "source": "SecurityWeek"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260902-TRND-0d7ea576"
+      },
+      {
+        "topic_id": "TREND-2026-09-02-003",
+        "title": "ClickFix型キャンペーンが31組織を侵害、Polygonブロックチェーンを悪用したEtherHidingでC2を更新",
+        "summary": "ClickFix型の偽検証画面を用いる攻撃キャンペーンが31組織を侵害したことが報告された。C2インフラの更新にPolygonブロックチェーンを悪用するEtherHiding技術（攻撃者制御のアドレス帳としてブロックチェーンを利用）を採用しており動的なC2更新が可能。攻撃者の帰属は本日時点で確認されていない。EtherHiding自体は既報のDOUBLECUP（2026-08-04・Ethereum/Polygon悪用）等複数の脅威アクターで採用例がある技術であり、同一主体かは不明（推測を含む）。",
+        "changes_24h": [
+          {
+            "source": "Dark Reading",
+            "date": "2026-09-01T22:56:42+09:00",
+            "description": "ClickFixキャンペーンが31組織を侵害しPolygonブロックチェーン経由のEtherHidingでC2を動的更新していると報道"
+          }
+        ],
+        "sector_impact": [
+          "other"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.darkreading.com/endpoint-security/clickfix-campaign-comprises-31-orgs-abuses-polygon-blockchain",
+            "title": null,
+            "language": "en",
+            "source": "Dark Reading"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260902-TRND-e83325a9"
+      },
+      {
+        "topic_id": "TREND-2026-09-02-004",
+        "title": "正規エンドポイント管理ツールFaronics Deployを悪用しScreenConnectを配信するフィッシングキャンペーン",
+        "summary": "2026-07-21〜08-20の間、請求書・税務書類等を装ったフィッシングメールを起点に、正規のクラウド型エンドポイント管理プラットフォーム「Faronics Deploy」を悪用してScreenConnectをインストールさせるキャンペーンが457件超のエンドポイントへ到達したことをHuntressが報告した。ScreenConnectは独立した遠隔操作経路として、Faronicsエージェントが検知・除去された場合の冗長手段としても機能する。Faronics社は2026-08-05の通報を受け不正利用対策を強化済み。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-09-02T05:53:23+09:00",
+            "description": "Huntressの調査に基づき、正規のFaronics Deployを悪用しScreenConnectを配信するフィッシングキャンペーンを報道"
+          }
+        ],
+        "sector_impact": [
+          "other"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/hackers-abuse-faronics-deploy-admin-tool-to-install-screenconnect/",
+            "title": null,
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260902-TRND-27b7e34a"
+      }
+    ]
+  },
+  "apt_main": [
+    {
+      "group_name": "BREEZE COMET",
+      "aliases": [
+        "UNC5669（旧称）"
+      ],
+      "nation_state": null,
+      "attribution_confidence": "medium",
+      "campaign_id": "BreezeComet-2026-BrazilPaymentFraud",
+      "activity_type": [
+        "active_campaign",
+        "new_malware",
+        "ioc_release"
+      ],
+      "motivation": "financial",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "finance",
+          "it"
+        ],
+        "regions": [
+          "South America"
+        ],
+        "countries": [
+          "BR"
+        ]
+      },
+      "malware": [
+        {
+          "name": "REALBREEZE",
+          "type": "backdoor",
+          "language": null,
+          "delivery": [
+            "compromised_website"
+          ],
+          "persistence": [],
+          "c2_protocol": []
+        },
+        {
+          "name": "COBALTSPIN",
+          "type": "other",
+          "language": null,
+          "delivery": [],
+          "persistence": [],
+          "c2_protocol": []
+        },
+        {
+          "name": "KICKPLATE",
+          "type": "loader",
+          "language": null,
+          "delivery": [],
+          "persistence": [],
+          "c2_protocol": []
+        }
+      ],
+      "axis_p_score": 8,
+      "axis_q_score": 5,
+      "changes_24h": [
+        {
+          "source": "Google Threat Intelligence (Mandiant)",
+          "date": "2026-09-01T23:00:00+09:00",
+          "description": "金銭動機の脅威アクターBREEZE COMETがブラジルの決済システム（Pix・STR・Boleto）を狙う手口の詳細技術分析を公開"
+        }
+      ],
+      "overview": "金銭動機の脅威アクターBREEZE COMET（旧称UNC5669）がブラジルの銀行・フィンテック・小売・決済処理事業者を標的に、Pix・STR・Boleto等の決済システムと金融APIへのアクセス権限侵害を通じて不正送金を行っていることをGoogle Threat Intelligence（Mandiant）が報告した。侵害した特権アカウントを用いて中核金融アプリケーションへアクセスし、確立から24〜48時間以内に2波にわたる数百件の不正送金を実行。カスタムマルウェア群（REALBREEZE・COBALTSPIN・KICKPLATE・MILDFROST・LIGHTPAINT・BOATBEAM）と侵害済み正規サイトを組み合わせ、侵入経路・C2・ステルス性を確保している。永続化手法は2024年の商用RMMツール展開から、悪意あるKubernetesポッド展開・クラウドシークレットの公開ノートサイトへの窃取へ進化した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "侵害済み正規サイト・カスタムマルウェアで金融組織へ初期侵入"
+        },
+        {
+          "step": 2,
+          "description": "特権アカウントを侵害し中核金融アプリケーション・決済APIへアクセス"
+        },
+        {
+          "step": 3,
+          "description": "24〜48時間以内に2波の不正送金を実行し、クラウドシークレットを公開ノートサイトへ窃取"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1078",
+          "name": "Valid Accounts",
+          "implementation": "侵害した特権アカウントで金融アプリケーション・決済APIへアクセス"
+        },
+        {
+          "mitre_id": "T1608",
+          "name": "Stage Capabilities",
+          "implementation": "侵害済み正規Webサイトを初期アクセス・C2・決済APIとのやり取りの足場として悪用"
+        },
+        {
+          "mitre_id": "T1610",
+          "name": "Deploy Container",
+          "implementation": "悪意あるKubernetesポッドを永続化手段として展開"
+        }
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "Pix/STR/Boleto等の決済APIアクセス権限を持つアカウントの異常操作（短時間での連続送金・通常と異なる時間帯のアクセス）を監視する。mTLS証明書・RSFN接続の棚卸しと特権アカウントの多要素認証強化を推奨する。",
+      "splunk_spl": [
+        "index=payment_gateway sourcetype=pix_api OR sourcetype=str_api | stats count by account_id, src_ip | where count > <baseline>"
+      ],
+      "detection_notes": "短時間（24〜48時間）に集中する高額・高頻度送金パターンを重点確認する。単一アカウントからの連続的な決済API呼び出しは正規業務では稀である。",
+      "references": [
+        {
+          "url": "https://cloud.google.com/blog/topics/threat-intelligence/financially-motivated-threat-actor-breeze-comet-targets-brazil",
+          "title": null,
+          "language": "en",
+          "source": "Google Threat Intelligence (Mandiant)"
+        },
+        {
+          "url": "https://thehackernews.com/2026/09/breeze-comet-executes-hundreds-of.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_main",
+      "info_id": "20260902-APTC-ea6ac436"
+    },
+    {
+      "group_name": "Nimbus Manticore",
+      "aliases": [
+        "GalaxyGato",
+        "Mirage Kitten",
+        "Screening Serpens",
+        "Smoke Sandstorm",
+        "Subtle Snail",
+        "UNC1549"
+      ],
+      "nation_state": "IR",
+      "attribution_confidence": "high",
+      "campaign_id": "NimbusManticore-2026-TWOSTROKE-DreamJob",
+      "activity_type": [
+        "new_malware",
+        "new_target"
+      ],
+      "motivation": "espionage",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "it",
+          "defense",
+          "government"
+        ],
+        "regions": [
+          "Middle East",
+          "Africa"
+        ],
+        "countries": [
+          "AF",
+          "EG",
+          "ET"
+        ]
+      },
+      "malware": [
+        {
+          "name": "NodeRabbit",
+          "type": "rat",
+          "language": "JavaScript/Node.js",
+          "delivery": [
+            "phishing"
+          ],
+          "persistence": [],
+          "c2_protocol": []
+        },
+        {
+          "name": "PollCat",
+          "type": "rat",
+          "language": "JavaScript/Node.js",
+          "delivery": [
+            "phishing"
+          ],
+          "persistence": [],
+          "c2_protocol": []
+        }
+      ],
+      "axis_p_score": 8,
+      "axis_q_score": 5,
+      "changes_24h": [
+        {
+          "source": "Kaspersky（The Hacker News経由）",
+          "date": "2026-09-01T22:08:58+09:00",
+          "description": "イラン系Nimbus Manticore（別名Mirage Kitten）がLinux/macOS対応の新規クロスプラットフォームRAT「NodeRabbit」「PollCat」を偽採用面接コーディングテストで配布していると報告"
+        }
+      ],
+      "overview": "既報のNimbusManticore-2026-TWOSTROKE-DreamJob（Group-IB追跡）の関連キャンペーンとして、Kaspersky（別名Mirage Kitten）がLinux・macOSを標的とする新規クロスプラットフォームRAT「NodeRabbit」「PollCat」（いずれもNode.js/JavaScript製）を新たに文書化した。LinkedIn等の求人プラットフォームでリクルーターを装い、トロイ化されたコーディング課題アーカイブを介して配布する。初検体はアフガニスタンで発見され、その後エジプト・エチオピアでも観測されており標的地域が拡大している。NodeRabbitはホスト情報収集・C2通信・コマンド実行・ファイル操作を、PollCatはこれに加えドライブ列挙・ファイル送受信・隠しプロセス起動・任意JavaScript実行が可能。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "求人プラットフォームでリクルーターを偽装しスピアフィッシング"
+        },
+        {
+          "step": 2,
+          "description": "トロイ化されたコーディング課題アーカイブでNodeRabbit/PollCatを配布"
+        },
+        {
+          "step": 3,
+          "description": "ホスト偵察・C2通信・コマンド実行で足場を確立"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1566",
+          "name": "Phishing",
+          "implementation": "LinkedIn等の求人プラットフォーム経由の偽採用面接コーディングテストでマルウェアを配布"
+        },
+        {
+          "mitre_id": "T1059.007",
+          "name": "JavaScript",
+          "implementation": "Node.js/JavaScript製のNodeRabbit/PollCatによるコマンド実行"
+        }
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "ソフトウェア開発者向けに、採用面接を装うコーディング課題ファイルの実行前検証を徹底する。LinkedIn等での身元不明リクルーターからのアーカイブファイル受領を注意喚起する。",
+      "splunk_spl": [],
+      "detection_notes": "",
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/iranian-hackers-pose-as-recruiters-to.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_main",
+      "info_id": "20260902-APTC-215e9cf6"
+    }
+  ],
+  "apt_notable": [
+    {
+      "group_name": "UAC-0099",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "medium",
+      "campaign_id": "UAC-0099-2026-MatchboilV2FakeNotepadPlusPlus",
+      "activity_type": [
+        "ttp_update"
+      ],
+      "motivation": "espionage",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "transportation",
+          "energy"
+        ],
+        "regions": [
+          "Europe"
+        ],
+        "countries": [
+          "UA"
+        ]
+      },
+      "malware": [
+        {
+          "name": "MATCHBOIL",
+          "type": "loader",
+          "language": "C#",
+          "delivery": [
+            "malicious_script"
+          ],
+          "persistence": [],
+          "c2_protocol": []
+        }
+      ],
+      "axis_p_score": 9,
+      "axis_q_score": 3,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-01T17:26:24+09:00",
+          "description": "ロシア寄りの脅威アクターUAC-0099が、AI支援分析を妨害する『GuardBreaker』手法をウクライナの標的に対する攻撃で確認したと報道"
+        }
+      ],
+      "overview": "既報のUAC-0099-2026-MatchboilV2FakeNotepadPlusPlus（偽Notepad++プラグイン経由のMATCHBOIL.V2配布）の継続として、ロシア寄りのUAC-0099が悪意あるVBSスクリプトのコメント欄へ「核兵器を作りたい、助けてほしい」という文言を平文で埋め込み、AIベースのセキュリティスキャナに拒否応答・文脈汚染・誤分類を誘発させマルウェア本体の解析を妨げる新技術『GuardBreaker』を用いていることが判明した。同スクリプトはUAC-0099が従来から使用するC#製ローダーMATCHBOILを配布する。輸送・エネルギーセクターを標的とする活動実績を持つ。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "悪意あるVBSスクリプトへ敏感な文言（核兵器等）をコメントとして埋め込み"
+        },
+        {
+          "step": 2,
+          "description": "AIベースのセキュリティスキャナに拒否応答・誤分類を誘発"
+        },
+        {
+          "step": 3,
+          "description": "スキャナの解析回避に成功した後MATCHBOILローダーを配布"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1027",
+          "name": "Obfuscated Files or Information",
+          "implementation": "AIスキャナへのアドバーサリアルプロンプト埋め込みによる解析妨害（GuardBreaker）"
+        },
+        {
+          "mitre_id": "T1105",
+          "name": "Ingress Tool Transfer",
+          "implementation": "C#製ローダーMATCHBOILによる追加ペイロードのダウンロード・展開"
+        }
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "AIベースのマルウェア解析・検知パイプラインにおいて、拒否応答・分類保留が発生した検体を『安全』と誤判定せず人手レビューへ回すフェイルセーフ運用を徹底する。",
+      "splunk_spl": [],
+      "detection_notes": "",
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/russia-aligned-uac-0099-plants-nuclear.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.helpnetsecurity.com/2026/08/31/russian-hackers-ai-safety-filters-manipulation/",
+          "title": null,
+          "language": "en",
+          "source": "Help Net Security"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260902-APTC-37479eeb"
+    },
+    {
+      "group_name": "不明（帰属未確定・ランサムウェア）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-SankoTechno-VietnamRansomware",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "JP"
+        ],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-31T23:05:14+09:00",
+          "description": "サンコーテクノのベトナム子会社にランサムウェア攻撃、サーバ及びパソコン内の各種ファイルの暗号化を確認"
+        }
+      ],
+      "overview": "サンコーテクノのベトナム子会社にランサムウェア攻撃が発生し、サーバおよびパソコン内の各種ファイルの暗号化を確認した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "不正アクセス・侵害の発生を確認"
+        },
+        {
+          "step": 2,
+          "description": "調査・原因究明を実施中（詳細は続報を待つ）"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "被害範囲の確定・当局への報告・影響利用者への通知を進めるとともに、認証情報の失効・パスワード変更を推奨する。",
+      "splunk_spl": [],
+      "detection_notes": "",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/",
+          "title": "サンコーテクノのベトナム子会社にランサムウェア攻撃、サーバ及びパソコン内の各種ファイルの暗号化を確認",
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260902-APTC-5adf376d"
+    },
+    {
+      "group_name": "不明（帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-ZurichInsurance-DashcamDataBreach",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "JP"
+        ],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-31T23:05:12+09:00",
+          "description": "チューリッヒ保険に不正アクセス、ドライブレコーダーのデータをアップロードした最大1,668名の顧客の個人情報が漏えいした可能性"
+        }
+      ],
+      "overview": "チューリッヒ保険に不正アクセスがあり、ドライブレコーダーのデータをアップロードした最大1,668名の顧客の個人情報が漏えいした可能性がある。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "不正アクセス・侵害の発生を確認"
+        },
+        {
+          "step": 2,
+          "description": "調査・原因究明を実施中（詳細は続報を待つ）"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "被害範囲の確定・当局への報告・影響利用者への通知を進めるとともに、認証情報の失効・パスワード変更を推奨する。",
+      "splunk_spl": [],
+      "detection_notes": "",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/",
+          "title": "チューリッヒ保険に不正アクセス、ドライブレコーダーのデータをアップロードした最大1,668名の顧客の個人情報が漏えいした可能性",
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260902-APTC-a6268a26"
+    },
+    {
+      "group_name": "不明（帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-WhiteEssence-BookingSystemBreach",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "JP"
+        ],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-31T23:05:11+09:00",
+          "description": "ホワイトエッセンスの予約サイトおよび基幹システムに不正アクセス、Webサイト・アプリ等からの予約等を一時停止"
+        }
+      ],
+      "overview": "ホワイトエッセンスの予約サイトおよび基幹システムに不正アクセスがあり、Webサイト・アプリ等からの予約等を一時停止した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "不正アクセス・侵害の発生を確認"
+        },
+        {
+          "step": 2,
+          "description": "調査・原因究明を実施中（詳細は続報を待つ）"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "被害範囲の確定・当局への報告・影響利用者への通知を進めるとともに、認証情報の失効・パスワード変更を推奨する。",
+      "splunk_spl": [],
+      "detection_notes": "",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/",
+          "title": "ホワイトエッセンスの予約サイトおよび基幹システムに不正アクセス、Webサイト・アプリ等からの予約等を一時停止",
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260902-APTC-73659e5a"
+    },
+    {
+      "group_name": "不明（帰属未確定・サポート詐欺）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-SKIManagement-TechSupportScam",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "JP"
+        ],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-31T23:05:09+09:00",
+          "description": "エスケーアイマネージメントへのサポート詐欺、Lanscope によるログ解析を実施し約4,000ファイルの削除を確認"
+        }
+      ],
+      "overview": "エスケーアイマネージメントがサポート詐欺被害を受け、Lanscopeによるログ解析を実施した結果、約4,000ファイルの削除を確認した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "不正アクセス・侵害の発生を確認"
+        },
+        {
+          "step": 2,
+          "description": "調査・原因究明を実施中（詳細は続報を待つ）"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "被害範囲の確定・当局への報告・影響利用者への通知を進めるとともに、認証情報の失効・パスワード変更を推奨する。",
+      "splunk_spl": [],
+      "detection_notes": "",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/",
+          "title": "エスケーアイマネージメントへのサポート詐欺、Lanscope によるログ解析を実施し約4,000ファイルの削除を確認",
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260902-APTC-59ce14ee"
+    },
+    {
+      "group_name": "不明（帰属未確定・リスト型攻撃）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-Yonex-CredentialStuffing",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "JP"
+        ],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-31T23:05:08+09:00",
+          "description": "「ヨネックス公式オンラインショップ」にリスト型攻撃、3 件の不正ログイン確認"
+        }
+      ],
+      "overview": "「ヨネックス公式オンラインショップ」がリスト型攻撃を受け、3件の不正ログインを確認した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "不正アクセス・侵害の発生を確認"
+        },
+        {
+          "step": 2,
+          "description": "調査・原因究明を実施中（詳細は続報を待つ）"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "被害範囲の確定・当局への報告・影響利用者への通知を進めるとともに、認証情報の失効・パスワード変更を推奨する。",
+      "splunk_spl": [],
+      "detection_notes": "",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/",
+          "title": "「ヨネックス公式オンラインショップ」にリスト型攻撃、3 件の不正ログイン確認",
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260902-APTC-84fe118c"
+    },
+    {
+      "group_name": "不明（帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-NissanFoundation-WebsiteBreach",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "JP"
+        ],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-31T23:05:06+09:00",
+          "description": "公益財団法人日産財団Webサイトに不正アクセス、情報が外部から閲覧され得る状態にあったことが判明"
+        }
+      ],
+      "overview": "公益財団法人日産財団のWebサイトに不正アクセスがあり、情報が外部から閲覧され得る状態にあったことが判明した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "不正アクセス・侵害の発生を確認"
+        },
+        {
+          "step": 2,
+          "description": "調査・原因究明を実施中（詳細は続報を待つ）"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "被害範囲の確定・当局への報告・影響利用者への通知を進めるとともに、認証情報の失効・パスワード変更を推奨する。",
+      "splunk_spl": [],
+      "detection_notes": "",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/",
+          "title": "公益財団法人日産財団Webサイトに不正アクセス、情報が外部から閲覧され得る状態にあったことが判明",
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260902-APTC-c808c6f4"
+    },
+    {
+      "group_name": "不明（帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-Isabou-UnauthorizedAccess",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "JP"
+        ],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity",
+          "date": "2026-08-31T23:05:04+09:00",
+          "description": "いさぼうネットに不正アクセス、個人情報が外部から閲覧 取得された可能性"
+        }
+      ],
+      "overview": "「いさぼうネット」に不正アクセスがあり、個人情報が外部から閲覧・取得された可能性がある。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "不正アクセス・侵害の発生を確認"
+        },
+        {
+          "step": 2,
+          "description": "調査・原因究明を実施中（詳細は続報を待つ）"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "被害範囲の確定・当局への報告・影響利用者への通知を進めるとともに、認証情報の失効・パスワード変更を推奨する。",
+      "splunk_spl": [],
+      "detection_notes": "",
+      "references": [
+        {
+          "url": "https://scan.netsecurity.ne.jp/",
+          "title": "いさぼうネットに不正アクセス、個人情報が外部から閲覧 取得された可能性",
+          "language": "ja",
+          "source": "ScanNetSecurity"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260902-APTC-2c89cc62"
+    },
+    {
+      "group_name": "不明（帰属未確定・フィッシング）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-LiquorRetailer-PhishingOrderLeak",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "JP"
+        ],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-09-01T22:49:02+09:00",
+          "description": "複数顧客にフィッシングメール、注文情報が流出か - 酒類販売事業者"
+        }
+      ],
+      "overview": "酒類販売事業者が複数顧客宛にフィッシングメールを送付される被害を受け、注文情報の流出が疑われている。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "不正アクセス・侵害の発生を確認"
+        },
+        {
+          "step": 2,
+          "description": "調査・原因究明を実施中（詳細は続報を待つ）"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "被害範囲の確定・当局への報告・影響利用者への通知を進めるとともに、認証情報の失効・パスワード変更を推奨する。",
+      "splunk_spl": [],
+      "detection_notes": "",
+      "references": [
+        {
+          "url": "https://www.security-next.com/",
+          "title": "複数顧客にフィッシングメール、注文情報が流出か - 酒類販売事業者",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260902-APTC-1af525f4"
+    },
+    {
+      "group_name": "不明（帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "RIS-2026-Hololive-TCGSiteBreachTraces",
+      "activity_type": [
+        "new_target"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "other"
+        ],
+        "regions": [
+          "JP"
+        ],
+        "countries": [
+          "JP"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 1,
+      "axis_q_score": 1,
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-09-01T19:07:31+09:00",
+          "description": "「ホロライブ」トレカゲームサイトに侵害痕跡 - 脆弱性公表受け調査で判明"
+        }
+      ],
+      "overview": "トレーディングカードゲーム「ホロライブ」公式サイトで侵害の痕跡が確認された。既公表の別脆弱性を受けた調査で判明したもの。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "不正アクセス・侵害の発生を確認"
+        },
+        {
+          "step": 2,
+          "description": "調査・原因究明を実施中（詳細は続報を待つ）"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "被害範囲の確定・当局への報告・影響利用者への通知を進めるとともに、認証情報の失効・パスワード変更を推奨する。",
+      "splunk_spl": [],
+      "detection_notes": "",
+      "references": [
+        {
+          "url": "https://www.security-next.com/",
+          "title": "「ホロライブ」トレカゲームサイトに侵害痕跡 - 脆弱性公表受け調査で判明",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20260902-APTC-f442a86b"
+    }
+  ],
+  "forecasts": [
+    {
+      "forecast_number": 1,
+      "title": "JFrog Artifactory未修正環境は管理者トークン不正発行を前提としたアクセス監査・認証情報ローテーションを24時間以内に実施すべき",
+      "tier": "T1",
+      "confidence": "low",
+      "confidence_numeric": 0.3,
+      "framing": "defensive_action",
+      "outcome_channel": "E1",
+      "window_hours": 72,
+      "forecast_class": "fast_72h",
+      "forecast_class_rationale": "CISA KEVへの初回追加は一次・二値に観測可能な事象であり72h窓に収まる（M2）。実悪用が既に確認されているため。",
+      "root": {
+        "evidence": "[The Hacker News/SecurityWeek/Dark Reading 2026-09-01/02] JFrog Artifactory Access内の認証不備CVE-2026-82329（既定構成で未認証攻撃者が管理者トークンを不正発行可能）が2026-08-28公開・7.161.20で修正されたが、公開から数日後の09-01に攻撃者が管理者トークンを不正発行しユーザー・グループ・認証情報セットを列挙する実悪用が複数ソース独立に確認された。",
+        "past_patterns": "（過去実績）類似5件（outcome_channel=E1・exploitation_stage=active_exploitation・forecast_class=fast_72h・techniques=T1190）のうち的中2・部分0・外れ3（経験的的中率40%）。",
+        "threat_intel": "Artifactoryはバイナリ・ビルド成果物を保持するDevOpsの中核ツールであり、悪用が拡大すればサプライチェーン汚染に発展するリスクがある。KEV未登録・国内報道は本日時点で未確認。"
+      },
+      "anchor": {
+        "epss_score": 0.0038,
+        "epss_percentile": 0.30675,
+        "epss_model_date": "2026-09-01",
+        "kev_registered": false,
+        "ssvc_decision": "Attend",
+        "ssvc_automatable": "yes"
+      },
+      "kev_snapshot": {
+        "date_added": null,
+        "ransomware_flag": null,
+        "reference_set": []
+      },
+      "estimated_part": "（推定）実悪用が確認済みの高深刻度CVEはCISAのKEV追加基準（実悪用確認・明確な悪用手法）を満たしやすいためKEV追加の可能性を高く見積もっているが、CISAの内部審査・優先順位付けの実際のタイミングは本予報の確認事項ではなく、72時間以内に追加されない可能性も相応にある。",
+      "early_warning_signals": "Artifactoryの管理者トークン発行イベントの急増、CISA KEVカタログの更新頻度、ベンダー・研究者による追加のIOC・スキャン活動報告。",
+      "hit_criteria": "対象CVEが CISA KEV カタログへ dateAdded が 2026-09-02〜2026-09-05（両端を含む）の範囲で初回追加されること（一次ソース: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json のJSON本体）。",
+      "deadline_date": "2026-09-05",
+      "related_cves": [
+        "CVE-2026-82329"
+      ],
+      "related_apt_campaigns": []
+    },
+    {
+      "forecast_number": 2,
+      "title": "Langflow未修正環境はAI関連認証情報（OpenAI/AWS等）のローテーションと外部公開状況の緊急確認を24時間以内に実施すべき",
+      "tier": "T1",
+      "confidence": "low",
+      "confidence_numeric": 0.3,
+      "framing": "defensive_action",
+      "outcome_channel": "E1",
+      "window_hours": 72,
+      "forecast_class": "fast_72h",
+      "forecast_class_rationale": "CISA KEVへの初回追加は一次・二値に観測可能な事象であり72h窓に収まる（M2）。実悪用が既に大規模に確認されているため。",
+      "root": {
+        "evidence": "[BleepingComputer/The Hacker News/Dark Reading/SecurityWeek 2026-09-01/02] Langflow（OSSのAIアプリ開発プラットフォーム）の未認証コード実行脆弱性CVE-2026-0768（2026年1月修正済み）が、VulnCheckのハニーポットで週末50件超・累計360件超の実悪用試行として観測された。攻撃はLangflowスーパーユーザー認証情報・AWSシークレット・OpenAI APIキー等を狙った偵察が中心で送信元はロシアが主体。",
+        "past_patterns": "（過去実績）類似5件（outcome_channel=E1・exploitation_stage=active_exploitation・forecast_class=fast_72h・techniques=T1190）のうち的中2・部分0・外れ3（経験的的中率40%）。",
+        "threat_intel": "同日Ruby on Rails Active Storageの脆弱性CVE-2026-66066も同一攻撃キャンペーンの一部として実悪用が確認されており、AI開発基盤を狙った認証情報窃取キャンペーンが継続中とみられる。KEV未登録・国内報道は本日時点で未確認。"
+      },
+      "anchor": {
+        "epss_score": 0.02338,
+        "epss_percentile": 0.82417,
+        "epss_model_date": "2026-09-01",
+        "kev_registered": false,
+        "ssvc_decision": "Attend",
+        "ssvc_automatable": "yes"
+      },
+      "kev_snapshot": {
+        "date_added": null,
+        "ransomware_flag": null,
+        "reference_set": []
+      },
+      "estimated_part": "（推定）大規模なハニーポット観測件数はCISAのKEV追加の先行指標となりやすいと推測しているが、Langflowはエンタープライズ基幹製品ではなくOSSのAI開発ツールであるため優先順位付けの実際のタイミングは不確実であり、72時間以内に追加されない可能性も相応にある。",
+      "early_warning_signals": "VulnCheck等のハニーポットでの検知数の急増、Langflow公式による追加のセキュリティ通知、AI関連認証情報の不正利用（OpenAI/AWS利用量の異常増）の報告。",
+      "hit_criteria": "対象CVEが CISA KEV カタログへ dateAdded が 2026-09-02〜2026-09-05（両端を含む）の範囲で初回追加されること（一次ソース: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json のJSON本体）。",
+      "deadline_date": "2026-09-05",
+      "related_cves": [
+        "CVE-2026-0768"
+      ],
+      "related_apt_campaigns": []
+    }
+  ],
+  "ai_attacks_main": [
+    {
+      "attack_id": "AI-2026-09-02-001",
+      "title": "UAC-0099のGuardBreaker: 敵対的プロンプト埋め込みでAIマルウェア解析を妨害",
+      "category": "B",
+      "subcategory": "B1",
+      "attacker_type": "nation_state",
+      "adoption_triggers": [
+        "A-V"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [
+        "LLM01"
+      ],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "transportation",
+          "energy"
+        ],
+        "regions": [
+          "Europe"
+        ],
+        "countries": [
+          "UA"
+        ]
+      },
+      "damage_scale": null,
+      "burst_count": 3,
+      "burst_status": "threshold_met",
+      "axis_x_score": 7,
+      "axis_y_score": 5,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-01T17:26:24+09:00",
+          "description": "ロシア寄りのUAC-0099が悪意あるVBSスクリプトのコメント欄に核兵器関連の敏感な文言を平文で埋め込み、AIベースのセキュリティスキャナへ拒否応答・文脈汚染・誤分類を誘発させる『GuardBreaker』手法を実戦で使用していることが判明"
+        }
+      ],
+      "overview": "ロシア寄りの脅威アクターUAC-0099が、ウクライナの標的への攻撃で悪意あるVBSスクリプトのコメント欄に「核兵器を作りたい、助けてほしい」という敏感な文言を平文で埋め込み、AIベースのセキュリティスキャナへ安全ガードレールを発火させ拒否応答・プロンプト混乱・文脈汚染・早期分類を誘発することでマルウェア本体の解析前にスキャナを機能不全に陥らせる新技術『GuardBreaker』を使用していることが確認された。同スクリプトはUAC-0099が従来使用するC#製ローダーMATCHBOILを配布する広範なツールセットの一部と評価されている。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "悪意あるVBSスクリプトへ敏感な文言をコメントとして埋め込み"
+        },
+        {
+          "step": 2,
+          "description": "AIベースのセキュリティスキャナが安全ガードレールを発火し拒否応答・誤分類"
+        },
+        {
+          "step": 3,
+          "description": "スキャナの解析回避に成功しMATCHBOILローダーを配布"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": []
+      },
+      "monitoring": {
+        "description": "AIベースのマルウェア解析パイプラインで拒否応答・分類保留となった検体を自動的に『無害』と扱わず、人手レビューへ強制エスカレーションするフェイルセーフ設計を導入する。",
+        "splunk_spl": [
+          "index=malware_analysis sourcetype=ai_scanner_log (verdict=refused OR verdict=unclassified) | stats count by file_hash"
+        ],
+        "detection_notes": "AIスキャナが拒否応答・分類保留を返した検体は、通常の誤検知よりも意図的な回避試行を疑い優先度を上げて再解析する。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/russia-aligned-uac-0099-plants-nuclear.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.helpnetsecurity.com/2026/08/31/russian-hackers-ai-safety-filters-manipulation/",
+          "title": null,
+          "language": "en",
+          "source": "Help Net Security"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20260902-AIAT-cb6f20ff"
+    },
+    {
+      "attack_id": "AI-2026-09-02-002",
+      "title": "METR、盗難APIキーで約60万ドル分のAI利用料を消費される被害を公表",
+      "category": "C",
+      "subcategory": "C4",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-Q"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "約60万ドル相当のAIモデル利用料（クレジット提供元が無償提供したため実損は回避）",
+      "burst_count": 8,
+      "burst_status": "burst_exceeded",
+      "axis_x_score": 5,
+      "axis_y_score": 5,
+      "changes_24h": [
+        {
+          "source": "The Hacker News / Dark Reading / The Register",
+          "date": "2026-09-01T18:05:30+09:00",
+          "description": "AIモデル評価団体METRが、研究者個人のEC2インスタンス上のフェイルオープンな認証不備を突かれAPIキーを窃取され、3週間にわたり約60万ドル相当のAIモデル利用料を消費されたと公式開示"
+        }
+      ],
+      "overview": "フロンティアAIモデルの評価を行う非営利団体METRが2件のセキュリティインシデントを開示した。3月のインシデントでは、研究者が個人のAWS EC2インスタンス上でGoogle認証の背後に公開状態で稼働させていたアプリにMETRの公開モデルアカウントのAPIキーが保存されており、フェイルオープンな認証不備により数日間にわたり認証なしでアクセス可能な状態にあった。攻撃者はエージェントにプロンプトを与えてAPIキーを露出させ、SSH鍵を追加して永続化した上で、3週間にわたり大量のモデルクレジットを消費した。METRは大規模評価で通常から高トークン量を消費するため異常検知が遅れ、支出上限も設定していなかった。5月にはさらに、金銭動機とみられる別の攻撃者集団がクレデンシャルスタッフィング・OAuthトークン窃取試行・新規サービスのスキャン・スタッフへのフィッシングをエージェントで自動化した偵察を実施していたことも判明した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "個人所有EC2上の認証不備によりAPIキーが公開状態で露出"
+        },
+        {
+          "step": 2,
+          "description": "AIエージェントへプロンプトを与えAPIキー・認証情報を抽出させ持続的アクセス用SSH鍵を追加"
+        },
+        {
+          "step": 3,
+          "description": "3週間にわたり大量のモデルクレジットを消費（推定約60万ドル相当）"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": []
+      },
+      "monitoring": {
+        "description": "METR非インフラ上でのMETR認証情報・データの保管禁止ポリシーを導入済み。APIキーへの支出上限アラート・監視強化を実施。",
+        "splunk_spl": [
+          "index=cloud_billing sourcetype=api_usage app=ai_model_provider | stats sum(cost) by api_key_id | where sum(cost) > <baseline>"
+        ],
+        "detection_notes": "AIモデルAPIキーには支出上限・異常消費アラートを必ず設定する。研究用インスタンスの公開範囲・認証設計を定期監査する。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-steal-metr-api-key-and.html",
+          "title": null,
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://metr.org/blog/2026-08-31-security-update/",
+          "title": null,
+          "language": "en",
+          "source": "METR公式ブログ"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20260902-AIAT-68374e70"
+    },
+    {
+      "attack_id": "AI-2026-09-02-003",
+      "title": "Langflow未認証RCE(CVE-2026-0768)がOpenAI/AWS認証情報窃取を目的に大規模実悪用",
+      "category": "C",
+      "subcategory": "C1",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-S"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": null,
+      "burst_count": 8,
+      "burst_status": "burst_exceeded",
+      "axis_x_score": 5,
+      "axis_y_score": 5,
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-09-02T02:54:22+09:00",
+          "description": "VulnCheckがハニーポットで360件超の実悪用試行を観測、Langflowのスーパーユーザー認証情報・AWSシークレット・OpenAI APIキーを狙った偵察を確認"
+        }
+      ],
+      "overview": "OSSのAIアプリ開発プラットフォームLangflowの未認証コード実行脆弱性CVE-2026-0768（2026年1月修正済み）が、ロシアを主体とする送信元から大規模に実悪用されている。攻撃者はLangflowのスーパーユーザー認証情報、AWSシークレット、OpenAI APIキー等のAI関連認証情報をvalidateエンドポイント経由で窃取する偵察を行っており、Ruby on Rails Active Storageの別脆弱性CVE-2026-66066を悪用した攻撃と同一キャンペーンの一部と報じられている。詳細はSection 3（製品別CVE・参考情報B）を参照。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証でLangflowのvalidateエンドポイントへ細工Pythonコードを送信しroot権限でコード実行"
+        },
+        {
+          "step": 2,
+          "description": "Langflowスーパーユーザー認証情報・AWSシークレット・OpenAI APIキー等の環境変数を窃取"
+        },
+        {
+          "step": 3,
+          "description": "窃取したAIサービス認証情報を用いた不正利用の可能性（推定・本日時点で確認されず）"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": []
+      },
+      "monitoring": {
+        "description": "Langflowを含むAI開発プラットフォームの外部公開状況を棚卸しし、環境変数に格納するクラウド・AIサービス認証情報は最小権限のシークレットマネージャ経由へ移行する。",
+        "splunk_spl": [
+          "index=langflow sourcetype=langflow_app uri_path=\"*/validate*\" | stats count by src_ip"
+        ],
+        "detection_notes": "詳細はSection 3 CVE-2026-0768エントリの監視ポイントを参照。"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/critical-langflow-flaw-exploited-to-steal-openai-and-aws-keys/",
+          "title": null,
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20260902-AIAT-1d7d8d05"
+    }
+  ],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-09-02-001",
+      "title": "Claude等の汎用AIによるPLCエクスプロイト移植実験、産業制御系の攻撃コスト低下を実証",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "ε"
+      ],
+      "priority": "medium",
+      "product_or_service": "WAGO PLC（産業用制御機器）",
+      "targets": {
+        "sectors": [
+          "energy",
+          "manufacturing",
+          "critical_infrastructure"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SecurityWeek",
+          "date": "2026-09-01T21:37:15+09:00",
+          "description": "Forescoutの研究者がAnthropic Claudeを用いてWAGO PLC機種間でリモートコード実行エクスプロイトを移植する実験を実施し、数時間・数百ドルで完了したと報告"
+        }
+      ],
+      "overview": "Forescoutの研究者が汎用AIモデル（Anthropic Claude）を用い、あるWAGO PLC機種向けに存在するリモートコード実行エクスプロイトを別機種へ移植する実験を行い、従来は専門知識と長時間を要した作業が数時間・数百ドルのコストで完了したことを実証した。実際の攻撃キャンペーンではなく研究発表段階だが、AIによる産業制御システム（ICS）向けエクスプロイト開発の障壁低下を示すデータ点であり、パッチ未適用のPLC資産を持つ組織はTTP変化として把握しておくべきである。",
+      "recommended_actions": [
+        "ICS/OT資産の棚卸しとインターネット直接露出の有無を確認する",
+        "WAGO PLCを含む産業制御機器のパッチ適用状況を確認し、既知の脆弱性に対する優先パッチ適用計画を見直す",
+        "OT/ICSネットワークのセグメンテーションを確認し、汎用AIツールによる攻撃コスト低下を前提とした防御態勢を検討する"
+      ],
+      "monitoring": {
+        "description": "OT/ICSネットワークの境界における異常なPLC管理プロトコルアクセスを監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.securityweek.com/experiment-porting-a-plc-exploit-with-ai-takes-hours-and-hundreds-of-dollars/",
+          "title": null,
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "info_id": "20260902-SOCR-c4271003"
+    },
+    {
+      "rec_id": "SOC-2026-09-02-002",
+      "title": "Google Cloud BuildのRCE脆弱性、6月修正済みだが利用組織は設定を再確認",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "low",
+      "product_or_service": "Google Cloud Build",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global",
+          "JP"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-09-01T18:20:09+09:00",
+          "description": "Google Cloud上のビルドサービス「Cloud Build」に存在したRCE脆弱性が明らかとなったが、既に2026年6月時点で解消済みと報道"
+        }
+      ],
+      "overview": "Google Cloudのソフトウェアビルドサービス「Cloud Build」にリモートコード実行につながる脆弱性が存在していたことが明らかになったが、Google側で2026年6月に既に修正済みであり、現時点で追加のアクション不要とされている。国内でもCloud Buildを利用する組織はビルドパイプラインの権限設定（サービスアカウントの権限範囲等）を改めて確認しておくことが望ましい。",
+      "recommended_actions": [
+        "Cloud Buildのサービスアカウント権限が最小権限原則に沿っているか確認する",
+        "ビルドパイプラインの外部トリガー・Webhook設定を棚卸しする"
+      ],
+      "monitoring": {
+        "description": "",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/189666",
+          "title": "「Google Cloud Build」にRCE脆弱性 - 6月に修正済み",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "info_id": "20260902-SOCR-056d3e17"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-76658",
+        "product": "HPE Networking Fabric Composer（ほか4件: CVE-2026-76657/CVE-2026-19766/CVE-2026-73700/CVE-2026-73701）",
+        "reason": "low_score",
+        "reason_detail": "単一ベンダー(HPE)一括アドバイザリ・CVSS10.0の未認証RCE/認証バイパスを含むが軸1=7点（未認証RCE+3・CVSS9以上+3・広く使われる製品+1）で8点未満・国内報道等の参考A昇格トリガー該当なしのため除外。5件以上の同一ベンダー同時公開のため代表1件へ集約。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84147",
+        "product": "不明ERPシステム（CERT-In公表・ベンダー名非公開）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "情報源(CERT-In)が製品名・ベンダー名を公開しておらずトラックA判定に必要な製品特定ができないため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84148",
+        "product": "不明ERPシステム（CERT-In公表・ベンダー名非公開）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "CVE-2026-84147と同一不明ERPシステムのアクセス制御不備。製品・ベンダー名非公開のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84149",
+        "product": "不明ERPシステム（CERT-In公表・ベンダー名非公開）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "CVE-2026-84147と同一不明ERPシステムの.gitディレクトリ露出。製品・ベンダー名非公開のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-82954",
+        "product": "Dokploy（PaaS型セルフホストプラットフォーム）",
+        "reason": "low_score",
+        "reason_detail": "パストラバーサル・PoC公開済みだが軸1=5点（PoC公開+2・CVSS9以上+3）で8点未満、国内報道等の昇格トリガーなしのため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-18210",
+        "product": "TRtek Products Store（トルコ製POSソフトウェア）",
+        "reason": "low_score",
+        "reason_detail": "SQLインジェクション（TR-CERT公表）。軸1=3点（CVSS9以上のみ）で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-18550",
+        "product": "Nokri - Job Board（WordPressテーマ）",
+        "reason": "low_score",
+        "reason_detail": "パスワードリセットトークン検証不備によるアカウント乗っ取り。軸1=6点（認証バイパス+3・CVSS9以上+3）で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-18765",
+        "product": "Teracity E-OSB（トルコ製ソフトウェア）",
+        "reason": "low_score",
+        "reason_detail": "SQLインジェクション（TR-CERT公表）。軸1=3点で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-18808",
+        "product": "Klemsan KIO（Klemsan Internet Objects・産業用IoT）",
+        "reason": "low_score",
+        "reason_detail": "コードインジェクション（TR-CERT公表）。軸1=6点（RCE相当+3・CVSS9以上+3）で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-73749",
+        "product": "Aruba/HPE AOS-CX（ネットワークスイッチOS）",
+        "reason": "low_score",
+        "reason_detail": "未認証RCE（デーモンの不正な入力処理）。軸1=7点（未認証RCE+3・CVSS9以上+3・広く使われる製品+1）で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-75865",
+        "product": "WPLP Cookie Consent（WordPressプラグイン）",
+        "reason": "low_score",
+        "reason_detail": "未認証ファイルアップロード。軸1=6点で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-78012",
+        "product": "NetStaX EtherNet/IP Stack（産業用通信スタック）",
+        "reason": "low_score",
+        "reason_detail": "大サイズCIPメッセージによるメモリ破損・デバイスクラッシュ。RCEとしての確証なく軸1=3点のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84119",
+        "product": "Mozilla Firefox（DOM Navigationコンポーネント）",
+        "reason": "low_score",
+        "reason_detail": "サンドボックス脱出Use-After-Free。Firefox 155等で修正済み・実悪用未確認。軸1=7点（未認証RCE相当+3・CVSS9以上+3・広く使われる製品+1）で8点未満、国内報道未確認のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84121",
+        "product": "Mozilla Firefox（DOM Securityコンポーネント）",
+        "reason": "low_score",
+        "reason_detail": "CVE-2026-84119と同時修正のサンドボックス脱出Use-After-Free。同様に軸1=7点のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-4813",
+        "product": "Lutece Core（フランス公共部門向けCMS）",
+        "reason": "low_score",
+        "reason_detail": "XSLTエクスポート機能のRCEだが管理者権限を要するため軸1=3点（CVSS9以上のみ）で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84200",
+        "product": "Kyverno（Kubernetesポリシーエンジン）",
+        "reason": "low_score",
+        "reason_detail": "ポリシー例外処理のバイパス。軸1=3点で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2023-54356",
+        "product": "Kyverno（Kubernetesポリシーエンジン）",
+        "reason": "low_score",
+        "reason_detail": "TLS 3DES暗号スイート対応（Sweet32、CVE-2016-2183系）の旧CVE。軸1=3点で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-78319",
+        "product": "産業用制御機器（CERTVDE公表・製品名非公開）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "TOCTOU競合状態。CERTVDE公表情報からは具体的な製品名・ベンダー名が特定できないため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84189",
+        "product": "LibreNMS（ネットワーク監視OSS）",
+        "reason": "low_score",
+        "reason_detail": "管理者設定のOxidized連携URLを起点とするSSRF経由の格納型XSS。管理者権限での事前設定を要するため軸1=3点で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-9621",
+        "product": "RSLinx Classic（Rockwell Automation）",
+        "reason": "low_score",
+        "reason_detail": "細工CIPパケットによるDoS（サービスクラッシュのみ・RCEなし）。軸1=3点で8点未満のため除外。ICS関連のためSOC観点でも把握推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-18931",
+        "product": "Talassoft Industrial Management Software（TMT社製）",
+        "reason": "low_score",
+        "reason_detail": "ハードコード認証情報（TR-CERT公表）。軸1=3点で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-51743",
+        "product": "TOTOLINK T6（無線LANルータ）",
+        "reason": "low_score",
+        "reason_detail": "MQTTメッセージ経由でゲストWiFi無効化が可能なアクセス制御不備（DoS相当）。軸1=3点で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-67394",
+        "product": "Plesk for Linux（ホスティング管理パネル）",
+        "reason": "low_score",
+        "reason_detail": "既存シェルアクセスを持つ顧客・リセラーによるroot権限昇格。リモート未認証ではないため軸1=3点で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-79675",
+        "product": "NLTK（Stanfordラッパー、JVMオプション注入）",
+        "reason": "already_reported",
+        "reason_detail": "2026-08-26分レポートでNLTK pickle/JVMオプション経由RCE群の1件として既報（AI-2026-08-26-006相当）。EUVD側の記述は同一CVEの修正不完全（bypass）を示唆するが、独立した一次ソースでの追加確認は本日時点で得られていないため変化なし扱い。",
+        "reported_date": "2026-08-26"
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "RIS-2026-ClickFix31Orgs-PolygonEtherHiding",
+        "group_name": "不明（帰属未確定）",
+        "reason": "low_score",
+        "reason_detail": "ClickFix型キャンペーンで31組織を侵害・Polygon経由のEtherHiding技術を確認したが単一ソース(Dark Reading)のみで軸P3点未満・軸Q4点未満（推定）のため除外。国内昇格トリガーも該当なし。Section2トレンド記事(TREND-2026-09-02-003)で別途言及。",
+        "reported_date": null
+      },
+      {
+        "campaign_id": "RIS-2026-FaronicsDeploy-ScreenConnectAbuse",
+        "group_name": "不明（帰属未確定・フィッシング）",
+        "reason": "low_score",
+        "reason_detail": "正規エンドポイント管理ツールFaronics Deployを悪用しScreenConnectを配信するフィッシングキャンペーン（457エンドポイント到達）だが単一ベンダー報告(Huntress)のみで軸P6点・国内昇格トリガー該当なしのため除外。Section2トレンド記事(TREND-2026-09-02-004)で別途言及。",
+        "reported_date": null
+      }
+    ],
+    "ai_attacks": [],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 3,
+      "reference_a": 2,
+      "reference_b": 5,
+      "excluded": 24,
+      "total_processed": 34
+    },
+    "apt": {
+      "main": 2,
+      "notable": 10,
+      "excluded": 2,
+      "total_processed": 14
+    },
+    "ai_attacks": {
+      "main": 3,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 0,
+      "total_processed": 3,
+      "category_breakdown": {
+        "A": 0,
+        "B": 1,
+        "C": 2
+      }
+    },
+    "soc_recommendations": {
+      "high": 0,
+      "medium": 1,
+      "low": 1,
+      "excluded": 0,
+      "total_processed": 2,
+      "perspective_breakdown": {
+        "cve": 1,
+        "zeroday": 0,
+        "ai_attack": 1
+      }
+    }
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-09-01T23:03:27Z",
+    "operational_picture": {
+      "subjects_tracked": 142,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 49,
+        "DISCLOSED": 73,
+        "POC_PUBLIC": 20
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 98,
+        "shadow": 93
+      },
+      "event_type_counts": {
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 20,
+        "TF1_POC_PUBLICATION": 73
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}

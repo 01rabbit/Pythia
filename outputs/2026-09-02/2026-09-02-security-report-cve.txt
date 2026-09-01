@@ -1,0 +1,240 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-02 07:00 JST
+調査期間: 2026-09-01 07:00 〜 2026-09-02 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-82078 / PaperCut NG / PaperCut MF
+対象: 影響バージョン情報なし
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: (v4: 9.4) (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-01] パッチ適用済みのPaperCut NG/MFに対し、認可不備(CVE-2026-81578)とDB接続ユーティリティの安全でない動的クラスロード(CVE-2026-82078)を連鎖させたデータ窃取型の実悪用が拡大していると報道
+[Security NEXT 2026-09-01] 印刷管理ソフト「PaperCut NG/MF」の深刻な脆弱性について悪用の確認を国内向けに報道
+
+【概要】
+PaperCut NG/MFのWeb管理インタフェースにおける認可不備（CVE-2026-81578）とデータベース接続ユーティリティの安全でない動的クラスロード（CVE-2026-82078）を連鎖させることで未認証RCEが成立する。2026-08-27頃から実悪用が確認されベンダーが緊急アウトオブサイクルビルドを公開したが、CISAは2026-08-31付で両CVEをKEVへ追加した。直近の攻撃は偵察段階からDerby内蔵データベースのテーブルを標的とした実際のデータ持ち出しへ移行しており、Security NEXTも国内向けに実悪用の確認を報じた。
+
+攻撃の流れ:
+1. 未認証で管理Webインタフェースの認可不備を突く
+2. DB接続ユーティリティの動的クラスロードで任意コード実行
+3. Derby内蔵データベースのテーブルを列挙・抽出してデータを持ち出す
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース] PaperCutサーバのアクセスログ・アプリケーションログ・DB接続ユーティリティの異常な例外を監視する
+Splunk SPL: index=papercut sourcetype=papercut_app_log ("api/" OR "setupcompleted") status=200 | stats count by src_ip, uri_path
+Splunk SPL: index=papercut sourcetype=papercut_derby_log "SELECT" OR "export" | stats count by src_ip
+→ 通常運用で発生しないDerbyテーブルへの大量クエリ・管理APIへの未認証アクセスパターンを重点確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/recently-patched-papercut-zero-days-used-in-data-theft-attacks/
+https://www.security-next.com/189686
+
+------------------------------------------------------------
+2. CVE-2026-81578 / PaperCut NG / PaperCut MF
+対象: 影響バージョン情報なし
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 未公表 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-01] CVE-2026-82078と連鎖するWeb管理インタフェースの認可不備について、データ窃取型の実悪用拡大が報じられた
+
+【概要】
+PaperCut NG/MFのWeb管理インタフェースにおける不適切なアクセス制御。CVE-2026-82078（DB接続ユーティリティの動的クラスロード）と連鎖して未認証RCEに至る。詳細な攻撃の流れ・監視観点はCVE-2026-82078のエントリに統合して記載する。
+
+攻撃の流れ:
+1. Web管理インタフェースの認可チェックを回避
+2. CVE-2026-82078と連鎖して未認証RCEに至る
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース] 監視観点はCVE-2026-82078のエントリを参照
+
+【参照】
+https://www.bleepingcomputer.com/news/security/recently-patched-papercut-zero-days-used-in-data-theft-attacks/
+
+------------------------------------------------------------
+3. CVE-2026-66066 / Ruby on Rails（Active Storage）
+対象: 影響バージョン情報なし
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: (v4: 9.5) (Critical)
+状態: 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[The Hacker News 2026-09-01] Langflowの脆弱性CVE-2026-0768と併せ、Active Storageのlibvips未フズ化ハンドラを突く実悪用が認証情報窃取・C2活動の一環として観測されたと報道
+
+【概要】
+Ruby on Rails Active Storageのlibvips未フズ化ハンドラの脆弱性CVE-2026-66066が、Langflowの脆弱性CVE-2026-0768と同一の攻撃キャンペーンの一環として実悪用されていることをThe Hacker Newsが報じた。JPCERT/CCは注意喚起(at260021)を継続掲載しており、GMOサイバーセキュリティ byイエラエ等が国内Rails利用組織への個別案内を実施済み。既報時点ではPoC公開のみが確認されていたが、本日実悪用が新たに確認された。
+
+攻撃の流れ:
+1. 未認証でActive Storageの画像処理ハンドラへ細工ファイルを送信
+2. libvips未フズ化ハンドラ経由で任意ファイル読み取り
+3. secret_key_base等の窃取からRCEへ発展
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース] Railsアプリケーションログでの異常なActive Storageアップロードリクエスト・secret_key_base等の環境変数アクセス試行を監視する
+Splunk SPL: index=rails_app sourcetype=rails_log uri_path="*active_storage*" | stats count by src_ip, status
+→ 通常想定しないファイル形式・サイズでのActive Storageアップロード試行を重点確認する
+
+【参照】
+https://thehackernews.com/2026/09/attackers-exploit-critical-langflow-and.html
+https://www.jpcert.or.jp/at/2026/at260021.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-81302 / PALLET CONTROL（航空貨物パレット管理システム）
+CVSS: 未公表 状態: 状態情報なし
+
+【24時間以内の変化】
+[JVN / JVN iPedia 2026-09-01] 情報セキュリティ早期警戒パートナーシップに基づきIPA・JPCERT/CCが開発者との調整を行った上でJVN発行
+
+【概要】
+JALデジタル株式会社が提供する航空貨物パレット管理システム「PALLET CONTROL」において、バックグラウンドで稼働する複数のサービスプログラムとの通信にアクセス制御の不備（CWE-276）があり、管理者権限を持たない一般ユーザーがアクセス可能な状態にあることが判明した。情報セキュリティ早期警戒パートナーシップに基づきGMOサイバーセキュリティ byイエラエの研究者が報告し、IPA・JPCERT/CCが開発者との調整を行った。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース] PALLET CONTROLのサービスプログラム間通信ログでの権限外アクセス試行を監視する
+
+【参照】
+https://jvn.jp/jp/JVN84094853/
+https://jvndb.jvn.jp/ja/contents/2026/JVNDB-2026-000126.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [PALLET CONTROL製品におけるアクセス制御不備の脆弱性] https://jvn.jp/jp/JVN84094853/
+
+・CVE-2026-79687 / Dell PowerStore SDNAS
+CVSS: 未公表 状態: 状態情報なし
+
+【24時間以内の変化】
+[Security NEXT 2026-09-01] Dellがストレージ製品「Dell PowerStore」のセキュリティアドバイザリを更新し対象脆弱性を2件追加したことを報道
+
+【概要】
+DellはストレージアプライアンスDell PowerStoreのSDNASコンポーネントに関するセキュリティアドバイザリを更新し、重要な機能に対する認証欠如の脆弱性CVE-2026-79687を含む脆弱性を新たに対象へ追加した。未認証のリモート攻撃者がファイルシステムへアクセスできる可能性がある。Security NEXTが国内向けに報道した。実悪用・PoC公開は本日時点で未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース] PowerStore管理インタフェース・SDNASアクセスログでの未認証アクセス試行を監視する
+
+【参照】
+https://www.security-next.com/189686
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-0768 / Langflow
+CVSS: 9.8
+2026年1月に修正済みのLangflow（OSSのAIアプリ開発プラットフォーム）における未認証コード実行脆弱性CVE-2026-0768が、VulnCheckのハニーポットで大規模な実悪用試行として観測された。攻撃はLangflowのスーパーユーザー認証情報・AWSシークレット・OpenAI APIキー等の環境変数を狙った偵察が中心で、送信元はロシアが主体と報告されている。同日Ruby on Rails Active Storageの脆弱性CVE-2026-66066も同一の攻撃キャンペーンの一部として悪用が確認された。KEV未登録・国内報道は本日時点で未確認。
+IoC: 確認されず
+
+監視: [ログソース] Langflowサーバの外部公開状況・validateエンドポイントへのアクセスログを監視する
+Splunk SPL: index=langflow sourcetype=langflow_app uri_path="*/validate*" | stats count by src_ip
+→ root権限でのPythonコード実行を伴う異常なvalidateリクエストを重点確認する
+
+参照: https://www.bleepingcomputer.com/news/security/critical-langflow-flaw-exploited-to-steal-openai-and-aws-keys/
+参照: https://thehackernews.com/2026/09/attackers-exploit-critical-langflow-and.html
+・CVE-2026-82329 / JFrog Artifactory
+CVSS: 9.8
+JFrogは2026-08-28にArtifactory Access内の認証不備CVE-2026-82329（既定構成で未認証攻撃者が管理者権限を取得可能）を公開しバージョン7.161.20で修正した。公開からわずか数日後の2026-09-01、攻撃者が管理者トークンを不正発行しユーザー・グループ・認証情報セット・連携アクセス構成を列挙する実悪用が複数ソースで確認された。Artifactoryはバイナリ・ビルド成果物を保持するため、悪用が拡大すればサプライチェーン汚染に発展するリスクがある。KEV未登録・国内報道は本日時点で未確認。
+IoC: 確認されず
+
+監視: [ログソース] Artifactoryのアクセスログ・管理者トークン発行イベントを監視する
+Splunk SPL: index=artifactory sourcetype=artifactory_access "CREATE_TOKEN" admin=true | stats count by src_ip
+→ 通常運用で発生しない管理者トークンの新規発行・列挙系APIコールを重点確認する
+
+参照: https://thehackernews.com/2026/09/attackers-exploit-critical-jfrog.html
+参照: https://www.securityweek.com/critical-jfrog-artifactory-vulnerability-reportedly-exploited-in-the-wild/
+・CVE-2026-82971 / QVidium Opera11
+CVSS: 10.0
+放送設備ベンダーQVidiumのOpera11に、CGIスクリプト(net_tr.cgi)のipaddr引数処理に起因する未認証コマンドインジェクション脆弱性CVE-2026-82971が確認された。エクスプロイトは既に公開されている。ベンダーは事業を終了しており、パッチは提供されない見込み。
+IoC: 確認されず
+
+監視: [ログソース] 対象製品は事業終了ベンダー製のため、外部露出資産の棚卸し・隔離を優先する
+
+参照: https://euvd.enisa.europa.eu/enisa/EUVD-2026-68911
+・CVE-2026-83524 / RedPort Optimizer（衛星通信最適化アプライアンス）
+CVSS: 9.9
+海事・遠隔地向け衛星通信最適化アプライアンスRedPort Optimizer wXa-203/213/223に、システムクロック設定用CGI処理に起因する未認証コマンドインジェクション脆弱性CVE-2026-83524が確認された。エクスプロイトは既に公開されている。
+IoC: 確認されず
+
+監視: [ログソース] 衛星通信アプライアンスの管理インタフェース露出状況を確認する
+
+参照: https://euvd.enisa.europa.eu/enisa/EUVD-2026-68912
+・CVE-2026-83772 / Cobham SATCOM VSAT7090（海事衛星ルータ）
+CVSS: 9.9
+海事衛星ルータCobham SATCOM VSAT7090に、メール通知機能（mail-report.sh）のJSONパース処理に起因する未認証コマンドインジェクション脆弱性CVE-2026-83772が確認された。エクスプロイトは既に公開されている。
+IoC: 確認されず
+
+監視: [ログソース] 海事衛星ルータの管理インタフェース露出状況を確認する
+
+参照: https://euvd.enisa.europa.eu/enisa/EUVD-2026-68984
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-76658 (HPE Networking Fabric Composer（ほか4件: CVE-2026-76657/CVE-2026-19766/CVE-2026-73700/CVE-2026-73701）) → 単一ベンダー(HPE)一括アドバイザリ・CVSS10.0の未認証RCE/認証バイパスを含むが軸1=7点（未認証RCE+3・CVSS9以上+3・広く使われる製品+1）で8点未満・国内報道等の参考A昇格トリガー該当なしのため除外。5件以上の同一ベンダー同時公開のため代表1件へ集約。
+・CVE-2026-84147 (不明ERPシステム（CERT-In公表・ベンダー名非公開）) → 情報源(CERT-In)が製品名・ベンダー名を公開しておらずトラックA判定に必要な製品特定ができないため除外。
+・CVE-2026-84148 (不明ERPシステム（CERT-In公表・ベンダー名非公開）) → CVE-2026-84147と同一不明ERPシステムのアクセス制御不備。製品・ベンダー名非公開のため除外。
+・CVE-2026-84149 (不明ERPシステム（CERT-In公表・ベンダー名非公開）) → CVE-2026-84147と同一不明ERPシステムの.gitディレクトリ露出。製品・ベンダー名非公開のため除外。
+・CVE-2026-82954 (Dokploy（PaaS型セルフホストプラットフォーム）) → パストラバーサル・PoC公開済みだが軸1=5点（PoC公開+2・CVSS9以上+3）で8点未満、国内報道等の昇格トリガーなしのため除外。
+・CVE-2026-18210 (TRtek Products Store（トルコ製POSソフトウェア）) → SQLインジェクション（TR-CERT公表）。軸1=3点（CVSS9以上のみ）で8点未満のため除外。
+・CVE-2026-18550 (Nokri - Job Board（WordPressテーマ）) → パスワードリセットトークン検証不備によるアカウント乗っ取り。軸1=6点（認証バイパス+3・CVSS9以上+3）で8点未満のため除外。
+・CVE-2026-18765 (Teracity E-OSB（トルコ製ソフトウェア）) → SQLインジェクション（TR-CERT公表）。軸1=3点で8点未満のため除外。
+・CVE-2026-18808 (Klemsan KIO（Klemsan Internet Objects・産業用IoT）) → コードインジェクション（TR-CERT公表）。軸1=6点（RCE相当+3・CVSS9以上+3）で8点未満のため除外。
+・CVE-2026-73749 (Aruba/HPE AOS-CX（ネットワークスイッチOS）) → 未認証RCE（デーモンの不正な入力処理）。軸1=7点（未認証RCE+3・CVSS9以上+3・広く使われる製品+1）で8点未満のため除外。
+・CVE-2026-75865 (WPLP Cookie Consent（WordPressプラグイン）) → 未認証ファイルアップロード。軸1=6点で8点未満のため除外。
+・CVE-2026-78012 (NetStaX EtherNet/IP Stack（産業用通信スタック）) → 大サイズCIPメッセージによるメモリ破損・デバイスクラッシュ。RCEとしての確証なく軸1=3点のため除外。
+・CVE-2026-84119 (Mozilla Firefox（DOM Navigationコンポーネント）) → サンドボックス脱出Use-After-Free。Firefox 155等で修正済み・実悪用未確認。軸1=7点（未認証RCE相当+3・CVSS9以上+3・広く使われる製品+1）で8点未満、国内報道未確認のため除外。
+・CVE-2026-84121 (Mozilla Firefox（DOM Securityコンポーネント）) → CVE-2026-84119と同時修正のサンドボックス脱出Use-After-Free。同様に軸1=7点のため除外。
+・CVE-2026-4813 (Lutece Core（フランス公共部門向けCMS）) → XSLTエクスポート機能のRCEだが管理者権限を要するため軸1=3点（CVSS9以上のみ）で8点未満のため除外。
+・CVE-2026-84200 (Kyverno（Kubernetesポリシーエンジン）) → ポリシー例外処理のバイパス。軸1=3点で8点未満のため除外。
+・CVE-2023-54356 (Kyverno（Kubernetesポリシーエンジン）) → TLS 3DES暗号スイート対応（Sweet32、CVE-2016-2183系）の旧CVE。軸1=3点で8点未満のため除外。
+・CVE-2026-78319 (産業用制御機器（CERTVDE公表・製品名非公開）) → TOCTOU競合状態。CERTVDE公表情報からは具体的な製品名・ベンダー名が特定できないため除外。
+・CVE-2026-84189 (LibreNMS（ネットワーク監視OSS）) → 管理者設定のOxidized連携URLを起点とするSSRF経由の格納型XSS。管理者権限での事前設定を要するため軸1=3点で8点未満のため除外。
+・CVE-2026-9621 (RSLinx Classic（Rockwell Automation）) → 細工CIPパケットによるDoS（サービスクラッシュのみ・RCEなし）。軸1=3点で8点未満のため除外。ICS関連のためSOC観点でも把握推奨。
+・CVE-2026-18931 (Talassoft Industrial Management Software（TMT社製）) → ハードコード認証情報（TR-CERT公表）。軸1=3点で8点未満のため除外。
+・CVE-2026-51743 (TOTOLINK T6（無線LANルータ）) → MQTTメッセージ経由でゲストWiFi無効化が可能なアクセス制御不備（DoS相当）。軸1=3点で8点未満のため除外。
+・CVE-2026-67394 (Plesk for Linux（ホスティング管理パネル）) → 既存シェルアクセスを持つ顧客・リセラーによるroot権限昇格。リモート未認証ではないため軸1=3点で8点未満のため除外。
+・CVE-2026-79675 (NLTK（Stanfordラッパー、JVMオプション注入）) → 2026-08-26分レポートでNLTK pickle/JVMオプション経由RCE群の1件として既報（AI-2026-08-26-006相当）。EUVD側の記述は同一CVEの修正不完全（bypass）を示唆するが、独立した一次ソースでの追加確認は本日時点で得られていないため変化なし扱い。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編3件 / 参考A2件 / 参考B5件 / 除外24件
+
+========================================
