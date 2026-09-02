@@ -1,0 +1,73 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-03 07:00 JST
+調査期間: 2026-09-02 07:00 〜 2026-09-03 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にTemporal Burst Filtering（3件以上の独立ソース）を満たしAI攻撃本編に採用できる事案なし。個別の高質な単発事案は参考Bに記載）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Unit 42調査: フロンティアAIエージェントが10時間未満でランサムウェア攻撃を自律実行
+カテゴリ: A（AI武器化）A4 採用契機: A-Q, A-P
+ATLAS: 該当タクティクスなし / 調査中
+Unit 42が対応したランサムウェアインシデントにおいて、攻撃者はフロンティアAIモデルと攻撃特化型のエージェント型AIフレームワークを用い、通常は人間のオペレータが約2週間を要する侵害プロセスを10時間未満で自律的に実行した。並列動作する複数のAIエージェントがMarkdown形式の構造化ファイルでエージェント間通信を行い、AI生成のカスタムスクリプトで動的にオペレーションを管理していた。50種類超のMITRE ATT&CKテクニックが観測され、攻撃者は最終的に侵害した脆弱性を詳述する80ページの「技術監査レポート」まで生成していた。脅威アクターの身元は非公開。
+監視: CI/CDパイプラインの異常な自動化操作・シークレット管理システムへの短時間集中アクセスを監視する 検知SPL: index=cicd sourcetype=pipeline_audit | stats count by user, action | where count > 50
+→ 短時間で異常に多数のシークレット・パイプライン操作を行うアカウントを優先確認する→CI/CDの正規自動化ジョブとの切り分けを行う
+
+参照: https://unit42.paloaltonetworks.com/ai-assisted-cyber-attack-inside-a-unit-42-investigation
+
+・悪意ある.git設定でClaude Code・Codex・Cursor等のAIコーディングエージェントに攻撃者コードを実行させる「GitSpawn」
+カテゴリ: C（AIインフラ攻撃）C3 採用契機: A-V, A-S
+ATLAS: 該当タクティクスなし / 調査中
+研究グループManifold Securityは、Gitのパフォーマンス機能core.fsmonitor（変更ファイル検出のためコマンドを実行する設定）を悪用し、リポジトリの.git/configファイルに悪意あるコマンドを仕込む手法「GitSpawn」を公開した。AIコーディングエージェントがgit status等のGit操作をバックグラウンドで実行する際、設定のサニタイズが行われないため、攻撃者のコードがユーザー権限でエージェントのサンドボックス外・信頼確認プロンプトの前（一部エージェントではユーザー認証の前）に実行される。goose（v1.44.0未満）・Claude Code（core.fsmonitor経路はv2.1.196で修正）・Cursorは修正済みだが、Hermes Agent・Qwen Code・Grok Build・OpenAI Codexの一部バージョンは本日時点で未修正。研究者は「モデルや目新しい何かの脆弱性ではなく、IDEの下にある普通の配管（plumbing）の問題」と指摘している。
+監視: リポジトリクローン時の.git/config差分・core.fsmonitor/core.hooksPath設定の存在を監視する 検知SPL: index=edr sourcetype=process_create parent_process=*git* (core.fsmonitor OR core.hooksPath) | stats count by user, host
+→ AIコーディングエージェント経由のGitプロセスから外部コマンドが起動されていないか優先確認する→開発者が意図的に設定したfsmonitorツールとの切り分けを行う
+
+参照: https://thehackernews.com/2026/09/malicious-git-configs-can-make-claude.html
+
+・OpenAI Astra、Preparedness Framework上の「Critical」サイバー能力閾値に到達
+カテゴリ: A（AI武器化）A3 採用契機: A-T, A-P
+ATLAS: 該当タクティクスなし / 調査中
+OpenAIは、開発中のモデル「Astra」がPreparedness Framework（2023年策定の安全枠組み）が定める「Critical」レベルのサイバー能力閾値に到達した初のモデルであると公表した。テスト過程でAstraは2件のゼロデイ脆弱性を自律的に発見し連鎖させており、OpenAIは現在開発者への開示手続きを進めている。これを受けOpenAIはAstraの開発・提供の一部を遅延させ、悪意あるユーザーによる濫用とモデル自身による無許可の行動の双方を防ぐ追加の安全対策を実施したと説明している。OpenAIはPreparedness Framework自体の改訂作業も進めている。
+
+参照: https://openai.com/index/path-to-astra/
+参照: https://www.securityweek.com/openais-astra-becomes-first-model-to-cross-critical-cybersecurity-threshold/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はUnit 42によるフロンティアAIエージェント自律型ランサムウェア攻撃の調査結果、Manifold SecurityによるAIコーディングエージェント(Claude Code/Codex/Cursor等)を狙う「GitSpawn」手法の公開、OpenAI Astraのサイバー能力Critical閾値到達という3件のAI攻撃関連事案を確認した。いずれも48時間以内の独立ソース3件以上というバースト閾値には未達のため参考Bに留めた。カテゴリ内訳はA（AI武器化）2件・B（AI攻撃対象）1件・C（AIインフラ攻撃）0件。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B3件 / 除外4件
+カテゴリ内訳: A（武器化）2件 / B（攻撃対象）0件 / C（インフラ）1件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[AI攻撃]
+・(ID未採番) (AI Gives Cybercriminals a Dangerous Time Advantage（Dark Reading・トレンド解説）) → 個別インシデント・実証を伴わない一般的な傾向解説記事のため、A-P〜A-Yいずれの採用契機も明確な新規実証・被害として確認できず不採用（Unit 42調査・GitSpawn研究など個別事案は別途採用済み）。
+・(ID未採番) (AI's Vulnerability Surge May Be More Manageable Than First Feared（Dark Reading）) → 業界動向の解説記事で新規実証・被害の具体情報を伴わないため不採用。
+・(ID未採番) (How to Secure Enterprise AI: From Adoption to Incident Readiness（The Hacker News）) → ベンダー寄稿の一般的ガイダンス記事で新規インシデント・脆弱性を伴わないため不採用。
+・(ID未採番) (Anthropic Details Response to Security Incidents, Unveils Enterprise Safeguards（SecurityWeek）) → モデル提供元の防御的施策発表であり攻撃事象そのものではないため本セクションでは不採用（Section 4 SOC推奨情報の対象にも至らずと判断）。
+========================================

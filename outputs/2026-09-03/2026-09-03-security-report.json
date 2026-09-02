@@ -1,0 +1,2137 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-09-03",
+    "generated_at": "2026-09-03T07:47:54+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-09-02T07:00:00+09:00",
+      "to": "2026-09-03T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.09.02",
+      "candidates": 47,
+      "handled": 47,
+      "unhandled": 0,
+      "kev_added_in_window": 7,
+      "ghsa_origin_over_threshold": 6,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 38,
+        "euvd_only": 3
+      }
+    }
+  },
+  "zero_day_special": [
+    {
+      "cve_id": "CVE-2026-83548",
+      "product": "SMA1000 Appliances（6210 / 7210 / 8200v）",
+      "vendor": "SonicWall",
+      "affected_versions": "12.4.3-03453/12.5.0-02835（platform-hotfix）以前",
+      "priority": "critical",
+      "cvss_v3": 10.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-918"
+      ],
+      "epss": {
+        "score": 0.00266,
+        "percentile": 0.18174,
+        "model_date": "2026-09-02"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": true,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "12.4.3-03526/12.5.0-02952（platform-hotfix）以降",
+        "eta": null
+      },
+      "fceb_deadline": "2026-09-05",
+      "kev_date_added": "2026-09-02",
+      "axis1_score": 11,
+      "axis2_score": 4,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "SonicWall PSIRT",
+          "date": "2026-09-02T00:00:00+09:00",
+          "description": "SMA1000のAppliance Work Placeインターフェースの事前認証SSRF脆弱性(CVE-2026-83548)とAppliance Management Console(AMC)のOSコマンドインジェクション(CVE-2026-83549)が実悪用されていると公表し、CISAが同日KEVへ初回追加した"
+        },
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-02T19:53:00+09:00",
+          "description": "2件のゼロデイが連鎖して未認証RCEを構成する攻撃チェーンとして悪用されていると報道"
+        }
+      ],
+      "overview": "SonicWall SMA1000シリーズ（6210/7210/8200v）のAppliance Work Placeインターフェースに存在する事前認証SSRF脆弱性CVE-2026-83548（CVSS10.0）が実環境で悪用されている。単独でも機微機能への不正アクセスを許すが、Appliance Management Console（AMC）のOSコマンドインジェクションCVE-2026-83549（CVSS7.8・別entry参照）と連鎖させることで未認証のリモートコード実行に至る攻撃チェーンが観測された。SMA100シリーズおよびSonicWallファイアウォール上のSSL-VPNは対象外。SonicWallはSMA1000が2026年7月のMFAシード窃取事件に続き今回で3度目の侵害となる点を明らかにしている（推測: 同一アクセス経路を狙う継続的な攻撃関心が背景にある可能性があるが、攻撃者の同一性は情報源が明示していない）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者がAppliance Work PlaceインターフェースへCVE-2026-83548のSSRFリクエストを送信し内部機能へ到達"
+        },
+        {
+          "step": 2,
+          "description": "取得した内部アクセスを足がかりにAMCのOSコマンドインジェクション(CVE-2026-83549)を実行し未認証RCEへ連鎖"
+        },
+        {
+          "step": 3,
+          "description": "SMA1000上での永続化・機微データへのアクセスに至る（詳細な事後活動は情報源未公開）"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "[The Hacker News 2026-09-02] 事前認証SSRF(CVE-2026-83548)を公開アプライアンスへ送信し初期侵入することが明示されている"
+        }
+      ],
+      "temp_mitigation": [
+        "Appliance Work PlaceインターフェースへのアクセスをVPN/信頼済みIPへ制限する",
+        "AMC管理インターフェースをインターネットから隔離する",
+        "SonicWallが提示する侵害指標(IOC)に基づくログ監査を実施する"
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "SMA1000のWebアクセスログ・AMC管理ログにおける異常な内部リクエスト・コマンド実行痕跡を監視する",
+        "splunk_spl": [
+          "index=sonicwall_sma sourcetype=sma_workplace | search uri_path=*workplace* | stats count by src_ip, uri_path",
+          "index=sonicwall_sma sourcetype=sma_amc (cmd=* OR exec=*) | stats count by src_ip, user"
+        ],
+        "detection_notes": "AMCへの管理外IPからのアクセス、Work Placeインターフェースへの短時間バースト状のリクエストを優先確認する→誤検知除外は正規の監視・ヘルスチェックトラフィックとの切り分けを行う"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-exploit-two-sonicwall-sma.html",
+          "title": "Attackers Exploit Two SonicWall SMA 1000 Zero-Days That May Form an Attack Chain",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-actively-exploited-sma1000-zero-day-flaws",
+          "title": "SonicWall warns of actively exploited SMA1000 zero-day flaws",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://www.securityweek.com/sonicwall-warns-of-two-sma1000-zero-days-exploited-in-attacks/",
+          "title": "SonicWall Warns of Two SMA1000 Zero-Days Exploited in Attacks",
+          "language": "en",
+          "source": "SecurityWeek"
+        },
+        {
+          "url": "https://www.security-next.com/189706",
+          "title": "「SonicWall SMA 1000」に深刻な脆弱性 - 悪用を示す事例も",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "government",
+        "finance"
+      ],
+      "region_impact": [
+        "global",
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "zero_day_special",
+      "info_id": "20260903-CVEP-cf815514"
+    }
+  ],
+  "main_cve": [
+    {
+      "cve_id": "CVE-2026-83549",
+      "product": "SMA1000 Appliances（6210 / 7210 / 8200v）",
+      "vendor": "SonicWall",
+      "affected_versions": "12.4.3-03453/12.5.0-02835（platform-hotfix）以前",
+      "priority": "critical",
+      "cvss_v3": 7.8,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [
+        "CWE-78"
+      ],
+      "epss": {
+        "score": 0.00917,
+        "percentile": 0.57798,
+        "model_date": "2026-09-02"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": true,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "12.4.3-03526/12.5.0-02952（platform-hotfix）以降",
+        "eta": null
+      },
+      "fceb_deadline": "2026-09-05",
+      "kev_date_added": "2026-09-02",
+      "axis1_score": 8,
+      "axis2_score": 4,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "SonicWall PSIRT",
+          "date": "2026-09-02T00:00:00+09:00",
+          "description": "AMCコンポーネントのOSコマンドインジェクションが実悪用されており、CISAが同日KEVへ初回追加した"
+        }
+      ],
+      "overview": "Appliance Management Console(AMC)のOSコマンドインジェクション脆弱性。単独では認証後の悪用条件だが、事前認証SSRF(CVE-2026-83548・zero_day_special参照)と連鎖させることで未認証RCEを構成する攻撃チェーンの一部として実悪用が確認された。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "CVE-2026-83548で取得したアクセスを起点にAMCへ細工コマンドを送信し任意コード実行"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1059",
+          "sub_technique_id": null,
+          "tactic": "execution",
+          "evidence": "[The Hacker News 2026-09-02] AMCコンポーネントへのOSコマンドインジェクションによる実行が明示されている"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "AMC管理インターフェースへのコマンド実行痕跡を監視する",
+        "splunk_spl": [
+          "index=sonicwall_sma sourcetype=sma_amc cmd=* | stats count by src_ip, user, cmd"
+        ],
+        "detection_notes": "正規運用ではAMCへの外部コマンド投入は稀のため、外部IPからのAMCアクセスを優先確認する"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-exploit-two-sonicwall-sma.html",
+          "title": "Attackers Exploit Two SonicWall SMA 1000 Zero-Days That May Form an Attack Chain",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.helpnetsecurity.com/2026/09/02/sonicwall-sma-1000-cve-2026-83548-cve-2026-83549-zero-day-attacks/",
+          "title": "SonicWall SMA 1000 appliances under attack via zero-day flaws",
+          "language": "en",
+          "source": "Help Net Security"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "government",
+        "finance"
+      ],
+      "region_impact": [
+        "global",
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260903-CVEP-81ccae69"
+    },
+    {
+      "cve_id": "CVE-2026-82329",
+      "product": "Artifactory",
+      "vendor": "JFrog",
+      "affected_versions": "7.161.20未満の自己ホスト版（既定構成）",
+      "priority": "critical",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-287"
+      ],
+      "epss": {
+        "score": 0.01242,
+        "percentile": 0.67157,
+        "model_date": "2026-09-02"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "7.111.21 / 7.117.28 / 7.125.20 / 7.133.29 / 7.146.38 / 7.161.20 以降",
+        "eta": null
+      },
+      "fceb_deadline": "2026-09-05",
+      "kev_date_added": "2026-09-02",
+      "axis1_score": 8,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-02T00:00:00+09:00",
+          "description": "2026-08-28公開・修正済みの認証不備を突き、公開から数日で攻撃者が管理者トークンを不正発行しユーザー・グループ・認証情報セットを列挙する実悪用がwatchTowr等により確認され、CISAが同日KEVへ初回追加"
+        }
+      ],
+      "overview": "JFrog Artifactoryの既定構成に存在する認証不備により、未認証のネットワークアクセス可能な攻撃者が管理者権限のアクセストークンを不正発行できる。2026-08-28の公開・修正から数日後の09-01にはwatchTowrが実環境での悪用（管理者トークン生成・ユーザー/グループ/認証情報/フェデレーションアクセス関係の列挙）を観測しており、ビルド成果物・バイナリを保持するDevOps中核ツールであるためサプライチェーン汚染への波及が懸念される。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "既定構成の認証不備を突いて未認証で管理者トークンを不正発行"
+        },
+        {
+          "step": 2,
+          "description": "発行したトークンでユーザー・グループ・認証情報セット・連携アクセス関係を列挙"
+        },
+        {
+          "step": 3,
+          "description": "（推測）取得した認証情報・アクセス権を用いてビルド成果物への不正アクセスやサプライチェーン汚染に発展する可能性がある"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1078",
+          "sub_technique_id": null,
+          "tactic": "defense-evasion",
+          "evidence": "[The Hacker News/BleepingComputer 2026-09-01/02] 認証不備を突いて管理者トークンを取得し正規のアクセス経路として悪用したことが明示されている"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Artifactoryの管理者トークン発行イベント・列挙APIコールを監視する",
+        "splunk_spl": [
+          "index=jfrog_artifactory sourcetype=access_log (action=token_create OR action=admin_token) | stats count by src_ip, user"
+        ],
+        "detection_notes": "短時間での大量トークン発行・ユーザー列挙APIの連続呼び出しを優先確認する→正規CI/CDパイプラインからの定型的トークン発行との切り分けを行う"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-exploit-critical-jfrog.html",
+          "title": "Attackers Exploit Critical JFrog Artifactory Flaw to Mint Admin Tokens Days After Disclosure",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-jfrog-artifactory-flaw-to-forge-admin-tokens",
+          "title": "Hackers exploit critical JFrog Artifactory flaw to forge admin tokens",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://www.securityweek.com/critical-jfrog-artifactory-vulnerability-reportedly-exploited-in-the-wild/",
+          "title": "Critical JFrog Artifactory Vulnerability Reportedly Exploited in the Wild",
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "professional_services"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260903-CVEP-4ad40875"
+    },
+    {
+      "cve_id": "CVE-2026-9586",
+      "product": "Switchvox SMB Edition",
+      "vendor": "Sangoma",
+      "affected_versions": "8.3（104997）。8.4.0.2で修正済み（2026-07-14公開）",
+      "priority": "critical",
+      "cvss_v3": 9.3,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-89"
+      ],
+      "epss": {
+        "score": 0.01088,
+        "percentile": 0.63028,
+        "model_date": "2026-09-02"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "8.4.0.2",
+        "eta": null
+      },
+      "fceb_deadline": "2026-09-05",
+      "kev_date_added": "2026-09-02",
+      "axis1_score": 8,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-02T07:08:50+09:00",
+          "description": "/paエンドポイント経由の未認証SQLインジェクションが実悪用され、認証情報なしでリバースシェルを設置する攻撃が観測されたと報道。CISAが同日KEVへ初回追加"
+        }
+      ],
+      "overview": "Switchvox SMB EditionのPolycom IPフォンプロビジョニング用/paエンドポイントは、リクエストボディが<PolycomIPPhone>ルート要素で始まる場合にPhoneIP属性値をPostgreSQLクエリへ生文字列として連結しており、未認証のリモート攻撃者が単一リクエストでSQLインジェクションを行い任意コード実行に至る。2026-08-30頃からハニーポットで悪用試行が観測され始め、リバースシェル設置後に稼働プロセスを列挙する挙動が確認されている。インターネット露出台数は約4,000台、うち大半が米国。パッチは2026-07-14提供済みだが未適用環境が悪用対象になっている。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "/paエンドポイントへ<PolycomIPPhone>形式の細工XMLペイロードを送信"
+        },
+        {
+          "step": 2,
+          "description": "PhoneIP属性値に注入したSQLがPostgreSQLで実行されリモートコード実行に至る"
+        },
+        {
+          "step": 3,
+          "description": "リバースシェルを設置し稼働プロセスを列挙する事後活動が観測された"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "[The Hacker News/Help Net Security 2026-09-02] 未認証のSQLインジェクションによる初期侵入が明示されている"
+        },
+        {
+          "technique_id": "T1059",
+          "sub_technique_id": null,
+          "tactic": "execution",
+          "evidence": "[Help Net Security 2026-09-02] リバースシェル設置後にコマンド実行で稼働プロセスを列挙したことが明示されている"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "/paエンドポイントへの異常なXMLペイロード・PostgreSQLエラーログ・リバースシェル通信を監視する",
+        "splunk_spl": [
+          "index=switchvox sourcetype=access_combined uri_path=*/pa* | search PolycomIPPhone | stats count by src_ip"
+        ],
+        "detection_notes": "/paエンドポイントへの非プロビジョニング目的アクセス・異常な発信接続を優先確認する→正規IP電話のプロビジョニングトラフィックとの切り分けを行う"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-exploit-critical-switchvox.html",
+          "title": "Attackers Exploit Critical Switchvox Flaw to Deploy Reverse Shells Without Credentials",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/hackers-exploit-sangoma-switchvox-flaw-to-deploy-reverse-shells",
+          "title": "Hackers exploit Sangoma Switchvox flaw to deploy reverse shells",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://www.helpnetsecurity.com/2026/09/02/exploitation-of-sangoma-switchvox-flaw-underway-cve-2026-9586/",
+          "title": "Exploitation of Sangoma Switchvox flaw is underway (CVE-2026-9586)",
+          "language": "en",
+          "source": "Help Net Security"
+        }
+      ],
+      "sector_impact": [
+        "telecom",
+        "it"
+      ],
+      "region_impact": [
+        "US",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260903-CVEP-4c4eb827"
+    },
+    {
+      "cve_id": "CVE-2026-49869",
+      "product": "Kestra OSS",
+      "vendor": "Kestra",
+      "affected_versions": "1.0.45未満 / 1.3.21未満",
+      "priority": "critical",
+      "cvss_v3": 10.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-288"
+      ],
+      "epss": {
+        "score": 0.00991,
+        "percentile": 0.60153,
+        "model_date": "2026-09-02"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "1.0.45 / 1.3.21",
+        "eta": null
+      },
+      "fceb_deadline": "2026-09-05",
+      "kev_date_added": "2026-09-02",
+      "axis1_score": 8,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "Microsoft Security Blog",
+          "date": "2026-08-26T00:00:00+09:00",
+          "description": "AuthenticationFilterが/configsで終わるパスを完全一致ではなく接尾辞一致で判定しているため認証を回避できる不備を悪用し、未認証のワークフロー作成・Processランナー経由のシェル実行によるRCEが行われたとMicrosoftが高確信度で評価。攻撃はDockerソケットアクセス・コンテナ環境列挙・クリプトマイナー配備・証跡削除に至った"
+        },
+        {
+          "source": "CISA KEV",
+          "date": "2026-09-02T00:00:00+09:00",
+          "description": "CISAがKEVへ初回追加"
+        }
+      ],
+      "overview": "Kestraのワークフロー実行基盤において、AuthenticationFilterがAPIパスの末尾一致のみで認証要否を判定する実装不備により、パス末尾が/configsとなる任意のAPIパスが認証を回避できる。Kestraは既定でスクリプト実行プラグインが有効なため、未認証でワークフローを作成・実行させることでKestraワーカーコンテナ内でroot権限のRCEに直結する。Microsoftは、LiteLLM(CVE-2026-59822)・Starlette(CVE-2026-48710)を含むAI基盤を狙った侵害キャンペーンにおいて本脆弱性が初期侵入経路として使われた可能性が高いと評価しており、侵入後はDockerソケットへのアクセス・コンテナ環境の列挙・クリプトマイナーの配備・証跡削除が観測された。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "パス末尾を/configsとする未認証APIリクエストで認証フィルタを回避"
+        },
+        {
+          "step": 2,
+          "description": "Processランナーを用いた悪意あるワークフローを定義・実行させる"
+        },
+        {
+          "step": 3,
+          "description": "ワーカーコンテナ内でroot権限のシェルを取得しDockerソケットアクセス・環境列挙・クリプトマイナー配備・証跡削除を実行"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "[Microsoft Security Blog 2026-08-26] 認証バイパスによる未認証ワークフロー作成・実行が初期侵入経路として明示されている"
+        },
+        {
+          "technique_id": "T1610",
+          "sub_technique_id": null,
+          "tactic": "defense-evasion",
+          "evidence": "[Microsoft Security Blog 2026-08-26] Dockerソケットへのアクセスとコンテナ環境の列挙が明示されている"
+        },
+        {
+          "technique_id": "T1496",
+          "sub_technique_id": null,
+          "tactic": "impact",
+          "evidence": "[Microsoft Security Blog 2026-08-26] クリプトマイナーの配備が明示されている"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Kestra APIへの/configs終端パスへの未認証アクセス・ワーカーコンテナのDockerソケットアクセスを監視する",
+        "splunk_spl": [
+          "index=kestra sourcetype=access_log uri_path=*/configs | stats count by src_ip, status",
+          "index=container_logs (docker.sock) sourcetype=kestra_worker | stats count by container_id"
+        ],
+        "detection_notes": "認証ヘッダなしで/configs終端パスへアクセスするリクエストを優先確認する→正規のヘルスチェック・監視エンドポイントとの切り分けを行う"
+      },
+      "references": [
+        {
+          "url": "https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/",
+          "title": "When AI infrastructure becomes the target: Securing gateways and control points",
+          "language": "en",
+          "source": "Microsoft Security Blog"
+        },
+        {
+          "url": "https://cyberpress.org/hackers-hit-ai-infrastructure/",
+          "title": "Hackers Target LiteLLM, RAGFlow and Kestra AI Infrastructure to Steal API Keys and Mine Crypto",
+          "language": "en",
+          "source": "CyberPress"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [
+        "Unattributed-2026-AIInfraCryptomining-KestraLiteLLM"
+      ],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260903-CVEP-01acc48a"
+    },
+    {
+      "cve_id": "CVE-2026-59822",
+      "product": "LiteLLM",
+      "vendor": "BerriAI",
+      "affected_versions": "1.84.0未満",
+      "priority": "critical",
+      "cvss_v3": 8.8,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [
+        "CWE-287",
+        "CWE-306"
+      ],
+      "epss": {
+        "score": 0.00516,
+        "percentile": 0.41918,
+        "model_date": "2026-09-02"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "1.84.0",
+        "eta": null
+      },
+      "fceb_deadline": "2026-09-05",
+      "kev_date_added": "2026-09-02",
+      "axis1_score": 8,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "Microsoft Security Blog",
+          "date": "2026-08-26T00:00:00+09:00",
+          "description": "MCP Streamable HTTPエンドポイントで偽装Authorizationヘッダを用いOAuth2パススルーのフォールバック経路を誘発し、失敗したキー検証を空のUserAPIKeyAuth()に置換することでMCPツールへ未認証到達できる不備が実悪用されているとMicrosoftが報告"
+        }
+      ],
+      "overview": "LiteLLM（AIゲートウェイ・複数LLMプロバイダを統一APIで扱うOSS）のMCP Streamable HTTPエンドポイントにおいて、偽装したAuthorizationヘッダを送るとOAuth2パススルーのフォールバック処理が発火し、本来失敗するはずのLiteLLMキー検証が空のUserAPIKeyAuth()オブジェクトに置き換わる。結果として有効なLiteLLMキーなしにMCPツール群へ到達できる。KestraやStarlette依存コンポーネントを含むAI基盤侵害キャンペーンの一部として実悪用が確認されており、露出したAIゲートウェイでは最優先の対処が必要とされている。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "偽装Authorizationヘッダを付与しMCP Streamable HTTPエンドポイントへリクエスト"
+        },
+        {
+          "step": 2,
+          "description": "OAuth2パススルーのフォールバック経路が発火しキー検証が空オブジェクトに置換される"
+        },
+        {
+          "step": 3,
+          "description": "未認証のままMCPツール・下流のLLM/AIインフラへアクセス（推測: 上流のAPIキー窃取・クリプトマイニングへ発展した可能性。Kestra観測との関連が示唆されるが個別の因果は情報源未確認）"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1556",
+          "sub_technique_id": null,
+          "tactic": "defense-evasion",
+          "evidence": "[Microsoft Security Blog 2026-08-26] 偽装ヘッダによりキー検証を空オブジェクトへ置換し認証を無効化する手口が明示されている"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "MCP Streamable HTTPエンドポイントへの異常なAuthorizationヘッダ・空UserAPIKeyAuthでの到達を監視する",
+        "splunk_spl": [
+          "index=litellm sourcetype=access_log uri_path=*/mcp* | stats count by src_ip, authorization_header"
+        ],
+        "detection_notes": "正規のLiteLLMキー形式と異なるAuthorizationヘッダでのMCPエンドポイントアクセスを優先確認する→社内プロキシ経由の正規リクエストとの切り分けを行う"
+      },
+      "references": [
+        {
+          "url": "https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/",
+          "title": "When AI infrastructure becomes the target: Securing gateways and control points",
+          "language": "en",
+          "source": "Microsoft Security Blog"
+        },
+        {
+          "url": "https://www.redpacketsecurity.com/cve-alert-cve-2026-59822-berriai-litellm/",
+          "title": "CVE Alert: CVE-2026-59822 - BerriAI - litellm",
+          "language": "en",
+          "source": "RedPacket Security"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [
+        "Unattributed-2026-AIInfraCryptomining-KestraLiteLLM"
+      ],
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "info_id": "20260903-CVEP-08bf617d"
+    }
+  ],
+  "reference_a": [
+    {
+      "cve_id": "CVE-2026-76658",
+      "product": "HPE Networking Fabric Composer",
+      "vendor": "Hewlett Packard Enterprise",
+      "affected_versions": "7.3.3以前",
+      "priority": "high",
+      "cvss_v3": 10.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-306"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "7.3.3より後継の修正版",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 7,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-09-02T11:02:22+09:00",
+          "description": "HPE Fabric Composerに深刻な脆弱性が公表されアップデートが強く推奨されているとして国内向けに報道"
+        },
+        {
+          "source": "GBHackers",
+          "date": "2026-09-01T00:00:00+09:00",
+          "description": "SSHデーモンの未認証RCE(CVE-2026-76658)によりmanagement hostが完全侵害されうると公表"
+        }
+      ],
+      "overview": "HPE Networking Fabric Composer 7.3.3以前に52件の脆弱性が公表され、うちCVE-2026-76658はSSHデーモンに存在する未認証リモートコード実行（CVSS10.0）で、攻撃者が管理ホスト上で特権OSユーザーとして任意コマンドを実行し完全掌握できる。あわせてAPI認証回避によるCVE-2026-76657（管理者権限奪取）、OS層の認証バイパスCVE-2026-19766（隣接未認証攻撃者によるコード実行）も公表された。HPE公表時点（2026-09-01）で公開の議論・実証コードは確認されていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "SSHデーモンへ未認証で到達しCVE-2026-76658を悪用して特権OSユーザーとしてコマンド実行（詳細な実装手法は情報源未公開）"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Fabric Composer管理ホストのSSHアクセスログを監視する",
+        "splunk_spl": [
+          "index=hpe_fabric_composer sourcetype=sshd | stats count by src_ip, user, result"
+        ],
+        "detection_notes": "管理外ネットワークからのSSH到達を優先確認する→保守用ジャンプホストからの正規アクセスと切り分ける"
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/189721",
+          "title": "HPE「Fabric Composer」に深刻な脆弱性 - アップデートを強く推奨",
+          "language": "ja",
+          "source": "Security NEXT"
+        },
+        {
+          "url": "https://gbhackers.com/critical-hpe-fabric-composer-flaw/",
+          "title": "Critical HPE Fabric Composer Flaw Lets Unauthenticated Attackers Execute Commands as Privileged User",
+          "language": "en",
+          "source": "GBHackers"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "manufacturing"
+      ],
+      "region_impact": [
+        "global",
+        "JP"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_a",
+      "info_id": "20260903-CVEP-05883f58"
+    }
+  ],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-48710",
+      "product": "Starlette",
+      "vendor": "Encode（Starlette project）",
+      "affected_versions": "0.8.3以上1.0.1未満",
+      "priority": "high",
+      "cvss_v3": 6.5,
+      "cvss_v4": null,
+      "cvss_severity": "Medium",
+      "cwe_ids": [
+        "CWE-444"
+      ],
+      "epss": {
+        "score": 0.02099,
+        "percentile": 0.80418,
+        "model_date": "2026-09-02"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "1.0.1",
+        "eta": null
+      },
+      "fceb_deadline": "2026-09-05",
+      "kev_date_added": "2026-09-02",
+      "axis1_score": 8,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "Microsoft Security Blog",
+          "date": "2026-08-26T00:00:00+09:00",
+          "description": "「BadHost」と呼称されるHostヘッダ検証欠如(CVE-2026-48710)がFastAPI/vLLM/LiteLLM等のAI基盤で広く使われるStarletteの認証・パスベースのセキュリティ制御を回避する経路として実悪用されているとMicrosoftが報告し、CISAが同日KEVへ初回追加"
+        }
+      ],
+      "overview": "Starlette（FastAPI・vLLM・LiteLLM・MCPサーバ等AIエージェント基盤の広範なエコシステムの土台となる軽量ASGIフレームワーク）は、1.0.1未満でHTTP Hostリクエストヘッダを検証せずrequest.urlの再構築に用いていたため、細工したHostヘッダによりrequest.url.pathが実際のリクエストパスと乖離しうる（通称BadHost）。ルーティング自体は生のHTTPパスを見るがrequest.urlに基づくパスベースのセキュリティ制御はこの乖離により回避されうるため、認証バイパスの土台として悪用される。単体のCVSSは6.5だが、Kestra(CVE-2026-49869)・LiteLLM(CVE-2026-59822)を含むAI基盤侵害キャンペーンの構成要素として実悪用が確認されCISAがKEVへ追加した。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Hostヘッダにパス区切り文字を含む細工値を送信しrequest.url.pathを実際のリクエストパスと乖離させる"
+        },
+        {
+          "step": 2,
+          "description": "request.urlに依存するパスベースのミドルウェア・認証制御を回避（詳細な後続手口は個別インシデントに依存し情報源未公開）"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "[Microsoft Security Blog 2026-08-26] Hostヘッダ偽装によるパスベース制御の回避が初期侵入の土台として明示されている"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "異常なHostヘッダ値・パス区切り文字を含むリクエストを監視する",
+        "splunk_spl": [
+          "index=web_proxy sourcetype=access_combined | search http_host=*\\%5c* OR http_host=*\\\\* | stats count by src_ip, http_host"
+        ],
+        "detection_notes": "Hostヘッダにバックスラッシュ等の非典型文字を含むリクエストを優先確認する→正規のロードバランサヘルスチェックとの切り分けを行う"
+      },
+      "references": [
+        {
+          "url": "https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/",
+          "title": "When AI infrastructure becomes the target: Securing gateways and control points",
+          "language": "en",
+          "source": "Microsoft Security Blog"
+        },
+        {
+          "url": "https://ostif.org/disclosing-the-badhost-vulnerability-in-starlette/",
+          "title": "Disclosing the BADHOST Vulnerability in Starlette",
+          "language": "en",
+          "source": "OSTIF.org"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [
+        "Unattributed-2026-AIInfraCryptomining-KestraLiteLLM"
+      ],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260903-CVEP-84773bb9"
+    },
+    {
+      "cve_id": "CVE-2026-75604",
+      "product": "Next.js",
+      "vendor": "Vercel",
+      "affected_versions": "13.4.0以上15.5.24未満・16.3.3未満（自己ホスト版のみ。Vercel管理下は対象外）",
+      "priority": "high",
+      "cvss_v3": 9.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-22"
+      ],
+      "epss": {
+        "score": 0.00819,
+        "percentile": 0.54733,
+        "model_date": "2026-09-02"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": true,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "15.5.24 / 16.3.3",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 9,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "securityonline.info",
+          "date": "2026-09-02T00:00:00+09:00",
+          "description": "週間ダウンロード4,500万件規模のNext.jsに未認証RCEを許すパストラバーサル(CVE-2026-75604)が存在し公開PoCが出回っていると報道。JPCERT/CC Weekly Reportでも同CVEを含む複数脆弱性を掲載"
+        }
+      ],
+      "overview": "Next.js（Vercel提供の人気Reactフレームワーク）の自己ホスト環境限定の脆弱性で、パーセントエンコードされたバックスラッシュを含むHostヘッダ相当の細工パスがルーティング層で正規化されずWindows上ではバックスラッシュがディレクトリ区切りとして解釈されるため、キャッシュディレクトリ外へのファイル書き込みを経てリモートコード実行に至る。Pages Router・App Routerの双方でCache Componentsを使わない構成が対象。Vercel管理プラットフォーム上のホスティングは影響を受けない。GitHub上に検証用PoCが公開されているが、実悪用の報告は本日時点で未確認。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "パーセントエンコードされたバックスラッシュを含む細工パスをNext.jsルーティング層へ送信"
+        },
+        {
+          "step": 2,
+          "description": "Windows上でバックスラッシュがディレクトリ区切りとして解釈されキャッシュディレクトリ外へファイル書き込み"
+        },
+        {
+          "step": 3,
+          "description": "書き込んだファイルを起点にリモートコード実行（自己ホストWindows環境限定）"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "[securityonline.info/CyCognito 2026-09] パストラバーサルを起点とした未認証RCEが技術的に明示されている"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Next.jsキャッシュディレクトリ外へのファイル書き込み・異常なパーセントエンコードパスを監視する",
+        "splunk_spl": [
+          "index=web_proxy sourcetype=access_combined url=*%5c* | stats count by src_ip, url"
+        ],
+        "detection_notes": "URLにパーセントエンコードされたバックスラッシュ(%5c)を含むリクエストを優先確認する→自己ホストWindows環境か否かで対応要否を切り分ける"
+      },
+      "references": [
+        {
+          "url": "https://www.cycognito.com/blog/emerging-threat-cve-2026-75604-next-js-remote-code-execution-via-windows-path-traversal/",
+          "title": "Emerging Threat: (CVE-2026-75604) Next.js Remote Code Execution via Windows Path Traversal",
+          "language": "en",
+          "source": "CyCognito"
+        },
+        {
+          "url": "https://securityonline.info/nextjs-rce-vulnerability/",
+          "title": "45M Weekly Downloads at Risk: Next.js CVE-2026-75604 (CVSS 9.0) Enables Unauthenticated Remote Code Execution",
+          "language": "en",
+          "source": "securityonline.info"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260903-CVEP-040554b6"
+    }
+  ],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-09-03-001",
+        "title": "23年間稼働したSalityボットネットを国際共同作戦で無力化",
+        "summary": "米司法省・FBI・DCISおよびブルガリア・ハンガリー・ルーマニアの当局が関連ドメインを押収し、CrowdStrikeのCounter Adversary Operationsチームが偽情報をP2Pネットワークへ注入してボット同士を制御者から遮断するシンクホール作戦を実施した。Salityは2003年以降15,000台超に感染したP2P型ボットネットで、過去8年間はクリップボード監視型の暗号資産アドレス差し替えツールEggJaggerを主要ペイロードとしていた。CrowdStrikeは「これまでで最も複雑なボットネット制圧作戦」と説明している。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-09-02T15:56:30+09:00",
+            "description": "DOJ・FBIによるSality関連ドメイン押収とP2Pネットワークの無力化を報道"
+          },
+          {
+            "source": "BleepingComputer",
+            "date": "2026-09-02T17:00:43+09:00",
+            "description": "CrowdStrikeとの共同シンクホール作戦の技術詳細を報道"
+          },
+          {
+            "source": "SecurityWeek",
+            "date": "2026-09-02T17:38:00+09:00",
+            "description": "23年稼働のP2Pボットネット解体を報道"
+          }
+        ],
+        "sector_impact": [
+          "other"
+        ],
+        "region_impact": [
+          "global",
+          "US"
+        ],
+        "references": [
+          {
+            "url": "https://www.justice.gov/usao-cdca/pr/sality-malware-disrupted-international-cyber-takedown",
+            "title": "Sality Malware Disrupted in International Cyber Takedown",
+            "language": "en",
+            "source": "US DOJ"
+          },
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/sality-botnet-infrastructure-dismantled-in-joint-global-takedown/",
+            "title": "Sality botnet infrastructure dismantled in joint global takedown",
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://www.theregister.com/cyber-crime/2026/09/02/cops-crowdstrike-disrupt-sality-botnet-by-poisoning-the-network-and-diverting-into-sinkholes/",
+            "title": "Cops, CrowdStrike disrupt Sality botnet by poisoning the network and diverting into sinkholes",
+            "language": "en",
+            "source": "The Register"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260903-TRND-44d7b5d4"
+      },
+      {
+        "topic_id": "TREND-2026-09-03-002",
+        "title": "BGPハイジャックでVirtualizor更新配信を乗っ取り永続的root権限を設置",
+        "summary": "2026-08-28 20:57UTC〜08-30 06:10UTCの間、攻撃者がHetzner系IPブロックをBGPハイジャックしSoftaculousのアップデート配信・課金ポータルへのトラフィックを迂回させ、悪意あるVirtualizorパッケージを一部環境へ配信した。確認された34台中5台のハイパーバイザでroot権限侵害が成立。Softaculousはルーティング復旧・不正証明書の失効申請・署名検証機能を備えたVirtualizor 3.2.9.9（09-01リリース）への刷新、および今後の全パッケージ署名化を発表した。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-09-02T22:12:00+09:00",
+            "description": "BGPハイジャックによるVirtualizor不正更新配信の技術詳細を報道"
+          },
+          {
+            "source": "BleepingComputer",
+            "date": "2026-09-02T00:00:00+09:00",
+            "description": "同事案を報道し、Softaculousの復旧・署名化対応を伝達"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/09/bgp-hijack-delivers-malicious.html",
+            "title": "BGP Hijack Delivers Malicious Virtualizor Update That Establishes Persistent Root Access",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/hackers-push-malicious-virtualizor-update-in-bgp-hijacking-attack/",
+            "title": "Hackers push malicious Virtualizor update in BGP hijacking attack",
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260903-TRND-ddeb19f4"
+      },
+      {
+        "topic_id": "TREND-2026-09-03-003",
+        "title": "イエローハット不正アクセス、影響範囲が最大180万1,499名に確定",
+        "summary": "イエローハットは2026-08-18朝に「WEB作業予約システム」への不正プログラムによる攻撃を検知し外部接続遮断・システム停止の緊急措置を実施していたが、調査進展により影響を受けた可能性のある会員情報が最大180万1,499名（氏名・電話番号・メールアドレス・会員番号）に確定したと発表した。同システムはクレジットカード情報・パスワード・車両情報を保持しておらずそれらの漏えいはないとしている。個人情報保護委員会への報告・警察への相談を実施済み。",
+        "changes_24h": [
+          {
+            "source": "ScanNetSecurity",
+            "date": "2026-09-02T08:05:23+09:00",
+            "description": "最大180万1,499名への影響拡大を確定情報として報道"
+          }
+        ],
+        "sector_impact": [
+          "retail"
+        ],
+        "region_impact": [
+          "JP"
+        ],
+        "references": [
+          {
+            "url": "https://scan.netsecurity.ne.jp/article/2026/09/02/56108.html",
+            "title": "イエローハットWEB作業予約システムへの不正プログラムによる攻撃、最大1,801,499名の会員情報が漏えいした可能性",
+            "language": "ja",
+            "source": "ScanNetSecurity"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20260903-TRND-acb8b56d"
+      }
+    ]
+  },
+  "apt_main": [],
+  "apt_notable": [
+    {
+      "group_name": "Unattributed（中国語アーティファクトを含む・国家帰属未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "low",
+      "campaign_id": "RIS-2026-PhilippinesNuclearNavalBreach",
+      "activity_type": [
+        "new_target",
+        "infrastructure_change"
+      ],
+      "motivation": "espionage",
+      "first_seen": "2026-08-13",
+      "last_seen": "2026-08-29",
+      "targets": {
+        "sectors": [
+          "government",
+          "defense",
+          "energy"
+        ],
+        "regions": [
+          "Asia-Pacific"
+        ],
+        "countries": [
+          "PH"
+        ]
+      },
+      "malware": [
+        {
+          "name": "Sliver",
+          "type": "other",
+          "language": null,
+          "delivery": [],
+          "persistence": [],
+          "c2_protocol": [
+            "https"
+          ]
+        },
+        {
+          "name": "Metasploit/Mettle",
+          "type": "other",
+          "language": null,
+          "delivery": [],
+          "persistence": [],
+          "c2_protocol": []
+        }
+      ],
+      "axis_p_score": 3,
+      "axis_q_score": 3,
+      "changes_24h": [
+        {
+          "source": "Dark Reading",
+          "date": "2026-09-02T10:00:00+09:00",
+          "description": "Hunt.ioの調査（2026-08-29公開）を引用し、フィリピンの原子力研究機関と海軍関連造船会社の侵害をDark Readingが国際窓内で報道"
+        }
+      ],
+      "overview": "研究者Hunt.io（Attack Captureにより2026-08-13にステージングサーバを発見）が、フィリピンの原子力研究機関および同国海軍を支援する造船・海洋エンジニアリング企業の侵害を確認した。原子力機関へは2年以上前に開示・修正済みのownCloud認証バイパス（CVE-2023-49105）を用いて未認証のファイル取得が行われ、原子炉部材・燃料在庫・放射線安全文書等のデータベースが窃取された。造船会社へはWordPressのLiteSpeed Cacheプラグインの権限昇格（CVE-2024-28000）が悪用された。ステージングサーバには1,310ファイル・86フォルダ（計1.17GB）の窃取素材が保管されており、ログには合計約9GBの窃取データへの言及があった。フォルダ名・コード中のコメントが中国語で記述されている点から中国語話者による関与が推定されるが、情報源は特定の政府・脅威グループへの正式帰属を行っていない（推測: 言語的痕跡のみに基づく推定であり、国家帰属の断定はできない）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "既知の未パッチ脆弱性（ownCloud CVE-2023-49105・LiteSpeed Cache CVE-2024-28000）を悪用し初期侵入"
+        },
+        {
+          "step": 2,
+          "description": "SliverやMetasploit/Mettle等の攻撃フレームワークを用いて内部探索・認証情報窃取（KeePassデータベース・AxCrypt暗号化ファイルの取得を含む）"
+        },
+        {
+          "step": 3,
+          "description": "原子炉部材・燃料在庫・放射線安全文書、造船関連データを窃取しステージングサーバへ集積"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "2年以上前に開示・修正済みのownCloud/LiteSpeed Cache脆弱性を用いた初期侵入"
+        }
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [
+          "31.58.209.241"
+        ],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "ownCloud・LiteSpeed Cache等の既知脆弱性に対するパッチ適用状況を全公開資産で再棚卸しする。2年以上前の既知脆弱性が現役で悪用される点を踏まえ、パッチ適用の遅延を許容しない運用へ見直す。IOC（31.58.209[.]241等）に基づくアウトバウンド通信の監視を強化する。",
+      "splunk_spl": [
+        "index=firewall dest_ip=31.58.209.241 | stats count by src_ip, dest_port"
+      ],
+      "detection_notes": "IOC該当IPへの通信を最優先で確認する→正規のCDN/クラウドIPレンジとの重複がないか事前に確認する",
+      "references": [
+        {
+          "url": "https://securityaffairs.com/198041/intelligence/philippine-nuclear-and-naval-targets-hit-by-suspected-chinese-operator.html",
+          "title": "Philippine Nuclear and Naval Targets Hit by Suspected Chinese Operator",
+          "language": "en",
+          "source": "SecurityAffairs"
+        },
+        {
+          "url": "https://www.darkreading.com/cyberattacks-data-breaches/old-unpatched-flaws-attackers-philippines-nuclear-agency",
+          "title": "Old, Unpatched Flaws Give Attackers Access to Philippines Nuclear Agency",
+          "language": "en",
+          "source": "Dark Reading"
+        }
+      ],
+      "related_cves": [
+        "CVE-2023-49105",
+        "CVE-2024-28000"
+      ],
+      "report_section": "apt_notable",
+      "info_id": "20260903-APTC-55a021f7"
+    },
+    {
+      "group_name": "Unattributed（AI基盤クリプトマイニングキャンペーン）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "unconfirmed",
+      "campaign_id": "Unattributed-2026-AIInfraCryptomining-KestraLiteLLM",
+      "activity_type": [
+        "new_target",
+        "ioc_release"
+      ],
+      "motivation": "financial",
+      "first_seen": null,
+      "last_seen": "2026-09-02",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [],
+        "countries": []
+      },
+      "malware": [
+        {
+          "name": "クリプトマイナー（詳細名称未公開）",
+          "type": "other",
+          "language": null,
+          "delivery": [
+            "exploit"
+          ],
+          "persistence": [],
+          "c2_protocol": []
+        }
+      ],
+      "axis_p_score": 3,
+      "axis_q_score": 2,
+      "changes_24h": [
+        {
+          "source": "Microsoft Security Blog",
+          "date": "2026-08-26T00:00:00+09:00",
+          "description": "Kestra(CVE-2026-49869)・LiteLLM(CVE-2026-59822)・Starlette(CVE-2026-48710)を連鎖悪用しAI基盤上でAPIキー窃取・クリプトマイニングを行うキャンペーンをMicrosoftが報告"
+        }
+      ],
+      "overview": "MicrosoftはAI開発・提供基盤（Kestraワークフローエンジン・LiteLLM AIゲートウェイ・両者の基盤であるStarlette）を狙い、認証バイパス脆弱性を連鎖悪用してAPIキーを窃取しクリプトマイニングを行う攻撃者不明のキャンペーンを報告した。Kestraでは未認証のワークフロー作成・Processランナー経由のシェル実行でroot権限のRCEに至り、Dockerソケットアクセス・コンテナ環境列挙・クリプトマイナー配備・証跡削除の順で活動したことをテレメトリで確認している。国家帰属・犯罪組織への具体的帰属は情報源が明示していないため、attribution_confidenceはunconfirmedとする（原則3）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Kestra CVE-2026-49869の認証バイパスで未認証ワークフローを実行しroot権限RCEを獲得（推定初期侵入経路）"
+        },
+        {
+          "step": 2,
+          "description": "Dockerソケットアクセス・コンテナ環境列挙を経てクリプトマイナーを配備"
+        },
+        {
+          "step": 3,
+          "description": "LiteLLM・Starletteの認証バイパスを用いてAI基盤上のAPIキー等を窃取（推測: Kestra観測との具体的な因果連鎖は情報源が明示していない）"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "Kestra/LiteLLM/Starletteの認証バイパス脆弱性を連鎖悪用"
+        },
+        {
+          "mitre_id": "T1496",
+          "name": "Resource Hijacking",
+          "implementation": "侵害したコンテナ上でクリプトマイナーを配備"
+        }
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "Kestra・LiteLLM・Starletteを含むAI基盤コンポーネントを直ちにパッチ適用版へ更新する。露出したAPIキー（OpenAI/AWS等）をローテーションし、Dockerソケットへの到達制御を見直す。",
+      "splunk_spl": [
+        "index=container_logs sourcetype=docker_events (socket_access=true) | stats count by container_id, image"
+      ],
+      "detection_notes": "コンテナからのDockerソケットアクセス・異常なCPU使用率上昇（クリプトマイニングの兆候）を優先確認する→正規のCI/CDビルドジョブとの切り分けを行う",
+      "references": [
+        {
+          "url": "https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/",
+          "title": "When AI infrastructure becomes the target: Securing gateways and control points",
+          "language": "en",
+          "source": "Microsoft Security Blog"
+        },
+        {
+          "url": "https://cyberpress.org/hackers-hit-ai-infrastructure/",
+          "title": "Hackers Target LiteLLM, RAGFlow and Kestra AI Infrastructure to Steal API Keys and Mine Crypto",
+          "language": "en",
+          "source": "CyberPress"
+        }
+      ],
+      "related_cves": [
+        "CVE-2026-49869",
+        "CVE-2026-59822",
+        "CVE-2026-48710"
+      ],
+      "report_section": "apt_notable",
+      "info_id": "20260903-APTC-efd51feb"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [
+    {
+      "attack_id": "AI-2026-09-03-001",
+      "title": "Unit 42調査: フロンティアAIエージェントが10時間未満でランサムウェア攻撃を自律実行",
+      "category": "A",
+      "subcategory": "A4",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-Q",
+        "A-P"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "規模: 不明（インシデント対応事案。被害組織名は非公開）",
+      "burst_count": 1,
+      "burst_status": "below_threshold",
+      "axis_x_score": 8,
+      "axis_y_score": 4,
+      "changes_24h": [
+        {
+          "source": "Unit 42（Palo Alto Networks）",
+          "date": "2026-09-02T19:00:46+09:00",
+          "description": "フロンティアAIモデルと攻撃特化型エージェント型AIフレームワークを用い、公開APIエンドポイントからの侵入・認証情報窃取・CI/CDパイプライン乗っ取り・クラウドAI計算資源の乗っ取りに至る攻撃を10時間未満で自律実行したインシデント対応事案を公表"
+        }
+      ],
+      "overview": "Unit 42が対応したランサムウェアインシデントにおいて、攻撃者はフロンティアAIモデルと攻撃特化型のエージェント型AIフレームワークを用い、通常は人間のオペレータが約2週間を要する侵害プロセスを10時間未満で自律的に実行した。並列動作する複数のAIエージェントがMarkdown形式の構造化ファイルでエージェント間通信を行い、AI生成のカスタムスクリプトで動的にオペレーションを管理していた。50種類超のMITRE ATT&CKテクニックが観測され、攻撃者は最終的に侵害した脆弱性を詳述する80ページの「技術監査レポート」まで生成していた。脅威アクターの身元は非公開。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "公開APIエンドポイントを突破口としてネットワークへ侵入"
+        },
+        {
+          "step": 2,
+          "description": "自動化された偵察エージェントがマイクロサービス構成をマッピングし、コードリポジトリからハードコードされた認証情報を収集、シークレット管理システムへ侵入して管理者権限の認証情報を取得"
+        },
+        {
+          "step": 3,
+          "description": "CI/CDパイプラインを乗っ取りTerraformバックドアの注入を試行、窃取したAPIキーでクラウドAI計算資源を乗っ取り"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "Markdown形式のファイルを用いたエージェント間通信パターン",
+          "短時間（10時間未満）での広範なMITRE ATT&CKテクニック（50種類超）の連続実行"
+        ]
+      },
+      "monitoring": {
+        "description": "CI/CDパイプラインの異常な自動化操作・シークレット管理システムへの短時間集中アクセスを監視する",
+        "splunk_spl": [
+          "index=cicd sourcetype=pipeline_audit | stats count by user, action | where count > 50",
+          "index=secrets_manager sourcetype=access_log | stats dc(secret_name) as secrets_accessed by user, src_ip | where secrets_accessed > 10"
+        ],
+        "detection_notes": "短時間で異常に多数のシークレット・パイプライン操作を行うアカウントを優先確認する→CI/CDの正規自動化ジョブとの切り分けを行う"
+      },
+      "references": [
+        {
+          "url": "https://unit42.paloaltonetworks.com/ai-assisted-cyber-attack-inside-a-unit-42-investigation",
+          "title": "An AI-Assisted Cyber Attack: Inside a Unit 42 Investigation",
+          "language": "en",
+          "source": "Unit 42"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b",
+      "info_id": "20260903-AIAT-d0e01a17"
+    },
+    {
+      "attack_id": "AI-2026-09-03-002",
+      "title": "悪意ある.git設定でClaude Code・Codex・Cursor等のAIコーディングエージェントに攻撃者コードを実行させる「GitSpawn」",
+      "category": "C",
+      "subcategory": "C3",
+      "attacker_type": "researcher",
+      "adoption_triggers": [
+        "A-V",
+        "A-S"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "規模: 不明（研究者実証・goose/Claude Code/Cursor/Codex/Qwen Code/Grok Build/Hermes Agent等複数のAIコーディングエージェントが対象。実悪用は本日時点で未確認）",
+      "burst_count": 1,
+      "burst_status": "below_threshold",
+      "axis_x_score": 7,
+      "axis_y_score": 3,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-02T23:06:59+09:00",
+          "description": "Manifold Securityが「GitSpawn」と呼称する手法を公開。Gitのcore.fsmonitor設定を悪用し.git/configへ悪意あるコマンドを仕込むことでAIコーディングエージェントのGit操作時にサンドボックス外・信頼確認プロンプト前にコードが実行されると報道。OpenAIはCVE-2026-72718（goose・CVSS7.0）・CVE-2026-19592（Codex）を含む複数CVEを同日公開"
+        }
+      ],
+      "overview": "研究グループManifold Securityは、Gitのパフォーマンス機能core.fsmonitor（変更ファイル検出のためコマンドを実行する設定）を悪用し、リポジトリの.git/configファイルに悪意あるコマンドを仕込む手法「GitSpawn」を公開した。AIコーディングエージェントがgit status等のGit操作をバックグラウンドで実行する際、設定のサニタイズが行われないため、攻撃者のコードがユーザー権限でエージェントのサンドボックス外・信頼確認プロンプトの前（一部エージェントではユーザー認証の前）に実行される。goose（v1.44.0未満）・Claude Code（core.fsmonitor経路はv2.1.196で修正）・Cursorは修正済みだが、Hermes Agent・Qwen Code・Grok Build・OpenAI Codexの一部バージョンは本日時点で未修正。研究者は「モデルや目新しい何かの脆弱性ではなく、IDEの下にある普通の配管（plumbing）の問題」と指摘している。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者が細工した.git/config（core.fsmonitor等の設定に悪意あるコマンドを仕込む）を含むリポジトリを用意"
+        },
+        {
+          "step": 2,
+          "description": "被害者がAIコーディングエージェントでリポジトリを開き、エージェントがバックグラウンドでgit status等を実行"
+        },
+        {
+          "step": 3,
+          "description": "core.fsmonitorに仕込まれたコマンドがユーザー権限でサンドボックス外・信頼確認プロンプト前に実行される"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          ".git/configへのcore.fsmonitor・core.hooksPath等の不審な設定追加"
+        ]
+      },
+      "monitoring": {
+        "description": "リポジトリクローン時の.git/config差分・core.fsmonitor/core.hooksPath設定の存在を監視する",
+        "splunk_spl": [
+          "index=edr sourcetype=process_create parent_process=*git* (core.fsmonitor OR core.hooksPath) | stats count by user, host"
+        ],
+        "detection_notes": "AIコーディングエージェント経由のGitプロセスから外部コマンドが起動されていないか優先確認する→開発者が意図的に設定したfsmonitorツールとの切り分けを行う"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/malicious-git-configs-can-make-claude.html",
+          "title": "Malicious .git Configs Can Make Claude, Codex, Cursor, and Other AI Agents Run Attacker Code",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b",
+      "info_id": "20260903-AIAT-7f7b5785"
+    },
+    {
+      "attack_id": "AI-2026-09-03-003",
+      "title": "OpenAI Astra、Preparedness Framework上の「Critical」サイバー能力閾値に到達",
+      "category": "A",
+      "subcategory": "A3",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-T",
+        "A-P"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "規模: 不明（テスト中に未修正ソフトウェアのゼロデイ脆弱性2件を自律的に発見・連鎖させたとOpenAIが公表。開示手続き中）",
+      "burst_count": 1,
+      "burst_status": "below_threshold",
+      "axis_x_score": 6,
+      "axis_y_score": 2,
+      "changes_24h": [
+        {
+          "source": "OpenAI",
+          "date": "2026-09-01T00:00:00+09:00",
+          "description": "モデル「Astra」がPreparedness Frameworkの定めるCriticalサイバー能力閾値（人間の介入なしにハード化された実環境システムに対しあらゆる深刻度のゼロデイエクスプロイトを特定・開発できる、または高レベルの目標のみからハード化標的への攻撃を端から端まで自律的に立案・実行できる）に到達したと公表し、開発・提供の一部を遅延させた上で追加の安全対策を実施したと発表"
+        },
+        {
+          "source": "SecurityWeek",
+          "date": "2026-09-02T19:38:13+09:00",
+          "description": "OpenAI Astraが同閾値に到達した初のモデルであると報道"
+        }
+      ],
+      "overview": "OpenAIは、開発中のモデル「Astra」がPreparedness Framework（2023年策定の安全枠組み）が定める「Critical」レベルのサイバー能力閾値に到達した初のモデルであると公表した。テスト過程でAstraは2件のゼロデイ脆弱性を自律的に発見し連鎖させており、OpenAIは現在開発者への開示手続きを進めている。これを受けOpenAIはAstraの開発・提供の一部を遅延させ、悪意あるユーザーによる濫用とモデル自身による無許可の行動の双方を防ぐ追加の安全対策を実施したと説明している。OpenAIはPreparedness Framework自体の改訂作業も進めている。",
+      "attack_flow": [],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": []
+      },
+      "monitoring": {
+        "description": "該当なし（モデル提供元の能力評価・安全対策発表であり、防御側の直接監視対象ではない）",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://openai.com/index/path-to-astra/",
+          "title": "Path to Astra: critical capabilities and frontier safeguards",
+          "language": "en",
+          "source": "OpenAI"
+        },
+        {
+          "url": "https://www.securityweek.com/openais-astra-becomes-first-model-to-cross-critical-cybersecurity-threshold/",
+          "title": "OpenAI's Astra Crosses 'Critical' Cyber Threshold After Finding Zero-Days",
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b",
+      "info_id": "20260903-AIAT-cbd191d5"
+    }
+  ],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-09-03-001",
+      "title": "Cleo Harmony最新脆弱性のExploit公開、既往のCl0p悪用パターンに要警戒",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "δ",
+        "α"
+      ],
+      "priority": "high",
+      "product_or_service": "Cleo Harmony（MFTソフトウェア）",
+      "targets": {
+        "sectors": [
+          "manufacturing",
+          "professional_services"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SecurityWeek",
+          "date": "2026-09-02T21:39:07+09:00",
+          "description": "Cleo Harmonyの新規脆弱性に対するExploitコードが公開されたと報道"
+        }
+      ],
+      "overview": "ファイル転送ソフトウェアCleo Harmonyの新規脆弱性に対するExploitコードが公開された。Cleoの同種製品（Cleo Harmony/VLTrader/LexiCom）は2024年末にCl0pランサムウェアグループによる大規模データ窃取キャンペーンで悪用された前例があり、MFT（マネージド・ファイル転送）製品は攻撃者にとって高価値標的であり続けている。CVE番号・詳細な技術情報は09-03時点で情報源が限定的なため、続報を要確認。",
+      "recommended_actions": [
+        "Cleo Harmony/VLTrader/LexiCom等のMFT製品の外部公開状況を棚卸しし、インターネット直接露出を可能な限り解消する",
+        "続報のCVE番号・パッチ情報を注視し、公開次第直ちに適用する",
+        "[ログソース: MFTアクセスログ/EDR] 異常なファイルアップロード・管理コンソールへの外部アクセスを監視する"
+      ],
+      "monitoring": {
+        "description": "MFT製品の管理コンソールアクセス・異常なファイル操作を監視する",
+        "splunk_spl": [
+          "index=mft sourcetype=cleo_harmony (admin_console OR file_upload) | stats count by src_ip, user"
+        ],
+        "detection_notes": "社外IPからの管理コンソールアクセスを最優先で確認する"
+      },
+      "references": [
+        {
+          "url": "https://www.securityweek.com/exploit-published-for-fresh-cleo-harmony-vulnerability/",
+          "title": "Exploit Published for Fresh Cleo Harmony Vulnerability",
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "info_id": "20260903-SOCR-6304b05b"
+    },
+    {
+      "rec_id": "SOC-2026-09-03-002",
+      "title": "Rockwell Automation、産業制御製品群で十数件の脆弱性を一括修正",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β",
+        "γ"
+      ],
+      "priority": "medium",
+      "product_or_service": "Rockwell Automation 各種ICS/OT製品",
+      "targets": {
+        "sectors": [
+          "manufacturing",
+          "energy",
+          "critical_infrastructure"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SecurityWeek",
+          "date": "2026-09-02T21:39:07+09:00",
+          "description": "Rockwell Automationが複数製品にまたがる十数件の脆弱性への対応パッチを公開したと報道"
+        }
+      ],
+      "overview": "Rockwell Automationが自社の複数のICS/OT向け製品にまたがる十数件の脆弱性を一括で修正するアドバイザリを公開した。個別の悪用報告は本日時点で確認されていないが、製造・エネルギー等の重要インフラで広く使われる製品群であるため、パッチ適用計画への反映が必要。",
+      "recommended_actions": [
+        "自社で使用しているRockwell Automation製品の型式・バージョンを棚卸しし、該当製品の有無を確認する",
+        "次回メンテナンスウィンドウでのパッチ適用を計画する",
+        "OT/ICSネットワークのセグメンテーション状況を再確認する"
+      ],
+      "monitoring": {
+        "description": null,
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.securityweek.com/rockwell-automation-patches-over-a-dozen-vulnerabilities-across-products/",
+          "title": "Rockwell Automation Patches Over a Dozen Vulnerabilities Across Products",
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "info_id": "20260903-SOCR-1e581c1c"
+    },
+    {
+      "rec_id": "SOC-2026-09-03-003",
+      "title": "Microsoft Defenderが正規Google検索リンクを誤検知、SOC運用への影響に注意",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "γ"
+      ],
+      "priority": "medium",
+      "product_or_service": "Microsoft Defender",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-09-02T19:29:39+09:00",
+          "description": "Microsoft Defenderが正規のGoogle検索結果リンクを悪意あるものとして誤検知する不具合が報告されたと報道"
+        }
+      ],
+      "overview": "Microsoft Defenderが正規のGoogle検索結果リンクを悪意あるURLとして誤検知（フォールスポジティブ）する不具合が報告された。SOCにおいてはアラート疲れ・正規業務の妨害につながるため、当該誤検知パターンをアラートトリアージの除外条件として一時的に把握しておくことが推奨される。",
+      "recommended_actions": [
+        "Microsoft Defenderの検知ログでGoogle検索リンクに対する誤検知アラートの有無を確認する",
+        "Microsoftからの修正プログラム配信状況を注視する",
+        "[ログソース: EDR/Defenderアラートログ] 誤検知と疑われるアラートのパターンを一時的に記録しトリアージ効率化に活用する"
+      ],
+      "monitoring": {
+        "description": "Defenderアラートのうちgoogle.com/search配下URLに対する検知を集計する",
+        "splunk_spl": [
+          "index=defender sourcetype=alert url=*google.com/search* | stats count by verdict"
+        ],
+        "detection_notes": "誤検知率が高い場合はMicrosoft側の修正パッチ適用まで当該パターンをトリアージ優先度低に設定する"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/microsoft-defender-flags-legitimate-google-search-links-as-malicious",
+          "title": "Microsoft Defender flags legitimate Google search links as malicious",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20260903-SOCR-bac8c7d3"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-4357",
+        "product": "The Embed HTML5 Game WordPress plugin",
+        "reason": "low_score",
+        "reason_detail": "Embed HTML5 Game WordPressプラグイン(v1.3以前)の未認証ファイルアップロード。CVSS10.0だが利用者数の限られたニッチプラグイン。KEV未登録・実悪用未確認・国内報道なし。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-77009",
+        "product": "The WatchMan-Site7 WordPress plugin through 4.2.0",
+        "reason": "low_score",
+        "reason_detail": "WatchMan-Site7 WordPressプラグイン(v4.2.0以前)のデバッグコンソール無制限アクセス。ニッチプラグインで実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2023-54391",
+        "product": "Proxmox Virtual Environment (VE) 7.0 through",
+        "reason": "low_score",
+        "reason_detail": "Proxmox VE 7.0〜8.0の認証バイパス(VulnCheck起点・2023年採番の再周知)。KEV未登録・PoC未確認・実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2025-9314",
+        "product": "The Developer Tools WordPress plugin through",
+        "reason": "low_score",
+        "reason_detail": "Developer Tools WordPressプラグイン(v1.1.3以前)の未認証任意ファイルアップロード。ニッチプラグインで実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-19117",
+        "product": "Under specific conditions, an attacker can",
+        "reason": "low_score",
+        "reason_detail": "Delinea製品のFIDO2認証情報登録の不備による認証バイパス。KEV未登録・PoC未確認・実悪用未確認・国内報道なし。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-20212",
+        "product": "A vulnerability in the Silicon One",
+        "reason": "low_score",
+        "reason_detail": "Cisco Nexus 9000 Silicon One統合機能のTCPポート露出による未認証root権限コード実行(CVSS9.8)。Cisco公式アドバイザリで悪用確認・PoC公開いずれもなし。国内報道・参考A条件該当なし。軸1=CVSS9+(+3)+未認証RCE(+3)+広く使われる(+1)=7で8点未満のため除外(悪用確認・PoC公開があれば再評価)。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-20274",
+        "product": "As part of Cisco's ongoing commitment",
+        "reason": "low_score",
+        "reason_detail": "Cisco IOS XR Softwareのリソース制御不備(CWE-664)。Cisco社内の包括的セキュリティレビュー(ハードニングリリース)で発見され、悪用確認・PoC公開なし。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-20279",
+        "product": "As part of Cisco's ongoing commitment",
+        "reason": "low_score",
+        "reason_detail": "Cisco IOS XR Softwareのアクセス制御不備(CWE-284)。同上のCisco社内セキュリティレビューによるハードニングリリースで発見され、悪用確認・PoC公開なし。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-53611",
+        "product": "Looking Glass is a modern, stateless",
+        "reason": "low_score",
+        "reason_detail": "Looking Glass(GHSA起点・ネットワーク診断ツール)の脆弱性。ニッチなOSSツールで実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-78657",
+        "product": "The SigmaForms Pro – AI Generated",
+        "reason": "low_score",
+        "reason_detail": "SigmaForms Pro WordPressプラグインの任意ファイル削除。ニッチプラグインで実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-81294",
+        "product": "Unauthenticated Privilege Escalation in Authorizer <=",
+        "reason": "low_score",
+        "reason_detail": "Authorizer(OSS認証基盤・Patchstack起点)の未認証権限昇格。実悪用未確認・国内報道なし。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84325",
+        "product": "Google Chrome",
+        "reason": "low_score",
+        "reason_detail": "Google Chrome 152.0.7977.75（2026-09-02リリース）で修正された複数のUse-After-Free/入力検証不備(CVSS9.0〜9.8)。単一ベンダーPSIRTによる同一リリース内の一括公開バッチのため代表1件に集約（ほか5件: CVE-2026-84333, CVE-2026-84352, CVE-2026-84353, CVE-2026-84354, CVE-2026-84324）。Security NEXTはブラウザ更新（脆弱性26件・Critical 2件）として国内向けに報道したが個別CVEの注意喚起には至らず、実悪用未確認・自動更新により大半の利用者は既に修正版へ移行済み。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84372",
+        "product": "Predis is a flexible and feature-complete",
+        "reason": "low_score",
+        "reason_detail": "Predis(PHP向けRedis/Valkeyクライアント)のパイプライン処理におけるコマンドインジェクション。攻撃者制御下のキー/値をpipeline()経由で注入させる必要がありアプリ依存。実悪用未確認・KEV未登録。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84480",
+        "product": "WWBN AVideo fails to validate password",
+        "reason": "low_score",
+        "reason_detail": "WWBN AVideo(VulnCheck起点)のパスワード再設定トークン有効期限検証不備。ニッチCMSで実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84637",
+        "product": "Malicious calendar invitations could use file",
+        "reason": "low_score",
+        "reason_detail": "Mozilla Thunderbirdの細工MIMEボディによる未初期化メモリ使用(悪意あるカレンダー招待のfile URI添付が起点)。ユーザー操作(添付ファイル起動)を要し単純未認証RCEではない。実悪用未確認・PoC未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84795",
+        "product": "Craft CMS before 5.10.11 fails to",
+        "reason": "low_score",
+        "reason_detail": "Craft CMS(v5.10.11未満)のユーザー登録時admin権限フラグ検証不備。実悪用未確認・PoC未確認・国内報道なし。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-9055",
+        "product": "The Booking for Appointments and Events",
+        "reason": "low_score",
+        "reason_detail": "Amelia(Wordfence起点・予約管理WordPressプラグイン)の脆弱性。実悪用未確認・国内報道なし。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-53649",
+        "product": "Joro is a web exploitation framework.",
+        "reason": "low_score",
+        "reason_detail": "Joro(GHSA起点・Web侵入テストフレームワーク)のデフォルトプロキシモードでのローカルリスナー露出。ニッチなセキュリティツールで実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-53670",
+        "product": "PREVAIL is a Polynomial-Runtime EBPF Verifier",
+        "reason": "low_score",
+        "reason_detail": "PREVAIL(GHSA起点・eBPF検証ツール)の脆弱性。ニッチなセキュリティツールで実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-53671",
+        "product": "PREVAIL is a Polynomial-Runtime EBPF Verifier",
+        "reason": "low_score",
+        "reason_detail": "PREVAIL(GHSA起点・eBPF検証ツール)の別の脆弱性(CVE-2026-53670と同時公開)。実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-81286",
+        "product": "Unauthenticated SQL Injection in WCFM Marketplace",
+        "reason": "low_score",
+        "reason_detail": "WCFM Marketplace(Patchstack起点・WordPressマルチベンダープラグイン)の未認証SQLインジェクション。実悪用未確認・国内報道なし。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84479",
+        "product": "WWBN AVideo (current e01e41ecc and earlier)",
+        "reason": "low_score",
+        "reason_detail": "WWBN AVideo(VulnCheck起点)のログイン時セキュリティ制御不備。実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84695",
+        "product": "BookStack before 26.05.4 contains a stored",
+        "reason": "low_score",
+        "reason_detail": "BookStack(VulnCheck起点・ドキュメント管理OSS)の格納型XSS。実悪用未確認・PoC未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84696",
+        "product": "Phison PS3111-S11 controller firmware versions through",
+        "reason": "low_score",
+        "reason_detail": "Phison PS3111-S11コントローラファームウェア(VulnCheck起点)の特権ベンダーコマンド露出。リモート未認証攻撃面ではなくファームウェアレベルのローカル/物理アクセス前提。実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84699",
+        "product": "Team Password Manager before 14.184.308 fails",
+        "reason": "low_score",
+        "reason_detail": "Team Password Manager(VulnCheck起点)のローカル認証制御不備。実悪用未確認・国内報道なし。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-78689",
+        "product": "Description NGINX JavaScript (njs) has a",
+        "reason": "low_score",
+        "reason_detail": "NGINX JavaScript(njs)モジュールのXML名前空間プレフィックス解析の脆弱性。njsはNGINXコア機能ではなく拡張モジュールで利用範囲が限定的。実悪用未確認・PoC未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-66786",
+        "product": "A flaw was found in submariner.",
+        "reason": "low_score",
+        "reason_detail": "submariner(Red Hat起点・Kubernetesマルチクラスタネットワーキングツール)のcert-authモード設定不備。ニッチなインフラツールで実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-73475",
+        "product": "Incorrect Authorization vulnerability in Drupal Commerce",
+        "reason": "low_score",
+        "reason_detail": "Drupal Commerce PayPalの認可不備によるForceful Browsing。RCEではなく認可回避で実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84639",
+        "product": "Triggering an error condition in certain",
+        "reason": "low_score",
+        "reason_detail": "Mozilla Thunderbirdの細工MIMEボディによる未初期化メモリ使用(CVE-2026-84637と同時公開の別問題)。実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-82955",
+        "product": "In the current development version of",
+        "reason": "low_score",
+        "reason_detail": "Eclipse aeriOS(公式リリース未実施の開発中バージョン)の脆弱性。実運用環境が存在しないため実害リスクが極めて限定的。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84803",
+        "product": "SiYuan before v3.8.2 contains a stored",
+        "reason": "low_score",
+        "reason_detail": "SiYuan(VulnCheck起点・ノートアプリ)のアセット配信における格納型XSS。ニッチなアプリで実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-72920",
+        "product": "SeaweedFS",
+        "reason": "low_score",
+        "reason_detail": "SeaweedFS(分散ファイルシステムOSS)のfiler IAM gRPCサービスが未認証でS3管理権限を許す不備(EUVD-2026-56156・CVSS9.8)。NVD未反映(EUVD独自層)。KEV未登録・実悪用未確認・国内報道なし。軸1=CVSS9+(+3)+未認証権限奪取相当(+3)+広く使われる(+1)=7で8点未満のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-71866",
+        "product": "Orval",
+        "reason": "low_score",
+        "reason_detail": "Orval(OpenAPIからのクライアントSDK自動生成ツール)のインポート時RCE(スキーマのプロパティ名からcomputed-property-key経由でzodクライアントへ注入・EUVD-2026-62596・CVSS9.3)。開発時ツールでありインポート対象のスキーマファイルを信頼した場合のみ悪用可能。CVE-2026-72716(同日公開の関連脆弱性)とあわせて記録。NVD未反映(EUVD独自層)。実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-72716",
+        "product": "Orval",
+        "reason": "low_score",
+        "reason_detail": "Orvalの別のインポート時RCE(クエリパラメータのデフォルト値からzodモジュールレベルのテンプレートリテラルへ注入・EUVD-2026-62600・CVSS9.3)。CVE-2026-71866と同時公開・同一プロジェクトのためまとめて記録。実悪用未確認。軸1<8のため除外。",
+        "reported_date": null
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": null,
+        "group_name": "Kimsuky/Lazarus（複数媒体の総括記事）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "Kimsuky・Lazarusの連携をまとめた総括記事（cybersecuritynews.com等）は窓内の新規事象ではなく過去複数月の活動をまとめた解説記事のため、P〜Wいずれの採用契機も窓内の新規変化として確認できず不採用。",
+        "reported_date": null
+      }
+    ],
+    "ai_attacks": [
+      {
+        "attack_id": null,
+        "title": "AI Gives Cybercriminals a Dangerous Time Advantage（Dark Reading・トレンド解説）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "個別インシデント・実証を伴わない一般的な傾向解説記事のため、A-P〜A-Yいずれの採用契機も明確な新規実証・被害として確認できず不採用（Unit 42調査・GitSpawn研究など個別事案は別途採用済み）。",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "AI's Vulnerability Surge May Be More Manageable Than First Feared（Dark Reading）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "業界動向の解説記事で新規実証・被害の具体情報を伴わないため不採用。",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "How to Secure Enterprise AI: From Adoption to Incident Readiness（The Hacker News）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "ベンダー寄稿の一般的ガイダンス記事で新規インシデント・脆弱性を伴わないため不採用。",
+        "reported_date": null
+      },
+      {
+        "attack_id": null,
+        "title": "Anthropic Details Response to Security Incidents, Unveils Enterprise Safeguards（SecurityWeek）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "モデル提供元の防御的施策発表であり攻撃事象そのものではないため本セクションでは不採用（Section 4 SOC推奨情報の対象にも至らずと判断）。",
+        "reported_date": null
+      }
+    ],
+    "soc_recommendations": [
+      {
+        "rec_id": null,
+        "title": "OpenLeash Adds a Human Check to Risky AI Agent Actions（SecurityWeek）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "新製品発表記事でSOC運用への直接的な採用条件（α〜η）に明確に合致する要素が薄いため不採用。",
+        "reported_date": null
+      },
+      {
+        "rec_id": null,
+        "title": "US charges Russian for infecting 80,000 freelancers with malware（BleepingComputer）",
+        "reason": "insufficient_evidence",
+        "reason_detail": "法執行機関による訴追報道であり、日次収集では法執行チェックを対象外とする運用方針（pipeline-1b-apt.md）に準じ不採用。週次検証での確認対象。",
+        "reported_date": null
+      }
+    ]
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 1,
+      "main": 5,
+      "reference_a": 1,
+      "reference_b": 2,
+      "excluded": 34,
+      "total_processed": 43
+    },
+    "apt": {
+      "main": 0,
+      "notable": 2,
+      "excluded": 1,
+      "total_processed": 3
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 3,
+      "excluded": 4,
+      "total_processed": 7,
+      "category_breakdown": {
+        "A": 2,
+        "B": 0,
+        "C": 1
+      }
+    },
+    "soc_recommendations": {
+      "high": 1,
+      "medium": 2,
+      "low": 0,
+      "excluded": 2,
+      "total_processed": 5,
+      "perspective_breakdown": {
+        "cve": 1,
+        "zeroday": 1,
+        "ai_attack": 1
+      }
+    }
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-09-02T23:03:31Z",
+    "operational_picture": {
+      "subjects_tracked": 148,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 55,
+        "DISCLOSED": 72,
+        "POC_PUBLIC": 21
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 110,
+        "shadow": 93
+      },
+      "event_type_counts": {
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 21,
+        "TF1_POC_PUBLICATION": 72
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}

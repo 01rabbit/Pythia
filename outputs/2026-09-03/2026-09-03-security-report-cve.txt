@@ -1,0 +1,316 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-03 07:00 JST
+調査期間: 2026-09-02 07:00 〜 2026-09-03 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-83548 / SMA1000 Appliances（6210 / 7210 / 8200v）
+対象: 12.4.3-03453/12.5.0-02835（platform-hotfix）以前
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[SonicWall PSIRT 2026-09-02] SMA1000のAppliance Work Placeインターフェースの事前認証SSRF脆弱性(CVE-2026-83548)とAppliance Management Console(AMC)のOSコマンドインジェクション(CVE-2026-83549)が実悪用されていると公表し、CISAが同日KEVへ初回追加した
+[The Hacker News 2026-09-02] 2件のゼロデイが連鎖して未認証RCEを構成する攻撃チェーンとして悪用されていると報道
+
+【概要】
+SonicWall SMA1000シリーズ（6210/7210/8200v）のAppliance Work Placeインターフェースに存在する事前認証SSRF脆弱性CVE-2026-83548（CVSS10.0）が実環境で悪用されている。単独でも機微機能への不正アクセスを許すが、Appliance Management Console（AMC）のOSコマンドインジェクションCVE-2026-83549（CVSS7.8・別entry参照）と連鎖させることで未認証のリモートコード実行に至る攻撃チェーンが観測された。SMA100シリーズおよびSonicWallファイアウォール上のSSL-VPNは対象外。SonicWallはSMA1000が2026年7月のMFAシード窃取事件に続き今回で3度目の侵害となる点を明らかにしている（推測: 同一アクセス経路を狙う継続的な攻撃関心が背景にある可能性があるが、攻撃者の同一性は情報源が明示していない）。
+
+攻撃の流れ:
+1. 攻撃者がAppliance Work PlaceインターフェースへCVE-2026-83548のSSRFリクエストを送信し内部機能へ到達
+2. 取得した内部アクセスを足がかりにAMCのOSコマンドインジェクション(CVE-2026-83549)を実行し未認証RCEへ連鎖
+3. SMA1000上での永続化・機微データへのアクセスに至る（詳細な事後活動は情報源未公開）
+
+【暫定緩和策】
+・Appliance Work PlaceインターフェースへのアクセスをVPN/信頼済みIPへ制限する
+・AMC管理インターフェースをインターネットから隔離する
+・SonicWallが提示する侵害指標(IOC)に基づくログ監査を実施する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] SMA1000のWebアクセスログ・AMC管理ログにおける異常な内部リクエスト・コマンド実行痕跡を監視する
+Splunk SPL: index=sonicwall_sma sourcetype=sma_workplace | search uri_path=*workplace* | stats count by src_ip, uri_path
+Splunk SPL: index=sonicwall_sma sourcetype=sma_amc (cmd=* OR exec=*) | stats count by src_ip, user
+→ AMCへの管理外IPからのアクセス、Work Placeインターフェースへの短時間バースト状のリクエストを優先確認する→誤検知除外は正規の監視・ヘルスチェックトラフィックとの切り分けを行う
+
+【参照】
+https://thehackernews.com/2026/09/attackers-exploit-two-sonicwall-sma.html
+https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-actively-exploited-sma1000-zero-day-flaws
+https://www.securityweek.com/sonicwall-warns-of-two-sma1000-zero-days-exploited-in-attacks/
+https://www.security-next.com/189706
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-83549 / SMA1000 Appliances（6210 / 7210 / 8200v）
+対象: 12.4.3-03453/12.5.0-02835（platform-hotfix）以前
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 7.8 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[SonicWall PSIRT 2026-09-02] AMCコンポーネントのOSコマンドインジェクションが実悪用されており、CISAが同日KEVへ初回追加した
+
+【概要】
+Appliance Management Console(AMC)のOSコマンドインジェクション脆弱性。単独では認証後の悪用条件だが、事前認証SSRF(CVE-2026-83548・zero_day_special参照)と連鎖させることで未認証RCEを構成する攻撃チェーンの一部として実悪用が確認された。
+
+攻撃の流れ:
+1. CVE-2026-83548で取得したアクセスを起点にAMCへ細工コマンドを送信し任意コード実行
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] AMC管理インターフェースへのコマンド実行痕跡を監視する
+Splunk SPL: index=sonicwall_sma sourcetype=sma_amc cmd=* | stats count by src_ip, user, cmd
+→ 正規運用ではAMCへの外部コマンド投入は稀のため、外部IPからのAMCアクセスを優先確認する
+
+【参照】
+https://thehackernews.com/2026/09/attackers-exploit-two-sonicwall-sma.html
+https://www.helpnetsecurity.com/2026/09/02/sonicwall-sma-1000-cve-2026-83548-cve-2026-83549-zero-day-attacks/
+
+------------------------------------------------------------
+2. CVE-2026-82329 / Artifactory
+対象: 7.161.20未満の自己ホスト版（既定構成）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[The Hacker News 2026-09-02] 2026-08-28公開・修正済みの認証不備を突き、公開から数日で攻撃者が管理者トークンを不正発行しユーザー・グループ・認証情報セットを列挙する実悪用がwatchTowr等により確認され、CISAが同日KEVへ初回追加
+
+【概要】
+JFrog Artifactoryの既定構成に存在する認証不備により、未認証のネットワークアクセス可能な攻撃者が管理者権限のアクセストークンを不正発行できる。2026-08-28の公開・修正から数日後の09-01にはwatchTowrが実環境での悪用（管理者トークン生成・ユーザー/グループ/認証情報/フェデレーションアクセス関係の列挙）を観測しており、ビルド成果物・バイナリを保持するDevOps中核ツールであるためサプライチェーン汚染への波及が懸念される。
+
+攻撃の流れ:
+1. 既定構成の認証不備を突いて未認証で管理者トークンを不正発行
+2. 発行したトークンでユーザー・グループ・認証情報セット・連携アクセス関係を列挙
+3. （推測）取得した認証情報・アクセス権を用いてビルド成果物への不正アクセスやサプライチェーン汚染に発展する可能性がある
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] Artifactoryの管理者トークン発行イベント・列挙APIコールを監視する
+Splunk SPL: index=jfrog_artifactory sourcetype=access_log (action=token_create OR action=admin_token) | stats count by src_ip, user
+→ 短時間での大量トークン発行・ユーザー列挙APIの連続呼び出しを優先確認する→正規CI/CDパイプラインからの定型的トークン発行との切り分けを行う
+
+【参照】
+https://thehackernews.com/2026/09/attackers-exploit-critical-jfrog.html
+https://www.bleepingcomputer.com/news/security/hackers-exploit-critical-jfrog-artifactory-flaw-to-forge-admin-tokens
+https://www.securityweek.com/critical-jfrog-artifactory-vulnerability-reportedly-exploited-in-the-wild/
+
+------------------------------------------------------------
+3. CVE-2026-9586 / Switchvox SMB Edition
+対象: 8.3（104997）。8.4.0.2で修正済み（2026-07-14公開）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.3 (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[The Hacker News 2026-09-02] /paエンドポイント経由の未認証SQLインジェクションが実悪用され、認証情報なしでリバースシェルを設置する攻撃が観測されたと報道。CISAが同日KEVへ初回追加
+
+【概要】
+Switchvox SMB EditionのPolycom IPフォンプロビジョニング用/paエンドポイントは、リクエストボディが<PolycomIPPhone>ルート要素で始まる場合にPhoneIP属性値をPostgreSQLクエリへ生文字列として連結しており、未認証のリモート攻撃者が単一リクエストでSQLインジェクションを行い任意コード実行に至る。2026-08-30頃からハニーポットで悪用試行が観測され始め、リバースシェル設置後に稼働プロセスを列挙する挙動が確認されている。インターネット露出台数は約4,000台、うち大半が米国。パッチは2026-07-14提供済みだが未適用環境が悪用対象になっている。
+
+攻撃の流れ:
+1. /paエンドポイントへ<PolycomIPPhone>形式の細工XMLペイロードを送信
+2. PhoneIP属性値に注入したSQLがPostgreSQLで実行されリモートコード実行に至る
+3. リバースシェルを設置し稼働プロセスを列挙する事後活動が観測された
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] /paエンドポイントへの異常なXMLペイロード・PostgreSQLエラーログ・リバースシェル通信を監視する
+Splunk SPL: index=switchvox sourcetype=access_combined uri_path=*/pa* | search PolycomIPPhone | stats count by src_ip
+→ /paエンドポイントへの非プロビジョニング目的アクセス・異常な発信接続を優先確認する→正規IP電話のプロビジョニングトラフィックとの切り分けを行う
+
+【参照】
+https://thehackernews.com/2026/09/attackers-exploit-critical-switchvox.html
+https://www.bleepingcomputer.com/news/security/hackers-exploit-sangoma-switchvox-flaw-to-deploy-reverse-shells
+https://www.helpnetsecurity.com/2026/09/02/exploitation-of-sangoma-switchvox-flaw-underway-cve-2026-9586/
+
+------------------------------------------------------------
+4. CVE-2026-49869 / Kestra OSS
+対象: 1.0.45未満 / 1.3.21未満
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[Microsoft Security Blog 2026-08-26] AuthenticationFilterが/configsで終わるパスを完全一致ではなく接尾辞一致で判定しているため認証を回避できる不備を悪用し、未認証のワークフロー作成・Processランナー経由のシェル実行によるRCEが行われたとMicrosoftが高確信度で評価。攻撃はDockerソケットアクセス・コンテナ環境列挙・クリプトマイナー配備・証跡削除に至った
+[CISA KEV 2026-09-02] CISAがKEVへ初回追加
+
+【概要】
+Kestraのワークフロー実行基盤において、AuthenticationFilterがAPIパスの末尾一致のみで認証要否を判定する実装不備により、パス末尾が/configsとなる任意のAPIパスが認証を回避できる。Kestraは既定でスクリプト実行プラグインが有効なため、未認証でワークフローを作成・実行させることでKestraワーカーコンテナ内でroot権限のRCEに直結する。Microsoftは、LiteLLM(CVE-2026-59822)・Starlette(CVE-2026-48710)を含むAI基盤を狙った侵害キャンペーンにおいて本脆弱性が初期侵入経路として使われた可能性が高いと評価しており、侵入後はDockerソケットへのアクセス・コンテナ環境の列挙・クリプトマイナーの配備・証跡削除が観測された。
+
+攻撃の流れ:
+1. パス末尾を/configsとする未認証APIリクエストで認証フィルタを回避
+2. Processランナーを用いた悪意あるワークフローを定義・実行させる
+3. ワーカーコンテナ内でroot権限のシェルを取得しDockerソケットアクセス・環境列挙・クリプトマイナー配備・証跡削除を実行
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] Kestra APIへの/configs終端パスへの未認証アクセス・ワーカーコンテナのDockerソケットアクセスを監視する
+Splunk SPL: index=kestra sourcetype=access_log uri_path=*/configs | stats count by src_ip, status
+Splunk SPL: index=container_logs (docker.sock) sourcetype=kestra_worker | stats count by container_id
+→ 認証ヘッダなしで/configs終端パスへアクセスするリクエストを優先確認する→正規のヘルスチェック・監視エンドポイントとの切り分けを行う
+
+【参照】
+https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/
+https://cyberpress.org/hackers-hit-ai-infrastructure/
+
+------------------------------------------------------------
+5. CVE-2026-59822 / LiteLLM
+対象: 1.84.0未満
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.8 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[Microsoft Security Blog 2026-08-26] MCP Streamable HTTPエンドポイントで偽装Authorizationヘッダを用いOAuth2パススルーのフォールバック経路を誘発し、失敗したキー検証を空のUserAPIKeyAuth()に置換することでMCPツールへ未認証到達できる不備が実悪用されているとMicrosoftが報告
+
+【概要】
+LiteLLM（AIゲートウェイ・複数LLMプロバイダを統一APIで扱うOSS）のMCP Streamable HTTPエンドポイントにおいて、偽装したAuthorizationヘッダを送るとOAuth2パススルーのフォールバック処理が発火し、本来失敗するはずのLiteLLMキー検証が空のUserAPIKeyAuth()オブジェクトに置き換わる。結果として有効なLiteLLMキーなしにMCPツール群へ到達できる。KestraやStarlette依存コンポーネントを含むAI基盤侵害キャンペーンの一部として実悪用が確認されており、露出したAIゲートウェイでは最優先の対処が必要とされている。
+
+攻撃の流れ:
+1. 偽装Authorizationヘッダを付与しMCP Streamable HTTPエンドポイントへリクエスト
+2. OAuth2パススルーのフォールバック経路が発火しキー検証が空オブジェクトに置換される
+3. 未認証のままMCPツール・下流のLLM/AIインフラへアクセス（推測: 上流のAPIキー窃取・クリプトマイニングへ発展した可能性。Kestra観測との関連が示唆されるが個別の因果は情報源未確認）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] MCP Streamable HTTPエンドポイントへの異常なAuthorizationヘッダ・空UserAPIKeyAuthでの到達を監視する
+Splunk SPL: index=litellm sourcetype=access_log uri_path=*/mcp* | stats count by src_ip, authorization_header
+→ 正規のLiteLLMキー形式と異なるAuthorizationヘッダでのMCPエンドポイントアクセスを優先確認する→社内プロキシ経由の正規リクエストとの切り分けを行う
+
+【参照】
+https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/
+https://www.redpacketsecurity.com/cve-alert-cve-2026-59822-berriai-litellm/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-76658 / HPE Networking Fabric Composer
+CVSS: 10.0 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-09-02] HPE Fabric Composerに深刻な脆弱性が公表されアップデートが強く推奨されているとして国内向けに報道
+[GBHackers 2026-09-01] SSHデーモンの未認証RCE(CVE-2026-76658)によりmanagement hostが完全侵害されうると公表
+
+【概要】
+HPE Networking Fabric Composer 7.3.3以前に52件の脆弱性が公表され、うちCVE-2026-76658はSSHデーモンに存在する未認証リモートコード実行（CVSS10.0）で、攻撃者が管理ホスト上で特権OSユーザーとして任意コマンドを実行し完全掌握できる。あわせてAPI認証回避によるCVE-2026-76657（管理者権限奪取）、OS層の認証バイパスCVE-2026-19766（隣接未認証攻撃者によるコード実行）も公表された。HPE公表時点（2026-09-01）で公開の議論・実証コードは確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] Fabric Composer管理ホストのSSHアクセスログを監視する
+Splunk SPL: index=hpe_fabric_composer sourcetype=sshd | stats count by src_ip, user, result
+→ 管理外ネットワークからのSSH到達を優先確認する→保守用ジャンプホストからの正規アクセスと切り分ける
+
+【参照】
+https://www.security-next.com/189721
+https://gbhackers.com/critical-hpe-fabric-composer-flaw/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-48710 / Starlette
+CVSS: 6.5
+Starlette（FastAPI・vLLM・LiteLLM・MCPサーバ等AIエージェント基盤の広範なエコシステムの土台となる軽量ASGIフレームワーク）は、1.0.1未満でHTTP Hostリクエストヘッダを検証せずrequest.urlの再構築に用いていたため、細工したHostヘッダによりrequest.url.pathが実際のリクエストパスと乖離しうる（通称BadHost）。ルーティング自体は生のHTTPパスを見るがrequest.urlに基づくパスベースのセキュリティ制御はこの乖離により回避されうるため、認証バイパスの土台として悪用される。単体のCVSSは6.5だが、Kestra(CVE-2026-49869)・LiteLLM(CVE-2026-59822)を含むAI基盤侵害キャンペーンの構成要素として実悪用が確認されCISAがKEVへ追加した。
+IoC: 確認されず
+
+監視: 異常なHostヘッダ値・パス区切り文字を含むリクエストを監視する Splunk SPL: index=web_proxy sourcetype=access_combined | search http_host=*\%5c* OR http_host=*\\* | stats count by src_ip, http_host
+→ Hostヘッダにバックスラッシュ等の非典型文字を含むリクエストを優先確認する→正規のロードバランサヘルスチェックとの切り分けを行う
+
+参照: https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/
+参照: https://ostif.org/disclosing-the-badhost-vulnerability-in-starlette/
+
+・CVE-2026-75604 / Next.js
+CVSS: 9.0
+Next.js（Vercel提供の人気Reactフレームワーク）の自己ホスト環境限定の脆弱性で、パーセントエンコードされたバックスラッシュを含むHostヘッダ相当の細工パスがルーティング層で正規化されずWindows上ではバックスラッシュがディレクトリ区切りとして解釈されるため、キャッシュディレクトリ外へのファイル書き込みを経てリモートコード実行に至る。Pages Router・App Routerの双方でCache Componentsを使わない構成が対象。Vercel管理プラットフォーム上のホスティングは影響を受けない。GitHub上に検証用PoCが公開されているが、実悪用の報告は本日時点で未確認。
+IoC: 確認されず
+
+監視: Next.jsキャッシュディレクトリ外へのファイル書き込み・異常なパーセントエンコードパスを監視する Splunk SPL: index=web_proxy sourcetype=access_combined url=*%5c* | stats count by src_ip, url
+→ URLにパーセントエンコードされたバックスラッシュ(%5c)を含むリクエストを優先確認する→自己ホストWindows環境か否かで対応要否を切り分ける
+
+参照: https://www.cycognito.com/blog/emerging-threat-cve-2026-75604-next-js-remote-code-execution-via-windows-path-traversal/
+参照: https://securityonline.info/nextjs-rce-vulnerability/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-4357 (The Embed HTML5 Game WordPress plugin) → Embed HTML5 Game WordPressプラグイン(v1.3以前)の未認証ファイルアップロード。CVSS10.0だが利用者数の限られたニッチプラグイン。KEV未登録・実悪用未確認・国内報道なし。軸1<8のため除外。
+・CVE-2026-77009 (The WatchMan-Site7 WordPress plugin through 4.2.0) → WatchMan-Site7 WordPressプラグイン(v4.2.0以前)のデバッグコンソール無制限アクセス。ニッチプラグインで実悪用未確認。軸1<8のため除外。
+・CVE-2023-54391 (Proxmox Virtual Environment (VE) 7.0 through) → Proxmox VE 7.0〜8.0の認証バイパス(VulnCheck起点・2023年採番の再周知)。KEV未登録・PoC未確認・実悪用未確認。軸1<8のため除外。
+・CVE-2025-9314 (The Developer Tools WordPress plugin through) → Developer Tools WordPressプラグイン(v1.1.3以前)の未認証任意ファイルアップロード。ニッチプラグインで実悪用未確認。軸1<8のため除外。
+・CVE-2026-19117 (Under specific conditions, an attacker can) → Delinea製品のFIDO2認証情報登録の不備による認証バイパス。KEV未登録・PoC未確認・実悪用未確認・国内報道なし。軸1<8のため除外。
+・CVE-2026-20212 (A vulnerability in the Silicon One) → Cisco Nexus 9000 Silicon One統合機能のTCPポート露出による未認証root権限コード実行(CVSS9.8)。Cisco公式アドバイザリで悪用確認・PoC公開いずれもなし。国内報道・参考A条件該当なし。軸1=CVSS9+(+3)+未認証RCE(+3)+広く使われる(+1)=7で8点未満のため除外(悪用確認・PoC公開があれば再評価)。
+・CVE-2026-20274 (As part of Cisco's ongoing commitment) → Cisco IOS XR Softwareのリソース制御不備(CWE-664)。Cisco社内の包括的セキュリティレビュー(ハードニングリリース)で発見され、悪用確認・PoC公開なし。軸1<8のため除外。
+・CVE-2026-20279 (As part of Cisco's ongoing commitment) → Cisco IOS XR Softwareのアクセス制御不備(CWE-284)。同上のCisco社内セキュリティレビューによるハードニングリリースで発見され、悪用確認・PoC公開なし。軸1<8のため除外。
+・CVE-2026-53611 (Looking Glass is a modern, stateless) → Looking Glass(GHSA起点・ネットワーク診断ツール)の脆弱性。ニッチなOSSツールで実悪用未確認。軸1<8のため除外。
+・CVE-2026-78657 (The SigmaForms Pro – AI Generated) → SigmaForms Pro WordPressプラグインの任意ファイル削除。ニッチプラグインで実悪用未確認。軸1<8のため除外。
+・CVE-2026-81294 (Unauthenticated Privilege Escalation in Authorizer <=) → Authorizer(OSS認証基盤・Patchstack起点)の未認証権限昇格。実悪用未確認・国内報道なし。軸1<8のため除外。
+・CVE-2026-84325 (Google Chrome) → Google Chrome 152.0.7977.75（2026-09-02リリース）で修正された複数のUse-After-Free/入力検証不備(CVSS9.0〜9.8)。単一ベンダーPSIRTによる同一リリース内の一括公開バッチのため代表1件に集約（ほか5件: CVE-2026-84333, CVE-2026-84352, CVE-2026-84353, CVE-2026-84354, CVE-2026-84324）。Security NEXTはブラウザ更新（脆弱性26件・Critical 2件）として国内向けに報道したが個別CVEの注意喚起には至らず、実悪用未確認・自動更新により大半の利用者は既に修正版へ移行済み。軸1<8のため除外。
+・CVE-2026-84372 (Predis is a flexible and feature-complete) → Predis(PHP向けRedis/Valkeyクライアント)のパイプライン処理におけるコマンドインジェクション。攻撃者制御下のキー/値をpipeline()経由で注入させる必要がありアプリ依存。実悪用未確認・KEV未登録。軸1<8のため除外。
+・CVE-2026-84480 (WWBN AVideo fails to validate password) → WWBN AVideo(VulnCheck起点)のパスワード再設定トークン有効期限検証不備。ニッチCMSで実悪用未確認。軸1<8のため除外。
+・CVE-2026-84637 (Malicious calendar invitations could use file) → Mozilla Thunderbirdの細工MIMEボディによる未初期化メモリ使用(悪意あるカレンダー招待のfile URI添付が起点)。ユーザー操作(添付ファイル起動)を要し単純未認証RCEではない。実悪用未確認・PoC未確認。軸1<8のため除外。
+・CVE-2026-84795 (Craft CMS before 5.10.11 fails to) → Craft CMS(v5.10.11未満)のユーザー登録時admin権限フラグ検証不備。実悪用未確認・PoC未確認・国内報道なし。軸1<8のため除外。
+・CVE-2026-9055 (The Booking for Appointments and Events) → Amelia(Wordfence起点・予約管理WordPressプラグイン)の脆弱性。実悪用未確認・国内報道なし。軸1<8のため除外。
+・CVE-2026-53649 (Joro is a web exploitation framework.) → Joro(GHSA起点・Web侵入テストフレームワーク)のデフォルトプロキシモードでのローカルリスナー露出。ニッチなセキュリティツールで実悪用未確認。軸1<8のため除外。
+・CVE-2026-53670 (PREVAIL is a Polynomial-Runtime EBPF Verifier) → PREVAIL(GHSA起点・eBPF検証ツール)の脆弱性。ニッチなセキュリティツールで実悪用未確認。軸1<8のため除外。
+・CVE-2026-53671 (PREVAIL is a Polynomial-Runtime EBPF Verifier) → PREVAIL(GHSA起点・eBPF検証ツール)の別の脆弱性(CVE-2026-53670と同時公開)。実悪用未確認。軸1<8のため除外。
+・CVE-2026-81286 (Unauthenticated SQL Injection in WCFM Marketplace) → WCFM Marketplace(Patchstack起点・WordPressマルチベンダープラグイン)の未認証SQLインジェクション。実悪用未確認・国内報道なし。軸1<8のため除外。
+・CVE-2026-84479 (WWBN AVideo (current e01e41ecc and earlier)) → WWBN AVideo(VulnCheck起点)のログイン時セキュリティ制御不備。実悪用未確認。軸1<8のため除外。
+・CVE-2026-84695 (BookStack before 26.05.4 contains a stored) → BookStack(VulnCheck起点・ドキュメント管理OSS)の格納型XSS。実悪用未確認・PoC未確認。軸1<8のため除外。
+・CVE-2026-84696 (Phison PS3111-S11 controller firmware versions through) → Phison PS3111-S11コントローラファームウェア(VulnCheck起点)の特権ベンダーコマンド露出。リモート未認証攻撃面ではなくファームウェアレベルのローカル/物理アクセス前提。実悪用未確認。軸1<8のため除外。
+・CVE-2026-84699 (Team Password Manager before 14.184.308 fails) → Team Password Manager(VulnCheck起点)のローカル認証制御不備。実悪用未確認・国内報道なし。軸1<8のため除外。
+・CVE-2026-78689 (Description NGINX JavaScript (njs) has a) → NGINX JavaScript(njs)モジュールのXML名前空間プレフィックス解析の脆弱性。njsはNGINXコア機能ではなく拡張モジュールで利用範囲が限定的。実悪用未確認・PoC未確認。軸1<8のため除外。
+・CVE-2026-66786 (A flaw was found in submariner.) → submariner(Red Hat起点・Kubernetesマルチクラスタネットワーキングツール)のcert-authモード設定不備。ニッチなインフラツールで実悪用未確認。軸1<8のため除外。
+・CVE-2026-73475 (Incorrect Authorization vulnerability in Drupal Commerce) → Drupal Commerce PayPalの認可不備によるForceful Browsing。RCEではなく認可回避で実悪用未確認。軸1<8のため除外。
+・CVE-2026-84639 (Triggering an error condition in certain) → Mozilla Thunderbirdの細工MIMEボディによる未初期化メモリ使用(CVE-2026-84637と同時公開の別問題)。実悪用未確認。軸1<8のため除外。
+・CVE-2026-82955 (In the current development version of) → Eclipse aeriOS(公式リリース未実施の開発中バージョン)の脆弱性。実運用環境が存在しないため実害リスクが極めて限定的。軸1<8のため除外。
+・CVE-2026-84803 (SiYuan before v3.8.2 contains a stored) → SiYuan(VulnCheck起点・ノートアプリ)のアセット配信における格納型XSS。ニッチなアプリで実悪用未確認。軸1<8のため除外。
+・CVE-2026-72920 (SeaweedFS) → SeaweedFS(分散ファイルシステムOSS)のfiler IAM gRPCサービスが未認証でS3管理権限を許す不備(EUVD-2026-56156・CVSS9.8)。NVD未反映(EUVD独自層)。KEV未登録・実悪用未確認・国内報道なし。軸1=CVSS9+(+3)+未認証権限奪取相当(+3)+広く使われる(+1)=7で8点未満のため除外。
+・CVE-2026-71866 (Orval) → Orval(OpenAPIからのクライアントSDK自動生成ツール)のインポート時RCE(スキーマのプロパティ名からcomputed-property-key経由でzodクライアントへ注入・EUVD-2026-62596・CVSS9.3)。開発時ツールでありインポート対象のスキーマファイルを信頼した場合のみ悪用可能。CVE-2026-72716(同日公開の関連脆弱性)とあわせて記録。NVD未反映(EUVD独自層)。実悪用未確認。軸1<8のため除外。
+・CVE-2026-72716 (Orval) → Orvalの別のインポート時RCE(クエリパラメータのデフォルト値からzodモジュールレベルのテンプレートリテラルへ注入・EUVD-2026-62600・CVSS9.3)。CVE-2026-71866と同時公開・同一プロジェクトのためまとめて記録。実悪用未確認。軸1<8のため除外。
+本日の集計:
+CVE — ゼロデイ特報1件 / 本編5件 / 参考A1件 / 参考B2件 / 除外34件
+========================================
