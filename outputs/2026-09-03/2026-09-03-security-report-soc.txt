@@ -1,0 +1,95 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-03 07:00 JST
+調査期間: 2026-09-02 07:00 〜 2026-09-03 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Cleo Harmony最新脆弱性のExploit公開、既往のCl0p悪用パターンに要警戒
+観点: ゼロデイ関連
+採用契機: δ, α
+------------------------------------------------------------
+
+優先度: 高
+対象: Cleo Harmony（MFTソフトウェア）
+
+【24時間以内の変化】
+[SecurityWeek 2026-09-02] Cleo Harmonyの新規脆弱性に対するExploitコードが公開されたと報道
+
+【概要】
+ファイル転送ソフトウェアCleo Harmonyの新規脆弱性に対するExploitコードが公開された。Cleoの同種製品（Cleo Harmony/VLTrader/LexiCom）は2024年末にCl0pランサムウェアグループによる大規模データ窃取キャンペーンで悪用された前例があり、MFT（マネージド・ファイル転送）製品は攻撃者にとって高価値標的であり続けている。CVE番号・詳細な技術情報は09-03時点で情報源が限定的なため、続報を要確認。
+
+【推奨アクション】
+・Cleo Harmony/VLTrader/LexiCom等のMFT製品の外部公開状況を棚卸しし、インターネット直接露出を可能な限り解消する
+・続報のCVE番号・パッチ情報を注視し、公開次第直ちに適用する
+・[ログソース: MFTアクセスログ/EDR] 異常なファイルアップロード・管理コンソールへの外部アクセスを監視する
+Splunk SPL: index=mft sourcetype=cleo_harmony (admin_console OR file_upload) | stats count by src_ip, user
+→ 社外IPからの管理コンソールアクセスを最優先で確認する
+
+【参照】
+https://www.securityweek.com/exploit-published-for-fresh-cleo-harmony-vulnerability/
+
+------------------------------------------------------------
+2. Rockwell Automation、産業制御製品群で十数件の脆弱性を一括修正
+観点: CVE関連
+採用契機: β, γ
+------------------------------------------------------------
+
+優先度: 中
+対象: Rockwell Automation 各種ICS/OT製品
+
+【24時間以内の変化】
+[SecurityWeek 2026-09-02] Rockwell Automationが複数製品にまたがる十数件の脆弱性への対応パッチを公開したと報道
+
+【概要】
+Rockwell Automationが自社の複数のICS/OT向け製品にまたがる十数件の脆弱性を一括で修正するアドバイザリを公開した。個別の悪用報告は本日時点で確認されていないが、製造・エネルギー等の重要インフラで広く使われる製品群であるため、パッチ適用計画への反映が必要。
+
+【推奨アクション】
+・自社で使用しているRockwell Automation製品の型式・バージョンを棚卸しし、該当製品の有無を確認する
+・次回メンテナンスウィンドウでのパッチ適用を計画する
+・OT/ICSネットワークのセグメンテーション状況を再確認する
+
+【参照】
+https://www.securityweek.com/rockwell-automation-patches-over-a-dozen-vulnerabilities-across-products/
+
+------------------------------------------------------------
+3. Microsoft Defenderが正規Google検索リンクを誤検知、SOC運用への影響に注意
+観点: AI攻撃関連
+採用契機: γ
+------------------------------------------------------------
+
+優先度: 中
+対象: Microsoft Defender
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-02] Microsoft Defenderが正規のGoogle検索結果リンクを悪意あるものとして誤検知する不具合が報告されたと報道
+
+【概要】
+Microsoft Defenderが正規のGoogle検索結果リンクを悪意あるURLとして誤検知（フォールスポジティブ）する不具合が報告された。SOCにおいてはアラート疲れ・正規業務の妨害につながるため、当該誤検知パターンをアラートトリアージの除外条件として一時的に把握しておくことが推奨される。
+
+【推奨アクション】
+・Microsoft Defenderの検知ログでGoogle検索リンクに対する誤検知アラートの有無を確認する
+・Microsoftからの修正プログラム配信状況を注視する
+・[ログソース: EDR/Defenderアラートログ] 誤検知と疑われるアラートのパターンを一時的に記録しトリアージ効率化に活用する
+Splunk SPL: index=defender sourcetype=alert url=*google.com/search* | stats count by verdict
+→ 誤検知率が高い場合はMicrosoft側の修正パッチ適用まで当該パターンをトリアージ優先度低に設定する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/microsoft-defender-flags-legitimate-google-search-links-as-malicious
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[SOC推奨情報]
+・(ID未採番) (OpenLeash Adds a Human Check to Risky AI Agent Actions（SecurityWeek）) → 新製品発表記事でSOC運用への直接的な採用条件（α〜η）に明確に合致する要素が薄いため不採用。
+・(ID未採番) (US charges Russian for infecting 80,000 freelancers with malware（BleepingComputer）) → 法執行機関による訴追報道であり、日次収集では法執行チェックを対象外とする運用方針（pipeline-1b-apt.md）に準じ不採用。週次検証での確認対象。
+本日の集計:
+SOC推奨情報 — 高1件 / 中2件 / 低0件 / 除外2件
+========================================

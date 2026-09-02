@@ -1,0 +1,116 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-03 07:00 JST
+調査期間: 2026-09-02 07:00 〜 2026-09-03 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-83548 / SMA1000 Appliances（6210 / 7210 / 8200v）
+対象: 12.4.3-03453/12.5.0-02835（platform-hotfix）以前
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[SonicWall PSIRT 2026-09-02] SMA1000のAppliance Work Placeインターフェースの事前認証SSRF脆弱性(CVE-2026-83548)とAppliance Management Console(AMC)のOSコマンドインジェクション(CVE-2026-83549)が実悪用されていると公表し、CISAが同日KEVへ初回追加した
+[The Hacker News 2026-09-02] 2件のゼロデイが連鎖して未認証RCEを構成する攻撃チェーンとして悪用されていると報道
+
+【概要】
+SonicWall SMA1000シリーズ（6210/7210/8200v）のAppliance Work Placeインターフェースに存在する事前認証SSRF脆弱性CVE-2026-83548（CVSS10.0）が実環境で悪用されている。単独でも機微機能への不正アクセスを許すが、Appliance Management Console（AMC）のOSコマンドインジェクションCVE-2026-83549（CVSS7.8・別entry参照）と連鎖させることで未認証のリモートコード実行に至る攻撃チェーンが観測された。SMA100シリーズおよびSonicWallファイアウォール上のSSL-VPNは対象外。SonicWallはSMA1000が2026年7月のMFAシード窃取事件に続き今回で3度目の侵害となる点を明らかにしている（推測: 同一アクセス経路を狙う継続的な攻撃関心が背景にある可能性があるが、攻撃者の同一性は情報源が明示していない）。
+
+攻撃の流れ:
+1. 攻撃者がAppliance Work PlaceインターフェースへCVE-2026-83548のSSRFリクエストを送信し内部機能へ到達
+2. 取得した内部アクセスを足がかりにAMCのOSコマンドインジェクション(CVE-2026-83549)を実行し未認証RCEへ連鎖
+3. SMA1000上での永続化・機微データへのアクセスに至る（詳細な事後活動は情報源未公開）
+
+【暫定緩和策】
+・Appliance Work PlaceインターフェースへのアクセスをVPN/信頼済みIPへ制限する
+・AMC管理インターフェースをインターネットから隔離する
+・SonicWallが提示する侵害指標(IOC)に基づくログ監査を実施する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] SMA1000のWebアクセスログ・AMC管理ログにおける異常な内部リクエスト・コマンド実行痕跡を監視する
+Splunk SPL: index=sonicwall_sma sourcetype=sma_workplace | search uri_path=*workplace* | stats count by src_ip, uri_path
+Splunk SPL: index=sonicwall_sma sourcetype=sma_amc (cmd=* OR exec=*) | stats count by src_ip, user
+→ AMCへの管理外IPからのアクセス、Work Placeインターフェースへの短時間バースト状のリクエストを優先確認する→誤検知除外は正規の監視・ヘルスチェックトラフィックとの切り分けを行う
+
+【参照】
+https://thehackernews.com/2026/09/attackers-exploit-two-sonicwall-sma.html
+https://www.bleepingcomputer.com/news/security/sonicwall-warns-of-actively-exploited-sma1000-zero-day-flaws
+https://www.securityweek.com/sonicwall-warns-of-two-sma1000-zero-days-exploited-in-attacks/
+https://www.security-next.com/189706
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にAPT活動本編採用条件を満たす活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Unattributed（中国語アーティファクトを含む・国家帰属未確定）（campaign_id: RIS-2026-PhilippinesNuclearNavalBreach）
+研究者Hunt.io（Attack Captureにより2026-08-13にステージングサーバを発見）が、フィリピンの原子力研究機関および同国海軍を支援する造船・海洋エンジニアリング企業の侵害を確認した。原子力機関へは2年以上前に開示・修正済みのownCloud認証バイパス（CVE-2023-49105）を用いて未認証のファイル取得が行われ、原子炉部材・燃料在庫・放射線安全文書等のデータベースが窃取された。造船会社へはWordPressのLiteSpeed Cacheプラグインの権限昇格（CVE-2024-28000）が悪用された。ステージングサーバには1,310ファイル・86フォルダ（計1.17GB）の窃取素材が保管されており、ログには合計約9GBの窃取データへの言及があった。フォルダ名・コード中のコメントが中国語で記述されている点から中国語話者による関与が推定されるが、情報源は特定の政府・脅威グループへの正式帰属を行っていない（推測: 言語的痕跡のみに基づく推定であり、国家帰属の断定はできない）。
+採用契機: V, W　帰属信頼度: low
+推奨アクション: ownCloud・LiteSpeed Cache等の既知脆弱性に対するパッチ適用状況を全公開資産で再棚卸しする。2年以上前の既知脆弱性が現役で悪用される点を踏まえ、パッチ適用の遅延を許容しない運用へ見直す。IOC（31.58.209[.]241等）に基づくアウトバウンド通信の監視を強化する。
+参照: https://securityaffairs.com/198041/intelligence/philippine-nuclear-and-naval-targets-hit-by-suspected-chinese-operator.html
+参照: https://www.darkreading.com/cyberattacks-data-breaches/old-unpatched-flaws-attackers-philippines-nuclear-agency
+
+・Unattributed（AI基盤クリプトマイニングキャンペーン）（campaign_id: Unattributed-2026-AIInfraCryptomining-KestraLiteLLM）
+MicrosoftはAI開発・提供基盤（Kestraワークフローエンジン・LiteLLM AIゲートウェイ・両者の基盤であるStarlette）を狙い、認証バイパス脆弱性を連鎖悪用してAPIキーを窃取しクリプトマイニングを行う攻撃者不明のキャンペーンを報告した。Kestraでは未認証のワークフロー作成・Processランナー経由のシェル実行でroot権限のRCEに至り、Dockerソケットアクセス・コンテナ環境列挙・クリプトマイナー配備・証跡削除の順で活動したことをテレメトリで確認している。国家帰属・犯罪組織への具体的帰属は情報源が明示していないため、attribution_confidenceはunconfirmedとする（原則3）。
+採用契機: V, W　帰属信頼度: unconfirmed
+推奨アクション: Kestra・LiteLLM・Starletteを含むAI基盤コンポーネントを直ちにパッチ適用版へ更新する。露出したAPIキー（OpenAI/AWS等）をローテーションし、Dockerソケットへの到達制御を見直す。
+参照: https://www.microsoft.com/en-us/security/blog/2026/08/26/when-ai-infrastructure-becomes-target-securing-gateways-control-points/
+参照: https://cyberpress.org/hackers-hit-ai-infrastructure/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] 23年間稼働したSalityボットネットを国際共同作戦で無力化
+米司法省・FBI・DCISおよびブルガリア・ハンガリー・ルーマニアの当局が関連ドメインを押収し、CrowdStrikeのCounter Adversary Operationsチームが偽情報をP2Pネットワークへ注入してボット同士を制御者から遮断するシンクホール作戦を実施した。Salityは2003年以降15,000台超に感染したP2P型ボットネットで、過去8年間はクリップボード監視型の暗号資産アドレス差し替えツールEggJaggerを主要ペイロードとしていた。CrowdStrikeは「これまでで最も複雑なボットネット制圧作戦」と説明している。
+参照: https://www.justice.gov/usao-cdca/pr/sality-malware-disrupted-international-cyber-takedown
+参照: https://www.bleepingcomputer.com/news/security/sality-botnet-infrastructure-dismantled-in-joint-global-takedown/
+参照: https://www.theregister.com/cyber-crime/2026/09/02/cops-crowdstrike-disrupt-sality-botnet-by-poisoning-the-network-and-diverting-into-sinkholes/
+
+・[トレンド記事] BGPハイジャックでVirtualizor更新配信を乗っ取り永続的root権限を設置
+2026-08-28 20:57UTC〜08-30 06:10UTCの間、攻撃者がHetzner系IPブロックをBGPハイジャックしSoftaculousのアップデート配信・課金ポータルへのトラフィックを迂回させ、悪意あるVirtualizorパッケージを一部環境へ配信した。確認された34台中5台のハイパーバイザでroot権限侵害が成立。Softaculousはルーティング復旧・不正証明書の失効申請・署名検証機能を備えたVirtualizor 3.2.9.9（09-01リリース）への刷新、および今後の全パッケージ署名化を発表した。
+参照: https://thehackernews.com/2026/09/bgp-hijack-delivers-malicious.html
+参照: https://www.bleepingcomputer.com/news/security/hackers-push-malicious-virtualizor-update-in-bgp-hijacking-attack/
+
+・[トレンド記事] イエローハット不正アクセス、影響範囲が最大180万1,499名に確定
+イエローハットは2026-08-18朝に「WEB作業予約システム」への不正プログラムによる攻撃を検知し外部接続遮断・システム停止の緊急措置を実施していたが、調査進展により影響を受けた可能性のある会員情報が最大180万1,499名（氏名・電話番号・メールアドレス・会員番号）に確定したと発表した。同システムはクレジットカード情報・パスワード・車両情報を保持しておらずそれらの漏えいはないとしている。個人情報保護委員会への報告・警察への相談を実施済み。
+参照: https://scan.netsecurity.ne.jp/article/2026/09/02/56108.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし。
+理由: 本日実悪用が確認された対象（SonicWall SMA1000×2/JFrog Artifactory/Sangoma Switchvox/Kestra/LiteLLM/Starlette）はいずれも本日中にCISA KEVへ既に初回追加済みであり、将来のKEV初回追加を予報する対象が存在しない（M4: 発行時点で既にKEV収載済みのCVEはE1対象にできない）。他の観測（HPE Fabric Composer等）はexploitation_stageがnoneまたはpoc_publicに留まりStep A'の実悪用確認要件（kev_listed/active_exploitation）を満たさない。E2/E3はM1-b頻度ゲートにより発行禁止（教訓14・16）。Next.js CVE-2026-75604はT3候補だが「今日の調査で初めて確認した」というT3必須条件C（教訓10）を満たさない（PoCは8月下旬から既知）ため不採用。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・(ID未採番) (Kimsuky/Lazarus（複数媒体の総括記事）) → Kimsuky・Lazarusの連携をまとめた総括記事（cybersecuritynews.com等）は窓内の新規事象ではなく過去複数月の活動をまとめた解説記事のため、P〜Wいずれの採用契機も窓内の新規変化として確認できず不採用。
+本日の集計:
+APT — 本編0件 / 注目動向2件 / 除外1件
+========================================
