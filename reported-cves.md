@@ -454,3 +454,6 @@
 | CVE-2026-82971 | QVidium Opera11（3.3.2a26-Ax4x-opera11） | 2026-09-02 | poc_public | 2026-09-02 | YES | CVSS10.0・CGIスクリプト(net_tr.cgi)のipaddr引数を起点とする未認証コマンドインジェクション・エクスプロイト公開済み・ベンダーは事業終了しパッチ提供なし・軸1=8点/軸2=0点で参考B採用 |
 | CVE-2026-83524 | RedPort Optimizer wXa-203/213/223（衛星通信最適化アプライアンス） | 2026-09-02 | poc_public | 2026-09-02 | YES | CVSS9.9・システムクロック設定機能のCGI処理を起点とする未認証コマンドインジェクション・エクスプロイト公開済み・軸1=8点/軸2=0点で参考B採用 |
 | CVE-2026-83772 | Cobham SATCOM VSAT7090（海事衛星ルータ） | 2026-09-02 | poc_public | 2026-09-02 | YES | CVSS9.9・メール通知機能(mail-report.sh)のJSONパース処理を起点とする未認証コマンドインジェクション・エクスプロイト公開済み・軸1=8点/軸2=0点で参考B採用 |
+| CVE-2026-85031 | TOTOLINK CP450 | 2026-09-04 | none | 2026-09-04 | YES | CVSS9.9・/cgi-bin/cstecgi.cgiのtopicurl引数を起点とするリモートバッファオーバーフロー・VulDB起点・境界機器(SOHOルータ)としてのリスクを評価し軸1=9点/軸2=0点で参考B採用・実悪用/PoC未確認 |
+| CVE-2026-85109 | Tenda HG10（300001138） | 2026-09-04 | poc_public | 2026-09-04 | YES | CVSS9.8・Boa Webサーバ formLogin機能(/boaform/formLogin)のUsername引数を起点とする未認証リモートバッファオーバーフロー・NVD記述に公開エクスプロイトの存在を明記・境界機器(SOHOルータ)・軸1=11点/軸2=0点で参考B採用・実悪用未確認 |
+| CVE-2026-15203 | Danfoss iC7-Automation SP / iC7-Marine / iC7-Hybrid GR3 | 2026-09-04 | none | 2026-09-04 | YES | CVSSv4 9.3・デバッグ/エンジニアリングインタフェースのアクセス制御不備で未署名アプリ・EEPROM/ファームウェアの書込みが可能・EUVD独自層(euvd_only・NVD/KEV本日時点未反映)・ICS/OT製品・軸1=9点/軸2=0点で参考B採用・実悪用/PoC未確認 |
