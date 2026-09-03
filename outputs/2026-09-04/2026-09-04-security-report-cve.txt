@@ -1,0 +1,116 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-04 08:10 JST
+調査期間: 2026-09-03 07:00 〜 2026-09-04 07:00 JST
+========================================
+
+網羅スイープ: 候補39件（NVD窓内新規公開CVSS9.0以上26件+EUVD独自層13件）/ 処理済み39件 / 未処理0件 / KEV窓内新規追加0件 / GHSA起点2件（KEVカタログ版2026.09.02）
+収集ソース注記: security-intel-collector/data/raw/ の日次自動収集（06:00 JST）が本レポート開始時点で当日窓分未実行だったため（最新取得は news-2026-09-02.json 相当・約1日遅延）、pipeline-1-cve.md/pipeline-2-trends.md の定めに従いWebSearch/WebFetch及びNVD/EUVD/EPSS直接照会を一次情報源として使用した。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内に本編採用条件を満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内に参考A昇格トリガーを満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・CVE-2026-85031 / TOTOLINK CP450
+CVSS: 9.9 (Critical)
+状態: 実悪用・PoCとも未確認
+
+TOTOLINK CP450（ファームウェア4.1.0）のcgi-bin/cstecgi.cgiにおいてtopicurl引数を操作することでリモートからバッファオーバーフローを引き起こせる脆弱性。認証の要否はNVD/VulDB記述からは明示されていないが、CGIエンドポイントが標準でWAN側に露出しうるSOHOルータであり境界機器としてのリスクが高い。実悪用・PoC公開は本日時点で確認されていない。
+対処: パッチ未提供
+IoC: 確認されず
+
+監視: [TOTOLINK CP450等SOHOルータの管理CGIへの異常なtopicurlパラメータ・想定外の長大クエリ文字列を監視]
+Splunk SPL: index=firewall OR index=proxy uri_path="*/cgi-bin/cstecgi.cgi*" | eval qlen=len(uri_query) | where qlen>500 | table _time src dest uri_query qlen
+→ WAN側からの管理CGIアクセスは原則遮断が前提。露出台数が少ない場合は誤検知よりも露出自体の是正を優先する
+
+参照: https://vuldb.com/cve/CVE-2026-85031
+https://nvd.nist.gov/vuln/detail/CVE-2026-85031
+
+・CVE-2026-85109 / Tenda HG10
+CVSS: 9.8 (Critical)
+状態: PoC公開
+
+Tenda HG10（ファームウェア300001138）のBoa WebサーバformLogin機能（/boaform/formLogin）でUsername引数を操作することによりリモートから未認証でバッファオーバーフローを起こせる脆弱性。NVD記述自体に公開エクスプロイトの存在が明記されており、家庭用ルータの管理画面が標準でWAN側に露出しやすい製品クラスであることから境界機器リスクとして参考B採用とした。実際の悪用観測は本日時点で確認されていない。
+対処: パッチ未提供
+IoC: 確認されず
+
+監視: [Tenda等SOHOルータのBoa Webサーバ管理エンドポイント（/boaform/formLogin）への異常なUsername値送信を監視]
+Splunk SPL: index=firewall OR index=proxy uri_path="*/boaform/formLogin*" | eval ulen=len(Username) | where ulen>200 | table _time src dest uri_path Username
+→ 家庭用/SOHO機器のため企業SOC監視対象外のことが多いが、テレワーク環境の自宅ルータとしての波及に留意
+
+参照: https://vuldb.com/cve/CVE-2026-85109
+https://nvd.nist.gov/vuln/detail/CVE-2026-85109
+
+・CVE-2026-15203 / Danfoss iC7-Automation SP / iC7-Marine / iC7-Hybrid GR3
+CVSS: 9.3 (Critical)
+状態: 実悪用・PoCとも未確認
+
+Danfoss iC7-Automation SP・iC7-Marine・iC7-Hybrid GR3（産業用周波数変換器/ドライブ）のデバッグ・エンジニアリングインタフェースにおけるアクセス制御不備。露出したサービスインタフェース・ソフトウェア更新機構経由で内部値の読み書き、未署名アプリケーションのアップロード・実行、未署名EEPROM/ファームウェアの書き込みが可能とDanfoss自身が公表している。CVE未採番のためNVD/CISA KEVには本日時点で反映されておらず、GHSA/VulnCheck等の報道系ソースにも本日時点で言及がないため、網羅スイープのEUVD独立列挙（euvd_only層）でのみ捕捉された。ICS/OT製品でありSection3各国の産業制御システムに影響しうるため参考B採用とした。実悪用・PoC公開は確認されていない。
+対処: パッチ未提供
+IoC: 確認されず
+
+監視: [Danfoss iC7シリーズのデバッグ/エンジニアリングポート・ファームウェア更新機構へのOT/ICSネットワーク境界外からのアクセスを監視]
+Splunk SPL: index=ot_network OR index=ics dest_port IN (102,502,44818) NOT src_net="10.0.0.0/8" | stats count by src dest dest_port | where count>0
+→ ICS/OT資産のためIT-SOCでの直接監視が及ばないケースが多い。OT側のインベントリ台帳にiC7シリーズが含まれるか棚卸しし、当該インタフェースのネットワーク到達性を制限することを優先する（推定：ベンダー公式アドバイザリの詳細な回避策は本日時点で参照できていないため一般的なICSセグメンテーション対策を記述）
+
+参照: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-66251
+https://www.danfoss.com/en/service-and-support/coordinated-vulnerability-disclosure/danfoss-security-advisories/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-85061 (MapLibre GL JS) → MapLibre GL JS 6.4.1未満のDOM.sanitize()における属性除去ロジック不具合（ライブNamedNodeMapの走査中インデックスがずれ隣接する危険属性の除去漏れが発生）。GHSA起点・CVSS10.0だがクライアント側描画ライブラリでUI操作前提の悪用条件があり、実悪用・PoC・KEV登録いずれも未確認。軸1=4点（CVSS9.0以上+3・広く使われるOSS+1）で参考A昇格トリガーもないため除外。
+・CVE-2026-82526 (R2R（AI検索/RAGプラットフォーム）) → R2R 3.6.6以下のベクトルインデックス作成エンドポイントでindex名パラメータがCREATE INDEX文へ無検証で連結される未認証SQLインジェクション。CVSS9.8・VulnCheck起点。AI関連OSSだが実悪用・PoC・国内報道いずれも未確認で技術詳細の追加調査も本日時点で完了せず。軸1=6点（CVSS9.0以上+3・未認証RCE相当+3）で除外。
+・CVE-2026-84238 (YITH Request a Quote for WooCommerce Premium) → 4.46.0未満の未認証アクセス制御不備。Patchstack起点・CVSS9.8。実悪用・PoC未確認、国内報道なし。軸1=6点で除外。
+・CVE-2026-84753 (Mail Mint) → 1.31.0以下の未認証PHPオブジェクトインジェクション。Patchstack起点・CVSS9.8。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-84814 (Bricksforge) → 3.1.8.8以下のSubscriber権限を起点とする権限昇格（低権限アカウント保有が前提のためPR:L）。Patchstack起点・CVSS9.8。軸1=3点（未認証条件を満たさず）で除外。
+・CVE-2026-84834 (JobSearch) → 3.2.0以下の未認証PHPオブジェクトインジェクション。Patchstack起点・CVSS9.8。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-85154 (WWBN AVideo) → video_id_hash認証情報が非失効・非取消可能なベアラートークンとして扱われ、動画所有者になりすまして管理者権限セッションへ到達できる認証不備。CVSS9.8・VulnCheck起点。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-85181 (CAT（製品詳細未特定。session cookie整合性検証機能を持つ管理コンソール製品）) → セッションクッキーの整合性検証にサーバ側鍵管理を伴わないJava String.hashCode()のみを使用し、X-Forwarded-Forヘッダ偽装でIPバインド検証を回避のうえ管理者セッションを偽造できる脆弱性。CVSS9.8・VulnCheck起点だが製品名・ベンダーの特定がNVD/EUVD記述からは完了せず（次回検証時に一次ソース照合を継続）。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-85391 (Peppermint（OSSヘルプデスク/チケット管理システム）) → 0.5.5以下のdocker-compose.ymlにJWT署名鍵がハードコードされており、公開済みの鍵を用いて任意ユーザーIDのセッショントークンを偽造できる。CVSS9.8・VulnCheck起点。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-85042 (Google Chrome（DevTools・サンドボックス外UAF）) → 152.0.7977.82未満のDevTools use-after-freeによりサンドボックス外での任意コード実行が可能（Chromiumセキュリティ重要度High）。同日公開のCVE-2026-85047・CVE-2026-85050とあわせ152.0.7977.82の同一Stable Channel更新内の複合脆弱性としてバッチ記録。実悪用（ITW）の言及は本日確認できるソースになし。軸1=4点（CVSS9.0以上+3・広く使われるOSS+1）で除外。
+・CVE-2026-85047 (Google Chrome（Transactions Platform・iOS）) → 152.0.7977.82未満、iOS版Transactions Platformの入力検証不備によるサンドボックス外コード実行の可能性（Chromiumセキュリティ重要度Medium）。CVE-2026-85042・CVE-2026-85050と同一Stable Channel更新内の複合脆弱性。軸1=4点で除外。
+・CVE-2026-85050 (Google Chrome（WebGL・Android・OOB書込）) → 152.0.7977.82未満、Android版WebGLの境界外書き込みによるサンドボックス外コード実行の可能性（Chromiumセキュリティ重要度High）。CVE-2026-85042・CVE-2026-85047と同一Stable Channel更新内の複合脆弱性。軸1=4点で除外。
+・CVE-2026-78069 (Joomla拡張 J2Store（j2commerce.com製）) → 1.0.0-3.3.21/4.0.0-4.0.21/4.1.0-4.1.6のAppsコントローラ委譲チェーンでACLチェックが一切実装されておらず、fof.xmlのワイルドカードdenyに副次的に依存していたアクセス制御不備。CVSSv4 9.5・Joomla公式CNA起点。実悪用・PoC未確認、国内報道なし。軸1=6点で除外。
+・CVE-2026-82180 (Eclipse Arrowhead) → 5.0.0-5.2.1のMQTT API証明書認証構成でCertificateMqttFilterがクライアント送信のX.509証明書Subject DNをそのまま認証済みIDとして扱う検証不備。CVSSv4 9.5・Eclipse Foundation起点。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-85216 (MISP（脅威インテリジェンス共有プラットフォーム）) → LDAP/LinOTP認証コンポーネント（LdapAuthenticate/LinOTPAuthenticate）がCakePHP標準のFormAuthenticate相当の認証情報検証を再実装せず、空値・非文字列値が認証処理を通過しうる認証バイパス。CVSSv4 9.5。セキュリティコミュニティで広く使われるOSSだが実悪用・PoC・国内報道いずれも未確認。軸1=6点で除外。
+・CVE-2026-76174 (Ocsreports) → admin_infoエンドポイントのCSVアップロード機能でクライアント指定のファイル名のみに基づき検証しPHPファイルをWeb到達可能ディレクトリへアップロードできる（管理者権限が前提のためPR:H）。CVSSv4 9.4・INCIBE(スペインCERT)起点。CVE-2026-76178（同endpoint近傍の格納型XSS）と同一アドバイザリ内の複合脆弱性。軸1=3点で除外。
+・CVE-2026-78080 (Joomla拡張 JooDatabase Lite（feenders.de製）) → 5.1.0未満、cidパラメータが検証なしにクエリへ使用される未認証SQLインジェクション。CVSSv4 9.3・Joomla公式CNA起点。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-84768 (VikAppointments Services Booking Calendar) → 1.2.20以下の未認証SQLインジェクション。Patchstack起点・CVSS9.3。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-84813 (GeoDirectory) → 2.8.174以下の未認証SQLインジェクション。Patchstack起点・CVSS9.3。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-85183 (Taipy（Python製ローコードWebアプリフレームワーク）) → socket.ioサーバがワイルドカードCORSオリジン+credentialフラグ有効で構成されており、任意ドメインからの資格情報付きWebSocket接続でCSRF保護のない状態変更・アクションコールバック呼び出しが可能。CVSSv4 9.3・VulnCheck起点。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-85394 (python-jose（Python製JWT/JOSEライブラリ）) → 3.5.0以下がHMAC初期化時の非対称鍵検証不備によりPEM形式でないDERエンコード公開鍵をそのまま鍵として受理してしまう認証バイパス（アルゴリズム混同攻撃の一種）。CVSS9.3・VulnCheck起点。広く使われるPython OSSライブラリだが軸1=7点（CVSS9.0以上+3・未認証認証バイパス+3・広く使われるOSS+1）で8点未達のため除外（僅差）。
+・CVE-2026-76178 (Ocsreports) → notification機能（/ocsreports/?function=notification）の格納型XSS。CVSSv4 9.2・INCIBE起点。CVE-2026-76174と同一アドバイザリ内の複合脆弱性。軸1=3点で除外。
+・CVE-2026-58400 (GeoNetwork（地理空間カタログ管理OSS）) → 4.4.12/4.2.17未満、リソースメタデータ処理に使用するSaxon XSLTプロセッサの取り扱いに起因する脆弱性。CVSS9.1・GHSA起点。実悪用・PoC未確認、国内報道なし。軸1=3点で除外。
+・CVE-2026-85222 (D-Link DNS-340L（NASデバイス）) → 1.01B04、/cgi-bin/addon_centerの詳細不明な脆弱性。CVSS9.1・VulDB起点。未認証性が記述から明確に確認できずリモート境界機器としての加点を保留。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-69083 (SiYuan（個人ナレッジベース/ノートアプリOSS）) → publish（公開共有）モード時、fullTextSearchAssetContent経由で未認証の読者がRaw SQL実行・REGEXPインジェクションを行える。EUVD/VulnCheck起点・CVSS4.0換算9.9（euvd_only層・NVD/KEV未反映）。CVE-2026-69084と同一プロダクト・同日公開の複合脆弱性としてバッチ記録。実悪用・PoC未確認。軸1=6点で除外。
+・CVE-2026-69084 (SiYuan（個人ナレッジベース/ノートアプリOSS）) → publish（公開共有）モード時、searchEmbedBlock経由で未認証の読者が任意SQL実行・ノートブック横断の読み書きを行える。EUVD/VulnCheck起点・CVSS4.0換算9.9（euvd_only層）。CVE-2026-69083と同一プロダクトの複合脆弱性。軸1=6点で除外。
+・CVE-2026-62681 (Orval（OpenAPI仕様からTypeScriptクライアントを自動生成するOSSコード生成ツール）) → OpenAPIパスのバッククォート未エスケープによりrequest URLテンプレートリテラルへ注入されインポート/生成時RCEに至る。EUVD/GitHub_M起点（euvd_only層）。悪意あるOpenAPI仕様ファイルを取り込ませる必要がありサプライチェーン/信頼境界型の悪用前提のため未認証RCE加点は付与せず。単一プロジェクト（Orval）から同一窓でCVE-2026-62682/71864/71865/71867/71868/71869/71871/72717の計9件が一括公開されたためバッチ集約。軸1=3点で除外。
+・CVE-2026-62682 (Orval) → servers[].url経由（getBaseUrlFromSpecification）の同種テンプレートリテラル注入インポート時RCE。CVE-2026-62681ほかと同一Orvalバッチ内。軸1=3点で除外。
+・CVE-2026-71864 (Orval) → headerパラメータ名がzodクライアント生成コードへcomputed-property-keyとして注入されるインポート時RCE。同一Orvalバッチ内。軸1=3点で除外。
+・CVE-2026-71865 (Orval) → queryパラメータ名の同種computed-property-key注入インポート時RCE。同一Orvalバッチ内。軸1=3点で除外。
+・CVE-2026-71867 (Orval) → スキーマプロパティ名がMSWモックジェネレータへcomputed-property-keyとして注入されるRCE。同一Orvalバッチ内。軸1=3点で除外。
+・CVE-2026-71868 (Orval) → enum型デフォルト値によるzodモジュールレベルテンプレートリテラル注入インポート時RCE。同一Orvalバッチ内。軸1=3点で除外。
+・CVE-2026-71869 (Orval) → 配列要素デフォルト値による同種zodモジュールレベルテンプレートリテラル注入。同一Orvalバッチ内。軸1=3点で除外。
+・CVE-2026-71871 (Orval) → headerパラメータデフォルト値による同種zodモジュールレベルテンプレートリテラル注入。同一Orvalバッチ内。軸1=3点で除外。
+・CVE-2026-72717 (Orval) → スキーマデフォルト値による同種zodモジュールレベルテンプレートリテラル注入。同一Orvalバッチ内で計9件中最後の1件。軸1=3点で除外。
+・CVE-2026-71428 (unstructured（Pythonライブラリ・非構造化文書パース/AIデータ前処理OSS）) → URLベースパーティショニング機能におけるサーバサイドリクエストフォージェリ（SSRF）。CVSS3.1換算9.3・GHSA/GitHub_M起点（euvd_only層）。AIデータパイプラインで用いられるOSSだが実悪用・PoC・国内報道いずれも未確認。軸1=6点で除外。
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B3件 / 除外36件
+========================================

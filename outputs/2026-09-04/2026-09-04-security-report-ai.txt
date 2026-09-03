@@ -1,0 +1,63 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-04 08:10 JST
+調査期間: 2026-09-03 07:00 〜 2026-09-04 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-09-03 〜 2026-09-04
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内に本編採用条件を満たすAI攻撃インシデントなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内に参考B採用条件を満たすAI攻撃インシデントなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・[RevStealer: 偽Claude Opus 5デスクトップアプリを装ったElectron製情報窃取マルウェア]
+カテゴリ: C4 採用契機: A-Q, A-X
+Windows向け情報窃取マルウェア『RevStealer』が、Anthropic Claude Opus 5の無料デスクトップ版を装ったトロイ化Electronアプリ内に隠蔽され配布されていることが判明した。GitHubリポジトリ（claude5opus/Claude-Opus-5-Free-Desktop）およびゲームチート配布サイト経由で拡散しており、同じローダー基盤は本キャンペーン以前にはゲームチートを装って配布されていた。ClaudeOpus5-desktop.zipを展開して実行すると、目立ったUIを持たない64bit Electronアプリが起動し、リソース内に隠されたAES-256-CBC暗号化のネイティブマルウェアペイロードを復号・実行するローダーとして機能する。標的はブラウザの保存認証情報・拡張機能ストレージ・Windows資格情報マネージャ・10種以上のパスワードマネージャファイル・50種類超の暗号資産ウォレット・VPN/リモートアクセス認証情報・メッセージングアプリデータ・クリップボード内容・スクリーンショット等広範囲に及ぶ。サンドボックス検知回避のためメモリ2GiB以上・論理コア2以上・既知GPUベンダー・ブロックリスト外のホスト名/ユーザー名といった環境チェックを実施し、主C2が停止している場合はPolygonブロックチェーン上のスマートコントラクトからフォールバックC2アドレスを取得する仕組みを備える。AI人気ツールのブランドを騙る配布手口として2026-07-24既報のFakeAgent（偽ClaudeDesktop.exe・claude.ai Artifactホスティング悪用）と類似の傾向線上にある別キャンペーンである。
+対策: 監視: AIツールの非公式配布元（GitHubリポジトリ・ゲームチートサイト等）経由のインストーラ実行と、Electronアプリからの不審な外部通信・暗号資産ウォレットファイルへのアクセスを監視する
+検知SPL: index=edr (Image="*ClaudeOpus5*" OR CommandLine="*claude5opus*") | table _time host user Image CommandLine
+検知SPL: index=proxy OR index=dns dest_domain="*polygon-rpc*" OR dest_domain="*polygonscan*" src_process="*.exe" NOT src_process IN ("chrome.exe","msedge.exe","firefox.exe") | table _time src_ip user dest_domain src_process
+→ 正規のClaude Desktopはanthropic.com/claude.ai公式配布のみであり、GitHub上の非公式リポジトリやゲームチートサイト経由の配布は原則すべて不審と扱う
+参照: https://www.helpnetsecurity.com/2026/09/01/revstealer-malware-claude-opus-5-github/
+https://www.scworld.com/news/revstealer-malware-spread-through-fake-claude-opus-5-download
+https://cybersecuritynews.com/revstealer-inside-fake-claude/
+https://gbhackers.com/fake-claude-opus-5-app/
+
+・[llms.txtファイル記載の未登録パッケージ名を悪用したAIエージェント経由のサプライチェーン侵害実証（Clerk実例）]
+カテゴリ: B1 採用契機: A-P, A-Q
+AIエージェント向けにサイトのルートへ設置する『llms.txt』（どのページ・コマンドが重要かをAIへ伝えるガイダンスファイル）を8,500件超調査した研究者Alon Hertz氏が、Fortune 500企業や防衛関連企業を含む100社超の公開llms.txtの中に、PyPI/npm/RubyGems上に実在しない（未登録の）パッケージ名を指示するものが237件超あることを発見した。研究者がこれらの未登録パッケージ名を実際にレジストリへ登録し外部への通信のみを行う最小限のコードを仕込んだところ、あるFortune500企業のサーバがパッケージ登録からわずか4分後に自動でダウンロード・実行した。認証サービスClerkのllms.txtには実在しない`clerk-next-fix-auth-protection`というコマンドの実行指示が含まれており、研究者がこれを登録したところ、インストールフックがインストール実行者のユーザー名・ホスト名・作業ディレクトリ・タイムスタンプを外部サーバへ送信する挙動が確認された。この攻撃はAIコーディングエージェント（Claude・Codex・Hermes等）が『承認済みのAIツールが標準的なパッケージマネージャを呼び出し、PyPI/npmという信頼されたレジストリへ接続する』という通常の開発フローと外形上区別がつかないため、従来のエンドポイント制御では検知が難しい。実際の悪意ある攻撃者による悪用（malicious exploitation）は本日時点で確認されておらず、研究者による倫理的開示のPoCの範囲に留まる。
+対策: 監視: AIエージェント経由で実行されるパッケージマネージャコマンドの対象パッケージ名を、社内承認済みSBOM/依存関係台帳と突合する
+検知SPL: index=edr (ParentImage="*claude*" OR ParentImage="*codex*" OR ParentImage="*hermes*") (Image="*pip.exe" OR Image="*npm.cmd" OR Image="*npm") | table _time host user ParentImage Image CommandLine
+→ llms.txt等のAIエージェント向けガイダンスファイルは『データ』ではなく『実行可能な指示』として扱われうる点に留意し、自社が公開するllms.txtに記載したパッケージ名が実在・登録済みであることを定期的に検証する
+参照: https://cybernews.com/security/fortune500-security-gap-ai-agents-install-malware/
+https://www.tomshardware.com/tech-industry/artificial-intelligence/researchers-easily-trick-fortune-500-companies-ai-agents-into-running-arbitrary-code-supply-chain-attack-via-llms-txt-guidance-file-illustrates-how-data-has-become-code
+https://gbhackers.com/researchers-execute-code-inside-fortune-500-companies/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+本日はAI攻撃動向として2件を参考A（実害注目・技術詳細不足）として採用した。RevStealer（偽Claude Opus 5デスクトップアプリ配布）は複数の独立ソースが48時間以内に5件以上報道しバースト検出閾値を超過（burst_exceeded）。llms.txtファイル記載の未登録パッケージ名を悪用したサプライチェーン侵害実証（Clerk実例）も同様にバースト検出閾値を超過した。両件とも国内でも広く使われるAIツール・レジストリへの影響があるため実害注目の観点で参考A採用としたが、技術的な悪用実績（malicious exploitation）はいずれも本日時点で確認されていない。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A2件 / 参考B0件 / 除外0件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）1件 / C（インフラ）1件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[AI攻撃]
+該当なし
+========================================
