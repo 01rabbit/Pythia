@@ -1,0 +1,110 @@
+{
+  "_schema_version": "1.0",
+  "_run_date": "2026-09-04",
+  "_comment": "日次実行の各ステップの入出力・時刻・内容ハッシュ・版。予報の先見性を第三者が追跡できるようにするための実行記録（改善計画 §10）。",
+  "steps": [
+    {
+      "step": "snapshot_sources",
+      "status": "ok",
+      "started_at_utc": "2026-09-03T23:11:57Z",
+      "ended_at_utc": "2026-09-03T23:13:20Z",
+      "version": "snapshot_sources/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/evidence/manifests/2026/09/2026-09-04.json",
+          "sha256": "1d8295406d187cf579af7ad7feac68b272da7e5cf4e0133e35ea005d3bc6466f"
+        }
+      ],
+      "note": "daily-pipeline.yml 収集が当初07:00JST時点で未実行だったため、Step0.5 verify-onlyは失敗を記録。08:13JST頃の遅延実行後にmainからmergeして整合を確認した。"
+    },
+    {
+      "step": "nvd_window_sweep",
+      "status": "ok",
+      "started_at_utc": "2026-09-03T22:35:00Z",
+      "ended_at_utc": "2026-09-03T22:37:33Z",
+      "version": "nvd_window_sweep/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": ".cache/daily-security-intel/2026-09-04/step1-sweep.json",
+          "sha256": "a96df474b372f1ab7b252bae602b81814a5fb536c16b5768c6c6803baa191911"
+        }
+      ]
+    },
+    {
+      "step": "weighting_and_report",
+      "status": "ok",
+      "started_at_utc": "2026-09-03T22:41:00Z",
+      "ended_at_utc": "2026-09-03T22:56:00Z",
+      "version": "pipeline-3-weighting/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "outputs/2026-09-04/2026-09-04-security-report.json",
+          "sha256": "9d35ea5f1512add556ba3098b469a787fea72e7609aee30a1d0ef912a982afce"
+        }
+      ],
+      "note": "security-intel-collector data/raw が当日窓分未取得のためWeb検索を一次情報源として使用（meta.data_raw_status参照）。"
+    },
+    {
+      "step": "01_normalize",
+      "status": "ok",
+      "started_at_utc": "2026-09-03T22:59:00Z",
+      "ended_at_utc": "2026-09-03T23:00:30Z",
+      "version": "01-normalize/1.2",
+      "inputs": [
+        "outputs/2026-09-04/2026-09-04-security-report.json"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/observations/2026/09/2026-09-04.json",
+          "sha256": "7cc93e0ca51198a2dda46d391c1a2f67ae602d47c0895deaa921afa15dd83091"
+        }
+      ]
+    },
+    {
+      "step": "02_baseline",
+      "status": "ok",
+      "started_at_utc": "2026-09-03T23:00:30Z",
+      "ended_at_utc": "2026-09-03T23:01:50Z",
+      "version": "regen_baseline/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/baseline/technique-freq.json",
+          "sha256": "923b219e18ddf6273417f84ea427a1e9bb085bb4a92335fc920221df555eea0d"
+        }
+      ]
+    },
+    {
+      "step": "03_forecast",
+      "status": "ok",
+      "started_at_utc": "2026-09-03T23:01:50Z",
+      "ended_at_utc": "2026-09-03T23:03:40Z",
+      "version": "03-forecast/2.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/forecasts/daily/2026-09-04.json",
+          "sha256": "258949ce3b1be23099dba2de9bc7e7fe55f07280df76b825dbfe53637e6735df"
+        }
+      ],
+      "note": "本日新規予報0件（M1: KEV/実悪用候補なし、M5: 当日evidence manifest未固定のためevidence_ids引用不可）"
+    },
+    {
+      "step": "tactical_pipeline",
+      "status": "ok",
+      "started_at_utc": "2026-09-03T23:13:20Z",
+      "ended_at_utc": "2026-09-03T23:14:05Z",
+      "version": "tf1/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/candidates/tactical/2026-09-04.json",
+          "sha256": "a1f7d03e7c9bda99573abe568a6a72cee1d2d09fbfd5441290b33134de653c6f"
+        }
+      ]
+    }
+  ]
+}
