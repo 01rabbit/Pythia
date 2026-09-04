@@ -1,0 +1,152 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-05 07:00 JST
+調査期間: 2026-09-04 07:00 〜 2026-09-05 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. FalconFlank: CrowdStrike Falcon 権限昇格ゼロデイPoC公開（ベンダー未確認・パッチ未提供）
+観点: ゼロデイ関連
+採用契機: η
+------------------------------------------------------------
+
+優先度: 高
+対象: CrowdStrike Falcon Sensor for Windows（EDR製品）
+
+【24時間以内の変化】
+[The Hacker News / BleepingComputer 2026-09-03 2026-09-04] [The Hacker News / BleepingComputer 2026-09-03] 研究者（handle: Chaotic Eclipse）がFalconの「Microsoft Office 悪意あるマクロ修復」機能を悪用しSYSTEM権限を取得するPoC（FalconFlank）をGitHubで公開。CrowdStrikeは調査中と表明し、2026-09-03時点でCVE未割当・CVSS未採点・修正版未提供。暫定回避策としてOffice関連マクロ除去ポリシーの無効化を案内。窓内（2026-09-04以降）でのベンダー対応進展・実悪用確認は本調査時点で未確認のため継続監視が必要。
+
+【概要】
+[The Hacker News / BleepingComputer 2026-09-03] 研究者（handle: Chaotic Eclipse）がFalconの「Microsoft Office 悪意あるマクロ修復」機能を悪用しSYSTEM権限を取得するPoC（FalconFlank）をGitHubで公開。CrowdStrikeは調査中と表明し、2026-09-03時点でCVE未割当・CVSS未採点・修正版未提供。暫定回避策としてOffice関連マクロ除去ポリシーの無効化を案内。窓内（2026-09-04以降）でのベンダー対応進展・実悪用確認は本調査時点で未確認のため継続監視が必要。
+
+【推奨アクション】
+・CrowdStrike管理コンソールでFalconのバージョン・ポリシー設定を確認し、ベンダーからの正式パッチ・CVE情報の発行を監視する
+・ベンダー案内に従い「Microsoft Office File Suspicious Macro Removal」ポリシーの無効化要否を検討（無効化は別のマクロ関連リスクとのトレードオフのため、代替の低権限ユーザー制御と併用を検討）
+・エンドポイントでのローカル低権限ユーザーによるSYSTEM権限奪取兆候（不審な名前付きパイプ操作、リパースポイント操作、予期しないSYSTEM権限プロセス生成）を監視強化
+・[EDR/Falconコンソール] Falconエージェントのプロセス作成ログとWindowsセキュリティイベント（4688等）でSYSTEM権限への異常な昇格を突合
+・Splunk SPL: index=windows EventCode=4688 NewProcessName=*cmd.exe* ParentProcessName=*CSFalconService*
+・→ CSFalconService（Falconサービス）を親プロセスとする予期しないcmd.exe/SYSTEM権限プロセス生成があれば要調査
+Splunk SPL: index=windows EventCode=4688 NewProcessName=*cmd.exe* ParentProcessName=*CSFalconService*
+
+【参照】
+https://thehackernews.com/2026/09/researcher-releases-falconflank-poc.html
+https://www.bleepingcomputer.com/news/security/new-crowdstrike-falconflank-zero-day-grants-system-privileges/
+https://github.com/MSNightmare/FalconFlank
+https://socradar.io/blog/falconflank-crowdstrike-falcon-0day-poc/
+
+------------------------------------------------------------
+2. PostgreSQL「PostGREShell」12年越しロジカルデコーディング脆弱性（CVE-2026-6471, CVSS7.2）
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: PostgreSQL（2014年以降のリリース全般・広く利用されるOSS RDBMS）
+
+【24時間以内の変化】
+[SecurityWeek / The Hacker News 2026-09-04 2026-09-04] [SecurityWeek / The Hacker News 2026-09-04] セキュリティ企業Cyeraが、低権限のレプリケーションロールアクセスを恒久的なスーパーユーザー権限・永続的バックドアへエスカレーションできる脆弱性（CVE-2026-6471, CVSS 7.2）を報告。2014年以降のPostgreSQLリリースに存在するロジカルデコーディング機構の欠陥が原因。
+
+【概要】
+[SecurityWeek / The Hacker News 2026-09-04] セキュリティ企業Cyeraが、低権限のレプリケーションロールアクセスを恒久的なスーパーユーザー権限・永続的バックドアへエスカレーションできる脆弱性（CVE-2026-6471, CVSS 7.2）を報告。2014年以降のPostgreSQLリリースに存在するロジカルデコーディング機構の欠陥が原因。
+
+【推奨アクション】
+・自組織のPostgreSQL利用箇所（レプリケーション設定の有無）を棚卸しし、該当バージョンの修正パッチ適用計画を今週中に策定
+・レプリケーション用ロールの権限を最小化し、不要なレプリケーション接続を無効化
+・[DB監査ログ/SIEM] レプリケーションロールによる異常なSQL実行・権限変更（ALTER ROLE, スーパーユーザー昇格）を監視
+・Splunk SPL: index=db_audit sourcetype=postgresql ("ALTER ROLE" OR "REPLICATION") | stats count by user, client_ip
+・→ レプリケーション権限ロールからの管理者権限操作があれば要調査
+Splunk SPL: index=db_audit sourcetype=postgresql ("ALTER ROLE" OR "REPLICATION") | stats count by user, client_ip
+
+【参照】
+https://www.securityweek.com/12-year-old-postgresql-vulnerability-enables-database-server-takeover/
+
+------------------------------------------------------------
+3. 「ASCII smuggling」不可視Unicode文字を用いたフィッシングメールのフィルタ回避手法（Microsoft報告）
+観点: ゼロデイ関連
+採用契機: ε
+------------------------------------------------------------
+
+優先度: 中
+対象: メールセキュリティフィルタ・SEG（Secure Email Gateway）全般
+
+【24時間以内の変化】
+[Microsoft Security Blog 2026-09-03 / The Hacker News 2026-09-04 2026-09-04] [Microsoft Security Blog 2026-09-03 / The Hacker News 2026-09-04] Microsoft Threat Intelligenceが、AIプロンプトインジェクション研究で知られる「ASCII smuggling」技術（不可視Unicodeタグ文字）を用いて'funding'等の金融系ルアー単語を分割し、文字列完全一致検索型のフィルタを回避する大量フィッシングキャンペーンを報告。最盛期は2026年2〜5月だが、手法自体は現行のメールセキュリティ運用に恒常的な検知漏れリスクをもたらすため技術情報として新規公開。
+
+【概要】
+[Microsoft Security Blog 2026-09-03 / The Hacker News 2026-09-04] Microsoft Threat Intelligenceが、AIプロンプトインジェクション研究で知られる「ASCII smuggling」技術（不可視Unicodeタグ文字）を用いて'funding'等の金融系ルアー単語を分割し、文字列完全一致検索型のフィルタを回避する大量フィッシングキャンペーンを報告。最盛期は2026年2〜5月だが、手法自体は現行のメールセキュリティ運用に恒常的な検知漏れリスクをもたらすため技術情報として新規公開。
+
+【推奨アクション】
+・メールセキュリティ製品/SEGのフィルタルールが不可視Unicodeタグ文字（U+E0000-U+E007F等）を正規化・除去してから文字列照合しているか設定確認
+・件名/本文の正規化（Unicode NFKC正規化等）をメールゲートウェイのパイプラインに組み込めるか検討
+・[メールゲートウェイログ/SIEM] 不可視Unicodeタグ文字を含む送信元・キャンペーンパターンを抽出
+・Splunk SPL: index=email_gateway subject=* | regex subject="[\\x{E0000}-\\x{E007F}]"
+・→ 不可視Unicode文字混入メールが検出された場合、既存フィルタのバイパス実績として個別に精査
+Splunk SPL: index=email_gateway subject=* | regex subject="[\\x{E0000}-\\x{E007F}]"
+
+【参照】
+https://www.microsoft.com/en-us/security/blog/2026/09/03/ascii-smuggling-crosses-over-from-ai-prompt-injection-to-phishing-evasion/
+https://thehackernews.com/2026/09/phishing-campaign-sends-millions-of.html
+
+------------------------------------------------------------
+4. パスキー認証を突破する新手法39件の体系化研究公開
+観点: ゼロデイ関連
+採用契機: ε
+------------------------------------------------------------
+
+優先度: 中
+対象: FIDO2/パスキー認証を導入するWebアプリケーション・ID基盤全般（特定製品に限定されない）
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-04 2026-09-04] [BleepingComputer 2026-09-04] パスキープロンプトフラッディング、認証情報インターフェース偽装、アプリメタデータ偽装、ウィンドウハンドル偽装、リモートデスクトップ経由のパスキーフィッシング、FIDOインターフェースオーバーレイ攻撃等、パスキー認証の実装・運用層（ブラウザ・OS・パスワードマネージャ・クラウド同期・ヘルプデスク等）を狙う39種の攻撃手法が体系的に公開された。暗号技術自体は無傷のまま、周辺の信頼境界が突破される点が特徴。全手法が実運用で悪用済みというわけではないが、攻撃手口が公開されたことで再現障壁が下がった。
+
+【概要】
+[BleepingComputer 2026-09-04] パスキープロンプトフラッディング、認証情報インターフェース偽装、アプリメタデータ偽装、ウィンドウハンドル偽装、リモートデスクトップ経由のパスキーフィッシング、FIDOインターフェースオーバーレイ攻撃等、パスキー認証の実装・運用層（ブラウザ・OS・パスワードマネージャ・クラウド同期・ヘルプデスク等）を狙う39種の攻撃手法が体系的に公開された。暗号技術自体は無傷のまま、周辺の信頼境界が突破される点が特徴。全手法が実運用で悪用済みというわけではないが、攻撃手口が公開されたことで再現障壁が下がった。
+
+【推奨アクション】
+・パスキー導入済みサービスにおけるアカウント復旧フロー・ヘルプデスク経由の認証情報リセット手順を再点検（人的プロセスが最も弱い経路になりやすい）
+・パスキー同期サービス（クラウド同期）の保護設定・デバイス登録の異常な追加を監視
+・[IDプロバイダログ/SIEM] 短時間での複数回パスキー認証プロンプト発行（フラッディング）や新規デバイス登録の急増を検知
+・Splunk SPL: index=idp sourcetype=webauthn action="authentication_prompt" | stats count by user | where count > 5
+・→ 同一ユーザーへの短時間大量認証プロンプトはプロンプトフラッディング攻撃の兆候として要確認
+Splunk SPL: index=idp sourcetype=webauthn action="authentication_prompt" | stats count by user | where count > 5
+
+【参照】
+https://www.bleepingcomputer.com/news/security/39-new-methods-that-compromise-passkey-authentication/
+
+------------------------------------------------------------
+5. G7、量子セキュア暗号への移行を加速するよう各国・組織に「行動喚起」を発行
+観点: CVE関連
+採用契機: ζ
+------------------------------------------------------------
+
+優先度: 低
+対象: 組織全般（重要インフラに限らず全セクター対象と明記）
+
+【24時間以内の変化】
+[The Record from Recorded Future News 2026-09-04 / Infosecurity Magazine 2026-09-04] [The Record from Recorded Future News 2026-09-04 / Infosecurity Magazine] フランスが議長を務めるG7サイバーセキュリティ作業部会（ANSSI主導、日本含む全G7各国当局・EU/ENISA支持）が2026-09-03付で共同声明を発行。量子脅威を「遠い将来の課題」ではなく「今すぐ対処すべき近未来の脅威」と再定義し、2030〜2035年を移行期間とするポスト量子暗号（PQC）移行ロードマップへの早期着手を要請。
+
+【概要】
+[The Record from Recorded Future News 2026-09-04 / Infosecurity Magazine] フランスが議長を務めるG7サイバーセキュリティ作業部会（ANSSI主導、日本含む全G7各国当局・EU/ENISA支持）が2026-09-03付で共同声明を発行。量子脅威を「遠い将来の課題」ではなく「今すぐ対処すべき近未来の脅威」と再定義し、2030〜2035年を移行期間とするポスト量子暗号（PQC）移行ロードマップへの早期着手を要請。
+
+【推奨アクション】
+・自組織の暗号資産棚卸し（どのシステムがどの暗号アルゴリズムに依存しているか）を中長期計画に組み込む
+・長期秘匿性が必要なデータ（医療・金融・国家機密等）については「Harvest Now, Decrypt Later」リスクを踏まえた優先度付けを検討
+・ベンダーのPQC対応ロードマップ（TLS/証明書基盤等）を四半期ごとに確認
+・（即時のログ監視対象ではないため把握のみ）
+
+【参照】
+https://therecord.media/g7-urges-organizations-to-prepare-for-quantum-threats
+https://www.infosecurity-magazine.com/news/g7-urges-quantum-safe-cyber-rules/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[SOC推奨情報]
+本日の集計:
+SOC推奨情報 — 高1件 / 中3件 / 低1件 / 除外0件
+========================================

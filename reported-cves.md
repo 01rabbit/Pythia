@@ -457,3 +457,8 @@
 | CVE-2026-85031 | TOTOLINK CP450 | 2026-09-04 | none | 2026-09-04 | YES | CVSS9.9・/cgi-bin/cstecgi.cgiのtopicurl引数を起点とするリモートバッファオーバーフロー・VulDB起点・境界機器(SOHOルータ)としてのリスクを評価し軸1=9点/軸2=0点で参考B採用・実悪用/PoC未確認 |
 | CVE-2026-85109 | Tenda HG10（300001138） | 2026-09-04 | poc_public | 2026-09-04 | YES | CVSS9.8・Boa Webサーバ formLogin機能(/boaform/formLogin)のUsername引数を起点とする未認証リモートバッファオーバーフロー・NVD記述に公開エクスプロイトの存在を明記・境界機器(SOHOルータ)・軸1=11点/軸2=0点で参考B採用・実悪用未確認 |
 | CVE-2026-15203 | Danfoss iC7-Automation SP / iC7-Marine / iC7-Hybrid GR3 | 2026-09-04 | none | 2026-09-04 | YES | CVSSv4 9.3・デバッグ/エンジニアリングインタフェースのアクセス制御不備で未署名アプリ・EEPROM/ファームウェアの書込みが可能・EUVD独自層(euvd_only・NVD/KEV本日時点未反映)・ICS/OT製品・軸1=9点/軸2=0点で参考B採用・実悪用/PoC未確認 |
+| CVE-2026-85046 | Google Chrome / Chromium（V8 JavaScriptエンジン） | 2026-09-05 | active_exploitation | 2026-09-05 | YES | CVSS8.8・KEV新規追加(条件D)・The Hacker News/socprime/cyberpress等複数独立報道が実悪用を確認・パッチ152.0.7977.82提供済み・軸1=12点/軸2=6点でゼロデイ特報採用 |
+| CVE-2026-62928 | XING CPTrans-ME-X | 2026-09-05 | none | 2026-09-05 | YES | CVSS9.8・未認証OSコマンドインジェクション・CNA=JPCERT/CC（国内製品）・実悪用/PoC未確認・軸1=6点/軸2=4点（JPCERT関与）で参考A採用 |
+| CVE-2026-69657 | XING CPTrans-ME-X | 2026-09-05 | none | 2026-09-05 | YES | CVSS9.8・デフォルトパスワード使用・CNA=JPCERT/CC（国内製品）・実悪用/PoC未確認・軸1=6点/軸2=4点（JPCERT関与）で参考A採用 |
+| CVE-2026-70403 | XING CPTrans-ME-X | 2026-09-05 | none | 2026-09-05 | YES | CVSS9.8・ハードコードパスワード使用・CNA=JPCERT/CC（国内製品）・実悪用/PoC未確認・軸1=6点/軸2=4点（JPCERT関与）で参考A採用 |
+| CVE-2026-75160 | X-Serie Gateway Firmware（V6_00_05） | 2026-09-05 | none | 2026-09-05 | YES | CVSS9.1・/cgi-bin/wwwugw.cgi・/cgi-bin/ugwdownload.cgi経由の未認証リモート権限昇格・境界機器(ゲートウェイ)・実悪用/PoC未確認・軸1=9点/軸2=0点で参考B採用 |

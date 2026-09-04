@@ -1,0 +1,221 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-05 07:00 JST
+調査期間: 2026-09-04 07:00 〜 2026-09-05 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-85046 / Google Chrome / Chromium (V8 JavaScriptエンジン)
+対象: Google Chrome 152.0.7977.82 より前の全バージョン（V8コンポーネント）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.8 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み(152.0.7977.82)
+
+【24時間以内の変化】
+[CISA KEV 2026-09-04] CISAがCVE-2026-85046をKEVカタログへ新規追加（FCEB期限2026-09-18）。
+[The Hacker News 2026-09-04] Google Chrome V8のType Confusion脆弱性が実悪用されているとして緊急パッチ公開を報道。
+
+【概要】
+Google Chrome（V8 JavaScriptエンジン）のType Confusion脆弱性（CWE-843）で、Chrome 152.0.7977.82より前のバージョンが影響を受け、リモートの攻撃者が悪意あるHTMLページ経由で任意コードを実行できる。研究者Salvatore Gulizia氏が2026-08-04に発見・報告し、CISAは2026-09-04にKEVカタログへ新規追加（実悪用確認・FCEB期限2026-09-18）、TheHackerNews・socprime・cyberpress等複数の独立報道が実環境での悪用（in the wild）を確認したと伝えている。公開PoCコード自体の存在は本日時点で確認されていない。
+
+攻撃の流れ:
+1. 攻撃者が悪意あるJavaScriptを含むWebページへ被害者を誘導する
+2. V8エンジンのType Confusionを悪用しメモリ破損を引き起こす
+3. レンダラプロセス内で任意コード実行に至る（サンドボックス脱出の有無は本日時点で未確認）
+
+【暫定緩和策】
+・Chromeおよび同一Chromiumエンジンを使うブラウザ（Edge/Brave/Opera等）を152.0.7977.82以降へ即時更新する
+・自動更新が無効な環境では手動更新を優先実施する
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] ブラウザバージョンの棚卸しと、V8 Type Confusionを誘発する難読化JavaScriptパターンの検知（既知IOC未公表のため汎用的なサンドボックス回避挙動ベースの検知に限られる）
+Splunk SPL: index=proxy sourcetype=chrome_browser_history OR sourcetype=web_proxy | rex field=useragent "Chrome/(?<chrome_ver>[\\d\\.]+)" | where chrome_ver<"152.0.7977.82"
+→ バージョン文字列ベースの検知は自己申告のUser-Agentに依存するため、資産管理台帳（EDR/MDM）側のブラウザバージョン情報と突合することを推奨する。
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/04/cisa-adds-one-known-exploited-vulnerability-catalog
+https://thehackernews.com/2026/09/google-releases-chrome-update-to-patch.html
+https://socprime.com/blog/cve-2026-85046-analysis/
+https://cyberpress.org/google-chrome-v8-flaw-exploited/
+https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-70702
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用条件を満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-62928 / XING CPTrans-ME-X
+CVSS: 9.8 (Critical) 状態: 特記事項なし
+
+【24時間以内の変化】
+[NVD/JPCERT 2026-09-04] CVE-2026-62928がNVDへ新規公開（CNA: JPCERT/CC）。OS Command Injection（CWE-78）。管理画面のCGIパラメータへ未認証でOSコマンドを注入できる。
+
+【概要】
+国産ゲートウェイ製品XING CPTrans-ME-Xにおける脆弱性（CVE-2026-62928）。OS Command Injection（CWE-78）。管理画面のCGIパラメータへ未認証でOSコマンドを注入できる。 CVSS 9.8（Critical）。CNAはJPCERT/CCであり国内製品の脆弱性調整として扱われている。実悪用・PoC公開は本日時点で未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] 管理画面・CGIエンドポイントへの異常アクセスおよび既知デフォルト/ハードコード認証情報でのログイン成功を監視する
+Splunk SPL: sourcetype=access_combined / syslog: XING CPTrans-ME-X管理画面への未認証コマンド注入パターン(CGIパラメータにシェルメタ文字)
+→ 正規運用でのCGI直接アクセスが稀な環境では、アクセス自体を異常として扱ってよい。
+
+【参照】
+https://nvd.nist.gov/vuln/detail/CVE-2026-62928
+https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-70916
+https://github.com/advisories/GHSA-wvq4-q789-f852
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [XING CPTrans-ME-X 複数の脆弱性（CVE-2026-62928含む）] https://jvn.jp/vu/CVE-2026-62928/
+
+
+・CVE-2026-69657 / XING CPTrans-ME-X
+CVSS: 9.8 (Critical) 状態: 特記事項なし
+
+【24時間以内の変化】
+[NVD/JPCERT 2026-09-04] CVE-2026-69657がNVDへ新規公開（CNA: JPCERT/CC）。Use of Default Password（CWE-1393）。既知のデフォルト認証情報を知る者は誰でもログイン可能。
+
+【概要】
+国産ゲートウェイ製品XING CPTrans-ME-Xにおける脆弱性（CVE-2026-69657）。Use of Default Password（CWE-1393）。既知のデフォルト認証情報を知る者は誰でもログイン可能。 CVSS 9.8（Critical）。CNAはJPCERT/CCであり国内製品の脆弱性調整として扱われている。実悪用・PoC公開は本日時点で未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] 管理画面・CGIエンドポイントへの異常アクセスおよび既知デフォルト/ハードコード認証情報でのログイン成功を監視する
+Splunk SPL: sourcetype=access_combined / syslog: デフォルトパスワードでのログイン成功イベント(認証ログで既知デフォルト資格情報使用)
+→ 正規運用でのCGI直接アクセスが稀な環境では、アクセス自体を異常として扱ってよい。
+
+【参照】
+https://nvd.nist.gov/vuln/detail/CVE-2026-69657
+https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-70918
+https://github.com/advisories/GHSA-6wxx-c57w-qmvf
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [XING CPTrans-ME-X 複数の脆弱性（CVE-2026-69657含む）] https://jvn.jp/vu/CVE-2026-69657/
+
+
+・CVE-2026-70403 / XING CPTrans-ME-X
+CVSS: 9.8 (Critical) 状態: 特記事項なし
+
+【24時間以内の変化】
+[NVD/JPCERT 2026-09-04] CVE-2026-70403がNVDへ新規公開（CNA: JPCERT/CC）。Use of Hard-coded Password（CWE-259）。ハードコードされた認証情報を知る者は誰でもログイン可能。
+
+【概要】
+国産ゲートウェイ製品XING CPTrans-ME-Xにおける脆弱性（CVE-2026-70403）。Use of Hard-coded Password（CWE-259）。ハードコードされた認証情報を知る者は誰でもログイン可能。 CVSS 9.8（Critical）。CNAはJPCERT/CCであり国内製品の脆弱性調整として扱われている。実悪用・PoC公開は本日時点で未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[ログソース / SIEM] 管理画面・CGIエンドポイントへの異常アクセスおよび既知デフォルト/ハードコード認証情報でのログイン成功を監視する
+Splunk SPL: sourcetype=access_combined / syslog: ハードコードパスワードでのログイン成功イベント
+→ 正規運用でのCGI直接アクセスが稀な環境では、アクセス自体を異常として扱ってよい。
+
+【参照】
+https://nvd.nist.gov/vuln/detail/CVE-2026-70403
+https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-70919
+https://github.com/advisories/GHSA-cmq2-8jv5-p6pw
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行あり: [XING CPTrans-ME-X 複数の脆弱性（CVE-2026-70403含む）] https://jvn.jp/vu/CVE-2026-70403/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-75160 / X-Serie Gateway Firmware
+CVSS: 9.1 (Critical)
+X-Serie Gateway Firmware V6_00_05に、リモートの攻撃者が/cgi-bin/wwwugw.cgiおよび/cgi-bin/ugwdownload.cgiエンドポイント経由で権限昇格できる脆弱性（CVSS 9.1・AV:N/PR:N＝未認証リモート）。ゲートウェイ機器であり境界露出時の影響が大きい。実悪用・PoC公開は本日時点で未確認。国内影響（JPCERT/IPA注意喚起・国内報道）は本日時点で確認できていない。
+IoC: 確認されず
+
+監視: [ログソース / SIEM] 対象CGIエンドポイントへの外部からの到達性を棚卸しし、異常アクセスを監視する Splunk SPL: sourcetype=access_combined uri_path IN ("/cgi-bin/wwwugw.cgi", "/cgi-bin/ugwdownload.cgi")
+→ WAN側からの直接到達性がある場合は露出自体の是正（アクセス制御・ファイアウォールルール見直し）を優先する。
+
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-75160
+参照: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-71455
+参照: https://github.com/advisories/GHSA-qqg2-xvr7-83hv
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-70352 (Microsoft Azure AI Language) → 軸1=7点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS10.0・exploitation_stage=none。
+・CVE-2026-75754 (ASUS Control Center) → 軸1=4点（CVSS9+ +3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS10.0・exploitation_stage=none。
+・CVE-2026-83711 (Microsoft Azure Active Directory B2C) → 軸1=7点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS10.0・exploitation_stage=none。
+・CVE-2026-85223 (D-Link DNS-340L) → 軸1=5点（CVSS9+ +3, PoC公開+2）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.9・exploitation_stage=poc_public。
+・CVE-2026-11613 (WordPress Divi Ajax Filter plugin) → 軸1=7点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-15354 (WordPress ACPT (Premium) plugin) → 軸1=7点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-18658 (IBM Operational Decision Manager) → 軸1=7点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-31020 (DocsGPT) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-44402 (Voltronic Power SNMP Web Pro) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-75430 (PowerJob Worker) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-82923 (WordPress AI Website Builder plugin) → 軸1=7点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85146 (SmartIT Desktop Manager (Lightstar)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85148 (SmartIT Desktop Manager (Lightstar)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85424 (MOOS core-moos (MOOS-IvP robotics middleware)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85425 (MOOS-IvP iSay) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85426 (MOOS-IvP uMemWatch) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85428 (MOOS core-moos (MOOSDB HTTPサーバ)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85433 (MOOS essential-moos pShare) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85437 (MOOS-IvP function string decoders) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85438 (MOOS-IvP StringToIvPFunction) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85440 (MOOS core-moos (MOOSCommPkt)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85504 (FreeIPMI (Fujitsu SEL long-text)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85506 (FreeIPMI ipmi-oem (Dell idrac-info)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85507 (FreeIPMI ipmi-oem (Dell cmc-info)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85508 (FreeIPMI ipmi-oem (Dell cmc-ipv6-info)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85509 (FreeIPMI (FRUデータ読み取り)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85661 (excel-mcp-server) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85663 (Aim (実験管理ツール)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85672 (zerox (ドキュメント変換ツール)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85688 (TEN Framework (TMAN Designer)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-85696 (SadTalker) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.8・exploitation_stage=none。
+・CVE-2026-19274 (IBM Observability with Instana Agent Operator) → 軸1=4点（CVSS9+ +3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.6・exploitation_stage=none。
+・CVE-2026-85085 (Canva Android App) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.6・exploitation_stage=none。
+・CVE-2026-85695 (FastChat) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.4・exploitation_stage=none。
+・CVE-2026-80098 (Microsoft Copilot Studio) → 軸1=7点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.3・exploitation_stage=none。
+・CVE-2026-85434 (MOOS-IvP uFldShoreBroker) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.3・exploitation_stage=none。
+・CVE-2026-85435 (MOOS-IvP uFldNodeBroker) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.3・exploitation_stage=none。
+・CVE-2026-85595 (Traefik) → 軸1=4点（CVSS9+ +3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.3・exploitation_stage=none。
+・CVE-2026-85602 (Grav Form plugin (getgrav/grav-plugin-form)) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.3・exploitation_stage=none。
+・CVE-2026-85667 (xiaobei (エージェントパイプライン)) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.3・exploitation_stage=none。
+・CVE-2026-67402 (ConfigServer Security & Firewall (CSF)) → 軸1=6点（CVSS9+ +3, 境界機器該当+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.2・exploitation_stage=none。
+・CVE-2026-85427 (MOOS essential-moos pAntler) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.2・exploitation_stage=none。
+・CVE-2026-85614 (OpenPanel) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.2・exploitation_stage=none。
+・CVE-2026-85620 (Postgres MCP Pro) → 軸1=4点（CVSS9+ +3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.2・exploitation_stage=none。
+・CVE-2026-85625 (sift (sift.js)) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.2・exploitation_stage=none。
+・CVE-2026-85660 (cli-mcp-server) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.2・exploitation_stage=none。
+・CVE-2026-85694 (LaVague) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.2・exploitation_stage=none。
+・CVE-2026-9317 (Nango) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.2・exploitation_stage=none。
+・CVE-2026-62916 (Microsoft Entra ID) → 軸1=7点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.1・exploitation_stage=none。
+・CVE-2026-75431 (PowerJob Server) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.1・exploitation_stage=none。
+・CVE-2026-78327 (SonicWall Network Security Manager (NSM) On-Prem) → 軸1=7点（CVSS9+ +3, 境界機器該当+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.1・exploitation_stage=none。
+・CVE-2026-78328 (SonicWall Network Security Manager (NSM) On-Prem) → 軸1=7点（CVSS9+ +3, 境界機器該当+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.1・exploitation_stage=none。
+・CVE-2026-81939 (SonicWall Network Security Manager (NSM) On-Prem) → 軸1=7点（CVSS9+ +3, 境界機器該当+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.1・exploitation_stage=none。
+・CVE-2026-85184 (@fastify/middie) → 軸1=7点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3, 広く使われる製品+1）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.1・exploitation_stage=none。
+・CVE-2026-85224 (D-Link DNS-320 ShareCenter) → 軸1=5点（CVSS9+ +3, PoC公開+2）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.1・exploitation_stage=poc_public。
+・CVE-2026-85430 (MOOS essential-moos pShare) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.1・exploitation_stage=none。
+・CVE-2026-85684 (marker (FastAPI PDFパイプライン)) → 軸1=6点（CVSS9+ +3, 未認証RCE/認証バイパス相当(AV:N/PR:N)+3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS9.1・exploitation_stage=none。
+・CVE-2026-72798 (SiYuan (ノートアプリ)) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS不明(EUVD記載値のみ)・exploitation_stage=none。
+・CVE-2026-75856 (CodeWhale) → 軸1=3点（CVSS9+ +3）・軸2=0点。実悪用・KEV登録・PoC公開・境界機器該当のいずれも確認されず、参考A昇格トリガー（国内影響）も該当なしのため出力振り分け判定順4（除外）に帰属。CVSS不明(EUVD記載値のみ)・exploitation_stage=none。
+本日の集計:
+CVE — ゼロデイ特報1件 / 本編0件 / 参考A3件 / 参考B1件 / 除外59件
+========================================
