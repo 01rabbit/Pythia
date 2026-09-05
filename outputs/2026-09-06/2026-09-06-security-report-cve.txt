@@ -1,0 +1,198 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-06 07:55 JST
+調査期間: 2026-09-05 07:00 〜 2026-09-06 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-67276 / MikroTik RouterOS（SSHサービス）
+対象: 6.0.0〜6.49.20 / 7.0.0〜7.23.3 / 7.24〜7.24.1（修正版: 6.49.21・7.23.4・7.24.2・7.25beta3）
+------------------------------------------------------------
+
+優先度: 緊急（パッチ提供済み・侵害痕跡確認必須）
+CVSS: 9.2 (Critical)
+状態: 実悪用確認 / PoC公開 / ゼロデイ
+パッチ提供: 提供済み（6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3）
+
+【24時間以内の変化】
+[CERT Polska 2026-09-05] CERT.PL が CVE-2026-67276 を含む RouterOS 6件の脆弱性を公開し、同時に別記事で「実際の攻撃が少なくとも2026-09-02から観測されている」と実悪用を公表した。CVE-2026-67276 と CVE-2026-86060 を組み合わせた攻撃連鎖を CERT.PL は MikroTrick と呼称している。
+[NVD 2026-09-06] CVE-2026-67276 が NVD へ新規公開（CNA: CERT-PL・CVSS v4.0 9.2 Critical・CWE-347）。
+[Nick Pratley (npratley.net) 2026-09-04] RouterOS 7.23.4 の「サイレントパッチ」を逆解析した技術記事が公開され、RSA 署名偽造の実証コード forge_e3_ssh.py を含む複数の PoC が公開された。
+
+【概要】
+MikroTik RouterOS の SSH サーバが、認可済みユーザー鍵と SSH 認証要求を突き合わせる際に RSA 公開鍵を完全一致で比較せず、鍵種別とモジュラスのみを確認して指数（exponent）を無視していた。署名検証には「クライアントが提示した鍵」がそのまま使われるため、認可済みユーザーの RSA モジュラス（公開情報）を知る攻撃者は指数を1に差し替えた鍵を提示することで有効な署名を偽造でき、秘密鍵なしに当該ユーザーとして SSH コマンドチャネルを開ける。CVSS v4.0 9.2（AV:N/PR:N/UI:N）。CERT.PL は本脆弱性と CVE-2026-86060（SSH ログイン時の引数処理不備による権限昇格）を連鎖させる攻撃を MikroTrick と名付け、SSH が外部公開された機器に対して少なくとも2026-09-02から実際の攻撃が発生していること、攻撃者が認証なしで機器を完全に掌握していることを確認したと公表した。ベンダーは 2026-09-03 に技術詳細を伏せたまま修正版（6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3）を全チャネルへ公開しており、実悪用の観測がベンダー公表・CVE 採番に先行している点でゼロデイ性が高い。侵害された機器は RouterOS のアップグレード時に「Flagged」状態としてログへ記録される。2026-09-06 時点で CISA KEV への登録は未確認、EPSS スコアは未算出（公開直後のため）。
+
+攻撃の流れ:
+1. インターネットへ露出した RouterOS の SSH ポート（既定 22/TCP）へ接続する。
+2. 認可済みユーザーの RSA 公開鍵モジュラスを取得し、指数を1に置き換えた公開鍵を提示して署名を偽造、秘密鍵なしに当該ユーザーとして認証を通過する（CVE-2026-67276）。
+3. 禁止文字で始まるユーザー名（CERT.PL 公表のログでは `-2`）を用いた SSH ログイン経路の引数処理不備により、RouterOS のポリシーマスクを書き換えて管理者権限へ昇格する（CVE-2026-86060）。
+4. 機器を認証なしで完全掌握し、特権ユーザー（観測例では `ops`）の作成・スクリプト追加・設定改変を行う。
+
+【暫定緩和策】
+・6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3 以降へ即時アップグレードする（アップグレード時に RouterOS が侵害判定を行い、該当機器を Flagged 状態にする）。
+・パッチ適用までの間、SSH・HTTP/HTTPS・bandwidth-test サービスを無効化するか信頼済みネットワークからのみ到達可能に制限する（CERT.PL 推奨）。
+・信頼できないネットワーク経由での TLS 接続の開始・RouterOS 内蔵 SSH クライアントの使用を避ける（CERT.PL 推奨）。
+・パッチ適用後にログを侵害痕跡（`login failure for user -2 ... via ssh`）で確認し、未知のユーザー・スクリプト・設定変更の有無を棚卸しする。
+
+【IoC】
+IP: 82.192.72.4
+IP: 103.102.31.18
+
+【監視ポイント】
+・RouterOS の syslog を SIEM へ集約し、CERT.PL が公表した侵害痕跡（禁止文字始まりユーザー名でのログイン失敗ログ・攻撃元IP・特権ユーザー ops の作成）と、外部から管理ポート（22/TCP 等）への到達を監視する
+Splunk SPL: index=network sourcetype=mikrotik ("login failure for user -2" OR "login failure for user -") | rex field=_raw "from (?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+) via ssh" | stats count values(src_ip) as src_ip by host
+Splunk SPL: index=network sourcetype=mikrotik src_ip IN ("82.192.72.4","103.102.31.18") | stats count earliest(_time) as first_seen latest(_time) as last_seen by host, src_ip
+Splunk SPL: index=network sourcetype=mikrotik ("user added" OR "added user" OR "ops") | search "ops" | stats count by host, _time
+→ `login failure for user -2 ... via ssh` は CERT.PL が公表した攻撃固有のログパターンであり、通常運用ではまず発生しない。検知した場合は攻撃試行そのものであり、成功可否に関わらず当該機器のユーザー一覧・スクリプト・スケジューラ・NAT/ファイアウォールルールを直ちに棚卸しする。公表IPは既知分のみのため、IP一致がないことを非侵害の根拠にしてはならない。
+
+【参照】
+https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/
+https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve
+https://mikrotik.com/supportsec/september-2026-vulnerability/
+https://npratley.net/reversing-mikrotiks-silent-patch-the-routeros-7-23-4-fix-they-wouldnt-explain/
+https://nvd.nist.gov/vuln/detail/CVE-2026-67276
+https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-72024
+------------------------------------------------------------
+2. CVE-2026-86060 / MikroTik RouterOS（SSHログイン処理）
+対象: 6.0.0〜6.49.20 / 7.0.0〜7.23.3 / 7.24〜7.24.1（修正版: 6.49.21・7.23.4・7.24.2・7.25beta3）
+------------------------------------------------------------
+
+優先度: 緊急（パッチ提供済み・侵害痕跡確認必須）
+CVSS: 9.2 (Critical)
+状態: 実悪用確認 / PoC公開 / ゼロデイ
+パッチ提供: 提供済み（6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3）
+
+【24時間以内の変化】
+[CERT Polska 2026-09-05] CERT.PL が CVE-2026-86060 を公開し、CVE-2026-67276 との組み合わせ（MikroTrick）による認証不要の完全掌握が2026-09-02以降実際に観測されていると公表した。侵害痕跡としてログ文字列 `login failure for user -2 from <ip> via ssh` と特権ユーザー ops の作成を提示。
+[NVD 2026-09-06] CVE-2026-86060 が NVD へ新規公開（CNA: CERT-PL・CVSS v4.0 9.2 Critical・CWE-88）。
+[Nick Pratley (npratley.net) 2026-09-04] ユーザー名 `-2` を用いた権限昇格の実証コード routeros_minus2_pty_poc.py が技術記事内で公開された。
+
+【概要】
+MikroTik RouterOS の SSH ログイン経路に、禁止文字で始まるユーザー名の引数処理不備（CWE-88 argument injection）があり、RouterOS が信頼するポリシーマスクを書き換えられて権限昇格に至る。悪用には未認証の SSH セッションが RouterOS のログインヘルパへ到達できることが必要であり、CVE-2026-67276（RSA 指数を無視した署名検証不備による SSH 認証バイパス）と連鎖することで、未認証の攻撃者が管理者権限で機器を完全掌握できる。CERT.PL はこの連鎖を MikroTrick と呼称し、SSH を外部公開した機器に対する実際の攻撃を少なくとも2026-09-02から観測したと公表している。CVSS v4.0 9.2。ベンダー修正版は2026-09-03公開の 6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3。実証コードは2026-09-04公開の技術記事に含まれる。2026-09-06 時点で CISA KEV 未登録・EPSS 未算出。
+
+攻撃の流れ:
+1. CVE-2026-67276 等により未認証の SSH セッションを RouterOS のログインヘルパへ到達させる。
+2. 禁止文字で始まるユーザー名（観測例では `-2`）を指定し、引数処理不備によって信頼済みポリシーマスクを書き換える。
+3. 読み取り専用相当のセッションから管理者権限のコマンド実行へ昇格し、特権ユーザー作成・設定改変・スクリプト設置を行う。
+
+【暫定緩和策】
+・6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3 以降へ即時アップグレードする。
+・パッチ適用までの間、SSH を無効化するか信頼済みネットワークからのみ到達可能に制限する（CERT.PL 推奨）。
+・アップグレード後に RouterOS の Flagged 状態とログを確認し、未知のユーザー（例: ops）・スクリプト・設定変更を棚卸しする。
+
+【IoC】
+IP: 82.192.72.4
+IP: 103.102.31.18
+
+【監視ポイント】
+・RouterOS syslog における禁止文字始まりユーザー名でのログイン失敗、および直後の特権ユーザー作成・設定変更イベントを時系列で相関監視する
+Splunk SPL: index=network sourcetype=mikrotik ("login failure for user -2" OR "login failure for user -") | rex field=_raw "from (?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+) via ssh" | stats count values(src_ip) as src_ip by host
+Splunk SPL: index=network sourcetype=mikrotik src_ip IN ("82.192.72.4","103.102.31.18") | stats count earliest(_time) as first_seen latest(_time) as last_seen by host, src_ip
+Splunk SPL: index=network sourcetype=mikrotik ("user added" OR "added user" OR "ops") | search "ops" | stats count by host, _time
+→ CVE-2026-67276 と同一の攻撃連鎖であるため検知観点は共通。ログイン失敗ログの直後に user/script/scheduler の追加イベントが続く場合は昇格成功の可能性が高く、機器の隔離と設定の完全な再構築を検討する。
+
+【参照】
+https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/
+https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve
+https://mikrotik.com/supportsec/september-2026-vulnerability/
+https://npratley.net/reversing-mikrotiks-silent-patch-the-routeros-7-23-4-fix-they-wouldnt-explain/
+https://nvd.nist.gov/vuln/detail/CVE-2026-86060
+https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-72029
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-82078 / PaperCut NG / PaperCut MF
+対象: 現在サポートされている全バージョン（緊急アウトオブサイクルビルドv24/v25/v26で修正済み）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.4 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[The Hacker News (Arctic Wolf Adversary Research Team) 2026-09-05] Arctic WolfがCVE-2026-81578/82078の認証バイパス+RCEチェーン悪用による米欧の初等中等教育機関・大学PaperCutサーバーへの侵害を報告。侵害後にレジストリハイブ収集ツール・Metasploit/Meterpreter系Javaペイロードの展開、特権アカウント作成、ホスト・ユーザー・プロセス・機密設定情報の探索コマンドが観測された。標的IPまたはホスト名のみでサーバーを完全に侵害可能と指摘。
+
+【概要】
+PaperCut NG/MFの認可不備（CVE-2026-81578）とデータベース接続ユーティリティの安全でない動的クラスロード（CVE-2026-82078）を連鎖させた未認証RCEが実悪用されている（既報・2026-08-28初出）。CISAは2026-08-31付で両CVEをKEVカタログへ追加済み。本日Arctic Wolfの新規報告により、教育セクター（米欧のK-12学校・大学）を標的とした侵害キャンペーンの詳細（レジストリハイブ収集ツール・Metasploit/Meterpreter系ペイロードの展開・特権アカウント作成）が新たに判明した。
+
+攻撃の流れ:
+1. Webマネジメントインタフェースの認可不備（CVE-2026-81578）を悪用し設定変更
+2. データベース接続ユーティリティの安全でない動的クラスロード（CVE-2026-82078）で任意Javaバイトコード実行
+3. レジストリハイブ収集・Metasploit/Meterpreterペイロード展開・特権アカウント作成による侵害後活動
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・PaperCutサーバーへの未認証設定変更リクエスト、異常なJavaプロセス起動、レジストリハイブ取得コマンド（reg save等）を監視する。
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*pc-app.exe*" OR CommandLine="*reg save*" | stats count by Computer, CommandLine
+→ PaperCutプロセスからのreg save実行やMeterpreter系プロセス生成は通常運用では発生しないため高確度の悪用シグナルとなる。
+
+【参照】
+https://thehackernews.com/2026/09/attackers-exploit-papercut-flaws-to.html
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A採用CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-75925 / IXON VPN Client
+CVSS: 9.4
+OT/産業機器のリモートアクセス基盤である IXON の VPN クライアント（1.4.7 未満）に、CRLF シーケンスの無害化不備（CWE-93）がある。ローカルサービスが受け付けた設定値が、改行シーケンスを無害化されないまま特権サブプロセスに読み込まれるファイルへ書き出されるため、攻撃者は追加のディレクティブを注入して root または SYSTEM としてコマンドを実行できる。さらに設定インタフェースは要求元の認証・出所検証を行わないため、認証なしで設定変更を投入できる。CISA によれば注入された設定はクライアント・OS の再起動をまたいでディスク上に残存し、VPN 接続は正常に機能し続けるためユーザーから見た挙動変化がない。ベンダーは 1.4.7 以降への更新（または不要なら削除）を推奨し、2026-08-05 以降 IXON クラウド側がポータル・バックエンド API の両方で 1.4.7 未満のクライアント接続を拒否している。CISA はアドバイザリ発行時点で本脆弱性の公開悪用は把握していないとしている。2026-09-06 時点で CISA KEV 未登録・公開 PoC 未確認・国内報道および JPCERT/CC・IPA の注意喚起はいずれも未確認。
+IoC: 確認されず
+
+監視: IXON VPN Client の設定ファイル（特権サブプロセスが読み込む構成ファイル）の予期しない書き換えと、VPN クライアントプロセスを親とする root/SYSTEM 権限の子プロセス生成を監視する
+検知SPL: index=edr (sourcetype=sysmon EventCode=1 OR sourcetype=linux_audit type=EXECVE) parent_process="*ixon*" user IN ("SYSTEM","root") | stats count values(process) as process by host, parent_process
+検知SPL: index=edr sourcetype=sysmon EventCode=11 TargetFilename="*ixon*" | stats count values(TargetFilename) as files by host, Image
+→ 正規のクライアント更新・接続確立時にも設定ファイルは書き換わるため、書き換え単体では確定できない。VPN クライアントを親とする予期しないシェル・スクリプトインタプリタの起動と併発した場合に侵害の疑いとして扱う。OT 用途の端末では 1.4.7 未満のクライアント残存自体を棚卸し対象とする。
+
+参照: https://www.cisa.gov/news-events/ics-advisories/icsa-26-246-02
+参照: https://www.ixon.cloud/Advisories/ADV-2026-08-05.pdf
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-75925
+参照: https://github.com/cisagov/CSAF/blob/develop/csaf_files/OT/white/2026/icsa-26-246-02.json
+・CVE-2026-32475 / Elementor Pro
+CVSS: 9.0
+Elementor Pro（WordPress用ページビルダープラグイン）の未認証ファイルアップロード脆弱性CVE-2026-32475（CVSS 9.0・NVD公開2026-08-19）が実悪用されている。フォームのファイルアップロードフィールドを配列として送信し2番目の要素にPHPペイロードを仕込むことでサーバー上に任意のPHPファイルを書き込み、直接リクエストすることでリモートコード実行に至る。Wordfenceの観測では2026-07-14から悪用が開始し2026-08-18に日次4万件超のピークを記録、2026-08-19から本CVEへの攻撃が確認され、累計悪用試行は44万件を超えたと2026-09-04〜05に報道された。バージョン4.2.2で修正済み。本パイプラインでの新規採用は本日が初回である（過去の窓では未採用）。
+IoC: 確認されず
+
+監視: WordPressアップロードディレクトリ配下への新規PHPファイル作成、Elementor Proフォーム経由の異常なPOSTリクエストを監視する。
+検知SPL: index=web_logs uri_path="*/wp-content/uploads/elementor/forms/*.php" | stats count by clientip, uri_path
+→ 正規運用でforms配下にPHPファイルが生成されることはないため、拡張子.phpのファイル生成イベントは高確度の悪用シグナルとなる。
+
+参照: https://thehackernews.com/2026/09/over-440000-exploit-attempts-target.html
+参照: https://www.securityweek.com/elementor-pro-wordpress-plugin-vulnerability-exploited-to-hack-sites
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】(CVE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2024-11080 (Post Grid and Gutenberg Blocks – ComboBlocks（WordPressプラグイン・pickplugins）) → low_score (軸1=6点（CVSS9.0以上 +3, 未認証のコード注入（CWE-94 Hook Injection・AV:N/PR:N）+3）・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。CVSS 9.8・影響 2.2.85〜2.3.32。Wordfence が 2026-09-04 に開示（報告者 Chloe Chamberland・ベンダー通知 2026-09-02）。NVD 記述は「他のセキュリティ制御が存在しない場合に限り」フックを介した処理実行が可能とする条件付きの影響であり、未認証RCEとしては確定していない。EPSS 0.00441 / percentile 0.36839（2026-09-05）。KEV未登録・公開PoC未確認・実悪用未確認。exploitation_stage=none。)
+・CVE-2026-10196 (Mail Mint – Email Marketing, Newsletter, Email Automation & WooCommerce Emails（WordPressプラグイン・getwpfunnels）) → low_score (軸1=6点（CVSS9.0以上 +3, 未認証のPHPオブジェクト注入（POPチェーン併存によりコード実行可能）+3）・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。CVSS 9.8・影響 1.31.0 以下（CWE-502）。Wordfence が 2026-09-04 に開示（報告者 maru・ベンダー通知 2026-05-31）。1.23.1 で部分修正済みとされる。KEV未登録・公開PoC未確認・実悪用未確認・国内報道なし。exploitation_stage=none。)
+・CVE-2026-13447 (MStore API – Create Native Android & iOS Apps On The Cloud（WordPressプラグイン・inspireui）) → low_score (軸1=6点（CVSS9.0以上 +3, 未認証の認証バイパス（JWT署名検証欠如・CWE-287）+3）・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。CVSS 9.8・影響 4.20.0 以下。FirebasePhoneAuthHelper::verify_id_token() が JWT クレームのみを検証し openssl_verify() 相当の署名検証を行わないため、自己生成鍵で署名した Firebase Phone Auth JWT により任意の電話番号を詐称して既存アカウントへログイン・新規アカウント作成が可能。Wordfence が 2026-09-04 に開示（報告者 t4g0・ベンダー通知 2026-06-26）。EPSS 0.00380 / percentile 0.31049（2026-09-05）。KEV未登録・公開PoC未確認・実悪用未確認。exploitation_stage=none。)
+・CVE-2026-83627 (Hummingbird – Speed Optimization, Caching, Minify, Compress & CDN（WordPressプラグイン・WPMU DEV）) → low_score (軸1=7点（CVSS9.0以上 +3, 未認証RCE（CWE-94・ページキャッシュデバッグログへのCookie名注入）+3, 広く使われる製品・OSS +1（WordPress.org 公称アクティブインストール 70,000+））・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。CVSS 9.8・影響 3.21.0 以下、修正版 3.21.2（WordPress.org 上の最新版）。wp-content/wphb-logs/page-caching-log.php が Web 到達可能な PHP ファイルであり、先頭の `<?php die(); ?>` ガードが class_exists('Filesystem') の名前空間解決不整合により常に不成立となるため、wphb_cache_ 接頭辞に一致する Cookie 名が無害化されずに書き込まれ未認証で任意 PHP コードを注入できる。Wordfence が 2026-09-04 に開示（報告者 Kuba・ベンダー通知 2026-08-31）。EPSS 0.00824 / percentile 0.54589（2026-09-05）。KEV未登録・公開PoC未確認・実悪用未確認・国内報道および JPCERT/IPA 注意喚起なし。境界機器該当なしのため軸1が閾値8点に1点届かず判定順4に帰属したが、未認証RCEかつ相応の導入規模であり翌日以降にPoC公開・悪用報道があれば直ちに昇格対象となる（推測を含まない事実として本日時点の未確認事項を明記）。exploitation_stage=none。)
+・CVE-2026-86121 (Cua computer-server（trycua・AIエージェント向けデスクトップ制御サーバ）) → low_score (軸1=6点（CVSS9.0以上 +3（v4.0 9.3 / v3.1 9.8）, 未認証RCE（CWE-306・認証スキップ+全インタフェースbind）+3）・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。影響 0.3.42 未満。CONTAINER_NAME 環境変数が未設定のとき認証がスキップされ既定で全インタフェースにバインドするため、8000/TCP へ到達できる攻撃者が run_command エンドポイントで任意シェルコマンド実行・任意ファイル読み書き・対話PTYアクセスを行える。VulnCheck が 2026-09-05 に開示（報告者 George Chen）。修正コミットあり。KEV未登録・公開PoC未確認・実悪用未確認。exploitation_stage=none。)
+・CVE-2026-86124 (AutoAgent（HKUDS・OSSのLLMエージェントフレームワーク）) → low_score (軸1=6点（CVSS9.0以上 +3（v4.0 9.3 / v3.1 9.8）, 未認証RCE（CWE-306・サンドボックスTCPコマンドサーバ）+3）・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。全インタフェースにバインドされた TCP サーバが攻撃者指定のコマンドを root として実行し、コンテナ内から bind-mount されたホスト側ワークスペースディレクトリへ到達できる。VulnCheck が 2026-09-05 に開示（報告者 George Chen・GitHub Issue #96）。修正版の明示なし。KEV未登録・公開PoC未確認・実悪用未確認。exploitation_stage=none。)
+・CVE-2026-86184 (Lara Dashboard（laradashboard・Laravel管理ダッシュボード）) → low_score (軸1=6点（CVSS9.0以上 +3（v4.0 9.3 / v3.1 9.8）, 未認証の認証バイパス（CWE-306・screenshot-loginルート）+3）・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。影響 1.3.0 未満（1.3.0 で修正）。APP_ENV が production でない場合に GET /screenshot-login/{email} へ登録済みメールアドレスを指定するだけで完全な認証済みセッションを取得でき、ユーザー管理・設定へアクセスできる。悪用は本番環境設定でないことが前提であり実運用系への影響は限定的。VulnCheck が 2026-09-05 に開示（報告者 EVIL0RD・GHSA-wj35-4h53-phfp）。KEV未登録・公開PoC未確認・実悪用未確認。exploitation_stage=none。)
+・CVE-2026-86189 (WWBN AVideo（OSS動画共有プラットフォーム）) → low_score (軸1=6点（CVSS9.0以上 +3（v4.0 9.3 / v3.1 9.8）, 未認証のパストラバーサル→任意ファイル書き込み（CWE-73）+3）・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。影響 29.0 まで。notify.ffmpeg.json.php が avideoRelativePath パラメータで呼び出し側指定のパスを受け入れ、過去に発行された任意の暗号文を notifyCode トークンとして再送すると復号のみ行われ検証されないため認証を回避してアプリケーション配下へファイルを書き込める。VulnCheck が 2026-09-05 に開示（報告者 rajivraj・GHSA-cprx-fggj-7vpq）。KEV未登録・公開PoC未確認・実悪用未確認。exploitation_stage=none。)
+・CVE-2026-52777 (YesWiki（PHP製Wikiシステム・BazarImportAction）) → low_score (軸1=3点（CVSS9.0以上 +3（v4.0 9.4））・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。影響 4.6.6 未満（4.6.6 で修正）。BazarImportAction の unserialize を経由する PHP オブジェクト注入だが、GitHub Security Advisory は「認証済み」の前提を明示し、CVSS v4.0 ベクタも UI:A（利用者の能動的な操作が必要）を含むため、未認証RCE・認証バイパスの加点条件を満たさない。EPSS 0.00215 / percentile 0.11792（2026-09-05）。KEV未登録・公開PoC未確認・実悪用未確認。exploitation_stage=none。)
+・CVE-2026-86123 (SQL Chat（OSSの自然言語SQLクライアント）) → low_score (軸1=3点（CVSS9.0以上 +3（v4.0 9.4 / v3.1 8.7））・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。未認証の4つの API エンドポイントがクライアント指定のDB接続パラメータを受け入れ、攻撃者が指定したホストに対して任意SQLを実行する（CWE-918 SSRF）。影響は攻撃者指定先の内部DBへのピボット・スキーマ列挙であり、対象製品自体への未認証RCE・認証バイパスには当たらないため該当加点なし。VulnCheck が 2026-09-05 に開示（報告者 George Chen）。KEV未登録・公開PoC未確認・実悪用未確認。exploitation_stage=none。)
+・CVE-2026-86190 (WWBN AVideo（videoViewsInfo エンドポイント）) → low_score (軸1=6点（CVSS9.0以上 +3（v4.0 9.3 / v3.1 9.1）, 開示されたセッション識別子による管理者セッション乗っ取り（認証バイパス相当）+3）・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。影響 29.0 まで。hash パラメータを与えると未認証の呼び出し元に対してパスワードハッシュ・復旧トークン・ライブセッション識別子を含む完全なユーザーレコードを返す（CWE-200）。VulnCheck が 2026-09-05 に開示（報告者 rajivraj・GHSA-82q2-88mq-p44q）。同一製品の CVE-2026-86189 とは別のエンドポイント・別の欠陥であるため個別に判断した（アグリゲータCNA由来のためバッチ集約は行わない）。KEV未登録・公開PoC未確認・実悪用未確認。exploitation_stage=none。)
+・CVE-2026-86117 (Coolify（coollabsio・OSSのセルフホスト型PaaS）) → low_score (軸1=7点（CVSS9.0以上 +3（v4.0 9.2 / v3.1 8.1）, OAuthコールバックの認証バイパス（CWE-287）+3, 広く使われるOSS +1）・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。影響 4.3.17 まで。OAuth コールバックハンドラがプロバイダのアサーション検証・OAuth ID の紐付けを行わずメールアドレスのみで既存アカウントへサインインさせるため、有効化済みの任意 OAuth プロバイダで被害者のメールアドレスを登録すれば当該ユーザーとして認証済みセッションを取得できる。CVSS v4.0 は AC:H/AT:P であり悪用条件に制約がある。VulnCheck が 2026-09-05 に開示（報告者 George Chen）。KEV未登録・公開PoC未確認・実悪用未確認。exploitation_stage=none。)
+・CVE-2026-86119 (Webstudio（webstudio-is・OSSのビジュアルWebビルダー）) → low_score (軸1=3点（CVSS9.0以上 +3（v4.0 9.2 / v3.1 8.6））・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。影響 0.296.0 まで。RESIZE_ORIGIN 環境変数が未設定のとき /cgi/image・/cgi/video・/cgi/asset のプロキシ経路が未認証SSRF（CWE-918）となり、クラウドインスタンスメタデータの読み出し・内部サービスへのアクセス・インフラ偵察が可能。対象製品自体への未認証RCE・認証バイパスには当たらないため該当加点なし。VulnCheck が 2026-09-05 に開示（報告者 George Chen・GitHub Issue #5816）。KEV未登録・公開PoC未確認・実悪用未確認。exploitation_stage=none。)
+・CVE-2026-52766 (YesWiki（{{erasespamedcomments}} アクション）) → low_score (軸1=6点（CVSS9.0以上 +3（v3.1 9.1・C:N/I:H/A:H）, 未認証で到達可能な認可欠如による全ページ削除（CWE-862/CWE-276）+3）・軸2=0点（0点（国内外の追加シグナルなし））。出力振り分け判定順4に帰属（本編:軸1>=8&軸2>=4／参考B:軸1>=8&軸2<4／参考A:軸1<8&参考Aトリガー該当）。参考A昇格トリガー（JPCERT/CC・IPA注意喚起／警察庁公表／Security NEXT・ScanNetSecurity国内報道／国内ベンダーアドバイザリ／国内広範製品への直接影響）はいずれも未確認。影響 4.6.6 未満（4.6.6 で修正）。actions/EraseSpamedCommentsAction.php が POST の suppr[] 配列を受け取り、アクション本体にもページ削除処理にも認可チェックがないまま該当タグのページをすべて削除する。YesWiki の既定許可型 ACL モデルと組み合わさることで未認証の第三者が任意ページを破壊できるが、機密性への影響はなく（C:N）実悪用・PoC・国内報道いずれも未確認。EPSS 0.00331 / percentile 0.25795（2026-09-05）。exploitation_stage=none。)
+・CVE-2026-59346 (VMware Workstation / Fusion) → low_score (CVSS 9.3（VMXNET3仮想NICの整数オーバーフロー）。ゲストVM上でローカル管理者権限を持つ攻撃者がホスト側でコード実行可能となるが、悪用には既にVM内の管理者権限を要するため未認証RCEに該当せず。実悪用報告なし（2026-09-05公開・同日パッチ提供済み26H1u1）。軸1=4点（CVSS9+3・広く使われる製品+1）で判定順4（除外）に帰属。関連CVE-2026-59347（CVSS8.1）も同種のためあわせて記録。NVD未収載（取得試行時点でtotalResults=0）・EUVD側でも本日時点で確認できず — 網羅スイープのNVD反映遅れ層に該当する可能性があるため翌日以降のスイープで再確認する。)
+
+CVE — ゼロデイ特報2件 / 本編1件 / 参考A0件 / 参考B2件 / 除外15件
+
+========================================
