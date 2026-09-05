@@ -1,0 +1,180 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-06 07:55 JST
+調査期間: 2026-09-05 07:00 〜 2026-09-06 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-67276 / MikroTik RouterOS（SSHサービス）
+対象: 6.0.0〜6.49.20 / 7.0.0〜7.23.3 / 7.24〜7.24.1（修正版: 6.49.21・7.23.4・7.24.2・7.25beta3）
+------------------------------------------------------------
+
+優先度: 緊急（パッチ提供済み・侵害痕跡確認必須）
+CVSS: 9.2 (Critical)
+状態: 実悪用確認 / PoC公開 / ゼロデイ
+パッチ提供: 提供済み（6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3）
+
+【24時間以内の変化】
+[CERT Polska 2026-09-05] CERT.PL が CVE-2026-67276 を含む RouterOS 6件の脆弱性を公開し、同時に別記事で「実際の攻撃が少なくとも2026-09-02から観測されている」と実悪用を公表した。CVE-2026-67276 と CVE-2026-86060 を組み合わせた攻撃連鎖を CERT.PL は MikroTrick と呼称している。
+[NVD 2026-09-06] CVE-2026-67276 が NVD へ新規公開（CNA: CERT-PL・CVSS v4.0 9.2 Critical・CWE-347）。
+[Nick Pratley (npratley.net) 2026-09-04] RouterOS 7.23.4 の「サイレントパッチ」を逆解析した技術記事が公開され、RSA 署名偽造の実証コード forge_e3_ssh.py を含む複数の PoC が公開された。
+
+【概要】
+MikroTik RouterOS の SSH サーバが、認可済みユーザー鍵と SSH 認証要求を突き合わせる際に RSA 公開鍵を完全一致で比較せず、鍵種別とモジュラスのみを確認して指数（exponent）を無視していた。署名検証には「クライアントが提示した鍵」がそのまま使われるため、認可済みユーザーの RSA モジュラス（公開情報）を知る攻撃者は指数を1に差し替えた鍵を提示することで有効な署名を偽造でき、秘密鍵なしに当該ユーザーとして SSH コマンドチャネルを開ける。CVSS v4.0 9.2（AV:N/PR:N/UI:N）。CERT.PL は本脆弱性と CVE-2026-86060（SSH ログイン時の引数処理不備による権限昇格）を連鎖させる攻撃を MikroTrick と名付け、SSH が外部公開された機器に対して少なくとも2026-09-02から実際の攻撃が発生していること、攻撃者が認証なしで機器を完全に掌握していることを確認したと公表した。ベンダーは 2026-09-03 に技術詳細を伏せたまま修正版（6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3）を全チャネルへ公開しており、実悪用の観測がベンダー公表・CVE 採番に先行している点でゼロデイ性が高い。侵害された機器は RouterOS のアップグレード時に「Flagged」状態としてログへ記録される。2026-09-06 時点で CISA KEV への登録は未確認、EPSS スコアは未算出（公開直後のため）。
+
+攻撃の流れ:
+1. インターネットへ露出した RouterOS の SSH ポート（既定 22/TCP）へ接続する。
+2. 認可済みユーザーの RSA 公開鍵モジュラスを取得し、指数を1に置き換えた公開鍵を提示して署名を偽造、秘密鍵なしに当該ユーザーとして認証を通過する（CVE-2026-67276）。
+3. 禁止文字で始まるユーザー名（CERT.PL 公表のログでは `-2`）を用いた SSH ログイン経路の引数処理不備により、RouterOS のポリシーマスクを書き換えて管理者権限へ昇格する（CVE-2026-86060）。
+4. 機器を認証なしで完全掌握し、特権ユーザー（観測例では `ops`）の作成・スクリプト追加・設定改変を行う。
+
+【暫定緩和策】
+・6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3 以降へ即時アップグレードする（アップグレード時に RouterOS が侵害判定を行い、該当機器を Flagged 状態にする）。
+・パッチ適用までの間、SSH・HTTP/HTTPS・bandwidth-test サービスを無効化するか信頼済みネットワークからのみ到達可能に制限する（CERT.PL 推奨）。
+・信頼できないネットワーク経由での TLS 接続の開始・RouterOS 内蔵 SSH クライアントの使用を避ける（CERT.PL 推奨）。
+・パッチ適用後にログを侵害痕跡（`login failure for user -2 ... via ssh`）で確認し、未知のユーザー・スクリプト・設定変更の有無を棚卸しする。
+
+【IoC】
+IP: 82.192.72.4
+IP: 103.102.31.18
+
+【監視ポイント】
+・RouterOS の syslog を SIEM へ集約し、CERT.PL が公表した侵害痕跡（禁止文字始まりユーザー名でのログイン失敗ログ・攻撃元IP・特権ユーザー ops の作成）と、外部から管理ポート（22/TCP 等）への到達を監視する
+Splunk SPL: index=network sourcetype=mikrotik ("login failure for user -2" OR "login failure for user -") | rex field=_raw "from (?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+) via ssh" | stats count values(src_ip) as src_ip by host
+Splunk SPL: index=network sourcetype=mikrotik src_ip IN ("82.192.72.4","103.102.31.18") | stats count earliest(_time) as first_seen latest(_time) as last_seen by host, src_ip
+Splunk SPL: index=network sourcetype=mikrotik ("user added" OR "added user" OR "ops") | search "ops" | stats count by host, _time
+→ `login failure for user -2 ... via ssh` は CERT.PL が公表した攻撃固有のログパターンであり、通常運用ではまず発生しない。検知した場合は攻撃試行そのものであり、成功可否に関わらず当該機器のユーザー一覧・スクリプト・スケジューラ・NAT/ファイアウォールルールを直ちに棚卸しする。公表IPは既知分のみのため、IP一致がないことを非侵害の根拠にしてはならない。
+
+【参照】
+https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/
+https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve
+https://mikrotik.com/supportsec/september-2026-vulnerability/
+https://npratley.net/reversing-mikrotiks-silent-patch-the-routeros-7-23-4-fix-they-wouldnt-explain/
+https://nvd.nist.gov/vuln/detail/CVE-2026-67276
+https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-72024
+------------------------------------------------------------
+2. CVE-2026-86060 / MikroTik RouterOS（SSHログイン処理）
+対象: 6.0.0〜6.49.20 / 7.0.0〜7.23.3 / 7.24〜7.24.1（修正版: 6.49.21・7.23.4・7.24.2・7.25beta3）
+------------------------------------------------------------
+
+優先度: 緊急（パッチ提供済み・侵害痕跡確認必須）
+CVSS: 9.2 (Critical)
+状態: 実悪用確認 / PoC公開 / ゼロデイ
+パッチ提供: 提供済み（6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3）
+
+【24時間以内の変化】
+[CERT Polska 2026-09-05] CERT.PL が CVE-2026-86060 を公開し、CVE-2026-67276 との組み合わせ（MikroTrick）による認証不要の完全掌握が2026-09-02以降実際に観測されていると公表した。侵害痕跡としてログ文字列 `login failure for user -2 from <ip> via ssh` と特権ユーザー ops の作成を提示。
+[NVD 2026-09-06] CVE-2026-86060 が NVD へ新規公開（CNA: CERT-PL・CVSS v4.0 9.2 Critical・CWE-88）。
+[Nick Pratley (npratley.net) 2026-09-04] ユーザー名 `-2` を用いた権限昇格の実証コード routeros_minus2_pty_poc.py が技術記事内で公開された。
+
+【概要】
+MikroTik RouterOS の SSH ログイン経路に、禁止文字で始まるユーザー名の引数処理不備（CWE-88 argument injection）があり、RouterOS が信頼するポリシーマスクを書き換えられて権限昇格に至る。悪用には未認証の SSH セッションが RouterOS のログインヘルパへ到達できることが必要であり、CVE-2026-67276（RSA 指数を無視した署名検証不備による SSH 認証バイパス）と連鎖することで、未認証の攻撃者が管理者権限で機器を完全掌握できる。CERT.PL はこの連鎖を MikroTrick と呼称し、SSH を外部公開した機器に対する実際の攻撃を少なくとも2026-09-02から観測したと公表している。CVSS v4.0 9.2。ベンダー修正版は2026-09-03公開の 6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3。実証コードは2026-09-04公開の技術記事に含まれる。2026-09-06 時点で CISA KEV 未登録・EPSS 未算出。
+
+攻撃の流れ:
+1. CVE-2026-67276 等により未認証の SSH セッションを RouterOS のログインヘルパへ到達させる。
+2. 禁止文字で始まるユーザー名（観測例では `-2`）を指定し、引数処理不備によって信頼済みポリシーマスクを書き換える。
+3. 読み取り専用相当のセッションから管理者権限のコマンド実行へ昇格し、特権ユーザー作成・設定改変・スクリプト設置を行う。
+
+【暫定緩和策】
+・6.49.21 / 7.23.4 / 7.24.2 / 7.25beta3 以降へ即時アップグレードする。
+・パッチ適用までの間、SSH を無効化するか信頼済みネットワークからのみ到達可能に制限する（CERT.PL 推奨）。
+・アップグレード後に RouterOS の Flagged 状態とログを確認し、未知のユーザー（例: ops）・スクリプト・設定変更を棚卸しする。
+
+【IoC】
+IP: 82.192.72.4
+IP: 103.102.31.18
+
+【監視ポイント】
+・RouterOS syslog における禁止文字始まりユーザー名でのログイン失敗、および直後の特権ユーザー作成・設定変更イベントを時系列で相関監視する
+Splunk SPL: index=network sourcetype=mikrotik ("login failure for user -2" OR "login failure for user -") | rex field=_raw "from (?<src_ip>\\d+\\.\\d+\\.\\d+\\.\\d+) via ssh" | stats count values(src_ip) as src_ip by host
+Splunk SPL: index=network sourcetype=mikrotik src_ip IN ("82.192.72.4","103.102.31.18") | stats count earliest(_time) as first_seen latest(_time) as last_seen by host, src_ip
+Splunk SPL: index=network sourcetype=mikrotik ("user added" OR "added user" OR "ops") | search "ops" | stats count by host, _time
+→ CVE-2026-67276 と同一の攻撃連鎖であるため検知観点は共通。ログイン失敗ログの直後に user/script/scheduler の追加イベントが続く場合は昇格成功の可能性が高く、機器の隔離と設定の完全な再構築を検討する。
+
+【参照】
+https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/
+https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve
+https://mikrotik.com/supportsec/september-2026-vulnerability/
+https://npratley.net/reversing-mikrotiks-silent-patch-the-routeros-7-23-4-fix-they-wouldnt-explain/
+https://nvd.nist.gov/vuln/detail/CVE-2026-86060
+https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-72029
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] Magento／Adobe Commerceの未修正ゼロデイ「StyleSmuggler」が実悪用、ECサイトへのバックドア設置が進行中（CVE未採番）
+オランダのEC専門セキュリティ企業Sansecが2026-09-05付でアドバイザリを公開し、Magento Open Source（2.4.6／2.4.7／2.4.8／2.4.9）およびAdobe Commerceの現行版に、未認証で任意コード実行が可能な2段構成の脆弱性「StyleSmuggler」が存在すると報告した。Sansecはクリーンインストール環境（2.4.7／2.4.8／2.4.9）で再現を確認しており、実際の攻撃は2026-09-04から観測されている。侵害を受けたストアではバックドアが設置される。本日時点でCVE番号は未採番、Adobeからの公式アドバイザリ・パッチ・回避策も未公表であり、Sansecは修正提供前の早期公開に踏み切ったと説明している。暫定緩和策としてGraphQLの一時停止、非公式パッチ（Disrex／ProxiBlue／Graycore各モジュール）の適用、PHPのproc_open無効化、一時ディレクトリのnoexecマウントが挙げられている。侵害総数は公表されておらず、確認済みの被害はDisrex Group管理下の2ストアとSansec Shield顧客1件にとどまる（規模は未確定）。CVE未採番かつ特定の攻撃者グループへの帰属も示されていないため、トレンド記事として扱う。日本国内でもMagento／Adobe Commerceを採用するEC事業者は存在し、Adobeの次回定例リリース（2026-09-08予定）まで無防備な期間が生じる点に注意が必要である（推測: 定例リリースで本件が修正されるかは未確認）。
+参照: https://thehackernews.com/2026/09/unpatched-magento-and-adobe-commerce.html
+参照: https://sansec.io/research/stylesmuggler
+・[トレンド記事] 改ざんされた5,400超のサイトがBNB Smart Chain上のスマートコントラクトからClickFixペイロードを配信
+中小企業サイトを大量に侵害し、BNB Smart Chain（BSC）テストネット上のスマートコントラクトへ次段ペイロードを格納して配信する大規模キャンペーンが報告された。確認された改ざんサイトは5,400件超で、大半がWordPressおよびPrestaShop構築のサイトである。各サイトにはインラインスクリプトまたは偽装パッケージが注入され、BSCテストネットのエンドポイントから次段コードを取得する（EtherHiding手法）。取得されたコードは偽CAPTCHAを表示するClickFix型のオーバーレイを出し、閲覧者にWindowsの「ファイル名を指定して実行」からPowerShellコマンドを貼り付けさせて最終ペイロードを実行させる。オンチェーンの単一コントラクトを書き換えるだけで配信物を差し替えられるため、キャンペーン後期にはClickFixオーバーレイをWebRTCデータチャネル型のステージャに置き換える変種が観測されている。報道によれば影響組織は2,200超に及び、現在も拡大中とされる。最終ペイロードとしては資格情報窃取型マルウェア（Lumma Stealer）が観測されたとする報告がある。特定の攻撃者グループへの帰属は示されていない。初期侵害の手口は未特定である。2026-09-02レポートで扱ったPolygon利用のEtherHiding型ClickFixキャンペーン（TREND-2026-09-02-003）と手法系統は共通するが、利用チェーン・規模・報告主体が異なるため別トピックとして記録する。
+参照: https://www.bleepingcomputer.com/news/security/over-5-400-hacked-sites-serve-clickfix-payloads-stored-on-the-blockchain
+参照: https://www.netskope.com/blog/malware-on-the-blockchain-an-ongoing-campaigns-new-webrtc-twist
+・[トレンド記事] JetBrains、自社クラウド「Cadence」が未適用のTeamCity脆弱性経由で侵害されAWS資格情報が窃取されたとして全面ローテーションを要請
+JetBrainsは、自社のクラウド開発サービス「Cadence」が、同社製品TeamCityの既知の重大脆弱性（CVE-2026-63077・CVSS 9.8・エージェントポーリングプロトコル経由の未認証RCE。2026-07-29に本レポートで既報、2026-08-05にCISA KEV追加済み）を悪用されて侵害されたと公表した。侵害を受けたのは同社内部で未更新のまま稼働していたTeamCityサーバであり、api.cadence.jetbrains.com が2026-08-08から08-24にかけて影響を受けた。JetBrainsは08-23に不審な活動を検知し翌日にサーバを停止している。窃取された情報には複数のAWS IAMユーザーおよび関連資格情報（Cadenceを利用していた同社従業員のIAMユーザーを含む）が含まれ、2024年時点のCadenceバックアップも侵害されたとされる。JetBrainsはCadence利用者に対し、Cadence実行に用いた可能性のある全ての資格情報・シークレットの失効／ローテーションと、当該実行の入出力を信頼できないものとして扱うことを求め、PyCharmのCadenceプラグインが使用するアクセストークンを無効化した。攻撃者は未特定であり、特定グループへの帰属は示されていない。脆弱性自体はCVE track既報のため、本エントリはベンダー自身の環境が侵害され下流の開発者資格情報に波及したサプライチェーン型インシデントとしてトレンド記事に位置づける。
+参照: https://thehackernews.com/2026/09/attackers-breached-jetbrains-cadence.html
+・[トレンド記事] Trezor、物流委託先ShipMonkの侵害で「削除済み」のはずの米国顧客67,000名分が追加流出と公表
+ハードウェアウォレット製造のTrezorは2026-09-05（金）、物流委託先ShipMonkの侵害について、当初公表分に加えて米国顧客約67,000名分のデータが流出していたと開示した。追加分は2019年11月から2021年8月にかけての旧提携期間の注文記録で、氏名・メールアドレス・電話番号・配送先住所・注文番号が含まれる。Trezorは契約およびデータ保持ポリシーに基づき当該古い顧客データは削除済みであるとの書面保証をShipMonkから繰り返し受けていたが、実際には削除されずShipMonk側システムに残存しており、今回の侵害で露出した。ShipMonkからTrezorへの通知は2026-09-04付。本件は2026-08-16レポートで既報の同一インシデント（当初開示は完全流出11,742名＋部分流出1,947名の計約13,689名）の続報であり、影響規模が約5倍に拡大した形となる。ウォレット本体・秘密鍵・ファームウェアへの影響は否定されているが、暗号資産保有者を狙ったフィッシング・ソーシャルエンジニアリングの標的リスト化リスクが残る。委託先の「削除済み」保証が実態と乖離していた点は、第三者リスク管理における保証の検証可能性という観点で他業種にも共通する教訓である。攻撃者グループの帰属は示されていない。
+参照: https://thehackernews.com/2026/09/trezor-says-shipmonk-breach-exposed.html
+参照: https://trezor.io/blog/news/recent-customer-data-exposed-in-shipping-provider-incident
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用APT活動なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向採用APT活動なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+予報作成前に pipeline-forecast-verification.md のTier分類・確度適用条件・観測可能性ゲート（M1）を確認済み。
+
+・予報1: MikroTik RouterOS未パッチ環境（SSH公開）は認証バイパス連鎖(CVE-2026-67276/CVE-2026-86060)を前提とした緊急アップグレード・侵害痕跡確認を24時間以内に実施すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1
+検証窓: fast_72h
+根拠:
+  Evidence: [CERT Polska 2026-09-05] SSH RSA鍵検証不備(CVE-2026-67276)と権限昇格(CVE-2026-86060)を連鎖させたMikroTrick攻撃について、2026-09-02以降の実際の攻撃観測を確認・公表。[Nick Pratley 2026-09-04] RouterOS 7.23.4サイレントパッチの逆解析によりPoC(forge_e3_ssh.py)を公開。
+  過去パターン: （過去実績）類似過去事例なし（内部実績検索0件）。
+  脅威情報: SSHが外部公開されたRouterOS機器全般が対象。侵害された機器はアップグレード時に「Flagged」状態としてログへ記録される。KEV未登録・国内報道は本日時点で未確認。
+  確度アンカー: EPSSパーセンタイル 取得不能 / KEV登録状態 未登録 / SSVC決定 Act / Automatable yes
+推定部分: （推定）CERT.PLによる独立確認・公開PoC・ベンダーのサイレントパッチという組み合わせはCISAのKEV追加基準を満たしやすいと推測しているが、対象がMikroTik（米国連邦機関での使用は限定的）であるため、72時間以内に追加されない可能性も相応にある。
+先回り監視: RouterOSのsyslogにおける「login failure for user -2 ... via ssh」パターン、既知の攻撃元IP（82.192.72.4 / 103.102.31.18）からの接続、特権ユーザー「ops」相当の新規ユーザー作成。
+的中判定: CVE-2026-67276 が CISA KEV カタログへ dateAdded 2026-09-06〜2026-09-09（両端を含む）の範囲で初回追加された場合（一次ソース: CISA KEV カタログJSON本体）。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【戦術予報 TF-1（shadow・第1段階）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。
+追跡中の脆弱性状態: 147件（状態分布: {'ACTIVE_EXPLOITATION': 55, 'DISCLOSED': 71, 'POC_PUBLIC': 21}）
+shadow候補: 92件 / 棄権: 110件（第1段階は個別候補を公開しない）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】(APT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・不明（帰属未確定・金銭動機のEC侵害アクター。Sansecは特定グループへの帰属を行っていない） / RIS-2026-StyleSmuggler-MagentoZeroDay → low_score (軸P=5点（新規マルウェアファミリー「StyleSmuggler」の技術分析公開+3、確認済みIOCの公開+2）・軸Q=3点（複数の独立した研究者/メディアが観測を確認+2、単一セクター〔EC〕+1）。軸P<8のため判定順1/2に該当せず、参考A昇格トリガー〔警察庁/NISC/JPCERT公表・国内組織侵害確認・国内ベンダーアドバイザリ〕も24時間窓内に確認できないため判定順4（除外）。事実: Sansecが2026-09-05にアドバイザリを公開し、Magento Open Source / Adobe Commerce の未修正脆弱性（CVE未採番）を悪用した実攻撃が2026-09-04に開始されたと報告（The Hacker News 2026-09-05 20:14 UTC報道）。GraphQL経由でPHPコードを注入し「Payment Transaction Failed Reminder」メール機能の実行契機で未認証RCEに至る。IOC: 247.cdnflare[.]xyz、99.84.67[.]186:443、88.216.72[.]181、5.181.86[.]133、プロセス名 [kworker/u:8:0]、~/.local/share/.gvfsd/gvfsd-user。Adobeの次回定例修正は2026-09-08予定。帰属・国家関与の言及は原典になく attribution は行わない（行動原則1・3）。本事象はゼロデイ/CVEトラックおよびSection 2トレンド記事で別途扱う。reported-apts.md 全212行と照合し同一マルウェア名・同一C2インフラの既存行なし。継続監視対象。)
+・不明（帰属未確定。Arctic Wolf Adversary Research Teamは特定グループ・国家への帰属を行っていない） / RIS-2026-PaperCutEduExploitation-ArcticWolf → low_score (軸P=5点（単一ベンダー〔Arctic Wolf〕による技術報告+3、既知CVEの新規武器化観測+2）・軸Q=3点（複数の独立した研究者/メディアが観測を確認+2、単一セクター〔教育〕+1）。軸P<8のため判定順1/2に該当せず、参考A昇格トリガーも24時間窓内に確認できないため判定順4（除外）。事実: Arctic Wolfが PaperCut NG/MF の認可不備 CVE-2026-81578 と安全でない動的クラスロード CVE-2026-82078 の連鎖悪用を観測し、米国・欧州のK-12学校から大学までの教育機関で認証情報窃取が行われていると報告（The Hacker News / SecurityAffairs 2026-09-05報道）。観測された事後活動は特権アカウント「Administrator17」の作成、certutil による認証情報窃取ツールの取得、lsa_collect.exe による Windows BootKey 抽出（SAM 復号目的）、Meterpreter系Javaペイロード展開、whoami/tasklist/ver/uname 等の偵察コマンド、PaperCut設定ファイル内のパスワード・LDAP設定の探索。検知手掛かりは5文字の .class/.cmd/.out ファイル、/custom/pcp_*.txt への不審リクエスト、python-requests による大容量ダウンロード。両CVEは2026-08-31にCISA KEV登録済みで、CVE自体は reported-cves.md（2026-09-01〜02分）で個別追跡中。本日の新規性は「実悪用の被害セクターと事後TTPの具体化」であり、帰属は一切示されていない。)
+・不明（帰属未確定・金銭動機のClickFix/EtherHidingクラスタ） / RIS-2026-ClickFix31Orgs-PolygonEtherHiding → low_score (軸P=6点（複数のメジャーベンダー〔Microsoft Threat Intelligence・Netskope〕が独立して観測を確認+4、確認済みIOCの公開+2）・軸Q=5点（多数の組織/複数セクターへの同時侵害確認+5）。軸P<8のため判定順1/2に該当せず、参考A昇格トリガーも該当なしのため判定順4（除外）。事実: BleepingComputer 2026-09-05 14:29 UTC報道により、WordPress/PrestaShop を中心とする5,400超の侵害済み中小企業サイトが、BNB Smart Chain（BSC）テストネット上のスマートコントラクトから次段ペイロードを取得するスクリプトを埋め込まれ、偽CAPTCHA（ClickFix）でWindows利用者にコマンド実行を促していることが判明。NetskopeはキャンペーンがWorld-wideで2,200組織超に及び、単一のオンチェーン契約の書き換えで配布物を差し替え続けていると報告。EtherHiding技術自体は既報（2026-08-04 DOUBLECUP、2026-08-31 TerminalFix、2026-09-02 ClickFix31Orgs）で追跡済みであり、campaign_id 採番規則の既存キー類似照合の結果、既存キー RIS-2026-ClickFix31Orgs-PolygonEtherHiding（2026-09-02登録・Polygon利用）と同一クラスタの拡大報告と判断して新規キーを採番しない。ブロックチェーンがPolygonからBSCテストネットへ移った点、規模が31組織→5,400サイト/2,200組織へ拡大した点が本日の変化（推測: 同一主体の連続とは断定できず、EtherHidingを共有する複数主体の可能性がある）。Section 2トレンド記事で別途言及。)
+・不明（帰属未確定。JetBrainsは「unidentified threat actors」とのみ記載） / RIS-2026-JetBrainsCadence-TeamCityBreach → low_score (軸P=4点（既知CVEの新規武器化観測+2、確認済みIOC〔6件のIP〕の公開+2）・軸Q=4点（サプライチェーン経由の二次被害が報告+4）。軸P<8のため判定順1/2に該当せず、参考A昇格トリガーも該当なしのため判定順4（除外）。事実: JetBrainsが自社クラウドサービス Cadence の侵害を公表し、全利用者に認証情報・シークレットの即時失効/ローテーションを要請（The Hacker News 2026-09-05 16:52 UTC報道）。攻撃者は TeamCity の重大な脆弱性 CVE-2026-63077（CVSS 9.8・信頼できないデータのデシリアライズによる認証バイパス+OSコマンド実行）を悪用し、2026-08-08〜08-24に侵入（検知は2026-08-23）。2024年のサーババックアップから認証情報・設定・AWS IAM 認証情報を取得し、PyCharm プロジェクト由来のソースコードへのアクセス可能性も示唆。IOC: 150.109.230.104、43.153.227.206、62.210.127.48、210.247.242.190、15.235.225.205、152.233.30.18。攻撃者の帰属・国家関与に関する記述は一次情報になく、TTP類似のみでの帰属推定は行わない（行動原則3）。開発基盤ベンダー侵害としてSection 2トレンド記事およびCVEトラックで扱う。)
+・不明（帰属未確定・攻撃者/侵入手口とも未公開） / RIS-2026-Trezor-ShipMonkThirdPartyBreach → insufficient_evidence (事実: Trezor が物流委託先 ShipMonk の侵害により、米国顧客67,000名分（氏名・メールアドレス・電話番号・配送先住所・注文番号、2019-11〜2021-08分）が追加で影響を受けたと2026-09-05に公表（The Hacker News 2026-09-05 14:17 UTC報道）。ハードウェアウォレット本体のセキュリティには影響しないとされる。攻撃者・侵入手口・マルウェア・TTPのいずれも公開されておらず、採用条件P〜Wのうち技術的裏付けを要する条件を満たさない（軸P=0点相当・評価不能）。国内組織の侵害確認もなく参考A昇格トリガーにも該当しないため除外。Section 2トレンド記事で別途言及。)
+・不明（帰属未確定・大量スキャン/改ざんアクター） / RIS-2026-ElementorPro-MassExploitation → low_score (軸P=2点（既知CVEの新規武器化観測+2）・軸Q=1点（単一セクター/限定的観測+1）。軸P<8のため判定順4（除外）。事実: SecurityWeek 2026-09-05 13:00 UTC報道により、Elementor Pro（WordPress）の任意ファイルアップロード脆弱性 CVE-2026-32475（CVSS 9.8・フォーム送信処理に起因）を悪用したサイト改ざん攻撃が観測されていると報告。脅威アクター名・キャンペーン名・IOCは公開されておらず、APT/組織犯罪キャンペーンとしての構造的記述がないため Step 1（CVE調査）トラックで扱う。)
+・Toy Ghouls（別名: Bearlyfy / Laboo.boo / Feral Wolf・金銭動機・帰属信頼度: 低〔国家帰属の記述なし〕） / ToyGhouls-2026-HiveMQElementBackdoors → out_of_window (Kaspersky Securelist の初報は2026-09-04公開であり、本日の調査窓（2026-09-05 07:00〜2026-09-06 07:00 JST）の開始前に該当するため除外（out_of_window）。窓内に続報・状態変化は確認できなかった。内容: 2025年以降ロシア国内組織を標的とする金銭動機グループが、公開ツール・流出ランサムビルダー利用から自作マルウェアへ移行し、HiveMQ の公開MQTTブローカ（broker.hivemq.com）を悪用する mqtt-bird-agent 0.1.0 と、Element/Matrix（meet.element[.]tw）を悪用する matrix-bird-agent 0.1.0 の2種のバックドアを展開。正規サービスをC2に用いる点が特徴。IOC: cplsupport.exe（MD5 BFADBEEE63A4F0BF19EC9DEB8FA58F58）、wtass.exe（MD5 7916C33688385525078BEE504C90F359）、レジストリ HKLM\Software\synapse\Config\SealedConfig。MITRE ATT&CK Technique の明示はなく techniques は付与しない（行動原則1）。reported-apts.md に同グループ・同マルウェアの既存行はなし。窓外事象のため本日は採用せず、継続監視対象として記録する（人間レビュー用の申し送り）。)
+
+APT — 本編0件 / 注目動向0件 / 除外7件
+
+========================================
