@@ -1,0 +1,93 @@
+name: Reference Rates Drift Check (weekly)
+
+# forecaster/models/reference-rates.json は機械生成物だが、_governance により
+# 再生成は日次ルーチンからは行わず PR + 人間レビューを経る（knowledge/ と同格・
+# CLAUDE.md 行動原則5に準じる）。一方 forecaster/observations/ は日次で増え続ける
+# ため、直近リフレッシュ以降は scripts/build_reference_rates.py の再計算値が
+# 必ず committed 値からずれていく。
+#
+# これを pull_request 側の「Tactical Forecaster v3 Validation」でブロッキング
+# チェックにすると、日次成果物を含むあらゆるPRが恒常的に赤くなる（2026-09-01
+# リフレッシュ後、2026-09-02〜09-05 の全daily-report PRで失敗・run #20〜#29）。
+# 「正しさのゲート」ではなく「ドリフトの監視」が本質のため、このワークフローへ
+# 切り出し、ドリフト検出時は weekly-verify.yml と同じ「Issueで通知するだけ」の
+# 形にする（ジョブ自体は red にしない・PRをブロックしない）。
+
+on:
+  schedule:
+    # 毎週月曜 04:00 JST = 日曜 19:00 UTC（他のスケジュールと重ならない時間帯）
+    - cron: '0 19 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Regenerate and diff against committed reference-rates.json
+        id: diff
+        run: |
+          cp forecaster/models/reference-rates.json /tmp/reference-rates.before.json
+          python3 scripts/build_reference_rates.py
+          if diff -u /tmp/reference-rates.before.json forecaster/models/reference-rates.json \
+              > /tmp/reference-rates.diff; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+          fi
+          # 次のステップへ渡すため作業ツリーを元に戻す（このワークフローはコミットしない）
+          git checkout -- forecaster/models/reference-rates.json
+
+      - name: Check if a drift issue is already open
+        id: check
+        if: steps.diff.outputs.drift == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: 'reference-rates-drift',
+              state: 'open',
+            });
+            return issues.data.length === 0;
+
+      - name: Create drift tracking issue
+        if: steps.diff.outputs.drift == 'true' && steps.check.outputs.result == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let diffBody = fs.readFileSync('/tmp/reference-rates.diff', 'utf8');
+            if (diffBody.length > 6000) {
+              diffBody = diffBody.slice(0, 6000) + '\n... (truncated)';
+            }
+            const date = new Date().toISOString().slice(0, 10);
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[TF1] reference-rates.json がコーパスの現状からドリフトしています (${date})`,
+              body: `## reference-rates.json ドリフト検出\n\n` +
+                `\`scripts/build_reference_rates.py\` を現在の観測コーパスから再実行した結果が、` +
+                `コミット済みの \`forecaster/models/reference-rates.json\` と一致しませんでした。\n\n` +
+                `\`forecaster/observations/\` は日次で増え続けるため、これ自体は異常ではありません` +
+                `（直近リフレッシュ以降は必ずいずれドリフトします）。ただし更新するかどうかは` +
+                `\`_governance\` に従い人間レビューを経る必要があります（PR #189 と同様の扱い）。\n\n` +
+                `**対応:**\n` +
+                `- [ ] 差分の内容を確認し、更新が必要か判断する\n` +
+                `- [ ] 更新する場合は \`python3 scripts/build_reference_rates.py\` を実行し、` +
+                `専用PR（daily-report PRに混ぜない）としてレビューを経てマージする\n` +
+                `- [ ] 対応後、このIssueをクローズする\n\n` +
+                `<details><summary>diff（先頭6000文字）</summary>\n\n\`\`\`diff\n${diffBody}\n\`\`\`\n</details>\n\n` +
+                `_このIssueはGitHub Actions（reference-rates-weekly-check.yml）により自動作成されました_`,
+              labels: ['reference-rates-drift'],
+            });
