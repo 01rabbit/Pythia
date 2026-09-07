@@ -1,0 +1,220 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-08 09:00 JST
+調査期間: 2026-09-07 07:00 〜 2026-09-08 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-75650 / Adobe Commerce / Magento Open Source（通称: StyleSmuggler）
+対象: 2.4.4〜2.4.9（Adobe Commerce および Magento Open Source の全サポートバージョン）。緊急ホットフィックス提供済み
+------------------------------------------------------------
+
+優先度: 緊急（パッチ提供済み・侵害痕跡確認必須）
+CVSS: 10.0 (Critical)
+状態: 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み（APSB26-146 緊急ホットフィックス（2026-09-07公開））
+
+【24時間以内の変化】
+[Sansec 2026-09-07] Adobe Commerce / Magento のテンプレートエンジンにおける特殊要素の無害化不備（CWE-1336）をStyleSmugglerと命名し詳細解析を公開。2026-09-04から実際の攻撃が開始されていたと報告。
+[BleepingComputer 2026-09-08] 全バージョンのMagento/Adobe Commerceに影響するゼロデイが実悪用されRust製Linuxバックドアの展開に使われていると報道。
+[Adobe / SecurityWeek 2026-09-07] Adobeが実悪用の事実（in the wild）を認め、APSB26-146として緊急ホットフィックスを公開したことが判明。
+
+【概要】
+Adobe Commerce および Magento Open Source のテンプレートエンジンが、注文の支払い失敗通知メール生成処理に渡す特殊要素（'styles' プロパティ経由のテンプレートディレクティブ）を適切に無害化していない（CWE-1336）。攻撃者は失敗レポートを生成させる形でPHPコードをテンプレートへ注入し、続いて支払い失敗通知メールの生成処理をトリガーすることで注入済みコードを実行させる2段階の攻撃を成立させる。ユーザー操作は不要で、認証なしにリモートから任意コード実行に至る（CVSS 3.1: 10.0、AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H）。Sansecは攻撃が2026-09-04から観測されていたとし、侵害成功後は/proc配下のプロセス名を[kworker/u:8:0]のようなLinuxカーネルワーカーに偽装する小型のRust製バックドアが常駐プロセスとして展開され、2026-09-06観測分ではfc-cache（フォントキャッシュユーティリティ偽装）へ命名が変化していることを確認した。Adobeは2026-09-07にAPSB26-146として緊急ホットフィックスを公開し、実悪用（in the wild）の事実を認めている。2026-09-08時点でCISA KEVへの登録・EPSSスコアの算出はいずれも未確認（公開直後のため）。日本国内での被害報道は本日時点で確認されていない。
+
+攻撃の流れ:
+1. 注文の支払い失敗を発生させ、失敗レポート生成処理を経由して 'styles' プロパティにPHPコードを含むテンプレートディレクティブを注入する（第1段階）。
+2. 注入済みテンプレートを実行させるトリガーとして、Magentoの支払い失敗通知メール生成処理を発火させ、注入済みPHPコードを実行させる（第2段階）。
+3. 実行に成功した任意コードから、プロセス名をLinuxカーネルワーカー（[kworker/u:8:0]）やフォントキャッシュユーティリティ（fc-cache）に偽装した小型Rust製バックドアをバックグラウンドプロセスとして常駐させる。
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・APSB26-146の緊急ホットフィックスを即時適用する。適用前はWAFで支払い失敗通知メール生成に関わるエンドポイント・テンプレートレンダリングパスへの異常な入力を検査する。
+・外部WAF（Cloudflare等）でテンプレートインジェクション兆候（'styles'パラメータへの{{}}/${}等のテンプレート構文混入）をブロックする暫定ルールを適用する。
+・サーバ上のプロセス一覧を[kworker/u:8:0]・fc-cache 等の偽装名を含め棚卸しし、正規のカーネルスレッド数・フォントキャッシュプロセスの起動元（実行パス）と照合する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Magento/Adobe Commerceのアプリケーションログにおけるテンプレートインジェクション兆候と、Webサーバプロセスを親とする不審な子プロセス生成、カーネルワーカー/フォントキャッシュを偽装したプロセスを監視する
+Splunk SPL: index=web_access sourcetype=magento_app (uri_path="*checkout*" OR uri_path="*payment*") payload="*styles*" | regex payload="(?i)(\\{\\{|\\$\\{|<\\?php)" | stats count by src_ip, uri_path
+Splunk SPL: index=edr (sourcetype=sysmon EventCode=1 OR sourcetype=linux_audit type=EXECVE) (process_name="kworker*" OR process_name="fc-cache") parent_process_name IN ("php-fpm","httpd","nginx","apache2") | stats count by host, process_name, parent_process_name
+→ 正規のfc-cacheはフォントキャッシュ更新時にのみ短時間動作し、Webサーバプロセスの子として持続稼働することはない。Webサーバ系プロセスを親に持つkworker/fc-cache名のプロセスは高確度で侵害を示す。
+
+【参照】
+https://sansec.io/research/stylesmuggler-0day
+https://www.bleepingcomputer.com/news/security/magento-stylesmuggler-zero-day-exploited-to-deploy-linux-backdoor
+https://www.securityweek.com/adobe-commerce-zero-day-exploited-to-backdoor-online-stores
+https://thehackernews.com/2026/09/unpatched-magento-and-adobe-commerce.html
+https://helpx.adobe.com/security/products/magento/apsb26-146.html
+
+------------------------------------------------------------
+2. CVE-2026-86218 / N-able N-central（RMM/リモート監視管理プラットフォーム）
+対象: N-central 2026.3 Hotfix 4（2026.3.1.14）未満の全ビルド
+------------------------------------------------------------
+
+優先度: 緊急（パッチ提供済み・侵害痕跡確認必須）
+CVSS: 10.0 (Critical)
+状態: 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み（N-central 2026.3 Hotfix 4（2026.3.1.14））
+
+【24時間以内の変化】
+[N-able Status 2026-09-07] N-central 2026.3 Hotfix 4（CVE-2026-86218）のインシデント通知を公開。未認証リモートコード実行が実悪用されていると明記。
+[BleepingComputer 2026-09-07] N-ableが実運用環境での悪用を確認しておらず慎重な表現に変わった一方、Shadowserverがインターネット露出N-centralサーバ約1,500台を確認したと報道。
+[The Hacker News 2026-09-07] 8月〜9月の第3波として、5週間で4回目のN-centralホットフィックスとなったことを報道。
+
+【概要】
+N-ableのRMM（遠隔監視管理）製品N-centralに、未認証の攻撃者がHTTPで到達可能であればネットワーク権限を持たずにサーバプロセス上へ任意コードを注入・実行できる静的コードインジェクションの脆弱性（CWE-94）が存在する（CVSS v4.0: 10.0）。N-ableは2026-09-06にインシデント通知を公開し、当初「実際に悪用が観測されている」としていたが、後日「本番環境での悪用の証拠は確認していない」と表現を修正した経緯がある。本脆弱性は2026年8月から9月にかけて発生した3回目の脆弱性波であり、5週間で4回目のホットフィックスとなる。直近では2026-09-05にHF3として2件の認証バイパス（CVE-2026-86206・CVE-2026-86207、いずれもCVSS v4.0で6.9/7.7、実悪用は確認されていない）も修正されている。N-ableは2026-09-06にHotfix 4（2026.3.1.14）を公開し、ホスティング型のNCOD環境は既に適用済みとしている。Shadowserverは、インターネットへ露出したN-centralサーバを約1,500台確認しており、米国・欧州が中心。RMM製品はMSP経由で多数の顧客組織へ波及するサプライチェーンリスクを持つため、影響範囲は露出台数以上に及ぶ可能性がある。2026-09-08時点でCISA KEV未登録、EPSSパーセンタイル34.3%（公開直後のため低め・M3の確度アンカーには不足）。日本国内での被害報道は本日時点で確認されていない。
+
+攻撃の流れ:
+1. インターネットへ露出したN-central（HTTP到達可能）を発見する。
+2. 認証情報・ネットワーク特権を持たない状態で、細工したリクエストによりサーバプロセスへ任意コードを注入し実行する（未認証・単一ステップ）。
+3. N-central経由でMSP配下の管理対象エンドポイント群への横展開・侵害拡大のリスクがある（RMM製品特有のサプライチェーン波及、確認された実害は本日時点で非公開）。
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・N-central 2026.3 Hotfix 4（2026.3.1.14）へ即時アップグレードする。
+・パッチ適用までの間、N-centralサーバをインターネットから直接到達不能にする（VPN/許可リスト経由アクセスへ限定）。
+・Shadowserver等の外部スキャンサービスで自組織のN-centralインスタンスの外部露出有無を確認する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・N-centralサーバプロセスからの予期しない子プロセス生成・外部向け通信、および管理コンソールへの認証なしアクセス試行を監視する
+Splunk SPL: index=edr sourcetype=sysmon EventCode=1 parent_process_name="*n-central*" NOT process_name IN ("expected_process_list") | stats count by host, process_name, parent_process_name
+Splunk SPL: index=web_access sourcetype=n_central_access status=200 uri_path="*/api/*" NOT Authorization=* | stats count by src_ip, uri_path
+→ N-centralサーバプロセスを親とする未知の子プロセス生成は侵害の強いシグナル。RMM製品の性質上、検知時は当該N-central配下の全管理対象エンドポイントの棚卸しを優先する。
+
+【参照】
+https://status.n-able.com/2026/09/06/n-central-2026-3-hotfix-4-cve-2026-86218/
+https://www.bleepingcomputer.com/news/security/n-able-patches-max-severity-n-central-flaw-amid-ongoing-attacks/
+https://thehackernews.com/2026/09/n-able-issues-fourth-n-central-hotfix.html
+https://forkast.news/n-able-n-central-cvss-10-0-pre-auth-rce-marks-third-attack-wave-in-six-weeks/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[ゼロデイ特報格] CVE未採番 / ConnectWise ScreenConnect（不正クライアントによるワーム型拡散・CVE未採番）
+状態: 実悪用確認 / ゼロデイ
+2026年8月下旬から、改ざんされたConnectWise ScreenConnectクライアントを悪用したワーム的挙動を持つ攻撃キャンペーンが観測されている。Huntressの調査によれば、不正なScreenConnectクライアントはwscript.exeの子プロセスを繰り返し生成して4段階のVBScriptファイルを展開し、システム偵察・ペイロード段階化・PowerShell実行（痕跡消去とUAC回避を試行する第2段階PowerShellを含む）を経て、新たに接続してきたホストへ自動的にScreenConnectクライアントをインストールし同じ4段階チェーンを伝播させる。初期侵入経路は偽Quick Assistサポートを装った通話、フィッシング経由のScreenConnect.ClientSetup.msiインストーラ、偽Geek Squad返金検索経由でのScreenConnect.Client.exe起動など複数の社会工学的手口が確認されている。2026-09-08時点でCVE番号は未採番だが、ConnectWiseは今週中の発行と正式な修正版提供を予告している。単一製品（ScreenConnect）に紐付く事象だが、CVE未採番かつワーム的拡散という高インパクト性からトラックBとして本セクションに掲載する。
+IoC: 確認されず
+参照: https://www.huntress.com/blog/rogue-screenconnect-installations
+参照: https://www.securityweek.com/modified-screenconnect-clients-used-in-worm-like-campaign/
+参照: https://thehackernews.com/2026/09/rogue-screenconnect-clients-spread-four.html
+・[トレンド記事] Rapid7がDPRK系と中確度で帰属する新型Linuxバックドア『Ted』を報告（韓国メディア・自動車セクター標的）
+Rapid7が、韓国のメディア・自動車セクターを標的にHAProxy(2.8.12)へ直接組み込む形の新型バックドア『ted backdoor』と、agetty/atd/crond/polkitd/sshd等を差し替えるトロイ化ツール群を報告した。侵入経路はホスト上でのコード実行によりHAProxy正規バイナリを差し替えるもので脆弱性の悪用ではない。単純なXORベース暗号・独自置換暗号・ハードコードされたC2リストがAPT37と重複することから、Rapid7はDPRK系APTへ中確度で帰属している。国内組織への影響は本日時点で確認されていない（reported-apts.mdでは軸P/Q基準および国内トリガー非該当のため除外・本トレンド記事で別途言及）。
+参照: https://www.rapid7.com/blog/post/tr-dprk-apts-ted-backdoor-curlrat-target-south-korean-media-automotive-sectors/
+参照: https://thehackernews.com/2026/09/new-ted-backdoor-hides-inside-victims.html
+参照: https://www.securityweek.com/north-korean-hackers-deploy-new-linux-espionage-toolkit/
+・[トレンド記事] Arctic WolfがM365標的の偽IT電話恐喝クラスタ『PREY-0058』を報告（UNC6671と手口重複）
+Arctic Wolfが、偽の社内ヘルプデスク電話（ビッシング）でMicrosoft 365等SaaSの認証情報・MFAコードを取得しAitMトークン窃取・住宅用プロキシ経由ログインを組み合わせる新規脅威クラスタ『PREY-0058』を報告した。マルウェア展開やネットワーク内横展開を伴わず社会工学と窃取済み認証情報のみで完結する点が特徴。米国の建設・医療・不動産・金融・専門サービス業の役員層（ディレクター・VP等）を標的にSharePoint/OneDrive/Exchange/Boxから大量データを窃取後、恐喝要求を送付する。データ窃取後の恐喝手口はデータ恐喝グループUNC6671と手口の重複があるとされる。国内組織への影響は本日時点で確認されていない（reported-apts.mdでは軸P/Q基準および国内トリガー非該当のため除外・本トレンド記事で別途言及）。
+参照: https://thehackernews.com/2026/09/microsoft-365-attackers-use-help-desk.html
+・[トレンド記事] フィッシングキット『BigBear 2.0』がMFA突破AitM基盤として258組織で悪用（CloudSEK調査）
+CloudSEKが、Evilginx2ベースのAitM（Adversary-in-the-Middle）フィッシングキット『BigBear 2.0』の管理パネルへ研究者権限でアクセスし、Microsoft 365専用に構成された42台のVPSノードが258組織から5,000件超の認証情報・MFA済みセッションCookieを窃取したことを確認したと報告した。FIDO2/WebAuthn認証を無効化させるカスタムJavaScriptで強固な認証手段への回避を強制し、69カ国の住宅用プロキシで被害者の地理的位置に一致させることでMicrosoft側の異常検知を回避する。既報のBigBear関連事案は本日時点でreported-ai-attacks.md・reported-apts.mdに未登録のため新規言及とする。国内組織への影響は本日時点で確認されていない。
+参照: https://www.bleepingcomputer.com/news/security/bigbear-microsoft-365-phishing-service-bypassed-mfa-at-258-organizations/
+・[トレンド記事] JSCeal: 盗取Cookieによるセッションリプレイ攻撃でGoogle認証を回避するJavaScriptマルウェア
+コンパイル済みV8 JavaScript（JSC）形式のマルウェア『JSCeal』が、感染端末から窃取したCookieを用いてGoogleアカウントのブラウザセッションを再構築し、認証を経ずにアカウントへアクセスするセッションリプレイ攻撃機能を備えていることが報じられた。JSCealは複数のChromiumベースブラウザから認証情報・Cookieを窃取するモジュールを持ち、暗号資産サービス向けの通信改ざん機能も併載する。偽の暗号資産取引サイト（Facebook/Google広告経由の偽TradingViewインストーラ配布）で拡散するとされる。ペイロードはjavascript-obfuscatorによりRC4文字列保護・制御フロー平坦化等で難読化されている。国内組織への影響は本日時点で確認されていない。
+参照: https://thehackernews.com/2026/09/jsceal-malware-can-bypass-google.html
+・[トレンド記事] PEEP: Chrome/Edgeを偽装ブックマーク拡張機能でポストコンプロマイズ・バックドア化するツールキット
+Chromium系ブラウザ（Chrome/Edge）を標的とするポストコンプロマイズ型のバックドアフレームワーク『PEEP』が報告された。インストーラはChromiumの『Secure Preferences』整合性値を偽造することでウェブストア審査・ユーザー確認を経ずに拡張機能を直接プロファイルへ注入し、『Smart Bookmarks』（拡張ID: ejkndncpkdcjcikfhiamcdehdoegilbj）を偽装する。ブラウザ内で完結する操作（スクリーンショット・クリップボード・JavaScript注入）はブラウザ内で、OSアクセスを要する操作は補助実行ファイル（nm_host.exe）経由で実行し、閲覧履歴・Cookie・アクティブタブ情報等を窃取する。C2（206.237.30[.]232 / xfjcc[.]fun）へ30秒間隔でポーリングする。初期侵入手段自体は持たない純粋なポストコンプロマイズツールで、ソースコード中の中国語アーティファクトから中国語話者系の関与が示唆されているが帰属は未確定。国内組織への影響は本日時点で確認されていない。
+参照: https://thehackernews.com/2026/09/peep-turns-chrome-and-edge-into-post.html
+・[トレンド記事] 研究者『Nightmare Eclipse』がCrowdStrike/Nvidia/Avast向けゼロデイPoCを立て続けに公開
+Windows脆弱性の連続開示で既知の研究者『Nightmare Eclipse』（別名Chaotic Eclipse/Infinite Nightmare/MSNightmare）が、標的をセキュリティ・GPUベンダー製品へ拡大し、CrowdStrike Falcon向け権限昇格『FalconFlank』（Officeマクロ無害化機能の悪用によるSYSTEM権限奪取）・Avastサンドボックス向け『PrettyPrague』（AVG/Norton等GenDigital系製品にも影響し得るサンドボックス脱出）・NVIDIA向けDoS『GreenSection』の3件のゼロデイPoCを立て続けに公開した。セキュリティ研究者Kevin Beaumont氏はFalconFlank等の権限昇格PoCが実際に動作することを確認したと述べている。各ベンダーの正式な修正状況は本日時点で確認できていない。国内組織への影響は本日時点で確認されていない。
+参照: https://www.securityweek.com/nightmare-eclipse-drops-crowdstrike-nvidia-avast-zero-day-exploits/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用APT活動なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（帰属未確定・窃取済み認証情報の悪用） / 三井不動産は、盗取された認証情報を用いた第三者による社内システムへの不正アクセスを2026-08-28に検知し、2026-09-01に公表した。社員情報（氏名・メールアドレス・所属・役職）約1.9万件と社外関係者情報（メールアドレス・表示名）約3.6万件、合計最大約5.5万件が閲覧された可能性がある。認証情報自体がどの経路で窃取されたかは調査中。同社は該当認証情報を無効化し監視を強化、個人情報保護委員会等へ通知済み。攻撃者・侵入手口の詳細は非公開。単一ソース・単一組織のため軸P1/軸Q1にとどまるが、国内組織への侵害確認により注目動向として採用する。
+採用契機: 国内組織侵害確認（V）。帰属信頼度: 未確定。
+推奨アクション: 漏洩した可能性のあるメールアドレス宛のなりすましメール・フィッシングへの注意喚起を行う。認証情報の使い回しがないか自組織でも点検する。
+参照: https://scan.netsecurity.ne.jp/article/2026/09/07/56140.html
+
+・不明（帰属未確定・ランサムウェア恐喝グループ） / 塗料メーカーのT&K TOKAは、第三者による不正アクセスを受けランサムウェアに感染したことを2026-08-28に公表した（本日改めて報道）。サーバ・PC上のファイル暗号化が確認され、一部業務が停止している。顧客情報への影響可能性も含め被害範囲・原因を調査中で、警察へ通報し捜査に協力している。攻撃者名・侵入経路は非公開。単一ソース・単一組織のため軸P2/軸Q1にとどまるが、国内組織への侵害確認（ランサムウェアによる業務停止）により注目動向として採用する。
+採用契機: 国内組織侵害確認（V）。帰属信頼度: 未確定。
+推奨アクション: バックアップの世代管理・オフライン保管状況を点検する。取引先として影響を受ける可能性がある場合は同社からの公式連絡を確認する。
+参照: https://scan.netsecurity.ne.jp/article/2026/09/07/56141.html
+
+・不明（帰属未確定・攻撃手口非公開） / 01銀行は、2026-08-17に検知・2026-08-27に公表した不正アクセスにより、最大100社分の顧客識別情報・メールアドレスが漏えいした可能性があると発表した。具体的にどの顧客が影響を受けたかは特定できていない。同行は不正アクセス経路を遮断し、当該手法は現在実行不可能な状態にしたと説明、外部専門家による調査を継続している。攻撃者・侵入手口の詳細は非公開。単一ソース・単一組織のため軸P1/軸Q1にとどまるが、国内組織（金融機関）への侵害確認により注目動向として採用する。
+採用契機: 国内組織侵害確認（V）。帰属信頼度: 未確定。
+推奨アクション: 取引先金融機関からの公式通知を確認し、なりすましメールへの注意喚起を行う。
+参照: https://scan.netsecurity.ne.jp/article/2026/09/07/56142.html
+
+・不明（帰属未確定・BIツールの脆弱性悪用） / VOISINGは、自社が利用する内部BIツールの脆弱性を突いた外部からの不正アクセス（2026-08-10未明開始）により、2026-08-16夜にデータの不正ダウンロードを許したことを公表した。侵害は同日深夜に検知され、翌未明にシステム停止・ネットワーク遮断を完了した。氏名・住所・電話番号・メールアドレス・生年月日・性別・購入履歴・決済情報・会員状況・推しタレント選択情報等、複数サービスの顧客データが対象となった可能性がある。件数は調査中。同社はパッチ適用・全パスワード/アクセスキーの無効化と再発行、外部専門家によるフォレンジック調査を実施している。単一ソース・単一組織のため軸P2/軸Q1にとどまるが、国内組織への侵害確認により注目動向として採用する。
+採用契機: 国内組織侵害確認（V）。帰属信頼度: 未確定。
+推奨アクション: 決済情報を含む可能性があるため対象顧客への注意喚起（不正利用モニタリング）を確認する。自組織のBIツールのパッチ適用状況・外部露出を点検する。
+参照: https://scan.netsecurity.ne.jp/article/2026/09/07/56144.html
+
+・不明（帰属未確定・VPN経由ランサムウェア） / ロジックベインは、2025-12-08に検知した社内ネットワークへの不正アクセス事案について第4報を2026-08-17に公表した。フォレンジック調査により、攻撃者がVPN接続経由で社内ネットワークへ不正アクセスしランサムウェアを実行したことが判明。ダークウェブ上のリークサイトで17,559名分（氏名・所属・メールアドレス・住所・電話番号）の個人情報流出が確認されたほか、氏名・所属先・メールアドレス・契約情報・製品評価情報・展示会来場者情報等を含む約97,338名分が流出のおそれがあるとされる。同社はEDR導入・アクセス制御再設計・認証強化・ログ体制強化・専門部署設置・ISO27001認証取得等の再発防止策を進めており、対象者への個別通知を順次進めている。単一ソースだが、VPN侵害からランサムウェア展開・ダークウェブ流出確認までフォレンジックで裏付けられた具体的な攻撃チェーンであり、軸P3/軸Q2（複数カテゴリの個人・関係者データ、件数規模大）として国内組織への侵害確認により注目動向として採用する。
+採用契機: 国内組織侵害確認（V）。帰属信頼度: 未確定。
+推奨アクション: 自組織のVPN機器の認証強化（MFA必須化）・パッチ適用状況を点検する。取引先・関係者として通知を受けた場合はフィッシング・なりすましに注意する。
+参照: https://scan.netsecurity.ne.jp/article/2026/09/07/56145.html
+
+・不明（帰属未確定・攻撃手口非公開） / まんだらけは、2026-08-27に検知したサーバへの不正アクセスについて、2026-08-28午前6時までにECサイトで注文した顧客の氏名・住所・電話番号・メールアドレス等が閲覧された可能性があると公表した。同社は不正な取得・改ざん・削除の痕跡は確認していないとしつつ、警察・個人情報保護委員会へ報告し、通販サイト・オークションを一時停止してサーバを新環境で再構築、2026-09-05に通販再開、2026-09-07にオークション業務（グランドオークション）も再開した。攻撃者・侵入手口の詳細は非公開。単一ソース・単一組織のため軸P1/軸Q1にとどまるが、国内組織への侵害確認により注目動向として採用する。
+採用契機: 国内組織侵害確認（V）。帰属信頼度: 未確定。
+推奨アクション: 同社からの正式な通知を確認し、注文時登録情報を狙ったフィッシングに注意する。
+参照: https://www.security-next.com/189663
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+予報作成前に pipeline-forecast-verification.md のTier分類・確度適用条件・観測可能性ゲート（M1）を確認済み。
+
+・予報1: Adobe Commerce / Magento『StyleSmuggler』未パッチ環境はAPSB26-146の緊急適用と侵害痕跡確認を24時間以内に実施すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1
+検証窓: fast_72h
+根拠:
+  Evidence: [Sansec 2026-09-07] Adobe Commerce/Magentoのテンプレートエンジン特殊要素無害化不備（CVE-2026-75650・CWE-1336）を『StyleSmuggler』と命名し2026-09-04からの実悪用を確認。[Adobe/SecurityWeek 2026-09-07] Adobeが実悪用（in the wild）を認めAPSB26-146緊急ホットフィックスを公開。
+  過去パターン: CVSS10.0・広く使われるECプラットフォームでの実悪用確認は過去のKEV初回追加事例（Langflow・LiteLLM等）と同様のパターンで、確認から数日以内にKEVへ追加される例が複数観測されている（2026-09-02分レポート参照）。
+  脅威情報: Sansecの継続観測でRust製バックドアの命名がkworker偽装からfc-cache偽装へ変化しており、攻撃者側が検知回避のため実装を継続的に更新している。
+  確度アンカー: EPSSパーセンタイル 取得不能 / KEV登録状態 未登録 / SSVC決定 Act / Automatable yes
+推定部分: （推定）Adobeが実悪用を公式に認めた事例は過去にCISAのKEV追加へつながる傾向があるが、CISAの内部審査・優先順位付けの実際のタイミングは本予報の確認事項ではなく、対象がECプラットフォーム（連邦政府機関での使用は限定的）であるため72時間以内に追加されない可能性も相応にある。
+先回り監視: 自組織のMagento/Adobe Commerce環境で、支払い失敗通知メール生成処理の異常な頻発、Webサーバプロセスを親に持つkworker/fc-cache偽装プロセスの生成、テンプレート値への{{}}や<?php等の混入。
+的中判定: 対象CVE CVE-2026-75650 が CISA KEV カタログへ dateAdded が 2026-09-08〜2026-09-11（両端を含む）の範囲で初回追加されること（一次ソース: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json のJSON本体）。
+
+・予報2: N-able N-central未パッチ環境はHotfix 4の緊急適用とインターネット露出確認を24時間以内に実施すべき
+Tier: 1
+確度: 低
+観測出口クラス: E1
+検証窓: fast_72h
+根拠:
+  Evidence: [N-able Status 2026-09-06] N-central未認証コードインジェクション（CVE-2026-86218・CVSS v4.0 10.0）のインシデント通知を公開し実悪用の観測を示唆。[BleepingComputer 2026-09-07] Shadowserverがインターネット露出N-centralサーバ約1,500台を確認したと報道。
+  過去パターン: 同一製品ラインの先行事例CVE-2026-18577・CVE-2026-18556（2026年8月）はいずれもCISAが公表から1〜2日以内にKEVへ新規追加している。同一ベンダー・同一製品での短期KEV追加パターンが直近で2件連続している。
+  脅威情報: N-central は2026年8月から今回で3回目の脆弱性波・5週間で4回目のホットフィックスであり、MSP経由の顧客波及リスクを持つRMM製品として継続的に狙われている。
+  確度アンカー: EPSSパーセンタイル 34.3% / KEV登録状態 未登録 / SSVC決定 Attend / Automatable yes
+推定部分: （推定）過去の同製品ラインでのKEV追加パターンから類推しているが、N-able自身は後日『本番環境での悪用の証拠は確認していない』と表現を修正しており、実悪用の確度は先行2件（CVE-2026-18577等）と比べて弱い。EPSSパーセンタイルも34.3%と低く（公開直後のため）、定量ゲートDのEPSS条件（≥0.90）を満たさないため確度は低にとどめる。
+先回り監視: 自組織のN-centralサーバへの管理セグメント外からのアクセス試行、N-centralプロセスを親とする未知の子プロセス生成。
+的中判定: 対象CVE CVE-2026-86218 が CISA KEV カタログへ dateAdded が 2026-09-08〜2026-09-11（両端を含む）の範囲で初回追加されること（一次ソース: https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json のJSON本体）。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【戦術予報 TF-1（shadow・第1段階）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。
+追跡中の脆弱性状態: 139件（状態分布: {'ACTIVE_EXPLOITATION': 55, 'DISCLOSED': 64, 'POC_PUBLIC': 20}）
+shadow候補: 84件 / 棄権: 110件（第1段階は個別候補を公開しない）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・不明（DPRK nexus・APT37との重複あり・帰属信頼度: 中、Rapid7） / RIS-2026-TedBackdoor-HAProxyDPRK → low_score (Rapid7が単一ベンダーとして帰属（新規マルウェアファミリー発見）・韓国メディア/自動車セクターへの集中攻撃だが軸P6/軸Q5にとどまり本編/注目動向の閾値（軸P8以上）未達。国内組織への侵害確認等の参考A昇格トリガーもないため除外。Section2トレンド記事(TREND-2026-09-08-001)で別途言及。)
+・不明（帰属未確定・Arctic Wolf追跡番号PREY-0058、UNC6671と手口重複） / RIS-2026-PREY0058-M365Vishing → low_score (Arctic Wolfによる単一ベンダー報告・米国複数セクターへの標的化だが軸P6/軸Q5にとどまり閾値未達。国内組織への侵害確認等の参考A昇格トリガーもないため除外。Section2トレンド記事(TREND-2026-09-08-002)で別途言及。)
+
+本日の集計:
+APT — 本編0件 / 注目動向6件 / 除外2件

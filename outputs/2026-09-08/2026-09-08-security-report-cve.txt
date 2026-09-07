@@ -1,0 +1,220 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-08 09:00 JST
+調査期間: 2026-09-07 07:00 〜 2026-09-08 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-75650 / Adobe Commerce / Magento Open Source（通称: StyleSmuggler）
+対象: 2.4.4〜2.4.9（Adobe Commerce および Magento Open Source の全サポートバージョン）。緊急ホットフィックス提供済み
+------------------------------------------------------------
+
+優先度: 緊急（パッチ提供済み・侵害痕跡確認必須）
+CVSS: 10.0 (Critical)
+状態: 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み（APSB26-146 緊急ホットフィックス（2026-09-07公開））
+
+【24時間以内の変化】
+[Sansec 2026-09-07] Adobe Commerce / Magento のテンプレートエンジンにおける特殊要素の無害化不備（CWE-1336）をStyleSmugglerと命名し詳細解析を公開。2026-09-04から実際の攻撃が開始されていたと報告。
+[BleepingComputer 2026-09-08] 全バージョンのMagento/Adobe Commerceに影響するゼロデイが実悪用されRust製Linuxバックドアの展開に使われていると報道。
+[Adobe / SecurityWeek 2026-09-07] Adobeが実悪用の事実（in the wild）を認め、APSB26-146として緊急ホットフィックスを公開したことが判明。
+
+【概要】
+Adobe Commerce および Magento Open Source のテンプレートエンジンが、注文の支払い失敗通知メール生成処理に渡す特殊要素（'styles' プロパティ経由のテンプレートディレクティブ）を適切に無害化していない（CWE-1336）。攻撃者は失敗レポートを生成させる形でPHPコードをテンプレートへ注入し、続いて支払い失敗通知メールの生成処理をトリガーすることで注入済みコードを実行させる2段階の攻撃を成立させる。ユーザー操作は不要で、認証なしにリモートから任意コード実行に至る（CVSS 3.1: 10.0、AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H）。Sansecは攻撃が2026-09-04から観測されていたとし、侵害成功後は/proc配下のプロセス名を[kworker/u:8:0]のようなLinuxカーネルワーカーに偽装する小型のRust製バックドアが常駐プロセスとして展開され、2026-09-06観測分ではfc-cache（フォントキャッシュユーティリティ偽装）へ命名が変化していることを確認した。Adobeは2026-09-07にAPSB26-146として緊急ホットフィックスを公開し、実悪用（in the wild）の事実を認めている。2026-09-08時点でCISA KEVへの登録・EPSSスコアの算出はいずれも未確認（公開直後のため）。日本国内での被害報道は本日時点で確認されていない。
+
+攻撃の流れ:
+1. 注文の支払い失敗を発生させ、失敗レポート生成処理を経由して 'styles' プロパティにPHPコードを含むテンプレートディレクティブを注入する（第1段階）。
+2. 注入済みテンプレートを実行させるトリガーとして、Magentoの支払い失敗通知メール生成処理を発火させ、注入済みPHPコードを実行させる（第2段階）。
+3. 実行に成功した任意コードから、プロセス名をLinuxカーネルワーカー（[kworker/u:8:0]）やフォントキャッシュユーティリティ（fc-cache）に偽装した小型Rust製バックドアをバックグラウンドプロセスとして常駐させる。
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・APSB26-146の緊急ホットフィックスを即時適用する。適用前はWAFで支払い失敗通知メール生成に関わるエンドポイント・テンプレートレンダリングパスへの異常な入力を検査する。
+・外部WAF（Cloudflare等）でテンプレートインジェクション兆候（'styles'パラメータへの{{}}/${}等のテンプレート構文混入）をブロックする暫定ルールを適用する。
+・サーバ上のプロセス一覧を[kworker/u:8:0]・fc-cache 等の偽装名を含め棚卸しし、正規のカーネルスレッド数・フォントキャッシュプロセスの起動元（実行パス）と照合する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Magento/Adobe Commerceのアプリケーションログにおけるテンプレートインジェクション兆候と、Webサーバプロセスを親とする不審な子プロセス生成、カーネルワーカー/フォントキャッシュを偽装したプロセスを監視する
+Splunk SPL: index=web_access sourcetype=magento_app (uri_path="*checkout*" OR uri_path="*payment*") payload="*styles*" | regex payload="(?i)(\\{\\{|\\$\\{|<\\?php)" | stats count by src_ip, uri_path
+Splunk SPL: index=edr (sourcetype=sysmon EventCode=1 OR sourcetype=linux_audit type=EXECVE) (process_name="kworker*" OR process_name="fc-cache") parent_process_name IN ("php-fpm","httpd","nginx","apache2") | stats count by host, process_name, parent_process_name
+→ 正規のfc-cacheはフォントキャッシュ更新時にのみ短時間動作し、Webサーバプロセスの子として持続稼働することはない。Webサーバ系プロセスを親に持つkworker/fc-cache名のプロセスは高確度で侵害を示す。
+
+【参照】
+https://sansec.io/research/stylesmuggler-0day
+https://www.bleepingcomputer.com/news/security/magento-stylesmuggler-zero-day-exploited-to-deploy-linux-backdoor
+https://www.securityweek.com/adobe-commerce-zero-day-exploited-to-backdoor-online-stores
+https://thehackernews.com/2026/09/unpatched-magento-and-adobe-commerce.html
+https://helpx.adobe.com/security/products/magento/apsb26-146.html
+
+------------------------------------------------------------
+2. CVE-2026-86218 / N-able N-central（RMM/リモート監視管理プラットフォーム）
+対象: N-central 2026.3 Hotfix 4（2026.3.1.14）未満の全ビルド
+------------------------------------------------------------
+
+優先度: 緊急（パッチ提供済み・侵害痕跡確認必須）
+CVSS: 10.0 (Critical)
+状態: 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み（N-central 2026.3 Hotfix 4（2026.3.1.14））
+
+【24時間以内の変化】
+[N-able Status 2026-09-07] N-central 2026.3 Hotfix 4（CVE-2026-86218）のインシデント通知を公開。未認証リモートコード実行が実悪用されていると明記。
+[BleepingComputer 2026-09-07] N-ableが実運用環境での悪用を確認しておらず慎重な表現に変わった一方、Shadowserverがインターネット露出N-centralサーバ約1,500台を確認したと報道。
+[The Hacker News 2026-09-07] 8月〜9月の第3波として、5週間で4回目のN-centralホットフィックスとなったことを報道。
+
+【概要】
+N-ableのRMM（遠隔監視管理）製品N-centralに、未認証の攻撃者がHTTPで到達可能であればネットワーク権限を持たずにサーバプロセス上へ任意コードを注入・実行できる静的コードインジェクションの脆弱性（CWE-94）が存在する（CVSS v4.0: 10.0）。N-ableは2026-09-06にインシデント通知を公開し、当初「実際に悪用が観測されている」としていたが、後日「本番環境での悪用の証拠は確認していない」と表現を修正した経緯がある。本脆弱性は2026年8月から9月にかけて発生した3回目の脆弱性波であり、5週間で4回目のホットフィックスとなる。直近では2026-09-05にHF3として2件の認証バイパス（CVE-2026-86206・CVE-2026-86207、いずれもCVSS v4.0で6.9/7.7、実悪用は確認されていない）も修正されている。N-ableは2026-09-06にHotfix 4（2026.3.1.14）を公開し、ホスティング型のNCOD環境は既に適用済みとしている。Shadowserverは、インターネットへ露出したN-centralサーバを約1,500台確認しており、米国・欧州が中心。RMM製品はMSP経由で多数の顧客組織へ波及するサプライチェーンリスクを持つため、影響範囲は露出台数以上に及ぶ可能性がある。2026-09-08時点でCISA KEV未登録、EPSSパーセンタイル34.3%（公開直後のため低め・M3の確度アンカーには不足）。日本国内での被害報道は本日時点で確認されていない。
+
+攻撃の流れ:
+1. インターネットへ露出したN-central（HTTP到達可能）を発見する。
+2. 認証情報・ネットワーク特権を持たない状態で、細工したリクエストによりサーバプロセスへ任意コードを注入し実行する（未認証・単一ステップ）。
+3. N-central経由でMSP配下の管理対象エンドポイント群への横展開・侵害拡大のリスクがある（RMM製品特有のサプライチェーン波及、確認された実害は本日時点で非公開）。
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・N-central 2026.3 Hotfix 4（2026.3.1.14）へ即時アップグレードする。
+・パッチ適用までの間、N-centralサーバをインターネットから直接到達不能にする（VPN/許可リスト経由アクセスへ限定）。
+・Shadowserver等の外部スキャンサービスで自組織のN-centralインスタンスの外部露出有無を確認する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・N-centralサーバプロセスからの予期しない子プロセス生成・外部向け通信、および管理コンソールへの認証なしアクセス試行を監視する
+Splunk SPL: index=edr sourcetype=sysmon EventCode=1 parent_process_name="*n-central*" NOT process_name IN ("expected_process_list") | stats count by host, process_name, parent_process_name
+Splunk SPL: index=web_access sourcetype=n_central_access status=200 uri_path="*/api/*" NOT Authorization=* | stats count by src_ip, uri_path
+→ N-centralサーバプロセスを親とする未知の子プロセス生成は侵害の強いシグナル。RMM製品の性質上、検知時は当該N-central配下の全管理対象エンドポイントの棚卸しを優先する。
+
+【参照】
+https://status.n-able.com/2026/09/06/n-central-2026-3-hotfix-4-cve-2026-86218/
+https://www.bleepingcomputer.com/news/security/n-able-patches-max-severity-n-central-flaw-amid-ongoing-attacks/
+https://thehackernews.com/2026/09/n-able-issues-fourth-n-central-hotfix.html
+https://forkast.news/n-able-n-central-cvss-10-0-pre-auth-rce-marks-third-attack-wave-in-six-weeks/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: 国内ベンダー（日本電気（NEC））がアドバイザリを発行
+
+・CVE-2026-16876 / NEC UNIVERGE IX-R / IX-V シリーズルータ
+CVSS: 9.4 状態: 特記事項なし（実悪用・PoC・KEV登録いずれも未確認）
+
+【24時間以内の変化】
+[NVD 2026-09-07] CVE-2026-16876がNVDへ新規公開（CVSS v4.0 9.3 Critical・CWE-306・CNA: NEC）。2026-08-26分レポートで参考A採用済みの既報事案だが、NVD公式レコード反映（条件B）を契機に再採用。
+
+【概要】
+NEC製ルータUNIVERGE IX-R/IX-VシリーズのWebGUIに、重要な機能に対する認証の欠如（CWE-306）の脆弱性がある。攻撃者はWebGUIが送受信するメッセージを改ざんし機器へ送信することで認証を回避し、任意のCLIコマンドを実行できる。リモートから認証なしで悪用可能（CVSS v3.0: 9.4）。報告者はSophos Ltd.の榎田幸次朗氏。本脆弱性はNECが2026-08-21付セキュリティ情報NV26-005・JVNがJVN#81414813として既に開示しており、本パイプラインでも2026-08-26分レポートで参考A採用済み（既報）である。本日、この脆弱性のNVD公式レコード（CNA: NEC）がCVSS v4.0 9.3 Criticalで新規公開され、Step 0.7の網羅スイープ候補として検出されたため、NVD反映という条件Bの変化を契機に参考A再採用として記録する。対策は変わらず、対策済みソフトウェアへの更新、またはWebGUI自体の無効化（`no http-server ip enable`）。本日時点で実悪用・PoC公開はいずれも確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・UNIVERGE IX-R/IX-VのWebGUI（HTTP/HTTPS管理インタフェース）への外部からのアクセスと、CLIコマンド実行ログの異常を監視する
+Splunk SPL: index=network sourcetype=nec_univerge (dest_port=80 OR dest_port=443) NOT src_ip IN ("管理端末セグメント") | stats count by src_ip, dest_ip
+→ WebGUI管理ポートへ管理端末セグメント以外からのアクセスがあれば侵害試行の疑いとして扱う。
+
+【参照】
+https://jvn.jp/jp/JVN81414813/index.html
+https://jpn.nec.com/security-info/secinfo/nv26-005_en.html
+https://nvd.nist.gov/vuln/detail/CVE-2026-16876
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-16876 — 24時間窓内に発行確認されず
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-86299 / Linksys RE7000（Wi-Fiエクステンダー）
+CVSS: 9.9
+Linksys RE7000（Wi-Fiエクステンダー、ファームウェア2.0.15）のCGIハンドラ/cgi-bin/json.cgi?PingTestにおいて、pingTestIp/pingTestPktSize/pingTestTimes引数の無害化不備によりOSコマンドインジェクションが可能（CWE-78）。リモートから認証なしで任意コマンドを実行できる（CVSS v3.1: 9.9）。CNAはアグリゲータのVulDBで、エクスプロイトが既に公開されていると記載されているが、独立した実悪用の報告・PoCの直接的な現物確認は本日時点で得られていない（VulDB記載内容の裏取りは限定的）。ベンダーからの対策情報は本日時点で確認できていない（EOL製品の可能性）。国内報道・KEV登録は確認されていない。
+IoC: 確認されず
+
+監視: Linksys RE7000のCGI管理インタフェース（/cgi-bin/json.cgi）への外部アクセスを監視する
+Splunk SPL: index=network sourcetype=access_combined uri_path="*/cgi-bin/json.cgi*" uri_query="*PingTest*" | stats count by src_ip, dest_ip
+→ 家庭用/SOHO機器のため企業SIEMでの直接監視対象になりにくい。境界に設置されている場合は当該CGIパスへの外部到達性自体を遮断する。
+
+参照: https://vuldb.com/?id.CVE-2026-86299
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-86299
+
+・CVE-2026-61410 / Dell SCG（Secure Connect Gateway）5.0
+CVSS: 9.4
+Dell SCG（Secure Connect Gateway）5.0は、Dell製品の遠隔サポート・テレメトリ収集のために顧客ネットワーク境界に設置される中継アプライアンスである。認可（Authorization）の欠如（CWE-862）により、未認証のリモート攻撃者が本体機能を悪用してコマンドを実行できる状態にある（CVSS v3.1: 9.4）。Dellはこれを「重大」と分類し、境界設置型の中継アプライアンスという性質上、攻撃者にとってネットワーク侵入の初期足がかりとなり得ることから境界機器影響として評価した。Dellは修正済みバージョン（Appliance 5.36.00.16 / Application 5.36.00.00）を提供済み。同一アドバイザリ内の複合脆弱性としてCVE-2026-80238（権限の実行、ローカル/SSHアクセス前提）も同時公開されている。実悪用・PoC公開の報告は本日時点で確認されていない。
+IoC: 確認されず
+
+監視: SCGアプライアンスへの管理セグメント外からのアクセスと、SCGプロセスを起点とする予期しないコマンド実行を監視する
+Splunk SPL: index=network sourcetype=dell_scg NOT src_ip IN ("管理セグメント","Dellサポートネットワーク") | stats count by src_ip, dest_ip
+→ SCGは通常Dell向けテレメトリ送信のみを行うため、管理セグメント外からのアクセスやSCGを親とする不審な子プロセスは侵害の兆候として扱う。
+
+参照: https://www.dell.com/support/kbdoc/en-us/security-advisories
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-61410
+
+・CVE-2026-80238 / Dell SCG（Secure Connect Gateway）5.0
+CVSS: 9.3
+Dell SCG 5.0に、不要な権限での実行（CWE-250）に起因する保護機構バイパスの脆弱性がある。SSH等でローカルアクセス権を持つ低権限オペレータが、この脆弱性を悪用して保護機構を回避できる（CVSS v3.1: 9.3、AV:Lのためリモートから直接悪用はできない）。CVE-2026-61410（本編参照）と同一のDellアドバイザリ内で同時公開された複合脆弱性であり、修正済みバージョンも共通（Appliance 5.36.00.16 / Application 5.36.00.00）。攻撃前提としてローカル/SSHアクセスを要するため、CVE-2026-61410単体よりも悪用条件は限定的である。
+IoC: 確認されず
+
+監視: SCGアプライアンスへのSSHログインとその後の権限昇格挙動を監視する
+→ CVE-2026-61410のエントリを参照。
+
+参照: https://www.dell.com/support/kbdoc/en-us/security-advisories
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-80238
+
+・CVE-2026-67276 / MikroTik RouterOS（SSHサービス・MikroTrick攻撃連鎖）
+CVSS: 9.2
+2026-09-06分レポートでゼロデイ特報として採用したMikroTik RouterOSのSSH認証バイパス連鎖（CVE-2026-67276: RSA公開鍵検証不備によるSSH認証バイパス、CVE-2026-86060: SSHログイン引数処理不備による権限昇格、CERT.PL命名『MikroTrick』）について、Help Net Security・The Hacker News・GBHackers等の追加ソースが実悪用の継続を報じた。新たにCVE-2026-67277（RouterOSのbandwidth-testサービスが、対応する主セッションの認証完了前に関連btest接続を受理してしまう不備。未認証クライアントがIPv4 UDPテストを開始でき、`random-data=false`指定時にはカーネルパケットバッファの未初期化領域がそのまま送信され、別の未認証クライアントによるメモリ内容の窃取・機器のクラッシュ/再起動につながる。CVSS v4.0: 8.8）が同一MikroTikアドバイザリ内の複合脆弱性としてNVDへ新規公開された。CVE-2026-67276本体については、2026-09-06付でCISA KEVへの初回追加を的中条件とする攻撃予報fc-20260906-1（確度低・期限2026-09-09）が既に発行済みであり、本日時点でKEVへの追加は確認されていない（週次検証で正式判定）。
+IP: 82.192.72.4
+IP: 103.102.31.18
+
+監視: RouterOSのsyslogにおける禁止文字始まりユーザー名でのログイン失敗、および既知攻撃元IPからのアクセスを監視する（詳細は2026-09-06分レポートのゼロデイ特報エントリを参照）
+Splunk SPL: index=network sourcetype=mikrotik ("login failure for user -2" OR "login failure for user -") | stats count by host
+→ 2026-09-06分エントリと同一の検知ロジックを継続適用する。bandwidth-testサービス（CVE-2026-67277）については未認証UDPテストの新規セッション生成を追加監視する。
+
+参照: https://www.helpnetsecurity.com/2026/09/07/mikrotik-routeros-ssh-vulnerabilities-exploited/
+参照: https://thehackernews.com/2026/09/attackers-hijack-mikrotik-routers.html
+参照: https://cert.pl/en/posts/2026/09/vulnerabilities-in-mikrotik-routeros-actively-exploited/
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-67277
+
+・CVE-2026-13182 / Progress Telerik UI for ASP.NET AJAX（RadAsyncUpload padding-oracleチェーン）
+CVSS: 7.5
+Progress Telerik UI for ASP.NET AJAX（2026.2.708未満の全バージョン）のRadAsyncUploadコンポーネントに、暗号化されたクライアント状態の処理をめぐる4件の連鎖脆弱性がある。中核となるCVE-2026-13182はパディングオラクル脆弱性（CWE-209）で、攻撃者が暗号文を繰り返し改変しサーバの応答（復号失敗かJSON解析失敗か）を観測することでPKCS#7パディングの妥当性を判定でき、暗号鍵を持たずに保護データを1バイトずつ復元できる。これにCVE-2026-13181（偽装アップロードメタデータによる型解決の悪用でRCEに至る）・CVE-2026-13183（タイミング差による暗号妥当性の漏洩）・CVE-2026-13184（ConfigurationHashKey未設定時のデフォルト鍵へのフォールバック）を組み合わせることで、未認証の攻撃者がリモートコード実行に至る。Progressは2026-07-08に2026.2.708（2026 Q2 SP1）で修正し、2026-07-22にCVE群とアドバイザリを公開済み。2026-09-07、セキュリティ企業TantoSecのMarcio Almeida氏が、コマンドラインツール（telerik-rau-exploit）とWebシェル設置型・メモリ常駐型の2種の実行ペイロードを含む実証コードを公開したことで、パッチ未適用環境に対する武器化されたエクスプロイトが誰でも利用可能な状態になった。実悪用の報告は本日時点で確認されていない。
+IoC: 確認されず
+
+監視: Telerik UI for ASP.NET AJAXを使用するアプリケーションのRadAsyncUploadエンドポイントへの異常な暗号文改変パターン（同一セッションからの高頻度リクエスト）を監視する
+Splunk SPL: index=web_access uri_path="*Telerik.Web.UI.WebResource.axd*" OR uri_path="*RadAsyncUpload*" | stats count by src_ip, uri_path | where count > 100
+→ パディングオラクル攻撃は同一エンドポイントへの大量の逐次リクエストとして観測される。短時間に数百〜数千件の異常アクセスがあれば侵害試行として扱う。
+
+参照: https://thehackernews.com/2026/09/telerik-ui-padding-oracle-bug-chained.html
+参照: https://tantosec.com/blog/2026/09/telerik-padding-oracle-to-shell/
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-13182
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-86296 (D-Link DIR-822A A_101（udhcpcd）) → low_score (CVSS10.0(v3.1)・VulDB(CNA)がudhcpcdのstrcpy起因スタックバッファオーバーフローとしてエクスプロイト公開済みと記載するが独立検証・実悪用報告は確認されず、対象は既にEOLの家庭用ルータで軸1=6点（CVSS+3・PoC(VulDB自己申告)+2・広く使われる製品+1）にとどまり参考A昇格トリガーもないため除外。)
+・CVE-2026-86297 (D-Link DIR-605 B1v202WWB03（tunnel_set_params）) → insufficient_evidence (EUVD独自層（euvd_only・NVD窓内公開はしているがNVD自身のCVSS判定では9.0未満のためNVD候補には非該当。EUVD側CVSSv4.0は9.2）。VulDB記載でも『攻撃は極めて複雑』『エクスプロイトの難易度は困難』と明記されており実用的な悪用証拠なし。軸1=3点・EOL家庭用ルータのため除外。)
+・CVE-2026-79697 (Advantech WISE-6610シリーズ（Basic Station証明書削除ハンドラ）) → low_score (CVSS9.9(v3.1)だが攻撃前提として低権限の認証（PR:L）を要し無認証RCEではない。EPSSパーセンタイル87.9%（2026-09-07）とやや高いが、PoC公開・KEV登録・実悪用いずれも未確認。軸1=4点（CVSS+3・広く使われる産業用IoTゲートウェイ+1）で除外。)
+・CVE-2026-79698 (Advantech WISE-6610シリーズ（Node-RED Libraryハンドラ）) → low_score (CVE-2026-79697と同一Advantechアドバイザリ内の複合脆弱性。CVSS9.9(v3.1)だが同様に低権限認証（PR:L）前提でPoC・KEV・実悪用いずれも未確認。軸1=4点で除外。)
+・CVE-2026-18922 (389 Directory Server（SASL PLAIN認証）) → low_score (CVSS9.8(v3.1)・Red Hat自社CNAによる公開だが、認証バイパスというより複雑な条件下でのID混同フローであり、悪用には特定の失敗バインド→成功バインドという条件が必要。PoC・KEV・実悪用いずれも未確認。軸1=3点で除外。)
+・CVE-2026-76578 (FreeIPA（自己管理OTPトークンACI）) → low_score (CVSS9.8(v3.1)・Red Hat自社CNA。未認証LDAPクライアントからの悪用が可能だが、別途追跡中の関連ACI評価不備との組み合わせが前提。PoC・KEV・実悪用いずれも未確認。軸1=7点（CVSS+3・未認証+3・広く使われる企業ID基盤+1点は不算入のため7点）で8点未満・参考A昇格トリガーもなく除外。)
+・CVE-2026-7861 (Next4Biz CSM（Customer Service Management）) → insufficient_evidence (CVSS9.8(v3.1)・デシリアライゼーションRCE。ベンダーは開示に応答なし（脆弱性記述に明記）。トルコの一企業向けCRM製品で国際的な普及度が低く、PoC・KEV・実悪用いずれも未確認。軸1=6点で除外。)
+・CVE-2026-6223 (Bahçelievler Muncipality BiHayat App) → low_score (CVSS9.4(v3.1)・トルコの一自治体向けアプリの認証試行回数制限不備。国際的な普及度・波及経路が極めて限定的でPoC・KEV・実悪用いずれも未確認。軸1=3点で除外。)
+・CVE-2026-86478 (JetBrains YouTrack Helpdesk) → low_score (CVSS9.8(v3.1)・自己申告メールアドレスによる未認証アカウント乗っ取り。認証バイパスとしてJetBrainsの2026-09-07セキュリティリリースで修正済みだがPoC・KEV・実悪用いずれも未確認。軸1=7点（CVSS+3・認証バイパス+3・広く使われる製品+1は僅差で不算入）で8点未満のため除外。パッチ適用を推奨。)
+・CVE-2026-86480 (JetBrains Hub) → low_score (CVSS9.8(v3.1)・未認証の攻撃者が信頼済みサービスとして登録しスーパーユーザー権限を取得可能。JetBrains Hub は複数JetBrains製品のSSO基盤であり実務上の波及範囲は大きいが、PoC・KEV・実悪用いずれも未確認のため軸1=7点（CVSS+3・認証バイパス+3・広く使われる製品+1は僅差で不算入）で8点未満のため除外。影響範囲の大きさに鑑みパッチ適用を強く推奨。)
+・CVE-2026-86426 (LibreNMS（REST API認証バイパス）) → low_score (CVSS9.2(v4.0)・数値型トークンとのMySQL型強制変換を突く認証バイパス。26.8.0で修正済みだがPoC・KEV・実悪用いずれも未確認。軸1=7点（CVSS+3・認証バイパス+3・広く使われるOSS監視ツール+1は僅差で不算入）で8点未満のため除外。)
+
+本日の集計:
+CVE — ゼロデイ特報2件 / 本編0件 / 参考A1件 / 参考B5件 / 除外11件
