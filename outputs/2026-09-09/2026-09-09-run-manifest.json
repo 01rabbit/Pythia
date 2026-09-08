@@ -1,0 +1,178 @@
+{
+  "_schema_version": "1.0",
+  "_run_date": "2026-09-09",
+  "_comment": "日次実行の各ステップの入出力・時刻・内容ハッシュ・版。予報の先見性を第三者が追跡できるようにするための実行記録（改善計画 §10）。",
+  "steps": [
+    {
+      "step": "nvd_window_sweep",
+      "status": "ok",
+      "started_at_utc": "2026-09-08T22:35:00Z",
+      "ended_at_utc": "2026-09-08T22:37:37Z",
+      "version": "nvd_window_sweep/1.0",
+      "inputs": [
+        "https://services.nvd.nist.gov/rest/json/cves/2.0",
+        "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+        "https://euvdservices.enisa.europa.eu/api"
+      ],
+      "outputs": [
+        {
+          "path": ".cache/daily-security-intel/2026-09-09/step1-sweep.json",
+          "sha256": "07ceff01e20d0e6a4f432e4b8a48d0acdfd265445ecbb042642f448b9242dbab"
+        }
+      ]
+    },
+    {
+      "step": "web_research",
+      "status": "ok",
+      "started_at_utc": "2026-09-08T22:40:00Z",
+      "ended_at_utc": "2026-09-08T23:00:00Z",
+      "version": "manual/1.0",
+      "inputs": [],
+      "outputs": [],
+      "note": "WebSearch/WebFetch（BleepingComputer/The Hacker News/CISA/SecurityWeek/GitHub/Hitachi等）を一次手段として使用。security-intel-collector/data/raw/の当日分（news-2026-09-08.json等）が本チェックアウトに存在しないため（SKILL.md Step0.5フォールバック）。"
+    },
+    {
+      "step": "security_report_generation",
+      "status": "ok",
+      "started_at_utc": "2026-09-08T23:00:00Z",
+      "ended_at_utc": "2026-09-08T23:00:00Z",
+      "version": "pipeline-3-weighting/1.0",
+      "inputs": [
+        ".cache/daily-security-intel/2026-09-09/step1-sweep.json"
+      ],
+      "outputs": [
+        {
+          "path": "outputs/2026-09-09/2026-09-09-security-report.json",
+          "sha256": "0a6f22d380c9bd828f80f1a6c32e255cf8abcdf3a078f0dd8b60f21f34f06db3"
+        },
+        {
+          "path": "outputs/2026-09-09/2026-09-09-security-report.txt",
+          "sha256": "6b1bff5a478593e74cfb96c9d02a085cca7a457daef311eaac2abbe174728959"
+        },
+        {
+          "path": "outputs/2026-09-09/2026-09-09-security-report-cve.txt",
+          "sha256": "3ac2e8d4caaa10fcf882e65550df7413f2cb7f3ad8a6a73a215991e357dba941"
+        },
+        {
+          "path": "outputs/2026-09-09/2026-09-09-security-report-zeroday-trends.txt",
+          "sha256": "64222f05dc3ce2e61d249b0de63a1725104a9b596c5c6e3712aec393b6f2a9d4"
+        },
+        {
+          "path": "outputs/2026-09-09/2026-09-09-security-report-ai.txt",
+          "sha256": "c3b311c6ced962b9b0f2206e9e0a146dcb9d9036aff699e6612771a289d2ec66"
+        },
+        {
+          "path": "outputs/2026-09-09/2026-09-09-security-report-soc.txt",
+          "sha256": "b13360543ef5dd3069f52af12c7a5ec3edf827767c1ed7d5201425663937978c"
+        }
+      ]
+    },
+    {
+      "step": "sweep_reconcile",
+      "status": "ok",
+      "started_at_utc": "2026-09-08T23:01:00Z",
+      "ended_at_utc": "2026-09-08T23:01:05Z",
+      "version": "nvd_window_sweep/1.0",
+      "inputs": [
+        ".cache/daily-security-intel/2026-09-09/step1-sweep.json",
+        "outputs/2026-09-09/2026-09-09-security-report.json"
+      ],
+      "outputs": [],
+      "note": "候補104件/未処理0件"
+    },
+    {
+      "step": "normalize_observations",
+      "status": "ok",
+      "started_at_utc": "2026-09-08T23:02:00Z",
+      "ended_at_utc": "2026-09-08T23:03:32Z",
+      "version": "01-normalize/1.2",
+      "inputs": [
+        "outputs/2026-09-09/2026-09-09-security-report.json"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/observations/2026/09/2026-09-09.json",
+          "sha256": "977c89da5d7d92be6330a289f4a6f4544ff680fb7a6cb5368b1a61dea7092222"
+        }
+      ]
+    },
+    {
+      "step": "regen_baseline",
+      "status": "ok",
+      "started_at_utc": "2026-09-08T23:03:40Z",
+      "ended_at_utc": "2026-09-08T23:03:45Z",
+      "version": "regen_baseline/1.1",
+      "inputs": [
+        "forecaster/observations/"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/baseline/technique-freq.json",
+          "sha256": "5d2e0dc10fe3fb7ac3a061be9005b29732edff3b1afe5833bd3f27dba8715702"
+        },
+        {
+          "path": "forecaster/baseline/group-activity.json",
+          "sha256": "54de9730e1dd9b81f1b4718ce6a6e5f8fb131bf8121d68ea45b73aa112a172d2"
+        }
+      ]
+    },
+    {
+      "step": "forecast_generation",
+      "status": "skipped",
+      "started_at_utc": "2026-09-08T23:04:00Z",
+      "ended_at_utc": "2026-09-08T23:04:00Z",
+      "version": "03-forecast/2.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/forecasts/daily/2026-09-09.json",
+          "sha256": "ae0d07ed749204269f4422f0551acec282c34319d296ec11ec6dc4b07a05dd85"
+        },
+        {
+          "path": "forecaster/forecasts/daily/2026-09-09.md",
+          "sha256": "822f1210e515b84a3e5959925267daddafbb3ffb0ccd9b82bf8f3f64cbefda27"
+        }
+      ],
+      "note": "Evidence Ledger（forecaster/evidence/manifests/2026/09/2026-09-09.json）欠落のためevidence_ids必須の新規v2.0予報を発行せず。forecasts:[]。"
+    },
+    {
+      "step": "tactical_tf1",
+      "status": "ok",
+      "started_at_utc": "2026-09-08T23:05:04Z",
+      "ended_at_utc": "2026-09-08T23:05:19Z",
+      "version": "tf1-shadow/1.0",
+      "inputs": [
+        "forecaster/observations/2026/09/2026-09-09.json"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/events/2026/09/2026-09-09.json",
+          "sha256": "24ccf5128719f598ecb7862e10a01eb44692a3597c16bb46aea7a41aaed661ad"
+        },
+        {
+          "path": "forecaster/state/tactical/2026/09/2026-09-09.json",
+          "sha256": "7498ff0211cbeb3c2db7ff9632d1ffcf899b687be11aab24102bed614185a40a"
+        },
+        {
+          "path": "forecaster/candidates/tactical/2026-09-09.json",
+          "sha256": "970a684dd04f491af06b645226a58b045ac0e362c28452eff0484a157d43a091"
+        }
+      ],
+      "note": "build_event_store→build_tactical_state→generate_tactical_candidates→validate_tactical_integrity(0 errors)→validate_transition_claims(0 errors)→verify_tactical_forecasts→check_verification_health(0 errors/3 warnings)→render_tactical_forecast_section --inject-report"
+    },
+    {
+      "step": "token_usage_report",
+      "status": "ok",
+      "started_at_utc": "2026-09-08T23:10:00Z",
+      "ended_at_utc": "2026-09-08T23:10:05Z",
+      "version": "token_usage_report/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "outputs/2026-09-09/2026-09-09-token-usage.json",
+          "sha256": "6e387082a059542f3cc1da6e424b6d8c2ecbbdd76af073578d701e89d4cfc8c7"
+        }
+      ]
+    }
+  ]
+}
