@@ -1,0 +1,365 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-09 11:30 JST
+調査期間: 2026-09-08 07:00 〜 2026-09-09 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-75650 / Adobe Commerce / Magento Open Source（通称: StyleSmuggler）
+対象: 2.4.4〜2.4.9（Adobe Commerce および Magento Open Source の全サポートバージョン）。APSB26-146緊急ホットフィックス提供済み
+------------------------------------------------------------
+
+優先度: 緊急
+CVSS: 10.0 (Critical) [v3.x]
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み（APSB26-146 緊急ホットフィックス（2026-09-07公開））
+
+【24時間以内の変化】
+[CISA 2026-09-08] CISAがCVE-2026-75650をKnown Exploited Vulnerabilities（KEV）カタログへ初回追加（4件の一括追加のうちの1件）。FCEB機関の対応期限は2026-09-11。
+
+【概要】
+2026-09-08分レポートでゼロデイ特報として採用したAdobe Commerce/Magento Open Sourceのテンプレートエンジン特殊要素無害化不備（CWE-1336・通称StyleSmuggler）について、CISAが本日2026-09-08付でCISA KEVカタログへ初回追加した（4件一括追加のうちの1件、FCEB期限2026-09-11）。脆弱性の技術的詳細（Sansecが2026-09-04からの実悪用を確認、Adobeが2026-09-07にAPSB26-146緊急ホットフィックスを公開）は変化なし。本日時点でEPSSパーセンタイルは49.97%（2026-09-08時点、KEV登録直後のため今後上昇が見込まれる）。日本国内での被害報道は本日時点でも確認されていない。攻撃予報fc-20260908-1（T1/E1/fast_72h・確度低・期限2026-09-11）が的中条件としていたKEV初回追加dateAddedの窓（2026-09-08〜2026-09-11）内での発生であり、週次検証（火・木）での正式判定を待つ。
+
+攻撃の流れ:
+1. 注文の支払い失敗を発生させ、失敗レポート生成処理を経由して 'styles' プロパティにPHPコードを含むテンプレートディレクティブを注入する（第1段階）。
+2. 注入済みテンプレートを実行させるトリガーとして、Magentoの支払い失敗通知メール生成処理を発火させ、注入済みPHPコードを実行させる（第2段階）。
+3. 実行に成功した任意コードから、プロセス名をLinuxカーネルワーカー（[kworker/u:8:0]）やフォントキャッシュユーティリティ（fc-cache）に偽装した小型Rust製バックドアをバックグラウンドプロセスとして常駐させる。
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・未適用環境はAPSB26-146緊急ホットフィックスを即時適用する。
+・適用済み環境も、Adobe推奨の暗号鍵ローテーション（管理者パスワード・API/OAuthトークン・DB認証情報等）の実施状況を確認する。
+・サーバ上のプロセス一覧を[kworker/u:8:0]・fc-cache等の偽装名を含め棚卸しする。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Magento/Adobe Commerceのアプリケーションログにおけるテンプレートインジェクション兆候と、Webサーバプロセスを親とする不審な子プロセス生成を監視する
+Splunk SPL: index=web_access sourcetype=magento_app (uri_path="*checkout*" OR uri_path="*payment*") payload="*styles*" | stats count by src_ip, uri_path
+→ KEV登録によりFCEB機関は2026-09-11までの対応が義務化された。民間組織も同期限を目安に対応することを推奨する。
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/08/cisa-adds-four-known-exploited-vulnerabilities-catalog
+https://sansec.io/research/stylesmuggler-0day
+https://helpx.adobe.com/security/products/magento/apsb26-146.html
+
+------------------------------------------------------------
+2. CVE-2026-86218 / N-able N-central（RMM/リモート監視管理プラットフォーム）
+対象: N-central 2026.3 Hotfix 4（2026.3.1.14）未満の全ビルド
+------------------------------------------------------------
+
+優先度: 緊急
+CVSS: 10.0 (Critical) [v4.0]
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み（N-central 2026.3 Hotfix 4（2026.3.1.14））
+
+【24時間以内の変化】
+[CISA 2026-09-08] CISAがCVE-2026-86218をKEVカタログへ初回追加（4件一括追加のうちの1件）。FCEB期限2026-09-11。
+
+【概要】
+2026-09-08分レポートでゼロデイ特報として採用したN-able N-centralの未認証コードインジェクション（CWE-94・CVSS v4.0 10.0）について、CISAが本日2026-09-08付でKEVカタログへ初回追加した（FCEB期限2026-09-11）。N-ableは実悪用の当初表現を後日「本番環境での悪用の証拠は確認していない」と修正した経緯があるが、CISAはKEV追加基準（実悪用の確証）を満たしたと判断したことになる。Shadowserverが確認したインターネット露出N-centralサーバ約1,500台（米国・欧州中心）は本日時点で更新情報なし。EPSSパーセンタイル34.3%（2026-09-08時点）。日本国内での被害報道は本日時点でも確認されていない。攻撃予報fc-20260908-2（T1/E1/fast_72h・確度低・期限2026-09-11）の的中条件としていたKEV初回追加窓（2026-09-08〜2026-09-11）内での発生であり、週次検証を待つ。
+
+攻撃の流れ:
+1. インターネットへ露出したN-central（HTTP到達可能）を発見する。
+2. 認証情報・ネットワーク特権を持たない状態で、細工したリクエストによりサーバプロセスへ任意コードを注入し実行する（未認証・単一ステップ）。
+3. N-central経由でMSP配下の管理対象エンドポイント群への横展開・侵害拡大のリスクがある。
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・N-central 2026.3 Hotfix 4（2026.3.1.14）へ未適用の環境は即時アップグレードする。
+・N-centralサーバのインターネット露出有無をShadowserver等の外部スキャンで確認する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・N-centralサーバプロセスからの予期しない子プロセス生成・外部向け通信を監視する
+Splunk SPL: index=edr sourcetype=sysmon EventCode=1 parent_process_name="*n-central*" | stats count by host, process_name
+→ KEV登録によりFCEB機関は2026-09-11までの対応が義務化された。RMM製品はMSP経由の波及リスクが高く、優先対応を推奨する。
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/08/cisa-adds-four-known-exploited-vulnerabilities-catalog
+https://status.n-able.com/2026/09/06/n-central-2026-3-hotfix-4-cve-2026-86218/
+
+------------------------------------------------------------
+3. CVE-2026-84869 / ConnectWise ScreenConnect（クライアント）
+対象: ScreenConnectクライアント全般（対策版・詳細バージョン範囲は本日時点でConnectWise公式アドバイザリに一次情報での明記未確認）
+------------------------------------------------------------
+
+優先度: 緊急
+CVSS: 9.9 (Critical) [v3.x]
+状態: 実悪用確認 / ゼロデイ
+パッチ提供: 未提供
+
+【24時間以内の変化】
+[NVD 2026-09-08] 2026-08下旬からHuntressが観測していたワーム型ScreenConnectキャンペーンにCVE-2026-84869が採番されNVDへ新規公開（CVSS v3.1 9.9・CWE-862 Missing Authorization）。
+
+【概要】
+2026-09-08分レポートでSection2トレンドCVE未採番として採用したConnectWise ScreenConnectワーム型キャンペーンについて、本日CVE-2026-84869（CVSS v3.1 9.9・CWE-862）が採番されNVDへ公開された。pipeline-1-cve.mdの規定によりトラックB（Section2）からトラックA（Section3・本エントリ）へ帰属し直す。脆弱性はScreenConnectクライアントが、アクティブなリモートセッション中にホスト側の確認・認可を経ずにファイルを転送・実行できてしまう認可欠如（ScreenConnectサーバ自体は影響を受けない）。Huntressの観測では、改ざんされたScreenConnectクライアントがwscript.exeの子プロセスとして4段階のVBScriptチェーンを実行し、新規接続ホストへ自己伝播するワーム的挙動が確認されている。本日時点で正式な修正版の提供は確認できておらず、暫定策としてTransferFiles（旧バージョンはTransferFilesInSession）機能の無効化がConnectWiseから案内されている。日本国内での被害報道は確認されていない。
+
+攻撃の流れ:
+1. 偽Quick Assistサポート通話・フィッシング型ScreenConnect.ClientSetup.msi・偽Geek Squad返金検索等の社会工学的手口で被害者にScreenConnectクライアントを実行させる（初期侵入は本CVE自体の悪用対象ではない）。
+2. 確立済みのアクティブなリモートセッション内で、Host側の確認・認可を経ずにファイルを転送・実行する（CVE-2026-84869本体）。
+3. 転送・実行されたVBScriptチェーンがシステム偵察・PowerShell実行を経て、新たにScreenConnect経由で接続してきたホストへ同じチェーンを自動伝播させる（ワーム的拡散）。
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・ConnectWise公式の暫定策に従い、TransferFiles（旧バージョンはTransferFilesInSession）機能を管理画面から無効化する。
+・自組織で許可していないScreenConnectクライアントのインストール・起動を検知・ブロックする。
+・ConnectWise公式セキュリティ情報（security-bulletins）を継続的に確認し、正式な修正版が公開され次第即時適用する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・ScreenConnectクライアントプロセスを親とするwscript.exe/VBScript実行チェーンを監視する（2026-09-08分レポートと同一検知ロジック）
+Splunk SPL: index=edr sourcetype=sysmon EventCode=1 parent_process_name="*screenconnect*" process_name IN ("wscript.exe","powershell.exe") | stats count by host, process_name
+→ 正規のScreenConnect運用でwscript.exe/VBScriptが自動起動することは通常ない。
+
+【参照】
+https://radar.offseq.com/threat/cve-2026-84869-cwe-862-missing-authorization-in-connectwise-screenconnect-0d8b829dc3870ca0
+https://www.huntress.com/blog/rogue-screenconnect-installations
+
+------------------------------------------------------------
+4. CVE-2026-81963 / Windows Update Stack
+対象: 対象Windows全バージョン（2026年9月Patch Tuesdayで修正）
+------------------------------------------------------------
+
+優先度: 緊急
+CVSS: 7.8 (High) [v3.x]
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み（2026年9月Patch Tuesday累積更新プログラム）
+
+【24時間以内の変化】
+[Microsoft 2026-09-08] 2026年9月Patch Tuesday（974件修正）でWindows Update Stackのファイルアクセス前のリンク解決不備（CWE-59）を修正。Microsoftは実悪用検知済みとしてフラグ。
+[CISA 2026-09-08] CISAがCVE-2026-81963をKEVカタログへ初回追加（4件一括追加のうちの1件）。FCEB期限2026-09-22。
+
+【概要】
+2026年9月Patch Tuesday（Microsoftが974件のCVEを修正した過去最多規模の月例更新）で同時公開された2件の実悪用ゼロデイのうち1件。Windows Update Stack（更新プログラムインストール処理を担うコンポーネント群）に、ファイルアクセス前のリンク解決不備（CWE-59・いわゆるlink following）による権限昇格の脆弱性がある（CVSS v3.1: 7.8、AV:L/AC:L/PR:L/UI:N）。低権限のローカル攻撃者が、リンク解決の不備と不適切なアクセス制御を悪用してSYSTEM権限を取得できる。Microsoftは月例更新と同時に実悪用検知を確認しており、CISAが本日KEVカタログへ初回追加した（FCEB期限2026-09-22）。単体では初期侵入手段を持たない権限昇格の脆弱性であり、他の初期アクセス手段（フィッシング等）と連鎖して悪用されるとみられる（推測）。日本国内での被害報道は確認されていない。
+
+攻撃の流れ:
+1. 何らかの手段（本CVEの対象外）で対象Windowsホスト上に低権限のローカルコード実行を確保する。
+2. Windows Update Stackのファイルアクセス処理におけるリンク解決の不備を悪用し、意図しないファイルへアクセス・書き換えさせる。
+3. 更新プログラム処理がSYSTEM権限で実行される特権を利用し、攻撃者コードがSYSTEM権限で実行される。
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・2026年9月Patch Tuesday累積更新プログラムを最優先（24時間以内目安）で適用する。
+・KEV登録済みのためFCEB機関は2026-09-22までの対応が義務。民間組織も同期限を目安とする。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Windows Update関連プロセス（wuauclt.exe、usoclient.exe等）からの予期しない権限昇格・不審なファイルアクセスを監視する
+Splunk SPL: index=wineventlog EventCode=4688 ParentProcessName="*wuauclt*" OR ParentProcessName="*usoclient*" | stats count by ComputerName, NewProcessName
+→ 権限昇格単体は初期侵入の痕跡を伴わないため、直前のフィッシング・不審プロセス実行等の初期アクセス兆候と合わせて評価する。
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/08/cisa-adds-four-known-exploited-vulnerabilities-catalog
+https://www.bleepingcomputer.com/news/microsoft/microsoft-september-2026-patch-tuesday-fixes-966-flaws-2-zero-days/
+https://www.securityweek.com/microsoft-patches-record-974-vulnerabilities-including-two-exploited-zero-days/
+
+------------------------------------------------------------
+5. CVE-2026-85880 / Windows ALPC（Advanced Local Procedure Call）
+対象: 対象Windows全バージョン（2026年9月Patch Tuesdayで修正）
+------------------------------------------------------------
+
+優先度: 緊急
+CVSS: 7.8 (High) [v3.x]
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み（2026年9月Patch Tuesday累積更新プログラム）
+
+【24時間以内の変化】
+[Microsoft 2026-09-08] 2026年9月Patch TuesdayでWindows ALPCのヒープバッファオーバーフロー（CWE-122）を修正。Microsoftは実悪用検知済みとしてフラグ。
+[CISA 2026-09-08] CISAがCVE-2026-85880をKEVカタログへ初回追加（4件一括追加のうちの1件）。FCEB期限2026-09-22。
+
+【概要】
+2026年9月Patch Tuesdayで同時公開された2件の実悪用ゼロデイのもう1件。Windows ALPC（Advanced Local Procedure Call、プロセス間通信を担うコアコンポーネント）にヒープバッファオーバーフロー（CWE-122）があり、低権限のAppContainer内でコード実行できる攻撃者がAppContainerをエスケープしSYSTEM権限を取得できる（CVSS v3.1: 7.8、AV:L/AC:L/PR:L/UI:N・追加のユーザー操作不要）。CVE-2026-81963と同様、Microsoftは実悪用検知を確認しており、CISAが本日KEVカタログへ初回追加した（FCEB期限2026-09-22）。サンドボックス（AppContainer）エスケープに使われる性質上、ブラウザ等のサンドボックス化アプリケーションの侵害と連鎖して悪用される可能性が高い（推測）。日本国内での被害報道は確認されていない。
+
+攻撃の流れ:
+1. 何らかの手段（本CVEの対象外。例: サンドボックス化されたブラウザ等の別脆弱性）でAppContainer内の低権限コード実行を確保する。
+2. Windows ALPCのヒープバッファオーバーフローを悪用し、AppContainerの分離境界を破る。
+3. AppContainerをエスケープしSYSTEM権限でコードを実行する。
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・2026年9月Patch Tuesday累積更新プログラムを最優先（24時間以内目安）で適用する。
+・KEV登録済みのためFCEB機関は2026-09-22までの対応が義務。民間組織も同期限を目安とする。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・AppContainer内プロセスからの予期しない特権プロセス生成・ALPCポート異常アクセスを監視する
+Splunk SPL: index=wineventlog EventCode=4688 | search NewProcessName="*\\System32\\*" ParentProcessName="*AppContainer*" | stats count by ComputerName
+→ AppContainerエスケープの直接的な監視は難度が高く、直後の権限昇格イベント（4672等）や新規サービス作成の組み合わせで評価する。
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/08/cisa-adds-four-known-exploited-vulnerabilities-catalog
+https://www.bleepingcomputer.com/news/microsoft/microsoft-september-2026-patch-tuesday-fixes-966-flaws-2-zero-days/
+https://securityonline.info/patch-tuesday-zero-day-september-2026/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内に本編採用CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-71377 / 日立 Cosminexus Component Container
+対象: 11-70-01〜11-70-02 / 11-60〜11-60-02 / 11-50〜11-50-02 / 11-40〜11-40-02 / 11-30〜11-30-07 / 11-20〜11-20-09 / 11-10〜11-10-10 / 11-00〜11-00-12 / 09-87〜09-87-09 / 09-80〜09-80-04 / 09-70〜09-70-27 / 09-50〜09-50-21 / 09-00〜09-00-17（関連CVE-2026-71374・CVE-2026-71376と共通の対象バージョン帯）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.8 (Critical) [v3.x]
+状態: 特記事項なし
+パッチ提供: 提供済み（対策済みバージョンへの更新（日立公式セキュリティ情報で個別案内予定））
+
+【24時間以内の変化】
+[NVD 2026-09-08] CVE-2026-71377（コマンド引数インジェクション・CWE-88・CVSS v3.1 9.8）がNVDへ新規公開（CNA: hirt@hitachi.co.jp）。同一Cosminexus Component Containerに対する関連CVE-2026-71374（デシリアライゼーション・CWE-502・CVSS9.8）・CVE-2026-71376（XXE系・CWE-611系・CVSS9.8）も同日公開。
+
+【概要】
+日立製作所が提供するJava EEアプリケーションサーバ「Cosminexus Component Container」（国内の官公庁・金融・製造業等で広く使われる業務システム基盤）に、コマンド引数の無害化不備によるコマンド引数インジェクションの脆弱性（CWE-88）がある。CVSSベクタはAV:N/AC:L/PR:N/UI:N（CVSS v3.1: 9.8）であり、ネットワークから認証・ユーザー操作なしに悪用可能とNVDのCNA提供スコアが示している。同日、同一製品に対しデシリアライゼーション脆弱性CVE-2026-71374（CWE-502・CVSS9.8）とXML外部実体参照系のCVE-2026-71376（CWE-611系・CVSS9.8）もNVDへ新規公開されており、3件は同一のCosminexus Component Containerアドバイザリ由来とみられる（推測。日立公式セキュリティ情報ページでの当該3件の個別紐付けは本日時点で一次情報での確認ができていない）。国内で広く使われる企業向けミドルウェアであり参考A昇格トリガー（国内で広く使われる製品への直接影響）に該当するが、JPCERT/CC・IPAによる注意喚起、Security NEXT等国内メディアでの報道、実悪用・PoC公開は本日時点でいずれも確認されていない。
+
+攻撃の流れ:
+1. Cosminexus Component Containerが提供する機能へネットワークから到達し、コマンド引数として解釈される入力へ細工した値を送信する（CVE-2026-71377）。
+2. 引数の無害化不備により意図しないコマンド引数が注入・実行される。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Cosminexus Component Containerの管理インタフェース・アプリケーションログにおける異常なコマンド引数パターンを監視する
+→ 日立公式セキュリティ情報（hitachi.co.jp/Prod/comp/soft1/security/info/vuls/）の該当アドバイザリ公開を待ち、対策版・回避策を確認する。
+
+【参照】
+https://radar.offseq.com/threat/cve-2026-71377-cwe-88-improper-neutralization-of-argument-delimiters-in-a-command-argument-injection-c26949899f96a910
+https://radar.offseq.com/threat/cve-2026-71374-cwe-502-deserialization-of-untrusted-data-in-hitachi-cosminexus-component-container-92a3cd3c99491b10
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-75604 / Next.js（Pages Router / App Router、Windowsホスト環境）
+対象: Next.js 15.5.24未満（Maintenance LTS）/ 16.3.3未満（Active LTS）。Windowsファイルシステム上でセルフホストする構成のみ影響（Linux/macOSは影響なし、Vercelマネージド環境も影響なし）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.0 (Critical) [v3.x]
+状態: PoC公開
+パッチ提供: 提供済み（15.5.24（Maintenance LTS）/ 16.3.3（Active LTS））
+
+【24時間以内の変化】
+[GitHub 2026-09-08] 研究者rafabd1氏がCVE-2026-75604の実証コード（PoC）をGitHubへ公開（開示から約24時間以内）。
+
+【概要】
+Next.js（Pages RouterとApp Routerを併用しCache Componentsを使わない構成）で、パーセントエンコードされたバックスラッシュ列がルーティング層で正規化されずに到達し、Windowsファイルシステム上ではバックスラッシュがディレクトリ区切りとして解釈されるため、未認証の攻撃者がフレームワークのオンディスクキャッシュディレクトリ外へファイルを書き込みリモートコード実行に至れるパストラバーサル脆弱性（CVSS v3.1: 9.0）。Linux・macOSは影響を受けず、Windowsファイルシステム上でセルフホストする構成のみが対象（Vercelマネージド環境は影響なし）。2026-08-25にNext.js 15.5.24 / 16.3.3で修正済みだが、2026-09-08時点で公開実証コードが登場し武器化リスクが高まったため本日改めて参考情報Bとして採用する。回避策は無く、パッチ適用が唯一の対処。実悪用の報告は本日時点で確認されていない。
+
+攻撃の流れ:
+1. Windowsファイルシステム上でセルフホストされたNext.jsサーバへ、パーセントエンコードされたバックスラッシュを含むリクエストを送信する。
+2. ルーティング層での正規化不備によりパストラバーサルが成立し、オンディスクキャッシュディレクトリ外へ任意ファイルを書き込む。
+3. 書き込んだファイルを起点にリモートコード実行へ至る。
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・Next.js 15.5.24（Maintenance LTS）または16.3.3（Active LTS）へ即時アップデートする（回避策なし）。
+・アップデートが即座に行えない場合、当該NextjsサーバのホストOSをWindows以外へ移行する、またはインターネットからの直接到達を一時的に制限する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Next.jsのキャッシュディレクトリ外への予期しないファイル書き込みを監視する
+→ Windowsホスト上のNext.jsデプロイでのみ影響するため、まず自組織のNext.jsホスティング環境（OS種別）の棚卸しを優先する。
+
+【参照】
+https://github.com/vercel/next.js/security/advisories/GHSA-p293-qw3h-jr36
+https://thehackernews.com/2026/08/nextjs-patches-critical-avif-and.html
+https://github.com/rafabd1/CVE-2026-75604-poc
+
+------------------------------------------------------------
+2. CVE-2026-82533 / DeepSeek Harness（ローカルAIエージェント実行基盤・dsh CLI）
+対象: 0.1.2-alpha.1未満
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 9.6 (Critical) [v3.x]
+状態: PoC公開
+パッチ提供: 提供済み（0.1.2-alpha.1）
+
+【24時間以内の変化】
+[GitHub 2026-09-08] deepseek-ai/deepseek-harness GitHub Discussion #853でHostヘッダ偽装による認証バイパスの技術詳細とPoCが公開されたことをOffSeq Threat Radar等が報道。
+
+【概要】
+DeepSeekが提供するローカルAIエージェント実行基盤「DeepSeek Harness」（dsh CLI）のローカルHTTP制御プレーンAPIに、クライアント提供のHostヘッダの値のみを検証し実際のTCP接続元を検証しない認証バイパスの脆弱性（CWE-290・CVSS9.8として報告する情報源もあるがNVD公式スコアはCVSS v3.1 9.6）がある。攻撃者はHostヘッダを偽装するだけで、danger-full-access権限を持つcommands/execute等の特権コマンド呼び出し、セッション承認ポリシーの無制限実行への引き上げ、保存済み会話全件の取得を認証情報なしに行える。PoCコードは既に公開済み。0.1.2-alpha.1で修正済み。実悪用の報告は本日時点で確認されていないが、AIエージェント実行基盤という性質上、悪用されれば任意コマンド実行に直結するため注意を要する。
+
+攻撃の流れ:
+1. DeepSeek Harnessのローカル制御プレーンAPI（デフォルトでネットワークインタフェースにバインドされる構成）へ到達する。
+2. リクエストのHostヘッダを偽装し、正規のローカルクライアントであるかのように認証を回避する。
+3. danger-full-access権限のcommands/execute等を呼び出し、任意コマンド実行・会話履歴全件の窃取・セッションポリシーの無制限化を行う。
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・DeepSeek Harnessを0.1.2-alpha.1以降へ即時アップデートする。
+・アップデートまでの間、ローカル制御プレーンAPIのバインド先を127.0.0.1に限定し、外部到達性を遮断する。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・DeepSeek Harnessのローカル制御プレーンAPIへの外部・想定外送信元からのアクセスを監視する
+→ AIエージェント実行基盤をローカル開発環境・CI環境に導入している場合は棚卸し対象に含める。
+
+【参照】
+https://github.com/deepseek-ai/deepseek-harness/discussions/853
+https://radar.offseq.com/threat/cve-2026-82533-reliance-on-untrusted-inputs-in-a-security-decision-in-deepseek-deepseek-harness-fcb976e4f3a52a84
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[CVE]
+・CVE-2026-69463 ほか39件 (Microsoft（2026年9月Patch Tuesday）) → low_score (Windows NTFS（ヒープバッファオーバーフロー・RCE、CVSS9.8）を代表とする2026年9月Patch Tuesday（974件修正）のうち、本スイープ窓内で新規公開されたCVSS9.0以上40件から、実悪用検知済みのCVE-2026-81963・CVE-2026-85880（ゼロデイ特報として個別採用済み）を除く残り39件。単一ベンダー（Microsoft）が同一月例サイクルで一括公開したパッチ群であり（pipeline-1-cve.md「単一ベンダーPSIRTが同一窓で5件以上を一括公開したかたまり」の集約条件に合致）、本39件について実悪用・PoC公開・KEV登録のいずれも本日時点で確認されていない。 該当CVE ID: CVE-2026-65669, CVE-2026-66302, CVE-2026-68839, CVE-2026-69276, CVE-2026-69356, CVE-2026-69408, CVE-2026-69431, CVE-2026-69463, CVE-2026-69491, CVE-2026-69493, CVE-2026-69496, CVE-2026-69525, CVE-2026-69579, CVE-2026-69586, CVE-2026-69590, CVE-2026-69595, CVE-2026-69641, CVE-2026-69715, CVE-2026-69730, CVE-2026-69768, CVE-2026-69769, CVE-2026-69819, CVE-2026-69824, CVE-2026-69829, CVE-2026-69845, CVE-2026-69854, CVE-2026-69910, CVE-2026-70296, CVE-2026-72979, CVE-2026-72982, CVE-2026-72983, CVE-2026-73009, CVE-2026-73010, CVE-2026-73025, CVE-2026-77493, CVE-2026-78445, CVE-2026-78509, CVE-2026-78510, CVE-2026-81376, CVE-2026-83941)
+・CVE-2026-19232 ほか5件 (Adobe（2026年9月定例パッチ）) → low_score (Adobe Experience Manager（Incorrect Authorization・CVSS9.9）を代表とする2026年9月定例パッチのうち、ゼロデイ特報のCVE-2026-75650（Adobe Commerce/Magento・別アドバイザリ）を除く6件（ACC/AEM/ColdFusion/Adobe Commerce XSS×2）。単一ベンダー一括公開のため集約。実悪用・PoC公開は未確認。 該当CVE ID: CVE-2026-19232, CVE-2026-48273, CVE-2026-75746, CVE-2026-76200, CVE-2026-76201, CVE-2026-82004)
+・CVE-2026-62645 ほか4件 (Siemens ProductCERT) → low_score (Siemens Reyrolle 7SR5（情報漏洩・CVSS9.8）を代表とする産業制御機器5件（Reyrolle系3件・SIMOVE Fleetmanager・Siveillance Control Pro）。単一ベンダーProductCERTの同時公開バッチのため集約。実悪用・PoC公開は未確認。 該当CVE ID: CVE-2026-50093, CVE-2026-62645, CVE-2026-62646, CVE-2026-62647, CVE-2026-67367)
+・CVE-2026-12650 ほか5件 (Ivanti（Neurons for ITSM）) → low_score (Ivanti Neurons for ITSM（デシリアライゼーション・CVSS9.9）を代表とする同一プラットフォームの6件（Missing Authorization系4件・Deserialization系2件）。単一ベンダーPSIRT一括公開のため集約。実悪用・PoC公開・KEV登録はいずれも未確認。 該当CVE ID: CVE-2026-12645, CVE-2026-12646, CVE-2026-12647, CVE-2026-12650, CVE-2026-12744, CVE-2026-12745)
+・CVE-2026-77089 (Commvault Command Center（認証バイパス）) → low_score (CVSS v4.0 9.3・認証バイパス（CWE-290系）。AT:N/PR:N/UI:Nで軸1=認証バイパス+3・CVSS9+3・広く使われる企業向けバックアップ製品+1=7点にとどまり本編/参考Bの閾値（8点）未達、参考A昇格トリガー（国内報道等）も本日時点で確認できず除外。PoC公開・実悪用は未確認。)
+・CVE-2026-82067 (MongoDB Server（設定検証の大文字小文字誤処理）) → low_score (CVSS9.2だが設定検証コンポーネントの大文字小文字誤処理であり、軸1=CVSS9+3のみで4点にとどまり閾値未達。実悪用・PoC公開は未確認のため除外。)
+・CVE-2026-44756 (A memory safety vulnerability exists in the Extended Passpor) → low_score (CVSS10.0。A memory safety vulnerability exists in the Extended Passport Protocol (EPP) processing library. Under specific conditio… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-58240 (SAP NetWeaver Message Server does not sufficiently validate ) → low_score (CVSS9.8。SAP NetWeaver Message Server does not sufficiently validate the authenticity of internal application server components d… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-66768 (SAP GUI for Java does not correctly enforce the trust level ) → low_score (CVSS9.0。SAP GUI for Java does not correctly enforce the trust level policy for certain functions invoked from a connected backen… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-76969 (@sap/cds-mtxs NPM library does not perform sufficient checks) → low_score (CVSS9.4。@sap/cds-mtxs NPM library does not perform sufficient checks on certain functionality used in multitenant CAP applicatio… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-86509 (A flaw has been found in D-Link DIR-895L A1_102b07. This imp) → low_score (CVSS9.6。A flaw has been found in D-Link DIR-895L A1_102b07. This impacts the function sendOffer/sendACK of the file udhcpcd/serv… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-86510 (A vulnerability has been found in D-Link DIR-822A A_101. Aff) → low_score (CVSS9.9。A vulnerability has been found in D-Link DIR-822A A_101. Affected is the function tunnel_set_params of the component L2T… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-79569 (Movie_Recommend v1.0.0 was discovered to contain a SQL injec) → low_score (CVSS9.8。Movie_Recommend v1.0.0 was discovered to contain a SQL injection vulnerability in the sort parameter at /loadingmore. Th… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-79576 (An issue in the Single-Sign On (SSO) component of Digital-In) → low_score (CVSS9.8。An issue in the Single-Sign On (SSO) component of Digital-Infrastructure v9.6.7 allows attackers to authenticate as any … 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-61516 (Netis NX10 firmware V4.0.1.5808 and V3.0.0.4142 contain an i) → low_score (CVSS9.8。Netis NX10 firmware V4.0.1.5808 and V3.0.0.4142 contain an information disclosure vulnerability that allows unauthentica… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-73309 (XenForo before 2.3.13 contains an authentication bypass vuln) → low_score (CVSS9.1。XenForo before 2.3.13 contains an authentication bypass vulnerability in the OAuth2 token endpoint that allows unauthent… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-73311 (XenForo before 2.3.13 contains an OAuth2 authorization code ) → low_score (CVSS9.1。XenForo before 2.3.13 contains an OAuth2 authorization code reuse vulnerability that allows attackers to obtain unauthor… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-73312 (XenForo before 2.3.13 contains a refresh token replay vulner) → low_score (CVSS9.1。XenForo before 2.3.13 contains a refresh token replay vulnerability that allows attackers to reuse a refresh token multi… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-86542 (knowns before 0.30.0 fails to validate import names in the i) → low_score (CVSS9.1。knowns before 0.30.0 fails to validate import names in the import routes, allowing unauthenticated attackers to write fi… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-86543 (knowns versions before 0.30.0 serve the management API witho) → low_score (CVSS9.8。knowns versions before 0.30.0 serve the management API without authentication on all network interfaces by default, with… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-86729 (WWBN AVideo through commit e01e41ecc (no patched version ava) → low_score (CVSS9.1。WWBN AVideo through commit e01e41ecc (no patched version available) exposes get_api_preauthorize in plugin/API/API.php a… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-86738 (Snipe-IT versions before 8.7.0 contain a CSS injection vulne) → low_score (CVSS9.3。Snipe-IT versions before 8.7.0 contain a CSS injection vulnerability in the Custom CSS field due to incomplete sanitizat… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-84197 (In Eclipse Ditto's Node.js JavaScript client, all released v) → low_score (CVSS9.2。In Eclipse Ditto's Node.js JavaScript client, all released versions of @eclipse-ditto/ditto-javascript-client-node from … 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-86464 (In the current development version of Eclipse aeriOS, for wh) → low_score (CVSS9.9。In the current development version of Eclipse aeriOS, for which no official release has yet been published, the Identity… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-26084 (Fortinet FortiSandbox（情報漏洩）) → low_score (CVSS v3.1 9.9だが実体は情報漏洩（C:L/I:L・CWE該当は機微情報への不正アクセス）であり未認証RCEには該当しない。軸1=CVSS9+3・広く使われるセキュリティ製品+1=4点で閾値未達。4.4.9/5.0.6で修正済み・実悪用報告は未確認のため除外。)
+・CVE-2026-85982 (Okta Auth0 AD/LDAPコネクタ（Stored XSS）) → low_score (CVSS9.0・Stored XSS（CWE-79）。RCE/認証バイパスに該当せず軸1=CVSS9+3のみで4点、閾値未達のため除外。実悪用・PoC公開は未確認。)
+・CVE-2026-78234 (hawtio-operator（OpenShift Service CA秘密鍵の読み取り）) → low_score (CVSS9.9・hawtio-operatorがOpenShift Service CAの秘密署名鍵を読み取れる設計不備。軸1=CVSS9+3・広く使われるOSS(OpenShiftエコシステム)+1=4点で閾値未達のため除外。実悪用・PoC公開は未確認。)
+・CVE-2026-28659 (In MicroXR Blobstore, there is a possible way to access othe) → low_score (CVSS10.0。In MicroXR Blobstore, there is a possible way to access other app's files due to a missing permission check. This could … 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-49883 (In checkReadPermission of PermissionsManager.java, there is ) → low_score (CVSS10.0。In checkReadPermission of PermissionsManager.java, there is a possible way to monitor sensitive device state data due to… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-49921 (In multiple locations, there is a possible memory safety iss) → low_score (CVSS9.8。In multiple locations, there is a possible memory safety issue due to a heap buffer overflow. This could lead to remote … 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-58822 (In multiple functions of ftsmooth.c, there is a possible mem) → low_score (CVSS9.8。In multiple functions of ftsmooth.c, there is a possible memory safety issue due to improper casting. This could lead to… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-75156 (Apache Airflow FABプロバイダ（OAuthトークン検証不備）) → low_score (CVSS9.1・OAuthトークンのissuer/audience未検証。軸1=CVSS9+3・広く使われるOSS+1=4点で閾値未達。実悪用・PoC公開は未確認のため除外。)
+・CVE-2026-72789 (SiYuan: The publish-access gate treats encrypted notebooks a) → low_score (CVSS9.2。SiYuan: The publish-access gate treats encrypted notebooks as publicly accessible by default, allowing anonymous readers… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-73294 (Semaphore U: OS Command Injection) → low_score (CVSS9.9。Semaphore U: OS Command Injection… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-75595 (Netty: SNI Routing Bypass via Fragmented TLS ClientHello Cau) → low_score (CVSS9.1。Netty: SNI Routing Bypass via Fragmented TLS ClientHello Causing Fallback to Default SslContext… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-77635 (CakePHP: FunctionsBuilder::jsonValue() vulerable to SQL inje) → low_score (CVSS9.2。CakePHP: FunctionsBuilder::jsonValue() vulerable to SQL injection with PostgresDriver… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-78676 (GitPython: Dormant multi-line git-config values are corrupte) → low_score (CVSS9.3。GitPython: Dormant multi-line git-config values are corrupted into live injected directives (e.g. core.hooksPath) on any… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-78683 (NLTK: Unsafe Pickle Deserialization in TransitionParser Allo) → low_score (CVSS9.4。NLTK: Unsafe Pickle Deserialization in TransitionParser Allows Remote Code Execution… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-79657 (NLTK: Allowlisted pickle loaders still permit code execution) → low_score (CVSS9.3。NLTK: Allowlisted pickle loaders still permit code execution in current source… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-84372 (Predis: Redis command injection and denial of service via CR) → low_score (CVSS9.8。Predis: Redis command injection and denial of service via CRLF smuggling in pipelined commands on aggregate connections… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+・CVE-2026-85061 (MapLibre GL JS: XSS Sanitizer Bypass in DOM.sanitize() via L) → low_score (CVSS10.0。MapLibre GL JS: XSS Sanitizer Bypass in DOM.sanitize() via Live NamedNodeMap Removal Skip… 実悪用・PoC公開・KEV登録のいずれも本日時点で確認されておらず、軸1スコアが本編/参考Bの閾値（8点）未達（アグリゲータCNA起点または単一ベンダー5件未満のためバッチ集約せず個別判断・個別記録とする）。)
+
+本日の集計:
+CVE — ゼロデイ特報5件 / 本編0件 / 参考A1件 / 参考B2件 / 除外41件
+========================================
