@@ -1,0 +1,119 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-10 13:00 JST
+調査期間: 2026-09-09 07:00 〜 2026-09-10 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-87491 / Google Chrome / Chromium（V8 JavaScriptエンジン）
+対象: 153.0.8010.36 より前の全バージョン（Windows/macOS/Linux）
+------------------------------------------------------------
+
+優先度: critical
+CVSS: v3: 8.8 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+KEV登録日: 2026-09-09（FCEB期限: 2026-09-23）
+
+【24時間以内の変化】
+[The Hacker News 2026-09-09] Chrome 153（V8のOOB write, CVE-2026-87491）が実悪用済みゼロデイとして公開・サンドボックス内コード実行が可能と確認
+[CISA KEV 2026-09-09] CISAがKEVカタログへ本CVEを初回追加（FCEB期限2026-09-23）
+
+【概要】
+Google Chrome/ChromiumのV8 JavaScriptエンジンに存在する境界外書き込み（OOB write）脆弱性で、悪意あるHTMLページを閲覧させることでサンドボックス内での任意コード実行を許す。2026年に確認された7件目のChromeゼロデイで、Googleは「CVE-2026-87491のエクスプロイトが実際に存在することを確認している」と述べたが悪用者・悪用手法の詳細は非開示。発見者はソウル大学Compsec Labの研究者Jihyeon Jeong氏（2026-08-06報告・バグ報奨金2,500ドル）。CISAは同日KEVカタログへ初回追加した。
+
+攻撃の流れ:
+1. 攻撃者が悪意あるHTMLページ/広告等を用意し被害者に閲覧させる
+2. V8のOOB write脆弱性を悪用しレンダラプロセス内で任意コード実行
+3. サンドボックス内での実行に留まる（サンドボックスエスケープの有無は非開示）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Chromeのバージョン配布状況の確認・ブラウザ経由の異常なプロセス生成（レンダラからの子プロセス起動等）を監視する
+Splunk SPL: index=sysmon EventCode=1 ParentImage="*chrome.exe" NOT Image="*chrome.exe" | stats count by ComputerName,Image,CommandLine
+→ Chromeのヘルパープロセスからの正規の子プロセス生成もあるため、既知の正規パターンをベースライン化した上で異常のみアラートする
+
+【参照】
+https://thehackernews.com/2026/09/chrome-v8-zero-day-exploited-in-wild.html
+https://www.helpnetsecurity.com/2026/09/09/google-chrome-cve-2026-87491-zero-day-flaw/
+https://www.bleepingcomputer.com/news/security/google-patches-seventh-chrome-zero-day-exploited-in-attacks-this-year/
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] BlueMoon: 複数の国家系クラスタがChrome/Windowsゼロデイ連鎖エクスプロイトキットを共有
+Proofpointが命名した『BlueMoon』は、既報のChrome V8型混同（CVE-2026-85046）とWindowsカーネルLPE（CVE-2026-85880）を連鎖させるエクスプロイトキットで、少なくとも4つの脅威クラスタが2026-08-28以降に採用したことを確認した。詳細はSection2 APT活動—本編（campaign_id: BlueMoon-2026-ChromeWindowsExploitKitSharing）参照。
+参照: https://cybersecuritynews.com/bluemoon-exploit-chain/
+参照: https://therecord.media/china-hackers-chrome-browser-zero-day-multiple-groups
+
+・[トレンド記事] CISA/NSA/FBI合同勧告: 中国企業6社による米フロンティアAIモデルの産業規模ディスティレーション
+CISA・NSA・FBIが合同勧告（AA26-251A）を発行し、DeepSeek・Moonshot AI・Alibaba・MiniMax・StepFun・Z.AIの中国企業6社が、Anthropic Claude・OpenAI GPT・Google Gemini・xAI Grokから数百万回のクエリを通じ数十億トークンを抽出する『産業規模』の知識ディスティレーション（蒸留）を行ったと指摘した。不正アカウント・一括プレミアム契約・プロキシ経由の『中継局』サービスを用いて検知・地域制限を回避していたと分析。DeepSeekはR1/V3の学習データ生成にClaude/GPT/Geminiの出力を利用、Moonshot AIはKimi K3/K2の開発にClaude Fable/GPT-4o出力を利用したと具体的に指摘。詳細な対応方針はSection4 SOC推奨情報（SOC-2026-09-09-001）参照。
+参照: https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-251a
+参照: https://www.helpnetsecurity.com/2026/09/09/china-malicious-ai-knowledge-distillation-against-us-companies/
+参照: https://www.bleepingcomputer.com/news/security/us-says-chinese-firms-extracted-billions-of-tokens-from-frontier-ai-models/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+TA412（別名: Violet Typhoon / APT31 / Judgment Panda）ほか3クラスタ（UNK_LateNight/UNK_DoubleCheck/UNK_QuietRacket）（帰属信頼度: 中）
+活動タイプ: new_malware/ttp_update/active_campaign
+------------------------------------------------------------
+
+標的: government/defense/manufacturing/finance/it / North America/Southeast Asia
+マルウェア: BlueMoon（エクスプロイトキット）、ShadowPad
+
+【24時間以内の変化】
+[Proofpoint 2026-09-09] 初報: 既知2件のブラウザ/OS脆弱性を連鎖する新規エクスプロイトキット『BlueMoon』を少なくとも4クラスタが週内に共有・採用していることを確認
+
+【概要】
+ProofpointがBlueMoonと命名した新規エクスプロイトキットは、Chrome V8の型混同（CVE-2026-85046、既報）とWindowsカーネルのローカル特権昇格ゼロデイ（CVE-2026-85880、既報）を連鎖させ、ブラウザレンダラでのコード実行からカーネル権限昇格まで到達する。2026-08-28にTA412（Violet Typhoon/APT31）による初回使用が確認され、その後数日でUNK_LateNight・UNK_DoubleCheck・UNK_QuietRacketの3クラスタが追随して採用した。追随各クラスタはShadowPadやブラウザ監視ペイロード等の異なるツールを展開しており、単一グループによる開発ではなく複数の中国ネクサス疑いクラスタ間でエクスプロイトキットが共有・急速拡散していることを示す（推測: 共有のバックエンド開発者・ブローカーの存在の可能性）。標的は米国のNGO・鉱業/資源取引企業に加え政府・防衛・航空宇宙・製造・金融・商業セクター（米国・東南アジア）。
+
+攻撃の流れ（判明分）:
+1. 標的にドライブバイでBlueMoonエクスプロイトキットへ誘導
+2. Chrome V8型混同(CVE-2026-85046)でレンダラ内コード実行
+3. Windows ALPC LPE(CVE-2026-85880)でカーネル権限まで昇格し、ShadowPad等のペイロードを展開
+
+【新規TTP】
+・[T1189] Drive-by Compromise — BlueMoonキット経由の悪意あるWebコンテンツ配信
+・[T1068] Exploitation for Privilege Escalation — CVE-2026-85880（Windows ALPC）によるカーネル権限昇格
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・Chrome/ChromiumおよびWindowsの2026年9月分パッチ（CVE-2026-85046・CVE-2026-85880）の適用状況を即時確認する。EDRでのブラウザレンダラプロセスからの異常な子プロセス生成・ALPCポート経由の異常なプロセス間通信を監視する。
+Splunk SPL: index=sysmon EventCode=1 ParentImage="*chrome.exe" OR ParentImage="*msedge.exe" | stats count by ComputerName,Image,CommandLine
+
+【参照】
+https://cybersecuritynews.com/bluemoon-exploit-chain/
+https://therecord.media/china-hackers-chrome-browser-zero-day-multiple-groups
+https://mallory.ai/stories/01a0872c-72bf-71eb-afe1-5afea11aecde
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Nightmare Eclipse（帰属信頼度: 不明・個人/小グループ） / 継続的にWindows/Defenderのゼロデイを連続開示している研究者Nightmare Eclipseが、2026年9月Patch Tuesdayで修正された既報のDefender特権昇格ゼロデイ『ShieldBreak』（CVE-2026-69414）を回避する新規PoC『ShieldCrash』を公開した。完全パッチ適用済みのWindows 10/11/ServerでもSYSTEM権限取得が可能と主張（ファイル書き込み権限は付与されないと明記）。本人はMicrosoftのバグ報奨金・脆弱性開示方針への不満を動機として表明しており、Microsoftは『実害をもたらす悪意ある活動』への法的措置を警告している。CVE番号は本日時点で未確認。実悪用の報告はない。 帰属信頼度: 不明。
+推奨アクション: Defenderに関連する特権昇格チェーンの連続開示が続いているため、SYSTEM権限での異常なDefenderコンポーネント呼び出しをEDRで監視する。CVE付与・パッチ提供の有無を継続監視する。
+参照: https://www.bleepingcomputer.com/news/security/new-microsoft-defender-shieldcrash-zero-day-grants-system-access/
+参照: https://www.theregister.com/security/2026/09/09/serial-microsoft-0-day-hunter-drops-yet-another-defender-exploit/5295335/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし。理由: forecaster/evidence/manifests/2026/09/2026-09-10.json が存在せず（06:00 JST snapshot_sources.py の本セッションチェックアウトへの反映待ち）、forecast v2.0が必須とするevidence_ids（Evidence Ledger実在参照）を満たせないためvalidate_temporal_integrity.pyのfail-closedゲートを通過できず発行を見送った（2026-09-09分と同型の欠落。観測正規化・ベースライン更新・TF-1戦術状態構成は本欠落の影響を受けないため通常どおり実施）。
+
+[APT]
+該当なし
+
+本日の集計:
+APT — 本編1件 / 注目動向1件 / 除外0件
+
+========================================
