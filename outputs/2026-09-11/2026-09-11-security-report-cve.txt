@@ -1,0 +1,188 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-11 15:00 JST
+調査期間: 2026-09-10 07:00 〜 2026-09-11 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-86060 / MikroTik RouterOS（SSHログイン処理・MikroTrick連鎖）
+対象: RouterOS 7.25beta3 / 7.24.2 / 7.23.4 / 6.49.21 未満の全バージョン
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.2 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[CISA KEV 2026-09-11] CVE-2026-86060がCISA KEVカタログへ新規追加された（catalogVersion 2026.09.10）
+[CISA 2026-09-11] 同時にCVE-2026-67277（bandwidth-testサービスの未認証メモリ漏洩/クラッシュ）もKEVへ新規追加
+
+【概要】
+CISAは2026-09-10、MikroTik RouterOSの権限昇格の脆弱性CVE-2026-86060（CVSS 9.2）と帯域測定サービスの未認証メモリ漏洩/クラッシュの脆弱性CVE-2026-67277（CVSS 8.8）をKEVカタログへ新規追加した（既報のMikroTrick連鎖 CVE-2026-67276・CVE-2026-86060は2026-09-06にゼロデイ特報として採用済み・CERT Polskaが2026-09-02以降の実悪用を確認）。SSH認証バイパス（CVE-2026-67276）と本日KEV追加のSSHログイン権限昇格（CVE-2026-86060）を連鎖させることで、SSHサービスをインターネットに公開しているRouterOS機器に対し認証なしで管理者権限を奪取できる。ベンダーは2026-09-03に詳細非公開の緊急修正版（RouterOS 7.25beta3・7.24.2・7.23.4・6.49.21）を公開済み。CVE-2026-67277は同一アドバイザリ内の関連脆弱性（bandwidth-testサービス起点）で、本日KEVへ新規追加された。
+
+攻撃の流れ:
+1. インターネット公開SSHサービスに対し、禁止文字始まりのユーザー名を含むログイン試行を送る（CVE-2026-86060）
+2. RouterOSがユーザー名処理を誤り、フルセッションを付与（CVE-2026-67276のRSA鍵検証不備と連鎖する場合は認証自体もバイパス）
+3. 取得した管理者権限でユーザー作成（'-2'や'ops'等の不審アカウント）・SSH鍵/ファイアウォール/プロキシ/トンネル設定を改変し永続化
+
+【暫定緩和策】
+・RouterOS SSHサービスをインターネットから遮断する、または管理アクセスをVPN/許可IPのみに制限する
+・SSHユーザー一覧に'-2'または'ops'等の見覚えのないアカウントがないか確認する
+・ベンダー修正版（7.25beta3/7.24.2/7.23.4/6.49.21）へ緊急アップデートする
+
+【IoC】
+IP: 82.192.72.4
+IP: 103.102.31.18
+
+【監視ポイント】
+・RouterOS SSHログイン監査ログ・ユーザー一覧変更・境界FWでのMikroTik管理ポート(22/8291)着信を監視
+Splunk SPL: index=network sourcetype=mikrotik-syslog ("login failure" OR "user added") | stats count by src_ip user
+Splunk SPL: index=firewall dest_port IN (22,8291) app=mikrotik | stats count by src_ip dest_ip | where count > 20
+→ 自組織で意図的に作成していない管理ユーザー（'-2'・'ops'等）が存在する場合は侵害を前提に初期化・再構築を検討する
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/10/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://cert.pl/en/posts/2026/09/mikrotik-routeros-cve/
+https://www.bleepingcomputer.com/news/security/hackers-exploit-new-mikrotik-routeros-flaws-to-hijack-routers/
+https://securityaffairs.com/198538/security/your-mikrotik-router-may-already-be-compromised-look-for-ssh-user-2.html
+
+------------------------------------------------------------
+2. CVE-2026-67277 / MikroTik RouterOS（bandwidth-testサービス・MikroTrick関連）
+対象: RouterOS 7.25beta3 / 7.24.2 / 7.23.4 / 6.49.21 未満の全バージョン
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 8.8 (High)
+状態: KEV登録済み
+
+【24時間以内の変化】
+[CISA KEV 2026-09-11] CVE-2026-67277がCISA KEVカタログへ新規追加された（catalogVersion 2026.09.10）
+
+【概要】
+MikroTik RouterOSのbandwidth-testサービスにおいて、認証未完了のbtest接続の受理処理に不備があり、未認証の遠隔攻撃者がカーネルメモリの一部を読み取る、またはサービスをクラッシュさせることができる。CVE-2026-67276・CVE-2026-86060と同一のベンダーアドバイザリで公開された複合脆弱性群の一つで、MikroTrick連鎖の直接的な認証バイパス経路ではないが、同一アドバイザリ対象機器として本日CISA KEVへ新規追加された。独立した実悪用の報道は本日時点で未確認。
+
+攻撃の流れ:
+1. 認証未完了のbtest接続を確立
+2. サービスの境界チェック不備を突きカーネルメモリの一部を読み取る、またはクラッシュさせる
+
+【暫定緩和策】
+・bandwidth-testサービスをインターネットから遮断する
+・ベンダー修正版へ緊急アップデートする
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・RouterOS bandwidth-testサービスへの外部からの接続試行を監視
+Splunk SPL: index=firewall dest_port=2000 app=mikrotik-btest | stats count by src_ip
+→ btestサービスは通常インターネット公開の必要がないため、外部からの着信自体が異常
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/10/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://mikrotik.com/supportsec/september-2026-vulnerability/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1≥8点かつ軸2≥4点のCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A昇格トリガー該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-89094 / Forgejo（セルフホスト型Gitフォージ）
+CVSS: 9.9
+Forgejo 16.0.4より前のバージョンで、テンプレートリポジトリからの新規リポジトリ生成機能にパストラバーサル欠陥があり、悪意あるテンプレートの.forgejo/template配下ファイルの変数展開処理を悪用することで新規.gitフォルダを注入し、認証済み攻撃者がForgejoホスト上で任意コードを実行できる。GitHub上に技術解析・PoCリポジトリが複数公開されている。国内での被害報告は本日時点で確認されていない。
+IoC: 確認されず
+監視: Forgejoサーバのリポジトリ生成ログ・異常な.gitフォルダ再作成を監視 Splunk SPL: index=forgejo action=repo_generate | search template=* | stats count by actor template_repo
+→ 外部から取り込んだテンプレートからの生成イベントを優先確認する
+参照: https://lwn.net/Articles/1093671/
+
+・CVE-2026-68487 / Plesk for Linux（Backup Manager）
+CVSS: 9.9
+Plesk for Linux（18.0.79.10以前・18.0.80〜18.0.80.6）のBackup Managerに2件の脆弱性が同時公開された。CVE-2026-68487はパストラバーサルにより認証済み顧客がroot権限で任意ファイルを書き込める欠陥、CVE-2026-68488はTOCTOU競合状態を悪用したシンボリックリンク追跡によりローカル権限昇格でroot権限のファイル/ディレクトリ所有権を奪取できる欠陥で、両者を組み合わせると認証済み顧客・リセラーがホストサーバを完全に掌握できる。Plesk 18.0.79.11または18.0.80.7で修正済み。（関連: CVE-2026-68488・TOCTOUシンボリックリンク追跡によるroot権限奪取）
+IoC: 確認されず
+監視: Plesk Backup Manager APIの異常な操作・root所有ファイルの想定外の変更を監視 Splunk SPL: index=plesk sourcetype=panel.log "backup" | stats count by customer_id action
+→ 顧客権限からのroot所有ファイル変更イベントは要調査
+参照: https://www.panellicense.com/kb/plesk-cve-2026-68487-68488-backup-manager-root/
+
+・CVE-2026-88018 / rclone（serve s3/ftp）
+CVSS: 9.8
+rclone（クラウドストレージ同期CLIツール）に認証プロキシ関連の脆弱性2件が公開された。CVE-2026-88018はserve s3を--auth-proxyかつ--auth-key未指定で運用した場合、空のシークレットに対する署名で任意のアクセスキーIDを未認証で騙れる欠陥（CVSS 9.8）。CVE-2026-88044はserve/start RCインタフェースがサーバ単位のAuthProxy設定を無視しグローバル値のみを参照するため認証プロキシが無効化される欠陥（CVSS 9.1）。いずれも1.75.1で修正済み。GitHub Advisory起点。
+IoC: 確認されず
+監視: rclone serve s3/ftpの認証プロキシ設定と未知accessKeyIDでのアクセスを監視 Splunk SPL: index=rclone sourcetype=rclone_serve | stats count by access_key_id src_ip | where count>5
+→ --auth-proxy運用時は必ず--auth-keyを併用しているか設定監査を行う
+参照: https://www.thehackerwire.com/rclone-authproxy-bypass-in-ftp-s3-serve-interfaces-cve-2026-88044/
+
+・CVE-2026-65639 / ConfigServer Security & Firewall（CSF）
+CVSS: 9.5
+cPanel/WHM等で広く使われるファイアウォール ConfigServer Security & Firewall（CSF、WebProsフォーク版含む）に未認証OSコマンドインジェクション2件が公開された。CVE-2026-65638はリクエストURLのエスケープ不備により未認証遠隔攻撃者がCSFサービスアカウント権限でコマンドを実行できる欠陥（CVSS 9.2）。CVE-2026-65639はadvanced-ruleパーサの検証不備により、設定済みのallow/denyフィードを制御できる攻撃者がroot権限でコマンドを実行できる欠陥（CVSS 9.5）。WebProsが16.30で修正。
+IoC: 確認されず
+監視: CSFプロセスからの想定外の子プロセス生成・allow/denyフィード取得元を監視 Splunk SPL: index=linux_audit comm=csf | stats count by exe parent_process | where NOT exe IN ("lfd","csf")
+→ CSF/lfdプロセスからshell/pythonなどの子プロセスが生成されていれば要調査
+参照: https://www.seekahost.in/csf-security-advisory-critical-patch/
+
+・CVE-2026-88877 / Traefik（Kubernetes Ingress Controller）
+CVSS: 9.8
+リバースプロキシ/Kubernetes Ingress ControllerのTraefikに認証関連の脆弱性2件が公開された。CVE-2026-88877（v3.7.0〜3.7.11）はnginx.ingress.kubernetes.io/from-to-www-redirectアノテーションとBasicAuth等の認証アノテーションを併用した場合、ポート指定が非数値/空のリクエストが認証・リダイレクトを回避して保護対象バックエンドへ到達する欠陥。CVE-2026-88007（2.11.0〜2.11.57・3.7.13未満）はHTTP/3有効時にNTLM/Negotiate等の接続バインド認証のバックエンドコネクションを無関係なクライアントが再利用でき、被害者としてなりすませる欠陥。3.7.12/2.11.57・3.7.13で修正。
+IoC: 確認されず
+監視: TraefikでBasicAuth設定Ingressへの非数値ポート指定リクエスト・HTTP/3経由の異常な接続再利用を監視 Splunk SPL: index=k8s_ingress sourcetype=traefik_access host_header="*:x" OR host_header="*:" | stats count by src_ip host_header
+→ 保護対象バックエンドへ認証アノテーション適用なしで到達したアクセスがあれば要調査
+参照: https://github.com/traefik/traefik/security/advisories/GHSA-6p8f-p8j2-rqmv
+
+・CVE-2026-57967 / Apache ActiveMQ Artemis（メッセージブローカー）
+CVSS: 9.8
+Apache ActiveMQ Artemis（Apache Artemis 2.50.0〜2.56.0・Apache ActiveMQ Artemis 1.0.0〜2.44.0）に3件の脆弱性が同時公開された。CVE-2026-57967は未認証遠隔攻撃者がCOREプロトコルのSESSION_REATTACHパケットを偽造し既存セッションを乗っ取れる欠陥（CVSS 9.8）。CVE-2026-49364はクラスタ初期接続ハンドシェイク中にディスカバリを悪用しクラスタ管理者クレデンシャルを未認証隣接ネットワーク攻撃者が窃取できる欠陥（CVSS 9.1）。CVE-2026-67593はOpenWireのRemoveSubscriptionInfoコマンドを偽造し認証前にキューを削除できる欠陥（CVSS 9.1）。2.57.0で修正。
+IoC: 確認されず
+監視: ActiveMQ ArtemisへのSESSION_REATTACH・クラスタディスカバリ・OpenWire RemoveSubscriptionInfoの異常発生を監視 Splunk SPL: index=middleware sourcetype=artemis_audit (SESSION_REATTACH OR RemoveSubscriptionInfo) | stats count by src_ip
+→ 認証確立前のセッション再接続・購読削除イベントは特に注意
+参照: https://radar.offseq.com/threat/cve-2026-57967
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-77770 (miniOrange 2FA（WordPressプラグイン）) → CVSS10.0だが未認証でのオプション削除によるロックアウト/機能停止に留まりRCEではない。ニッチなWPプラグインのため軸1<8点
+・CVE-2026-78361 (zipMoney(Zip Co) Payments（WooCommerceプラグイン）) → 上記miniOrangeと同型の未認証オプション削除によるロックアウトのみ。決済系だが影響は設定破壊に限定・軸1<8点
+・CVE-2026-19583 (Velociraptor（DFIRツール）) → 悪用には既存のオペレータ権限が前提（インサイダーリスク）。未認証・遠隔からの初期侵入経路ではないため軸1<8点
+・CVE-2026-89049 (Amazon AWS SSM Agent) → 悪用には認証済みリモートユーザーが前提。ポートフォワーディング機能のSSRFでリンクローカル到達に限定・軸1<8点
+・CVE-2026-18351 (Drag and Drop File Upload for Elementor Forms（WPプラグイン）) → ニッチなWordPressプラグイン、KEV/PoC未確認・軸1<8点
+・CVE-2026-71805 (LZ-litchi 1.0.0) → 知名度・普及度不明の製品、KEV/PoC未確認・軸1<8点
+・CVE-2026-7188 (USOM(トルコCERT)報告製品（製品名詳細不明）) → NVD記載の説明文に対象製品名の明記なし。SQLインジェクションのみでKEV/PoC未確認のため個別追跡を見送り
+・CVE-2026-9163 (USOM(トルコCERT)報告製品（製品名詳細不明）) → CVE-2026-7188と同型・対象製品名の明記なし。KEV/PoC未確認のため個別追跡を見送り
+・CVE-2026-81800 (Verified Reviews（Avis Vérifiés、WordPressプラグイン）) → ニッチなWordPressプラグインのSQLi、KEV/PoC未確認・軸1<8点
+・CVE-2026-8323 (Armiya Information Technologies製品) → オープンリダイレクトのみで影響度が低く、軸1<8点
+・CVE-2026-88069 (Pandora（マルウェア解析サンドボックス）) → 2026-09-10付でreported-cves.mdへ登録済み（当時exploitation_stage: none・軸1閾値未達で除外採用）。本ウィンドウ内に新たな変化（KEV追加・実悪用確認等）は確認されず
+・CVE-2026-78082 (joomshaper.com製Joomla拡張（Property Search and Map Filtering）) → ニッチなJoomla拡張のSQLi、KEV/PoC未確認・軸1<8点
+・CVE-2026-75940 (Lenovo Health（中国限定配布Androidアプリ）) → 配布が中国国内限定のモバイルアプリであり、対象範囲が地理的に限定的・軸1<8点
+・CVE-2026-44950 (libXfont2（X11フォントサーバクライアント）) → レガシーなX11フォントサーバコンポーネント。現代的な環境での露出は限定的・軸1<8点
+・CVE-2026-59679 (libXfont2（X11フォントサーバクライアント）) → CVE-2026-44950と同一コンポーネントの関連脆弱性。同様の理由で軸1<8点
+・CVE-2026-87931 (Pavlok Behavioral Conditioning Wearable) → Bluetooth等ローカルネットワーク内での悪用が前提のニッチなウェアラブル機器。VulDB情報のみでベンダー無応答・軸1<8点
+・CVE-2026-88860 (Capgo（モバイルOTA配信SaaS）) → 権限管理の不備だが対象がニッチなSaaSでRCE等ではない・軸1<8点
+・CVE-2026-88864 (Capgo（モバイルOTA配信SaaS）) → CVE-2026-88860と同一ベンダーの別欠陥（Supabase経由のSSOバイパス）。同様の理由で軸1<8点
+・CVE-2026-88866 (WWBN AVideo（LoginControlプラグイン）) → 格納型XSSに留まりRCE・認証バイパスではない・軸1<8点
+・CVE-2026-88867 (WWBN AVideo（カテゴリ管理）) → 同上・格納型XSS。CVE-2026-88866と同一製品の別コンポーネント
+・CVE-2026-88868 (WWBN AVideo（LiveLinksプラグイン）) → 同上・格納型XSS
+・CVE-2026-88869 (WWBN AVideo（AD_Serverプラグイン）) → 同上・格納型XSS
+・CVE-2026-88899 (knowns（opencodeプロキシ）) → 知名度・普及度が限定的なOSSツール、パストラバーサルのみでKEV/PoC未確認・軸1<8点
+・CVE-2026-89042 (passport-saml-encrypted（npmパッケージ）) → SAML署名検証バイパスだが元プロジェクトの非公式フォークで採用実績が限定的・軸1<8点
+・CVE-2026-89043 (passport-saml-encrypted（npmパッケージ）) → CVE-2026-89042と同一パッケージのXML署名ラッピング脆弱性。同様の理由で軸1<8点
+・CVE-2026-84939 (Apache FreeMarker) → パストラバーサルの悪用には呼び出し元アプリがロケール識別子を利用者入力から構成する設計であることが前提。localized lookup無効化で回避可能・KEV/PoC未確認のため軸1<8点（テンプレートエンジンとしての採用範囲は広いため今後の動向を継続監視）
+・CVE-2026-89086 (jose（OCaml向けJOSEライブラリ）) → OCamlエコシステムの小規模ライブラリで採用実績が限定的・軸1<8点
+
+本日の集計:
+CVE — ゼロデイ特報2件 / 本編0件 / 参考A0件 / 参考B6件 / 除外27件
+========================================
