@@ -1,0 +1,81 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-11 15:00 JST
+調査期間: 2026-09-10 07:00 〜 2026-09-11 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-09-10 〜 2026-09-11
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にburst_status=threshold_met以上かつ軸X高・軸Y高の実インシデントなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・IBM Langflow OSS: 公開MCPプロジェクトエンドポイント経由の未認証RCE（CVE-2026-85025）
+カテゴリ: CC1 採用契機: A-R/A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: LLM03/AG01
+IBM Langflow OSS（LLMワークフロー構築基盤）の1.0.0〜1.11.5において、公開共有されたMCPプロジェクトエンドポイントのセッション分離・公開フロー制限の実装不備により、未認証攻撃者が任意コードを実行しチャットセッションを閲覧・改ざんできる（CVSS 9.8）。Langflowは同時期に複数の認証・認可不備（CVE-2026-8505等）も報告されており、エージェント型AI基盤の公開エンドポイント設計に系統的な課題があることを示している。
+監視: Langflowの公開flow/MCPエンドポイントへの異常なリクエストパターンを監視 検知SPL: index=langflow sourcetype=access_combined uri_path="*/api/v1/mcp/project*" | stats count by src_ip status
+→ 未認証での公開エンドポイントアクセスからのコード実行痕跡（子プロセス生成等）を優先確認
+参照: https://www.ibm.com/support/pages/security-bulletin-unauthenticated-remote-code-execution-langflow-oss-pythonreplcomponent-builtins-injection
+
+・Flowise: predictionエンドポイント経由の未認証RCE（CVE-2026-52098）
+カテゴリ: CC1 採用契機: A-R/A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: LLM03/AG01
+オープンソースのAIエージェント構築ツールFlowise（3.1.2）において、/api/v1/prediction/<flowId>エンドポイントの入力検証不備により、未認証遠隔攻撃者が任意コードを実行できる（CVSS 9.8）。Flowiseは過去にもMCPカスタムノード経由のRCEで実悪用・インターネット露出インスタンスの大量存在が報告されており、AIワークフロー基盤全般に共通する「エンドポイント露出＋入力検証不足」パターンの継続として注視する。
+監視: Flowise公開インスタンスのprediction APIへの異常リクエストを監視 検知SPL: index=flowise sourcetype=access_combined uri_path="*/api/v1/prediction/*" method=POST | stats count by src_ip flowId
+→ インターネット露出インスタンスの棚卸しとバージョン確認を優先する
+参照: https://cybersecuritynews.com/flowise-vulnerability/
+
+・OmniRoute（AIゲートウェイ）: カスタムエージェント経由のRCE（CVE-2026-88062）
+カテゴリ: CC1 採用契機: A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: LLM05
+複数のAIモデルプロバイダを単一エンドポイントに集約するオープンソースAIゲートウェイOmniRouteにおいて、ACP Custom-Agent機能の入力処理不備によるリモートコード実行がGitHub Advisoryとして公開された（CVSS 9.5）。AIゲートウェイ製品はマルチテナントで複数モデル・複数エージェント設定を仲介するため、単一の脆弱性が波及する範囲が大きい点に留意する。
+監視: OmniRoute Custom-Agent設定APIへの異常な入力を監視 検知SPL: index=omniroute sourcetype=access_combined uri_path="*/acp/agent*" | stats count by src_ip
+→ GHSA記載の修正版へのアップデート状況を優先確認
+参照: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-75705
+
+・Amazon Deep Java Library（DJL）: テンソルバッファ検証の整数オーバーフロー（CVE-2026-85228）
+カテゴリ: CC1 採用契機: A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+Amazonが保守するJava向け深層学習フレームワークDeep Java Library（DJL、0.13.0〜0.36.0）において、細工したテンソル形状がバイトサイズ計算で32bit符号付き整数の範囲を超えてラップし、過小なバッファが検証を通過することで境界外読み取りが発生する（CVSS 9.1）。未認証の遠隔攻撃者が細工したテンソルペイロードを送ることで隣接プロセスメモリの情報取得やサービス停止を引き起こす可能性がある。0.37.0で修正済み。
+監視: DJLベースの推論サービスへの異常なテンソル入力・クラッシュ発生を監視 検知SPL: index=ml_inference sourcetype=djl_service ("OutOfMemory" OR "crash") | stats count by src_ip
+→ 0.37.0未満のDJLを利用する推論エンドポイントの棚卸しを優先
+参照: https://vuldb.com/vuln/402163
+
+・Google Gemini CLI: 2026-04修正済みRCE連鎖にCVE番号が本日採番（CVE-2026-13745）
+カテゴリ: AA4 採用契機: A-R
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: AG02
+（事実）CVE-2026-13745はGoogle Gemini CLIおよびrun-gemini-cli GitHub Actionにおいて、信頼できないローカル.envファイルがGEMINI_CLI_HOMEを上書きできる不備を発端に、GitHubのissueコメント経由のプロンプトインジェクションからCI/CDホスト上での任意コード実行に至る連鎖（CVSS 10.0）を指す。Googleは2026-04-24にGHSA-wpqr-6v78-jr5gとして公開し、run-gemini-cli 0.1.22およびGemini CLI 0.39.1/0.40.0-preview.3で既に修正済みである。本日確認できた変化はNVDへのCVE ID採番のみであり、新規の実悪用や未修正の脆弱性ではない。（推測）採番の遅延自体はAIエージェント系ツールのCVE管理プロセスの遅れを示唆する可能性がある。
+参照: https://www.securityweek.com/gemini-cli-vulnerability-could-have-led-to-code-execution-supply-chain-attack/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に国内影響・実害が確認されたAI攻撃事案なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はAIプラットフォーム（LLMアプリ構築基盤・AIゲートウェイ・MLライブラリ）のCVE公開が5件確認された（IBM Langflow・Flowise・OmniRoute・Amazon DJL・Google Gemini CLI）。いずれも単一日の技術的CVE公開に留まり、Temporal Burst Filtering（48時間3ソース以上）の本編昇格閾値には未到達のため参考Bに区分した。Gemini CLIの1件は2026-04に既に修正済みの脆弱性へCVE番号が本日採番されたものであり新規の実害ではない。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B5件 / 除外0件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）0件 / C（インフラ）4件
+========================================
