@@ -1,0 +1,116 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-13 09:30 JST
+調査期間: 2026-09-12 07:00 〜 2026-09-13 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にパッチ未提供のゼロデイ特報該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1≧8点かつ軸2≧4点のCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A昇格トリガー該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-85706 / GitLab Community Edition / Enterprise Edition
+対象: 18.7以降19.1.8未満、19.2系19.2.6未満、19.3系19.3.2未満（自己管理インストールのみ影響。GitLab.com/GitLab Dedicatedは対象外）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / PoC公開 / 実悪用確認 / パッチ提供済み
+
+【24時間以内の変化】
+[The Hacker News 2026-09-12] watchTowrが2026-09-11 06:00 UTCから開始した未認証事前ファイル読み取りを狙った実悪用スキャンを観測したと報道（開示翌日から悪用開始）。
+[BleepingComputer 2026-09-12] GitLabが自己管理インスタンスの緊急パッチ適用を改めて強く要請していると報道。
+
+【概要】
+GitLabのリポジトリcommits API（/api/v4/projects/{id}/repository/commits/）にパス制限不備と認証強制欠如（CWE-22）があり、未認証の攻撃者が意図した範囲外の任意ファイルを読み取れる。設定情報・認証情報・ソースコード・CI/CDシークレットの露出につながる恐れがある。CISAは2026-09-11にKEVカタログへ初回追加し、watchTowrは開示翌日の2026-09-11 06:00 UTCから同脆弱性を狙った未認証スキャンを観測している。国内でのJPCERT/CC・IPA注意喚起や国内被害報道は本日時点で確認できない。
+
+攻撃の流れ:
+1. 未認証でcommits APIへfile.pathパラメータを含むHTTP POSTリクエストを送信
+2. パス制限の不備を悪用し意図した範囲外の任意ファイルを読み取り
+3. 取得した設定情報・認証情報・CI/CDシークレットを用いた二次侵害
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[GitLab commits APIへのfile.pathパラメータ付き不審リクエストを監視する]
+Splunk SPL: index=web_proxy OR index=gitlab_access uri_path="*/repository/commits/*" (uri_query="*file.path*" OR form_data="*file.path*") | stats count by src_ip, uri_path | where count > 5
+→ 認証済みユーザーの正規のAPI利用と区別するため、未認証（Authorizationヘッダ無し）のリクエストに絞り込む。file.pathに../等のパストラバーサル文字列が含まれる場合は最優先で確認する。
+
+【参照】
+https://thehackernews.com/2026/09/gitlab-cvss-10-file-read-flaw-draws-in.html
+https://www.bleepingcomputer.com/news/security/gitlab-urges-users-to-patch-max-severity-path-traversal-flaw/
+https://cybersecuritynews.com/gitlab-patches-critical-flaws/
+
+------------------------------------------------------------
+2. CVE-2026-85102 / Check Point Quantum Security Gateway / Spark Firewall（VPN機能）
+対象: Site-to-Site VPNまたはRemote Access VPNを使用するSecurity GatewayおよびSpark Firewall（2026-09-09提供の修正版未適用のもの）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: パッチ提供済み
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-12] オランダ国家サイバーセキュリティセンター（NCSC）が本脆弱性の悪用可能性・影響ともに「高」と評価し、近く実悪用が始まると予想する注意喚起を発行したと報道（2026-09-10報告済みの本CVEに対する初の政府機関評価）。
+[Check Point 2026-09-12] Check Pointは本日時点で実悪用・公開PoC・IOCのいずれも確認していないと表明（社内発見のまま）。
+
+【概要】
+VPNネゴシエーション時の証明書データ検証不備（CWE-295）により、リモートの未認証攻撃者がSecurity Gateway上で任意コードを実行できる可能性がある。Check Pointは2026-09-09に修正版を提供済みで社内発見のため実悪用は確認されていないが、オランダNCSCは2026-09-12、悪用可能性・影響度をともに「高」と評価し実悪用の切迫（imminent）を警告する注意喚起を発行した。国内でのJPCERT/CC・IPA注意喚起は本日時点で確認できない。（推測）NCSCの評価は過去の境界VPN機器脆弱性で観測されたパッチ公開後の急速な武器化パターンに基づく先読みであり、実際の悪用開始を確認したものではない。
+
+攻撃の流れ:
+1. （推測）攻撃者が修正パッチの差分解析からVPN証明書検証ロジックの不備を再現
+2. 細工した証明書を用いたVPNネゴシエーションでSecurity Gatewayに対しリモートコード実行を試行
+3. 境界VPN機器の制御奪取を足がかりとした内部ネットワークへの侵入
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Check Point Security Gateway／Spark FirewallのVPNネゴシエーションログにおける異常な証明書検証失敗・再試行の急増を監視する]
+Splunk SPL: index=checkpoint sourcetype=cp_log (action="Fail" OR action="reject") product="VPN" | stats count by src, dst | where count > 20
+→ 通常運用でも証明書失効・時計ズレ等で失敗ログは発生するため、単一送信元IPからの短時間大量試行に絞って確認する。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/dutch-ncsc-critical-check-point-vpn-flaws-exploitation-is-imminent/
+https://cyberpress.org/critical-check-point-vpn-flaws/
+
+━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-87719 (GitLab Enterprise Edition（Duo Chat）) → CVSS9.9・インセキュアデシリアライゼーション(CWE-502)だがDuo Chatへの認証済みアクセスを要するため未認証RCE該当なし。CVE-2026-85706と同一2026-09-09提供のGitLabセキュリティリリース(19.1.8/19.2.6/19.3.2)に含まれる関連脆弱性のため同エントリ内に付記。軸1=6点(CVSS9+3・広く使われる製品+1・境界機器非該当)/軸2=0点で判定順4（除外）。
+・CVE-2026-82845 (Masteriyo LMS WordPressプラグイン) → CVSS9.9・メタデータのデシリアライゼーション不備(CWE-502)によるオブジェクトインジェクション。ニッチなLMSプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=3点/軸2=0点で判定順4（除外）。
+・CVE-2026-75800 (Frontegg SAML SSO WordPressプラグイン) → CVSS9.8・SAML認証応答の署名・発行者未検証(CWE-347)による認証バイパス。KEV未登録・PoC未確認・国内報道なし。軸1=6点(CVSS9+3・認証バイパス+3)/軸2=0点で判定順4（除外）。
+・CVE-2026-78006 (The Events Calendar WordPressプラグイン（is_safe_widget_instance）) → CVSS9.8・不十分な検証によるRCE(CWE-94相当)。KEV未登録・PoC未確認・国内報道なし。軸1=6点(CVSS9+3・未認証RCE+3)/軸2=0点で判定順4（除外）。
+・CVE-2026-78159 (The Events Calendar WordPressプラグイン（parse_array）) → CVSS9.8・parse_array関数の検証不備によるRCE。CVE-2026-78006と同一プラグインの別経路。KEV未登録・PoC未確認・国内報道なし。軸1=6点/軸2=0点で判定順4（除外）。
+・CVE-2026-81402 (DS Ad Rotator WordPressプラグイン) → CVSS9.8・権限チェック/nonce検証/ファイル種別検証の欠如(CWE-434)による未認証任意ファイルアップロード。ニッチなプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=6点/軸2=0点で判定順4（除外）。
+・CVE-2026-84171 (WP images upload on piclect WordPressプラグイン) → CVSS9.8・アップロードファイル名/種別未検証(CWE-434)による未認証任意ファイルアップロード。ニッチなプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=6点/軸2=0点で判定順4（除外）。
+・CVE-2026-85681 (WP Component WordPressプラグイン) → CVSS9.8・未認証ユーザーに開放されたアクションへの権限/nonceチェック欠如。ニッチなプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=6点/軸2=0点で判定順4（除外）。
+・CVE-2026-90558 (sngrep（SIPパケットキャプチャツール）) → CVSS9.3(v3.1)・SIP属性フォーマット処理のスタックバッファオーバーフロー(CWE-121)。ニッチなCLIツールでKEV未登録・PoC未確認・国内報道なし。軸1=6点(CVSS9+3・想定リモートバッファオーバーフロー+3)/軸2=0点で判定順4（除外）。
+・CVE-2026-77005 (CODE MONKEYS PROPOSALS WordPressプラグイン) → CVSS9.6・ユーザー指定パスの未検証・権限チェック欠如によるファイル削除(CWE-22系)。ニッチなプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=3点/軸2=0点で判定順4（除外）。
+・CVE-2026-77006 (WebTotem Backups WordPressプラグイン) → CVSS9.6・パス未検証・権限チェック欠如・CSRFトークン検証結果を無視(CWE-22系)。ニッチなプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=3点/軸2=0点で判定順4（除外）。
+・CVE-2026-90456 (バンドル在庫管理コンポーネントの例示環境設定ファイル) → CVSS9.2(v4.0)・例示（サンプル）環境設定ファイルに固定の公開既知管理者パスワードが同梱(CWE-798)。デプロイ時に当該サンプルをそのまま本番投入した場合のみ影響が顕在化する限定的事象。製品・ベンダー名がNVD記述からは特定できず、KEV未登録・PoC未確認・国内報道なし。軸1=6点(CVSS9+3・認証バイパス相当+3)/軸2=0点で判定順4（除外）。
+・CVE-2026-84869 (ConnectWise ScreenConnect（クライアント）) → 2026-09-09初報・軸1=13点/軸2=1点でゼロデイ特報採用済み（reported-cves.md記載）。CISAは2026-09-11（本調査窓の前日・窓外）にKEVカタログへ新規追加した。本調査窓（2026-09-12 07:00〜09-13 07:00 JST）内に新たな変化点は確認されなかったため今回は本文掲載を見送り、reported-cves.mdの備考欄にKEV登録日(2026-09-11)を追記するに留める。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B2件 / 除外13件

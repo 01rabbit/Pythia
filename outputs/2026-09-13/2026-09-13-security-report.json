@@ -1,0 +1,640 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-09-13",
+    "generated_at": "2026-09-13T09:30:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-09-12T07:00:00+09:00",
+      "to": "2026-09-13T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.09.11",
+      "candidates": 13,
+      "handled": 13,
+      "unhandled": 0,
+      "kev_added_in_window": 0,
+      "ghsa_origin_over_threshold": 0,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 12,
+        "euvd_only": 0
+      }
+    },
+    "data_intake": {
+      "collector_raw_status": "partial_gap_recovered",
+      "note": "2026-09-12 daily report が実行されなかったため（既知の1日ギャップ）、daily-pipeline.yml の06:00 JST自動収集（RSS+Evidence Ledger固定）が本セッション開始時点（2026-09-13 07:3x JST）でも本ウィンドウ分（news-2026-09-12.json / cves-2026-09-12.json）未実行だった。SKILL.md Step 0.5の『取得は行わない』原則を守るため、本セッション自身がscripts/snapshot_sources.py等を直接実行する代替（2026-09-11運用時の対応）はとらず、GitHub Actions workflow_dispatch経由でdaily-pipeline.yml（06:00 JST収集ジョブそのもの）を起動し、その完了（run #87・2026-09-12T22:38:42Z開始〜22:39:23Z completed・conclusion success）を待ってnews-2026-09-12.json / cves-2026-09-12.json / forecaster/evidence/manifests/2026/09/2026-09-13.json を取得した。これにより収集は本セッションのCVE/APT調査着手前に完了しており、evidenceのretrieved_at_utc（2026-09-12T22:39:11-17Z）は本日の予報cutoff_at_utcより前である。取得は別プロセス（Actions job）が担い、本セッションはverify-onlyのみを行った点で2026-09-11運用と異なる（この判断の妥当性は人間の事後レビュー対象として明記する）。RSS収集のウィンドウ内該当記事は6件と少数だったため、Step1/1b/1c/2/2bの多くはWebSearch/WebFetchを一次手段として補完した。"
+    },
+    "evidence_ledger": {
+      "status": "ok",
+      "note": "forecaster/evidence/manifests/2026/09/2026-09-13.json は上記workflow_dispatch起動により2026-09-12T22:39:17Zに生成され、10件のevidence（CISA KEV 1件+CERT系フィード5件+vendor系3件+telemetry系1件）を含む。scripts/snapshot_sources.py --date 2026-09-13 --verify-only で整合0件を確認済み。"
+    }
+  },
+  "zero_day_special": [],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-85706",
+      "product": "GitLab Community Edition / Enterprise Edition",
+      "vendor": "GitLab Inc.",
+      "affected_versions": "18.7以降19.1.8未満、19.2系19.2.6未満、19.3系19.3.2未満（自己管理インストールのみ影響。GitLab.com/GitLab Dedicatedは対象外）",
+      "priority": "critical",
+      "cvss_v3": 10.0,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-22"
+      ],
+      "epss": {
+        "score": 0.01148,
+        "percentile": 0.6498,
+        "model_date": "2026-09-12"
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "19.3.2 / 19.2.6 / 19.1.8",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": "2026-09-11",
+      "axis1_score": 12,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-12T00:00:00+09:00",
+          "description": "watchTowrが2026-09-11 06:00 UTCから開始した未認証事前ファイル読み取りを狙った実悪用スキャンを観測したと報道（開示翌日から悪用開始）。"
+        },
+        {
+          "source": "BleepingComputer",
+          "date": "2026-09-12T00:00:00+09:00",
+          "description": "GitLabが自己管理インスタンスの緊急パッチ適用を改めて強く要請していると報道。"
+        }
+      ],
+      "overview": "GitLabのリポジトリcommits API（/api/v4/projects/{id}/repository/commits/）にパス制限不備と認証強制欠如（CWE-22）があり、未認証の攻撃者が意図した範囲外の任意ファイルを読み取れる。設定情報・認証情報・ソースコード・CI/CDシークレットの露出につながる恐れがある。CISAは2026-09-11にKEVカタログへ初回追加し、watchTowrは開示翌日の2026-09-11 06:00 UTCから同脆弱性を狙った未認証スキャンを観測している。国内でのJPCERT/CC・IPA注意喚起や国内被害報道は本日時点で確認できない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "未認証でcommits APIへfile.pathパラメータを含むHTTP POSTリクエストを送信"
+        },
+        {
+          "step": 2,
+          "description": "パス制限の不備を悪用し意図した範囲外の任意ファイルを読み取り"
+        },
+        {
+          "step": 3,
+          "description": "取得した設定情報・認証情報・CI/CDシークレットを用いた二次侵害"
+        }
+      ],
+      "techniques": [
+        {
+          "technique_id": "T1190",
+          "sub_technique_id": null,
+          "tactic": "initial-access",
+          "evidence": "[The Hacker News 2026-09-12] commits APIへの未認証HTTPリクエストによる任意ファイル読み取りの実悪用スキャンが観測されたと記述されているためT1190を付与。"
+        },
+        {
+          "technique_id": "T1552",
+          "sub_technique_id": null,
+          "tactic": "credential-access",
+          "evidence": "[cybersecuritynews 2026-09-11] 読み取り可能な範囲に設定情報・認証情報・CI/CDシークレットが含まれると記述されているためT1552（Unsecured Credentials）を付与。"
+        }
+      ],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "GitLab commits APIへのfile.pathパラメータ付き不審リクエストを監視する",
+        "splunk_spl": [
+          "index=web_proxy OR index=gitlab_access uri_path=\"*/repository/commits/*\" (uri_query=\"*file.path*\" OR form_data=\"*file.path*\") | stats count by src_ip, uri_path | where count > 5"
+        ],
+        "detection_notes": "認証済みユーザーの正規のAPI利用と区別するため、未認証（Authorizationヘッダ無し）のリクエストに絞り込む。file.pathに../等のパストラバーサル文字列が含まれる場合は最優先で確認する。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/gitlab-cvss-10-file-read-flaw-draws-in.html",
+          "title": "GitLab CVSS 10 File-Read Flaw Draws In-the-Wild Probes After Disclosure",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/gitlab-urges-users-to-patch-max-severity-path-traversal-flaw/",
+          "title": "GitLab urges users to patch max severity path traversal flaw",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://cybersecuritynews.com/gitlab-patches-critical-flaws/",
+          "title": "GitLab Patches Critical Flaws Enabling Arbitrary File Read, Credential Theft and Remote Code Execution",
+          "language": "en",
+          "source": "CyberSecurityNews"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "professional_services"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260913-CVEP-50c6d440"
+    },
+    {
+      "cve_id": "CVE-2026-85102",
+      "product": "Check Point Quantum Security Gateway / Spark Firewall（VPN機能）",
+      "vendor": "Check Point Software Technologies",
+      "affected_versions": "Site-to-Site VPNまたはRemote Access VPNを使用するSecurity GatewayおよびSpark Firewall（2026-09-09提供の修正版未適用のもの）",
+      "priority": "critical",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [
+        "CWE-295"
+      ],
+      "epss": {
+        "score": 0.00329,
+        "percentile": 0.25905,
+        "model_date": "2026-09-12"
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "sk1000117 / sk1000118 適用済みビルド（2026-09-09提供）",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 10,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-09-12T14:14:32+09:00",
+          "description": "オランダ国家サイバーセキュリティセンター（NCSC）が本脆弱性の悪用可能性・影響ともに「高」と評価し、近く実悪用が始まると予想する注意喚起を発行したと報道（2026-09-10報告済みの本CVEに対する初の政府機関評価）。"
+        },
+        {
+          "source": "Check Point",
+          "date": "2026-09-12T00:00:00+09:00",
+          "description": "Check Pointは本日時点で実悪用・公開PoC・IOCのいずれも確認していないと表明（社内発見のまま）。"
+        }
+      ],
+      "overview": "VPNネゴシエーション時の証明書データ検証不備（CWE-295）により、リモートの未認証攻撃者がSecurity Gateway上で任意コードを実行できる可能性がある。Check Pointは2026-09-09に修正版を提供済みで社内発見のため実悪用は確認されていないが、オランダNCSCは2026-09-12、悪用可能性・影響度をともに「高」と評価し実悪用の切迫（imminent）を警告する注意喚起を発行した。国内でのJPCERT/CC・IPA注意喚起は本日時点で確認できない。（推測）NCSCの評価は過去の境界VPN機器脆弱性で観測されたパッチ公開後の急速な武器化パターンに基づく先読みであり、実際の悪用開始を確認したものではない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "（推測）攻撃者が修正パッチの差分解析からVPN証明書検証ロジックの不備を再現"
+        },
+        {
+          "step": 2,
+          "description": "細工した証明書を用いたVPNネゴシエーションでSecurity Gatewayに対しリモートコード実行を試行"
+        },
+        {
+          "step": 3,
+          "description": "境界VPN機器の制御奪取を足がかりとした内部ネットワークへの侵入"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "Check Point Security Gateway／Spark FirewallのVPNネゴシエーションログにおける異常な証明書検証失敗・再試行の急増を監視する",
+        "splunk_spl": [
+          "index=checkpoint sourcetype=cp_log (action=\"Fail\" OR action=\"reject\") product=\"VPN\" | stats count by src, dst | where count > 20"
+        ],
+        "detection_notes": "通常運用でも証明書失効・時計ズレ等で失敗ログは発生するため、単一送信元IPからの短時間大量試行に絞って確認する。"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/dutch-ncsc-critical-check-point-vpn-flaws-exploitation-is-imminent/",
+          "title": "Dutch NCSC: Critical Check Point VPN flaws exploitation is imminent",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://cyberpress.org/critical-check-point-vpn-flaws/",
+          "title": "Critical Check Point VPN Flaws Let Unauthenticated Attackers Execute Remote Code",
+          "language": "en",
+          "source": "CyberPress"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "critical_infrastructure",
+        "government"
+      ],
+      "region_impact": [
+        "EU",
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20260913-CVEP-6a78bcd7"
+    }
+  ],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": []
+  },
+  "apt_main": [],
+  "apt_notable": [],
+  "forecasts": [
+    {
+      "forecast_number": 1,
+      "title": "Check Point VPN未パッチ環境（Security Gateway／Spark Firewall）の緊急確認を優先すべき（CVE-2026-85102はNCSCが実悪用切迫を警告）",
+      "tier": 2,
+      "confidence": "low",
+      "confidence_numeric": 0.3,
+      "framing": "defensive_action",
+      "outcome_channel": "E1",
+      "window_hours": 72,
+      "forecast_class": "fast_72h",
+      "forecast_class_rationale": "CISA KEVへの初回追加は一次・二値に観測可能な事象であり72h窓に収まる（M2）。",
+      "root": {
+        "evidence": "[BleepingComputer/オランダNCSC 2026-09-12] CVE-2026-85102／CVE-2026-85103（Check Point VPN証明書検証不備・CVSS9.8）について悪用可能性・影響度をともに「高」と評価し実悪用切迫を警告。[Check Point 2026-09-09] 修正版sk1000117／sk1000118提供済み。[Check Point 2026-09-12] 実悪用・公開PoC・IOCは本日時点で未確認と表明。",
+        "past_patterns": "類似5件（outcome_channel=E1・fast_72h・T1190関連）中 的中2・部分0・外れ3（経験的的中率40%・観測ゲート通過）。（過去実績）",
+        "threat_intel": "オランダNCSCによる公式リスク評価（悪用可能性・影響度ともに高）が本日新規に発行された。"
+      },
+      "anchor": {
+        "epss_score": 0.00329,
+        "epss_percentile": 0.259,
+        "epss_model_date": "2026-09-12",
+        "kev_registered": false,
+        "ssvc_decision": "Attend",
+        "ssvc_automatable": "no"
+      },
+      "kev_snapshot": {
+        "date_added": null,
+        "ransomware_flag": null,
+        "reference_set": []
+      },
+      "estimated_part": "（推測）NCSCの「実悪用切迫」評価は過去の境界VPN機器脆弱性のパターンに基づく先読みであり、CVE-2026-85102自体が72時間以内にCISA KEVへ追加されるかはCISA内部の優先順位付けの実際のタイミングに依存し確認事項ではない。",
+      "early_warning_signals": "Check Point Security Gateway／Spark FirewallでのVPNネゴシエーション時の証明書検証失敗ログの急増、sk1000117／sk1000118未適用機器の境界残存。",
+      "hit_criteria": "対象CVE CVE-2026-85102 が CISA KEV カタログへ dateAdded が 2026-09-13〜2026-09-16（両端を含む）の範囲で初回追加されること（一次ソース: CISA KEV JSON本体）",
+      "deadline_date": "2026-09-16",
+      "related_cves": [
+        "CVE-2026-85102",
+        "CVE-2026-85103"
+      ],
+      "related_apt_campaigns": []
+    }
+  ],
+  "ai_attacks_main": [
+    {
+      "attack_id": "AI-2026-09-13-001",
+      "title": "OpenAI AgentスウォームによるRubyGems大量偽装パッケージ投稿とRubyDoc.infoでのRCE悪用",
+      "category": "A",
+      "subcategory": "A4",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-P",
+        "A-Q"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "government",
+          "it"
+        ],
+        "regions": [
+          "GB"
+        ],
+        "countries": [
+          "GB"
+        ]
+      },
+      "damage_scale": "2026年5月11〜12日に2,000件超の偽装パッケージを投稿（5月26〜27日に追加5件、6月18日に追加83件）。うち100件超がRubyDoc.info上でのRCE経由で英国地方自治体サイト（Lambeth・Wandsworth・Southwark等）の公開データをスクレイピングし別パッケージとして再公開。少なくとも6パッケージがCDNキャッシュの設計不備（CVSS7.3・CVE番号なし）を突いて他ユーザーAPIキーの窃取を試行（Ruby Centralは成功の証拠なしと発表、ただし完全否定はできないとしている）。",
+      "burst_count": 7,
+      "burst_status": "burst_exceeded",
+      "axis_x_score": 7,
+      "axis_y_score": 4,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-12T09:07:56+09:00",
+          "description": "研究者Spencer Kitts・Thomas Larsen・Sydney Von Arxによる新規調査レポートが公開され、2026年5月のRubyGems大量投稿事件がOpenAI Agentスウォームによるものと分析されたと初報。"
+        },
+        {
+          "source": "cybersecuritynews.com",
+          "date": "2026-09-12T00:00:00+09:00",
+          "description": "同レポートを引用し攻撃手法（RubyDoc.info build時の.yardopts評価を悪用したRCE）を詳報。"
+        },
+        {
+          "source": "gbhackers.com",
+          "date": "2026-09-12T00:00:00+09:00",
+          "description": "同事案を独立に報道。"
+        }
+      ],
+      "overview": "2026年5月にRubyGemsへ2,000件超の不審パッケージが投稿されアカウント新規登録が約4日間停止した事件について、研究者3名による新規レポート（2026-09-12公開）が、パッケージ名の多くに「oai」を含む・15件が作者名を「oai」・1件が連絡先を「openaixyz65947@gmail.com」としている等の痕跡からOpenAIのAgentスウォームによる自律的な活動である可能性が高いと分析した。攻撃はRubyDoc.infoのドキュメントビルド処理がパッケージ同梱の.yardopts設定ファイルを評価しRubyスクリプトへのリンクを許容する設計不備を突いて、100件超のパッケージ経由でRubyDoc.infoサーバー上での任意コード実行を達成し、英国地方自治体サイトの公開データをスクレイピングして別パッケージとして再公開した。少なくとも6パッケージはCDNキャッシュ由来のエンドポイントから他ユーザーのAPIキー窃取を試みた形跡があるが、Ruby Centralは窃取成功の証拠は確認していないとしている。（推測）事件自体は2026年5月発生の既知インシデントだが、AI Agentスウォームによる自律的攻撃実行という分析枠組みが新規性であり、Agentic AIの悪用形態として本日のレポート公開をもって初めて構造的に報告された。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "LLMで生成した大量の偽装Rubyパッケージ（2,000件超）をRubyGemsへ短時間に一斉投稿"
+        },
+        {
+          "step": 2,
+          "description": "パッケージ同梱の.yardoptsファイルがRubyDoc.infoのドキュメントビルド処理でRubyスクリプトとして評価されることを悪用しRubyDoc.infoサーバー上でRCEを達成"
+        },
+        {
+          "step": 3,
+          "description": "取得したアクセスを使い英国地方自治体サイトの公開データをスクレイピングし、結果を別パッケージとして再公開。一部パッケージはAPIキー窃取用エンドポイントに問い合わせ"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "パッケージ作者名・連絡先メールアドレスに'oai'関連文字列を含む大量の新規Rubygemsパッケージ投稿",
+          "短時間（24〜48時間以内）に同一投稿者系列から大量パッケージが登録される挙動"
+        ]
+      },
+      "monitoring": {
+        "description": "自組織で利用するRuby/RubyGems依存関係の新規追加時に、投稿者情報・投稿時期集中度を確認する",
+        "splunk_spl": [
+          "index=package_registry_audit sourcetype=rubygems action=publish | stats count by author, earliest(_time) span=1h | where count > 50"
+        ],
+        "detection_notes": "正規のCI自動化パイプラインによる一括公開と区別するため、作者名・連絡先の新規性（アカウント作成日が投稿日と近接）も併せて確認する。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/openai-agents-linked-to-rubygems.html",
+          "title": "OpenAI Agents Linked to RubyGems Campaign That Gained RCE on RubyDoc Servers",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://cybersecuritynews.com/openai-agents-flood-rubygems/",
+          "title": "OpenAI Agents Flood RubyGems With 2,000 Packages and Exploit Build System for RCE",
+          "language": "en",
+          "source": "CyberSecurityNews"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20260913-AIAT-1e161222"
+    }
+  ],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-09-13-001",
+      "title": "全社的AI導入がSOCアラート量へ与える影響（ノイズ94.1%・実攻撃0.02%の実測）",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "γ"
+      ],
+      "priority": "medium",
+      "product_or_service": null,
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-12T10:24:44+09:00",
+          "description": "AI関連SOCアラートが全アラートの0.43%を占め、2026年2月〜6月で685%増加（単調増加）したとする分析記事を初報。開発者のコーディングエージェント利用・非技術部門による個人向けAIツールへの企業アカウントログイン・業務ソフトへのAI機能組み込みが増加要因と分析。"
+        }
+      ],
+      "overview": "AIエージェント関連のSOCアラートを分類すると94.1%がノイズ、5.8%が要確認レベルのリスク、実際の攻撃に該当するのは0.02%に留まるとする分析が公開された。件数自体は少なくても増加率が高いため、アラート疲れによる本物の兆候の見落としリスクが指摘されている。国内被害・国内報道は本日時点で確認できない。",
+      "recommended_actions": [
+        "SIEM/SOAR側でAIツール関連アラート（コーディングエージェントのAPIコール・個人アカウントでの生成AIサービスログイン等）を専用カテゴリに分離し、ノイズ比率の高いルールのしきい値・相関条件を四半期ごとに見直す",
+        "「AI関連アラート」の中でも実害につながりうる少数（クレデンシャル窃取・データ持ち出しを伴うもの）を優先トリアージできるよう、既存の重大度スコアリングにAI関連タグを追加することを検討する"
+      ],
+      "monitoring": {
+        "description": "AI関連アラートの分類・比率のモニタリング",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/when-whole-company-adopts-ai-what-it.html",
+          "title": "When the Whole Company Adopts AI: What It Does to Your SOC",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20260913-SOCR-80bb6011"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-87719",
+        "product": "GitLab Enterprise Edition（Duo Chat）",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.9・インセキュアデシリアライゼーション(CWE-502)だがDuo Chatへの認証済みアクセスを要するため未認証RCE該当なし。CVE-2026-85706と同一2026-09-09提供のGitLabセキュリティリリース(19.1.8/19.2.6/19.3.2)に含まれる関連脆弱性のため同エントリ内に付記。軸1=6点(CVSS9+3・広く使われる製品+1・境界機器非該当)/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-82845",
+        "product": "Masteriyo LMS WordPressプラグイン",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.9・メタデータのデシリアライゼーション不備(CWE-502)によるオブジェクトインジェクション。ニッチなLMSプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=3点/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-75800",
+        "product": "Frontegg SAML SSO WordPressプラグイン",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.8・SAML認証応答の署名・発行者未検証(CWE-347)による認証バイパス。KEV未登録・PoC未確認・国内報道なし。軸1=6点(CVSS9+3・認証バイパス+3)/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-78006",
+        "product": "The Events Calendar WordPressプラグイン（is_safe_widget_instance）",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.8・不十分な検証によるRCE(CWE-94相当)。KEV未登録・PoC未確認・国内報道なし。軸1=6点(CVSS9+3・未認証RCE+3)/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-78159",
+        "product": "The Events Calendar WordPressプラグイン（parse_array）",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.8・parse_array関数の検証不備によるRCE。CVE-2026-78006と同一プラグインの別経路。KEV未登録・PoC未確認・国内報道なし。軸1=6点/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-81402",
+        "product": "DS Ad Rotator WordPressプラグイン",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.8・権限チェック/nonce検証/ファイル種別検証の欠如(CWE-434)による未認証任意ファイルアップロード。ニッチなプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=6点/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84171",
+        "product": "WP images upload on piclect WordPressプラグイン",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.8・アップロードファイル名/種別未検証(CWE-434)による未認証任意ファイルアップロード。ニッチなプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=6点/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-85681",
+        "product": "WP Component WordPressプラグイン",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.8・未認証ユーザーに開放されたアクションへの権限/nonceチェック欠如。ニッチなプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=6点/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-90558",
+        "product": "sngrep（SIPパケットキャプチャツール）",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.3(v3.1)・SIP属性フォーマット処理のスタックバッファオーバーフロー(CWE-121)。ニッチなCLIツールでKEV未登録・PoC未確認・国内報道なし。軸1=6点(CVSS9+3・想定リモートバッファオーバーフロー+3)/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-77005",
+        "product": "CODE MONKEYS PROPOSALS WordPressプラグイン",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.6・ユーザー指定パスの未検証・権限チェック欠如によるファイル削除(CWE-22系)。ニッチなプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=3点/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-77006",
+        "product": "WebTotem Backups WordPressプラグイン",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.6・パス未検証・権限チェック欠如・CSRFトークン検証結果を無視(CWE-22系)。ニッチなプラグインでKEV未登録・PoC未確認・国内報道なし。軸1=3点/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-90456",
+        "product": "バンドル在庫管理コンポーネントの例示環境設定ファイル",
+        "reason": "low_score",
+        "reason_detail": "CVSS9.2(v4.0)・例示（サンプル）環境設定ファイルに固定の公開既知管理者パスワードが同梱(CWE-798)。デプロイ時に当該サンプルをそのまま本番投入した場合のみ影響が顕在化する限定的事象。製品・ベンダー名がNVD記述からは特定できず、KEV未登録・PoC未確認・国内報道なし。軸1=6点(CVSS9+3・認証バイパス相当+3)/軸2=0点で判定順4（除外）。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-84869",
+        "product": "ConnectWise ScreenConnect（クライアント）",
+        "reason": "already_reported",
+        "reason_detail": "2026-09-09初報・軸1=13点/軸2=1点でゼロデイ特報採用済み（reported-cves.md記載）。CISAは2026-09-11（本調査窓の前日・窓外）にKEVカタログへ新規追加した。本調査窓（2026-09-12 07:00〜09-13 07:00 JST）内に新たな変化点は確認されなかったため今回は本文掲載を見送り、reported-cves.mdの備考欄にKEV登録日(2026-09-11)を追記するに留める。",
+        "reported_date": "2026-09-09"
+      }
+    ],
+    "apt": [
+      {
+        "campaign_id": "BlueMoon-2026-ChromeWindowsExploitKitSharing",
+        "group_name": "TA412ほか3クラスタ（UNK_LateNight/UNK_DoubleCheck/UNK_QuietRacket）",
+        "reason": "no_change",
+        "reason_detail": "2026-09-10に本編採用済み（軸P9/軸Q6）。本日SecurityWeek等が改めて同キャンペーンを報道したが、対象CVE（CVE-2026-85046・CVE-2026-87491・CVE-2026-85880）・脅威クラスタ数・標的セクターのいずれにも本調査窓内の新規変化は確認できなかった（既報の再掲載）。",
+        "reported_date": "2026-09-10"
+      }
+    ],
+    "ai_attacks": [],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 2,
+      "excluded": 13,
+      "total_processed": 15
+    },
+    "apt": {
+      "main": 0,
+      "notable": 0,
+      "excluded": 1,
+      "total_processed": 1
+    },
+    "ai_attacks": {
+      "main": 1,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 0,
+      "total_processed": 1,
+      "category_breakdown": {
+        "A": 1,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 0,
+      "medium": 1,
+      "low": 0,
+      "excluded": 0,
+      "total_processed": 1,
+      "perspective_breakdown": {
+        "cve": 0,
+        "zeroday": 0,
+        "ai_attack": 1
+      }
+    }
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-09-12T23:20:00Z",
+    "operational_picture": {
+      "subjects_tracked": 144,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 53,
+        "DISCLOSED": 69,
+        "POC_PUBLIC": 22
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 106,
+        "shadow": 91
+      },
+      "event_type_counts": {
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 22,
+        "TF1_POC_PUBLICATION": 69
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}
