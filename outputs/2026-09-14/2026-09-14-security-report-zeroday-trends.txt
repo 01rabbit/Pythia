@@ -1,0 +1,90 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-14 07:48 JST
+調査期間: 2026-09-13 07:00 〜 2026-09-14 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. UNC6671（別名: Storm-3032（Microsoft追跡名） / BlackFile / Redact / Pink（CL-CRI-1147） / Helix / Falcon（CL-CRI-1182） / 国家帰属: 不明 / 帰属信頼度: high）
+活動タイプ: TTP更新 / 継続キャンペーン / IOC公開
+------------------------------------------------------------
+
+標的: it/retail/manufacturing/professional_services/finance / North America/US
+マルウェア: 判明分なし（フィッシングインフラ主体）
+
+【24時間以内の変化】
+[The Hacker News（Microsoft原典） 2026-09-13] Microsoftが、既報UNC6671（Helix恐喝ブランド）の手口拡張として、IT部門を装った音声・SMSでのパスキー/MFA再設定を騙るソーシャルエンジニアリングでMicrosoftクラウドアカウントを乗っ取りSharePoint/OneDrive/メールボックスからデータを窃取する新キャンペーン（2026年5月検知開始）と、Storm-3121による100万通超のCEOなりすましACH送金詐欺キャンペーン（2026-08-03〜05）の2件を新規開示し、新規IOCドメイン計10件を公開した。
+
+【概要】
+Microsoftは、既報のUNC6671（Storm-3032・Helix恐喝ブランド）が新たに個人携帯電話への直接連絡による「ITヘルプデスクを装ったビッシング/スミッシング」でパスキー・MFA・SSO設定の緊急更新を騙り、偽Microsoftサインインページへ誘導したうえでGraph API偵察・攻撃者管理下でのMFA手段登録・SharePoint/OneDrive REST API経由でのデータ窃取（数時間〜数日かけた低速持続的な流出）を行う手口を2026年5月から観測していると開示した。あわせて、同一恐喝エコシステムに連なるとみられるStorm-3121が2026年8月3〜5日にCEOなりすましのACH送金詐欺メールを100万通超送信したキャンペーン（生成AIによるテンプレート・文面作成を活用）も同時開示された。標的はIT/消費財/不動産/製造業等の複数業種にまたがる米国企業が中心。
+
+攻撃の流れ（判明分）:
+1. 被害者の個人携帯電話へ音声・SMSで連絡し、IT部門を装ってパスキー/MFA/SSO設定の緊急更新を要求する。
+2. 偽Microsoftサインインページへ誘導し、AiTMまたはデバイスコード認証フローの悪用でクラウドアカウントを乗っ取る。
+3. Graph API偵察・攻撃者管理下でのMFA手段の追加登録を行い、SharePoint/OneDrive/メールボックスから数時間〜数日かけて低速にデータを持ち出す。
+
+【新規TTP】
+・[T1566] Phishing — 個人携帯電話への音声・SMS連絡でITヘルプデスクを装い、偽Microsoftサインインページへ誘導する。
+・[T1556] Modify Authentication Process — 乗っ取ったアカウントに攻撃者管理下のMFA/パスキー手段を追加登録し持続的アクセスを確保する。
+・[T1114] Email Collection — 侵害したクラウドアカウントのメールボックスデータを収集する。
+・[T1567] Exfiltration to Cloud Storage — SharePoint/OneDriveのREST API経由でデータを外部へ持ち出す（python-httpxユーザーエージェントでの自動化収集）。
+
+【IoC】
+Domain: passkeyhelpdesk[.]com, secure-passkey[.]com, setupmypasskey[.]com, add-passkey[.]com, integratedsso[.]com, oktasession[.]com, syncmykey[.]com, portalsetuphub[.]com, service-nowinc[.]com, domainlify[.]net
+
+【推奨アクション】
+・個人携帯電話へのIT部門なりすまし連絡（ビッシング/スミッシング）を想定した従業員向け注意喚起を行う。パスキー/MFA/SSO再設定を促す通信は正規のITサービスデスク経由以外は疑う運用へ見直す。上記IOCドメインをプロキシ/DNSでブロックし、Graph APIの異常な大量呼び出し・SharePoint/OneDriveからのREST API経由の継続的データアクセスを監視する。
+・検知SPLクエリ: Splunk SPL: index=o365 sourcetype="o365:management:activity" Workload=SharePoint (Operation=FileAccessed OR Operation=FileDownloaded) | stats count dc(ObjectId) as files by UserId, ClientIP | where count > 100
+・検知SPLクエリ: Splunk SPL: index=azuread sourcetype="azure:aad:signin" | search dest_domain IN ("passkeyhelpdesk.com","secure-passkey.com","setupmypasskey.com","add-passkey.com","integratedsso.com","oktasession.com","syncmykey.com","portalsetuphub.com")
+→ python-httpxユーザーエージェントでの継続的なSharePoint/OneDriveアクセスは正規の自動化ツールとの区別が必要。IOCドメインへの接続はプロキシログでの検知が高確度。
+
+【参照】
+https://thehackernews.com/2026/09/attackers-use-passkey-phishing-to.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸P<8点かつ参考A昇格トリガー該当のAPT活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックB CVE・トレンド記事なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし。
+
+理由: 本日観測されたexploitation_stage=active_exploitationのCVE-2026-51990（Sogou Input Method）は新規IOC公開を伴うが、追随IOC公開を的中条件とするE2型予報は教訓14により全Tierで発行禁止であり、当該CVEはCISA KEV収載の見込みが立たない中国国内消費者向けアプリのためE1（KEV初回追加）の的中条件も設定できない。既存の発行済み予報fc-20260913-1（検証期限2026-09-16）については本日新規のEvidenceが確認されなかったため、新証拠なしに同一CVEを再予報しない原則により据え置き、新規予報は発行しない。詳細はforecaster/forecasts/daily/2026-09-14.md / .jsonを参照。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・UNC3569 / RIS-2026-UNC3569-SogouGrayRabbit → China-nexusのハッカー・フォー・ハイア集団（Google Threat Intelligence帰属・i-SOONとの関係の可能性を指摘）によるSogou Input Method（CVE-2026-51990）悪用の実侵入をGen Digitalが報告。単一ベンダー報告のみで大規模IOC複数ソース検証・重要インフラ侵害等の裏付けがなく軸P=5点（単一ベンダー報告+3/IOC公開+2）・軸Q=1点（単一セクター/限定地域）で除外基準未達。CVE-2026-51990として本文はSection3参考情報Bで別途採用。
+
+本日の集計:
+APT — 本編1件 / 注目動向0件 / 除外1件
+
+========================================

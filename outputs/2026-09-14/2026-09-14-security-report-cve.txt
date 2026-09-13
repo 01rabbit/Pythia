@@ -1,0 +1,86 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-14 07:48 JST
+調査期間: 2026-09-13 07:00 〜 2026-09-14 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1≥8点かつ軸2≥4点のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に国内影響トリガー該当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-51990 / Sogou Input Method（捜狗输入法）
+対象: 16.3.0.3498（2026-04-21修正版）以前の全バージョン。ただし報道によれば当該修正はsgbiz: URIハンドラの引数注入経路自体を解消しておらず、悪用条件は残存
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 不明（NVD未反映）
+状態: 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-13] Gen Threat LabsとGoogle Threat Intelligenceが、Sogou Input MethodのsgbizプロトコルハンドラとCEFベースの旧Chromium 80埋め込みブラウザを連鎖させたワンクリックRCE（CVE-2026-51990）を、中国nexusのUNC3569による実際の侵入調査の過程で発見したと公表した。
+
+【概要】
+TencentのSogou Input Method（中国語入力メソッド、数億台規模の導入実績）に存在するCVE-2026-51990は、sgbiz: URIハンドラのコマンドライン引数注入・CEFベースWebViewでの無制限URL遷移・サンドボックス化されていない旧Chromium 80エンジンの3つの弱点を連鎖させ、リンクをクリックさせるだけでバックドアを仕掛けられる未認証RCEである。Gen Threat Labsは、China-nexusと見られるハッカー・フォー・ハイア集団UNC3569（Google Threat Intelligenceがi-SOONとの business relationship の可能性を指摘）による実際の侵入活動を調査する過程で本脆弱性を発見した。Tencentは2026年4月に修正版（16.3.0.3498）を自動配信したが、報道によれば攻撃を可能にしていた核心部分（sgbizハンドラの引数注入経路）は変更されておらず、悪用条件は今も残存しているとされる。CVEは2026年7月10日付で採番され、2026年9月10〜13日にかけて技術詳細が公開された。
+
+攻撃の流れ:
+1. 被害者に細工されたsgbiz: リンクをクリックさせ、Sogou Input Methodのコマンドライン引数注入を発火させる。
+2. CEFベースWebViewの無制限URL遷移と旧Chromium 80エンジンの脆弱性を連鎖させ、サンドボックス保護のない状態でリモートコードを実行する。
+3. GRAYRABBITバックドア（リモートシェル・双方向ファイル転送・追加モジュールのロード機能を持つ）を設置し、C2インフラ（mail.uaiubifas[.]top等）と通信して持続的アクセスを確立する。
+
+【IoC】
+IP: 8.218.50.207
+Domain: mail.uaiubifas[.]top, noht1ng[.]top
+Hash: 29c7ee41d0cc9e07d981e451df56d0c3d37c41ac4ec10c7b516cc033ee397a63
+Hash: 749160a2f20f82744026719cf72e483595c6aad718efa74d675a98662e02422e
+Hash: d7a3c7eb94edc0e020f74c678743d71d61e944634aade4a67a96c3589e828b3a
+
+【監視ポイント】
+・[エンドポイント/ネットワーク] Sogou Input Methodがインストールされた端末でのsgbiz:リンク経由の子プロセス生成・旧Chromium埋め込みプロセスからの外部通信を監視する。
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*SogouCloud*" OR ParentImage="*Sogou*" | stats count by NewProcessName, CommandLine, ComputerName
+Splunk SPL: index=network_traffic dest_host IN ("mail.uaiubifas.top", "noht1ng.top") | stats count by src_ip, dest_host
+→ Sogou Input Methodは国内組織での導入実績が低いため、国内SOCでは自組織の資産棚卸しで導入有無を確認したうえで監視対象化の要否を判断する。誤検知源として正規のSogouクラウド同期通信との区別が必要。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hackers-exploit-tencent-app-flaw-to-deploy-grayrabbit-malware
+https://www.gendigital.com/blog/insights/research/one-click-backdoor-sogou
+https://thehackernews.com/2026/09/china-linked-unc3569-exploited-sogou.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-81648 (CryptoPayment Gateway (WordPress plugin)) → CVSS10.0(v3.1)・AJAXエンドポイントの認可欠如による未認証ファイル削除/設定改ざん/ウォレット認証情報平文窃取（WPScan発行）だが実悪用・PoC公開・国内影響いずれも未確認、ニッチな暗号資産決済プラグインのため軸1=6点（CVSS9.0以上+3/認証バイパス+3）・軸2=0点で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-90561 (Strapi（CMS・content-manager WYSIWYGプレビュー）) → CVSS9.3(v4.0)/8.7(v3.1)・保存型XSS（Author権限ユーザーがEditor/Super Adminセッションを乗っ取り得る）・4.26.3/5.48.1で修正済み・実悪用未確認・軸1=4点（CVSS9.0以上+3/広く使われるOSS+1）・軸2=0点で除外。網羅スイープ母集団該当のため記録。
+・CVE-2026-90562 (LangBot（LLMチャットボット/エージェントフレームワーク）) → CVSS9.2(v4.0)/8.1(v3.1)・パスワードリセットキーのエントロピー不足（24ビット）とレート制限欠如による未認証管理者アカウント乗っ取り・4.10.11で修正済み・実悪用未確認・単一情報源（VulnCheck/GitHub）のみ・軸1=6点（CVSS9.0以上+3/認証バイパス+3）・軸2=0点で除外。AIプラットフォーム関連CVE（pipeline-ai-1.md分類C1相当）としても軸X/軸Y・バースト（単一ソース）とも閾値未達のためSection1でも不採用。網羅スイープ母集団該当のため記録。
+・CVE-2026-90647 (ASE/Kalkitech ASE2000 V2 Communication Test Set（IEC 60870-5-104試験ツール）) → CVSS9.1(v4.0)/7.4(v3.1)・IEC 60870-5-104 TLSクライアントの証明書検証不備によるMITM・CISA ICS勧告（ICSA-26-239-04）あり・v2.38で修正済み・実悪用未確認・電力セクター向け試験専用ツールで一般導入は限定的・軸1=3点（CVSS9.0以上+3）・軸2=1点（海外複数ソース報道）で除外。網羅スイープ母集団該当のため記録。
+・CVE-2026-90493 (Tonec Internet Download Manager（idmwfp.sysカーネルドライバ）) → NVD正本CVSS8.8(v3.1、v4.0は8.5)・ローカル特権昇格・PoC公開済み（GitHub）・ベンダー無応答・実悪用未確認・単一情報源（VulDB）のみ・軸1=5点（CVSS7.5〜8.9+2/PoC公開+2/広く使われる製品+1）・軸2=0点で除外。EUVD独立列挙ではCNA(VulDB)スコア9.3として窓内候補に現れたが、NVDが本日時点で分析済みスコアを公開しているためNVDスコア(8.8)を正としCVSS9.0以上の高インパクト条件には該当しない。網羅スイープ母集団（EUVD窓内・NVD/KEV未収載層）該当のため記録。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B1件 / 除外5件
+
+========================================

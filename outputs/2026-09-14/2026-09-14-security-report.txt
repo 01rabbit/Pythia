@@ -1,0 +1,194 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-14 07:48 JST
+調査期間: 2026-09-13 07:00 〜 2026-09-14 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1≥8点かつ軸2≥4点のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に国内影響トリガー該当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-51990 / Sogou Input Method（捜狗输入法）
+対象: 16.3.0.3498（2026-04-21修正版）以前の全バージョン。ただし報道によれば当該修正はsgbiz: URIハンドラの引数注入経路自体を解消しておらず、悪用条件は残存
+------------------------------------------------------------
+
+優先度: 高
+CVSS: 不明（NVD未反映）
+状態: 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-13] Gen Threat LabsとGoogle Threat Intelligenceが、Sogou Input MethodのsgbizプロトコルハンドラとCEFベースの旧Chromium 80埋め込みブラウザを連鎖させたワンクリックRCE（CVE-2026-51990）を、中国nexusのUNC3569による実際の侵入調査の過程で発見したと公表した。
+
+【概要】
+TencentのSogou Input Method（中国語入力メソッド、数億台規模の導入実績）に存在するCVE-2026-51990は、sgbiz: URIハンドラのコマンドライン引数注入・CEFベースWebViewでの無制限URL遷移・サンドボックス化されていない旧Chromium 80エンジンの3つの弱点を連鎖させ、リンクをクリックさせるだけでバックドアを仕掛けられる未認証RCEである。Gen Threat Labsは、China-nexusと見られるハッカー・フォー・ハイア集団UNC3569（Google Threat Intelligenceがi-SOONとの business relationship の可能性を指摘）による実際の侵入活動を調査する過程で本脆弱性を発見した。Tencentは2026年4月に修正版（16.3.0.3498）を自動配信したが、報道によれば攻撃を可能にしていた核心部分（sgbizハンドラの引数注入経路）は変更されておらず、悪用条件は今も残存しているとされる。CVEは2026年7月10日付で採番され、2026年9月10〜13日にかけて技術詳細が公開された。
+
+攻撃の流れ:
+1. 被害者に細工されたsgbiz: リンクをクリックさせ、Sogou Input Methodのコマンドライン引数注入を発火させる。
+2. CEFベースWebViewの無制限URL遷移と旧Chromium 80エンジンの脆弱性を連鎖させ、サンドボックス保護のない状態でリモートコードを実行する。
+3. GRAYRABBITバックドア（リモートシェル・双方向ファイル転送・追加モジュールのロード機能を持つ）を設置し、C2インフラ（mail.uaiubifas[.]top等）と通信して持続的アクセスを確立する。
+
+【IoC】
+IP: 8.218.50.207
+Domain: mail.uaiubifas[.]top, noht1ng[.]top
+Hash: 29c7ee41d0cc9e07d981e451df56d0c3d37c41ac4ec10c7b516cc033ee397a63
+Hash: 749160a2f20f82744026719cf72e483595c6aad718efa74d675a98662e02422e
+Hash: d7a3c7eb94edc0e020f74c678743d71d61e944634aade4a67a96c3589e828b3a
+
+【監視ポイント】
+・[エンドポイント/ネットワーク] Sogou Input Methodがインストールされた端末でのsgbiz:リンク経由の子プロセス生成・旧Chromium埋め込みプロセスからの外部通信を監視する。
+Splunk SPL: index=wineventlog EventCode=4688 ParentImage="*SogouCloud*" OR ParentImage="*Sogou*" | stats count by NewProcessName, CommandLine, ComputerName
+Splunk SPL: index=network_traffic dest_host IN ("mail.uaiubifas.top", "noht1ng.top") | stats count by src_ip, dest_host
+→ Sogou Input Methodは国内組織での導入実績が低いため、国内SOCでは自組織の資産棚卸しで導入有無を確認したうえで監視対象化の要否を判断する。誤検知源として正規のSogouクラウド同期通信との区別が必要。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/hackers-exploit-tencent-app-flaw-to-deploy-grayrabbit-malware
+https://www.gendigital.com/blog/insights/research/one-click-backdoor-sogou
+https://thehackernews.com/2026/09/china-linked-unc3569-exploited-sogou.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. UNC6671（別名: Storm-3032（Microsoft追跡名） / BlackFile / Redact / Pink（CL-CRI-1147） / Helix / Falcon（CL-CRI-1182） / 国家帰属: 不明 / 帰属信頼度: high）
+活動タイプ: TTP更新 / 継続キャンペーン / IOC公開
+------------------------------------------------------------
+
+標的: it/retail/manufacturing/professional_services/finance / North America/US
+マルウェア: 判明分なし（フィッシングインフラ主体）
+
+【24時間以内の変化】
+[The Hacker News（Microsoft原典） 2026-09-13] Microsoftが、既報UNC6671（Helix恐喝ブランド）の手口拡張として、IT部門を装った音声・SMSでのパスキー/MFA再設定を騙るソーシャルエンジニアリングでMicrosoftクラウドアカウントを乗っ取りSharePoint/OneDrive/メールボックスからデータを窃取する新キャンペーン（2026年5月検知開始）と、Storm-3121による100万通超のCEOなりすましACH送金詐欺キャンペーン（2026-08-03〜05）の2件を新規開示し、新規IOCドメイン計10件を公開した。
+
+【概要】
+Microsoftは、既報のUNC6671（Storm-3032・Helix恐喝ブランド）が新たに個人携帯電話への直接連絡による「ITヘルプデスクを装ったビッシング/スミッシング」でパスキー・MFA・SSO設定の緊急更新を騙り、偽Microsoftサインインページへ誘導したうえでGraph API偵察・攻撃者管理下でのMFA手段登録・SharePoint/OneDrive REST API経由でのデータ窃取（数時間〜数日かけた低速持続的な流出）を行う手口を2026年5月から観測していると開示した。あわせて、同一恐喝エコシステムに連なるとみられるStorm-3121が2026年8月3〜5日にCEOなりすましのACH送金詐欺メールを100万通超送信したキャンペーン（生成AIによるテンプレート・文面作成を活用）も同時開示された。標的はIT/消費財/不動産/製造業等の複数業種にまたがる米国企業が中心。
+
+攻撃の流れ（判明分）:
+1. 被害者の個人携帯電話へ音声・SMSで連絡し、IT部門を装ってパスキー/MFA/SSO設定の緊急更新を要求する。
+2. 偽Microsoftサインインページへ誘導し、AiTMまたはデバイスコード認証フローの悪用でクラウドアカウントを乗っ取る。
+3. Graph API偵察・攻撃者管理下でのMFA手段の追加登録を行い、SharePoint/OneDrive/メールボックスから数時間〜数日かけて低速にデータを持ち出す。
+
+【新規TTP】
+・[T1566] Phishing — 個人携帯電話への音声・SMS連絡でITヘルプデスクを装い、偽Microsoftサインインページへ誘導する。
+・[T1556] Modify Authentication Process — 乗っ取ったアカウントに攻撃者管理下のMFA/パスキー手段を追加登録し持続的アクセスを確保する。
+・[T1114] Email Collection — 侵害したクラウドアカウントのメールボックスデータを収集する。
+・[T1567] Exfiltration to Cloud Storage — SharePoint/OneDriveのREST API経由でデータを外部へ持ち出す（python-httpxユーザーエージェントでの自動化収集）。
+
+【IoC】
+Domain: passkeyhelpdesk[.]com, secure-passkey[.]com, setupmypasskey[.]com, add-passkey[.]com, integratedsso[.]com, oktasession[.]com, syncmykey[.]com, portalsetuphub[.]com, service-nowinc[.]com, domainlify[.]net
+
+【推奨アクション】
+・個人携帯電話へのIT部門なりすまし連絡（ビッシング/スミッシング）を想定した従業員向け注意喚起を行う。パスキー/MFA/SSO再設定を促す通信は正規のITサービスデスク経由以外は疑う運用へ見直す。上記IOCドメインをプロキシ/DNSでブロックし、Graph APIの異常な大量呼び出し・SharePoint/OneDriveからのREST API経由の継続的データアクセスを監視する。
+・検知SPLクエリ: Splunk SPL: index=o365 sourcetype="o365:management:activity" Workload=SharePoint (Operation=FileAccessed OR Operation=FileDownloaded) | stats count dc(ObjectId) as files by UserId, ClientIP | where count > 100
+・検知SPLクエリ: Splunk SPL: index=azuread sourcetype="azure:aad:signin" | search dest_domain IN ("passkeyhelpdesk.com","secure-passkey.com","setupmypasskey.com","add-passkey.com","integratedsso.com","oktasession.com","syncmykey.com","portalsetuphub.com")
+→ python-httpxユーザーエージェントでの継続的なSharePoint/OneDriveアクセスは正規の自動化ツールとの区別が必要。IOCドメインへの接続はプロキシログでの検知が高確度。
+
+【参照】
+https://thehackernews.com/2026/09/attackers-use-passkey-phishing-to.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸P<8点かつ参考A昇格トリガー該当のAPT活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックB CVE・トレンド記事なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし。
+
+理由: 本日観測されたexploitation_stage=active_exploitationのCVE-2026-51990（Sogou Input Method）は新規IOC公開を伴うが、追随IOC公開を的中条件とするE2型予報は教訓14により全Tierで発行禁止であり、当該CVEはCISA KEV収載の見込みが立たない中国国内消費者向けアプリのためE1（KEV初回追加）の的中条件も設定できない。既存の発行済み予報fc-20260913-1（検証期限2026-09-16）については本日新規のEvidenceが確認されなかったため、新証拠なしに同一CVEを再予報しない原則により据え置き、新規予報は発行しない。詳細はforecaster/forecasts/daily/2026-09-14.md / .jsonを参照。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-09-13 〜 2026-09-14
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸X≥6点かつ軸Y≥4点のAI攻撃事案なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日（週末窓）はAI攻撃の新規該当事案なし。24時間窓内の一次収集記事は3件と少数で、AI関連の実証・被害報告は確認されなかった。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B0件 / 除外0件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）0件 / C（インフラ）0件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にα〜η条件を満たす情報なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-81648 (CryptoPayment Gateway (WordPress plugin)) → CVSS10.0(v3.1)・AJAXエンドポイントの認可欠如による未認証ファイル削除/設定改ざん/ウォレット認証情報平文窃取（WPScan発行）だが実悪用・PoC公開・国内影響いずれも未確認、ニッチな暗号資産決済プラグインのため軸1=6点（CVSS9.0以上+3/認証バイパス+3）・軸2=0点で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-90561 (Strapi（CMS・content-manager WYSIWYGプレビュー）) → CVSS9.3(v4.0)/8.7(v3.1)・保存型XSS（Author権限ユーザーがEditor/Super Adminセッションを乗っ取り得る）・4.26.3/5.48.1で修正済み・実悪用未確認・軸1=4点（CVSS9.0以上+3/広く使われるOSS+1）・軸2=0点で除外。網羅スイープ母集団該当のため記録。
+・CVE-2026-90562 (LangBot（LLMチャットボット/エージェントフレームワーク）) → CVSS9.2(v4.0)/8.1(v3.1)・パスワードリセットキーのエントロピー不足（24ビット）とレート制限欠如による未認証管理者アカウント乗っ取り・4.10.11で修正済み・実悪用未確認・単一情報源（VulnCheck/GitHub）のみ・軸1=6点（CVSS9.0以上+3/認証バイパス+3）・軸2=0点で除外。AIプラットフォーム関連CVE（pipeline-ai-1.md分類C1相当）としても軸X/軸Y・バースト（単一ソース）とも閾値未達のためSection1でも不採用。網羅スイープ母集団該当のため記録。
+・CVE-2026-90647 (ASE/Kalkitech ASE2000 V2 Communication Test Set（IEC 60870-5-104試験ツール）) → CVSS9.1(v4.0)/7.4(v3.1)・IEC 60870-5-104 TLSクライアントの証明書検証不備によるMITM・CISA ICS勧告（ICSA-26-239-04）あり・v2.38で修正済み・実悪用未確認・電力セクター向け試験専用ツールで一般導入は限定的・軸1=3点（CVSS9.0以上+3）・軸2=1点（海外複数ソース報道）で除外。網羅スイープ母集団該当のため記録。
+・CVE-2026-90493 (Tonec Internet Download Manager（idmwfp.sysカーネルドライバ）) → NVD正本CVSS8.8(v3.1、v4.0は8.5)・ローカル特権昇格・PoC公開済み（GitHub）・ベンダー無応答・実悪用未確認・単一情報源（VulDB）のみ・軸1=5点（CVSS7.5〜8.9+2/PoC公開+2/広く使われる製品+1）・軸2=0点で除外。EUVD独立列挙ではCNA(VulDB)スコア9.3として窓内候補に現れたが、NVDが本日時点で分析済みスコアを公開しているためNVDスコア(8.8)を正としCVSS9.0以上の高インパクト条件には該当しない。網羅スイープ母集団（EUVD窓内・NVD/KEV未収載層）該当のため記録。
+
+[APT]
+・UNC3569 / RIS-2026-UNC3569-SogouGrayRabbit → China-nexusのハッカー・フォー・ハイア集団（Google Threat Intelligence帰属・i-SOONとの関係の可能性を指摘）によるSogou Input Method（CVE-2026-51990）悪用の実侵入をGen Digitalが報告。単一ベンダー報告のみで大規模IOC複数ソース検証・重要インフラ侵害等の裏付けがなく軸P=5点（単一ベンダー報告+3/IOC公開+2）・軸Q=1点（単一セクター/限定地域）で除外基準未達。CVE-2026-51990として本文はSection3参考情報Bで別途採用。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B1件 / 除外5件
+APT — 本編1件 / 注目動向0件 / 除外1件
+AI攻撃 — 本編0件 / 参考A0件 / 参考B0件 / 除外0件
+SOC推奨情報 — 高0件 / 中0件 / 低0件 / 除外0件
+
+========================================
