@@ -1,0 +1,97 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-16 07:56 JST
+調査期間: 2026-09-15 07:00 〜 2026-09-16 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. September 2026 Patch Tuesday起因のRDS障害に対する緊急修正パッチ公開（KB5129195等）
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 高
+対象: Windows Server 2019/2022/2025, Windows 10/11（Remote Desktop Services）
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-15] Microsoftが2026年9月Patch Tuesday（9/8）由来のRDS接続不能・セッションホスト応答不能・Hyper-VでのLinux VMフォルダ共有障害・USBオーディオ障害を修正する緊急アウトオブバンド更新（Windows 11: KB5129195／Windows 10: KB5129236／Server 2025: KB5129235／Server 2022: KB5129237／Server 2019: KB5129238）を公開した
+[gHacks / it-connect.tech 2026-09-15] USBオーディオ問題は今回の緊急パッチでは完全には解消されず追加修正が別途必要になる見込みであることが報じられた
+
+【概要】
+2026年9月8日のPatch Tuesdayで配信されたセキュリティ更新が原因で、Windows Server 2019/2022/2025上のRemote Desktop Servicesがブート後数時間で応答不能になりRDP接続が「接続中…」のまま固着する事象が広範に発生し、これに伴いMMCやエクスプローラー、Windows Update画面にも影響が及んだため、Microsoftは9月14日に緊急のアウトオブバンド更新を配信した。国内でもRDSをリモートワーク基盤として利用する組織は多く、パッチ未適用環境では今回の障害が攻撃による可用性侵害と誤認される恐れがあるため、SOCは事象の切り分けと適用状況の把握を急ぐ必要がある。
+
+【推奨アクション】
+・自組織のWindows Server（2019/2022/2025）およびRDS/ターミナルサーバー用途のWindows 10/11端末に該当KB（KB5129195/KB5129235/KB5129236/KB5129237/KB5129238）が適用済みか本日中に確認し、未適用環境には優先適用する
+・9月8日Patch Tuesday以降に発生したRDP接続断・セッションホストのハング・MMCやエクスプローラーの不安定化について、インシデントチケットが起票されている場合はまず本パッチ由来の既知不具合である可能性を確認してから侵害調査へ進む（誤ったインシデント対応の浪費を防ぐ）
+・USBオーディオ問題は本パッチで未解消のため、追加修正の公開を継続的にウォッチする
+Splunk SPL: index=wineventlog (EventCode=1001 OR EventCode=1002) Source="TermService" | stats count by ComputerName, EventCode | sort -count
+→ パッチ適用時刻の前後でRDS関連エラーイベントが急増している場合は既知の更新起因不具合を優先的に疑い、C2通信や横展開の兆候（異常な外部宛先通信・新規プロセス生成等）が併発していない限り重大インシデントとして即時エスカレートしない判断が可能
+
+【参照】
+https://www.bleepingcomputer.com/news/microsoft/microsoft-releases-emergency-windows-updates-to-fix-rds-failures/
+https://www.ghacks.net/2026/09/15/microsoft-releases-emergency-windows-updates-to-fix-remote-desktop-services-failures/
+------------------------------------------------------------
+2. LiteSpeed Web Server Enterprise の権限昇格級の欠陥（CVE未採番）でホスティングアカウントからroot奪取の恐れ
+観点: ゼロデイ関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: LiteSpeed Web Server Enterprise（cPanel共用ホスティング環境、6.3.7未満）
+
+【24時間以内の変化】
+[The Hacker News（cPanel/LiteSpeedアドバイザリ引用） 2026-09-15] cPanelが2026年9月14日付アドバイザリで、LiteSpeed Web Server Enterprise 6.3.7未満に低権限の共用ホスティングアカウントからroot権限を奪取できる欠陥が存在すると公表。9月11日リリースの6.3.7で修正済みだが、CVE番号・CVSSスコアは本日時点で未採番・未公開で、実悪用の有無も明言されていない
+
+【概要】
+共用ホスティング環境で多くの顧客サイトが同一サーバー上に同居するLiteSpeed Web Server Enterprise本体に、1つのホスティングアカウントから他サイトやサーバー自体を掌握できる権限昇格級の欠陥が見つかった。cPanel環境でのLiteSpeed関連の権限昇格報告は今年5月・6月のcPanelプラグイン側の欠陥（いずれも実悪用ありとして報告済み）に続き3件目で、今回はWebサーバー本体での初報告となる。技術詳細・PoC・実悪用は本日時点で確認されていないが、過去の類似欠陥が悪用された実績があるため国内のホスティング事業者・共用サーバー利用企業のSOCは把握しておくべき事案である。
+
+【推奨アクション】
+・cPanel/LiteSpeed構成の共用ホスティング環境を運用・委託している場合、/usr/local/lsws/admin/misc/lsup.sh -f -v 6.3.7 を実行しLiteSpeed Web Server Enterpriseを6.3.7以降へ強制的に即時更新する（自動更新の反映には遅延の可能性があるため待たない）
+・自社サービスがcPanel＋LiteSpeed Enterprise構成の共用ホスティング上で稼働していないか、外部委託先を含めて今週中に棚卸しし、パッチ適用状況を確認する
+・同系統（cPanelプラグイン）の既報CVE-2026-48172・CVE-2026-54420が実悪用された経緯を踏まえ、本欠陥のCVE採番・実悪用報告の続報を継続的にウォッチする
+→ 技術詳細が非公開のため検知シグネチャは未整備。当面はパッチ適用状況の確認とベンダー続報の監視が主対応となる
+
+【参照】
+https://thehackernews.com/2026/09/litespeed-enterprise-flaw-could-let-one.html
+https://www.guardianmssp.com/2026/09/15/litespeed-enterprise-flaw-could-let-one-hosting-account-gain-root-access-on-a-shared-server/
+------------------------------------------------------------
+3. Marimo RCE(CVE-2026-39987)を突いた手動操作の攻撃者がクラウド認証情報窃取からSSH踏み台到達までわずか8秒
+観点: CVE関連
+採用契機: δ
+------------------------------------------------------------
+
+優先度: 中
+対象: Marimo（Pythonノートブック環境、0.20.4以前）／AWS Secrets Manager／SSH踏み台ホスト
+
+【24時間以内の変化】
+[The Hacker News（Sysdig調査引用） 2026-09-15] Sysdigが、未認証RCE脆弱性CVE-2026-39987（Marimo、/terminal/wsエンドポイントの認証欠如、CVSS 9.3）を突いた侵入事例を公開。攻撃者はAIエージェントを使わず手作業のみで、初期侵入からAWS Secrets Manager経由の認証情報窃取・SSH踏み台ホストへの到達までをわずか8秒で完了し、9時間のセッション中に850件超のコマンドを手打ちで実行したと報告した
+
+【概要】
+Marimoの/terminal/wsエンドポイントが他のWebSocket経路と異なり認証を強制していなかったため、未認証の攻撃者が認証情報なしでシェルを取得できる脆弱性（CVE-2026-39987、修正版0.23.0）が悪用された。本事例で特筆すべきは、AI支援ツールを一切使わない人間の手作業でも、初期RCEからクラウド認証情報の窃取・SSH踏み台ホストへの侵入までがわずか8秒で完結した点であり、既知の攻撃ツールを使わず即興のスクリプトで行われたことも確認されている。クラウド環境を利用する組織にとって、侵入検知から遮断までの対応目標時間を「分単位」ではなく「秒単位」で設計し直す必要性を示す事例として、SOCは把握しておくべきである。
+
+【推奨アクション】
+・外部公開されたMarimoインスタンスの有無を棚卸しし、稼働している場合は0.23.0以降へ即時アップデートするか、/terminal/wsエンドポイントへの外部アクセスを遮断する
+・RCE検知からクラウド認証情報窃取・横展開までが数秒〜数十秒で完了し得るという前提でインシデント対応計画・自動遮断（SOAR連携）を見直す
+・AWS Secrets Manager等へのシークレット取得APIコールをCloudTrail/GuardDutyで監視し、侵害の疑いがある場合は認証情報を即時失効・ローテーションする運用を整備する
+Splunk SPL: index=aws_cloudtrail eventName=GetSecretValue | stats count by userIdentity.arn sourceIPAddress | where count > 5
+→ RCE検知・クラウド認証情報アクセス・踏み台接続という一連のイベントチェーンをSOAR等で自動相関させ、秒単位での自動遮断を検討する判断材料とする
+
+【参照】
+https://thehackernews.com/2026/09/human-attacker-exploits-marimo-rce.html
+https://webflow.sysdig.com/blog/machine-speed-hold-the-ai-hand-rolled-marimo-cve-2026-39987-exploit
+
+[除外]
+・情報セキュリティ早期警戒パートナーシップガイドライン改訂案の公開（サイバー対応能力強化法対応） → IPAが2026-09-14付で公開（意見募集期間9/14〜9/24）。掲載時刻が確認できず、当日の調査窓（2026-09-15 07:00〜2026-09-16 07:00 JST）開始前の公表である可能性が高いため今回は見送り。ζ条件（規制当局・標準化機関によるガイダンス改訂）に該当する候補として翌日以降の窓内で再確認を要する
+・Nightmare Eclipse『ShieldCrash』（Microsoft Defender権限昇格ゼロデイPoC、CVE-2026-69414）の関連報道再浮上 → reported-apts.md（NightmareEclipse-2026-WindowsZeroDayDisclosure）および reported-cves.md（CVE-2026-69414）に2026-09-10付で既報・注目動向として採用済み。本日の窓内で技術的な新展開（新CVE採番・実悪用確認等）は確認できなかったため変化なしとして除外
+・IPA「経営者のためのランサムウェア対策ハンドブック」公開 → 経営層向けの一般的な啓発資料であり、窓内で確認できる新規の技術的データ・観測事実を伴わないため、SOC推奨情報としての採用条件（α〜η）に該当しないと判断
+・Cisco Secure Email Gateway SQLインジェクション（CVE-2026-76461）に関するJPCERT/CC注意喚起 → CVSSv3.1=9.8・CISA KEV登録・実悪用確認済みでありpipeline-1-cve.mdの決定木上トラックA（Section 3製品別CVE）に帰属する事案のため、SOC推奨情報（Section 4）の収集対象外として除外（他ステップの管轄）
+
+本日の集計:
+SOC推奨情報 — 高1件 / 中2件 / 低0件 / 除外4件
+
+========================================
