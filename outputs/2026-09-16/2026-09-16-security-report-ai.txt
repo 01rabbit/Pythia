@@ -1,0 +1,101 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-16 07:56 JST
+調査期間: 2026-09-15 07:00 〜 2026-09-16 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-09-16
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編相当のAI攻撃動向なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[MCP Context Forge: Pythonサンドボックス実行環境のgetattr経由エスケープによる任意コード実行（CVE-2026-53710）]
+カテゴリ: CC3 採用契機: A-R、A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+MCP・A2A・REST/gRPC APIを統合するAIゲートウェイ／レジストリ製品「MCP Context Forge」のpython_sandbox_serverコンポーネントにおいて、コード実行を制限するはずのRestrictedPythonサンドボックスがsafe_builtins経由で素のgetattrを公開し_getattr_メディエーションを回避できる設計不備が発見された・危険な二重アンダースコア文字列の字面チェックのみに依存するvalidate_codeも回避可能であり、python_sandbox_serverのHTTPエンドポイントに到達できる攻撃者はtools/call経由でサーバプロセス権限のOSコマンド実行に至る・GitHub Security Advisory起点でCVSSv3.1 10.0（Critical）として公開され1.0.2で修正済み・実悪用や公開PoCコードの確認は本日時点で取れていない・単一ソース（NVD/GHSA記録）のため独立報道の追跡は継続監視とする
+監視: Splunk SPL: index=mcp_gateway sourcetype=mcp_context_forge component=python_sandbox_server | search tools_call_payload="*getattr*" OR tools_call_payload="*__*__*" | stats count by src_ip
+→ python_sandbox_serverからの子プロセス生成（execve系）や想定外の外向き通信は緊急度高。バージョン1.0.2未満のMCP Context Forge導入有無の棚卸しを優先する
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-53710
+参照: https://hol.org/guard/security/cves/CVE-2026-53710-mcp-contextforge-gateway-has-restrictedpython
+参照: https://github.com/IBM/mcp-context-forge
+・[PraisonAIマルチエージェントフレームワーク: コード実行サンドボックス回避・無認証MCPエンドポイント・ハードコードJWTシークレット等の重大脆弱性群（CVE-2026-57138等6件）]
+カテゴリ: CC1 採用契機: A-R、A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+オープンソースのマルチエージェントAIフレームワーク「PraisonAI」で同一日にCVSS9.4〜9.9の重大脆弱性6件がGitHub Security Advisory起点で新規公開された・codeModeツールがmodel生成JavaScriptをnew Function()＋with(sandbox)で実行し正規表現ブロックリストのみに依存する設計不備により({}).constructor.constructorやFunction('return this')()でサンドボックスを脱出しホストのプロセス・ファイルシステムへ到達可能（CVE-2026-57138/57141）・MCPServer.startHttp()がホスト制限なしでバインドし認証なしにtools/call等を受理（CVE-2026-57139）・AgentOSが既定で0.0.0.0にバインドしエージェント一覧取得や呼び出しAPIを無認証公開（CVE-2026-57140）・praisonai_platformの認証サービスがPLATFORM_JWT_SECRET未設定時に公開値dev-secret-change-meへフォールバックしPLATFORM_ENV既定値によって本番ガードも無効化される設計不備が2件（CVE-2026-57147/57148）・全ていずれもv1.7.2または0.1.6で修正済み・実悪用や公開PoCコードの確認は本日時点でなく単一ソース（NVD/GHSA記録）のため継続監視とする
+監視: Splunk SPL: index=praisonai sourcetype=praisonai_mcp_server | search jwt_secret_source="default" OR endpoint="/api/agents" OR endpoint="/api/chat" | stats count by src_ip
+→ PLATFORM_JWT_SECRET未設定・PLATFORM_ENV未設定のデフォルト構成のまま外部公開されていないかの棚卸しを優先し、v1.7.2／0.1.6以降への更新を確認する
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-57138
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-57139
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-57140
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-57141
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-57147
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-57148
+参照: https://www.strix.ai/cve/CVE-2026-57138
+・[Casdoor: MCPエンドポイント経由の組織横断権限昇格・管理者アカウント作成脆弱性（CVE-2026-91998）]
+カテゴリ: CC3 採用契機: A-R、A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+オープンソースのアイデンティティ・アクセス管理（IDaaS/SSO）基盤Casdoor（4.4.0以下）のAIエージェント連携用/api/mcpエンドポイントに認可バイパスが存在し、単一アプリケーションの正規clientId/clientSecretを保持する攻撃者が組織横断で無制限のユーザー管理操作を実行できることが新規公開された・パスワードソルトやメールアドレスを含むユーザーレコードの列挙、管理者アカウントの新規作成・既存ユーザーの改変・削除がマルチテナント環境の全組織にわたり可能とされCVSSv3.1 9.9（Critical）・CERT/CCのVU番号でも調整開示が確認できる・実悪用や具体的な被害組織の報告は本日時点で確認できず単一ソースのため継続監視とする
+監視: Splunk SPL: index=casdoor sourcetype=casdoor_api endpoint="/api/mcp" | stats count by client_id, org, action | where action="create_user" OR action="list_users"
+→ 組織をまたいだclientId利用や短時間でのユーザー列挙・管理者作成イベントを優先確認し、4.4.0以下からの更新有無を棚卸しする
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-91998
+参照: https://kb.cert.org/vuls/id/780781
+・[@zereight/mcp-gitlab: 動的APIURLヘッダー注入とHost/Origin検証欠如によるDNSリバインディング脆弱性2件（CVE-2026-61559/61568）]
+カテゴリ: CC3 採用契機: A-R、A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+GitLab向けの非公式MCPサーバとして広く利用される@zereight/mcp-gitlab（npm週間ダウンロード実績のあるコミュニティ製OSS）で新規に重大脆弱性2件が公開された・CVE-2026-61559はENABLE_DYNAMIC_API_URL=true設定時にHTTPリクエストヘッダーX-GitLab-API-URLの値をそのまま外向きGitLab API呼び出し先として採用してしまう設計不備（CVSSv3.1 9.6）・CVE-2026-61568はStreamable HTTP MCPエンドポイントが有効なHost/Origin allowlistを欠くため悪意あるWebページがDNSリバインディングでブラウザ経由の被害者ローカルMCPリスナーへ到達しうる設計不備（CVSSv3.1 9.6）・いずれもv2.1.30で修正済み・同プロジェクトは2026年7月にもPluto Securityの調査（コーディネート開示）で別の重大脆弱性（環境変数読み出し経由のGitLabトークン窃取等）が公表されておりMCPサーバの信頼境界不備が繰り返し露見している系譜だが本日分の2件自体の実悪用・公開PoCは未確認で単一ソースのため継続監視とする
+監視: Splunk SPL: index=mcp_gitlab sourcetype=http_proxy | search http_header="X-GitLab-API-URL" | stats count by src_ip, dest_host
+→ ENABLE_DYNAMIC_API_URL設定の要否を再点検し、v2.1.30未満の導入有無を棚卸しする
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-61559
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-61568
+参照: https://github.com/zereight/gitlab-mcp/issues/748
+・[IBM Langflow OSS: socket/urllibインポート経由のroot権限任意コード実行（CVE-2026-12944）]
+カテゴリ: CC1 採用契機: A-R、A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+既報のLangflow未認証RCE（CVE-2026-0768、実際の悪用が確認済み・本編既報）やMCPプロジェクトエンドポイント経由RCE（CVE-2026-85025、既報）とは別系統の新規脆弱性としてIBM Langflow OSS（1.0.0〜1.10.0）でCVE-2026-12944が公開された・攻撃者がsocketまたはurllibをインポートするコンポーネントを送信するだけでLangflowサーバ上をroot権限（UID=0）で任意Pythonコードを実行でき、IMDSv1経由のSSRFによるAWS IAMロール権限のフル窃取・コンテナファイルシステムからの任意ファイル持出し・Docker内部ネットワーク上のPostgreSQL/Redis等への横展開が可能とされる（CVSSv3.1 9.6）・Langflowは2026年を通じて野生下での悪用が繰り返し確認されている広く使われるAIワークフローツールであり同種の悪用リスクが指摘されるが、本CVE自体の実悪用確認は本日時点で取れておらず単一ソース（IBM PSIRT/NVD記録）のため継続監視とする
+監視: Splunk SPL: index=langflow sourcetype=langflow_component | search component_code="*import socket*" OR component_code="*import urllib*" | stats count by user, src_ip
+→ Langflowはroot(UID=0)で稼働させず非特権ユーザーでのコンテナ実行を優先し、1.10.0以下からの更新有無を棚卸しする。既報CVE-2026-0768の実悪用実績を踏まえ本CVEも早期パッチ適用を推奨
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-12944
+参照: https://www.strix.ai/cve/CVE-2026-12944
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はAI攻撃動向として7件を評価し、本編0件・参考A0件・参考B5件を採用した。いずれもMCP/エージェントフレームワーク等のAIインフラ（カテゴリC）に対する脆弱性開示であり、実悪用の確認された事例はなかった。バースト検出閾値（48時間以内3件以上）を超えたトピックはなかった。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B5件 / 除外2件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）0件 / C（インフラ）6件
+
+[除外]
+・Marimo RCE(CVE-2026-39987)における人間攻撃者の高速攻撃実証（AI不使用・比較対象） → The Hacker News/Sysdig 2026-09-15公開・SysdigがMarimo notebook未認証RCE(CVE-2026-39987・既報)を悪用しSSHバスティオンホストへ8秒で到達した攻撃者を観測したが、記事・原典Sysdigブログとも一貫して当該攻撃者はAIエージェント・LLM生成ツールを一切使用せず手書きPythonスクリプトのみで実行したと明記（研究側が『同一CVEでプロファイルした全エージェント型脅威アクター(ATA)はこの罠に嵌った』と述べる比較対象として人間の技量を強調する内容）・AI攻撃側の採用条件A-P〜A-Yに該当する事実（AI武器化・AI攻撃対象・AIインフラへの悪用のいずれも）が本記事からは確認できないため除外・同一研究が言及する『エージェント型脅威アクター』側の観測についての独立報道が今後出た場合は改めて採録を検討
+・MySQL MCP Server: SSE Transportでの認証欠如によるDNSリバインディング経由の未認証SQL実行（CVE-2026-59971） → 網羅スイープ(Step0.7)のNVD publishedフィールドでは2026-09-15T15:17:19Zと窓内表示されるが、GHSA/OSV記録(GHSA-rqfv-2mw9-78g2)およびGitLab Advisory Database記載の実際の脆弱性公開は2026-09-11T20:35:42Zであり調査窓（2026-09-14T22:00Z〜2026-09-15T22:00Z）より前・NVD側の取り込み反映ラグによる表示であり窓内の新規事象ではないため除外・本パイプラインでは未報告のためreported-ai-attacks.mdには『継続監視』として登録せず次回窓内で新規動きがあれば改めて評価
+
+========================================
