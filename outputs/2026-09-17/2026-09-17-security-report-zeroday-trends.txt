@@ -1,0 +1,148 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-17 09:30 JST
+調査期間: 2026-09-16 07:00 〜 2026-09-17 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】CISA KEV・実悪用確認・ゼロデイ報道
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-76460 / Cisco Identity Services Engine (ISE) / ISE-PIC
+対象: ISE/ISE-PIC 全サポートバージョン（Cisco公式アドバイザリ参照）
+------------------------------------------------------------
+
+優先度: critical
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[CISA 2026-09-16] CVE-2026-76460をKEVカタログへ新規追加。連邦機関対応期限2026-09-19。
+[The Hacker News / securityonline.info 2026-09-16] Cisco ISE APIの認証バイパス脆弱性が実悪用下にあると報道。
+
+【概要】
+Cisco Identity Services Engine (ISE) および ISE-PIC のAPIに認証制御不備があり、未認証のリモート攻撃者が細工したリクエストをAPIエンドポイントへ送信することで、Web管理インターフェースの認証をバイパスし対象デバイスへ不正アクセスできる。CISAは実悪用を確認しKEVカタログへ追加した（連邦機関対応期限2026-09-19）。
+
+攻撃の流れ:
+1. 未認証で細工したAPIリクエストを対象ISEエンドポイントへ送信
+2. Web管理インターフェースの認証制御をバイパス
+3. 管理者相当のアクセス権限で対象デバイスを不正操作
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Cisco ISE/ISE-PIC 管理API・Web管理インターフェースへの認証なしアクセス試行を監視する
+Splunk SPL: index=network_infra sourcetype=cisco:ise | search uri_path="*api*" http_status=200 auth_status=none | stats count by src_ip, uri_path
+→ 正常な管理端末以外からのISE API呼び出し、認証ヘッダ欠如のリクエストを優先確認する
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/16/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://securityonline.info/cisco-ise-vulnerability-exploited/
+
+------------------------------------------------------------
+2. CVE-2026-58704 / Pixel（Cellular Modem コンポーネント）
+対象: Pixel対応機種（2026-09-05セキュリティパッチレベル未満）
+------------------------------------------------------------
+
+優先度: critical
+CVSS: 8.8 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[CISA 2026-09-16] CVE-2026-58704をKEVカタログへ新規追加。
+[9to5Google / The Hacker News 2026-09-16] GoogleがPixelモデムのゼロデイに対する標的型・限定的な実悪用の兆候を確認したと公表。
+
+【概要】
+Pixel端末のセルラーモデムに論理エラーによる権限バイパスの欠陥があり、追加の実行権限やユーザー操作なしに近接・隣接した経路からの権限昇格が可能。Googleは限定的・標的型の実悪用の兆候を確認したとして2026年9月のPixelセキュリティアップデートで修正した。CISAはKEVカタログへ追加している。
+
+攻撃の流れ:
+1. 近接/隣接経路（セルラー通信等）からモデムの論理エラーを悪用
+2. 追加権限なしに権限昇格（Escalation of Privilege）
+3. 標的端末に対する限定的・標的型の侵害
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Pixel端末のモデムファームウェアバージョン・2026-09セキュリティパッチレベル適用状況の把握
+Splunk SPL: index=mdm sourcetype=android_patch_level product=Pixel | where patch_level<"2026-09-05" | stats count by device_id
+→ MDM経由で未パッチPixel端末を洗い出し、優先パッチ適用対象とする（標的型のため全数監視より優先度付けが有効）
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/16/cisa-adds-one-known-exploited-vulnerability-catalog
+https://9to5google.com/2026/09/16/google-pixel-targeted-zero-day-modem-attack/
+
+------------------------------------------------------------
+3. CVE-2026-87886 / Acronis Backup（cPanel/WHM/Plesk向けバックアッププラグイン）
+対象: cPanel/WHM/Plesk向けAcronis Backupプラグイン（パッチ未適用版）
+------------------------------------------------------------
+
+優先度: high
+CVSS: 7.8 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA 2026-09-16] CVE-2026-87886をKEVカタログへ新規追加。連邦機関対応期限2026-09-19。
+[Help Net Security / SecurityWeek 2026-09-16] cPanel/WHM向けAcronis Backupプラグインの不適切なデフォルト権限を突いた限定的な標的型実悪用を確認と報道。
+
+【概要】
+Acronis BackupのcPanel/WHM/Plesk向けバックアップ拡張機能にデフォルト権限設定の不備（CWE-276）があり、認証済み攻撃者がユーザー操作なしにLinux上でローカル権限昇格を行える。cPanel/WHM向け展開に対する限定的・標的型の実悪用が確認されており、Plesk向けでは実悪用の兆候は現時点で確認されていない。Acronisは修正済みプラグインを公開済み。
+
+攻撃の流れ:
+1. cPanel/WHM上のAcronis Backupプラグインへの認証済みアクセスを取得
+2. 不適切なデフォルトファイル権限を悪用しローカル権限昇格
+3. Linuxホスト上でroot相当の権限を取得
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・cPanel/WHM/PleskホストのAcronis Backupプラグインバージョンとファイル権限設定の確認
+Splunk SPL: index=linux_hosts sourcetype=auditd path="*acronis*" perm=* | stats count by host, path, perm
+→ root権限昇格につながる想定外プロセスからのAcronisプラグインディレクトリへの書き込み・実行を優先確認
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/16/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://www.helpnetsecurity.com/2026/09/16/acronis-backup-plugin-vulnerability-exploited-cve-2026-87886/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）・トレンド記事】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックB CVE・トレンド記事なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にAPT本編該当なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にAPT注目動向該当なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし。理由: 本日分Evidence Ledger（forecaster/evidence/manifests/2026/09/2026-09-17.json）未生成のため、M5時刻順序ゲート（validate_temporal_integrity.py）の根拠となる取得時刻付き証拠が不足し、予報を発行しなかった。戦況・観測の成果物（observations/baseline）は生成済み。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー：APT活動】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Red Heron（中国語圏nexusの疑い） / RedHeron-2026-GiteaRCE → The Hacker News/Acronis TRU原典（2026-09-14公表）。前回2026-09-16レポートで既にウィンドウ外として除外済み・本日ウィンドウ（2026-09-16 07:00〜2026-09-17 07:00 JST）内の新規進展は本日時点で確認されず。CVE-2026-60004 Gitea RCE武器化・6カ国13組織侵害・LD_PRELOADルートキットSIXZUT確認
+・Iran MOIS（FBI呼称: HEAVYGRAM / NCSC呼称: CHOSEN BRICK） / HEAVYGRAM-CHOSENBRICK-2026-MOIS → NCSC/FBI/AIVD合同勧告・The Hacker News報道（2026-09-15公表、正確な公表時刻は未確認）。本日調査窓開始（2026-09-16 07:00 JST / 2026-09-15T22:00Z）より前の公表である可能性が高く、窓内の新規進展（追加TTP・新規IOC等）は本日時点で確認されないため対象外。Telegram制御のWindows向けバックドアでイラン反体制派・ジャーナリストを標的（活動開始2023年秋、2025年以降ドキュメント化）。継続監視対象として明日以降の窓内更新を確認する
+
+本日の集計（Section2 APT活動）:
+本編0件 / 注目動向0件 / 除外2件
