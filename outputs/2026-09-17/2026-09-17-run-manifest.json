@@ -1,0 +1,129 @@
+{
+  "_schema_version": "1.0",
+  "_run_date": "2026-09-17",
+  "_comment": "日次実行の各ステップの入出力・時刻・内容ハッシュ・版。予報の先見性を第三者が追跡できるようにするための実行記録（改善計画 §10）。",
+  "steps": [
+    {
+      "step": "nvd_window_sweep",
+      "status": "ok",
+      "started_at_utc": "2026-09-16T22:45:00Z",
+      "ended_at_utc": "2026-09-16T22:47:53Z",
+      "version": "nvd_window_sweep/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": ".cache/daily-security-intel/2026-09-17/step1-sweep.json",
+          "sha256": "122034379204228624124a1392340ee2eeb5083ce46bff747c836d9df4572064"
+        }
+      ]
+    },
+    {
+      "step": "security_report",
+      "status": "ok",
+      "started_at_utc": "2026-09-16T22:47:53Z",
+      "ended_at_utc": "2026-09-16T23:01:44Z",
+      "version": "build_report/manual-1.0",
+      "inputs": [
+        ".cache/daily-security-intel/2026-09-17/step1-sweep.json"
+      ],
+      "outputs": [
+        {
+          "path": "outputs/2026-09-17/2026-09-17-security-report.json",
+          "sha256": "487aaeb2d8ec0c607134ce2140f45f2ab30d205fe4152807f26e79a4f19ee298"
+        }
+      ],
+      "note": "raw collector/Evidence Ledger未生成のためStep1-2bはライブWeb検索で代替"
+    },
+    {
+      "step": "normalize_observations",
+      "status": "ok",
+      "started_at_utc": "2026-09-16T22:58:00Z",
+      "ended_at_utc": "2026-09-16T23:00:16Z",
+      "version": "01-normalize/manual-1.0",
+      "inputs": [
+        "outputs/2026-09-17/2026-09-17-security-report.json"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/observations/2026/09/2026-09-17.json",
+          "sha256": "bedd24c06110457484866ad942b9d12521d59ccc5f4ef950c800bd1b049d1101"
+        }
+      ]
+    },
+    {
+      "step": "regen_baseline",
+      "status": "ok",
+      "started_at_utc": "2026-09-16T22:59:00Z",
+      "ended_at_utc": "2026-09-16T22:59:51Z",
+      "version": "regen_baseline.py/1.0",
+      "inputs": [
+        "forecaster/observations/"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/baseline/technique-freq.json",
+          "sha256": "3a1a79f418974ee2b152131fc69783bf853d30ea1e05109f681515d242630371"
+        },
+        {
+          "path": "forecaster/baseline/group-activity.json",
+          "sha256": "4fea5914a0a2bd571b734707dab6beed2b8bf6b5d537e50f5ced6d44acc65f41"
+        }
+      ]
+    },
+    {
+      "step": "forecast",
+      "status": "ok",
+      "started_at_utc": "2026-09-16T23:00:30Z",
+      "ended_at_utc": "2026-09-16T23:01:14Z",
+      "version": "03-forecast/manual-1.0",
+      "inputs": [
+        "forecaster/observations/2026/09/2026-09-17.json",
+        "forecaster/baseline/technique-freq.json"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/forecasts/daily/2026-09-17.json",
+          "sha256": "d8ecb3208d253b580905bfe34c3eb621c0ff5bf1367a2cbd90c3c6349e0bfa8c"
+        },
+        {
+          "path": "forecaster/forecasts/daily/2026-09-17.md",
+          "sha256": "508599de2d487b692aca7c67f861075fa0eda703e088747efb1c41c57273e00e"
+        }
+      ],
+      "note": "新規予報0件: Step A'はKEV単体条件のみで追加確認イベント無し・Step AはT1068逸脱が多ベンダー混在・M5 Evidence Ledger未生成"
+    },
+    {
+      "step": "build_tactical_state",
+      "status": "ok",
+      "started_at_utc": "2026-09-16T23:01:15Z",
+      "ended_at_utc": "2026-09-16T23:01:22Z",
+      "version": "build_tactical_state.py/1.0",
+      "inputs": [
+        "forecaster/observations/"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/state/tactical/2026/09/2026-09-17.json",
+          "sha256": "6d8ca00105927128f17795ad12865c315c104e91831e70a6fa864b20e7d61522"
+        }
+      ]
+    },
+    {
+      "step": "generate_tactical_candidates",
+      "status": "ok",
+      "started_at_utc": "2026-09-16T23:01:22Z",
+      "ended_at_utc": "2026-09-16T23:01:26Z",
+      "version": "generate_tactical_candidates.py/1.0",
+      "inputs": [
+        "forecaster/state/tactical/2026/09/2026-09-17.json"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/candidates/tactical/2026-09-17.json",
+          "sha256": "18bb16f8275b94c339505c49d2ba2e15e788e62d0ae34c8ec9ad87c856fc59c5"
+        }
+      ],
+      "note": "TF-1 shadow運用（第1段階）: 発行0件・shadow90件・棄権118件"
+    }
+  ]
+}

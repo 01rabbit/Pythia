@@ -1,0 +1,331 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-17 09:30 JST
+調査期間: 2026-09-16 07:00 〜 2026-09-17 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】CISA KEV・実悪用確認・ゼロデイ報道
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-76460 / Cisco Identity Services Engine (ISE) / ISE-PIC
+対象: ISE/ISE-PIC 全サポートバージョン（Cisco公式アドバイザリ参照）
+------------------------------------------------------------
+
+優先度: critical
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[CISA 2026-09-16] CVE-2026-76460をKEVカタログへ新規追加。連邦機関対応期限2026-09-19。
+[The Hacker News / securityonline.info 2026-09-16] Cisco ISE APIの認証バイパス脆弱性が実悪用下にあると報道。
+
+【概要】
+Cisco Identity Services Engine (ISE) および ISE-PIC のAPIに認証制御不備があり、未認証のリモート攻撃者が細工したリクエストをAPIエンドポイントへ送信することで、Web管理インターフェースの認証をバイパスし対象デバイスへ不正アクセスできる。CISAは実悪用を確認しKEVカタログへ追加した（連邦機関対応期限2026-09-19）。
+
+攻撃の流れ:
+1. 未認証で細工したAPIリクエストを対象ISEエンドポイントへ送信
+2. Web管理インターフェースの認証制御をバイパス
+3. 管理者相当のアクセス権限で対象デバイスを不正操作
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Cisco ISE/ISE-PIC 管理API・Web管理インターフェースへの認証なしアクセス試行を監視する
+Splunk SPL: index=network_infra sourcetype=cisco:ise | search uri_path="*api*" http_status=200 auth_status=none | stats count by src_ip, uri_path
+→ 正常な管理端末以外からのISE API呼び出し、認証ヘッダ欠如のリクエストを優先確認する
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/16/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://securityonline.info/cisco-ise-vulnerability-exploited/
+
+------------------------------------------------------------
+2. CVE-2026-58704 / Pixel（Cellular Modem コンポーネント）
+対象: Pixel対応機種（2026-09-05セキュリティパッチレベル未満）
+------------------------------------------------------------
+
+優先度: critical
+CVSS: 8.8 (High)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[CISA 2026-09-16] CVE-2026-58704をKEVカタログへ新規追加。
+[9to5Google / The Hacker News 2026-09-16] GoogleがPixelモデムのゼロデイに対する標的型・限定的な実悪用の兆候を確認したと公表。
+
+【概要】
+Pixel端末のセルラーモデムに論理エラーによる権限バイパスの欠陥があり、追加の実行権限やユーザー操作なしに近接・隣接した経路からの権限昇格が可能。Googleは限定的・標的型の実悪用の兆候を確認したとして2026年9月のPixelセキュリティアップデートで修正した。CISAはKEVカタログへ追加している。
+
+攻撃の流れ:
+1. 近接/隣接経路（セルラー通信等）からモデムの論理エラーを悪用
+2. 追加権限なしに権限昇格（Escalation of Privilege）
+3. 標的端末に対する限定的・標的型の侵害
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Pixel端末のモデムファームウェアバージョン・2026-09セキュリティパッチレベル適用状況の把握
+Splunk SPL: index=mdm sourcetype=android_patch_level product=Pixel | where patch_level<"2026-09-05" | stats count by device_id
+→ MDM経由で未パッチPixel端末を洗い出し、優先パッチ適用対象とする（標的型のため全数監視より優先度付けが有効）
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/16/cisa-adds-one-known-exploited-vulnerability-catalog
+https://9to5google.com/2026/09/16/google-pixel-targeted-zero-day-modem-attack/
+
+------------------------------------------------------------
+3. CVE-2026-87886 / Acronis Backup（cPanel/WHM/Plesk向けバックアッププラグイン）
+対象: cPanel/WHM/Plesk向けAcronis Backupプラグイン（パッチ未適用版）
+------------------------------------------------------------
+
+優先度: high
+CVSS: 7.8 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA 2026-09-16] CVE-2026-87886をKEVカタログへ新規追加。連邦機関対応期限2026-09-19。
+[Help Net Security / SecurityWeek 2026-09-16] cPanel/WHM向けAcronis Backupプラグインの不適切なデフォルト権限を突いた限定的な標的型実悪用を確認と報道。
+
+【概要】
+Acronis BackupのcPanel/WHM/Plesk向けバックアップ拡張機能にデフォルト権限設定の不備（CWE-276）があり、認証済み攻撃者がユーザー操作なしにLinux上でローカル権限昇格を行える。cPanel/WHM向け展開に対する限定的・標的型の実悪用が確認されており、Plesk向けでは実悪用の兆候は現時点で確認されていない。Acronisは修正済みプラグインを公開済み。
+
+攻撃の流れ:
+1. cPanel/WHM上のAcronis Backupプラグインへの認証済みアクセスを取得
+2. 不適切なデフォルトファイル権限を悪用しローカル権限昇格
+3. Linuxホスト上でroot相当の権限を取得
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・cPanel/WHM/PleskホストのAcronis Backupプラグインバージョンとファイル権限設定の確認
+Splunk SPL: index=linux_hosts sourcetype=auditd path="*acronis*" perm=* | stats count by host, path, perm
+→ root権限昇格につながる想定外プロセスからのAcronisプラグインディレクトリへの書き込み・実行を優先確認
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/16/cisa-adds-two-known-exploited-vulnerabilities-catalog
+https://www.helpnetsecurity.com/2026/09/16/acronis-backup-plugin-vulnerability-exploited-cve-2026-87886/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考情報A該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+CVE-2026-5430 / WSO2 API Manager / API Control Plane / Traffic Manager / Universal Gateway
+対象: API Manager 4.1.0〜4.6.0
+------------------------------------------------------------
+
+優先度: high
+CVSS: 9.8 (Critical)
+状態: 実悪用確認
+
+【24時間以内の変化】
+[watchTowr / The Hacker News 2026-09-16] watchTowrのハニーポットが2026-09-13以降、管理者権限を偽装したJWTトークンによる実悪用試行を捕捉と報道。
+
+【概要】
+WSO2 API ManagerでJWT認証の署名検証に不備があり、サポート対象外アルゴリズムで署名されたトークンにより認証をバイパスできる。watchTowrのハニーポットが管理者権限を偽装したJWTトークンによる悪用試行を観測しており、悪用に成功すると全登録アプリケーションのAPIバックエンド・認証情報・コンシューマーキー等へアクセスされ得る。KEV登録は本日時点で未確認。
+
+攻撃の流れ:
+1. サポート対象外アルゴリズムで署名した偽造JWTトークンを作成
+2. 偽造トークンでWSO2 API Managerの認証をバイパス
+3. 全登録アプリケーションのAPIバックエンド・認証情報へ不正アクセス
+
+【IoC】
+
+【監視ポイント】
+・WSO2 API Managerの認証ログで、サポート対象外アルゴリズム署名のJWTや管理者クレームを含む不審トークンを監視
+Splunk SPL: index=api_gateway sourcetype=wso2:apim jwt_alg!=RS256 role=admin | stats count by src_ip, client_id
+→ RS256以外のアルゴリズムで署名されたトークンや、通常発行されない管理者クレームの出現を優先確認
+
+【参照】
+https://thehackernews.com/2026/09/active-exploitation-attempts-target.html
+https://www.securityweek.com/enterprises-warned-of-attacks-exploiting-wso2-vulnerability/
+
+------------------------------------------------------------
+CVE-2026-27540 / WooCommerce Wholesale Lead Capture（Rymera Web Co製プレミアムプラグイン）
+対象: 2.0.3.1以前
+------------------------------------------------------------
+
+優先度: high
+CVSS: 9.8 (Critical)
+状態: 実悪用確認
+
+【24時間以内の変化】
+[Wordfence / The Hacker News 2026-09-16] Wordfenceが過去24時間で99件、6月以降累計10万件超の悪用試行をブロックしたと報告。
+
+【概要】
+WooCommerce Wholesale Lead CaptureプラグインのAJAXアクション「wwlc_file_upload_handler」にファイル種別検証不備（CWE-434）があり、未認証の攻撃者が細工したfile_settingsパラメータで任意のPHPファイル（webshell）をアップトードできる。パッチは2月に公開済みだが、Wordfenceは直近24時間で99件を含む累計10万件超の悪用試行をブロックしたと報告している。
+
+攻撃の流れ:
+1. 未認証でwwlc_file_upload_handler AJAXアクションへ細工したfile_settingsパラメータを送信
+2. ファイル種別検証不備を突いて任意のPHPファイル（shell.php等）をアップロード
+3. アップロードしたWebシェル経由でリモートコード実行
+
+【IoC】
+Filename: shell.php
+
+【監視ポイント】
+・WordPress環境でのwwlc_file_upload_handler呼び出しとアップロードディレクトリへの新規PHPファイル生成を監視
+Splunk SPL: index=web_access sourcetype=access_combined uri_path="*wwlc_file_upload_handler*" | stats count by clientip, uri_query
+→ wp-content/uploads配下への予期しないPHPファイル生成をファイル整合性監視（FIM）で併せて検知する
+
+【参照】
+https://thehackernews.com/2026/09/attackers-exploit-woocommerce-wholesale.html
+https://www.infosecurity-magazine.com/news/woocommerce-wholesale-lead-capture/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー：製品別CVE】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-20130 ほか22件 (Cisco 一括公開バッチ（同一ウィンドウ内 23件）) → Ciscoが同一ウィンドウ内で一括公開したCVE計23件（CVSS 9.0〜10.0）。代表: CVE-2026-20130 (CVSS10.0) As part of Cisco's ongoing commitment to proactive security and product quality, the Cisco Identity Services Engine (ISE。個別に実悪用・PoC公開の新規報道は本日時点で未確認。網羅スイープ母集団該当のため記録。内訳CVE: CVE-2026-20130, CVE-2026-20192, CVE-2026-76423, CVE-2026-20234, CVE-2026-20307, CVE-2026-20322, CVE-2026-20324, CVE-2026-20325, CVE-2026-20329, CVE-2026-20330, CVE-2026-20332, CVE-2026-20242, CVE-2026-20326, CVE-2026-20331, CVE-2026-20176, CVE-2026-20194, CVE-2026-20211, CVE-2026-20237, CVE-2026-20284, CVE-2026-20305, CVE-2026-20306, CVE-2026-20341, CVE-2026-76420
+・CVE-2026-70416 (Dell/EMC) → CVSS10.0(cvssMetricV31)・Dell/EMC・Dell ObjectScale, versions prior to 4.4.0.0, contains a Deserialization of Untrusted Data vulnerability. An unauthenticated attacker with remote access could po・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-73453 ほか5件 (Arista Networks 一括公開バッチ（同一ウィンドウ内 6件）) → Arista Networksが同一ウィンドウ内で一括公開したCVE計6件（CVSS 9.4〜10.0）。代表: CVE-2026-73453 (CVSS10.0) An unauthenticated P4Runtime (Programming Protocol-Independent Packet Processors Runtime) client can achieve arbitrary c。個別に実悪用・PoC公開の新規報道は本日時点で未確認。網羅スイープ母集団該当のため記録。内訳CVE: CVE-2026-73453, CVE-2026-73456, CVE-2026-73437, CVE-2026-86106, CVE-2026-73447, CVE-2026-73461
+・CVE-2026-92808 (Altium) → CVSS10.0(cvssMetricV40)・Altium・A server-side request forgery (SSRF) vulnerability exists in the UnifiedLogin service of Altium Enterprise Server. An unauthenticated network attacker can cause・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2025-59953 (GitHub Advisory Database (aggregator)) → CVSS9.8(cvssMetricV31)・GitHub Advisory Database (aggregator)・LMDeploy is a toolkit for compressing, deploying, and serving large language models. Starting in version 0.9.1 and prior to version 0.10.2, the LMdeploy impleme・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-61560 (GitHub Advisory Database (aggregator)) → CVSS9.8(cvssMetricV31)・GitHub Advisory Database (aggregator)・`@zereight/mcp-gitlab` is a Model Context Protocol server for GitLab. Prior to version 2.1.27, the SSE transport mode (`SSE=true`) exposes all MCP tools without・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-77411 (GitHub Advisory Database (aggregator)) → CVSS9.5(cvssMetricV40)・GitHub Advisory Database (aggregator)・RabbitMQ amqp091-go is a Go AMQP 0.9.1 client. Prior to 1.13.0, readLongstr in read.go returns an empty string and a nil error when a declared AMQP longstr leng・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-77405 (GitHub Advisory Database (aggregator)) → CVSS9.4(cvssMetricV40)・GitHub Advisory Database (aggregator)・RabbitMQ amqp091-go is a Go AMQP 0.9.1 client. Prior to 1.13.0, tlsConfigFromURI in uri.go creates tls.Config values without setting MinVersion to tls.VersionTL・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-75513 (GitHub Advisory Database (aggregator)) → CVSS9.1(cvssMetricV31)・GitHub Advisory Database (aggregator)・Marten is a .NET Transactional Document DB and Event Store on PostgreSQL. From version 7.0.0 until 9.13.0, several Marten LINQ and tenant-management paths inter・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-77408 (GitHub Advisory Database (aggregator)) → CVSS9.1(cvssMetricV40)・GitHub Advisory Database (aggregator)・RabbitMQ amqp091-go is a Go AMQP 0.9.1 client. Prior to 1.13.0, the writeShortstr function in write.go casts the byte length of AMQP shortstr property values to・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-12793 (Wordfence (aggregator)) → CVSS9.8(cvssMetricV31)・Wordfence (aggregator)・The JetFormBuilder — Dynamic Blocks Form Builder plugin for WordPress is vulnerable to Privilege Escalation in all versions up to, and including, 3.6.2. This is・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-14349 (Wordfence (aggregator)) → CVSS9.8(cvssMetricV31)・Wordfence (aggregator)・The TrueBooker – Appointment Booking and Scheduler System plugin for WordPress is vulnerable to authorization bypass in all versions up to, and including, 1.2.3・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-27546 (CERT@VDE) → CVSS9.8(cvssMetricV31)・CERT@VDE・An unauthenticated remote attacker can exploit an authentication bypass in the _account_log function to log in as an admin, even when accounts are properly conf・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-27565 (CERT@VDE) → CVSS9.8(cvssMetricV31)・CERT@VDE・An unauthenticated remote attacker can upload a malicious IODD file that places and executes a shell script with root privileges. The shell script remains activ・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-73807 (CISA ICS-CERT) → CVSS9.8(cvssMetricV31)・CISA ICS-CERT・The mySCADA myPRO Manager command API does not properly enforce authentication for privileged functions. An unauthenticated attacker with network access to the ・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-78225 (CISA ICS-CERT) → CVSS9.5(cvssMetricV40)・CISA ICS-CERT・A hardcoded cryptographic server key vulnerability exists in the deployer-ng Update Controller component of Wärtsilä FOS-Onboard.・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-81855 (CISA ICS-CERT) → CVSS9.3(cvssMetricV40)・CISA ICS-CERT・A hardcoded cryptographic client authentication key vulnerability exists in the robot testing framework component of Wärtsilä FOS-Onboard.・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-89778 ほか25件 (Linux kernel 一括公開バッチ（同一ウィンドウ内 26件）) → Linux kernelが同一ウィンドウ内で一括公開したCVE計26件（CVSS 9.1〜9.8）。代表: CVE-2026-89778 (CVSS9.8) In the Linux kernel, the following vulnerability has been resolved: isofs: fix out-of-bounds page array access on empty 。個別に実悪用・PoC公開の新規報道は本日時点で未確認。網羅スイープ母集団該当のため記録。内訳CVE: CVE-2026-89778, CVE-2026-89783, CVE-2026-89788, CVE-2026-89847, CVE-2026-89857, CVE-2026-89969, CVE-2026-89970, CVE-2026-89972, CVE-2026-89990, CVE-2026-90012, CVE-2026-90036, CVE-2026-90037, CVE-2026-90038, CVE-2026-90042, CVE-2026-90048, CVE-2026-89775, CVE-2026-89914, CVE-2026-89915, CVE-2026-89916, CVE-2026-89918, CVE-2026-89930, CVE-2026-90049, CVE-2026-89779, CVE-2026-89786, CVE-2026-89846, CVE-2026-90011
+・CVE-2026-91843 (Check Point) → CVSS9.8(cvssMetricV31)・Check Point・A stack overflow during the unauthenticated login process may allow an attacker to run arbitrary code remotely with root privileges.・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-92787 (VulnCheck (aggregator)) → CVSS9.8(cvssMetricV31)・VulnCheck (aggregator)・Feast through 0.66.0 fails to verify JWT token signatures before establishing user identity, allowing attackers to bypass all role-based access control by prese・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-92805 (VulnCheck (aggregator)) → CVSS9.8(cvssMetricV31)・VulnCheck (aggregator)・UVdesk Community Skeleton through 1.1.8 fails to authenticate or validate installation state on wizard endpoints in ConfigureHelpdesk controller actions. Unauth・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-92716 (VulnCheck (aggregator)) → CVSS9.6(cvssMetricV31)・VulnCheck (aggregator)・Shuffle through 2.2.1 contains a cross-tenant privilege escalation vulnerability in the HandleApiGeneration endpoint that allows administrators to reset and rea・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-92717 (VulnCheck (aggregator)) → CVSS9.3(cvssMetricV40)・VulnCheck (aggregator)・Covenant through 0.6 registers the CovenantHub SignalR hub without an Authorize attribute, allowing unauthenticated callers to invoke CreateHttpListener and rec・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-92720 (VulnCheck (aggregator)) → CVSS9.3(cvssMetricV40)・VulnCheck (aggregator)・Kubero through 3.1.1 fails to apply authentication guards to the notifications API endpoints, allowing unauthenticated attackers to read webhook secrets and ser・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-92749 (VulnCheck (aggregator)) → CVSS9.2(cvssMetricV40)・VulnCheck (aggregator)・SafeLine through 9.4.1 derives the management console session-signing secret from a time-seeded math/rand generator, allowing attackers to reconstruct the key o・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-92785 (VulnCheck (aggregator)) → CVSS9.2(cvssMetricV40)・VulnCheck (aggregator)・Angel through 3.3.0 deserializes untrusted setAlgoMetrics payload using Kryo without class registration or allowlist validation. Unauthenticated network attacke・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-15640 (Delinea) → CVSS9.5(cvssMetricV40)・Delinea・Under certain conditions a valid SAML IdP response may be used to impersonate another Secret Server user.・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-15639 (Delinea) → CVSS9.3(cvssMetricV40)・Delinea・An attacker can craft a malicious link that, if used by a legitimate user, may cause the user's browser to run JavaScript supplied by the attacker.・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-15638 (Delinea) → CVSS9.1(cvssMetricV40)・Delinea・An unauthenticated user with access to Secret Server could leverage a padding oracle to decrypt or encrypt data using one of the server's cryptographic keys. Th・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-58146 (CERT.PL (WNC)) → CVSS9.4(cvssMetricV40)・CERT.PL (WNC)・WNC T-Mobile 5G Box IDU router is vulnerable to OS command injection vulnerability. The vulnerability exists within the /cgi-bin/portal.cgi endpoint, specifical・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-40855 (CERT.PL (WNC)) → CVSS9.3(cvssMetricV40)・CERT.PL (WNC)・WNC T-Mobile 5G Box IDU router is vulnerable to a command injection. The vulnerability exists in the ping functionality within the /cgi-bin/portal.cgi endpoint,・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-58147 (CERT.PL (WNC)) → CVSS9.3(cvssMetricV40)・CERT.PL (WNC)・WNC T-Mobile 5G Box IDU router contains an OS command injection vulnerability in the portal.cgi component's password change functionality. The application impro・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-73172 (Nozomi Networks (advisory issuer)) → CVSS9.3(cvssMetricV40)・Nozomi Networks (advisory issuer)・Nozomi Networks Labs identified a CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection') vulnerability in the edgser・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-89082 (HP) → CVSS9.3(cvssMetricV40)・HP・HP has identified potential security vulnerabilities in the HP Advance software that may enable elevation of privilege, remote code execution, or arbitrary file・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-89083 (HP) → CVSS9.3(cvssMetricV40)・HP・HP has identified potential security vulnerabilities in the HP Advance software that may enable elevation of privilege, remote code execution, or arbitrary file・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-91104 (HP) → CVSS9.3(cvssMetricV40)・HP・HP has identified and remediated multiple externally reported vulnerabilities within HPLIP. The findings affect several software components that could potential・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-91106 (HP) → CVSS9.3(cvssMetricV40)・HP・HP has identified and remediated multiple externally reported vulnerabilities within HPLIP. The findings affect several software components that could potential・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-81642 (NLnet Labs) → CVSS9.1(cvssMetricV40)・NLnet Labs・In NLnet Labs Unbound up to and including 1.26.0, a vulnerability was found in the DNSSEC validator that enables denial of service and possible remote code exec・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-92395 (OpenJS Foundation (Fastify)) → CVSS9.1(cvssMetricV31)・OpenJS Foundation (Fastify)・@fastify/proxy-addr is a Fastify plugin that determines a request's client address behind trusted reverse proxies, and it backs Fastify request.ip and request.i・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-92397 (VulDB (aggregator)) → CVSS9.1(cvssMetricV31)・VulDB (aggregator)・A vulnerability has been found in Ruijie RG-EW3000GX EW_3.0(1)B11P380. Affected by this vulnerability is the function cc_set of the file unifyframe-sgi.elf of t・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+・CVE-2026-92398 (VulDB (aggregator)) → CVSS9.1(cvssMetricV31)・VulDB (aggregator)・A vulnerability was found in Ruijie RG-EW3000GX EW_3.0(1)B11P380. Affected by this issue is some unknown functionality of the file /etc/rg_config/admin of the c・実悪用・PoC公開いずれも未確認・軸1=3点（CVSS9.0以上+3）・軸2=0点（該当なし・国内報道未確認）で除外。網羅スイープ母集団（NVD窓内新規公開CVSS9.0以上）該当のため記録。
+
+本日の集計（Section3 製品別CVE）:
+ゼロデイ特報3件 / 本編0件 / 参考A0件 / 参考B2件 / 除外41件（うち網羅スイープ母集団94件・未処理0件）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にAPT本編該当なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にAPT注目動向該当なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）・トレンド記事】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックB CVE・トレンド記事なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし。理由: 本日分Evidence Ledger（forecaster/evidence/manifests/2026/09/2026-09-17.json）未生成のため、M5時刻順序ゲート（validate_temporal_integrity.py）の根拠となる取得時刻付き証拠が不足し、予報を発行しなかった。戦況・観測の成果物（observations/baseline）は生成済み。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー：APT活動】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Red Heron（中国語圏nexusの疑い） / RedHeron-2026-GiteaRCE → The Hacker News/Acronis TRU原典（2026-09-14公表）。前回2026-09-16レポートで既にウィンドウ外として除外済み・本日ウィンドウ（2026-09-16 07:00〜2026-09-17 07:00 JST）内の新規進展は本日時点で確認されず。CVE-2026-60004 Gitea RCE武器化・6カ国13組織侵害・LD_PRELOADルートキットSIXZUT確認
+・Iran MOIS（FBI呼称: HEAVYGRAM / NCSC呼称: CHOSEN BRICK） / HEAVYGRAM-CHOSENBRICK-2026-MOIS → NCSC/FBI/AIVD合同勧告・The Hacker News報道（2026-09-15公表、正確な公表時刻は未確認）。本日調査窓開始（2026-09-16 07:00 JST / 2026-09-15T22:00Z）より前の公表である可能性が高く、窓内の新規進展（追加TTP・新規IOC等）は本日時点で確認されないため対象外。Telegram制御のWindows向けバックドアでイラン反体制派・ジャーナリストを標的（活動開始2023年秋、2025年以降ドキュメント化）。継続監視対象として明日以降の窓内更新を確認する
+
+本日の集計（Section2 APT活動）:
+本編0件 / 注目動向0件 / 除外2件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向 — 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にAI攻撃動向 本編該当なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向 — 参考B】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にAI攻撃動向 参考B該当なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向 — 参考A】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にAI攻撃動向 参考A該当なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー：AI攻撃動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・AI攻撃動向（MITRE ATLAS / OWASP GenAI / AI Incident Database / HiddenLayer 等横断調査） → insufficient_evidence
+
+本日の集計（Section1 AI攻撃動向）:
+本編0件 / 参考A0件 / 参考B0件 / 除外1件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に α〜η 条件を満たす情報なし）
+
+【除外サマリー：SOC推奨情報】
+・SOC推奨情報候補（Chrome 42件/Firefox 73件のセキュリティ修正等） → insufficient_evidence
+
+本日の集計（Section4 SOC推奨情報）:
+高0件 / 中0件 / 低0件 / 除外1件
+
+========================================
+【データソース注記】
+本日07:00 JST時点でsecurity-intel-collector日次自動収集（daily-pipeline.yml）の本日分raw data（news-2026-09-16.json等）およびEvidence Ledger manifest未生成のため、Step1〜Step2bはpipeline-*.md記載ソースへのライブWeb検索で代替した（SKILL.md Step0.5フォールバック規定）。Step3.6戦術予報のEvidence Ledger依存処理は本日分の証跡が無いため実行できず、Step3.5予報生成もM5時刻順序ゲート根拠が不足するため新規予報は発行していない。
+========================================
+
+========================================
