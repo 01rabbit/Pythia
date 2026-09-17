@@ -1,0 +1,129 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-18 09:00 JST
+調査期間: 2026-09-17 07:00 〜 2026-09-18 07:00 JST
+========================================
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報基準を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Void Manticore（別名: Storm-0842 / Banished Kitten / Red Sandstorm / Handala Hack Team（オンラインペルソナ） / 国家帰属: IR / 帰属信頼度: high）
+活動タイプ: official_attribution / new_malware / ttp_update
+------------------------------------------------------------
+
+採用契機: Q・R・S
+標的: other / GB/US/NL/Europe/North America
+マルウェア: HEAVYGRAM, CHOSEN BRICK, CRUDEEXCLUDE
+
+【24時間以内の変化】
+[Group-IB 2026-09-17] HEAVYGRAMの伴走ツールCRUDEEXCLUDE（Delphi製・Defender除外パス設定ユーティリティ）を新規文書化し、配布経路4種・追加サンプル/ローダー/ペイロード29件を発見。オンラインペルソナ"Handala Hack"をVoid Manticore（イランMOIS）に中確度で技術的に紐付け
+[NCSC (UK) / FBI / AIVD 2026-09-15] 英・米・蘭政府が合同勧告を公表し、イランMOIS系脅威アクターによる市民社会（ジャーナリスト・反体制派・活動家）標的の監視活動HEAVYGRAM/CHOSEN BRICKを公式に帰属
+
+【概要】
+英国NCSC・米国FBI・オランダAIVDが2026-09-15に合同勧告を発行し、イラン情報安全保障省（MOIS）に帰属するVoid Manticore（Storm-0842/Banished Kitten）系の脅威アクターが、Telegram制御のWindowsバックドアHEAVYGRAMおよびCHOSEN BRICKを用いて英・米・蘭を含む各国のジャーナリスト・反体制派・活動家等の市民社会を標的に監視活動を行っていると公表した。本調査窓内（2026-09-17）にはGroup-IBが伴走ツールCRUDEEXCLUDE（Delphi製・Windows Defender除外設定ユーティリティ）を新規に文書化し、追加の配布経路・サンプルを特定したほか、オンラインペルソナ"Handala Hack"を同アクターに中確度で技術的に紐付けた。
+
+攻撃の流れ（判明分）:
+1. WhatsApp・Telegramで知人やサポート担当者になりすまし標的へ接触（フィッシング）
+2. DLLサイドローディング等でHEAVYGRAM/CHOSEN BRICKを配布し、レジストリRunキーで永続化
+3. Telegram Bot APIを介したC2でリモートコマンド実行・スクリーンショット取得・マイク録音・連絡先/チャットデータ抽出を実行し、CRUDEEXCLUDEでDefender検知を回避
+
+【新規TTP】
+・[T1566] Phishing — WhatsApp・Telegramでの知人/サポート担当者偽装による接触
+・[T1574.002] DLL Side-Loading — HEAVYGRAM/CHOSEN BRICKの配布
+・[T1547.001] Registry Run Keys / Startup Folder — レジストリRunキー(SMQDService/winappx等)による永続化
+・[T1562.001] Disable or Modify Tools — CRUDEEXCLUDEによるWindows Defender除外設定
+・[T1113] Screen Capture — スクリーンショット取得機能
+・[T1123] Audio Capture — マイク経由の音声録音機能
+・[T1102] Web Service — Telegram Bot APIを利用した双方向C2
+・[T1485] Data Destruction — 遠隔データ破壊コマンド
+
+【IoC】
+Domain: api.telegram.org
+File: SMQDService (レジストリRunキー名)
+File: winappx (レジストリRunキー名)
+
+【推奨アクション】
+・英米蘭合同勧告のIOC・検知ルールを取り込み、Telegram Bot API宛の非承認アプリ通信・SysWOW64からの不審実行・Defender除外設定変更（EventCode 5007）を監視する。市民社会・NGO・報道機関等をクライアントに持つ組織は特に注意喚起を行う。
+Splunk SPL: sourcetype="WinEventLog:Security" OR sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" EventCode=13 (TargetObject="*\\Run\\SMQDService" OR TargetObject="*\\Run\\winappx") | stats count by host, TargetObject
+Splunk SPL: sourcetype="XmlWinEventLog:Microsoft-Windows-Windows Defender/Operational" EventCode=5007 | stats count by host, ExclusionPath
+Splunk SPL: sourcetype=proxy OR sourcetype=dns dest_host="*telegram*" NOT (process="Telegram.exe" OR process="TelegramDesktop.exe") | stats count by src_ip, process
+→ 正規Telegramクライアント経由の通信との切り分けにはプロセス名照合が必須。EventCode 5007（Defender除外設定変更）は正規IT運用でも発生しうるため変更申請台帳との突合で誤検知を除外する。
+
+【参照】
+https://www.ncsc.gov.uk/news/uk-allies-expose-spyware-iranian-state-actors-target-dissidents-activists-journalists
+https://www.ncsc.gov.uk/news/iranian-cyber-targeting-of-dissidents-activists-and-journalists
+https://www.securityweek.com/us-uk-dutch-agencies-expose-iranian-chosen-brick-surveillance-malware/
+https://www.helpnetsecurity.com/2026/09/16/iranian-hackers-chosen-brick-malware-dissidents-journalists/
+https://www.bleepingcomputer.com/news/security/iranian-hackers-use-chosen-brick-windows-malware-to-spy-on-targets/
+https://thehackernews.com/2026/09/iran-linked-handala-hack-tied-to.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] FBI・RCMPがDDoS-for-hireプラットフォーム「NightmareStresser」を摘発
+FBIアンカレッジ支局とカナダ王立騎馬警察(RCMP)連邦警察北西地域本部が共同で、booter/stresserサービス「NightmareStresser」（nightmare-stresser.com / nightmare-stresser.org）のドメインを押収した。同サービスは2022年以降、世界中の被害者に対し数十万件規模のDDoS攻撃の実行・未遂に利用されたとされ（2023年末のSearchlight Cyber報告では登録ユーザー56万人超・サーバー52台）、複数国連携の継続作戦「Operation PowerOFF」の一環として摘発された。過去の同種摘発と同様、別のbooterサービスへの需要移転が想定される（推測）。
+参照: https://thehackernews.com/2026/09/us-seizes-nightmarestresser-domains.html
+参照: https://www.bleepingcomputer.com/news/security/fbi-seizes-nightmarestresser-service-linked-to-thousands-of-ddos-attacks/
+参照: https://securityaffairs.com/199251/cyber-crime/nightmarestresser-goes-offline-in-global-ddos-for-hire-crackdown.html
+参照: https://www.justice.gov/usao-ak/pr/fbi-seizes-ddos-hire-domains-part-continuing-district-alaska-crackdown-booter-and
+
+・[トレンド記事] ムラウチドットコムへの不正アクセスで約771万件の個人情報漏えいが確定
+家電量販店ECサイト「ムラウチドットコム」運営元が外部フォレンジック調査完了を受け、氏名・住所・電話番号・メールアドレス・生年月日・性別の計7,716,811件が漏えいしたと確定発表した（クレジットカード情報・パスワードは対象外）。侵入起点は同社Webシステムの一部に存在した脆弱性（具体的なCVE番号・脆弱性種別は公表資料に明記なし）で、そこから複数の社内システムへ横展開したとしている。インシデント自体は2026年7月15日〜16日に発生したが、確定件数の公表と広範な国内報道は本調査窓（9/17）に該当する。個人情報保護委員会・警察への届出済み（7/20, 7/23）。
+参照: https://www.itmedia.co.jp/news/article/2609/17/2000001567/
+参照: https://internet.watch.impress.co.jp/docs/news/2141530.html
+参照: https://ascii.jp/elem/000/004/435/4435758/
+参照: https://act1.co.jp/2026-09-17-02/
+
+・[トレンド記事] 放棄済みホテル向けPBX管理システムへの探索的スキャン活動をSANS ISCが観測（単発シグナル）
+SANS ISCが、10年間更新されていないホテル向けPBX管理システム「PBX in a Flash Hospitality Management System（PIAF-HMS）」を狙った探索的スキャンを観測した。送信元は単一IP（94.102.49.125、バレットプルーフホスティング事業者IP Volume/AS202425）で、/admin/・/admin/config.php・/ucp/・/hms/・/hotel/等のエンドポイントを標的とした。同製品には数ヶ月前に報告されたSQLインジェクションを含む複数の脆弱性が存在するとISCは指摘している。単一ソース・単一送信元のみで48時間以内の3件以上の独立報道は確認できず単発シグナルに留まるが、宿泊客に対するなりすまし電話等への悪用可能性がありSOC観点で継続監視する。
+参照: https://isc.sans.edu/diary/rss/33344
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし。
+
+理由: 本日07:00 JST時点で日次自動収集ジョブ（daily-pipeline.yml）の本日分raw dataおよびEvidence Ledger manifestが未生成であり（2026-09-16・2026-09-17に続き3日連続）、Step3.5予報生成のM5測定固定要件（evidence_ids 1件以上必須）を満たせなかった。加えて窓内CISA KEV新規追加は0件（E1シグナルなし）であり、Step A'（KEV起点予報）の候補CVEも本日は存在しない。
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+※ Section 4本文を参照（security-report-soc.txt / security-report.txt 該当セクション）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・Brevo サプライチェーン攻撃（Cloudflare APIキー窃取・ClickFix注入） → 帰属主体名なし（財務動機の可能性）。軸P≈5/軸Q≈2〜3で閾値未達。国内トリガーなし。
+・TA(ブラジル銀行標的Chrome拡張) → no_change
+・TA412等 → no_change
+・PaperCut AI-agent駆動キャンペーン → 公表2026-09-10で調査窓外。国家帰属なし（金銭動機の疑い）
+
+本日の集計:
+APT — 本編1件 / 注目動向0件 / 除外4件
