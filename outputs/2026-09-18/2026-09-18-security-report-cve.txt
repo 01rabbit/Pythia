@@ -1,0 +1,149 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-18 09:00 JST
+調査期間: 2026-09-17 07:00 〜 2026-09-18 07:00 JST
+========================================
+
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（Section 3対象・24時間窓内にゼロデイ特報基準を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1≥8かつ軸2≥4を満たすCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: Mitsubishi Electric PSIRT（国内主要ICSベンダー）による自社アドバイザリ発行
+
+・CVE-2026-15688 / GX Works3 / Motion Control Setting Function
+CVSS: 9.2 状態: 特記事項なし
+
+【24時間以内の変化】
+[CISA ICS-CERT / Mitsubishi Electric PSIRT 2026-09-17] Mitsubishi Electric GX Works3のブロックパスワード認証実装不備（CWE-303）に関するアドバイザリが新規公開された。
+
+【概要】
+三菱電機のPLCエンジニアリングソフトウェアGX Works3のMotion Control Setting機能において、ローカル攻撃者が実行モジュールをメモリ上で一部改変することで、無効なブロックパスワードでも認証チェックを突破できる脆弱性（CWE-303: 認証アルゴリズムの不適切な実装）。攻撃条件はローカルアクセス（AV:L）であり、リモート無認証RCEではない。成功すると保護された制御プログラムの閲覧・改ざん・破壊・削除が可能になる。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・ローカル・オフラインのエンジニアリングツールのためネットワークログでは検知不能。エンドポイント（EDR）でのGX Works3プロセスに対する異常なメモリ改変・インジェクションの検知を監視ポイントとする。
+Splunk SPL: index=edr process_name="GXWorks3.exe" (event_type="process_memory_write" OR event_type="code_injection") | stats count by host, target_process
+→ 正規のデバッガ/プロファイラツールによる誤検知に留意。エンジニアリングPCの利用者・時間帯が通常と異なる場合は要調査。
+
+【参照】
+https://www.cisa.gov/news-events/ics-advisories/icsa-26-260-02
+https://app.opencve.io/cve/CVE-2026-15688
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-15688 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-90822 / MPVPN / WARP / IPVPN
+CVSS: 9.8
+FatPipe MPVPN/WARP/IPVPNのEOL（サポート終了）ファームウェア10.1.2r60p100において、xtremedデーモンのAuthFormServletエンドポイントが認証データをシェル経由で処理する際に入力を適切に無害化していないためOSコマンドインジェクションが可能。既定では管理インターフェースは無効化されているが、顧客が明示的に有効化している構成では無認証・リモートからroot権限のコード実行に至りうる。
+IoC: 確認されず
+
+監視: FatPipe管理インターフェースへのアクセスログを監視対象とする。
+Splunk SPL: sourcetype=fatpipe* (uri_path="*AuthFormServlet*" OR process="auth_user_pass") | stats count by src_ip, uri_path
+→ 正規の管理端末以外からのAuthFormServletへのアクセスは要調査。正規運用での定常的な管理端末アクセスは誤検知として除外する。
+
+参照: https://www.strix.ai/cve/CVE-2026-90822
+参照: https://radar.offseq.com/threat/cve-2026-90822-cwe-78-improper-neutralization-of-special-elements-used-in-an-os-command-4f0e0541397a1e9d
+
+・CVE-2026-90823 / MPVPN / WARP / IPVPN
+CVSS: 9.8
+FatPipe MPVPN/WARP/IPVPNのEOLファームウェア10.1.2r60p100において、`/usr/sbin/auth_user_pass`が固定長スタックバッファへ入力を未検査でコピーするスタックバッファオーバーフロー（CWE-121）。CVE-2026-90822と同一製品・同一開示（Securifera）の別脆弱性で、既定では管理インターフェースが無効化されているが有効化構成ではリモートroot権限のコード実行に至りうる。
+IoC: 確認されず
+
+監視: FatPipe管理インターフェースへのアクセスログを監視対象とする。
+Splunk SPL: sourcetype=fatpipe* uri_path="*auth_user_pass*" | stats count by src_ip
+→ 通常より著しく長い認証パラメータを含むリクエストは要調査。
+
+参照: https://www.strix.ai/cve/CVE-2026-90823
+参照: https://www.thehackerwire.com/fatpipe-mpvpn-warp-ipvpn-rce-via-stack-buffer-overflow-cve-2026-90823/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-62104 (Migratico Lite) → 低影響: ニッチなWordPressマイグレーションプラグイン、KEV未登録・PoC未確認・実悪用未確認
+・CVE-2026-54460 (OpenReception) → 低影響: ニッチな予約管理OSS、KEV/PoC未確認
+・CVE-2026-54617 (GravitLauncher) → 低影響: ニッチなMinecraftランチャー、KEV/PoC未確認
+・CVE-2026-54626 (SAIL画像ライブラリ) → 低影響: 悪意ある画像ファイル読込が前提、KEV/PoC未確認、広範な直接露出経路の記述なし
+・CVE-2026-54627 (SAIL画像ライブラリ) → 低影響: 悪意ある画像ファイル読込が前提、KEV/PoC未確認、広範な直接露出経路の記述なし
+・CVE-2026-62101 (EduAdmin Booking) → 低影響: ニッチな予約ソフト、KEV/PoC未確認
+・CVE-2026-62108 (Headless Single Sign On) → 低影響: ニッチなWordPress SSOプラグイン、KEV/PoC未確認
+・CVE-2026-86707 (Private Feed Key (WordPress)) → 低影響: インストール数が少ないニッチWordPressプラグイン、KEV/PoC未確認
+・CVE-2026-86709 (Pressengine (WordPress)) → 低影響: インストール数が少ないニッチWordPressプラグイン、KEV/PoC未確認
+・CVE-2026-86710 (Login with QR (WordPress)) → 低影響: インストール数が少ないニッチWordPressプラグイン、KEV/PoC未確認
+・CVE-2026-87796 (Multi Uploader for Gravity Forms) → 低影響: ニッチなWordPressアドオン、KEV/PoC未確認
+・CVE-2026-54053 (Many Notes) → 低影響: 認証済みユーザー前提のパストラバーサル、ニッチな自己ホスト型アプリ
+・CVE-2026-54752 (NetBox Device Type Library) → 低影響: 攻撃面はCI環境のテストハーネスに限定、本番runtime非対象、KEV/PoC未確認
+・CVE-2026-54501 (Browsertrix) → 中程度だが除外: クローラー/管理者権限を持つ認証済みユーザーが前提のコマンドインジェクション、KEV/PoC未確認、国内トリガーなし
+・CVE-2026-54618 (Obsidian Web MCP) → 低影響: ニッチな個人ノートMCPサーバー、KEV/PoC未確認
+・CVE-2026-92860 (Pulse (rcourtman)) → 低影響: VulDB由来の低品質・曖昧な記述、ニッチな自己ホストProxmox監視ツール、KEV/PoC未確認
+・CVE-2026-54237 (Wavelog) → 低影響: 趣味用途のニッチなアマチュア無線ログソフト、KEV/PoC未確認
+・CVE-2026-76834 (b2evolution CMS) → 低影響: 現在の採用率が低いレガシーCMS、KEV/PoC未確認
+・CVE-2026-92576 (HKUDS nanobot) → 低影響: 新興・ニッチなAIボットフレームワーク、KEV/PoC未確認
+・CVE-2026-92578 (WWBN AVideo) → 中程度だが除外: 攻撃者が既にパスワードハッシュを保有していることが前提の認証バイパス、KEV/PoC未確認、ニッチな自己ホスト動画プラットフォーム
+・CVE-2026-92913 (WWBN AVideo) → 中程度だが除外: 活性化コード予測に総当たりを要する弱いPRNG、KEV/PoC未確認、ニッチな自己ホスト動画プラットフォーム
+・CVE-2026-92943 (AWS IoT Device SDK for Python) → 中程度だが除外: AitM攻撃者の介在が前提の狭い攻撃条件、KEV/PoC未確認
+・CVE-2026-61594 (djust) → 低影響: 新興・ニッチなOSS（Django LiveView風ライブラリ）、KEV/PoC未確認
+・CVE-2026-63472 (Vendure) → 中程度だが除外: カスタム外部認証戦略の実装ミスが前提、KEV/PoC未確認、国内トリガーなし
+・CVE-2026-47252 (Anyquery) → 低影響: macOS限定の仮想テーブル・既存DB書込権限が前提、ニッチなCLIツール
+・CVE-2026-88795 (wpShopGermany IT-RECHT KANZLEI (WordPress)) → 低影響: ドイツの法令遵守向けニッチWordPressプラグイン、KEV/PoC未確認
+・CVE-2026-92937 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92938 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92939 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92940 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92941 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92944 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92946 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92947 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92948 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92950 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92951 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92953 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92954 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92955 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92956 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92957 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92960 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92934 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-92935 (vm2 (Node.js sandbox library)) → 研究実施済み・軸1=7点(CVSS9+3/サンドボックス境界越えRCE相当+3/広く使われるOSS+1)で軸2=0のため機械判定は除外。vm2(Node.jsサンドボックスライブラリ)の同日19件同時公開バッチ、最高CVSS10.0。本日分についてKEV登録・PoC公開・実悪用・国内外メディア報道は未確認。単一OSSで19件同時という異例の規模のため、Step3後の人間レビューで参考B昇格を検討する価値がある特筆事項として記録（詳細はforecaster正規化ノート参照）。
+・CVE-2026-82761 (ash_authentication (Elixir/Ash Framework)) → 研究実施済み・軸1=6点(CVSS9+3/認証バイパス+3、ニッチなElixir/Ash Frameworkエコシステムのため広く使われる製品+1は非該当)で軸2=0のため除外。team-alembic AshAuthentication/ash_authentication(Elixir認証ライブラリ)の同日5件同時公開(マジックリンクTOCTOU再生・メール確認バイパス・セッションjti失効漏れ・OAuth2 ID紐付け不備・dynamic_oidc namespace分離不備)。KEV/PoC/実悪用いずれも未確認。
+・CVE-2026-85500 (ash_authentication (Elixir/Ash Framework)) → 研究実施済み・軸1=6点(CVSS9+3/認証バイパス+3、ニッチなElixir/Ash Frameworkエコシステムのため広く使われる製品+1は非該当)で軸2=0のため除外。team-alembic AshAuthentication/ash_authentication(Elixir認証ライブラリ)の同日5件同時公開(マジックリンクTOCTOU再生・メール確認バイパス・セッションjti失効漏れ・OAuth2 ID紐付け不備・dynamic_oidc namespace分離不備)。KEV/PoC/実悪用いずれも未確認。
+・CVE-2026-86533 (ash_authentication (Elixir/Ash Framework)) → 研究実施済み・軸1=6点(CVSS9+3/認証バイパス+3、ニッチなElixir/Ash Frameworkエコシステムのため広く使われる製品+1は非該当)で軸2=0のため除外。team-alembic AshAuthentication/ash_authentication(Elixir認証ライブラリ)の同日5件同時公開(マジックリンクTOCTOU再生・メール確認バイパス・セッションjti失効漏れ・OAuth2 ID紐付け不備・dynamic_oidc namespace分離不備)。KEV/PoC/実悪用いずれも未確認。
+・CVE-2026-88952 (ash_authentication (Elixir/Ash Framework)) → 研究実施済み・軸1=6点(CVSS9+3/認証バイパス+3、ニッチなElixir/Ash Frameworkエコシステムのため広く使われる製品+1は非該当)で軸2=0のため除外。team-alembic AshAuthentication/ash_authentication(Elixir認証ライブラリ)の同日5件同時公開(マジックリンクTOCTOU再生・メール確認バイパス・セッションjti失効漏れ・OAuth2 ID紐付け不備・dynamic_oidc namespace分離不備)。KEV/PoC/実悪用いずれも未確認。
+・CVE-2026-91039 (ash_authentication (Elixir/Ash Framework)) → 研究実施済み・軸1=6点(CVSS9+3/認証バイパス+3、ニッチなElixir/Ash Frameworkエコシステムのため広く使われる製品+1は非該当)で軸2=0のため除外。team-alembic AshAuthentication/ash_authentication(Elixir認証ライブラリ)の同日5件同時公開(マジックリンクTOCTOU再生・メール確認バイパス・セッションjti失効漏れ・OAuth2 ID紐付け不備・dynamic_oidc namespace分離不備)。KEV/PoC/実悪用いずれも未確認。
+・CVE-2026-45140 (Chamilo LMS) → 一次アドバイザリが影響エンドポイント・悪用手法を明示しておらず情報不足。軸1=7点、軸2=0で除外。KEV/PoC/実悪用未確認。
+・CVE-2026-45143 (Chamilo LMS) → 認証済み低権限ユーザーによる格納型XSS。軸1=7点相当だが軸2=0で除外。KEV/PoC/実悪用未確認。
+・CVE-2026-79752 (CakePHP) → FunctionsBuilder経由SQLインジェクション。アプリ側が未信頼入力をdataType/part/unit等に渡す実装が前提で直接無認証攻撃ではない。軸1=4点で除外。KEV/PoC/実悪用未確認。
+・CVE-2026-86863 (pgAdmin 4) → Webserver認証モード限定（既定の内部認証では影響なし）のヘッダーなりすまし認証バイパス。軸1=7点、軸2=0で僅差の除外。KEV/PoC/実悪用未確認。
+・CVE-2026-93393 (MongoDB C Driver) → Windows TLSバックエンド限定のヒープバッファオーバーフロー。AitM的な接続介在が前提。軸1=4点で除外。KEV/PoC/実悪用未確認。
+・CVE-2026-72702 (Grav CMS) → オリジン検証迂回。third-partyトラッカー実測CVSS5.4（EUVD側cvss_max9.3は複数エイリアス最大値でありCNA実スコアと乖離）。EPSS 0.00103(percentile 0.011・2026-09-16)。軸1<8で除外。（EUVD-only候補）
+・CVE-2026-75827 (Grav CMS) → ブループリント経由の任意ファイル書込だがページ編集・ブループリント設定権限を持つ認証済みユーザーが前提。EPSS 0.00777(percentile 0.541・2026-09-16)。軸1<8で除外。（EUVD-only候補）
+・CVE-2026-75828 (Grav CMS) → 格納型XSS。EPSS 0.00343(percentile 0.277・2026-09-16)。軸1<8で除外。（EUVD-only候補）
+・CVE-2026-75837 (Grav CMS) → admin.superガード欠落による権限昇格だがadmin.usersオペレーター権限を持つ既存の委任管理者が前提。EPSS 0.00339(percentile 0.272・2026-09-16)。軸1<8で除外。（EUVD-only候補）
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A1件 / 参考B2件 / 除外59件
