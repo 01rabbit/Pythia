@@ -1,0 +1,137 @@
+{
+  "_schema_version": "1.0",
+  "_run_date": "2026-09-20",
+  "_comment": "日次実行の各ステップの入出力・時刻・内容ハッシュ・版。予報の先見性を第三者が追跡できるようにするための実行記録（改善計画 §10）。",
+  "steps": [
+    {
+      "step": "snapshot_sources",
+      "status": "error",
+      "started_at_utc": "2026-09-19T22:46:45Z",
+      "ended_at_utc": "2026-09-19T22:46:45Z",
+      "version": null,
+      "inputs": [],
+      "outputs": [],
+      "note": "06:00 JST定時収集ジョブ(daily-pipeline.yml)が本レポート生成時点で未完了のため、forecaster/evidence/manifests/2026/09/2026-09-20.jsonが生成されていない。2026-09-16/17/18に続く同型の事象（2026-09-19分の日次レポートは欠測のため間隔は空くが構造は同一）。"
+    },
+    {
+      "step": "nvd_window_sweep",
+      "status": "ok",
+      "started_at_utc": "2026-09-19T22:38:00Z",
+      "ended_at_utc": "2026-09-19T22:39:00Z",
+      "version": "nvd_window_sweep/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": ".cache/daily-security-intel/2026-09-20/step1-sweep.json",
+          "sha256": "88ac462b6a09ec98cb99bb2b14a8c22ea5167888aa7748e4f6e4d4e12a1f701e"
+        }
+      ],
+      "note": "窓内CVSS9.0以上10件・KEV窓内追加0件・EUVD窓内全量7件(EUVD-only 0件)。全10件を採用4/除外6で処理、未処理0件。"
+    },
+    {
+      "step": "normalize_observations",
+      "status": "ok",
+      "started_at_utc": "2026-09-19T22:44:00Z",
+      "ended_at_utc": "2026-09-19T22:45:00Z",
+      "version": "01-normalize/1.2",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/observations/2026/09/2026-09-20.json",
+          "sha256": "92b52aa0da96f359aca2c09aca0e4c3f7647775ff02520a8847ced38cdbd0151"
+        }
+      ],
+      "note": "observation 4件生成（TOTOLINK A3002MU x4・techniquesは全件[]・実悪用記述なし）。validate_observations違反0件。"
+    },
+    {
+      "step": "regen_baseline",
+      "status": "ok",
+      "started_at_utc": "2026-09-19T22:45:30Z",
+      "ended_at_utc": "2026-09-19T22:46:00Z",
+      "version": "regen_baseline/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/baseline/technique-freq.json",
+          "sha256": "8859990d543d5472be0708d6b85fe9f3e0a6dc81d5398b10da7817a268417ab4"
+        }
+      ],
+      "note": "_baseline_period_days=86（有効・30-90日帯）。techniques established=46/90・groups canonical=74。"
+    },
+    {
+      "step": "forecast_generation",
+      "status": "ok",
+      "started_at_utc": "2026-09-19T22:46:30Z",
+      "ended_at_utc": "2026-09-19T22:47:00Z",
+      "version": "03-forecast/2.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/forecasts/daily/2026-09-20.json",
+          "sha256": "1a2f7400ff0d75ddf7927b2b96c6f35411de7d74edfd52fcdafcdb448cfe8cdb"
+        }
+      ],
+      "note": "新規予報0件。Step A'(KEV起点)候補なし・Step A(Technique逸脱)算出対象なし・Step B(グループ活性化)対象なし・加えてM5(evidence_ids必須)を満たす本日分Evidence Ledgerが未生成のため二重に発行不可。validate_forecasts/validate_temporal_integrity違反0件。"
+    },
+    {
+      "step": "tactical_pipeline",
+      "status": "ok",
+      "started_at_utc": "2026-09-19T22:44:13Z",
+      "ended_at_utc": "2026-09-19T22:44:51Z",
+      "version": "tf1-shadow/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/candidates/tactical/2026-09-20.json",
+          "sha256": "b2b7687b028eea4b9c03c53f05b18fe6834e66d3fecdda8be60f4e482699910d"
+        }
+      ],
+      "note": "候補201件（shadow95/棄権106・棄権理由NO_REFERENCE_RATE）・発行0件（第1段階shadow運用）。validate_transition_claims違反0件。validate_tactical_integrity.pyは2026-08-29分の例外承認時刻(exclusions.json)と当該artifactのgit最終変更時刻(2026-09-01)の前後関係不整合により終了コード1（今回生成分とは無関係の既知の未解消データ不整合・人間レビュー要）。render_tactical_forecast_section.pyはこの既知の不整合が過去複数日の日次実行でも同様に存在し続けている前例（2026-09-18等でも同状態）を踏まえ実行し、tactical_forecastセクションをレポートへ注入した。"
+    },
+    {
+      "step": "report_generation",
+      "status": "ok",
+      "started_at_utc": "2026-09-19T22:30:00Z",
+      "ended_at_utc": "2026-09-19T22:43:00Z",
+      "version": "step3-weighting/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "outputs/2026-09-20/2026-09-20-security-report.json",
+          "sha256": "aaf9b32689c9b4a68bf48534092b5e0e0e87e5fabaf5970ace00ca5bf26bf036"
+        }
+      ],
+      "note": "Section3参考情報B4件・除外6件のみ（Section1 AI/Section2 APT/trendsは該当なし）。data/raw窓内0件のためWeb検索+nvd_window_sweep.pyで代替。"
+    },
+    {
+      "step": "sweep_reconcile",
+      "status": "ok",
+      "started_at_utc": "2026-09-19T22:50:00Z",
+      "ended_at_utc": "2026-09-19T22:50:10Z",
+      "version": "nvd_window_sweep/1.0-reconcile",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "outputs/2026-09-20/2026-09-20-security-report.json",
+          "sha256": "aaf9b32689c9b4a68bf48534092b5e0e0e87e5fabaf5970ace00ca5bf26bf036"
+        }
+      ],
+      "note": "候補10件/処理10件/未処理0件。"
+    },
+    {
+      "step": "token_usage_report",
+      "status": "ok",
+      "started_at_utc": "2026-09-19T22:52:00Z",
+      "ended_at_utc": "2026-09-19T22:52:05Z",
+      "version": "token_usage_report/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "outputs/2026-09-20/2026-09-20-token-usage.json",
+          "sha256": "3bb74f6689057f3fa32c3913d3f57bb7c7e17f6fb2c40a971ea3cb35819e5968"
+        }
+      ],
+      "note": "合計約19.2Mトークン・USD概算約7.51ドル（公開単価ベース概算）。"
+    }
+  ]
+}
