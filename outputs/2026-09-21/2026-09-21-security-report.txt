@@ -1,0 +1,179 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-21 07:00 JST
+調査期間: 2026-09-20 07:00 〜 2026-09-21 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編相当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考情報A相当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-94003 / CF-N1-S
+CVSS: 10.0
+Comfast CF-N1-S 2.6.0.1のWeb管理インターフェースにおいて、/cgi-bin/mbox-configのget_css_path_from_uri関数にスタックベースバッファオーバーフローが存在し、認証不要かつリモートから攻撃可能である（推測—CVSSベクタはPR:N/UI:Nで説明も認証への言及がなく未認証と判断したが、ベンダーによる公式アドバイザリ・パッチ提供は本稿執筆時点で確認できていない）。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] Comfast CF-N1-SのWeb管理インターフェースへの外部からのアクセス・異常なURIパラメータ長を監視する。境界にこの機器を置いている場合は該当ポートの外部公開有無を確認する
+Splunk SPL: index=network sourcetype=http_proxy uri_path="*/cgi-bin/mbox-config*" | stats count by src_ip, uri_query | where len(uri_query) > 256
+→ 通常運用でmbox-configへの外部アクセスは想定されないため、外部セグメントからの着信は原則すべて不審とみなしてよい
+
+参照: https://vuldb.com/vuln/407952
+
+・CVE-2026-94089 / DIR-868L
+CVSS: 10.0
+D-Link DIR-868L 2.01b05の認証処理コンポーネント/webfa_authentication.cgiにおいて、strcpy関数がid/passwordパラメータを未検証でコピーするためスタックベースバッファオーバーフローが発生する。CVSSベクタはPR:N/UI:Nであり、認証前のリクエストで到達可能な認証ハンドラの処理系である。攻撃はリモートから実行可能で、公開エクスプロイトが存在する。ベンダーによる公式パッチは本稿執筆時点で確認できていない（DIR-868Lはサポート終了製品の可能性がある）。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] DIR-868Lの管理インターフェースを外部公開している場合は/webfa_authentication.cgiへの異常なリクエストを監視する
+Splunk SPL: index=network sourcetype=http_proxy uri_path="*/webfa_authentication.cgi*" | eval qlen=len(_raw) | where qlen > 512 | stats count by src_ip
+→ 同エンドポイントへの外部からの着信、および極端に長いid/passwordパラメータは不審とみなす
+
+参照: https://vuldb.com/vuln/408017
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-90817 (REDCap) → 軸1=7（CVSS9.8以上+3、未認証RCE+3、広く使われるOSS+1）・軸2=0（国内被害・JPCERT/IPA注意喚起・国内報道の確認なし）。軸1が8点未満かつ参考A昇格トリガー未該当のため判定順4（除外）。REDCapのsurvey passthrough routingおよびData Import処理における未認証RCE（PoC未公開・KEV未登録）。影響バージョン: 13.3.0以降。
+・CVE-2026-88856 (OrdaSoft Joomla Gallery extension) → 軸1=3（CVSS9.4[v4.0]以上+3のみ。CVSSベクタPR:H＝認証済み・特権ユーザー限定のRCEのため未認証RCE加点は非該当。PoC公開未確認）・軸2=0。判定順4（除外）。Joomla < 6.2.7のupdateOSGallery()でmethodフィールドを検証なしにPHP関数として実行する認証済み特権RCE。
+・CVE-2026-88857 (OrdaSoft Joomla Gallery extension) → 軸1=3（CVSS9.4[v4.0]以上+3のみ。PR:H＝認証済みcore.manage権限限定のファイルアップロードRCEのため未認証RCE加点は非該当）・軸2=0。判定順4（除外）。saveWatermark()の任意ファイルアップロード（拡張子・内容検証なし）による認証済みRCE。
+・CVE-2026-94083 (Suricata) → 軸1=7（CVSS9.4以上+3、境界機器・セキュリティ監視基盤への影響+3、広く使われるOSS+1。RCEの確証なし＝報道は「クラッシュ」と記述されメモリ破損によるDoSが主眼のため未認証RCE加点は非付与）・軸2=0。判定順4（除外）。app-layer.protocols.doh2有効時のDoH2型混同によるinvalid free。8.0.7で修正済み。
+・CVE-2026-94084 (Suricata) → 軸1=7（CVSS9.4以上+3、境界機器・セキュリティ監視基盤への影響+3、広く使われるOSS+1。RCE確証なしのためRCE加点は非付与）・軸2=0。判定順4（除外）。http.response_header使用ルール検査時のHttp2ThreadMultiBuf use-after-free。8.0.7で修正済み。
+・CVE-2026-88854 (OrdaSoft Joomla Gallery extension) → 軸1=3（CVSS9.3[v4.0]以上+3のみ。未認証SQLiだが軸1表の加点対象は「未認証RCE／認証バイパス」のみでSQLi単体は非該当）・軸2=0。判定順4（除外）。showSearchResult()/showSearchResultAjax()のtextsearch/searchTextパラメータ検証不備による未認証SQLインジェクション。
+・CVE-2026-94107 (NivoCart) → 軸1=6（CVSS9.2[v4.0]以上+3、予測可能トークンによる認証バイパス+3。PoC公開未確認）・軸2=0。判定順4（除外）。forgotten.phpのパスワードリセットトークンがsubstr(md5(mt_rand()),0,10)で生成され予測可能。影響: 2.4.0以下。
+・CVE-2026-93958 (R95 (BE9500)) → 軸1=5（CVSS9.1以上+3、PoC公開済み+2。CVSSベクタはPR:H＝Web管理画面への認証済みセッション（sid）が前提のため未認証RCE加点は非付与。第三者PoC解説（HackSpeak/CVE-2026-93958）も認証済みセッション必須と明記）・軸2=0。判定順4（除外）。DHMAPI SetTimeSettingsのNTPServerパラメータへのOSコマンドインジェクションでroot権限のRCEに至る（認証済み・要adminセッション）。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B2件 / 除外8件
+
+━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編相当のAPT活動なし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] 偽装npmパッケージ「indexed-btree」がインストールスクリプト対策を回避し実行時にマルウェアを展開
+npmパッケージ「indexed-btree」（週間ダウンロード数約200万）が正規パッケージ「sorted-btree」を偽装し、preinstall/postinstall等のインストール時スクリプトを一切使わずライブラリ本体のBTree.prototype.set()メソッド内にマルウェアローダーを埋め込むことで、npmが導入したライフサイクルスクリプト制限（インストール時スクリプト対策）を回避していたとCheckmarx（Checkmarx Zero）が報告した。アプリケーションが該当メソッドを実際に呼び出した時のみ実行時に発火する設計のため、静的スキャナやテイント解析による検知を回避しやすいと分析されている。マルウェアはシステム情報を収集しSlack・Telegramへ送出するほか、Ethereum（Sepolia testnet）上のスマートコントラクトをC2チャネルとして利用し、X25519暗号でコマンドをやり取りする機能を持つと報告されている。Checkmarxは同一手口に紐づく追加9パッケージ（ordered-kv-index、btree-leaderboard、priority-slot-queue、btree-range-store、btree-core、btree-time-index、btree-lru-cache、neighbor-key-map、sliding-score-window）を特定し、いずれもnpmから削除済みである。10パッケージ合計のダウンロード数は500万件超に達していたと報告されている。CVE番号・特定の攻撃グループへの帰属情報は報道時点で確認されていない。
+参照: https://www.bleepingcomputer.com/news/security/malicious-npm-packages-evade-install-script-defenses-at-runtime
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし（M1観測可能性ゲート・M1-b頻度ゲートを満たす一次Evidenceが確認されなかったため。CVE候補10件はいずれもKEV未登録・実悪用未確認であり、Step A'の予報候補条件（KEV+実確認イベント起点）を満たさない）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・Transparent Tribe（APT36 / Earth Karkaddan・Pakistan-aligned・帰属信頼度: ソース記事内で明示的な信頼度表記なし） / TransparentTribe-2026-RapidRust-RUSTYSHADE → Zscaler ThreatLabz初報『Operation RapidRust』（新規Rust製バックドアRUSTYSHADE・USB伝播ツールRUSTYMOVE・ファイルスティーラーPSNATCH/BASHNATCH、インド/アフガニスタンの政府・防衛機関標的、活動集中期間2026-08-20〜09-01）およびThe Hacker News追跡報道はいずれも2026-09-18T15:24Z（JST 09-19 00:24）公開で、本調査期間（2026-09-19T22:00Z〜2026-09-20T22:00Z＝JST 2026-09-20 07:00〜09-21 07:00）より約30時間前。期間内に新たな変化点（続報・追加IOC・追加ベンダー確認等）は確認できなかったため採用条件P〜Wを期間内で満たさず除外。reported-apts.mdに未掲載のため次回以降の収集window（または検証ステージ）での捕捉を推奨。
+・不明（帰属未確定・金銭動機と推定/国家帰属の言及なし） / RIS-2026-IndexedBtree-EthereumC2Npm → Checkmarx調査・BleepingComputer 2026-09-20T14:11Z報道（期間内）。悪意あるnpmパッケージ「indexed-btree」等10件（合計ダウンロード数万〜200万超）がBTree.prototype.setメソッド内にランタイムコード注入を隠しinstall-script検知を回避、X25519鍵交換+AES復号・EthereumスマートコントラクトポーリングでC2コマンド取得・Slack/Telegram経由でのデータ持出し（新規TTP・T条件相当のIOC限定公開）を確認。単一ベンダー（Checkmarx）報告のみで政府機関帰属・重要インフラ侵害・複数ベンダー独立確認のいずれも未達、国内組織侵害や国内ベンダーアドバイザリ等の参考A昇格トリガーも該当なしのため軸P3/軸Q2で除外（判定順4）。継続監視対象として次回確認を推奨。
+
+本日の集計:
+APT — 本編0件 / 注目動向0件 / 除外2件
+
+━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-09-20 〜 2026-09-21
+━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編相当の実害確認・重大インシデントなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━
+
+・[Heapjack / Overpatch: OpenAI Codexサンドボックス脱出による無承認コマンド実行]
+カテゴリ: C1（C） 採用契機: A-P/A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし / 調査中
+セキュリティ研究者Oren Yomtov氏（Accomplish AI）がOpenAI Codex（Desktop/CLI）のサンドボックスから2種類の脱出手法を実証した。Heapjackは同一Node.jsプロセス内で信頼済み・非信頼のJavaScript実行コンテキストがヒープを共有している設計を突き、v8.getHeapSnapshot()等でヒープから検証トークンを読み取り親プロセスが監視するパイプへ不正リクエストを送出することで、承認プロンプトなしにホスト上で任意コマンドを実行できる。他人のリポジトリをCodexで開いてコードについて質問するだけで成立し得るとされる。Overpatchはapply_patchツールが読み書きモードでパッチファイル内に/tmp等のパスを含めることで意図しない書込権限（ホームディレクトリの.zshrc等）を許可してしまう不備。両者とも2026-08-12にOpenAIへ責任開示され8日以内にCodex Desktop build 26.818.21641・Codex CLI 0.149.0で修正済み。実運用環境での悪用・ユーザー被害・データ窃取は確認されていない（研究者・OpenAI双方が明言）。
+対策: バージョンアップ・修正版への更新を確認。
+
+監視: [ログソース / SIEM] Codex Desktop/CLIのバージョンが修正版未満のまま稼働していないか、未知リポジトリを開いた際の子プロセス生成・ホームディレクトリ設定ファイル変更の有無を監視する
+検知SPL: index=edr process_name="codex*" (parent_process_name="node" OR parent_process_name="electron") | stats count by host, user, command_line
+検知SPL: index=edr TargetFilename IN ("*/.zshrc", "*/.bashrc", "*/.bash_profile") ParentImage="*codex*" | table _time, host, user, TargetFilename
+→ Codexバージョンが修正版（Desktop 26.818.21641以降・CLI 0.149.0以降）未満であれば速やかにアップデートを推奨。不審な子プロセス生成やシェル設定ファイル変更を検知した場合は当該リポジトリの取扱いを確認する
+
+参照: https://www.bleepingcomputer.com/news/security/researchers-escape-openai-codex-sandbox-to-run-commands-on-host
+https://www.accomplish.ai/blog/escaping-the-openai-codex-sandbox-twice/
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━
+
+本日はOpenAI Codexのサンドボックス脱出研究「Heapjack」「Overpatch」（研究者実証・両方修正済み・実悪用未確認）を参考B採用した。48時間以内の独立ソース6件でバースト検出閾値超過。npmサプライチェーン侵害（indexed-btree等）はAI起因の記述がなく除外。国内影響・実害を伴うAI攻撃の報告は確認されなかった。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B1件 / 除外1件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）0件 / C（インフラ）1件
+
+━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に α〜η 条件を満たす情報なし。OpenAI Codexサンドボックス脱出研究はSection 1【AI攻撃—参考B】で採用済みのため本セクションでは重複掲載しない）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━
+
+・Google Gemini Broke Into Real Company Systems After Security Test Domain Mix-Up（Irregular社評価中のドメイン誤設定により実在3社へ侵入） → out_of_window
+・ThreatsDay Bulletin（Oracle 800+件パッチ・仮想通貨詐欺統計・ATMジャックポッティング等の週次まとめ） → out_of_window
+
+本日の集計:
+SOC推奨情報 — 高0件 / 中0件 / 低0件 / 除外2件

@@ -1,0 +1,64 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-21 07:00 JST
+調査期間: 2026-09-20 07:00 〜 2026-09-21 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編相当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考情報A相当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-94003 / CF-N1-S
+CVSS: 10.0
+Comfast CF-N1-S 2.6.0.1のWeb管理インターフェースにおいて、/cgi-bin/mbox-configのget_css_path_from_uri関数にスタックベースバッファオーバーフローが存在し、認証不要かつリモートから攻撃可能である（推測—CVSSベクタはPR:N/UI:Nで説明も認証への言及がなく未認証と判断したが、ベンダーによる公式アドバイザリ・パッチ提供は本稿執筆時点で確認できていない）。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] Comfast CF-N1-SのWeb管理インターフェースへの外部からのアクセス・異常なURIパラメータ長を監視する。境界にこの機器を置いている場合は該当ポートの外部公開有無を確認する
+Splunk SPL: index=network sourcetype=http_proxy uri_path="*/cgi-bin/mbox-config*" | stats count by src_ip, uri_query | where len(uri_query) > 256
+→ 通常運用でmbox-configへの外部アクセスは想定されないため、外部セグメントからの着信は原則すべて不審とみなしてよい
+
+参照: https://vuldb.com/vuln/407952
+
+・CVE-2026-94089 / DIR-868L
+CVSS: 10.0
+D-Link DIR-868L 2.01b05の認証処理コンポーネント/webfa_authentication.cgiにおいて、strcpy関数がid/passwordパラメータを未検証でコピーするためスタックベースバッファオーバーフローが発生する。CVSSベクタはPR:N/UI:Nであり、認証前のリクエストで到達可能な認証ハンドラの処理系である。攻撃はリモートから実行可能で、公開エクスプロイトが存在する。ベンダーによる公式パッチは本稿執筆時点で確認できていない（DIR-868Lはサポート終了製品の可能性がある）。
+IoC: 確認されず
+
+監視: [ログソース / SIEM（Splunk等）] DIR-868Lの管理インターフェースを外部公開している場合は/webfa_authentication.cgiへの異常なリクエストを監視する
+Splunk SPL: index=network sourcetype=http_proxy uri_path="*/webfa_authentication.cgi*" | eval qlen=len(_raw) | where qlen > 512 | stats count by src_ip
+→ 同エンドポイントへの外部からの着信、および極端に長いid/passwordパラメータは不審とみなす
+
+参照: https://vuldb.com/vuln/408017
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-90817 (REDCap) → 軸1=7（CVSS9.8以上+3、未認証RCE+3、広く使われるOSS+1）・軸2=0（国内被害・JPCERT/IPA注意喚起・国内報道の確認なし）。軸1が8点未満かつ参考A昇格トリガー未該当のため判定順4（除外）。REDCapのsurvey passthrough routingおよびData Import処理における未認証RCE（PoC未公開・KEV未登録）。影響バージョン: 13.3.0以降。
+・CVE-2026-88856 (OrdaSoft Joomla Gallery extension) → 軸1=3（CVSS9.4[v4.0]以上+3のみ。CVSSベクタPR:H＝認証済み・特権ユーザー限定のRCEのため未認証RCE加点は非該当。PoC公開未確認）・軸2=0。判定順4（除外）。Joomla < 6.2.7のupdateOSGallery()でmethodフィールドを検証なしにPHP関数として実行する認証済み特権RCE。
+・CVE-2026-88857 (OrdaSoft Joomla Gallery extension) → 軸1=3（CVSS9.4[v4.0]以上+3のみ。PR:H＝認証済みcore.manage権限限定のファイルアップロードRCEのため未認証RCE加点は非該当）・軸2=0。判定順4（除外）。saveWatermark()の任意ファイルアップロード（拡張子・内容検証なし）による認証済みRCE。
+・CVE-2026-94083 (Suricata) → 軸1=7（CVSS9.4以上+3、境界機器・セキュリティ監視基盤への影響+3、広く使われるOSS+1。RCEの確証なし＝報道は「クラッシュ」と記述されメモリ破損によるDoSが主眼のため未認証RCE加点は非付与）・軸2=0。判定順4（除外）。app-layer.protocols.doh2有効時のDoH2型混同によるinvalid free。8.0.7で修正済み。
+・CVE-2026-94084 (Suricata) → 軸1=7（CVSS9.4以上+3、境界機器・セキュリティ監視基盤への影響+3、広く使われるOSS+1。RCE確証なしのためRCE加点は非付与）・軸2=0。判定順4（除外）。http.response_header使用ルール検査時のHttp2ThreadMultiBuf use-after-free。8.0.7で修正済み。
+・CVE-2026-88854 (OrdaSoft Joomla Gallery extension) → 軸1=3（CVSS9.3[v4.0]以上+3のみ。未認証SQLiだが軸1表の加点対象は「未認証RCE／認証バイパス」のみでSQLi単体は非該当）・軸2=0。判定順4（除外）。showSearchResult()/showSearchResultAjax()のtextsearch/searchTextパラメータ検証不備による未認証SQLインジェクション。
+・CVE-2026-94107 (NivoCart) → 軸1=6（CVSS9.2[v4.0]以上+3、予測可能トークンによる認証バイパス+3。PoC公開未確認）・軸2=0。判定順4（除外）。forgotten.phpのパスワードリセットトークンがsubstr(md5(mt_rand()),0,10)で生成され予測可能。影響: 2.4.0以下。
+・CVE-2026-93958 (R95 (BE9500)) → 軸1=5（CVSS9.1以上+3、PoC公開済み+2。CVSSベクタはPR:H＝Web管理画面への認証済みセッション（sid）が前提のため未認証RCE加点は非付与。第三者PoC解説（HackSpeak/CVE-2026-93958）も認証済みセッション必須と明記）・軸2=0。判定順4（除外）。DHMAPI SetTimeSettingsのNTPServerパラメータへのOSコマンドインジェクションでroot権限のRCEに至る（認証済み・要adminセッション）。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A0件 / 参考B2件 / 除外8件

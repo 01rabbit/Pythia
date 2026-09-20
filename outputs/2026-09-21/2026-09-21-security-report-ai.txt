@@ -1,0 +1,56 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-21 07:00 JST
+調査期間: 2026-09-20 07:00 〜 2026-09-21 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-09-20 〜 2026-09-21
+━━━━━━━━━━━━━━━━━━━━━━
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編相当の実害確認・重大インシデントなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━
+
+・[Heapjack / Overpatch: OpenAI Codexサンドボックス脱出による無承認コマンド実行]
+カテゴリ: C1（C） 採用契機: A-P/A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし / 調査中
+セキュリティ研究者Oren Yomtov氏（Accomplish AI）がOpenAI Codex（Desktop/CLI）のサンドボックスから2種類の脱出手法を実証した。Heapjackは同一Node.jsプロセス内で信頼済み・非信頼のJavaScript実行コンテキストがヒープを共有している設計を突き、v8.getHeapSnapshot()等でヒープから検証トークンを読み取り親プロセスが監視するパイプへ不正リクエストを送出することで、承認プロンプトなしにホスト上で任意コマンドを実行できる。他人のリポジトリをCodexで開いてコードについて質問するだけで成立し得るとされる。Overpatchはapply_patchツールが読み書きモードでパッチファイル内に/tmp等のパスを含めることで意図しない書込権限（ホームディレクトリの.zshrc等）を許可してしまう不備。両者とも2026-08-12にOpenAIへ責任開示され8日以内にCodex Desktop build 26.818.21641・Codex CLI 0.149.0で修正済み。実運用環境での悪用・ユーザー被害・データ窃取は確認されていない（研究者・OpenAI双方が明言）。
+対策: バージョンアップ・修正版への更新を確認。
+
+監視: [ログソース / SIEM] Codex Desktop/CLIのバージョンが修正版未満のまま稼働していないか、未知リポジトリを開いた際の子プロセス生成・ホームディレクトリ設定ファイル変更の有無を監視する
+検知SPL: index=edr process_name="codex*" (parent_process_name="node" OR parent_process_name="electron") | stats count by host, user, command_line
+検知SPL: index=edr TargetFilename IN ("*/.zshrc", "*/.bashrc", "*/.bash_profile") ParentImage="*codex*" | table _time, host, user, TargetFilename
+→ Codexバージョンが修正版（Desktop 26.818.21641以降・CLI 0.149.0以降）未満であれば速やかにアップデートを推奨。不審な子プロセス生成やシェル設定ファイル変更を検知した場合は当該リポジトリの取扱いを確認する
+
+参照: https://www.bleepingcomputer.com/news/security/researchers-escape-openai-codex-sandbox-to-run-commands-on-host
+https://www.accomplish.ai/blog/escaping-the-openai-codex-sandbox-twice/
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━
+
+本日はOpenAI Codexのサンドボックス脱出研究「Heapjack」「Overpatch」（研究者実証・両方修正済み・実悪用未確認）を参考B採用した。48時間以内の独立ソース6件でバースト検出閾値超過。npmサプライチェーン侵害（indexed-btree等）はAI起因の記述がなく除外。国内影響・実害を伴うAI攻撃の報告は確認されなかった。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B1件 / 除外1件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）0件 / C（インフラ）1件
