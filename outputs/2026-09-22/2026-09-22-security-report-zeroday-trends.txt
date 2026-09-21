@@ -1,0 +1,120 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-22 07:55 JST
+調査期間: 2026-09-21 07:00 〜 2026-09-22 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-7273 / GS1900 Series Switches
+対象: GS1900-48HPv2 ファームウェア 2.90(ABTQ.1)C0 以前（他 GS1900 シリーズ機種を含む）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.8 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA 2026-09-21 00:00] CVE-2026-7273をKEVカタログへ新規追加。連邦機関対応期限2026-09-24（BOD 26-04準拠）。
+
+【概要】
+Zyxel GS1900シリーズスイッチのCGIプログラムにスタックベースバッファオーバーフロー脆弱性が存在し、LANベースの未認証攻撃者が細工したHTTPリクエストによりOSコマンドを実行できる。Zyxelは2026-06-16付でセキュリティアドバイザリを公開済みだが、CISAは本調査期間内の2026-09-21付でKEVカタログへ新規追加し実悪用を確認したと発表した。ランサムウェアキャンペーンでの悪用有無は本稿執筆時点で不明（Unknown）。パッチ提供状況は本稿執筆時点で確認できていない（推測—CISAのrequiredActionは「パッチ未提供の場合は使用中止を検討」と記載しており未提供の可能性を示唆）。
+
+攻撃の流れ:
+1. 攻撃者がLANセグメント内からGS1900シリーズのCGIプログラムへ細工したHTTPリクエストを送信
+2. スタックベースバッファオーバーフローが発生し、戻りアドレス等が攻撃者制御下に置かれる
+3. OSコマンドの実行に至り、スイッチの完全な制御を奪取される可能性（CISA公表の実悪用が確認されている）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM] GS1900シリーズのCGI管理エンドポイントへの異常なリクエスト（長大なパラメータ・想定外の送信元）を監視する。LANセグメント内の管理VLANアクセスを制限しているかを確認する
+Splunk SPL: index=network sourcetype=http_proxy dest_ip=<GS1900_mgmt_ip> uri_path="*/cgi-bin/*" | eval qlen=len(_raw) | where qlen > 512 | stats count by src_ip, uri_path
+→ GS1900の管理CGIへ管理VLAN外から到達できる構成自体が既に不審であり、当該経路の存在を優先的に確認する
+
+【参照】
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-7273
+https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-stack-based-buffer-overflow-vulnerability-in-gs1900-series-switches-06-16-2026
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. TraderTraitor（DPRK北朝鮮 / Jade Sleet / PUKCHONG / Slow Pisces / UNC4899・帰属信頼度: 高）
+活動タイプ: new_malware/ttp_update/active_campaign
+------------------------------------------------------------
+
+採用契機: Q, R, S
+標的: it/finance / Asia-Pacific/global（IN）
+マルウェア: FLATROOF, ROOFDECK
+
+【24時間以内の変化】
+[The Hacker News（SentinelOne調査） 2026-09-21 00:00] SentinelOne（Albert Priego・Alex Delamotte・Matej Havranek）がインド拠点ITサービス企業のDevOpsエンジニアのApple SiliconMacBookからRust製バックドアFLATROOF・ROOFDECKを検出し、TraderTraitor（Jade Sleet/PUKCHONG/Slow Pisces/UNC4899）による侵害と技術分析を初公開。両バックドアは2026年3〜4月のKelpDAO LayerZeroブリッジ攻撃でも過去に観測されたものと同一系統。
+
+【概要】
+北朝鮮とリンクするTraderTraitor（Microsoft命名Jade Sleet・Palo Alto命名Slow Pisces・CrowdStrike命名PUKCHONG・Mandiant命名UNC4899）が、偽の採用面接・コーディング課題を装いDevOps/暗号資産/フィンテック領域の開発者を標的とする既存手口（Contagious Interview系譜）の新展開として、Terraformの依存関係ロックファイル（.terraform.lock.hcl）を偽装リポジトリ（gtn-candidate-repo・Northwind-IAC・novacart-interview・terraform-candidate-repo等）に仕込み、開発者がterraform initを実行した際にregistry.hashicorp-aws[.]com等の悪性ドメインから侵害コードをダウンロードさせる手口でインド拠点ITサービス企業のDevOpsエンジニアのMacを侵害した。侵害は2026-03-18に検出されたが、実際のビーコン・ホスト活動開始は2026-03-29、更新版ROOFDECK（シンボル除去版）の展開は2026-04-20まで遡ることが判明している。FLATROOFはTelegramをC2に用い、コマンド実行・ファイル送受信のほかChrome/Brave/Firefox/Safariのブラウザデータ・ターミナル履歴・インストール済みアプリ一覧・システムプロファイル・実行中プロセス一覧・login.keychain-dbのコピーを窃取する機能を持つ。ROOFDECKは分散型プロトコルNostrをC2に用い、システム偵察・ファイル操作・リモートシェル・横展開・Launch Agent経由の永続化機能を持ち、コマンドは埋め込み公開鍵で署名検証される。両バックドアは2026年3〜4月のKelpDAO LayerZeroブリッジ攻撃（別事案）でも過去に観測されており、同一グループの継続的な武器庫であることが確認された。
+
+攻撃の流れ（判明分）:
+1. 偽の採用面接・コーディング課題を装いDevOps/Web3開発者へ接触し、Terraform依存関係ロックファイルを含む偽装リポジトリを開かせる
+2. 被害者がterraform initを実行すると、ロックファイルが指す悪性ドメイン（registry.hashicorp-aws[.]com等）からFLATROOF/ROOFDECKバックドアがダウンロード・実行される
+3. FLATROOF（Telegram C2）・ROOFDECK（Nostr C2、Launch Agentで永続化）が並行して稼働し、ブラウザ資格情報・キーチェーン・ターミナル履歴等を窃取、横展開・追加ペイロード配布に利用される
+
+【新規TTP】
+・[T1195] Supply Chain Compromise — 偽装リポジトリのTerraform依存関係ロックファイル（.terraform.lock.hcl）に悪性ダウンロード先を仕込み、terraform init実行時に侵害コードを取得させる
+・[T1543] Create or Modify System Process — ROOFDECKがmacOSのLaunch Agentを用いて永続化
+・[T1555] Credentials from Password Stores — FLATROOFがmacOSのlogin.keychain-dbをコピーして窃取
+・[T1102] Web Service — FLATROOFはTelegram、ROOFDECKは分散型プロトコルNostrをC2チャネルとして利用（コマンドは埋め込み公開鍵で署名検証）
+
+【IoC】
+Domain: registry.hashicorp-aws[.]com
+
+【推奨アクション】
+・DevOps/インフラエンジニアがterraform init等のIaC初期化コマンドを実行する前に、ロックファイル（.terraform.lock.hcl）が指すレジストリドメインの正当性を確認する。gtn-candidate-repo・Northwind-IAC・novacart-interview・terraform-candidate-repo等の名称・類似パターンを持つリポジトリからのクローン・実行を避ける。DevOps担当者の端末でmacOSのLaunch Agent新規作成・login.keychain-dbへの異常アクセスを監視する。
+Splunk SPL: index=dns query="*hashicorp-aws*" NOT query="*.hashicorp.com" | stats count by src_ip, query
+Splunk SPL: index=osx sourcetype=osquery LaunchAgents | search NOT known_baseline | table _time, host, path, program_arguments
+→ 正規のHashiCorpレジストリドメインはregistry.terraform.io等であり、hashicorp-awsのような紛らわしいドメインへの名前解決は即座に不審とみなす。開発者端末でのLaunch Agent新規作成は既知ベースラインとの差分を確認する
+
+【参照】
+https://thehackernews.com/2026/09/jade-sleet-linked-to-indian-it-provider.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向採用基準を満たす活動なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックB CVEなし）
+
+・[トレンド記事] BigCommerce、Ribonアプリ経由のデータ侵害を加盟店へ通知
+ECプラットフォームBigCommerceが、サードパーティ製アプリRibon/Ribon 1.5（Be A Part Of社・Fastr傘下）の認証情報侵害を発端に、複数加盟店のストアフロントで顧客データへの不正アクセスが発生したと通知した。2026-09-13〜17の間に不正アクセスが発生し、09-17にBigCommerceが侵害を確認・該当アプリを削除。窃取された顧客データは氏名・メールアドレス・電話番号・配送先住所で、パスワードおよび決済カード情報は別管理のため影響を受けていない。確認済みの被害企業は英国の酒類通販Master of Malt。同種のRibonアプリを利用する数百のBigCommerce加盟店が影響を受けた可能性がある。CVE番号・攻撃者名・IOCは本稿執筆時点で確認されていない。
+参照: https://www.bleepingcomputer.com/news/security/bigcommerce-alerts-merchants-of-data-breach-linked-to-ribon-apps/
+・[トレンド記事] ClickFixルアーが新種RAT『ChainScript』を配布、Polygonスマートコントラクトを使いC2インフラを高頻度ローテーション
+偽の「人間確認」画面等でユーザーにコマンド実行を誘導するClickFix型ルアーが、Spotify・Zoom Workplace・Microsoft Teams等を偽装する新種RAT『ChainScript』（別名ComponentTask33・UpdateDigital・HostShared・OrchidViolet66）を配布していることが確認された。ChainScriptはインタラクティブなCMD/PowerShell実行・ファイル操作・スクリーンショット取得・ペイロード配備・暗号資産ウォレット（デスクトップアプリ・ブラウザ拡張の双方）の列挙・リモートJavaScript実行機能を持つ。特徴的なのはEtherHiding型のC2ディスカバリ手法で、Polygonブロックチェーン上のスマートコントラクトを外部リゾルバとして用いて稼働中のWebSocket C2インフラの場所を解決する。3〜5月の観測期間には59件のC2ドメインが平均22時間ごとにローテーションされ、単一のPolygonスマートコントラクトが数百件の侵害済みWebサイトを横断して配布に使われた。スマートコントラクトへの1回の（数セント規模の）トランザクションで、感染ホスト全体を新しいC2ホストへ一斉に誘導できる。CVE番号・特定の攻撃グループへの帰属は本稿執筆時点で確認されていない。
+参照: https://thehackernews.com/2026/09/clickfix-lures-deploy-chainscript-rat.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし（Step A'〜Dいずれも観測可能性ゲート・頻度ゲートを満たす候補が確認できなかったため。KEV新規追加〔CVE-2026-7273〕は独立した実確認イベント〔スキャン増加・新規IOC・PoC加速〕が伴わずStep A'の予報候補条件を満たさない）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[APT]
+・Contagious Interview（WaterPlum / DPRK北朝鮮313総局・帰属信頼度: 高〔日米豪独共同勧告〕） / ContagiousInterview-2026-WaterPlum-JointAdvisory → 日本警察庁・米FBI/DC3・豪ACSC・独BND/BfV共同勧告（2026-09-18公表）が、2025年12月〜2026年7月の間にContagious Interview（WaterPlum）が全世界30,000台超のデバイスに感染し暗号資産7,000ウォレット超から少なくとも1,071万ドルを窃取・北朝鮮へ送金したと公式帰属。本調査期間（2026-09-21 07:00〜09-22 07:00 JST）内にThe Hacker News等が同内容を再言及したが、共同勧告そのものは2026-09-18公表であり期間内の新規変化（追加IOC・追加確認等）は確認できず除外。campaign_idは既存のContagiousInterview-2026-PolinRider-SupplyChain（reported-apts.md記載）とは被害形態・時期が異なる別作戦のため新規キーを暫定登録（次回以降の期間内変化確認時に本編採用を検討）。
+
+本日の集計:
+APT — 本編1件 / 注目動向0件 / 除外1件
+
+========================================

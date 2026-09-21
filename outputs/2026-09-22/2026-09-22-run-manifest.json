@@ -1,0 +1,130 @@
+{
+  "_schema_version": "1.0",
+  "_run_date": "2026-09-22",
+  "_comment": "日次実行の各ステップの入出力・時刻・内容ハッシュ・版。予報の先見性を第三者が追跡できるようにするための実行記録（改善計画 §10）。",
+  "steps": [
+    {
+      "step": "snapshot_sources",
+      "status": "error",
+      "started_at_utc": "2026-09-21T22:38:00Z",
+      "ended_at_utc": "2026-09-21T22:38:05Z",
+      "version": "snapshot_sources/1.0",
+      "inputs": [],
+      "outputs": [],
+      "note": "forecaster/evidence/manifests/2026/09/2026-09-22.json が存在しない（06:00 JST daily-pipeline.yml の当該回が未実行/未反映）。Step 0.5をfail-softとしWeb検索補完調査へフォールバック。取得は行っていない（証跡なし）。"
+    },
+    {
+      "step": "nvd_window_sweep",
+      "status": "ok",
+      "started_at_utc": "2026-09-21T22:40:00Z",
+      "ended_at_utc": "2026-09-21T22:44:00Z",
+      "version": "nvd_window_sweep/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": ".cache/daily-security-intel/2026-09-22/step1-sweep.json",
+          "sha256": "3a07a9c2a6605340e23d899fe894473169d73b9f4a9b54805a05c0a507e80143"
+        }
+      ]
+    },
+    {
+      "step": "collect_step1_1b_1c_2_2b",
+      "status": "ok",
+      "started_at_utc": "2026-09-21T22:45:00Z",
+      "ended_at_utc": "2026-09-21T23:00:00Z",
+      "version": "manual-agent/1.0",
+      "inputs": [],
+      "outputs": [],
+      "note": "data/raw未生成のためWebSearch/WebFetchでNVD API・CISA KEV JSON・FIRST EPSS API・BleepingComputer/The Hacker News/JPCERT公式/IPA公式/Security NEXT公式を直接照会し補完収集。security-report.json/5種txtの初版を生成（この時点ではtactical_forecast未挿入）。"
+    },
+    {
+      "step": "normalize_01",
+      "status": "ok",
+      "started_at_utc": "2026-09-21T23:00:30Z",
+      "ended_at_utc": "2026-09-21T23:01:00Z",
+      "version": "01-normalize/1.2",
+      "inputs": [
+        "outputs/2026-09-22/2026-09-22-security-report.json"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/observations/2026/09/2026-09-22.json",
+          "sha256": "d71d266e04e23f6d16794048e385bbac84aefe383c5b0675026859bf9c67dc3b"
+        }
+      ]
+    },
+    {
+      "step": "baseline_02",
+      "status": "ok",
+      "started_at_utc": "2026-09-21T23:02:00Z",
+      "ended_at_utc": "2026-09-21T23:02:05Z",
+      "version": "regen_baseline.py/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/baseline/technique-freq.json",
+          "sha256": "5df650b14cd4b4edb439398b6606e6cd37b95b7295e57bda6c69235729b90f93"
+        },
+        {
+          "path": "forecaster/baseline/group-activity.json",
+          "sha256": "5d1e1c2eaf3a0ab0310f09f29f53fb1964851446bffd5e949814a9c1b3e0819c"
+        }
+      ]
+    },
+    {
+      "step": "forecast_03",
+      "status": "ok",
+      "started_at_utc": "2026-09-21T23:05:00Z",
+      "ended_at_utc": "2026-09-21T23:10:00Z",
+      "version": "03-forecast/2.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/forecasts/daily/2026-09-22.md",
+          "sha256": "aa7be00f2ec83edcd88f5097a92d1c9ff20efd100ef26a66f87ec0d9b7248722"
+        },
+        {
+          "path": "forecaster/forecasts/daily/2026-09-22.json",
+          "sha256": "df55b4c6aa66e1f6309af6d1556e9f14e2986d1e64a48367f232a0f468889694"
+        }
+      ],
+      "note": "予報ゼロ件（Step A': KEV単体のため候補化せず／Step B: TraderTraitor/Lazarus Groupともにbaseline_status not_established）"
+    },
+    {
+      "step": "tactical_shadow_03_6",
+      "status": "ok",
+      "started_at_utc": "2026-09-21T23:04:37Z",
+      "ended_at_utc": "2026-09-21T23:04:45Z",
+      "version": "tf1-shadow/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/state/tactical/2026/09/2026-09-22.json",
+          "sha256": "dceb0278957fe101414b44cb8e02e6dad1587e034d4fbc5fd04a348fd7ed9c55"
+        },
+        {
+          "path": "forecaster/candidates/tactical/2026-09-22.json",
+          "sha256": "54c1318a779b031956c4b85d4a657ac90aa42e7bcefc4a368ebeea605e468799"
+        }
+      ],
+      "note": "TF-1 shadow運用。全候補186件（shadow96/棄権90/発行0）。validate_tactical_integrity/validate_transition_claimsともにエラー0件。"
+    },
+    {
+      "step": "sweep_reconcile_and_render",
+      "status": "ok",
+      "started_at_utc": "2026-09-21T23:11:00Z",
+      "ended_at_utc": "2026-09-21T23:15:00Z",
+      "version": "nvd_window_sweep.py+render_tactical_forecast_section.py/1.0",
+      "inputs": [
+        ".cache/daily-security-intel/2026-09-22/step1-sweep.json"
+      ],
+      "outputs": [
+        {
+          "path": "outputs/2026-09-22/2026-09-22-security-report.json",
+          "sha256": "e1ee8c608d0a69d4a2a71c464e7fd5c09d5ab8384a80783e83c906f06fcc421b"
+        }
+      ],
+      "note": "候補27件/handled27件/unhandled0件。render_tactical_forecast_section.pyでtactical_forecastセクションを最終挿入した後の最終ハッシュ。"
+    }
+  ]
+}

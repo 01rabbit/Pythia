@@ -1,0 +1,47 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-22 07:55 JST
+調査期間: 2026-09-21 07:00 〜 2026-09-22 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. TASK#STOMP PowerShellバックドア: 文書・Wi-Fiパスワード・クリップボード窃取
+観点: ゼロデイ関連
+採用契機: ε
+------------------------------------------------------------
+
+優先度: 中
+対象: 該当なし
+
+【24時間以内の変化】
+[The Hacker News（Securonix Threat Research調査） 2026-09-21 00:00] Securonix Threat Researchが新種PowerShellバックドア『TASK#STOMP』の技術分析を初公開。
+
+【概要】
+Securonix Threat Researchが新種のPowerShellバックドア『TASK#STOMP』を報告した。感染はデスクトップに設置されたエンコード済みVBScriptファイルをwscript.exeで実行することから始まる（初期侵入経路はメールフィッシング等と推定されるが確定情報なし）。バックドアはドライブ上の業務文書（Word→PDF→PowerPoint→Excelの優先順）を自動収集・持出し、ファイルシステムを常時監視して新規・更新ファイルも継続的に窃取するほか、Wi-Fiパスワード・クリップボード内容の窃取、スクリーンショット取得、トークン認証済みの冗長2系統C2サーバ経由での任意リモートコマンド実行に対応する。永続化にはスケジュールタスク4件とスタートアップフォルダへの自己配置の計5つの足場を設置する。文書種別の優先順位から企業文書を狙った標的型の情報窃取キャンペーンとみられる。CVE番号・特定の攻撃グループへの帰属は本稿執筆時点で確認されていない（単一ベンダー報告のみ）。
+
+【推奨アクション】
+・wscript.exe/cscript.exeによるデスクトップ・ダウンロードフォルダ上のスクリプト実行を監視・制限する（不要な環境ではWSHの無効化を検討）
+・スケジュールタスクの新規作成およびスタートアップフォルダへの実行ファイル配置を監視する
+・エンドポイントでのWi-Fiパスワード列挙コマンド（netsh wlan show profile key=clear等）の実行を検知対象に追加する
+Splunk SPL: index=wineventlog EventCode=4688 (Image="*wscript.exe" OR Image="*cscript.exe") CommandLine="*Desktop*" | stats count by Computer, Account_Name, CommandLine
+Splunk SPL: index=wineventlog EventCode=4698 | stats count by Computer, TaskName
+→ 同一端末でスケジュールタスク新規作成が短時間に複数件発生する場合は多重永続化の兆候として優先確認する
+
+【参照】
+https://thehackernews.com/2026/09/taskstomp-powershell-backdoor-steals.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[SOC推奨情報]
+・Rapuncel情報窃取マルウェア・Microsoft署名済みドライバによるAV/EDR無効化（LastPass Authenticator偽装GitHubリポジトリ経由） → out_of_window
+
+本日の集計:
+SOC推奨情報 — 高0件 / 中1件 / 低0件 / 除外1件
+
+========================================

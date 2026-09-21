@@ -1,0 +1,253 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-22 07:55 JST
+調査期間: 2026-09-21 07:00 〜 2026-09-22 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-7273 / GS1900 Series Switches
+対象: GS1900-48HPv2 ファームウェア 2.90(ABTQ.1)C0 以前（他 GS1900 シリーズ機種を含む）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.8 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA 2026-09-21 00:00] CVE-2026-7273をKEVカタログへ新規追加。連邦機関対応期限2026-09-24（BOD 26-04準拠）。
+
+【概要】
+Zyxel GS1900シリーズスイッチのCGIプログラムにスタックベースバッファオーバーフロー脆弱性が存在し、LANベースの未認証攻撃者が細工したHTTPリクエストによりOSコマンドを実行できる。Zyxelは2026-06-16付でセキュリティアドバイザリを公開済みだが、CISAは本調査期間内の2026-09-21付でKEVカタログへ新規追加し実悪用を確認したと発表した。ランサムウェアキャンペーンでの悪用有無は本稿執筆時点で不明（Unknown）。パッチ提供状況は本稿執筆時点で確認できていない（推測—CISAのrequiredActionは「パッチ未提供の場合は使用中止を検討」と記載しており未提供の可能性を示唆）。
+
+攻撃の流れ:
+1. 攻撃者がLANセグメント内からGS1900シリーズのCGIプログラムへ細工したHTTPリクエストを送信
+2. スタックベースバッファオーバーフローが発生し、戻りアドレス等が攻撃者制御下に置かれる
+3. OSコマンドの実行に至り、スイッチの完全な制御を奪取される可能性（CISA公表の実悪用が確認されている）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM] GS1900シリーズのCGI管理エンドポイントへの異常なリクエスト（長大なパラメータ・想定外の送信元）を監視する。LANセグメント内の管理VLANアクセスを制限しているかを確認する
+Splunk SPL: index=network sourcetype=http_proxy dest_ip=<GS1900_mgmt_ip> uri_path="*/cgi-bin/*" | eval qlen=len(_raw) | where qlen > 512 | stats count by src_ip, uri_path
+→ GS1900の管理CGIへ管理VLAN外から到達できる構成自体が既に不審であり、当該経路の存在を優先的に確認する
+
+【参照】
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-7273
+https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-stack-based-buffer-overflow-vulnerability-in-gs1900-series-switches-06-16-2026
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用基準を満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に国内影響トリガー該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-94097 / NBR200V2
+CVSS: 10.0
+Netcore NBR200V2（ファームウェア1.3.241127.071246）のCGI診断エンドポイント/www/cgi-bin/network_toolsにおいて、param/key/valパラメータの検証不備による未認証リモートコマンドインジェクションが存在する（CVE-2026-94097・CVSS10.0・PR:N）。VulDBは同一機種・同一ファームウェアに対し関連する脆弱性を追加で6件（CVE-2026-94095: /usr/bin/network_toolsのTraceroute機能・url引数コマンドインジェクション、CVE-2026-94096: 同LAN IP Configuration Handler・ipv4引数コマンドインジェクション、CVE-2026-94099: restore.cgiのQUERY_STRINGコマンドインジェクション、CVE-2026-94100: /usr/bin/routerdのwan_config_set_vlan関数・vlan_wanX.ports引数バッファオーバーフロー、CVE-2026-94101: 同routerdのvlan_load_form_uci関数・wan_num引数バッファオーバーフロー、CVE-2026-94098: /www/cgi-bin/upgrade（Firmware Upgrade CGI）のQUERY_STRINGコマンドインジェクション・PR:H）を同時期に公開しており、いずれもエクスプロイトが公開済みと記録されている。ベンダーは事前開示に応答しておらず（vendor was contacted early about this disclosure but did not respond in any way）、パッチは本稿執筆時点で確認できていない。CISA KEVへの登録・実悪用の確認はいずれも本稿執筆時点でない（推測—CGI診断・設定系エンドポイントが認証なしまたは低権限セッションのみでコマンドインジェクション可能な設計自体に構造的な脆弱性がある可能性）。7件すべて同一ベンダー・同一製品・同一ファームウェアのため代表CVE-2026-94097としてここに集約する（他6件のCVE IDは本文に明記のとおり）。
+IoC: 確認されず
+
+監視: [SIEM] NBR200V2のCGIエンドポイント（/www/cgi-bin/network_tools・/www/cgi-bin/upgrade・restore.cgi等）への外部アクセス・異常なクエリパラメータを監視する
+Splunk SPL: index=network sourcetype=http_proxy uri_path="*/cgi-bin/network_tools*" OR uri_path="*/cgi-bin/upgrade*" OR uri_path="*restore.cgi*" | stats count by src_ip, uri_query
+→ 同エンドポイントへの外部セグメントからの着信は原則すべて不審とみなしてよい。特殊文字（; | & `）を含むクエリパラメータは即座に精査する
+
+参照: https://vuldb.com/cve/CVE-2026-94097
+https://vuldb.com/cve/CVE-2026-94095
+https://vuldb.com/cve/CVE-2026-94096
+https://vuldb.com/cve/CVE-2026-94098
+https://vuldb.com/cve/CVE-2026-94099
+https://vuldb.com/cve/CVE-2026-94100
+https://vuldb.com/cve/CVE-2026-94101
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用基準を満たすAI攻撃情報なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[MaxKB: サンドボックス脱出コマンド実行（CVE-2026-77521）・AWS Bedrock認証情報窃取（CVE-2026-79916）]
+カテゴリ: C1 採用契機: A-R, A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+エンタープライズ向けオープンソースAIアシスタント基盤MaxKB（1Panel-dev）に2件の重大脆弱性が公開された。CVE-2026-77521（CVSS10.0・PR:N）は、ツール・MCPツール・スキル・サブアプリケーションを持つアシスタントがSandboxShellBackendを使用する際、意図しないシェル実行を外部から誘発できる不備（CWE-78 OSコマンドインジェクション・CWE-250 不要な権限での実行・CWE-749 危険なメソッドの露出）。CVE-2026-79916（CVSS9.1・PR:L）は、認証済みワークスペースメンバーがAWS Bedrockのaccess_key_id/secret_access_keyフィールドへ制御文字を注入し、MaxKBが送信するAPIリクエストの宛先を操作して認証情報を攻撃者インフラへ流出させ得る不備。いずれも2.10.5-ltsで修正済みで、実運用環境での悪用は本稿執筆時点で確認されていない（推測—AI基盤製品の権限分離・サンドボックス実装不備は今後も同種の指摘が続く可能性がある）。
+対策: MaxKBを2.10.5-lts以上へ速やかにアップデートすることを推奨。アップデート未了の環境ではワークスペースメンバーの権限を最小化する
+
+監視: [SIEM] MaxKBのバージョンが2.10.5-lts未満のまま稼働していないかを確認する。サンドボックス実行環境からの予期しない子プロセス生成、AWS Bedrock関連の設定変更操作を監視する
+検知SPL: index=app_logs sourcetype=maxkb ("SandboxShellBackend" OR "sandbox_shell") | stats count by user, action
+
+参照: https://github.com/1Panel-dev/MaxKB/security/advisories/GHSA-f36j-f34j-h3rx
+https://github.com/1Panel-dev/MaxKB/releases/tag/v2.10.5-lts
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に国内影響AI攻撃情報なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はMaxKB（1Panel-dev製オープンソースAIアシスタント基盤）のサンドボックス脱出コマンド実行・クラウド認証情報窃取に関する重大脆弱性2件が新規公開された（いずれも修正版公開済み・実運用悪用は未確認）。バースト検出閾値（48時間以内3件以上）を超える広域AI攻撃キャンペーンは確認されなかった。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B1件 / 除外0件
+カテゴリ内訳: A（武器化）0件 / B（攻撃対象）0件 / C（インフラ）1件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. TraderTraitor（DPRK北朝鮮 / Jade Sleet / PUKCHONG / Slow Pisces / UNC4899・帰属信頼度: 高）
+活動タイプ: new_malware/ttp_update/active_campaign
+------------------------------------------------------------
+
+採用契機: Q, R, S
+標的: it/finance / Asia-Pacific/global（IN）
+マルウェア: FLATROOF, ROOFDECK
+
+【24時間以内の変化】
+[The Hacker News（SentinelOne調査） 2026-09-21 00:00] SentinelOne（Albert Priego・Alex Delamotte・Matej Havranek）がインド拠点ITサービス企業のDevOpsエンジニアのApple SiliconMacBookからRust製バックドアFLATROOF・ROOFDECKを検出し、TraderTraitor（Jade Sleet/PUKCHONG/Slow Pisces/UNC4899）による侵害と技術分析を初公開。両バックドアは2026年3〜4月のKelpDAO LayerZeroブリッジ攻撃でも過去に観測されたものと同一系統。
+
+【概要】
+北朝鮮とリンクするTraderTraitor（Microsoft命名Jade Sleet・Palo Alto命名Slow Pisces・CrowdStrike命名PUKCHONG・Mandiant命名UNC4899）が、偽の採用面接・コーディング課題を装いDevOps/暗号資産/フィンテック領域の開発者を標的とする既存手口（Contagious Interview系譜）の新展開として、Terraformの依存関係ロックファイル（.terraform.lock.hcl）を偽装リポジトリ（gtn-candidate-repo・Northwind-IAC・novacart-interview・terraform-candidate-repo等）に仕込み、開発者がterraform initを実行した際にregistry.hashicorp-aws[.]com等の悪性ドメインから侵害コードをダウンロードさせる手口でインド拠点ITサービス企業のDevOpsエンジニアのMacを侵害した。侵害は2026-03-18に検出されたが、実際のビーコン・ホスト活動開始は2026-03-29、更新版ROOFDECK（シンボル除去版）の展開は2026-04-20まで遡ることが判明している。FLATROOFはTelegramをC2に用い、コマンド実行・ファイル送受信のほかChrome/Brave/Firefox/Safariのブラウザデータ・ターミナル履歴・インストール済みアプリ一覧・システムプロファイル・実行中プロセス一覧・login.keychain-dbのコピーを窃取する機能を持つ。ROOFDECKは分散型プロトコルNostrをC2に用い、システム偵察・ファイル操作・リモートシェル・横展開・Launch Agent経由の永続化機能を持ち、コマンドは埋め込み公開鍵で署名検証される。両バックドアは2026年3〜4月のKelpDAO LayerZeroブリッジ攻撃（別事案）でも過去に観測されており、同一グループの継続的な武器庫であることが確認された。
+
+攻撃の流れ（判明分）:
+1. 偽の採用面接・コーディング課題を装いDevOps/Web3開発者へ接触し、Terraform依存関係ロックファイルを含む偽装リポジトリを開かせる
+2. 被害者がterraform initを実行すると、ロックファイルが指す悪性ドメイン（registry.hashicorp-aws[.]com等）からFLATROOF/ROOFDECKバックドアがダウンロード・実行される
+3. FLATROOF（Telegram C2）・ROOFDECK（Nostr C2、Launch Agentで永続化）が並行して稼働し、ブラウザ資格情報・キーチェーン・ターミナル履歴等を窃取、横展開・追加ペイロード配布に利用される
+
+【新規TTP】
+・[T1195] Supply Chain Compromise — 偽装リポジトリのTerraform依存関係ロックファイル（.terraform.lock.hcl）に悪性ダウンロード先を仕込み、terraform init実行時に侵害コードを取得させる
+・[T1543] Create or Modify System Process — ROOFDECKがmacOSのLaunch Agentを用いて永続化
+・[T1555] Credentials from Password Stores — FLATROOFがmacOSのlogin.keychain-dbをコピーして窃取
+・[T1102] Web Service — FLATROOFはTelegram、ROOFDECKは分散型プロトコルNostrをC2チャネルとして利用（コマンドは埋め込み公開鍵で署名検証）
+
+【IoC】
+Domain: registry.hashicorp-aws[.]com
+
+【推奨アクション】
+・DevOps/インフラエンジニアがterraform init等のIaC初期化コマンドを実行する前に、ロックファイル（.terraform.lock.hcl）が指すレジストリドメインの正当性を確認する。gtn-candidate-repo・Northwind-IAC・novacart-interview・terraform-candidate-repo等の名称・類似パターンを持つリポジトリからのクローン・実行を避ける。DevOps担当者の端末でmacOSのLaunch Agent新規作成・login.keychain-dbへの異常アクセスを監視する。
+Splunk SPL: index=dns query="*hashicorp-aws*" NOT query="*.hashicorp.com" | stats count by src_ip, query
+Splunk SPL: index=osx sourcetype=osquery LaunchAgents | search NOT known_baseline | table _time, host, path, program_arguments
+→ 正規のHashiCorpレジストリドメインはregistry.terraform.io等であり、hashicorp-awsのような紛らわしいドメインへの名前解決は即座に不審とみなす。開発者端末でのLaunch Agent新規作成は既知ベースラインとの差分を確認する
+
+【参照】
+https://thehackernews.com/2026/09/jade-sleet-linked-to-indian-it-provider.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向採用基準を満たす活動なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にトラックB CVEなし）
+
+・[トレンド記事] BigCommerce、Ribonアプリ経由のデータ侵害を加盟店へ通知
+ECプラットフォームBigCommerceが、サードパーティ製アプリRibon/Ribon 1.5（Be A Part Of社・Fastr傘下）の認証情報侵害を発端に、複数加盟店のストアフロントで顧客データへの不正アクセスが発生したと通知した。2026-09-13〜17の間に不正アクセスが発生し、09-17にBigCommerceが侵害を確認・該当アプリを削除。窃取された顧客データは氏名・メールアドレス・電話番号・配送先住所で、パスワードおよび決済カード情報は別管理のため影響を受けていない。確認済みの被害企業は英国の酒類通販Master of Malt。同種のRibonアプリを利用する数百のBigCommerce加盟店が影響を受けた可能性がある。CVE番号・攻撃者名・IOCは本稿執筆時点で確認されていない。
+参照: https://www.bleepingcomputer.com/news/security/bigcommerce-alerts-merchants-of-data-breach-linked-to-ribon-apps/
+・[トレンド記事] ClickFixルアーが新種RAT『ChainScript』を配布、Polygonスマートコントラクトを使いC2インフラを高頻度ローテーション
+偽の「人間確認」画面等でユーザーにコマンド実行を誘導するClickFix型ルアーが、Spotify・Zoom Workplace・Microsoft Teams等を偽装する新種RAT『ChainScript』（別名ComponentTask33・UpdateDigital・HostShared・OrchidViolet66）を配布していることが確認された。ChainScriptはインタラクティブなCMD/PowerShell実行・ファイル操作・スクリーンショット取得・ペイロード配備・暗号資産ウォレット（デスクトップアプリ・ブラウザ拡張の双方）の列挙・リモートJavaScript実行機能を持つ。特徴的なのはEtherHiding型のC2ディスカバリ手法で、Polygonブロックチェーン上のスマートコントラクトを外部リゾルバとして用いて稼働中のWebSocket C2インフラの場所を解決する。3〜5月の観測期間には59件のC2ドメインが平均22時間ごとにローテーションされ、単一のPolygonスマートコントラクトが数百件の侵害済みWebサイトを横断して配布に使われた。スマートコントラクトへの1回の（数セント規模の）トランザクションで、感染ホスト全体を新しいC2ホストへ一斉に誘導できる。CVE番号・特定の攻撃グループへの帰属は本稿執筆時点で確認されていない。
+参照: https://thehackernews.com/2026/09/clickfix-lures-deploy-chainscript-rat.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし（Step A'〜Dいずれも観測可能性ゲート・頻度ゲートを満たす候補が確認できなかったため。KEV新規追加〔CVE-2026-7273〕は独立した実確認イベント〔スキャン増加・新規IOC・PoC加速〕が伴わずStep A'の予報候補条件を満たさない）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. TASK#STOMP PowerShellバックドア: 文書・Wi-Fiパスワード・クリップボード窃取
+観点: ゼロデイ関連
+採用契機: ε
+------------------------------------------------------------
+
+優先度: 中
+対象: 該当なし
+
+【24時間以内の変化】
+[The Hacker News（Securonix Threat Research調査） 2026-09-21 00:00] Securonix Threat Researchが新種PowerShellバックドア『TASK#STOMP』の技術分析を初公開。
+
+【概要】
+Securonix Threat Researchが新種のPowerShellバックドア『TASK#STOMP』を報告した。感染はデスクトップに設置されたエンコード済みVBScriptファイルをwscript.exeで実行することから始まる（初期侵入経路はメールフィッシング等と推定されるが確定情報なし）。バックドアはドライブ上の業務文書（Word→PDF→PowerPoint→Excelの優先順）を自動収集・持出し、ファイルシステムを常時監視して新規・更新ファイルも継続的に窃取するほか、Wi-Fiパスワード・クリップボード内容の窃取、スクリーンショット取得、トークン認証済みの冗長2系統C2サーバ経由での任意リモートコマンド実行に対応する。永続化にはスケジュールタスク4件とスタートアップフォルダへの自己配置の計5つの足場を設置する。文書種別の優先順位から企業文書を狙った標的型の情報窃取キャンペーンとみられる。CVE番号・特定の攻撃グループへの帰属は本稿執筆時点で確認されていない（単一ベンダー報告のみ）。
+
+【推奨アクション】
+・wscript.exe/cscript.exeによるデスクトップ・ダウンロードフォルダ上のスクリプト実行を監視・制限する（不要な環境ではWSHの無効化を検討）
+・スケジュールタスクの新規作成およびスタートアップフォルダへの実行ファイル配置を監視する
+・エンドポイントでのWi-Fiパスワード列挙コマンド（netsh wlan show profile key=clear等）の実行を検知対象に追加する
+Splunk SPL: index=wineventlog EventCode=4688 (Image="*wscript.exe" OR Image="*cscript.exe") CommandLine="*Desktop*" | stats count by Computer, Account_Name, CommandLine
+Splunk SPL: index=wineventlog EventCode=4698 | stats count by Computer, TaskName
+→ 同一端末でスケジュールタスク新規作成が短時間に複数件発生する場合は多重永続化の兆候として優先確認する
+
+【参照】
+https://thehackernews.com/2026/09/taskstomp-powershell-backdoor-steals.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-79920 (Ajenti) → 軸1=4（CVSS9.9[v3.1・PR:L]以上+3、広く使われるOSS+1。未認証RCE非該当〔認証済み低権限セッション必須〕・PoC公開未確認）・軸2=0。判定順4（除外）。/api/core/tasks/startへのInstallPlugin/UnInstallPlugin/UpgradeAll呼び出しでplugins.ajenti.org由来の任意プラグインを認証済み一般ユーザーがインストール可能（2.2.16で修正）。
+・CVE-2026-82187 (Web to Print Online Designer (WordPressプラグイン)) → 軸1=6（CVSS9.8[v3.1・PR:N]以上+3、未認証任意ファイルアップロード+3。PoC公開未確認・ニッチプラグインのため広く使われる+1は非付与）・軸2=0。判定順4（除外）。アップロードファイルの種別・拡張子検証不備およびアップロード保護トークンを任意訪問者へ払い出す設計不備（2.15.0未満）。
+・CVE-2026-85751 (Mailu) → 軸1=6（CVSS9.8[v3.1・PR:N]以上+3、認証バイパス（CWE-290/807）+3。PoC公開未確認）・軸2=0。判定順4（除外）。PROXY_AUTH_WHITELIST設定時にREAL_IP_HEADER検証が不十分でリバースプロキシなりすましによる認証バイパスが可能（2024.06.55以前・helm-charts 2.7.3未満）。
+・CVE-2026-94301 (Apache MINA SSHD) → 軸1=7（CVSS9.8[v3.1・PR:N]以上+3、認証バイパス相当のデシリアライズフィルタ回避+3、広く使われるOSS+1）・軸2=0。判定順4（除外・僅差）。既存のCVE-2026-47065/ZDRES-232修正（resolveProxyClass未オーバーライド）が不完全でjava.lang.reflect.Proxy経由のacceptMatchersフィルタバイパスが再度可能（前回修正の再迂回・要継続監視）。
+・CVE-2026-58491 (Warpgate) → 軸1=3（CVSS9.3[v3.1]以上+3のみ。UI:R〔ユーザー操作要〕のためSSOリダイレクトオープンリダイレクト/XSS〔CWE-79〕は未認証RCE非該当・ニッチ製品のため広く使われる+1非付与）・軸2=0。判定順4（除外）。/@warpgate/api/sso/providers/:name/startのnextパラメータ検証不備（0.25.5未満）。
+・CVE-2026-61674 (Fluent Bit) → 軸1=4（CVSS9.2[v4.0]以上+3、広く使われるOSS（CNCFログ収集基盤として広範に組込まれる）+1。攻撃者制御のforwardサーバへFluent Bit側が接続した場合に発火するクライアント側脆弱性のため未認証RCE〔対外公開サービスへの直接到達〕には非該当）・軸2=0。判定順4（除外）。out_forwardプラグインのsecure_forward_pong処理（0.11.0〜5.0.8未満）でサーバ応答のコピー処理にバッファオーバーフロー。
+・CVE-2025-12999 (Eclipse OpenVSX) → 軸1=3（CVSS9.1[v4.0]以上+3のみ。AT:P〔攻撃前提条件あり=リバースプロキシのX-Forwarded-*ヘッダ信頼設定〕のため未認証RCE非該当）・軸2=0。判定順4（除外）。UrlUtil.getBaseUrlがX-Forwarded-Host/Proto/Prefixヘッダを未検証でダウンロードリンク・アセットURL構築に使用し、VS Code拡張機能マーケットプレイスのURLなりすまし・フィッシングに悪用され得る。
+・CVE-2026-46649 (Joplin Server) → 軸1=4（CVSS9.1[v4.0]以上+3、広く使われるOSSノートアプリ+1。AC:H〔9桁SSOコードのブルートフォース要〕のため未認証RCE非該当）・軸2=0。判定順4（除外）。GET /api/login_with_code/:idエンドポイントがレート制限なしで9桁数字SSOコードを受理（3.7.2未満）。
+・CVE-2026-86473 (Apache Airflow) → 軸1=4（CVSS9.1[v3.1]以上+3、広く使われるOSSデータ基盤+1。ログアウト後もAuthorizationヘッダ提示のトークンが有効なままという セッション失効不備〔CWE-613〕であり未認証RCE・初期侵入型の認証バイパスには非該当）・軸2=0。判定順4（除外）。Core APIログアウトエンドポイントが_tokenクッキー提示分のみ失効させ、Authorization Bearerヘッダ提示のトークンを失効させない。
+・CVE-2026-94571 (OpenStack Octavia) → 軸1=3（CVSS9.4[v4.0]以上+3のみ。PR:L〔Load Balancer API権限要〕のため未認証RCE非該当）・軸2=0。判定順4（除外）。AmphoraプロバイダドライバがL7ポリシーのredirect_url/redirect_prefixフィールドの制御文字を拒否せず、生成されるHAProxy設定ファイルへ不正な値が書き込まれ得る（18.0.1未満）。関連するCVE-2026-94572（同日開示・同コンポーネント）とあわせて2件。
+・CVE-2026-94572 (OpenStack Octavia) → 軸1=3（CVSS9.4[v4.0]以上+3のみ。PR:L）・軸2=0。判定順4（除外）。CVE-2026-94571と同日・同コンポーネント（Amphoraプロバイダドライバ）の関連脆弱性。listener/poolのtls_ciphersフィールドの制御文字検証不備によるHAProxy設定ファイルへの不正値書込み（18.0.1未満）。
+・CVE-2026-94424 (Moore Threads MTT S80 Driver Package) → 軸1=3（CVSS9.3[v4.0]以上+3のみ。AV:L〔ローカルアクセス要〕のためリモート加点非該当・PoC公開未確認）・軸2=0。判定順4（除外）。mtdispkm64.sys（IOCTL Handler）のsub_140001000関数にヒープベースバッファオーバーフロー。
+・CVE-2026-94403 (ColorFul iGameCenter) → 軸1=5（CVSS9.3[v4.0]以上+3、PoC公開+2。AV:L〔ローカルアクセス要〕のためリモート加点非該当）・軸2=0。判定順4（除外）。ene.sys（IOCTL Handler）のsub_140001AF0関数に未検証ポインタ参照。EUVD独立列挙のみ（NVD/KEV未収載層・euvd_only）。
+・CVE-2026-94128 (BioStar VIVID LED DJ / VALKYRIE AURORA / Temperature Monitor Utility / BIOS Update Utility（Suprema系ドライバ4件）) → 軸1=4（CVSS8.8[v3.1]は7.5〜8.9帯+2、PoC公開+2。AV:L〔ローカルアクセス要〕のためリモート加点非該当。NVDの正スコアは8.8でありEUVD側のv4.0換算9.3は本項目のCVSS採否には使用しない）・軸2=0。判定順4（除外）。BS_LED64.sys等のIOCTL Handlerに同一パターン（sub_1105C関数・AssociatedIrp引数write-what-where）のローカル権限昇格系脆弱性。関連するCVE-2026-94129（VALKYRIE AURORA）・CVE-2026-94142（Temperature Monitor Utility）・CVE-2026-94146（BIOS Update Utility）とあわせて4件を集約。いずれもEUVD独立列挙のみでNVD候補（CVSS9.0以上フィルタ）には未収載（euvd_only・NVDの実スコアは8.8のため）。
+・CVE未採番 (WordPress Core（Click2Shell・CVE未採番）) → pwn.aiが発見したCSRF+セレクタインジェクション連鎖『Click2Shell』（強制テーマインストール単体でCVSS7.1・特定テーマとの連鎖でCVSS9.6のRCEに至る）。WordPress 7.1.1で2026-09-17付で修正済み・The Hacker News初報も2026-09-18付であり、いずれも本調査期間（2026-09-21 07:00〜09-22 07:00 JST）より前。期間内に新たな変化点は確認できず、CVEも本稿執筆時点で未採番のため除外。実悪用の兆候なし（pwn.ai/WordPress公式ともに報告なし）。
+
+[APT]
+・Contagious Interview（WaterPlum / DPRK北朝鮮313総局・帰属信頼度: 高〔日米豪独共同勧告〕） / ContagiousInterview-2026-WaterPlum-JointAdvisory → 日本警察庁・米FBI/DC3・豪ACSC・独BND/BfV共同勧告（2026-09-18公表）が、2025年12月〜2026年7月の間にContagious Interview（WaterPlum）が全世界30,000台超のデバイスに感染し暗号資産7,000ウォレット超から少なくとも1,071万ドルを窃取・北朝鮮へ送金したと公式帰属。本調査期間（2026-09-21 07:00〜09-22 07:00 JST）内にThe Hacker News等が同内容を再言及したが、共同勧告そのものは2026-09-18公表であり期間内の新規変化（追加IOC・追加確認等）は確認できず除外。campaign_idは既存のContagiousInterview-2026-PolinRider-SupplyChain（reported-apts.md記載）とは被害形態・時期が異なる別作戦のため新規キーを暫定登録（次回以降の期間内変化確認時に本編採用を検討）。
+
+[AI攻撃]
+該当なし
+
+[SOC推奨情報]
+・Rapuncel情報窃取マルウェア・Microsoft署名済みドライバによるAV/EDR無効化（LastPass Authenticator偽装GitHubリポジトリ経由） → out_of_window
+
+本日の集計:
+CVE — 本編0件 / 参考A0件 / 参考B1件 / ゼロデイ特報1件 / 除外15件
+APT — 本編1件 / 注目動向0件 / 除外1件
+AI攻撃 — 本編0件 / 参考A0件 / 参考B1件 / 除外0件
+SOC推奨情報 — 高0件 / 中1件 / 低0件 / 除外1件
+
+========================================
