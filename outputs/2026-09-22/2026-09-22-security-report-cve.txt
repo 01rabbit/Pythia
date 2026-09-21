@@ -1,0 +1,100 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-22 07:55 JST
+調査期間: 2026-09-21 07:00 〜 2026-09-22 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-7273 / GS1900 Series Switches
+対象: GS1900-48HPv2 ファームウェア 2.90(ABTQ.1)C0 以前（他 GS1900 シリーズ機種を含む）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 8.8 (High)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA 2026-09-21 00:00] CVE-2026-7273をKEVカタログへ新規追加。連邦機関対応期限2026-09-24（BOD 26-04準拠）。
+
+【概要】
+Zyxel GS1900シリーズスイッチのCGIプログラムにスタックベースバッファオーバーフロー脆弱性が存在し、LANベースの未認証攻撃者が細工したHTTPリクエストによりOSコマンドを実行できる。Zyxelは2026-06-16付でセキュリティアドバイザリを公開済みだが、CISAは本調査期間内の2026-09-21付でKEVカタログへ新規追加し実悪用を確認したと発表した。ランサムウェアキャンペーンでの悪用有無は本稿執筆時点で不明（Unknown）。パッチ提供状況は本稿執筆時点で確認できていない（推測—CISAのrequiredActionは「パッチ未提供の場合は使用中止を検討」と記載しており未提供の可能性を示唆）。
+
+攻撃の流れ:
+1. 攻撃者がLANセグメント内からGS1900シリーズのCGIプログラムへ細工したHTTPリクエストを送信
+2. スタックベースバッファオーバーフローが発生し、戻りアドレス等が攻撃者制御下に置かれる
+3. OSコマンドの実行に至り、スイッチの完全な制御を奪取される可能性（CISA公表の実悪用が確認されている）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[SIEM] GS1900シリーズのCGI管理エンドポイントへの異常なリクエスト（長大なパラメータ・想定外の送信元）を監視する。LANセグメント内の管理VLANアクセスを制限しているかを確認する
+Splunk SPL: index=network sourcetype=http_proxy dest_ip=<GS1900_mgmt_ip> uri_path="*/cgi-bin/*" | eval qlen=len(_raw) | where qlen > 512 | stats count by src_ip, uri_path
+→ GS1900の管理CGIへ管理VLAN外から到達できる構成自体が既に不審であり、当該経路の存在を優先的に確認する
+
+【参照】
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog?field_cve=CVE-2026-7273
+https://www.zyxel.com/global/en/support/security-advisories/zyxel-security-advisory-for-stack-based-buffer-overflow-vulnerability-in-gs1900-series-switches-06-16-2026
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用基準を満たすCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に国内影響トリガー該当CVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-94097 / NBR200V2
+CVSS: 10.0
+Netcore NBR200V2（ファームウェア1.3.241127.071246）のCGI診断エンドポイント/www/cgi-bin/network_toolsにおいて、param/key/valパラメータの検証不備による未認証リモートコマンドインジェクションが存在する（CVE-2026-94097・CVSS10.0・PR:N）。VulDBは同一機種・同一ファームウェアに対し関連する脆弱性を追加で6件（CVE-2026-94095: /usr/bin/network_toolsのTraceroute機能・url引数コマンドインジェクション、CVE-2026-94096: 同LAN IP Configuration Handler・ipv4引数コマンドインジェクション、CVE-2026-94099: restore.cgiのQUERY_STRINGコマンドインジェクション、CVE-2026-94100: /usr/bin/routerdのwan_config_set_vlan関数・vlan_wanX.ports引数バッファオーバーフロー、CVE-2026-94101: 同routerdのvlan_load_form_uci関数・wan_num引数バッファオーバーフロー、CVE-2026-94098: /www/cgi-bin/upgrade（Firmware Upgrade CGI）のQUERY_STRINGコマンドインジェクション・PR:H）を同時期に公開しており、いずれもエクスプロイトが公開済みと記録されている。ベンダーは事前開示に応答しておらず（vendor was contacted early about this disclosure but did not respond in any way）、パッチは本稿執筆時点で確認できていない。CISA KEVへの登録・実悪用の確認はいずれも本稿執筆時点でない（推測—CGI診断・設定系エンドポイントが認証なしまたは低権限セッションのみでコマンドインジェクション可能な設計自体に構造的な脆弱性がある可能性）。7件すべて同一ベンダー・同一製品・同一ファームウェアのため代表CVE-2026-94097としてここに集約する（他6件のCVE IDは本文に明記のとおり）。
+IoC: 確認されず
+
+監視: [SIEM] NBR200V2のCGIエンドポイント（/www/cgi-bin/network_tools・/www/cgi-bin/upgrade・restore.cgi等）への外部アクセス・異常なクエリパラメータを監視する
+Splunk SPL: index=network sourcetype=http_proxy uri_path="*/cgi-bin/network_tools*" OR uri_path="*/cgi-bin/upgrade*" OR uri_path="*restore.cgi*" | stats count by src_ip, uri_query
+→ 同エンドポイントへの外部セグメントからの着信は原則すべて不審とみなしてよい。特殊文字（; | & `）を含むクエリパラメータは即座に精査する
+
+参照: https://vuldb.com/cve/CVE-2026-94097
+https://vuldb.com/cve/CVE-2026-94095
+https://vuldb.com/cve/CVE-2026-94096
+https://vuldb.com/cve/CVE-2026-94098
+https://vuldb.com/cve/CVE-2026-94099
+https://vuldb.com/cve/CVE-2026-94100
+https://vuldb.com/cve/CVE-2026-94101
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[CVE]
+・CVE-2026-79920 (Ajenti) → 軸1=4（CVSS9.9[v3.1・PR:L]以上+3、広く使われるOSS+1。未認証RCE非該当〔認証済み低権限セッション必須〕・PoC公開未確認）・軸2=0。判定順4（除外）。/api/core/tasks/startへのInstallPlugin/UnInstallPlugin/UpgradeAll呼び出しでplugins.ajenti.org由来の任意プラグインを認証済み一般ユーザーがインストール可能（2.2.16で修正）。
+・CVE-2026-82187 (Web to Print Online Designer (WordPressプラグイン)) → 軸1=6（CVSS9.8[v3.1・PR:N]以上+3、未認証任意ファイルアップロード+3。PoC公開未確認・ニッチプラグインのため広く使われる+1は非付与）・軸2=0。判定順4（除外）。アップロードファイルの種別・拡張子検証不備およびアップロード保護トークンを任意訪問者へ払い出す設計不備（2.15.0未満）。
+・CVE-2026-85751 (Mailu) → 軸1=6（CVSS9.8[v3.1・PR:N]以上+3、認証バイパス（CWE-290/807）+3。PoC公開未確認）・軸2=0。判定順4（除外）。PROXY_AUTH_WHITELIST設定時にREAL_IP_HEADER検証が不十分でリバースプロキシなりすましによる認証バイパスが可能（2024.06.55以前・helm-charts 2.7.3未満）。
+・CVE-2026-94301 (Apache MINA SSHD) → 軸1=7（CVSS9.8[v3.1・PR:N]以上+3、認証バイパス相当のデシリアライズフィルタ回避+3、広く使われるOSS+1）・軸2=0。判定順4（除外・僅差）。既存のCVE-2026-47065/ZDRES-232修正（resolveProxyClass未オーバーライド）が不完全でjava.lang.reflect.Proxy経由のacceptMatchersフィルタバイパスが再度可能（前回修正の再迂回・要継続監視）。
+・CVE-2026-58491 (Warpgate) → 軸1=3（CVSS9.3[v3.1]以上+3のみ。UI:R〔ユーザー操作要〕のためSSOリダイレクトオープンリダイレクト/XSS〔CWE-79〕は未認証RCE非該当・ニッチ製品のため広く使われる+1非付与）・軸2=0。判定順4（除外）。/@warpgate/api/sso/providers/:name/startのnextパラメータ検証不備（0.25.5未満）。
+・CVE-2026-61674 (Fluent Bit) → 軸1=4（CVSS9.2[v4.0]以上+3、広く使われるOSS（CNCFログ収集基盤として広範に組込まれる）+1。攻撃者制御のforwardサーバへFluent Bit側が接続した場合に発火するクライアント側脆弱性のため未認証RCE〔対外公開サービスへの直接到達〕には非該当）・軸2=0。判定順4（除外）。out_forwardプラグインのsecure_forward_pong処理（0.11.0〜5.0.8未満）でサーバ応答のコピー処理にバッファオーバーフロー。
+・CVE-2025-12999 (Eclipse OpenVSX) → 軸1=3（CVSS9.1[v4.0]以上+3のみ。AT:P〔攻撃前提条件あり=リバースプロキシのX-Forwarded-*ヘッダ信頼設定〕のため未認証RCE非該当）・軸2=0。判定順4（除外）。UrlUtil.getBaseUrlがX-Forwarded-Host/Proto/Prefixヘッダを未検証でダウンロードリンク・アセットURL構築に使用し、VS Code拡張機能マーケットプレイスのURLなりすまし・フィッシングに悪用され得る。
+・CVE-2026-46649 (Joplin Server) → 軸1=4（CVSS9.1[v4.0]以上+3、広く使われるOSSノートアプリ+1。AC:H〔9桁SSOコードのブルートフォース要〕のため未認証RCE非該当）・軸2=0。判定順4（除外）。GET /api/login_with_code/:idエンドポイントがレート制限なしで9桁数字SSOコードを受理（3.7.2未満）。
+・CVE-2026-86473 (Apache Airflow) → 軸1=4（CVSS9.1[v3.1]以上+3、広く使われるOSSデータ基盤+1。ログアウト後もAuthorizationヘッダ提示のトークンが有効なままという セッション失効不備〔CWE-613〕であり未認証RCE・初期侵入型の認証バイパスには非該当）・軸2=0。判定順4（除外）。Core APIログアウトエンドポイントが_tokenクッキー提示分のみ失効させ、Authorization Bearerヘッダ提示のトークンを失効させない。
+・CVE-2026-94571 (OpenStack Octavia) → 軸1=3（CVSS9.4[v4.0]以上+3のみ。PR:L〔Load Balancer API権限要〕のため未認証RCE非該当）・軸2=0。判定順4（除外）。AmphoraプロバイダドライバがL7ポリシーのredirect_url/redirect_prefixフィールドの制御文字を拒否せず、生成されるHAProxy設定ファイルへ不正な値が書き込まれ得る（18.0.1未満）。関連するCVE-2026-94572（同日開示・同コンポーネント）とあわせて2件。
+・CVE-2026-94572 (OpenStack Octavia) → 軸1=3（CVSS9.4[v4.0]以上+3のみ。PR:L）・軸2=0。判定順4（除外）。CVE-2026-94571と同日・同コンポーネント（Amphoraプロバイダドライバ）の関連脆弱性。listener/poolのtls_ciphersフィールドの制御文字検証不備によるHAProxy設定ファイルへの不正値書込み（18.0.1未満）。
+・CVE-2026-94424 (Moore Threads MTT S80 Driver Package) → 軸1=3（CVSS9.3[v4.0]以上+3のみ。AV:L〔ローカルアクセス要〕のためリモート加点非該当・PoC公開未確認）・軸2=0。判定順4（除外）。mtdispkm64.sys（IOCTL Handler）のsub_140001000関数にヒープベースバッファオーバーフロー。
+・CVE-2026-94403 (ColorFul iGameCenter) → 軸1=5（CVSS9.3[v4.0]以上+3、PoC公開+2。AV:L〔ローカルアクセス要〕のためリモート加点非該当）・軸2=0。判定順4（除外）。ene.sys（IOCTL Handler）のsub_140001AF0関数に未検証ポインタ参照。EUVD独立列挙のみ（NVD/KEV未収載層・euvd_only）。
+・CVE-2026-94128 (BioStar VIVID LED DJ / VALKYRIE AURORA / Temperature Monitor Utility / BIOS Update Utility（Suprema系ドライバ4件）) → 軸1=4（CVSS8.8[v3.1]は7.5〜8.9帯+2、PoC公開+2。AV:L〔ローカルアクセス要〕のためリモート加点非該当。NVDの正スコアは8.8でありEUVD側のv4.0換算9.3は本項目のCVSS採否には使用しない）・軸2=0。判定順4（除外）。BS_LED64.sys等のIOCTL Handlerに同一パターン（sub_1105C関数・AssociatedIrp引数write-what-where）のローカル権限昇格系脆弱性。関連するCVE-2026-94129（VALKYRIE AURORA）・CVE-2026-94142（Temperature Monitor Utility）・CVE-2026-94146（BIOS Update Utility）とあわせて4件を集約。いずれもEUVD独立列挙のみでNVD候補（CVSS9.0以上フィルタ）には未収載（euvd_only・NVDの実スコアは8.8のため）。
+・CVE未採番 (WordPress Core（Click2Shell・CVE未採番）) → pwn.aiが発見したCSRF+セレクタインジェクション連鎖『Click2Shell』（強制テーマインストール単体でCVSS7.1・特定テーマとの連鎖でCVSS9.6のRCEに至る）。WordPress 7.1.1で2026-09-17付で修正済み・The Hacker News初報も2026-09-18付であり、いずれも本調査期間（2026-09-21 07:00〜09-22 07:00 JST）より前。期間内に新たな変化点は確認できず、CVEも本稿執筆時点で未採番のため除外。実悪用の兆候なし（pwn.ai/WordPress公式ともに報告なし）。
+
+本日の集計:
+CVE — 本編0件 / 参考A0件 / 参考B1件 / ゼロデイ特報1件 / 除外15件
+
+========================================
