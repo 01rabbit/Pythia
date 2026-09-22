@@ -1,0 +1,79 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-23 09:30 JST
+調査期間: 2026-09-22 07:00 〜 2026-09-23 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用条件を満たすAI攻撃事案なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CLOSEDQUORUM: 商用LLM合議制で次の行動を決定する史上初の『自律型AI C2インプラント』（Cisco Talos CAIRNが発見）
+カテゴリ: AA4 採用契機: A-P
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+Cisco TalosはAI統合マルウェアを『メタデータ優先』（バイナリ実行なしにプロンプトテンプレート・APIキー・プロバイダエンドポイント等の『認知的アーティファクト』を抽出・分類）で追跡するOSSツールキット『CAIRN』を公開し、その過程でDeepSeek・Qwen・Mistral・Google Geminiという4つの商用LLMへ『You are an advanced malware strategist. Provide ONLY executable decisions.』というシステムプロンプトで順次問い合わせ、steal/inject/persist/moveに制約された行動スキーマの応答を多数決集計（同点時はDeepSeekが最終決定権）して次の攻撃行動を自律的に選択するWindows実装ファイル『CLOSEDQUORUM』を発見した。Talosはこれを自社の把握する限り初めて公開文書化された、戦術的C2判断を商用LLM群へ委任する自律型インプラントと位置付けている（Talos一次発表内容）。ただし配布された検体はAPIキーがダミー値のままの非機能テンプレートであり、実運用環境での稼働・実被害はTalos自身も未確認としている（推測—開発者を犯罪フォーラムの2025年カーディング関連投稿に結び付ける痕跡がある一方、特定の脅威アクター・APTグループへの正式帰属は行われていない。レッドチーム実証用または開発途上ツールの可能性も残る）。CAIRNの分析ではLAMEHUG（2025年7月・CERT-UA報告）以降、AI統合マルウェアが『LLMを任意機能として搭載』する段階から本件のような完全自律型多モデル判断システムへ1年程度で急速に進化したと指摘している。
+
+監視: エンドポイント上の未承認プロセスから複数の商用LLM APIエンドポイントへの連続アクセス、およびDiscord Webhookを用いた不審な外部通信を監視する
+検知SPL: index=proxy OR index=dns dest_host IN ("api.deepseek.com","api.mistral.ai","generativelanguage.googleapis.com") | stats count by src_ip, dest_host, process_name
+→ 業務でLLM APIを正規利用する開発端末では誤検知しうるため、プロセス系譜（未知の実行ファイル・非承認ツールからの通信か）で正規利用と区別する
+
+参照: https://blog.talosintelligence.com/the-closed-quorum-inside-the-first-reported-autonomous-ai-c2-implant/
+参照: https://blog.talosintelligence.com/introducing-cairn-frontier-tracking-for-ai-integrated-malware/
+参照: https://www.bleepingcomputer.com/news/security/new-closedquorum-windows-malware-uses-ai-for-attack-decisions/
+参照: https://www.helpnetsecurity.com/2026/09/22/cairn-open-source-framework-ai-malware-closedquorum/
+
+・mcp-atlassian: HTTPトランスポートにおける認証バイパス2件（CVE-2026-77244・CVE-2026-77254）
+カテゴリ: CC1 採用契機: A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+コーディングエージェント等からAtlassian製品（Jira/Confluence）を操作可能にするOSSのMCPサーバmcp-atlassianにおいて、HTTPトランスポート経由のリクエストがユーザ単位の身元検証を経ないままツールハンドラへ到達し、運用者がグローバルに設定したJira/Confluence認証情報へフォールバックする不備が判明した（CVE-2026-77244・CVSS10.0）。MCPエンドポイントへネットワーク到達可能な第三者は運用者アカウントの権限でAtlassianツールの読み書き操作を実行できる。関連する権限分離不備（CVE-2026-77254・CVSS9.1）も同時に公開された。実悪用・PoC公開は現時点で未確認。0.22.0で修正済み。
+
+監視: mcp-atlassianのHTTP MCPエンドポイントへの外部/想定外送信元からのアクセスと、Jira/Confluence API呼び出しログにおける運用者アカウントからの異常な操作パターンを監視する
+検知SPL: index=web_proxy uri_path="*/mcp*" | stats count by src_ip, uri_path, http_method dest_port
+→ MCPエンドポイントを外部公開せずリバースプロキシ等で認証を前段に必須化しているか確認し、0.22.0未満のバージョン運用がないか棚卸しする
+
+参照: https://github.com/sooperset/mcp-atlassian/security/advisories/GHSA-wrhw-j3f9-8vc6
+
+・LightRAG: ログインエンドポイントのブルートフォース対策欠如（CVE-2026-85734）
+カテゴリ: CC1 採用契機: A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+RAG（検索拡張生成）を提供するOSSのLightRAGにおいて、認証エンドポイント（POST /login）が総当たり攻撃に対するレート制限・ロックアウト・遅延・失敗カウンタのいずれも実装しておらず、ネットワーク上の攻撃者が全速でパスワード推測を行い有効な認証情報を特定できる不備が判明した。認証情報の突破に成功するとドキュメント・ナレッジグラフ・管理操作へのアクセス権が付与される。1.5.5で修正済み。実悪用・PoC公開は現時点で未確認。
+
+監視: LightRAGのログインエンドポイントに対する短時間での大量リクエスト・失敗ログイン試行の急増を監視する
+検知SPL: index=web_access uri_path="*/login" app="lightrag" | stats count by src_ip | where count > 50
+→ 同一送信元IPからの短時間大量失敗ログインを閾値検知し、WAF/リバースプロキシ側でのレート制限導入状況を併せて確認する
+
+参照: https://www.strix.ai/cve/CVE-2026-85734
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A該当AI攻撃事案なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日はAIプラットフォーム(MCP/RAG基盤)関連のCVE型インフラ攻撃・マルウェアのLLM問い合わせ機能実証を確認。いずれも単一ソース起点で持続性チェック閾値未達のため参考B留まり。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B3件 / 除外0件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）0件 / C（インフラ）2件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[AI攻撃]
+該当なし
+
+========================================
