@@ -1,0 +1,237 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-23 09:30 JST
+調査期間: 2026-09-22 07:00 〜 2026-09-23 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】重大・実悪用/KEV確認済み
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-85102 / Check Point Quantum Security Gateway / Spark Firewall
+対象: R81.20, R82, R82.10, R81.10.x, R82.00.x（VPN Site-to-Site/Remote Access使用時）※R80〜R81.10系はサポート終了
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-09-22] CVE-2026-85102をKEVカタログへ新規追加（catalogVersion 2026.09.22・FCEB期限2026-09-25）。既報（2026-09-10初報・実悪用未確認）から実悪用確認への状態変化
+[Check Point Blog 2026-09-22] 「Security Advisory – Action Required – Active Exploitation of CVE-2026-85102」を公開し、本CVEの実悪用を公式確認
+
+【概要】
+Check Point Quantum Security GatewayおよびSpark FirewallのVPNネゴシエーション時における証明書信頼検証不備（CWE-295）で、Site-to-SiteまたはRemote Access VPNを有効化した未認証の攻撃者がGateway上で任意コードを実行できる。2026-09-09にCheck Pointが自社発見として修正版を公開した際は実悪用未確認だったが、CISAが2026-09-22付でKEVカタログへ新規追加し、Check Point公式ブログも実悪用を確認したと発表した。オランダNCSCは2026-09-12時点で悪用可能性・影響ともに「高」と評価し注意喚起していた。
+
+攻撃の流れ:
+1. 攻撃者がVPNネゴシエーション中に不正な証明書を提示し、Gatewayの証明書信頼検証不備を悪用
+2. 証明書検証をバイパスして未認証のままGateway側処理に不正入力を到達させる
+3. Gateway上で任意コードを実行しRCEを達成
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Check Point Gateway/VPNログにおける異常な証明書ネゴシエーション失敗・再試行パターンと、Gatewayプロセスの予期しない子プロセス起動を監視する
+Splunk SPL: index=checkpoint sourcetype=checkpoint:vpn (cert_error OR "certificate validation") | stats count by src_ip, gw_name
+Splunk SPL: index=checkpoint sourcetype=checkpoint:system EventID=process_start ParentImage="*vpnd*" | stats count by ChildImage, src_ip
+→ 正規のVPNクライアント証明書更新やCA入れ替え作業時の検証エラーと区別するため、失敗元IPの地理的異常・短時間の反復試行の有無を確認する
+
+【参照】
+https://www.cisa.gov/news-events/alerts/2026/09/22/cisa-adds-four-known-exploited-vulnerabilities-catalog
+https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616
+https://support.checkpoint.com/results/sk/sk1000117
+------------------------------------------------------------
+2. CVE-2026-93616 / Check Point Security Management Server / Multi-Domain Security Management / Log Server / SmartEvent
+対象: Check Point Security Management Server, Multi-Domain Security Management Server, Log Server, Multi-Domain Log Server, SmartEvent（詳細版はCheck Point sk参照）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[The Hacker News 2026-09-22] 「Check Point Warns of Management Server Zero-Day Exploited in Targeted Attacks」を報道。少数顧客への標的型実悪用を確認
+[CISA KEV Catalog 2026-09-22] CVE-2026-93616をKEVカタログへ新規追加（catalogVersion 2026.09.22・FCEB期限2026-09-25）
+
+【概要】
+Check Point Management Web Serviceにおけるディレクトリトラバーサルおよびファイルアップロードの脆弱性で、未認証の攻撃者がManagement Server上で任意スクリプトをアップロード・実行できる。事前認証不要のパストラバーサルにより任意パスのスクリプト実行・任意Javaクラスのロードが可能。Check Point Researchはゼロデイとして少数顧客への標的型実悪用を確認したと発表し、CISAが2026-09-22付でKEVカタログへ新規追加した。
+
+攻撃の流れ:
+1. 未認証の攻撃者がManagement Web Serviceへディレクトリトラバーサルを含むリクエストを送信
+2. 任意パスへのスクリプトアップロードと任意Javaクラスのロードに成功
+3. アップロードしたスクリプトを実行しManagement Server上でコード実行を達成
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Management Server上のWebサービスアクセスログにおけるパストラバーサルパターン（../等）とWebルート外への予期しないファイル書き込みを監視する
+Splunk SPL: index=checkpoint sourcetype=checkpoint:mgmt_web (uri_path="*../*" OR uri_path="*%2e%2e*") | stats count by src_ip, uri_path
+Splunk SPL: index=checkpoint sourcetype=checkpoint:filesystem action=file_create file_path="*webroot*" NOT file_path="*expected_upload_dir*"
+→ SmartConsoleのTrusted Clients設定でManagement Serverアクセスを制限しているかを併せて確認し、許可外送信元からのアクセス試行を優先的に精査する
+
+【参照】
+https://thehackernews.com/2026/09/check-point-warns-of-management-server.html
+https://blog.checkpoint.com/security/security-advisory-action-required-active-exploitation-of-cve-2026-85102-and-a-management-pre-authentication-vulnerability-cve-2026-93616
+https://support.checkpoint.com/results/sk/sk1000171/
+https://www.cisa.gov/news-events/alerts/2026/09/22/cisa-adds-four-known-exploited-vulnerabilities-catalog
+------------------------------------------------------------
+3. CVE-2026-93952 / VeloCloud Orchestrator (VCO) on-prem
+対象: VCO on-prem 6.1系・7.0系（証明書ベースでEdgeを認証する構成が対象）。5.2系・6.4系は修正版提供済み。Hosted/Dedicated版は対応済み
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 10.0 (Critical)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-22] 「Arista patches VeloCloud Orchestrator zero-day exploited in attacks」を報道。証明書ベースでEdgeを認証する構成のオンプレVCOが標的
+[The Hacker News 2026-09-22] CVSS 10.0のVCO脆弱性が証明書ベース構成で実悪用中と報道
+[CISA KEV Catalog 2026-09-22] CVE-2026-93952をKEVカタログへ新規追加（catalogVersion 2026.09.22・FCEB期限2026-09-25）
+
+【概要】
+オンプレミス版VeloCloud Orchestrator（VCO）における不適切な入力検証の脆弱性で、ログイン不要の遠隔攻撃者が特権的な内部機能へアクセスしVCOホストの機密性・完全性・可用性を侵害できる。証明書ベースでEdgeを認証する構成のみが影響を受け、攻撃者はWebインターフェースへのネットワークアクセスとEdgeの認証用証明書公開部分の入手が必要となる。Aristaは外部からの指摘で発見し、実悪用中であることを確認したと発表。CVSS 10.0（最大値）でCISAが2026-09-22付KEVへ新規追加した。
+
+攻撃の流れ:
+1. 攻撃者が対象EdgeのTLS証明書公開部分を入手しVCO Web管理インターフェースへアクセス
+2. 不適切な入力検証を悪用し特権的な内部機能を未認証で呼び出す
+3. VCOホストの設定・データを改ざん、または制御を奪取
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・VCO管理コンソールへの証明書ベース認証試行ログと、内部特権APIへの未認証アクセス試行を監視する
+Splunk SPL: index=arista_vco sourcetype=vco:access uri_path="*internal*" status!=401 | stats count by src_ip, uri_path
+Splunk SPL: index=arista_vco sourcetype=vco:auth auth_method=cert | stats count by src_ip, edge_id | where count > 20
+→ 証明書ベースEdge認証を使用していない環境は本脆弱性の影響を受けないため、まず自組織の認証方式（証明書 vs パスワード）を確認したうえで監視要否を判断する
+
+【参照】
+https://thehackernews.com/2026/09/new-cvss-100-velocloud-orchestrator.html
+https://www.bleepingcomputer.com/news/security/arista-patches-velocloud-orchestrator-zero-day-exploited-in-attacks/
+https://www.arista.com/en/support/advisories-notices/security-advisory/24765-security-advisory-0183
+https://www.cisa.gov/news-events/alerts/2026/09/22/cisa-adds-four-known-exploited-vulnerabilities-catalog
+------------------------------------------------------------
+4. CVE-2026-94127 / BIG-IP APM
+対象: BIG-IP APM 21.1.0系, 17.5.x系, 17.1.x系（該当エンジニアリングホットフィックス未適用でAPMアクセスポリシー＋OAuthプロファイルを仮想サーバに構成している場合）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[F5 PSIRT (K000162605) 2026-09-23] BIG-IP APMのOAuthプロファイル関連ヒープバッファオーバーフローについて実悪用を確認しエンジニアリングホットフィックスを公開
+[CISA KEV Catalog 2026-09-22] CVE-2026-94127をKEVカタログへ新規追加（catalogVersion 2026.09.22・FCEB期限2026-09-25）
+
+【概要】
+BIG-IP APMのアクセスポリシーとOAuthプロファイルを仮想サーバに構成している場合、特定の悪意あるトラフィックによりヒープベースのバッファオーバーフローが発生し、未認証の遠隔攻撃者によるリモートコード実行（RCE）が可能となる。データプレーンの問題でありコントロールプレーンへの露出はない。F5がAppliance modeでも脆弱と明記した上で実悪用を確認し、CISAが2026-09-22付でKEVカタログへ新規追加した。恒久修正までのつなぎとしてF5提供のiRuleによる一時緩和策がある。
+
+攻撃の流れ:
+1. 攻撃者がAPM＋OAuthプロファイルを構成した仮想サーバへ細工したOAuth関連トラフィックを送信
+2. リクエスト処理中にヒープメモリが破損（バッファオーバーフロー）
+3. 未認証のままBIG-IPデータプレーン上でリモートコード実行を達成
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・BIG-IP APMのOAuth関連トラフィック処理での異常終了・再起動ログと、想定外に大きいOAuthリクエストペイロードを監視する
+Splunk SPL: index=f5_bigip sourcetype=f5:bigip:apm (restart OR core_dump OR tmm_panic) | stats count by hostname
+Splunk SPL: index=f5_bigip sourcetype=f5:bigip:ltm virtual_server=* protocol=oauth | eval body_len=len(http_body) | where body_len > 8192
+→ 恒久パッチ未適用の場合はF5提供iRuleの適用有無を優先確認し、tmmプロセスの予期しないクラッシュ・再起動を実悪用の先行シグナルとして扱う
+
+【参照】
+https://my.f5.com/manage/s/article/K000162605
+https://www.cisa.gov/news-events/alerts/2026/09/22/cisa-adds-four-known-exploited-vulnerabilities-catalog
+https://fieldeffect.com/blog/f5-fixes-big-ip-apm-vulnerability
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Red Heron（GreyNoise追跡名: Operation Kapibala・Chinese-speaking・帰属信頼度: 中）（別名: Kapibala / 国家帰属: 不明 / 帰属信頼度: medium）
+活動タイプ: active_campaign/new_target
+------------------------------------------------------------
+
+標的: government/other / global
+マルウェア: Kapibala作戦用カスタムバックドア（未命名・ハッシュのみ判明）
+
+【24時間以内の変化】
+[GreyNoise 2026-09-21] Global Observation Grid（GOG）センサー網でChinese-speakingとみられる単一の攻撃者による2026-05-07以降の活動を確認し、Acronisが以前報告した『Red Heron』クラスタと同一C2ドメイン・マルウェアファミリー・TTPを共有すると結論・作戦名『Kapibala』としてブログ公開
+[BleepingComputer / SecurityWeek / Help Net Security 2026-09-22] GreyNoise調査を引用し実被害規模（WordPress wp2shell経由で49組織・29カ国、ZyXEL GS1900経由で996台・48カ国、西側政府機関から18,566件超の平文パスワード・PII窃取）を報道・窓内で広範な媒体追随を確認
+
+【概要】
+GreyNoiseのGlobal Observation GridがChinese語話者と推定される単一の攻撃者（国家帰属の言及なし）による大規模な脆弱性悪用キャンペーン『Operation Kapibala』を検出し、既知の『Red Heron』クラスタ（Acronis報告・Gitea CVE-2026-60004悪用等で既知）と同一のC2ドメイン・マルウェアファミリー・TTPを共有すると中程度の確度で関連付けた（推測—Chinese語話者の痕跡およびUTC+8圏での活動時間帯という技術的手掛かりに基づく分析であり、政府機関による公式な国家帰属は行われていない）。WordPress Core『wp2shell』脆弱性（CVE-2026-63030・CVE-2026-60137）を2026-07-20頃から悪用し29カ国49組織（主に小規模事業者・政府機関）を侵害、うち西側政府機関1件では17件のAMSIバイパススクリプトを実行し権限昇格・レジストリ抽出を経てバックエンドSQLデータベースから法執行機関関連の平文パスワード・個人情報を含む18,566件超のレコードを窃取した。並行してZyXEL GS1900スマートマネージドスイッチの高深刻度脆弱性CVE-2026-7273（2026-08-17から悪用開始・本脆弱性の実悪用として世界初の公開文書化）を突き48カ国996台（イタリア133・米国129・台湾123・フランス90・韓国69台等）を侵害し、うち564台は工場出荷時デフォルト認証情報のまま稼働していたためデバイス設定・ネットワーク情報・ハッシュ化されたroot権限認証情報を窃取した。同一攻撃者はUbiquiti UniFi OS（CVE-2026-34908/34909/34910）・FlowiseAI（CVE-2026-56271）・Gitea（CVE-2026-60004）・Nuclio（CVE-2026-79756）・SENAITE LIMS（CVE-2026-54569）・Proxmox VE（CVE-2023-54391）・Linux Dirty Pipe（CVE-2022-0847）等、多岐にわたる技術スタックへの脆弱性武器化も並行して観測されている。
+
+攻撃の流れ（判明分）:
+1. WordPress『wp2shell』の脆弱性連鎖（CVE-2026-63030・CVE-2026-60137）またはZyXEL GS1900のCVE-2026-7273・工場出荷時デフォルト認証情報を悪用し初期アクセスを獲得
+2. 侵害環境内でAMSIバイパススクリプトの多重実行・権限昇格・レジストリ抽出等の偵察/横展開を実施し、kapibala/kapibala2等のアカウントを作成
+3. バックエンドSQLデータベースまたはデバイス設定情報へアクセスし、平文パスワード・PII・ハッシュ化認証情報を窃取してC2（p3.981666.xyz等）へ持出
+
+【新規TTP】
+・[T1562.001] Impair Defenses: Disable or Modify Tools — 西側政府機関侵害事案で17件のAMSIバイパススクリプトを実行しWindows Defenderの検知を回避（BleepingComputer 2026-09-22報道）
+・[T1078.001] Valid Accounts: Default Credentials — ZyXEL GS1900スイッチ996台中564台が工場出荷時デフォルト認証情報のまま稼働しており当該認証情報で侵害（GreyNoise 2026-09-21報告）
+
+【IoC】
+IP: 74.48.66.73
+IP: 104.225.153.141
+IP: 172.245.247.21
+Domain: p3.981666.xyz
+Domain: 981666.xyz
+Hash: 0e81d80b40eaacbf6cb1e817fb1824c30a824af5cb4faca4aa9b03fd506d480f
+Hash: 0f6e757e82c4d91df5bd249f775b9970b59dee42cc0dfe40f879d77fc16821c6
+Hash: 2ff2945b13a4cd0e9a65c85af29ea1539e162a516466c0de682dbf9f8a4000b1
+
+【推奨アクション】
+・WordPress Core（wp2shell関連プラグイン/機能）を CVE-2026-63030・CVE-2026-60137 修正版へ即時更新する。ZyXEL GS1900シリーズはCVE-2026-7273のパッチ適用に加え、工場出荷時デフォルト認証情報を使用していないか全数棚卸しし変更する。両製品ともインターネットへの直接公開を避けVPN/管理ネットワーク経由に限定する。IOC（IP・ドメイン・ハッシュ）をSIEM/EDRへ反映し、kapibala/kapibala2等の不審アカウント作成を監視する。
+Splunk SPL: index=network_traffic dest_ip IN ("74.48.66.73","104.225.153.141","172.245.247.21") OR dest_domain="*981666.xyz" | stats count by src_ip, dest_ip, dest_domain
+Splunk SPL: index=wineventlog EventCode=4720 OR EventCode=4732 Account_Name IN ("kapibala","kapibala2") | stats count by ComputerName, Account_Name
+→ IOCのIP/ドメインは変更されうるため、WordPress/ZyXELの脆弱バージョン棚卸しとデフォルト認証情報の是正を優先し、IOC一致は補助的な検知として扱う
+
+【参照】
+https://www.greynoise.io/blog/open-season-on-kapibala-attacker-steals-government-records-wordpress-exploitation
+https://www.bleepingcomputer.com/news/security/chinese-hackers-exploit-multiple-technologies-to-steal-govt-data/
+https://www.securityweek.com/recent-zyxel-switch-vulnerability-exploited-by-chinese-hackers/
+https://www.helpnetsecurity.com/2026/09/22/zyxel-switches-cve-2026-7273-vulnerability-exploited/
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に注目動向該当APT活動なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] Microsoft、AI搭載フィッシングサービス「EvilTokens」を摘発——英国警察と共同で運営者2名を逮捕・関連サイト50件超を差押え
+Microsoft Digital Crimes Unit（DCU）が英国大都市警察サイバー犯罪班と共同で、デバイスコード認証フローを悪用するフィッシング・アズ・ア・サービス「EvilTokens」を摘発した（観測: 2026-09-22・Microsoft公式ブログ/複数報道）。EvilTokensは2026年2月に出現し、デバイスコード認証を大規模に悪用した初のPhaaSであり、生成AIを用いて標的別の誘導文面を自動作成し、侵害後は窃取した受信箱をAIで選別して高価値標的を特定する機能を備えていたと報告されている（観測）。これまでに12,000件超のMicrosoftアカウント・10,000組織超が侵害されたとされる（観測）。英国当局は9月18日にキャナリーワーフおよびナインエルムズの拠点で捜索を実施し、32歳・38歳の男性2名を運営者容疑で逮捕、Microsoftは関連フィッシングキット配布サイト50件超を差し押さえた。MicrosoftのDCUによる法的措置に基づく摘発としては約20年間で40件目、かつ「AI完結型」サイバー犯罪サービスに対する初の摘発と位置づけられている（観測）。インフラは解体されたが、AIを用いたフィッシング量産・受信箱選別という手口自体は他のPhaaSへ模倣・拡散する可能性が高いとMicrosoftは指摘している（推測）。デバイスコード認証フィッシングは業種を問わず組織アカウント侵害の初期侵入経路として引き続き有効であるため、当面はSOCの監視対象として継続フォローが必要（推測）。
+参照: https://www.microsoft.com/en-us/security/blog/2026/09/22/unmasking-eviltokens-getting-to-the-root-of-device-code-phishing/
+参照: https://blogs.microsoft.com/on-the-issues/2026/09/22/disrupting-eviltokens-the-ai-chatbot-built-for-cybercrime/
+参照: https://www.bleepingcomputer.com/news/security/eviltokens-phaas-disrupted-after-compromising-12-000-microsoft-accounts/
+参照: https://thehackernews.com/2026/09/microsoft-takes-down-eviltokens-device.html
+参照: https://www.theregister.com/security/2026/09/22/uk-cops-arrest-2-eviltokens-suspects-microsoft-seizes-50-phishing-kit-websites/5298317
+・[トレンド記事] Forescout調査:OTネットワークの分離は不十分——1セグメント平均54台・重要機器とIT/IoT機器の混在が横展開リスクを拡大
+Forescoutが209組織・実ネットワークセグメント47,700件超（デバイス250万台超）を分析した実態調査を2026-09-22に公表した（観測）。単一デバイスのみの「マイクロセグメント」は全体の17%に留まり、72%は2〜50台、11%は51台超を収容しており、平均すると1セグメントに4種類の機能を持つデバイス54台が混在していたと報告されている（観測）。1台の侵害で同一セグメント内の他デバイスへ波及しうる「Blast Radius（爆発半径）」の観点では、業務・専門サービス、医療、石油・ガスの各業種で最大の平均Blast Radiusが記録された（観測）。IPカメラ・PLC（プログラマブルロジックコントローラ）・ビル自動化コントローラ・患者モニタ・輸液ポンプといった重要な運用/医療機器が、ITやIoT機器と同一セグメントに同居しているケースが多く、これらはForescoutが選定した「2026年で最もリスクの高い接続デバイス」リストの主要機能の半数を占めていたという（観測）。単一のCVEやAPTグループに紐づく事案ではなく、ネットワークアーキテクチャ全体の構造的リスクを定量化した業界統計レポートであり、セグメンテーション不備が侵害後の横展開・重要インフラへの波及を助長する構造的要因として改めて示された形（推測: 個別侵害事例との直接の因果は本調査単体では立証されていない）。
+参照: https://www.securityweek.com/only-13-of-ot-network-segments-are-fully-isolated-analysis/
+参照: https://www.itsecurityguru.org/2026/09/22/only-13-of-ot-network-segments-keep-operational-technology-isolated/
+参照: https://www.infosecurity-magazine.com/news/segmentation-failures-expanding/
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし（戦術予報TF-1はshadow運用のため本レポートには非公開。制度予報forecastsは該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[APT]
+・SideCopy（別名: TAG-140・パキスタン系・Transparent Tribeクラスタと技術重複） / SideCopy-2026-AcademiaReverseRAT → Trellix（Boggavarapu R S S Srinivas Gupta氏・Ravishankar N C氏）が2026-09-22公開（The Hacker News経由・著者Ravie Lakshmanan）・既知グループSideCopy（TAG-140）が従来のインド国防/政府機関標的からインド国内学術機関へ標的を拡大し、mshta.exe悪用スピアフィッシングで既知マルウェアReverseRAT（2021年から使用実績あり）を配布・C2はdns.educationportals[.]biz（45.61.157[.]22・ポート5863・ハードコード鍵で暗号化）。単一ベンダー（Trellix）の技術分析のみで、政府機関による公式帰属・合同勧告・複数ベンダー独立確認・重要インフラ侵害確認のいずれも該当なし（軸P=3点：単一ベンダー帰属レポートのみ）、標的は単一国・単一セクター（インド学術機関）に限定（軸Q=1点）。日本国内昇格トリガー（JPCERT/CC・NISC・警察庁公表／国内組織侵害確認／国内ベンダーアドバイザリ）にも該当せず、pipeline-3-weighting.md判定順4（除外）に帰属。継続監視対象。
+・ShinyHunters / ShinyHunters-2026-FBIPeopleSoftBreachClaim → ShinyHunters自身がBleepingComputer/TechCrunch/The Registerの取材に対し、Oracle PeopleSoftの未パッチ・CVE未採番のゼロデイ（apply.fbijobs.gov配下の/PSEMHUB/パスで発見と主張）を悪用し2026-09-21夜（米国時間）にFBIシステムへ侵入、AWS GovCloudへ横展開してHR/MedLink/Criminal Justice Information Services等から職員・元職員・応募者のPII/PHIを含む2〜3TBのデータを窃取したと2026-09-22に主張（BleepingComputer/TechCrunch/The Register/Nextgov/404 Media等複数媒体が同日報道）。ただし2026-09-22時点でFBI・Oracle・AWSはいずれも侵害の事実を確認しておらず、独立した技術的検証（ベンダーによるフォレンジック確認・政府機関発表）は存在しない攻撃者側主張のみの段階（行動原則3: 帰属判断は慎重に・事実と推測の分離により侵害『確認』とはみなさない）。軸P=3点（単一の未検証主張・新規TTP報告相当のみ、重要インフラ/政府機関侵害『確認』の加点要件は未検証のため不算入）、軸Q=5点（政府機関=法執行機関という重要セクターへの集中攻撃+3、BleepingComputer/TechCrunch/TheRegister/Nextgov/404Media等複数の独立メディアが観測・報道+2）。軸P<8で日本国内昇格トリガーにも該当しないためpipeline-3-weighting.md判定順4（除外）に帰属。真偽未確定の重大主張のため継続監視対象とし、FBI/Oracle/AWSによる公式確認または独立フォレンジック検証が得られ次第再評価する。
+
+本日の集計:
+APT — 本編1件 / 注目動向0件 / 除外2件
+========================================
