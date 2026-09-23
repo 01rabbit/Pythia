@@ -29,6 +29,8 @@ Pythia の中核（予報エンジン）の構造と育て方は `forecaster/REA
 config.yml                               ← Pythia の個性定義（スコープ・優先事項・フェーズ）
 SKILL.md                                 ← ★日次パイプラインの実体（Routines にファイルパス指定で登録・予報 Step 3.5 含む）
 .skills/forecast-verification/SKILL.md  ← 週次予報精度検証スキル（火・木 12:00 JST）
+.skills/collect-evidence/SKILL.md       ← 日次フィード収集・証跡固定スキル（06:00 JST・GitHub Actions
+                                           daily-pipeline.yml が実行時間上限で使えない間の代替・2026-09-24 追加）
 
 # ★Pythia の中核：予報エンジン★
 forecaster/README.md                     ← Pythia の育て方・Phaseロードマップ
@@ -118,6 +120,14 @@ outputs/YYYY-MM-DD/                      ← 日次収集レポート（予報�
 Claude Code Routines が毎日 07:00 JST に `SKILL.md` のパイプラインを自動実行する
 （ルーチンにはルート `SKILL.md` をファイルパス指定で登録する）。
 手動実行も可能（Routine 画面から "Run" をクリック）。
+
+GitHub Actions（`daily-pipeline.yml`）が実行時間上限に達している間は、
+`.skills/collect-evidence/SKILL.md` を毎日 06:00 JST（本体パイプラインの1時間前）の
+Routine として追加登録し、フィード収集・Evidence Ledger 固定を代替する
+（登録は Routines 画面から手動で行う。ツール経由での自動登録手段はない）。
+GitHub Actions の実行時間上限が回復し `daily-pipeline.yml` の `schedule:` を再開する場合は、
+二重収集・競合コミットを避けるため、本 Routine 登録を外すか `daily-pipeline.yml` 側の
+`schedule:` トリガーを止めるか、いずれか一方に統一すること。
 
 ## コミットルール
 
