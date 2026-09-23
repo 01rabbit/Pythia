@@ -196,6 +196,24 @@ def summary_rows(registry, verification, candidates, as_of):
     return rows
 
 
+def _evaluation_fields(row):
+    """--check の突合対象。source.candidate_files/excluded_files は除外する。
+
+    この2つは「コーパスに現存する候補ファイル数」という現在時刻依存の由来情報であり、
+    固定された --as-of-utc の再現性とは無関係に日次パイプラインが候補ファイルを
+    追加するたびに増え続ける（root cause: verify_tactical_forecasts.py の
+    _candidate_files は --as-of-utc でフィルタされず glob 全件をカウントする）。
+    --check が本来保証すべきなのは resolved_n/positive_events/brier_skill_score/
+    auc_lower_95/calibration/evidence_coverage など評価指標が固定 as_of に対して
+    決定論的に再現することであり、コーパスの自然な増加をそれらの指標の劣化と
+    混同してはならない。
+    """
+    row = dict(row)
+    row["source"] = {k: v for k, v in row.get("source", {}).items()
+                      if k not in ("candidate_files", "excluded_files")}
+    return row
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--as-of-utc", required=True, help="前向き評価の固定時刻")
@@ -212,8 +230,8 @@ def main():
         path = os.path.join(args.out_dir, filename)
         rendered = json.dumps(row, ensure_ascii=False, indent=2) + "\n"
         if args.check:
-            current = open(path, encoding="utf-8").read() if os.path.exists(path) else None
-            if current != rendered:
+            current = load(path) if os.path.exists(path) else None
+            if current is None or _evaluation_fields(current) != _evaluation_fields(row):
                 errors.append(path)
         else:
             os.makedirs(args.out_dir, exist_ok=True)
