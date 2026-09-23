@@ -1,0 +1,71 @@
+========================================
+【SOC推奨情報】
+調査期間: 2026-09-24 07:00 〜 2026-09-24 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+--- 高優先度 ---
+
+該当なし
+
+
+--- 中優先度 ---
+
+------------------------------------------------------------
+1. TrustSink: 不正な外部MFAプロバイダー登録によるMicrosoft Entra IDパスワード窃取手法
+観点: zeroday
+採用契機: ε・γ・β
+------------------------------------------------------------
+
+優先度: medium
+対象: Microsoft Entra ID（External Authentication Method / 外部MFAプロバイダー連携機能）
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-23] Varonis Threat Labsが2026-09-16付けで公開した攻撃手法「TrustSink」がBleepingComputer等複数メディアで報道され注目を集めた（原文公開はVaronis 2026-09-16、広範な二次報道は調査窓開始直前〜直後）。日本語メディア（PRSOL:CC）も2026-09-24付けで追随紹介
+
+【概要】
+TrustSinkはVaronis Threat Labsが報告した侵害後（post-compromise）の攻撃手法で、すでにGlobal AdministratorまたはAuthentication Policy Administrator権限を奪取した攻撃者がMicrosoft Entra IDに不正な外部MFAプロバイダー（External Authentication Method）を登録し、正規のサインインフロー内にMicrosoft風の偽パスワード入力画面を挿入して平文パスワードを窃取しつつ有効な署名済みトークンを返すことでエラーなくログインを完了させる手口であり、研究者はEntra以外でも同様の外部認証連携モデルを採用する製品全般に応用可能と指摘しており、さらに厄介な点としてパスワードリセットを行っても不正プロバイダー自体は認証フローに残存し次回サインイン時に新パスワードも窃取され続けるためインシデント対応時に単純なパスワードリセットだけでは不十分であるという運用上の盲点がある（推測: 侵害後の横展開・永続化手段として日本国内でもEntra ID/Azure ADを利用する組織に波及しうる）。
+
+【推奨アクション】
+・Entra ID管理者は「認証方法ポリシー（Authentication Methods Policy）」に登録されている外部認証方法（External Authentication Method）の一覧を棚卸しし、心当たりのないプロバイダーがないか確認する
+・不正な外部MFAプロバイダーを発見した場合はパスワードリセットの前に必ずプロバイダー自体を削除する（リセットのみでは窃取が継続する）
+・Global Administrator / Authentication Policy Administrator の常時保持（standing privilege）を廃止し、PIM等でJust-In-Time付与に切り替える
+・可能な範囲でFIDO2やWindows Hello for Businessなどフィッシング耐性のある認証方式への移行を検討する（今週中の対応事項として計画）
+・Entra ID監査ログで「外部認証方法の追加/更新」「認証方法ポリシーの変更」イベントの監視ルールを追加する
+Splunk SPL: index=azure_ad sourcetype="azure:aad:audit" (OperationName="Update authentication methods policy" OR OperationName="Add external authentication method" OR OperationName="Update external authentication method") | table _time, InitiatedBy, TargetResources, Result
+→ 本手法は事前に高権限アカウント（Global Administrator等）が侵害されていることが前提条件であるため、外部MFAプロバイダー関連ログにイベントが見当たらないことをもって安全とは判断できない。まず特権アカウントの侵害有無自体の調査を優先すべき（推測部分あり: 国内被害事例は本日時点で未確認）。
+
+【参照】
+https://www.bleepingcomputer.com/news/security/rogue-external-mfa-providers-can-steal-passwords-during-logins/
+https://www.varonis.com/blog/trustsink
+
+
+--- 低優先度 ---
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー — SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・ShieldCrash（Microsoft Defender ShieldBreak/CVE-2026-69414のパッチバイパスPoC） → already_reported
+・BreakingWAF（Zafran発見のWAF/CDN構成不備・Akamai/Cloudflare/Fastly/Imperva） → out_of_window
+・EvilTokens PhaaS基盤のMicrosoft主導テイクダウン（AI機能搭載フィッシング・12,000アカウント侵害） → insufficient_evidence
+・Check Point Management Server（CVE-2026-93616）/ F5 BIG-IP APM（CVE-2026-94127）/ Arista VeloCloud Orchestrator（CVE-2026-93952）実悪用ゼロデイ群 → out_of_window
+・Next.js next/og ImageResponse RCE（CVE-2026-94545, CVSS 9.5） → out_of_window
+・WordPress Core RCE（CVE-2026-87902, CVSS 9.2・実悪用確認） → out_of_window
+・Plugin4Shell（Claude Code/Codex/Copilot/Gemini CLIのSHA-pinningバイパス・ゼロクリックRCE） → out_of_window
+・Brevo（Sendinblue）サプライチェーン攻撃（Cloudflare APIキー窃取・ClickFix・WordPressバックドア） → out_of_window
+・J:COMインターネット大規模障害（2026-09-23 10時頃〜22時頃・東京/神奈川/千葉/兵庫等） → insufficient_evidence
+・デジタル庁GSS（ガバメントソリューションサービス）VPN脆弱性起因の不正アクセス・約24.6万件漏えい → out_of_window
+・TeamPCP/PCPJack npmサプライチェーン攻撃・CrowdSecリポジトリ流出 → out_of_window
+・NIST IR 8587（クラウドID トークン保護ガイダンス、CISA/NIST共同） → out_of_window
+・「AI全社導入がSOCに与える影響」Intezer調査（1690万件のSOCアラート分析） → out_of_window
+
+本日の集計:
+SOC推奨情報 — 高0件 / 中1件 / 低0件 / 除外13件

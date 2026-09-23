@@ -1,0 +1,100 @@
+========================================
+【AI攻撃動向】
+調査期間: 2026-09-24 07:00 〜 2026-09-24 07:00 JST（前日07:00起点24時間窓）
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 自律型AIエージェント（Strix/Cairn/Hermes）を用いたMagento系ECサイト大規模スキマー攻撃・カード情報60万件超窃取（Gambit Security）
+カテゴリ: A（A4） / 攻撃者種別: criminal_org
+------------------------------------------------------------
+
+採用契機: A-Q・A-X
+MITRE ATLAS: ATLAS TTP: 詳細未公開
+OWASP: 該当タクティクスなし / 調査中
+対象: retail/other / US
+被害規模: クレジットカード情報60万件超（うち少なくとも2社から）流出・スキマー設置サイト119件・直近5日間で侵害企業27社超・攻撃100件超・攻撃者自身の運用記録によるコスト推定1標的あたり平均25.46ドル（総額推定1.2万〜1.8万ドル、OpenRouterアカウント支出7,005.71ドル/4週間時点）
+
+【24時間以内（または期間内）の変化】
+[Gambit Security 2026-09-23] 攻撃者のステージングサーバへアクセスし、Strix（偵察・脆弱性スキャン）/Cairn（自律エクスプロイト）/Hermes（オーケストレーション・スキマー設置・証跡消去）の3種OSS AIエージェントを組み合わせた運用実態・コスト記録を初公開（時刻情報源に明記なし・調査窓基準時刻を補完値使用）
+[BleepingComputer 2026-09-24] Gambit Security調査を報道。被害組織種別（Fortune500宿泊業・米大手航空会社・米大手産業用品卸売業者・オンラインアパレル小売業者）と60万件超のカード情報流出、119サイトへのスキマー設置を確認
+
+【概要】
+BleepingComputer（2026-09-23付・Gambit Security調査に基づく）によると、中国系とみられる（推測）金銭動機の脅威アクターが、侵入テストAIエージェント「Strix」・自律型エクスプロイトエンジン「Cairn」・攻撃オーケストレーションAIエージェント「Hermes」（claude-opus-4.6を戦術判断に使用、121スキルのうち78件が攻撃関連の「SOUL - Red Team Operator」ペルソナを保持）というオープンソースAIエージェント群を組み合わせ、少なくとも2026年7月から継続する形でMagento等のECサイトを標的とした大規模なクレジットカードスキマー設置キャンペーンを展開していたことが判明した。攻撃者はStrixによる脆弱性スキャン（2026年8月23〜31日の間に138ホストへ146回実行・累計633スキャン時間）で標的を絞り込み、独自のトラフィックランキングサービスで高価値標的を優先付けした後、Cairnに侵害・権限奪取を実行させ、Hermesにスキマーコードの設置（JavaScriptファイルへのコード追記、チェックアウトページへのスクリプトタグ挿入、S3/CDNコンテンツ汚染、データベースフィールド改ざん、Kubernetesデプロイメント改変、cronジョブによる永続化）とカード情報抽出後のMagentoデータベース痕跡の一括消去までを自律的に担わせていた。これまでに少なくとも2社から60万件超のクレジットカード情報が窃取され、119件のサイトにスキマーが設置済み、直近5日間（9月10〜15日）だけで27社超が侵害・100件超の攻撃・105波の攻撃波が確認されており、被害にはフォーチュン500の宿泊業企業・米大手航空会社・米大手産業用品卸売業者・オンラインアパレル小売業者が含まれる。攻撃者自身が残した運用記録から、OpenRouterアカウントで4週間に7,005.71ドルを支出するなど1標的あたり平均25.46ドル（範囲3.13〜79.31ドル、総額推定1万2千〜1万8千ドル）という低コストで運用されていたことも判明した。
+
+攻撃の流れ:
+1. Strixが自律的にスキャンを実行し脆弱なECサイト（Magento等）を発見、独自トラフィックランキングサービスで高価値標的を優先付け
+2. Cairnが発見された脆弱性を悪用して初期侵入・権限奪取を実行
+3. Hermesが複数手法（JS改ざん・スクリプトタグ挿入・S3/CDN汚染・DB改ざん・K8sデプロイメント改変・cron永続化）でカード情報スキマーを設置・運用
+4. カード情報の抽出・外部送出後、Hermesがデータベース上の痕跡（カード情報フィールド）をバッチで消去し証跡を隠蔽
+
+【ATLAS TTPs】
+ATLAS TTP: 詳細未公開
+
+【IoC / 検知シグナル】
+URL/Domain: 確認されず
+Hash: 確認されず
+検知シグナル: Magentoチェックアウトページへの想定外scriptタグ追加・JavaScriptファイルへの追記型コード改ざん・カード情報テーブル/フィールドへの一括読取・消去操作・想定外のKubernetesデプロイメント変更・スキマー再設置を目的とした未承認cronジョブ追加・OpenRouter等LLM APIプロキシサービスからの高頻度・高コスト利用パターン（推測される攻撃側インフラの特徴）
+
+【監視・対策ポイント】
+・Magento等EC基盤のファイル整合性・チェックアウトページDOM変更・DB監査ログ・Kubernetesデプロイメント変更・cron追加を監視する
+Splunk SPL: index=web_app_logs sourcetype=magento (file_path="*checkout*" OR file_path="*onepage*") action IN ("file_modified","script_tag_added") | table _time host file_path user
+Splunk SPL: index=k8s_audit (verb=update OR verb=patch) objectRef.resource=deployments | stats count by objectRef.namespace objectRef.name user.username | where count>0
+→ 正規のデプロイパイプライン外でのファイル変更・DB操作・K8s変更を優先的に確認する。通常の運用担当者アカウントとの相関を取り、深夜・非定型時間帯の変更を特に注視する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/malicious-ai-agents-steal-600k-credit-cards-infect-100-plus-sites-with-skimmers/
+https://gambit.security/blog-posts/autonomous-ai-agents-online-retailers-25-a-company
+https://hackread.com/open-source-ai-agents-breach-credit-card-records/
+https://gbhackers.com/autonomous-ai-agents-hack-online-retailers/
+------------------------------------------------------------
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Meta Muse（macOS版）未文書化設定悪用によるディクテーション乗っ取り・認証トークン窃取ゼロデイ
+カテゴリ: B（B1） 採用契機: A-P・A-S
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当項目なし
+macOSセキュリティ研究者Patrick Wardle氏が2026-09-21にGitHubでPoC「not-a-mused」を公開し、Meta製のAIアシスタントアプリ「Muse」（Mac版）の未文書化設定項目endo_voyager_dictation_endpointが、特権を持たない任意のローカルプロセスから変更可能であることを実証した。この設定を書き換えることで、ユーザーがマイクボタンで発話した音声（ディクテーション）がMeta側サーバではなく攻撃者制御のエンドポイントへ送信されるようになり、プロンプトの窃取・Museへのプロンプトインジェクション・認証トークン窃取が可能になるとThe Hacker News/Malwarebytes（2026-09-22報道）が伝えた。攻撃には被害者端末上での既存のコード実行（例: ClickFix型の1コマンド実行誘導）が前提となるローカル権限昇格型の脆弱性であり、単独でリモートから突破できるものではない。Meta広報は本件を「リモートエクスプロイトではなくローカル権限昇格攻撃でありMuse Macアプリの実質的リスクは低い」との見解を示しつつホットフィックスを提供したとGizmodo等が報じている（Meta自身の一次アドバイザリ・CVE番号は情報源で確認できず）。脆弱性の主要開示自体は本調査窓開始前だが、ホットフィックス提供とMeta公式見解という新規事実が窓内で確認されたため採録する。
+監視: macOS端末上のMuseアプリ設定変更・異常なアウトバウンド通信を監視する
+検知SPL: index=macos_edr process_name="Muse" (file_modify OR config_write) file_path="*endo_voyager_dictation_endpoint*" | table _time host user file_path
+→ Meta公式ドメイン以外へのMuseプロセスからの通信を異常として扱う。ホットフィックス適用状況の資産管理での確認も行う
+参照: https://thehackernews.com/2026/09/one-hidden-meta-muse-setting-could-let.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日のAI攻撃動向を集計する。本編1件（自律型AIエージェントによるMagento系EC大規模スキマーキャンペーン、Gambit Security調査・カード情報60万件超窃取）、参考B1件（Meta Muse AIアシスタントのローカル権限昇格ゼロデイ）を採用。除外7件（Bifrost AIゲートウェイCVEは軸X/軸Yともに低評価、CLOSEDQUORUM・mcp-atlassian・LightRAG関連は既報で変化なし、AI利用ラテラルムーブメント分析記事は理論的リスクのみで除外、RemControlバンキングマルウェアはAI起因が推測レベルのためSection2 APTで扱う）。バースト検出閾値超過の主題はなし。
+
+本日の集計:
+AI攻撃 — 本編1件 / 参考A0件 / 参考B1件 / 除外7件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）1件 / C（インフラ）0件
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー — AI攻撃】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Bifrost AIゲートウェイ 未認証コマンド実行（CVE-2026-90898） → 軸X=4点・軸Y=1点。いずれも高（軸X≥6・軸Y≥4）の基準を満たさず。
+・RemControl Android バンキング型マルウェア（AIアシスタント応答が残存するフィッシングオーバーレイ） → AI起因はGroup-IB自身が「強い示唆」に留め断定していない。事象の主題（Androidバンキング型マルウェア配布キャンペーン）としてはSection2 APT/キャンペーン追跡（RIS-2026-RemControl-AndroidBankingTrojan）で扱い、Section1との二重掲載を避けるためAI攻撃動向からは除外する。
+・Plugin4Shell（Claude Code/Codex/Gemini CLI/GitHub Copilotのゼロクリックプラグイン差し替えRCE） → out_of_window
+・AI Agents Are Rewriting the Rules of Lateral Movement（The Hacker News分析記事） → insufficient_evidence
+・CLOSEDQUORUM（Cisco Talos CAIRN発見の商用LLM合議制C2判断インプラント） → no_change
+・mcp-atlassian HTTPトランスポート認証バイパス（CVE-2026-77244/77254） → no_change
+・LightRAG ログインエンドポイントのブルートフォース対策欠如（CVE-2026-85734） → no_change
