@@ -1,0 +1,294 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-25 07:00 JST
+調査期間: 2026-09-24 07:00 〜 2026-09-25 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-94127 / F5 BIG-IP Access Policy Manager (APM)
+対象: BIG-IPアクセスポリシー+OAuthプロファイルを同一仮想サーバに構成した環境（詳細はF5アドバイザリK000162605参照）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[JPCERT/CC 2026-09-24] 既報CVE（2026-09-23付ゼロデイ特報・KEV登録済み）について本日正式に注意喚起を発行（at260028）
+[watchTowr Labs 2026-09-24] OAuth UserInfoハンドラのヒープ境界外書き込みの技術解析を公開（0x4100バイト固定バッファへAuthorizationヘッダを未検証コピー）
+[CISA KEV 2026-09-25] FCEB期限（dateAdded+3日=2026-09-25）が本日到来。Rapid7が実悪用確認とあわせて改めて周知
+
+【概要】
+F5 BIG-IP Access Policy Manager（APM）にヒープベースのバッファオーバーフロー脆弱性CVE-2026-94127が存在し、APMアクセスポリシーとOAuthプロファイルを同一仮想サーバに構成した環境で、未認証の攻撃者がリモートコード実行を達成できる。F5は2026-09-22に修正版を公開すると同時に実悪用を確認しており、CISAは同日KEVカタログへ追加（FCEB期限2026-09-25）した。本日JPCERT/CCが国内向けに正式な注意喚起を発行し、watchTowr LabsとRapid7が技術詳細・脅威動向の分析を追加公開した。データプレーンの問題でありコントロールプレーンは直接影響を受けない。
+
+攻撃の流れ:
+1. 攻撃者がAPMアクセスポリシー+OAuthプロファイル構成済みの仮想サーバへ細工したAuthorizationヘッダを送信
+2. OAuth UserInfoハンドラのヒープバッファオーバーフローにより制御構造が破壊される
+3. リモートコード実行（詳細な悪用後の挙動は非公開）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・F5提供のiRuleワークアラウンドを適用（即時パッチ適用が困難な場合）
+・APM+OAuthプロファイル構成の有無を全仮想サーバで棚卸しし、該当構成のみ優先対応
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[BIG-IP APMのOAuth UserInfoエンドポイントへの異常に長いAuthorizationヘッダ・crashログを監視]
+Splunk SPL: index=f5_bigip sourcetype=f5:bigip:apm (Authorization_length>4096 OR event=crash) | table _time src dest uri
+→ F5公式のパッチ適用状況・iRule適用状況を資産管理台帳と突合し未対応機器を優先確認する
+
+【参照】
+https://www.jpcert.or.jp/at/2026/at260028.html
+https://labs.watchtowr.com/is-this-a-joke-in-the-auth-header-f5-big-ip-unauth-heap-overflow-to-rce-cve-2026-94127/
+https://www.rapid7.com/blog/post/etr-cve-2026-94127-critical-unauthenticated-rce-in-f5-big-ip-apm/
+https://my.f5.com/manage/s/article/K000162605
+
+------------------------------------------------------------
+2. CVE-2026-87902 / WordPress Core
+対象: 4.7.0〜7.1.1（7.1.2で修正・4.7系列までバックポート）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.2 (Critical)
+状態: 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[Help Net Security 2026-09-23] WordPress 7.1.2でページテンプレート解決処理の未認証ローカルファイルインクルード脆弱性CVE-2026-87902を修正したと報道（窓外だが背景情報として記録）
+[The Hacker News 2026-09-24] パッチ公開から数時間後の2026-09-22 11:49 UTCにPatchstackが初回悪用試行を観測したと報道。Previdianの遠隔測定で少なくとも68件の悪用試行を確認
+
+【概要】
+WordPress Coreのページテンプレート解決処理（get_page_template()）に未認証のローカルファイルインクルード脆弱性CVE-2026-87902が存在し、特定のテーマ構成（page-で始まる最上位ディレクトリを持つ子/親テーマ）とサーバ環境の条件が揃った場合はリモートコード実行に至る。WordPress.orgは2026-09-22に7.1.2（4.7系列までバックポート）で修正し、その数時間後にはPatchstackが最初の悪用試行を観測した。The Hacker Newsの報道によれば、Previdianの遠隔測定で少なくとも68件の悪用試行が確認されており、攻撃はpearcmd.php等のローカルPHPファイルを読み込ませGitHubホストの外部スクリプトを取得させる手口が中心となっている。WordPressは既定で自動更新が有効なため大量侵害には至っていないとみられるが、自動更新を無効化した環境や旧バージョンを塩漬けにした環境はリスクが高い。
+
+攻撃の流れ:
+1. 未認証の攻撃者がページテンプレート解決パラメータを細工しサーバ上の読み取り可能なローカルPHPファイルを指定
+2. テーマディレクトリ構成等の条件が揃った環境で当該ファイルがテンプレートとしてインクルードされる
+3. 外部ホストのペイロード取得・実行によるリモートコード実行（条件付き）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[WordPressのページテンプレートパラメータ経由の異常なファイルパス指定・/tmp配下への書き込みを監視]
+Splunk SPL: index=web_access sourcetype=access_combined uri_query="*page_template*" (uri_query="*pearcmd*" OR uri_query="*..*") | table _time clientip uri_query status
+→ WordPress自動更新の有効化状況とバージョン7.1.2以降への更新有無を資産棚卸しで確認する。page-始まりディレクトリを持つテーマの利用有無を優先確認
+
+【参照】
+https://www.helpnetsecurity.com/2026/09/23/cve-2026-87902-wordpress-7-1-2-security-release/
+https://thehackernews.com/2026/09/attackers-exploit-wordpress-cve-2026.html
+https://patchstack.com/articles/cve-2026-87902-attackers-started-probing-wordpress-sites-hours-after-the-patch/
+https://socradar.io/blog/cve-2026-87902-wordpress-conditional-rce/
+
+------------------------------------------------------------
+3. CVE-2026-48842 / Roundcube Webmail
+対象: 1.6.x（1.6.16未満）/ 1.7.x（1.7.1未満）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: 9.8 (Critical)
+状態: 実悪用確認
+
+【24時間以内の変化】
+[カナダサイバーセキュリティセンター（CCCS） 2026-09-21] 既存勧告AV26-503を更新し、OSSコミュニティ報告に基づく実悪用進行中を警告
+[BleepingComputer 2026-09-24] virtuser_queryプラグインの未認証SQLインジェクションが実悪用されていると報道
+
+【概要】
+Roundcube Webmailのvirtuser_queryプラグインに未認証のSQLインジェクション脆弱性CVE-2026-48842が存在し、preg_replace()によるバックスラッシュエスケープ処理の不備を突いて認証前にデータベースクエリを改ざんできる。カナダサイバーセキュリティセンター（CCCS）がOSSコミュニティ報告に基づき実悪用進行中と警告し、BleepingComputer等複数の海外メディアが後追い報道した。Roundcubeは1.6.16 / 1.7.1で修正済みだが、Roundcubeは国内含む多くのホスティング事業者で採用されているWebメールであるため波及が懸念される。即時更新が困難な場合はvirtuser_queryプラグインの無効化が推奨される。
+
+攻撃の流れ:
+1. 未認証の攻撃者がログイン画面等からvirtuser_query処理へ細工した入力を送信
+2. バックスラッシュエスケープのバイパスによりSQL文が意図しない形で改ざんされる
+3. データベース内容の窃取・改ざん（認証バイパスを含む高難度攻撃と評価）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Roundcubeログイン処理・virtuser_queryプラグイン呼び出し時の異常なSQLエラー・応答遅延を監視]
+Splunk SPL: index=mail_app sourcetype=roundcube (action=login OR component=virtuser_query) (error=* OR sql_error=*) | stats count by src_ip
+→ virtuser_queryプラグインの利用有無を確認し、即時更新できない場合はプラグイン無効化を優先する
+
+【参照】
+https://windowsforum.com/news/cve-2026-48842-roundcube-sql-injection-exploited-via-virtuser_query.445801/
+https://www.bleepingcomputer.com/news/security/hackers-now-exploit-critical-roundcube-flaw-in-code-injection-attacks/
+https://cybersecuritynews.com/roundcube-webmail-vulnerability-exploited/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-89078 / GitLab CE/EE
+CVSS: 9.9 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-09-24] GitLabがセキュリティアップデートを公開したと報道（本CVEを含む深刻な脆弱性複数に対処）
+
+【概要】
+GitLab CE/EEのCI/CD設定内で細工した正規表現を解析する際、二重解放（double free）が発生しうる脆弱性CVE-2026-89078が判明した。認証済みユーザーが特定条件下でGitLabサーバ上の任意コード実行に至る可能性がある。19.2.7・19.3.3・19.4.1で修正済みであり、Security NEXTが国内向けにアップデート公開を報道した。実悪用・PoC公開は本日時点で確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[GitLab CI/CD設定変更履歴・異常終了ログを監視]
+Splunk SPL: index=gitlab sourcetype=gitlab:rails (path="*ci/lint*" OR message="*regex*") status>=500 | stats count by project_id
+→ GitLabのバージョンを19.2.7/19.3.3/19.4.1以降へ更新済みか確認する
+
+【参照】
+https://www.security-next.com/190629
+https://about.gitlab.com/releases/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-89078 — 24時間窓内に発行確認されず
+
+・CVE-2026-93577 / GitLab CE/EE
+CVSS: 9.9 状態: 特記事項なし
+
+【24時間以内の変化】
+[Security NEXT 2026-09-24] GitLabがセキュリティアップデートを公開したと報道（CVE-2026-89078と同一アップデート内で対処された複合脆弱性）
+
+【概要】
+GitLab CE/EEのCI/CD設定内の正規表現をコンパイルする際に整数オーバーフローが発生しうる脆弱性CVE-2026-93577が判明した。CVE-2026-89078と同一のセキュリティアップデート（19.2.7/19.3.3/19.4.1）で修正済み。実悪用・PoC公開は本日時点で確認されていない。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[GitLab CI/CD設定変更履歴・異常終了ログを監視（CVE-2026-89078と共通）]
+Splunk SPL: index=gitlab sourcetype=gitlab:rails (path="*ci/lint*" OR message="*regex*") status>=500 | stats count by project_id
+→ GitLabのバージョンを19.2.7/19.3.3/19.4.1以降へ更新済みか確認する（CVE-2026-89078と同一アドバイザリ内の複合脆弱性）
+
+【参照】
+https://www.security-next.com/190629
+https://about.gitlab.com/releases/
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-93577 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-5430 / WSO2 API Manager / API Control Plane / Traffic Manager / Universal Gateway
+CVSS: 10.0 状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA 2026-09-24] 既報CVE（2026-09-17付参考B採用・実悪用確認済み）をKEVカタログへ新規追加（FCEB期限2026-09-27・時刻情報源に明記なし）
+
+【概要】
+WSO2製品群のJWT認証において、サポート対象外の署名アルゴリズムを用いたJWTが誤って受理される認証バイパス脆弱性CVE-2026-5430について、CISAが本日KEVカタログへ新規追加した。watchTowrのハニーポットが2026-09-13から偽装した管理者権限JWTトークンによる実悪用試行を捕捉済みであり、既報から継続して実悪用が確認されている。国内報道は本日時点で未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[WSO2 API管理プレーンでの異常なJWT署名アルゴリズム・管理者権限昇格ログを監視]
+Splunk SPL: index=wso2 sourcetype=wso2:apim (jwt_alg!=RS256 AND jwt_alg!=HS256) | stats count by src_ip user
+→ WSO2-2026-5328アドバイザリの修正版へ更新済みか確認する
+
+【参照】
+https://security.docs.wso2.com/en/latest/security-announcements/security-advisories/2026/WSO2-2026-5328/
+https://cybersecuritynews.com/critical-wso2-vulnerability/
+
+・CVE-2026-71362 / Adobe Commerce / Commerce B2B / Magento Open Source
+CVSS: 9.1 状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA 2026-09-24] 既報CVE（2026-08-13付参考B採用）をKEVカタログへ新規追加（FCEB期限2026-09-27・時刻情報源に明記なし）
+[ベルギーCCB 2026-09-24] 実悪用中の重大脆弱性として緊急パッチ適用を改めて呼びかけ
+
+【概要】
+Adobe CommerceおよびMagento Open Sourceにおける不正な認可（顧客セッションのアカウント紐付け不備）によりセッションを別顧客アカウントへ切り替え権限昇格が可能な脆弱性CVE-2026-71362について、CISAが本日KEVカタログへ新規追加した。既に2026-08-13時点でSansecが実悪用試行をブロックしたと報じられており、ベルギーCCBも緊急パッチ適用を呼びかけている。国内報道は本日時点で未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[Adobe Commerce/Magentoの異常なセッションID切り替え・顧客ID不一致ログを監視]
+Splunk SPL: index=magento sourcetype=magento:app (event=session_switch OR customer_id_mismatch) | stats count by session_id
+→ APSB26-92（2026年8月パッチ）以降へ更新済みか確認する
+
+【参照】
+https://ccb.belgium.be/advisories/warning-actively-exploited-critical-vulnerability-adobe-commerce-patch-immediately
+https://www.ionix.io/threat-center/cve-2026-71362/
+
+・CVE-2026-63077 / JetBrains TeamCity On-Premises
+CVSS: 9.8 状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[CISA 2026-09-24] 既報CVE（KEV登録済み・2026-08-05）についてランサムウェアグループによる悪用を新たに確認したと発表（Known Ransomware Campaign Use: Unknown→Known・時刻情報源に明記なし）
+[BleepingComputer 2026-09-24] CISA発表を報道。Shadowserverが未パッチのインターネット公開TeamCityサーバ約160台（当初700台超から減少）を確認
+
+【概要】
+JetBrains TeamCity On-Premisesのagent polling protocol経由の認証バイパス脆弱性CVE-2026-63077について、CISAが本日、ランサムウェアグループによる悪用が新たに確認されたと発表し、KEVカタログのKnown Ransomware Campaign Use欄をUnknownからKnownへ更新した。同CVEは2025年7月に修正済み・2026年8月にKEV登録済みで実悪用が確認されていたが、本日新たにランサムウェア関連の悪用という実害の深化が判明した。Shadowserverによれば未パッチのインターネット公開サーバは約160台まで減少している。国内報道は本日時点で未確認。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[TeamCityのagent polling protocol経由の異常な認証回避試行・未承認OSコマンド実行を監視]
+Splunk SPL: index=teamcity sourcetype=teamcity:server (path="*agent*" AND status=401) | stats count by src_ip
+→ 2025.11.7/2026.1.3以降への更新有無とインターネット直接露出の有無を確認する
+
+【参照】
+https://www.bleepingcomputer.com/news/security/cisa-ransomware-gangs-now-exploiting-critical-teamcity-flaw/
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-61732 (Decepticon（自律型侵入テストAIエージェント・OSS）) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。GHSA起点。web crawl結果をLLMメッセージへ未サニタイズで組込みChatML特殊トークンによるプロンプトインジェクションが可能（1.1.17で修正）。BYOK構成が前提で悪用条件が限定的・実悪用未確認。
+・CVE-2026-97359 (HFS2（Rejetto HTTP File Server 2.4.0以前）) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。VulnCheck起点。マルチパートアップロード処理のテンプレートインジェクションによる未認証RCE。開発元は事実上のEOLでパッチ未提供・実悪用未確認（CVE-2026-97360と同一VulnCheckアドバイザリの複合脆弱性）。
+・CVE-2026-97360 (HFS2（Rejetto HTTP File Server 2.4.0以前）) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。VulnCheck起点。マクロディスパッチャの認可モデル欠如による未認証任意ファイルアクセス。パッチ未提供・実悪用未確認（CVE-2026-97359と同一アドバイザリの複合脆弱性）。
+・CVE-2026-19072 (Velociraptor（DFIRツール）) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。Rapid7起点。investigatorロール保持者による内部フィールド改ざんが前提の認証済み脆弱性で未認証RCEには該当しない。実悪用未確認。
+・CVE-2026-93425 (Dokploy（自己ホスト型PaaS）) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。GHSA起点。service:read権限を持つ認証済み組織メンバーによるシェルコマンドインジェクション。0.29.13で修正済み・実悪用未確認。
+・CVE-2026-12227 (Visual Composer Website Builder（WordPressプラグイン）) → 軸1=7点（8点未満）・参考A昇格トリガー該当なし。Wordfence起点。vcv-templateパラメータ経由の未認証ローカルファイルインクルード（45.16.0以前）。実悪用未確認・国内報道なし。
+・CVE-2026-13249 (Honeywell PD45 産業用プリンタ) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。Honeywell自身のPSIRT起点。Web管理インタフェース経由の未認証ファイルアップロードRCE。ICS/産業機器で導入台数が限定的・実悪用未確認。
+・CVE-2026-18467 (Paytium: Mollie payment forms & donations（WordPressプラグイン）) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。Wordfence起点。5.0.3で導入された署名検証の抜け穴（pt_cf_checkout_meta経由）による権限昇格。RCEではなく実悪用未確認。
+・CVE-2026-78308 (DIAEnergie（Delta Electronics エネルギー監視ソフトウェア）) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。ICS-CERT起点。認証バイパス（1.11.00.022未満）。ICS向け製品で国内導入実績未確認・実悪用未確認（CVE-2026-78312と同一アドバイザリの複合脆弱性）。
+・CVE-2026-93352 (Laravel-Mediable（PHPパッケージ）) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。VulnCheck起点。既存パッチ（CVE-2026-49972対応）の不備で.pht拡張子がブロックリストから漏れファイルアップロードRCEに至る。7.0.2で修正済み・実悪用未確認。
+・CVE-2026-96891 (D-Link DIR-825（3.00b32・EOL家庭用ルータ）) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。VulDB起点（信頼性要検証）。rp-l2tpコンポーネントの境界外書き込み。EOL製品でベンダー修正提供見込み低・実悪用未確認。
+・CVE-2026-81549 (IBM DataStage on Cloud Pak for Data) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。IBM PSIRT起点。X-Forwarded-Protoヘッダ検証不備による認証済み情報漏洩。RCEではなく実悪用未確認。
+・CVE-2026-95699 (iSteamXモバイルアプリ（IoTデバイス連携）) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。AWSポリシー設定不備によるMQTTトピックのワイルドカードアクセス。認証済みユーザー間の権限分離不備で対象製品の国内知名度低・実悪用未確認。
+・CVE-2026-93291 (Omni C20) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。ICS-CERT起点。証明書検証不備によるMITM。実悪用未確認・国内導入実績未確認。
+・CVE-2026-13016 (ServiceNow AI Platform) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。ServiceNow PSIRT起点。未認証SQLインジェクション（特定条件下）。SaaS側で既にベンダーが修正配信済みで顧客対応不要・実悪用未確認。
+・CVE-2026-61604 (ixo Blockchain（Layer 1ブロックチェーン）) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。GHSA起点。x/bondsモジュールの送金元検証不備。ニッチな暗号資産プロジェクトで国内影響未確認・実悪用未確認。
+・CVE-2026-61741 (http4s-scala-xml（Scala HTTPライブラリ）) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。GHSA起点。SAXParserFactory既定設定によるXXE。0.24.1/1.0.0-M39で修正済み・実悪用未確認。
+・CVE-2026-61742 (DBHub（データベースMCPサーバ）) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。GHSA起点。HTTPトランスポートモード時の未認証MCPエンドポイント露出。0.22.5で修正済み・実悪用未確認。AI/MCPサーバの設定不備トレンドとしてSection4 SOC推奨情報で別途言及。
+・CVE-2026-86860 (ServiceNow AI Platform) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。ServiceNow PSIRT起点。認可欠如による情報抽出・権限昇格（特定条件下）。SaaS側で既にベンダーが修正配信済み・実悪用未確認（CVE-2026-13016と同日公表の別脆弱性）。
+・CVE-2026-91187 (nimble_zta（dashbit製Elixirライブラリ・Cloudflare Zero Trust連携）) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。暗号署名検証の戻り値パターンマッチ不備によるCloudflareサービストークン偽装。ニッチなElixirパッケージで国内導入実績未確認・実悪用未確認。
+・CVE-2026-81630 (Botslab G980H（ダッシュカメラ）) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。ICS-CERT起点。ファームウェア更新の署名検証不備。コンシューマ向けIoT機器で実悪用未確認。
+・CVE-2026-90481 (PortSwigger Burp Suite DAST（旧Burp Suite Enterprise Edition）) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。MITRE起点。代替パス・チャネル経由の認証バイパス（2026.8未満）。ペネトレーションテスト用ツールでありSOC/セキュリティ診断部門への影響の観点からSection4 SOC推奨情報で別途言及。実悪用未確認。
+・CVE-2026-97055 (SigNoz（オブザーバビリティプラットフォーム）) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。VulnCheck起点。JWTトークナイザ署名鍵の既定値が空文字列となる設定不備（v0.8.0〜v0.143.0未満）。実悪用未確認・国内導入実績未確認。
+・CVE-2026-97404 (OpenStack Zaqar（メッセージングサービス）) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。MITRE起点。空のURL-Signatureヘッダによる認証・署名検証バイパス（22.0.2未満）。レガシーOpenStackコンポーネントで国内導入実績未確認・実悪用未確認。
+・CVE-2026-78312 (DIAEnergie（Delta Electronics エネルギー監視ソフトウェア）) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。ICS-CERT起点。パストラバーサル（1.11.00.022未満）。実悪用未確認（CVE-2026-78308と同一アドバイザリの複合脆弱性）。
+・CVE-2026-79766 (Termix（Web版サーバ管理プラットフォーム）) → 軸1=3点（8点未満）・参考A昇格トリガー該当なし。GHSA起点。認証済み管理者によるACME/certbotコマンドインジェクション（2.4.1〜2.5.1）。管理者権限が前提で悪用条件が限定的・実悪用未確認。
+・CVE-2026-93289 (ペアリング処理を持つ組込み機器（ICS-CERTアドバイザリ・対象製品詳細は原典参照）) → 軸1=6点（8点未満）・参考A昇格トリガー該当なし。ICS-CERT起点。ペアリング処理時の未認証コマンドインジェクション。原典で対象製品名の詳細確認が必要・実悪用未確認。
+・CVE-2026-28324 (SolarWinds Observability Self-Hosted) → 軸1=7点（8点未満）・参考A昇格トリガー該当なし。不十分な整合性チェックによる未認証RCE（非既定・非安全構成が前提）。2026.2.3で修正済み・実悪用未確認・国内報道なし。
+・CVE-2026-28325 (SolarWinds Observability Self-Hosted) → 軸1=5点（8点未満）・参考A昇格トリガー該当なし。信頼できないデータのデシリアライゼーション（特定通信モード構成時）。2026.2.3で修正済み・実悪用未確認（CVE-2026-28324と同一アドバイザリの複合脆弱性）。
+
+[APT]
+・不明（帰属未確定） / RIS-2026-TeamFiltration-M365Compromise → 軸P1/軸Q1（8点未満）・参考A昇格トリガー該当なし（国内組織侵害未確認）。既定パスワードのM365アカウント7件侵害のみで規模限定。Section4 SOC推奨情報で別途言及。
+・不明（帰属未確定） / RIS-2026-GhostServiceAccounts-Chile → 軸P1/軸Q1（8点未満）・参考A昇格トリガー該当なし（南米単一国・国内組織侵害未確認）。Section4 SOC推奨情報で別途言及。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編3件 / 参考A2件 / 参考B3件 / 除外29件
+APT — 本編0件 / 注目動向6件 / 除外2件
+AI攻撃 — 本編2件 / 参考A0件 / 参考B3件 / 除外2件
+SOC推奨情報 — 高0件 / 中2件 / 低3件 / 除外2件
+========================================
