@@ -1,0 +1,176 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-26 07:30 JST
+調査期間: 2026-09-25 07:00 〜 2026-09-26 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+------------------------------------------------------------
+1. CVE-2026-87902 / WordPress Core
+対象: 4.7.0〜7.1.1（7.1.2で修正）
+------------------------------------------------------------
+
+優先度: critical
+CVSS: 9.2 (Critical)
+状態: KEV登録済み / 実悪用確認 / PoC公開
+
+【24時間以内の変化】
+[CISA 2026-09-25] CVE-2026-87902をKEVカタログへ新規追加（FCEB期限2026-09-28）
+[Tech Times 2026-09-25] 悪用試行がWebシェル設置に発展し累計35万サイト超に影響拡大したと集計報道
+
+【概要】
+WordPress Coreのページテンプレート解決処理get_page_template()に未認証のローカルファイルインクルード脆弱性があり、テーマ外の任意phpファイルを読み込ませることが可能で条件が揃うとリモートコード実行に至る。WordPress.orgが2026-09-22に7.1.2を公開し4.7系まで遡って修正をバックポートしたが数時間後にPatchstackが初回悪用試行を観測し、Previdianの遠隔測定でも悪用試行が継続確認されており、本日CISAがKEVカタログへ新規追加した。WordPressは世界で最も使われるCMSであり国内サイトへの影響も想定される。
+
+攻撃の流れ:
+1. get_page_template()のテーマディレクトリ外パス解決不備を悪用しローカルの任意phpファイルをテンプレートとして読み込ませる
+2. PHP実行環境・テーマ構成の条件が揃う場合、読み込んだファイル経由でリモートコード実行に至る
+3. Webシェル設置等による侵害の継続・拡大
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・WordPressアクセスログ・PHPエラーログでのテーマ外ファイル読み込み試行の監視
+Splunk SPL: index=web sourcetype=access_combined uri_path="*wp-content*" (uri_query="*..%2f*" OR uri_query="*..\/*") | stats count by clientip, uri_path
+Splunk SPL: index=web sourcetype=php_error "get_page_template" | stats count by host
+→ 正規テーマ切替APIとの誤検知を避けるため、テーマディレクトリ外パスを含むリクエストに限定して確認する
+
+【参照】
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+https://thehackernews.com/2026/09/wso2-and-adobe-commerce-flaws-exploited.html
+https://www.techtimes.com/articles/328042/20260925/wordpress-patch-became-exploit-blueprint-cve-2026-87902-webshells-hit-350k-sites.htm
+
+------------------------------------------------------------
+2. CVE-2026-48842 / Roundcube Webmail
+対象: 1.6.x（1.6.16未満）／1.7.x（1.7.1未満）
+------------------------------------------------------------
+
+優先度: critical
+CVSS: 9.8 (Critical)
+状態: 実悪用確認
+
+【24時間以内の変化】
+[The Hacker News 2026-09-25] Shadowserverの実測でインターネット露出インスタンス52.3万台超（うち脆弱と判定されたホスト10台、2026-09-23時点）を新規確認。カナダサイバーセキュリティセンター（CCCS）が公式に実悪用進行中と警告
+[SecurityWeek 2026-09-25] 「攻撃者の照準に入っている」として引き続き注意喚起を継続
+
+【概要】
+virtuser_queryプラグインのpreg_replace()バックスラッシュエスケープ処理不備による未認証SQLインジェクション。カナダサイバーセキュリティセンター（CCCS）がOSSコミュニティ報告に基づき実悪用進行中と公式警告し、Shadowserverの実測で52.3万台超のインターネット露出インスタンスと脆弱性未修正10台を新規確認した。認証情報・保存メールへの不正アクセスに繋がりうる。国内報道は本日時点で未確認。
+
+攻撃の流れ:
+1. virtuser_queryプラグインの未認証エンドポイントへSQLインジェクションペイロードを送信
+2. preg_replace()のバックスラッシュエスケープ処理不備を突いてクエリを改変
+3. メールアカウント認証情報・保存メッセージへの不正アクセス
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Roundcube virtuser_queryエンドポイントへの異常クエリパラメータ監視
+Splunk SPL: index=web sourcetype=access_combined uri_path="*roundcube*" (uri_query="*'*" OR uri_query="*UNION*" OR uri_query="*SELECT*") | stats count by clientip
+→ 正規のIMAP検索クエリとの誤検知に留意し、SQL構文断片を含むリクエストのみ抽出する
+
+【参照】
+https://thehackernews.com/2026/09/roundcube-pre-auth-sql-injection-flaw.html
+https://www.securityweek.com/roundcube-webmail-vulnerability-in-attackers-crosshairs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+・CVE-2026-93462 / baserCMS
+CVSS: 6.9
+国産オープンソースCMS baserCMSに複数の脆弱性が公開された。認証欠落（CVE-2026-93462、CVSS基本値5.3〜6.9）、クロスサイトスクリプティング3件（CVE-2026-93460/93463/93464、CVSS基本値5.1〜5.4）、SQLインジェクション（CVE-2026-62956、CVSS基本値5.3〜6.3）で構成される。開発者は最新版（5.4.1・5.3.1・5.2.10）へのアップデートを推奨している。
+IoC: 確認されず
+監視: baserCMS管理画面・DBクエリログの異常監視
+Splunk SPL: index=web sourcetype=access_combined uri_path="*/admin/*" | stats count by clientip, uri_path
+→ 国内利用サイトでの適用状況を優先的に確認する
+参照: https://jvn.jp/jp/JVN14353754
+
+・CVE-2026-97150 / baserCMS用プラグイン「アドオンマイグレーター」
+CVSS: 7.2
+baserCMS用プラグイン「アドオンマイグレーター」に、管理者権限でログイン可能な攻撃者がシステム上の任意ファイルを読み取り・削除できる脆弱性が公開された。国産CMSのプラグインエコシステムに関わる脆弱性であり、報告は三井物産セキュアディレクション。5.2.1以上へのアップデートで対処可能。
+IoC: 確認されず
+監視: 管理画面ログイン後の異常なファイル操作の監視
+Splunk SPL: index=web sourcetype=access_combined uri_path="*addon-migrator*" | stats count by clientip
+→ 管理者アカウントの侵害有無とあわせて確認する
+参照: https://jvn.jp/jp/JVN21754394
+
+・CVE-2026-94545 / Next.js（ImageResponse／画像生成モジュール）
+CVSS: 9.5
+Next.jsの画像生成モジュール「ImageResponse」のNode.js実装において、攻撃者が制御可能な値がSVGのコンテンツ・属性・スタイルへ渡され画像生成される場合にリモートコード実行へ至る可能性がある脆弱性。CVSS基本値9.5(Critical)。開発チームはNext.js 16.3.6で修正し、即座に更新できない場合の回避策も提示している。Next.jsは国内外で広く使われるReactフレームワークであり波及範囲が大きい。
+IoC: 確認されず
+監視: ImageResponseエンドポイントへの異常なSVGペイロード監視
+Splunk SPL: index=web sourcetype=access_combined uri_path="*og*" OR uri_path="*image*" | search payload="*<svg*" | stats count by clientip
+→ OGP画像生成等の正規SVG処理との切り分けが必要
+参照: https://www.security-next.com/190616
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+・CVE-2026-65660 / Microsoft SharePoint Server
+CVSS: 8.8
+オンプレミスMicrosoft SharePoint Serverのコードインジェクション脆弱性。認証済み低権限の攻撃者が特別に細工したリクエストを送信することでサーバ上で任意コードを実行できる。CISAが実悪用の証拠に基づきKEVカタログへ新規追加した。2026年8月修正ビルドへのアップグレードが必要。
+IoC: 確認されず
+監視: SharePoint ULSログでの異常なリクエストパターン監視
+Splunk SPL: index=sharepoint sourcetype=iis | stats count by cs_uri_stem, c_ip | where count > 50
+→ 低権限アカウントからの管理系操作試行を優先確認する
+参照: https://www.cisa.gov/news-events/alerts/2026/09/25/cisa-adds-two-known-exploited-vulnerabilities-catalog
+参照: https://securityaffairs.com/199777/hacking/u-s-cisa-adds-microsoft-sharepoint-and-mikrotik-routeros-flaws-to-its-known-exploited-vulnerabilities-catalog.html
+
+・CVE-2026-67279 / MikroTik RouterOS（SSHサービス・MikroTrick連鎖）
+CVSS: 6.9
+MikroTik RouterOSのSSHサービスにおいて、クライアント要求によるSSH再鍵交換後、認証完了前にセッションチャネルを開き管理対象ファイル名前空間（サポート・設定情報を含む）へファイル作成・上書きが可能な未認証の脆弱性。既報のMikroTrick連鎖（CVE-2026-67276・CVE-2026-86060・CVE-2026-67277、2026-09-06系列で継続追跡中）に連なる新規CVEで、CERT Polskaが2026-09-02以降の実悪用を確認し、CVE-2026-86060と連鎖させることで完全な管理者権限奪取に至ると報告している。CISAが本日KEVカタログへ新規追加した。
+IoC: 確認されず
+監視: RouterOS上の不審な管理者アカウント作成・SSH再鍵交換の異常パターン監視
+Splunk SPL: index=network sourcetype=mikrotik_log message="*user*added*" OR message="*ops*" | stats count by host
+→ デフォルトで作成されないはずのアカウント（例: ops）の出現を優先確認する
+参照: https://thehackernews.com/2026/09/mikrotrick-chain-let-attackers-take.html
+参照: https://www.securityweek.com/mikrotik-patches-critical-flaws-chained-to-hack-routers/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+[CVE]
+・CVE-2026-100075 (Linux kernel（RDMA/srpt）) → CVSS9.8だがカーネル内のRDMA構成に限定される修正コミットであり一般的な未認証リモート攻撃面ではない・KEV未登録・PoC未確認・軸1=3点で除外
+・CVE-2026-14281 (Automation Web Platform（WooCommerce用WordPressプラグイン）) → CVSS9.8の権限昇格（REST権限チェック欠落）だがKEV未登録・PoC未確認・実悪用未確認・軸1=6点<8で除外
+・CVE-2026-92161 (FriendsOfFlarum OAuth（Flarum拡張）) → CVSS9.8のOAuthメール検証不備によるアカウント乗っ取りだがKEV未登録・PoC未確認・ニッチなフォーラムソフトウェア拡張のため軸1=6点<8で除外
+・CVE-2026-92609 (Apache Qpid Broker-J) → CVSS9.8のセッション固定（HTTP管理認証）だがKEV未登録・PoC未確認・実悪用未確認・軸1=4点<8で除外
+・CVE-2026-93643 (Zimbra Collaboration Suite（OnlyOffice連携）) → CVSS9.8の未認証パストラバーサル書き込み→zimbraユーザーとしてのコマンド実行だがKEV未登録・PoC未確認・実悪用未確認・軸1=7点<8で除外（同一rapid7アドバイザリのCVE-2026-93641/93642/93647も本欄参照）
+・CVE-2026-97230 (IO::Socket::SSL::SelfCertificate（Perl CPANモジュール）) → 通常の脆弱性ではなく、CPANへ公開された同モジュールv1.00自体に難読化URLからPythonコードを取得・実行する悪意あるコードが混入していた事案（サプライチェーン型）。運用対応はSection 4 SOC推奨情報に別掲。軸1判定になじまないため本欄は除外区分とする
+・CVE-2026-48482 (GLPI（IT資産管理ソフトウェア）) → CVSS9.4のフォームインポート経由パストラバーサルだが管理者権限での認証済み操作が前提・KEV未登録・PoC未確認・軸1=4点<8で除外
+・CVE-2026-93641 (Zimbra Collaboration Suite（Classic UI）) → CVSS9.3の共有通知偽装によるストアドXSS（受信者のクリックが前提）・KEV未登録・PoC未確認・軸1=4点<8で除外
+・CVE-2026-93642 (Zimbra Collaboration Suite（Modern UI）) → CVE-2026-93641と同一手口のストアドXSS（Modern UI版）・KEV未登録・軸1=4点<8で除外
+・CVE-2026-93647 (Zimbra Collaboration Suite（カレンダー招待）) → CVSS9.3のカレンダーCOUNTERメッセージ経由ストアドXSS・KEV未登録・軸1=4点<8で除外
+・CVE-2026-95832 (kitty（ターミナルエミュレータ）) → CVSS9.3のカラー制御エスケープコード処理不備によるコマンド実行だが端末へ出力する経路が前提でありリモート未認証攻撃面ではない・軸1=3点<8で除外
+・CVE-2026-97063 (X-SpringBoot（デモ用アプリケーションフレームワーク）) → CVSS9.3の認証コード漏洩だがニッチな中国製デモアプリケーション・KEV未登録・PoC未確認・軸1=6点<8で除外
+・CVE-2026-97064 (X-SpringBoot（デモ用アプリケーションフレームワーク）) → CVSS9.3のハードコードされたマスターログインコードによる認証バイパス・CVE-2026-97063と同一製品・軸1=6点<8で除外
+・CVE-2026-100389 (GestSup（ヘルプデスクソフトウェア）) → CVSS9.2の未認証IMAP添付ファイル経由RCEだがニッチな製品・KEV未登録・PoC未確認・軸1=6点<8で除外
+・CVE-2026-100390 (Zoraxy（リバースプロキシ）) → CVSS9.1のIPv6アドレス偽装による認可バイパス・KEV未登録・PoC未確認・ニッチな製品・軸1=6点<8で除外
+・CVE-2026-39353 (InvoicePlane（OSS請求書管理）) → CVSS9.1のテンプレートディレクトリ経由コード実行だが管理者の書き込み権限が前提・KEV未登録・軸1=3点<8で除外
+・CVE-2026-42322 (Piwigo（OSSフォトギャラリー）) → CVSS9.1のロゴアップロード拡張子検証不備だが管理者権限が前提・KEV未登録・軸1=3点<8で除外
+・CVE-2026-62262 (Piwigo（OSSフォトギャラリー）) → CVSS9.1の評価機能経由の未認証呼び出し不備・KEV未登録・PoC未確認・軸1=3点<8で除外（CVE-2026-42322と同一製品の別脆弱性）
+・CVE-2026-84458 (Zammad（ヘルプデスク／カスタマーサポート）) → CVSS9.1のSSOメールアドレス一致によるアカウント紐付け不備・特定設定（自動アカウントリンク有効時）が前提・KEV未登録・軸1=6点<8で除外
+・CVE-2026-89055 (Customer Reviews for WooCommerce（WordPressプラグイン）) → CVSS9.1の認可バイパスだがKEV未登録・PoC未確認・実悪用未確認・軸1=6点<8で除外
+・CVE-2026-92288 (Lemonldap::NG::Portal（Perl製SSO/認証基盤）) → CVSS9.1のOAuth2トークンイントロスペクション認証不備・KEV未登録・PoC未確認・軸1=6点<8で除外
+・CVE-2026-93399 (Bookly（WordPress予約プラグイン）) → CVSS9.1のIDOR（複数AJAXアクションのID検証不備）・KEV未登録・PoC未確認・軸1=3点<8で除外
+・CVE-2026-100382 (MediaWiki ExternalData拡張機能（Wikimedia Foundation）) → EUVD独立列挙のみでNVD/KEV未収載（euvd_only）。CVSS10.0のOSコマンドインジェクションだがExternalData拡張機能自体の利用は限定的でありKEV未登録・PoC未確認・実悪用未確認・軸1=6点<8で除外。3.7への更新を推奨
+
+[APT]
+該当なし
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編2件 / 参考A3件 / 参考B2件 / 除外23件
+APT — 本編0件 / 注目動向5件 / 除外0件
+AI攻撃 — 本編1件 / 参考A0件 / 参考B2件 / 除外0件
+SOC推奨情報 — 高2件 / 中3件 / 低1件 / 除外0件
+
+========================================
