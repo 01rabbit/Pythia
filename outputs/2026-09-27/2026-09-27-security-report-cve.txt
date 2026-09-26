@@ -1,0 +1,137 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-27 07:30 JST
+調査期間: 2026-09-26 07:00 〜 2026-09-27 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に本編採用CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: エックスサーバー 2026-09-26 報道
+
+・CVE-2026-87902 / WordPress Core
+CVSS: 9.2 状態: KEV登録済み / 実悪用確認
+
+【24時間以内の変化】
+[エックスサーバー 2026-09-26] 国内大手レンタルサーバー事業者エックスサーバーがCVE-2026-87902を明示した緊急注意喚起を発行していることを確認（前日時点は国内報道未確認と評価していたが本日新たに確認）
+[さくらインターネット 2026-09-26] さくらインターネットも同CVE番号を明示した注意喚起を発行していることを確認
+
+【概要】
+WordPress Coreのページテンプレート解決処理（get_page_template()）における未認証ローカルファイルインクルード脆弱性（条件付きRCE）。2026-09-22の7.1.2公開後に実悪用が拡大し、CISAが2026-09-25付でKEVカタログへ新規追加済み（既報）。本日新たに、国内大手レンタルサーバー事業者のエックスサーバー・さくらインターネットが本CVE番号を明示した注意喚起を発行していることを確認し、国内影響ありと判断して参考A格上げとした。EPSSパーセンタイルも86.28%から97.11%へ上昇している。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[WordPressアクセスログでのテンプレートパラメータ異常値・不審なファイルインクルード試行を監視]
+Splunk SPL: index=web sourcetype=access_combined uri_path="*wp-*" | regex _raw="(\.\.\/|php:\/\/|data:\/\/)" | stats count by clientip
+→ 7.1.2未適用サイトの洗い出しと優先パッチ適用を最優先とする
+
+【参照】
+https://www.wordpress.org/news/
+https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-87902 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-35273 / Oracle PeopleSoft Enterprise PeopleTools（PSEMHUB経由）
+CVSS: 9.8
+2026年6月に緊急パッチが提供済みのOracle PeopleSoft PeopleTools認証不備脆弱性CVE-2026-35273について、ShinyHunters（Mandiant追跡番号UNC6240）がWAFのパス文字列一致ルールをURLエンコードでバイパスする新手口（/PSEMHUB/の1文字を%50等にエンコード）で大規模な実悪用を再開したことをGoogle Mandiantが確認し報道された。WAFのみに依存しパッチを未適用の組織が標的となっており、高等教育・技術・ITサービス・医療・農業・運輸・政府機関など世界中の複数システムでWebシェル設置が確認されている。詳細な攻撃者側TTPはSection2 APT活動セクション（ShinyHunters/UNC6240）を参照。
+IP: 162.219.30.165; Filename: x.jsp; Filename: u.jsp; Filename: Ple64.exe
+
+監視: [PeopleSoft Webサーバアクセスログでの/PSEMHUB/類似パスへのURLエンコード文字列を含む異常リクエスト、WAFログとオリジンサーバログのデコード差異を監視]
+Splunk SPL: index=web sourcetype=access_combined uri_path="*%50SEMHUB*" OR uri_path="*%2550SEMHUB*" | stats count by clientip, uri_path
+Splunk SPL: index=os sourcetype=WinEventLog:Security OR sourcetype=linux_secure process_name IN ("Ple64.exe") | stats count by host, process_name
+→ WAFで正規化済みログのみを見ると素通りするため、必ずオリジン(アプリケーションサーバ)側の生アクセスログでエンコード済み文字列を確認すること
+
+参照: https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks
+
+・CVE-2026-97163 / Joomla サードパーティ拡張機能6件（UP plugin ×4・AcyMailing Enterprise・YouTube Gallery）
+CVSS: 10.0
+Joomla PSIRTが同一窓で公開したサードパーティ拡張機能6件の脆弱性群。代表: CVE-2026-97163（UP plugin/lomart.fr、TLS検証無効なGitHub経由コード取得による未認証リモートコード設置、CVSS10.0）。他5件: CVE-2026-97160（UP plugin認証済み特権PHPコマンドインジェクション）・CVE-2026-97161（UP plugin パストラバーサル）・CVE-2026-97162（UP plugin SQLインジェクション）・CVE-2026-94132（AcyMailing Enterprise POP3添付経由RCE）・CVE-2026-94130（YouTube Gallery未認証SQLインジェクション）。いずれもGitHub上にPoC公開済みだが実悪用は未確認。ニッチな第三者拡張機能が対象でJoomla本体・国内報道は未確認。
+IoC: 確認されず
+
+監視: [Joomlaプラグインディレクトリへの新規ファイル書込み・検索パラメータのSQL構文異常を監視]
+Splunk SPL: index=web sourcetype=access_combined uri_path="*plugins/content/up*" OR uri_path="*com_acym/upload*" | stats count by clientip, uri_path
+→ 対象拡張機能を導入していない環境では影響なし。導入状況の棚卸しを優先する
+
+参照: https://github.com/murrez
+
+・CVE-2026-18143 / Request a Quote for WooCommerce（WordPressプラグイン）
+CVSS: 9.8
+WordPress「Request a Quote for WooCommerce」プラグインの見積りポップアップ機能（afrfq_submit_quote_via_popup()）が拡張子検証なしでファイルを保存するため、未認証の任意ファイルアップロードからWebシェル設置・RCEに至る。Wordfenceは記事タイトルで実悪用の可能性に言及しているが本文での確証は取れておらず、実悪用は未確認として扱う。国内報道は未確認。
+IoC: 確認されず
+
+監視: [wp-content/uploads配下の見積り一時ディレクトリへのPHPファイル書込みを監視]
+Splunk SPL: index=web sourcetype=access_combined uri_path="*wp-content/uploads*" file_ext=php | stats count by clientip
+→ 見積りポップアップ機能を有効化している環境が対象。無効化・アクセス制限も暫定緩和策となる
+
+参照: https://www.wordfence.com/blog/
+
+・CVE-2026-82901 / Ultra Addons for Contact Form 7（WordPressプラグイン）
+CVSS: 9.8
+WordPress「Ultra Addons for Contact Form 7」プラグインのPDF Generatorアドオン（既定無効）が有効な場合のみ、署名フィールド経由で拡張子検証なしのファイルアップロードが可能となりRCEに至る。前提条件（非既定アドオン有効化）により実効性は限定的。実悪用・国内報道は未確認。
+IoC: 確認されず
+
+監視: [uacf7-uploads配下へのPHPファイル書込みを監視]
+Splunk SPL: index=web sourcetype=access_combined uri_path="*uacf7-uploads*" | stats count by clientip
+→ PDF Generatorアドオンを有効化していない環境は影響なし
+
+参照: https://www.wordfence.com/blog/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-100382 (MediaWiki ExternalData Extension（Wikimedia）) → CVSS v4.0=10.0の未認証OSコマンドインジェクションだがNVDステータスReceived（解析途上）・KEV未登録・PoC未確認・実悪用未確認・単一の一次パッチ情報のみで軸1=6点<8のため除外
+・CVE-2026-100706 (kyverno（Kubernetes Policy Engine）) → CVSS9.9のnamespace越境権限昇格だがGHSA修正済み(1.19.1)・KEV未登録・PoC/実悪用未確認・軸1=4点<8のため除外
+・CVE-2026-100714 (Froxlor（サーバ管理パネル）) → letsencryptchallengepath設定の未エスケープによるコマンドインジェクション（CVSS9.1/9.4）・既存低権限アカウントを要する構成のためRCE/認証バイパスに該当せず・2.3.12で修正済み・軸1=3点<8のため除外（VulnCheckアグリゲータCNAのため個別記録）
+・CVE-2026-100715 (Froxlor（サーバ管理パネル）) → FTPアカウント削除cronのシンボリックリンク追跡による任意ファイル削除（CVSS9.6/8.5）・2.3.12で修正済み・KEV/PoC/実悪用未確認・軸1=3点<8のため除外（VulnCheckアグリゲータCNAのため個別記録）
+・CVE-2026-100716 (Froxlor（サーバ管理パネル）) → 顧客データエクスポートcronのパス検証不備によるシンボリックリンク経由権限昇格（CVSS9.9/9.4）・2.3.12で修正済み・KEV/PoC/実悪用未確認・軸1=3点<8のため除外（VulnCheckアグリゲータCNAのため個別記録）
+・CVE-2026-100717 (Froxlor（サーバ管理パネル）) → Validate::validateUrlのuserinfo部CRLF検証不備（CVSS9.9/8.5）・2.3.12で修正済み・KEV/PoC/実悪用未確認・軸1=3点<8のため除外（VulnCheckアグリゲータCNAのため個別記録）
+・CVE-2026-100720 (Froxlor（サーバ管理パネル）) → SSL証明書発行者名の未サニタイズ表示による格納型XSS（CVSS8.7/9.3）・要UI操作・2.3.12で修正済み・軸1=3点<8のため除外（VulnCheckアグリゲータCNAのため個別記録）
+・CVE-2026-85984 (miniOrange OTP Login, Verification and SMS Notifications（WordPress）) → 認証バイパス（依頼時想定の任意ファイルアップロードではなく実体は認証バイパスと判明・CVSS9.8）・4設定の同時有効化を要する高い前提条件・KEV/PoC/実悪用未確認・軸1=6点<8のため除外
+・CVE-2026-100606 (Flowise（AIアプリ開発OSSプラットフォーム）) → SSOコールバックのステータス検証不備による認証バイパス（CVSS v4.0=9.2）・Enterprise/SSO有効構成限定・KEV/PoC/実悪用未確認・軸1=7点<8のため除外
+・CVE-2026-100607 (Flowise（AIアプリ開発OSSプラットフォーム）) → SSO/ローカルユーザーのメールのみでの名寄せによる認証バイパス（CVSS v4.0=9.2）・Enterprise/SSO有効構成限定・KEV/PoC/実悪用未確認・軸1=7点<8のため除外
+・CVE-2026-100684 (Budibase（ローコード開発OSSプラットフォーム）) → OIDC/SSO招待コード検証不備による認証バイパス（CVSS v4.0=9.2）・OIDC/SSO構成限定・KEV/PoC/実悪用未確認・軸1=7点<8のため除外
+・CVE-2026-100551 (OpenClaw（iOSアプリ）) → Control UIでの保存済みGateway TLSピン不履行（CVSS v4.0=9.0）・悪用にはMITMポジション+ユーザーのWebView操作を要する複合前提条件・KEV/PoC/実悪用未確認・軸1=3点<8のため除外
+・CVE-2026-62062 (Elementor Website Builder（WordPressプラグイン）) → Editor EventsモジュールのCSRF保護スキップによる不正管理者アカウント作成（CVSS8.8・最大200万サイトに影響）・KEV/PoC/実悪用未確認・軸1=6点<8のため除外・4.3.2で修正済み・Section4 SOC推奨情報で別途言及
+・CVE-2026-65660 (Microsoft SharePoint Server（オンプレミス）) → 2026-09-26付で既に本編/参考B採用済み・reported-cves.md記録済み（KEV dateAdded=2026-09-25は前日調査窓に該当）・本日はEPSSパーセンタイル上昇（67.43%→80.96%）のみでその他の変化なし
+・CVE-2026-67279 (MikroTik RouterOS（MikroTrick連鎖）) → 2026-09-26付で既に本編/参考B採用済み・reported-cves.md記録済み（KEV dateAdded=2026-09-25は前日調査窓に該当）・本日はEPSSパーセンタイル上昇（51.54%→62.18%）のみでその他の変化なし
+
+[APT]
+該当なし
+
+[AI攻撃]
+・x47.c Windowsボットネット（xAI Grok悪用のAI永続化モジュール＋AI APIドレイン機能） → low_score
+
+[SOC推奨情報]
+該当なし
+
+本日の集計:
+CVE — 本編0件 / 参考A1件 / 参考B4件 / 除外15件
+APT — 本編1件 / 注目動向1件 / 除外0件
+SOC推奨情報 — 高2件 / 中0件 / 低0件 / 除外0件
