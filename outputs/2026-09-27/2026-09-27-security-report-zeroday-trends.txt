@@ -1,0 +1,122 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-27 07:30 JST
+調査期間: 2026-09-26 07:00 〜 2026-09-27 07:00 JST
+========================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・[トレンド記事] Kiteworks、連邦情報機関からの脅威情報を受け週末9時間のシステムシャットダウンを顧客へ要請
+セキュアファイル転送ベンダーKiteworks（旧Accellion）のCISO Frank Balonis氏が、連邦情報当局から一部顧客システムが標的とされる可能性について信頼できる脅威インテリジェンスを受け取ったとして、自己管理型（オンプレミス/AWS/Azure）およびホスト型の顧客に対し週末9時間のシステムシャットダウンを要請したと発表した。CVE番号・パッチ内容・攻撃者名はいずれも非公開で、Kiteworksは最新版9.5.1で既知脆弱性は全て修正済み・既知の侵害の確証はないと説明している。前身企業Accellionは2020年にClopによるゼロデイ攻撃を受けた前歴があり、複数メディアがこれを引き合いに出しているが（推測: 歴史的文脈としての言及であり今回の攻撃主体特定ではない）、CVE・技術詳細不明のまま本番システム停止を要請した点はwatchTowr等の専門家からも異例と指摘されている。
+参照: https://thehackernews.com/2026/09/kiteworks-urges-customers-to-shut-down.html
+
+・[トレンド記事] Bitget、北朝鮮関与疑いの不正送金額を3億5,160万ドルから3億8,750万ドルへ上方修正
+暗号資産取引所BitgetのCEO Gracy Chen氏が、2026-09-24に発表した北朝鮮関与疑いの不正送金事案について、被害額推計を当初の3億5,160万ドルから3億8,750万ドルへ上方修正したと発表した（前日レポートで既報の事案の続報）。IPアドレスの挙動パターン・オンチェーン分析からの関連指摘は同社独自の主張であり、政府機関による公式帰属は本日時点でも確認されていない（推測）。
+参照: https://therecord.media/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. ShinyHunters（UNC6240） （別名: UNC6240 / 国家帰属: 不明 / 帰属信頼度: high）
+活動タイプ: ttp_update/new_malware/active_campaign
+------------------------------------------------------------
+
+標的: education/it/healthcare/government/manufacturing / global
+マルウェア: SIDEEYE, Neo-reGeorg, MeshAgent
+
+【24時間以内の変化】
+[The Hacker News（Mandiant分析引用） 2026-09-26] ShinyHunters（UNC6240）がCVE-2026-35273（Oracle PeopleSoft）に対しURLエンコードによるWAFバイパス新手口・新規バックドアSIDEEYEを用いた大規模実悪用を再開したとGoogle Mandiantが確認
+
+【概要】
+金銭目的の犯罪グループShinyHunters（Mandiant追跡番号UNC6240）が、2026年6月に緊急パッチが提供済みのOracle PeopleSoft PeopleTools認証不備脆弱性CVE-2026-35273に対し、WAFのパス文字列一致ルールをURLエンコードでバイパスする新手口（/PSEMHUB/の1文字を%50等にエンコードしWAFの検知を回避しつつアプリケーションサーバ側ではデコード後にルーティングされる処理差異を悪用）を用いて大規模な実悪用を再開したことをGoogle Mandiantが確認・報道された。侵入後はJava逆シリアライズ悪用によるWebシェル（x.jsp・u.jsp）設置に加え、新規発見のC++製バックドア「SIDEEYE」（トロイ化された正規実行ファイルPle64.exe経由で配備）、Neo-reGeorgトンネリングツール、MeshAgentによる永続化を確認。侵害後はSSH経由で既知のユーザー名/パスワード組み合わせを用いた内部の他PeopleSoftサーバへの横展開も観測されている。高等教育・テクノロジー・ITサービス・医療・農業・運輸・政府機関を含む複数セクター・複数国で実侵害が確認されており、WAFのみに依存しパッチ未適用の組織が主な標的となっている。
+
+攻撃の流れ（判明分）:
+1. WAFが/PSEMHUB/への文字列一致でリクエストをブロックする一方、パス中の1文字をURLエンコードした亜種はデコード処理の差異により通過
+2. CVE-2026-35273の認証不備を突きPSEMHUBエンドポイントへ到達、Java逆シリアライズでWebシェル（x.jsp/u.jsp）を設置
+3. トロイ化したPle64.exe経由で新規バックドアSIDEEYEを配備、Neo-reGeorg/MeshAgentで永続化・トンネリングを確立
+4. 窃取済みまたは既知のユーザー名/パスワードでSSH経由の内部横展開を実施し他のPeopleSoftサーバへ拡大
+
+【新規TTP】
+・[T1190] Exploit Public-Facing Application — CVE-2026-35273（PSEMHUB認証不備）をWAFバイパス手口で悪用
+・[T1505] Server Software Component — Java逆シリアライズでJSPウェブシェル（x.jsp/u.jsp）を設置
+・[T1021] Remote Services — SSH経由の既知ユーザー名/パスワードによる内部PeopleSoftサーバへの横展開
+
+【IoC】
+IP: 162.219.30.165
+Filename: x.jsp
+Filename: u.jsp
+Filename: Ple64.exe
+
+【推奨アクション】
+・CVE-2026-35273未パッチのOracle PeopleSoft環境は即時パッチ適用を最優先とする（WAFルールのみでの緩和は無効化されたため）。/PSEMHUB/パスへのURLエンコード済み異常リクエストをオリジンサーバ側の生ログで監視し、MeshAgentサービスの新規インストール・Ple64.exeの実行有無を確認する。
+Splunk SPL: index=web sourcetype=access_combined uri_path="*%50SEMHUB*" OR uri_path="*%2550SEMHUB*" | stats count by clientip, uri_path
+Splunk SPL: index=os (process_name="Ple64.exe" OR service_name="MeshAgent") | stats count by host
+→ WAFで正規化済みのログのみでは検知できないため、必ずアプリケーションサーバ側の生アクセスログを確認すること
+
+【参照】
+https://www.bleepingcomputer.com/news/security/shinyhunters-uses-waf-bypass-trick-in-oracle-peoplesoft-attacks
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・不明（MaaS運営者「WraithTools」名義） / 侵害済みウクライナ語圏Webサイト経由の偽Cloudflare検証（ClickFix型）を起点に、偽MSIインストーラでLunexLoaderを展開し、CMSTPLUA COMオブジェクト悪用によるUACバイパスとAMD製脆弱ドライバ「PDFWKRNL.sys」（CVE-2023-20598）を用いたBYOVD（Bring Your Own Vulnerable Driver）でセキュリティ監視を無効化しつつ、インフォスティーラー本体「Lunex Stealer」（Psychedelic Stealerの拡張版）を展開するMaaSプラットフォーム。Chromium系7ブラウザからの認証情報窃取・暗号資産ウォレット列挙・Chrome Native Messaging Host経由のファイルシステム操作を実装。C2パネルは13カ国に28個確認されており2026年6月時点の6パネルから拡大している（推測: MaaS拡大の可能性）。研究元はOntinue単独であり独立した裏取りは今回の窓内では確認できていない。 採用契機: 該当条件参照。帰属信頼度: low。
+推奨アクション: AMD製ドライバPDFWKRNL.sys（CVE-2023-20598既知脆弱ドライバ）のロードをブロックリストで防止し、ブラウザ資格情報・暗号資産ウォレット拡張機能の異常アクセスを監視する。
+参照: https://thehackernews.com/2026/09/lunex-stealer-abuses-amd-driver-to.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし（forecaster/forecasts/daily/2026-09-27.md 参照。理由は同ファイルに記載）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-100382 (MediaWiki ExternalData Extension（Wikimedia）) → CVSS v4.0=10.0の未認証OSコマンドインジェクションだがNVDステータスReceived（解析途上）・KEV未登録・PoC未確認・実悪用未確認・単一の一次パッチ情報のみで軸1=6点<8のため除外
+・CVE-2026-100706 (kyverno（Kubernetes Policy Engine）) → CVSS9.9のnamespace越境権限昇格だがGHSA修正済み(1.19.1)・KEV未登録・PoC/実悪用未確認・軸1=4点<8のため除外
+・CVE-2026-100714 (Froxlor（サーバ管理パネル）) → letsencryptchallengepath設定の未エスケープによるコマンドインジェクション（CVSS9.1/9.4）・既存低権限アカウントを要する構成のためRCE/認証バイパスに該当せず・2.3.12で修正済み・軸1=3点<8のため除外（VulnCheckアグリゲータCNAのため個別記録）
+・CVE-2026-100715 (Froxlor（サーバ管理パネル）) → FTPアカウント削除cronのシンボリックリンク追跡による任意ファイル削除（CVSS9.6/8.5）・2.3.12で修正済み・KEV/PoC/実悪用未確認・軸1=3点<8のため除外（VulnCheckアグリゲータCNAのため個別記録）
+・CVE-2026-100716 (Froxlor（サーバ管理パネル）) → 顧客データエクスポートcronのパス検証不備によるシンボリックリンク経由権限昇格（CVSS9.9/9.4）・2.3.12で修正済み・KEV/PoC/実悪用未確認・軸1=3点<8のため除外（VulnCheckアグリゲータCNAのため個別記録）
+・CVE-2026-100717 (Froxlor（サーバ管理パネル）) → Validate::validateUrlのuserinfo部CRLF検証不備（CVSS9.9/8.5）・2.3.12で修正済み・KEV/PoC/実悪用未確認・軸1=3点<8のため除外（VulnCheckアグリゲータCNAのため個別記録）
+・CVE-2026-100720 (Froxlor（サーバ管理パネル）) → SSL証明書発行者名の未サニタイズ表示による格納型XSS（CVSS8.7/9.3）・要UI操作・2.3.12で修正済み・軸1=3点<8のため除外（VulnCheckアグリゲータCNAのため個別記録）
+・CVE-2026-85984 (miniOrange OTP Login, Verification and SMS Notifications（WordPress）) → 認証バイパス（依頼時想定の任意ファイルアップロードではなく実体は認証バイパスと判明・CVSS9.8）・4設定の同時有効化を要する高い前提条件・KEV/PoC/実悪用未確認・軸1=6点<8のため除外
+・CVE-2026-100606 (Flowise（AIアプリ開発OSSプラットフォーム）) → SSOコールバックのステータス検証不備による認証バイパス（CVSS v4.0=9.2）・Enterprise/SSO有効構成限定・KEV/PoC/実悪用未確認・軸1=7点<8のため除外
+・CVE-2026-100607 (Flowise（AIアプリ開発OSSプラットフォーム）) → SSO/ローカルユーザーのメールのみでの名寄せによる認証バイパス（CVSS v4.0=9.2）・Enterprise/SSO有効構成限定・KEV/PoC/実悪用未確認・軸1=7点<8のため除外
+・CVE-2026-100684 (Budibase（ローコード開発OSSプラットフォーム）) → OIDC/SSO招待コード検証不備による認証バイパス（CVSS v4.0=9.2）・OIDC/SSO構成限定・KEV/PoC/実悪用未確認・軸1=7点<8のため除外
+・CVE-2026-100551 (OpenClaw（iOSアプリ）) → Control UIでの保存済みGateway TLSピン不履行（CVSS v4.0=9.0）・悪用にはMITMポジション+ユーザーのWebView操作を要する複合前提条件・KEV/PoC/実悪用未確認・軸1=3点<8のため除外
+・CVE-2026-62062 (Elementor Website Builder（WordPressプラグイン）) → Editor EventsモジュールのCSRF保護スキップによる不正管理者アカウント作成（CVSS8.8・最大200万サイトに影響）・KEV/PoC/実悪用未確認・軸1=6点<8のため除外・4.3.2で修正済み・Section4 SOC推奨情報で別途言及
+・CVE-2026-65660 (Microsoft SharePoint Server（オンプレミス）) → 2026-09-26付で既に本編/参考B採用済み・reported-cves.md記録済み（KEV dateAdded=2026-09-25は前日調査窓に該当）・本日はEPSSパーセンタイル上昇（67.43%→80.96%）のみでその他の変化なし
+・CVE-2026-67279 (MikroTik RouterOS（MikroTrick連鎖）) → 2026-09-26付で既に本編/参考B採用済み・reported-cves.md記録済み（KEV dateAdded=2026-09-25は前日調査窓に該当）・本日はEPSSパーセンタイル上昇（51.54%→62.18%）のみでその他の変化なし
+
+[APT]
+該当なし
+
+[AI攻撃]
+・x47.c Windowsボットネット（xAI Grok悪用のAI永続化モジュール＋AI APIドレイン機能） → low_score
+
+[SOC推奨情報]
+該当なし
+
+本日の集計:
+CVE — 本編0件 / 参考A1件 / 参考B4件 / 除外15件
+APT — 本編1件 / 注目動向1件 / 除外0件
+SOC推奨情報 — 高2件 / 中0件 / 低0件 / 除外0件
