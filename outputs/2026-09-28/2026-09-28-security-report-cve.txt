@@ -1,0 +1,143 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-28 07:55 JST
+調査期間: 2026-09-27 07:00 〜 2026-09-28 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-88771 / Citrix NetScaler ADC / NetScaler Gateway
+対象: NetScaler ADC/Gateway 14.1 before 14.1-73.37; 13.1 before 13.1-64.23; 14.1 FIPS before 14.1-73.37 FIPS; 13.1 FIPS/NDcPP before 13.1-37.279
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 9.5 (Critical) [v4.0]
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[Citrix (Cloud Software Group) 2026-09-27] セキュリティ速報CTX697096でCVE-2026-88771を含む計8件の脆弱性を公開し、非パッチ適用環境での実悪用を確認したと発表。修正版14.1-73.37/13.1-64.23等をリリース。
+[The Hacker News 2026-09-27] 未認証攻撃者による任意コマンド実行が可能で全NetScaler ADC/Gateway展開に追加設定なしで影響すると報道。watchTowr Labsが前日26日時点で同種の未修正RCEの兆候を検知していたと報告。
+[BleepingComputer 2026-09-28] Citrixが正式に非パッチ適用のNetScaler展開環境での悪用を確認したと声明。管理者へ即時パッチ適用または露出低減を推奨。
+[CISA KEV Catalog 2026-09-27] CISAがKnown Exploited VulnerabilitiesカタログへCVE-2026-88771を新規追加（catalogVersion 2026.09.27・FCEB期限2026-09-30）。
+
+【概要】
+Citrixは2026-09-27、NetScaler ADCおよびNetScaler Gatewayに存在する未認証RCEの緊急脆弱性CVE-2026-88771（入力検証不備・CVSS9.5）を修正パッチとともに公開し、非パッチ適用環境で実悪用が確認されたと発表した。追加のライセンス機能や設定を必要とせず全てのNetScaler ADC/Gateway展開が影響を受ける。watchTowr Labsは調査の過程で同種の未修正RCEの兆候を検知しており、オランダNCSC-NLは事前通知を受け複数の顧客組織で実悪用が確認されたと報告している。CISAは同日KEVカタログへ本CVEを新規追加しFCEB機関に2026-09-30までの対応を義務付けた。攻撃者の身元・具体的なIOCは本日時点で未公開。
+
+攻撃の流れ:
+1. 未パッチのNetScaler ADC/Gatewayに対し、未認証のリモート攻撃者が入力検証不備を悪用したリクエストを送信
+2. 検証不備を突いて機器上で任意のコマンドを実行
+3. 侵害された境界機器を足掛かりに内部ネットワークへの侵入・横展開を試みる可能性がある（具体的な侵害後の挙動は本日時点で未公開）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・緊急パッチ（14.1-73.37 / 13.1-64.23 等）の即時適用
+・パッチ適用が即時に行えない場合はNetScaler管理インターフェース・VPN仮想サーバのインターネットへの露出を可能な限り低減する
+・DTLSを使用しないVPN仮想サーバ構成が運用上可能な場合は無効化しCVE-2026-88772の攻撃面を縮小する
+・侵害が疑われる場合は証跡を保全した上で機器を隔離し、関連する認証情報をリセットする
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・NetScaler管理インターフェース・VPN仮想サーバへの想定外の認証試行・コマンド実行痕跡、設定改ざん、および子プロセスの異常起動を監視する。DTLSを使用しないVPN構成へ切替可能な場合はCVE-2026-88772の攻撃面縮小になる。
+Splunk SPL: index=network sourcetype=citrix_netscaler_syslog (message="*command*" OR message="*exec*" OR message="*shell*") | table _time src_ip user message
+Splunk SPL: index=network sourcetype=citrix_netscaler_syslog event_type=vpn | stats count by src_ip | where count > 50
+→ 既知の正規メンテナンス作業（管理者によるCLI操作等）と外部IPからの想定外コマンド実行・設定変更を区別すること。DTLS未使用のVPN仮想サーバ構成ではCVE-2026-88772の影響を受けないため誤検知除外の判断材料にする。
+
+【参照】
+https://support.citrix.com/external/article/CTX697096/citrix-netscaler-adc-and-citrix-netscale.html
+https://www.bleepingcomputer.com/news/security/citrix-admins-warned-to-shut-down-netscalers-over-2-exploited-zero-days
+https://thehackernews.com/2026/09/warning-two-unpatched-citrix-netscaler.html
+
+------------------------------------------------------------
+
+------------------------------------------------------------
+2. CVE-2026-88772 / Citrix NetScaler ADC / NetScaler Gateway
+対象: NetScaler ADC/Gateway 14.1 before 14.1-73.37; 13.1 before 13.1-64.23（DTLS有効なVPN仮想サーバ・NetScaler Gateway展開が対象。DTLSはVPN仮想サーバで既定有効）
+------------------------------------------------------------
+
+優先度: 緊急（パッチなし）
+CVSS: 9.5 (Critical) [v4.0]
+状態: KEV登録済み / 実悪用確認 / ゼロデイ
+パッチ提供: 提供済み
+
+【24時間以内の変化】
+[Citrix (Cloud Software Group) 2026-09-27] CVE-2026-88771と同一のセキュリティ速報CTX697096でCVE-2026-88772を公開し、非パッチ適用環境での実悪用を確認したと発表。
+[The Hacker News 2026-09-27] DTLS有効時のメモリオーバーフローによりRCEまたはDoSが可能と報道。DTLSはVPN仮想サーバで既定有効なためNetScaler Gatewayは明示的に無効化しない限り影響を受けると指摘。
+[CISA KEV Catalog 2026-09-27] CISAがKEVカタログへCVE-2026-88772を新規追加（catalogVersion 2026.09.27・FCEB期限2026-09-30）。
+
+【概要】
+CVE-2026-88771と同一のCitrixセキュリティ速報CTX697096（2026-09-27公開）で修正されたNetScaler ADC/GatewayのCVE-2026-88772は、DTLS有効時（VPN仮想サーバでは既定で有効）のメモリオーバーフローにより、未認証の遠隔攻撃者がリモートコード実行またはサービス拒否を引き起こせる脆弱性である。Citrixは非パッチ適用環境での実悪用を確認しており、CISAは同日KEVカタログへ本CVEも新規追加した（FCEB期限2026-09-30）。攻撃手口の詳細・IOCはCVE-2026-88771のエントリと共通の情報源に基づく。
+
+攻撃の流れ:
+1. DTLSが有効なNetScaler Gateway（VPN仮想サーバ）に対し、未認証のリモート攻撃者がメモリオーバーフローを誘発するデータを送信
+2. メモリ破壊によりリモートコード実行またはサービス拒否（クラッシュ）を引き起こす
+3. RCEに成功した場合は境界機器を足掛かりに内部ネットワークへの侵入を試みる可能性がある（具体的な侵害後の挙動は本日時点で未公開）
+
+【暫定緩和策】（パッチが提供されるまでの間の対処）
+・緊急パッチ（14.1-73.37 / 13.1-64.23 等）の即時適用
+・パッチ適用が即時に行えない場合はNetScaler管理インターフェース・VPN仮想サーバのインターネットへの露出を可能な限り低減する
+・DTLSを使用しないVPN仮想サーバ構成が運用上可能な場合は無効化しCVE-2026-88772の攻撃面を縮小する
+・侵害が疑われる場合は証跡を保全した上で機器を隔離し、関連する認証情報をリセットする
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・NetScaler管理インターフェース・VPN仮想サーバへの想定外の認証試行・コマンド実行痕跡、設定改ざん、および子プロセスの異常起動を監視する。DTLSを使用しないVPN構成へ切替可能な場合はCVE-2026-88772の攻撃面縮小になる。
+Splunk SPL: index=network sourcetype=citrix_netscaler_syslog (message="*command*" OR message="*exec*" OR message="*shell*") | table _time src_ip user message
+Splunk SPL: index=network sourcetype=citrix_netscaler_syslog event_type=vpn | stats count by src_ip | where count > 50
+→ 既知の正規メンテナンス作業（管理者によるCLI操作等）と外部IPからの想定外コマンド実行・設定変更を区別すること。DTLS未使用のVPN仮想サーバ構成ではCVE-2026-88772の影響を受けないため誤検知除外の判断材料にする。
+
+【参照】
+https://support.citrix.com/external/article/CTX697096/citrix-netscaler-adc-and-citrix-netscale.html
+https://www.bleepingcomputer.com/news/security/citrix-admins-warned-to-shut-down-netscalers-over-2-exploited-zero-days
+https://thehackernews.com/2026/09/warning-two-unpatched-citrix-netscaler.html
+
+------------------------------------------------------------
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1×軸2判定で本編相当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考A昇格トリガー該当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に参考B相当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-100740 (D-Link DIR-895L（L2TP制御チャネルパーサ）) → CVSS9.9のL2TP制御チャネルOOB書き込み（tunnel_set_params）でエクスプロイトコードが公開済みだがKEV未登録・実悪用未確認。D-Link DIR-895Lはベンダーサポート終了(EOL)のコンシューマ向けルーターで企業・重要インフラでの実利用は限定的。EPSS 0.45%（percentile 36.9%・2026-09-27時点）と低水準。軸1=5点（PoC公開+2/CVSS9.0以上+3）<8点、参考A昇格トリガーも該当なしのため除外。
+・CVE-2026-100741 (hMailServer（JScriptイベントスクリプトディスパッチャ）) → CVSS9.8のパスワード経由eval注入による未認証RCE・KEV/PoC/実悪用いずれも未確認。hMailServerはニッチなWindows向けOSSメールサーバでEPSS 1.73%（percentile 76.7%・2026-09-27時点）。軸1=6点（未認証RCE+3/CVSS9.0以上+3）<8点、参考A昇格トリガーも該当なしのため除外。
+・CVE-2026-101065 (Obot（AIエージェント/MCPプラットフォーム・Dockerクイックスタート既定構成）) → Docker quickstart既定構成で認証が無効化され未認証者がOwner/Admin権限相当の疑似ユーザーとして操作可能になる設定不備（CVSS9.8）。KEV/PoC/実悪用未確認・EPSS未算出（公開直後）。Obotは開発初期段階のニッチなOSSでREADME記載のquickstart（検証用途）に限定された既定値の問題であり本番運用への実影響は限定的とみられる（推測）。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーもなく除外。
+・CVE-2026-101084 (Obot（/mcp-connectエンドポイント・アクセス制御）) → /mcp-connectエンドポイントでアクセス制御ルールが適用されず、認証済みの任意ユーザーがサーバーIDを知っていれば制限されたMCPサーバーへ接続し保存済みOAuth資格情報を悪用できる（CVSS9.6）。認証済みユーザーが前提で未認証RCEではない。KEV/PoC/実悪用未確認。CVE-2026-101065と同一Obotプロダクト・同時公開。軸1=3点（CVSS9.0以上+3のみ）<8点のため除外。
+・CVE-2026-101090 (Nezha（自己ホスト型サーバー監視ツール・OAuth2リダイレクト）) → OAuth2リダイレクトエンドポイントにおけるHostヘッダインジェクション（任意設定dashboard_hostが未設定の場合のみ発現）でredirect_uriに攻撃者制御URLが反映されOAuthトークン等が窃取されうる（CVSS9.8）。KEV/PoC/実悪用未確認・EPSS未算出。特定の任意設定条件下でのみ影響するニッチな監視ツールのため軸1=3点（CVSS9.0以上+3のみ）<8点のため除外。
+・CVE-2026-100721 (vm2（Node.jsサンドボックスライブラリ・NodeVM外部モジュールリゾルバ）) → NodeVM外部モジュールリゾルバにおける認可バイパス（CVSS9.5・EPSS 0.40%/percentile 31.6%・2026-09-27時点）。エンベッダーがrequire.externalへカスタムリゾルバかつcontext:'host'を明示的に設定した非既定構成でのみ発現・KEV/PoC/実悪用未確認。vm2は2023年に開発終了が公式アナウンス済みで新規利用は既に非推奨。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーもなく除外。
+・CVE-2026-100835 (Contrast（TEEリモートアテステーション）) → TEEアテステーションのリレー攻撃（正当な別マシンで生成された証明を転用可能）で攻撃者にはネットワーク中間者的地位と別途信頼されたハードウェアの制御という厳しい前提条件が必要（CVSS9.1・EPSS 0.22%/percentile 10.9%・2026-09-27時点で最低水準）。KEV/PoC/実悪用未確認。軸1=3点（CVSS9.0以上+3のみ）<8点のため除外。
+・CVE-2026-88773 (Citrix NetScaler ADC / NetScaler Gateway（HTTPリクエスト密輸）) → CVE-2026-88771/88772と同一のCitrixセキュリティ速報CTX697096（2026-09-27公開）に含まれるHTTPリクエスト/レスポンス密輸（CVSS9.3）だが、Citrixが実悪用を確認したのはCVE-2026-88771/88772の2件のみで本CVEはKEV未登録・実悪用未確認。軸1=6点（CVSS9.0以上+3/境界機器+3）<8点、参考A昇格トリガーもなく除外（同一ベンダー同日アドバイザリのためCVE-2026-88771エントリの概要欄で背景言及済み）。
+・CVE-2026-65660 (Microsoft SharePoint Server（オンプレミス）) → 2026-09-25付で既にKEVカタログへ新規追加済み・reported-cves.md記録済み（2026-09-27付で参考B採用・EPSS上昇のみで除外済み）。本日のSecurityWeek記事は同一のKEV登録・FCEB期限2026-09-28を再掲したのみで新規情報なし。
+
+本日の集計:
+CVE — ゼロデイ特報2件 / 本編0件 / 参考A0件 / 参考B0件 / 除外9件
+
+網羅スイープ: 候補10件 / 未処理0件 / KEV窓内追加2件 / EUVD窓内全量10件（うちNVD/KEV未収載0件）
+========================================
