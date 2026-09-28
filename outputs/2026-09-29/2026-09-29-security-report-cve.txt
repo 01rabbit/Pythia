@@ -1,0 +1,168 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-29 08:05 JST
+調査期間: 2026-09-28 07:00 〜 2026-09-29 07:00 JST
+========================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内にゼロデイ特報該当CVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（24時間窓内に軸1×軸2判定で本編相当のCVEなし）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+昇格理由: JPCERT/CC 2026-09-28 注意喚起（日本語ソース確認）
+
+・CVE-2026-88771 / Citrix NetScaler ADC / NetScaler Gateway
+CVSS: 9.5  状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[JPCERT/CC 2026-09-28] NetScaler ADC/Gatewayの複数脆弱性（CVE-2026-88771・CVE-2026-88772等）を名指しした注意喚起を公開（前日までは国内公的機関の発行未確認だった）。
+[Unit 42 2026-09-29] CVE-2026-88771・CVE-2026-88772の実環境悪用を扱うThreat Briefを公開。
+[watchTowr Labs 2026-09-28] CVE-2026-88771（PreAuth Command Injection）の技術分析記事を公開。
+[BleepingComputer 2026-09-28] CISAが連邦機関へ水曜（2026-09-30）までのパッチ適用を命じたと報道（KEV追加自体は2026-09-27で既報）。
+
+【概要】
+CVE-2026-88771（Citrix NetScaler ADC/Gateway・未認証コマンド実行・CVSS v4.0 9.5）は2026-09-27に実悪用確認・KEV追加済み（既報）。本日新たにJPCERT/CC（国内CSIRT）が本CVEを名指しした注意喚起を公開したことを確認し、日本語ソース確認による参考A昇格トリガーを適用した。あわせてUnit 42が脅威ブリーフ、watchTowr Labsが技術分析を公開している。FCEB期限は2026-09-30。攻撃者の身元は本日時点でも未確認（推測を含めない）。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[NetScaler管理インターフェース・VPN仮想サーバへの想定外の認証試行・コマンド実行痕跡、設定改ざん、および子プロセスの異常起動を監視する。DTLSを使用しないVPN構成へ切替可能な場合はCVE-2026-88772の攻撃面縮小になる。]
+Splunk SPL: index=network sourcetype=citrix_netscaler_syslog (message="*command*" OR message="*exec*" OR message="*shell*") | table _time src_ip user message
+Splunk SPL: index=network sourcetype=citrix_netscaler_syslog event_type=vpn | stats count by src_ip | where count > 50
+→ 既知の正規メンテナンス作業（管理者によるCLI操作等）と外部IPからの想定外コマンド実行・設定変更を区別すること。DTLS未使用のVPN仮想サーバ構成ではCVE-2026-88772の影響を受けないため誤検知除外の判断材料にする。
+
+【参照】
+https://support.citrix.com/external/article/CTX697096/citrix-netscaler-adc-and-citrix-netscale.html
+https://www.bleepingcomputer.com/news/security/citrix-admins-warned-to-shut-down-netscalers-over-2-exploited-zero-days
+https://thehackernews.com/2026/09/warning-two-unpatched-citrix-netscaler.html
+https://www.jpcert.or.jp/at/
+https://www.bleepingcomputer.com/news/security/cisa-orders-feds-to-patch-exploited-citrix-flaws-by-wednesday
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行済み: JPCERT/CC 注意喚起: NetScaler ADCおよびNetScaler Gatewayにおける複数の脆弱性（CVE-2026-88771、CVE-2026-88772等）に関する注意喚起（2026-09-28）
+
+・CVE-2026-88772 / Citrix NetScaler ADC / NetScaler Gateway
+CVSS: 9.5  状態: KEV登録済み / 実悪用確認 / ゼロデイ
+
+【24時間以内の変化】
+[JPCERT/CC 2026-09-28] NetScaler ADC/Gatewayの複数脆弱性（CVE-2026-88771・CVE-2026-88772等）を名指しした注意喚起を公開（前日までは国内公的機関の発行未確認だった）。
+[Unit 42 2026-09-29] CVE-2026-88771・CVE-2026-88772の実環境悪用を扱うThreat Briefを公開。
+[watchTowr Labs 2026-09-28] CVE-2026-88771（PreAuth Command Injection）の技術分析記事を公開。
+[BleepingComputer 2026-09-28] CISAが連邦機関へ水曜（2026-09-30）までのパッチ適用を命じたと報道（KEV追加自体は2026-09-27で既報）。
+
+【概要】
+CVE-2026-88772（NetScaler Gateway・DTLS有効時のメモリオーバーフロー・CVSS v4.0 9.5）は2026-09-27に実悪用確認・KEV追加済み（既報）。本日JPCERT/CC注意喚起（CVE-2026-88771・88772等を名指し）の公開を確認し参考A昇格トリガーを適用した。Unit 42も両CVEの悪用に関する脅威ブリーフを公開している。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[NetScaler管理インターフェース・VPN仮想サーバへの想定外の認証試行・コマンド実行痕跡、設定改ざん、および子プロセスの異常起動を監視する。DTLSを使用しないVPN構成へ切替可能な場合はCVE-2026-88772の攻撃面縮小になる。]
+Splunk SPL: index=network sourcetype=citrix_netscaler_syslog (message="*command*" OR message="*exec*" OR message="*shell*") | table _time src_ip user message
+Splunk SPL: index=network sourcetype=citrix_netscaler_syslog event_type=vpn | stats count by src_ip | where count > 50
+→ 既知の正規メンテナンス作業（管理者によるCLI操作等）と外部IPからの想定外コマンド実行・設定変更を区別すること。DTLS未使用のVPN仮想サーバ構成ではCVE-2026-88772の影響を受けないため誤検知除外の判断材料にする。
+
+【参照】
+https://support.citrix.com/external/article/CTX697096/citrix-netscaler-adc-and-citrix-netscale.html
+https://www.bleepingcomputer.com/news/security/citrix-admins-warned-to-shut-down-netscalers-over-2-exploited-zero-days
+https://thehackernews.com/2026/09/warning-two-unpatched-citrix-netscaler.html
+https://www.jpcert.or.jp/at/
+https://www.bleepingcomputer.com/news/security/cisa-orders-feds-to-patch-exploited-citrix-flaws-by-wednesday
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+発行済み: JPCERT/CC 注意喚起: NetScaler ADCおよびNetScaler Gatewayにおける複数の脆弱性（CVE-2026-88771、CVE-2026-88772等）に関する注意喚起（2026-09-28）
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-86950 / Apple CoreGraphics（iOS/iPadOS/macOS 旧バージョン）
+CVSS: 記事記載なし  状態: ゼロデイ
+
+【24時間以内の変化】
+[The Hacker News 2026-09-29] AppleがCoreGraphicsの境界外書込み脆弱性CVE-2026-86950を修正し、「極めて高度な攻撃で特定の標的個人に対し悪用された可能性がある」との報告を把握していると説明したと報道。
+
+【概要】
+AppleはCoreGraphicsコンポーネントの境界外書込み（悪意あるファイル処理による任意コード実行の可能性）脆弱性CVE-2026-86950を修正した。Appleは「極めて高度な攻撃で特定の標的個人に対して悪用された可能性がある（may have been exploited）」との報告を把握していると説明しているが、悪用の詳細・件数・攻撃者は非公開でありCISA KEVにも本日時点で未登録。発見者はMeta Product Securityと報じられている。CVSSは記事に記載なし。
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・[MDM上の該当OSバージョン未更新端末の棚卸し。不審なファイル受信直後のアプリクラッシュログの確認。]
+→ 悪用の詳細・IOCが非公開のため検知シグネチャは提供できない。
+
+【参照】
+https://thehackernews.com/2026/09/apple-patches-coregraphics-flaw.html
+
+JPCERT/CC・IPA 発行状況（24h 窓内）:
+未発行: CVE-2026-86950 — 24時間窓内に発行確認されず
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[CVE]
+・CVE-2026-100886 (A vulnerability was identified in Seetong T8108, T8108P, T8116 and T8232 4.6.1.4) → VulDB起点の個別CVE（CVSS10.0）。概要: A vulnerability was identified in Seetong T8108, T8108P, T8116 and T8232 4.6.1.4-build202604241011. The affected element is an unknown function of the component Debug Service. Such manipulation leads … 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101000 (A vulnerability was determined in Netcore NBR100V2 1.3.240614.030928. This affec) → VulDB起点の個別CVE（CVSS10.0）。概要: A vulnerability was determined in Netcore NBR100V2 1.3.240614.030928. This affects the function uci.apply of the file /usr/share/rpcd/acl.d/unauthenticated.json of the component ACL Handler. This mani… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101001 (A vulnerability was identified in Netcore NBR200V2 1.3.241127.071246. This impac) → VulDB起点の個別CVE（CVSS10.0）。概要: A vulnerability was identified in Netcore NBR200V2 1.3.241127.071246. This impacts the function eval of the file /www/cgi-bin/network_tools of the component Web Management Interface. Such manipulation… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101039 (A vulnerability was identified in FAST FAC1900R 20190827_2.0.2. Affected by this) → VulDB起点の個別CVE（CVSS10.0）。概要: A vulnerability was identified in FAST FAC1900R 20190827_2.0.2. Affected by this issue is the function copy_msg_element of the component devdiscover Service. Such manipulation leads to stack-based buf… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101072 (A vulnerability was identified in Netcore NR289-GE 1.4.5102. This issue affects ) → VulDB起点の個別CVE（CVSS10.0）。概要: A vulnerability was identified in Netcore NR289-GE 1.4.5102. This issue affects the function system of the file /ap_ip.cgi of the component CGI Handler. Such manipulation of the argument ip leads to o… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101075 (A security vulnerability has been detected in Netcore NR289-GE 1.4.5102. The imp) → VulDB起点の個別CVE（CVSS10.0）。概要: A security vulnerability has been detected in Netcore NR289-GE 1.4.5102. The impacted element is the function system of the file /location_time.cgi of the component Location Time Handler. The manipula… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101076 (A vulnerability was detected in Netcore NR289-GE 1.4.5102. This affects the func) → VulDB起点の個別CVE（CVSS10.0）。概要: A vulnerability was detected in Netcore NR289-GE 1.4.5102. This affects the function system of the file /set_ntp_server_ip.cgi of the component CGI Handler. The manipulation of the argument ntp_ip res… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101077 (A flaw has been found in Netcore NR289-GE 1.4.5102. This impacts the function pr) → VulDB起点の個別CVE（CVSS10.0）。概要: A flaw has been found in Netcore NR289-GE 1.4.5102. This impacts the function process_request of the component boa_temp Handler. This manipulation causes missing authentication. The attack is possible… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-100896 (A weakness has been identified in TOTOLINK N150RT 3.4.0-B20201030. The affected ) → VulDB起点の個別CVE（CVSS9.9）。概要: A weakness has been identified in TOTOLINK N150RT 3.4.0-B20201030. The affected element is the function system of the file /boafrm/formWlSiteSurvey of the component Web Management Interface. This mani… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101002 (A security flaw has been discovered in Netcore NBR200V2 1.3.241127.071246. Affec) → VulDB起点の個別CVE（CVSS9.9）。概要: A security flaw has been discovered in Netcore NBR200V2 1.3.241127.071246. Affected is the function system of the file /usr/bin/network_tools of the component Tools Ping Handler. Performing a manipula… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101037 (A vulnerability was found in FAST FAC1200R 5.0_20201119_1.0.2. Affected is the f) → VulDB起点の個別CVE（CVSS9.9）。概要: A vulnerability was found in FAST FAC1200R 5.0_20201119_1.0.2. Affected is the function parse_advertisement_frame of the component devdiscover Service. The manipulation results in stack-based buffer o… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101038 (A vulnerability was determined in FAST FAC1200R 5.0_20201119_1.0.2. Affected by ) → VulDB起点の個別CVE（CVSS9.9）。概要: A vulnerability was determined in FAST FAC1200R 5.0_20201119_1.0.2. Affected by this vulnerability is the function MmtAtePrase of the component MmtAtePrase Parser. This manipulation causes stack-based… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-82377 (Missing Authorization in Apache Roller 6.1.5 allows an authenticated user to rea) → Apache Roller 6.1.5の脆弱性群（CVSS9.9）。概要: Missing Authorization in Apache Roller 6.1.5 allows an authenticated user to read, modify, or delete weblog content belonging to other weblogs through the legacy XML-RPC Blogger and MetaWeblog APIs, b… KEV/PoC/実悪用未確認・ニッチなOSSブログ基盤。軸1=3点<8点のため除外（同一製品の同時公開分）。
+・CVE-2026-85526 (Path traversal in the Btrfs storage driver (unpackVolume) in Canonical LXD on Li) → Canonical LXDの脆弱性（CVSS9.9）。概要: Path traversal in the Btrfs storage driver (unpackVolume) in Canonical LXD on Linux allows an authenticated user with instance creation privileges to delete or replace arbitrary files and directories … 認証済み前提またはローカル/移行経路が前提でKEV/PoC/実悪用未確認。軸1=3点<8点のため除外。
+・CVE-2026-87799 (Improper link resolution in the migration receive path in Canonical LXD versions) → Canonical LXDの脆弱性（CVSS9.9）。概要: Improper link resolution in the migration receive path in Canonical LXD versions 4.0 and later (fixed in 4.0.14, 5.0.10, 5.21.8 and 6.10) on Linux allows an authenticated client that can create instan… 認証済み前提またはローカル/移行経路が前提でKEV/PoC/実悪用未確認。軸1=3点<8点のため除外。
+・CVE-2026-101074 (A weakness has been identified in Netcore NR289-GE 1.4.5102. The affected elemen) → VulDB起点の個別CVE（CVSS9.8）。概要: A weakness has been identified in Netcore NR289-GE 1.4.5102. The affected element is the function password-check of the file /bin/boa of the component Authentication. Executing a manipulation of the a… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-82384 (Deserialization of Untrusted Data in Apache Roller 6.1.5 allows an unauthenticat) → Apache Roller 6.1.5の脆弱性群（CVSS9.8）。概要: Deserialization of Untrusted Data in Apache Roller 6.1.5 allows an unauthenticated remote attacker to cause deserialization of attacker-controlled bytes, because the XML-RPC endpoint accepts vendor ex… KEV/PoC/実悪用未確認・ニッチなOSSブログ基盤。軸1=3点<8点のため除外（同一製品の同時公開分）。
+・CVE-2026-90924 (Use of default credentials vulnerability in Innotim Software, Telecommunications) → CVSS9.8。概要: Use of default credentials vulnerability in Innotim Software, Telecommunications and Consultancy Trade Ltd. Co. Logsign SIEM allows Try Common or Default Usernames and Passwords. This issue affects Lo… KEV/実悪用未確認・PoC未確認。軸1=3点<8点のため除外。
+・CVE-2026-12342 (This vulnerability impacts all versions of IdentityIQ and allows an unauthentica) → SailPoint IdentityIQ（CVSS9.6）。概要: This vulnerability impacts all versions of IdentityIQ and allows an unauthenticated user remote code execution on the IdentityIQ server due to improper input validation of submitted web service API co… 未認証RCEだがKEV/PoC/実悪用未確認。軸1=6点（未認証RCE+3/CVSS9.0以上+3）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-85185 (Path traversal in the btrfs storage driver in Canonical LXD versions 4.0.2 and l) → Canonical LXDの脆弱性（CVSS9.6）。概要: Path traversal in the btrfs storage driver in Canonical LXD versions 4.0.2 and later (fixed in 4.0.14, 5.0.10, 5.21.8 and 6.10) on Linux allows an authenticated client with permission to create instan… 認証済み前提またはローカル/移行経路が前提でKEV/PoC/実悪用未確認。軸1=3点<8点のため除外。
+・CVE-2026-88804 (An unauthenticated update of public UI settings could be used by remote attacker) → CVSS9.6。概要: An unauthenticated update of public UI settings could be used by remote attackers to execute a stored cross-site scripting attack in the Rancher UI, in SUSE Rancher 2.15 before 2.15.2, 2.14 before 2.1… KEV/実悪用未確認・PoC未確認。軸1=3点<8点のため除外。
+・CVE-2026-19759 (An Incorrect Authorization vulnerability in the task configuration in Google Clo) → Google Cloud Application Integrationの脆弱性（CVSS9.4）。概要: An Incorrect Authorization vulnerability in the task configuration in Google Cloud Application Integration versions prior to 2026-06-17 on Google Cloud Platform allows an authenticated Google Cloud us… クラウド側サービスでベンダー修正・顧客対応不要とみられる（推測）。KEV/実悪用未確認。軸1=3点<8点のため除外。
+・CVE-2026-81867 (A Deserialization of Untrusted Data vulnerability in the JavaScript Task in Goog) → Google Cloud Application Integrationの脆弱性（CVSS9.4）。概要: A Deserialization of Untrusted Data vulnerability in the JavaScript Task in Google Cloud Application Integration versions prior to 2026-06-28 on Google Cloud Platform allows an authenticated user with… クラウド側サービスでベンダー修正・顧客対応不要とみられる（推測）。KEV/実悪用未確認。軸1=3点<8点のため除外。
+・CVE-2026-100752 (Joomla Extension - ordasoft.com - Unauthenticated SQL Injection in Real Estate M) → Joomla第三者拡張（ordasoft.com、CVSS9.3）の未認証SQLインジェクション。概要: Joomla Extension - ordasoft.com - Unauthenticated SQL Injection in Real Estate Manager (Free) < 6.7.9 - site/realestatemanager.php builds the ORDER BY clause of three separate frontend property-listin… KEV/実悪用未確認・ニッチ拡張。軸1=3点<8点のため除外。
+・CVE-2026-101108 (Joomla Extension - ordasoft.com - Unauthenticated SQL Injection in Vehicle Manag) → Joomla第三者拡張（ordasoft.com、CVSS9.3）の未認証SQLインジェクション。概要: Joomla Extension - ordasoft.com - Unauthenticated SQL Injection in Vehicle Manager (Free) < 6.5.8 - site/vehiclemanager.php reads the order_field and order_direction sort parameters at three separate … KEV/実悪用未確認・ニッチ拡張。軸1=3点<8点のため除外。
+・CVE-2026-101110 (Joomla Extension - ordasoft.com - Unauthenticated SQL Injection in Book Library ) → Joomla第三者拡張（ordasoft.com、CVSS9.3）の未認証SQLインジェクション。概要: Joomla Extension - ordasoft.com - Unauthenticated SQL Injection in Book Library (Free) < 6.4.6 - site/booklibrary.php’s books() function reads the field and direction request parameters and passes eac… KEV/実悪用未確認・ニッチ拡張。軸1=3点<8点のため除外。
+・CVE-2026-101891 (An improper access control vulnerability in an internal API service on WatchGuar) → WatchGuard Access Point内部APIの脆弱性（CVSS9.3）。概要: An improper access control vulnerability in an internal API service on WatchGuard Access Points allows an unauthenticated attacker with network access to the AP to obtain a valid API session.… KEV/実悪用未確認・PoC未確認。軸1=3点（CVSS9.0以上+3）<8点、参考A昇格トリガーなしのため除外（同一ベンダー同時公開分）。
+・CVE-2026-73640 (Dayforce Payroll is vulnerable to Time Based-Blind SQL Injection in password rec) → Dayforce Payroll（CERT-PL経由・CVSS9.3）。概要: Dayforce Payroll is vulnerable to Time Based-Blind SQL Injection in password recovery functionality. The unauthenticated attacker can prepare GET request with one of the parameters filled in with an a… KEV/実悪用未確認。SaaS型でベンダー側対応。軸1=3点<8点のため除外（同一製品の同時公開分）。
+・CVE-2026-86102 (An OS command injection vulnerability in the WatchGuard AP internal API service ) → WatchGuard Access Point内部APIの脆弱性（CVSS9.3）。概要: An OS command injection vulnerability in the WatchGuard AP internal API service allows an attacker with network access to the AP to execute arbitrary shell commands on the underlying operating system.… KEV/実悪用未確認・PoC未確認。軸1=3点（CVSS9.0以上+3）<8点、参考A昇格トリガーなしのため除外（同一ベンダー同時公開分）。
+・CVE-2026-73642 (Dayforce Payroll is vulnerable to Path Traversal in file download functionality.) → Dayforce Payroll（CERT-PL経由・CVSS9.2）。概要: Dayforce Payroll is vulnerable to Path Traversal in file download functionality. An unauthenticated attacker can sent GET request with file path parameter set to any path including an absolute local f… KEV/実悪用未確認。SaaS型でベンダー側対応。軸1=3点<8点のため除外（同一製品の同時公開分）。
+・CVE-2026-101008 (A vulnerability was found in aaPanel BaoTa up to 11.8.0. Impacted is the functio) → VulDB起点の個別CVE（CVSS9.1）。概要: A vulnerability was found in aaPanel BaoTa up to 11.8.0. Impacted is the function merge_split_file of the file /www/server/panel/class/files.py of the component File Merge Handler. Performing a manipu… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101081 (A security flaw has been discovered in D-Link DI-8400 16.07. This vulnerability ) → VulDB起点の個別CVE（CVSS9.1）。概要: A security flaw has been discovered in D-Link DI-8400 16.07. This vulnerability affects the function menu_nat_more_asp of the file menu_nat_more.asp of the component Web Administration Service. The ma… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101187 (A weakness has been identified in Ziroom ZHOME A0101 1.0.1.0. This vulnerability) → VulDB起点の個別CVE（CVSS9.1）。概要: A weakness has been identified in Ziroom ZHOME A0101 1.0.1.0. This vulnerability affects the function pop_usb_device of the file usr/lib/lua/luci/controller/api/zrUsb.lua of the component USB Device M… 窓内でKEV登録・実悪用報道なし。VulDBはアグリゲータCNAのためバッチ集約せず個別記録。組込み機器/ニッチ製品の公開情報で企業影響の裏付けなし。軸1=3点（CVSS9.0以上+3のみ）<8点、参考A昇格トリガーなしのため除外。
+・CVE-2026-101894 (The decompress package for Node.js extracts archives. Prior to 10.2.2 and 11.1.4) → GHSA起点のOSSライブラリ/ツール脆弱性（CVSS9.1）。概要: The decompress package for Node.js extracts archives. Prior to 10.2.2 and 11.1.4, the default decompress(input, output) API relies on lexical containment checks that do not account for the kernel foll… KEV/実悪用未確認・特定条件下で発現。軸1=3点<8点のため除外。
+・CVE-2026-102268 (PyJWT is a Python implementation of JSON Web Token standards. Prior to 2.14.0, i) → GHSA起点のOSSライブラリ/ツール脆弱性（CVSS9.1）。概要: PyJWT is a Python implementation of JSON Web Token standards. Prior to 2.14.0, is_pem_format in jwt/utils.py is affected because is_pem_format does not recognize every PEM representation accepted by t… KEV/実悪用未確認・特定条件下で発現。軸1=3点<8点のため除外。
+・CVE-2026-49994 (Bluehood monitors local bluetooth activity. Prior to version 0.7.1, when auth_en) → GHSA起点のOSSライブラリ/ツール脆弱性（CVSS9.1）。概要: Bluehood monitors local bluetooth activity. Prior to version 0.7.1, when auth_enabled is set in Bluehood, only the HTML page handlers enforced session validation. The /api/* handlers (settings, device… KEV/実悪用未確認・特定条件下で発現。軸1=3点<8点のため除外。
+・CVE-2026-82378 (Incorrect Authorization in the OAuth 1.0a authorization endpoint of Apache Rolle) → Apache Roller 6.1.5の脆弱性群（CVSS9.0）。概要: Incorrect Authorization in the OAuth 1.0a authorization endpoint of Apache Roller 6.1.5 allows an unauthenticated remote attacker who learns an outstanding request token for a configured site-wide con… KEV/PoC/実悪用未確認・ニッチなOSSブログ基盤。軸1=3点<8点のため除外（同一製品の同時公開分）。
+・CVE-2026-101007 (A vulnerability has been found in aaPanel BaoTa up to 11.8.0. This issue affects) → EUVD-only層（EUVD-only:EUVD-2026-88103・GHSA GHSA-5c78/mv7w系）。CVSS9.3（EUVD/v4.0）。同一製品aaPanel BaoTaの並行公開分でNVD反映遅れ。概要: A vulnerability has been found in aaPanel BaoTa up to 11.8.0. This issue affects the function InputSql of the file class/database.py of the component Database Backup Handler. Such manipulation of the … KEV/実悪用なし・EPSS 0.0。軸1=3点<8点のため除外。
+・CVE-2026-101009 (A vulnerability was determined in aaPanel BaoTa up to 11.8.0. The affected eleme) → EUVD-only層（EUVD-only:EUVD-2026-88106・GHSA GHSA-5c78/mv7w系）。CVSS9.3（EUVD/v4.0）。同一製品aaPanel BaoTaの並行公開分でNVD反映遅れ。概要: A vulnerability was determined in aaPanel BaoTa up to 11.8.0. The affected element is the function panelTask.bt_task._unzip of the file /www/server/panel/class/panelTask.py of the component Unzip Hand… KEV/実悪用なし・EPSS 0.0。軸1=3点<8点のため除外。
+・CVE-2026-35273 (Oracle PeopleSoft PeopleTools) → SecurityWeekがGoogleのShinyHunters新キャンペーン警告（%50によるWAFバイパス・SideEye/Neo-reGeorg/MeshCentral）を報じたが、2026-09-27に参考B/APT本編で採用済みの内容と同一。新規の状態変化なし（対象セクターが農業・運輸等へ拡大との記述のみ）。
+
+本日の集計:
+CVE — ゼロデイ特報0件 / 本編0件 / 参考A2件 / 参考B1件 / 除外40件
+
+網羅スイープ: 候補39件 / 未処理0件 / KEV窓内追加0件 / EUVD窓内全量39件（うちNVD/KEV未収載2件）
+
+========================================
