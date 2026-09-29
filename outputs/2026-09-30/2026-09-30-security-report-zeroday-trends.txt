@@ -1,0 +1,158 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-09-30 08:10 JST
+調査期間: 2026-09-29 07:00 〜 2026-09-30 07:00 JST
+========================================
+
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-86950 Apple CoreGraphics（iOS/iPadOS/macOS 旧バージョン）（Apple）
+------------------------------------------------------------
+優先度: high
+CVSS v4.0: None  KEV: 登録済み 2026-09-29  悪用: 確認  FCEB期限: 2026-10-02
+影響バージョン: iOS/iPadOS 26.7.1 未満、macOS Tahoe 26.7.1 未満、macOS Sequoia 15.8.1 未満（記事記載の旧バージョン系列）
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-09-29] CISAがKnown Exploited VulnerabilitiesカタログへCVE-2026-86950を新規追加（catalogVersion 2026.09.29・FCEB期限2026-10-02）。前日までKEV未登録だった。
+[BleepingComputer 2026-09-29] AppleがCoreGraphicsのゼロデイ脆弱性を修正し、攻撃で悪用されたと報道。
+[SANS Internet Storm Center 2026-09-29] iOS 26 / macOS 26 / macOS 15向け緊急パッチとしてCVE-2026-86950を解説。
+
+【概要】
+Apple CoreGraphicsの境界外書込み脆弱性CVE-2026-86950について、CISAが2026-09-29にKEVカタログへ追加した（FCEB期限2026-10-02）。前日既報の時点ではAppleが「特定の標的個人への極めて高度な攻撃で悪用された可能性」と説明するのみでKEV未登録だったが、KEV登録により実悪用が確認された扱いに状態が変化した。悪用の詳細・件数・攻撃者は非公開で、帰属は未確認。修正版はiOS/iPadOS 26.7.1、macOS Tahoe 26.7.1、macOS Sequoia 15.8.1。
+
+【攻撃の流れ】
+1. 細工されたファイル（画像/PDF等）を標的端末のCoreGraphicsに処理させる
+2. 境界外書込みにより任意コード実行に至る可能性（悪用の具体的な連鎖は非公開）
+
+【暫定対策】
+・iOS/iPadOS 26.7.1・macOS Tahoe 26.7.1・macOS Sequoia 15.8.1 へ更新（FCEB期限2026-10-02）
+・高リスク利用者は該当端末でロックダウンモードを検討する
+
+【監視】
+MDM上の該当OSバージョン未更新端末の棚卸し。不審なファイル受信直後のアプリクラッシュログの確認。
+
+【参照】
+・BleepingComputer: Apple patches CoreGraphics zero-day flaw exploited in attacks https://www.bleepingcomputer.com/news/security/apple-patches-coregraphics-zero-day-flaw-exploited-in-attacks
+・Security NEXT: 「iOS 26.7.1」公開、脆弱性を修正 - 特定個人への攻撃で悪用か https://www.security-next.com/
+・The Hacker News: Apple Patches CoreGraphics Flaw Possibly Exploited in Targeted Attacks https://thehackernews.com/2026/09/apple-patches-coregraphics-flaw.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Star Blizzard / StarBlizzard-2026-CosmicPulseEventInvite
+帰属: ロシア（Microsoftが「ほぼ確実にFSB第18センターの下で活動」と評価）（信頼度: high）
+標的: government, think_tank, ngo / US, GB, UA
+マルウェア: CosmicPulse
+
+【24時間以内の変化】
+[The Hacker News（Microsoft分析引用） 2026-09-30] MicrosoftがStar Blizzardによる偽イベント招待を使うフィッシングでPython製バックドアCosmicPulseを配布するキャンペーンを公開。2026年1月以降ウクライナ関連の100超の組織（主に米英）が影響を受けたと報道。
+
+【概要】
+Microsoftは、ロシアの国家支援グループStar Blizzardが2026年1月以降、正規団体を装った偽イベント招待メールでウクライナ関連の組織・個人（シンクタンク・NGO・政府機関等、主に米英）を標的とし、Python製バックドアCosmicPulseを配布していると公表した。パスワード付きRAR/ZIP（パスワードは画像で提示）、PDFに偽装したLNK、MSIによるスケジュールタスク(RedFlick)などの手口を使い、Evilginxによるパスワードとセッションクッキー窃取も確認されている。影響組織は100超だが、侵害が確認された端末数は不明。帰属はMicrosoftの評価に基づく（単一ベンダー・二次報道経由）。
+
+【TTP】
+・T1566 Phishing: 偽イベント招待メールによる配布
+・T1204.002 User Execution: Malicious File: PDF偽装LNK/アーカイブの実行
+・T1053.005 Scheduled Task: スケジュールタスクによるバックドア導入・永続化
+・T1539 Steal Web Session Cookie: Evilginxによるセッションクッキー窃取
+
+【IOC】
+IP: 103.160.59[.]97
+ドメイン: secure-dns-hub[.]com
+
+【推奨アクション】
+103.160.59[.]97とsecure-dns-hub[.]comへの通信をプロキシ/DNSログで遡及確認し、スケジュールタスク名（Internet Quality Test Connection / Network Configuration Manager / System Health Monitor）を点検する。Defender検知名Trojan:Script/RedFlick・Backdoor:Python/CosmicPulseを確認する。
+
+【参照】
+・The Hacker News: Russia's Star Blizzard Targets 100+ Organizations With Fake Event Invites to Deliver Backdoor https://thehackernews.com/2026/09/russias-star-blizzard-targets-100.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【動向トピック】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+Kiteworks、精密停止中に発見した未知の重大脆弱性を修正し顧客システムを再開
+------------------------------------------------------------
+
+【24時間以内の変化】
+[The Hacker News 2026-09-29] Kiteworksが重大脆弱性の修正と停止勧告の解除を発表と報道
+
+【概要】
+Kiteworksは、予防的停止要請の期間中に「顧客の1%未満で有効な機能に限定された、従来未知の重大な脆弱性」を発見し、パッチ適用後に停止勧告を解除したと説明した。連邦の情報機関と協力したとされる。CVE番号・悪用有無は本窓では未公開で、侵害の証拠はないとの同社説明のまま。既報事案（2026-09-27）の続報。
+
+【参照】
+・The Hacker News: Kiteworks、精密停止中に発見した未知の重大脆弱性を修正し顧客システムを再開 https://thehackernews.com/2026/09/kiteworks-fixes-critical-flaw-found.html
+
+------------------------------------------------------------
+仏税務当局から窃取した職員パスワードで税データを7週間抜き取り、検知されず（ANSSI報告）
+------------------------------------------------------------
+
+【24時間以内の変化】
+[The Hacker News 2026-09-30] ANSSIが仏税務当局の税データ窃取事案の報告書を公表と報道
+
+【概要】
+ANSSIの報告によれば、攻撃者はフランス税務当局職員の窃取されたパスワードを使い、2026年6〜7月に数十万件規模の納税者・事業者の税データを取得した。税務当局もANSSIもデータ流出を検知できず、攻撃は高度ではなく弱い認証管理が原因とされる。
+
+【参照】
+・The Hacker News: 仏税務当局から窃取した職員パスワードで税データを7週間抜き取り、検知されず（ANSSI報告） https://thehackernews.com/2026/09/french-tax-data-theft-using-stolen.html
+
+------------------------------------------------------------
+米国防人事データ管理センター(DMDC)で300万人規模のデータ侵害
+------------------------------------------------------------
+
+【24時間以内の変化】
+[SecurityWeek 2026-09-29] DMDCのデータ侵害が300万人に影響と報道
+
+【概要】
+SecurityWeekは、国防総省の人事記録を管理するDefense Manpower Data Centerでのデータ侵害が約300万人に影響すると報じた。侵入経路・攻撃者は本窓の要約では確認できていない。
+
+【参照】
+・SecurityWeek: 米国防人事データ管理センター(DMDC)で300万人規模のデータ侵害 https://www.securityweek.com/pentagon-personnel-agency-data-breach-impacts-3-million-people
+
+------------------------------------------------------------
+新Spectre v2亜種「Branch Target Reuse(BTR)」、Intel/AMD/ArmでJITやカーネルのメモリを漏えい
+------------------------------------------------------------
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-30] Spectre-v2 BTR攻撃を報道
+
+【概要】
+VUSecとScuola Superiore Sant'Annaの研究者がSpectre v2の新亜種BTRを公開した。Intel環境のLinuxでrootパスワードハッシュを平均3〜5分で回復できると報じられ、既存緩和策を回避する。悪用の確認はなく学術的な開示である。
+
+【参照】
+・BleepingComputer: 新Spectre v2亜種「Branch Target Reuse(BTR)」、Intel/AMD/ArmでJITやカーネルのメモリを漏えい https://www.bleepingcomputer.com/news/security/new-spectre-v2-attack-variant-leaks-linux-root-password-hash-in-minutes
+
+------------------------------------------------------------
+ShinyHunters関連：オランダ警察が24歳男性を逮捕、FBIがメンバーに出頭を要求
+------------------------------------------------------------
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-30] FBIがShinyHunters関係者に出頭を呼びかけと報道
+
+【概要】
+オランダ警察は今月アムステルダムの24歳男性をShinyHunters捜査で逮捕したと確認し、FBIはこの人物をグループの幹部の一人と説明して他のメンバーに出頭を促した。組織活動への影響は本窓では未確認。
+
+【参照】
+・BleepingComputer: ShinyHunters関連：オランダ警察が24歳男性を逮捕、FBIがメンバーに出頭を要求 https://www.bleepingcomputer.com/news/security/fbi-tells-shinyhunters-members-to-turn-themselves-in-after-recent-arrest
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+本日の新規予報なし（理由: forecaster/forecasts/daily/2026-09-30.md 参照。E1はCVE-2026-88772で2026-09-27、CVE-2026-86950で2026-09-29に発生・消費済み、E3は発行済み、E4は実測ハザード未測定でM1-bにより主的中条件に採れない）。
+
+【戦術予報 TF-1（shadow運用・非公開）】
+追跡対象 131 件 / 状態: {'ACTIVE_EXPLOITATION': 48, 'DISCLOSED': 44, 'POC_PUBLIC': 39} / 発行 0 件
+shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。
