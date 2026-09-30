@@ -1,0 +1,1826 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-10-01",
+    "generated_at": "2026-10-01T08:10:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-09-30T07:00:00+09:00",
+      "to": "2026-10-01T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.09.30",
+      "candidates": 68,
+      "handled": 68,
+      "unhandled": 0,
+      "kev_added_in_window": 1,
+      "ghsa_origin_over_threshold": 6,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 59,
+        "euvd_only": 1
+      }
+    }
+  },
+  "zero_day_special": [
+    {
+      "cve_id": "CVE-2026-76504",
+      "product": "Cisco Catalyst SD-WAN Manager（APIログインセッション認証管理）",
+      "vendor": "Cisco",
+      "affected_versions": "全構成（20.9未満は修正版へ移行要。修正版: 20.9.10.1 / 20.12.8.2 / 20.15.6.1 / 20.18.4.1 / 26.1.2.1 / 26.2.1。Cloud Hosted は対策済み）",
+      "priority": "high",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": true,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "20.9.10.1 / 20.12.8.2 / 20.15.6.1 / 20.18.4.1 / 26.1.2.1 / 26.2.1",
+        "eta": null
+      },
+      "fceb_deadline": "2026-10-03",
+      "kev_date_added": "2026-09-30",
+      "axis1_score": 14,
+      "axis2_score": 2,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "Cisco PSIRT",
+          "date": "2026-09-30",
+          "description": "CVE-2026-76504（SD-WAN Manager APIログインセッション認証管理の認証回避・CVSS 9.8）のアドバイザリを公開。2026年9月にTAC対応中に実悪用を把握したと説明。回避策なし・修正版あり。"
+        },
+        {
+          "source": "CISA KEV Catalog",
+          "date": "2026-09-30",
+          "description": "CISAがCVE-2026-76504をKEVカタログへ追加（FCEB期限2026-10-03・ランサムウェア利用: Unknown）。"
+        },
+        {
+          "source": "BleepingComputer / The Hacker News",
+          "date": "2026-09-30",
+          "description": "Catalyst SD-WAN Managerのゼロデイが管理者権限への昇格に悪用されていると報道。"
+        }
+      ],
+      "overview": "Cisco Catalyst SD-WAN Managerは、APIログインセッションの認証管理におけるURIエンコードの処理不備（j_security_checkのログインパスで「%6a」等のエンコードを用いる）により、ネットワーク到達性のみで未認証の攻撃者が管理者としてAPIを利用できる脆弱性CVE-2026-76504（CVSS 9.8）を修正した。CiscoはTAC対応中に2026年9月の実悪用を把握したと説明し、CISAが2026-09-30にKEVへ追加した（FCEB期限2026-10-03）。回避策はなく、インターネットに公開されたManagerが最もリスクが高いとされる。攻撃者の帰属・IOC・被害件数は公表されていない（未確認）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "SD-WAN ManagerのAPIログインパス（j_security_check）へURIエンコードした細工リクエストを送信し認証規則を回避"
+        },
+        {
+          "step": 2,
+          "description": "認証なしで管理者としてManager APIを利用（以降の具体的な連鎖は非公開）"
+        }
+      ],
+      "techniques": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "Manager APIログインセッションの認証回避脆弱性の悪用（Ciscoが実悪用を確認）"
+        }
+      ],
+      "temp_mitigation": [
+        "修正版（20.9.10.1 / 20.12.8.2 / 20.15.6.1 / 20.18.4.1 / 26.1.2.1 / 26.2.1）へ更新（FCEB期限2026-10-03）",
+        "Manager APIへのアクセスを信頼できるホストに限定し、インターネットから到達可能な状態を解消する",
+        "制御コンポーネントをファイアウォール配下に置く"
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "SD-WAN ManagerのWeb/APIアクセスログで、j_security_checkへのURIエンコード（%6a等）を含むリクエストと、その直後の管理者APIの利用を確認する。予期しない管理者アカウント・設定変更の有無を点検する。",
+        "splunk_spl": [],
+        "detection_notes": "IOCが非公開のため専用シグネチャは提供できない。上記リクエストパターンはアドバイザリ記載の悪用手口に基づく。"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/cisco-warns-of-new-sd-wan-authentication-bypass-zero-day-exploited-in-attacks",
+          "title": "Cisco warns of new SD-WAN zero-day exploited in attacks",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://thehackernews.com/2026/09/cisco-warns-of-attackers-exploiting.html",
+          "title": "Cisco Warns of Attackers Exploiting Critical Authentication Bypass in SD-WAN Manager",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "telecom",
+        "finance",
+        "government"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "zero_day_special",
+      "info_id": "20261001-CVEP-a3653160"
+    }
+  ],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [
+    {
+      "cve_id": "CVE-2026-84411",
+      "product": "MikroTik RouterOS（ウェブ管理のHTTPリクエスト処理）",
+      "vendor": "MikroTik",
+      "affected_versions": "RouterOS 7.24未満（7.23以降へ更新。最新stable 7.24.4・long-term 7.23.7が2026-09-16から提供）",
+      "priority": "medium",
+      "cvss_v3": null,
+      "cvss_v4": null,
+      "cvss_severity": null,
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "7.23以降（stable 7.24.4 / long-term 7.23.7）",
+        "eta": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "axis1_score": 9,
+      "axis2_score": 0,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-09-30",
+          "description": "CISAがMikroTik RouterOSの認証前RCE/DoSの重大な脆弱性CVE-2026-84411について注意喚起。実悪用は公表されていないと報道。"
+        }
+      ],
+      "overview": "CISAは、MikroTik RouterOSのウェブ管理のHTTPリクエスト処理における認証前の整数アンダーフローCVE-2026-84411について注意喚起した。単一の細工リクエストでroot権限のコード実行またはDoSが可能とされる。実悪用・PoCは報道範囲では公表されておらず、CVSS値は記事に記載がない。修正版は2026-09-16から提供されている。MikroTikは過去にも別CVEで悪用された経緯がある（報道の言及）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "ウェブ管理インターフェースへ細工した単一HTTPリクエストを送信し整数アンダーフローを誘発（認証不要）"
+        },
+        {
+          "step": 2,
+          "description": "root権限のコード実行またはDoS（実悪用は未確認）"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [
+        "RouterOS 7.23以降へ更新する",
+        "ウェブ管理（HTTP/HTTPS）をインターネットへ公開せず、ファイアウォール・VPNで接続元を制限する"
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "RouterOSのバージョン棚卸しと、ウェブ管理ポートが外部から到達可能な機器の洗い出し。",
+        "splunk_spl": [],
+        "detection_notes": "実悪用が未確認のため検知シグネチャは提供できない。"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/cisa-warns-of-critical-pre-auth-rce-flaw-in-mikrotik-routeros",
+          "title": "CISA warns of critical pre-auth RCE flaw in MikroTik RouterOS",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "telecom"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20261001-CVEP-89a88a2f"
+    },
+    {
+      "cve_id": "CVE-2026-73570",
+      "product": "Zimbra Collaboration Suite（zimbra-snmp・SNMP通知経由の未認証OSコマンドインジェクション）",
+      "vendor": "Synacor / Zimbra",
+      "affected_versions": "10.1.20未満（2026-07-20に修正版提供）",
+      "priority": "medium",
+      "cvss_v3": 8.9,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [
+        "CWE-78"
+      ],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "10.1.20",
+        "eta": null
+      },
+      "fceb_deadline": "2026-08-24",
+      "kev_date_added": "2026-08-21",
+      "axis1_score": 10,
+      "axis2_score": 1,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Microsoft Security Research引用）",
+          "date": "2026-09-30",
+          "description": "MicrosoftがCVE-2026-73570の実悪用後の挙動（JSPウェブシェル・リバースシェル・sudo(pam.d)改変による権限昇格・systemd/cron永続化・SSH経由の横展開・localconfig.xmlからの認証情報窃取・AzCopyでの持ち出し試行）を公開。攻撃者の帰属は示されていない。"
+        }
+      ],
+      "overview": "CVE-2026-73570はKEV登録・実悪用確認済みの既報事案。本窓でMicrosoft Security Researchが侵害後の挙動を公開した。SMTP経由の細工リクエストでOSコマンドを実行し、JSPウェブシェル、リバースシェル、/etc/pam.d/sudoの改変による権限昇格、systemdサービス（zimlog.service）とcronによる永続化、SSH鍵を使った横展開、/opt/zimbra/conf/localconfig.xmlからの認証情報窃取、メールボックスDBへのアクセスとAzCopyによる持ち出し試行を確認した。スキャンは2026-07-28〜08-07に観測されている。帰属は示されていない（未確認）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "細工したSMTP要求でzimbra-snmpのSNMP通知処理を経由しOSコマンドを実行（未認証）"
+        },
+        {
+          "step": 2,
+          "description": "JSPウェブシェル設置・リバースシェル・pam.d/sudo改変で権限昇格、systemd/cronで永続化"
+        },
+        {
+          "step": 3,
+          "description": "localconfig.xmlの認証情報窃取、SSH鍵での横展開、メールボックスDBの収集とAzCopyによる持ち出し試行"
+        }
+      ],
+      "techniques": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "SNMP通知処理経由の未認証OSコマンドインジェクションの悪用"
+        },
+        {
+          "mitre_id": "T1505.003",
+          "name": "Web Shell",
+          "implementation": "JSPウェブシェルの設置"
+        },
+        {
+          "mitre_id": "T1543.002",
+          "name": "Systemd Service",
+          "implementation": "systemdサービス（zimlog.service）による永続化"
+        }
+      ],
+      "temp_mitigation": [
+        "10.1.20以降へ更新する",
+        "更新できない場合はzimbra-snmpをアンインストールしSNMP通知を無効化、SNMP/SMTPへのアクセスを制限する",
+        "永続的なウェブシェルの走査と、Zimbraに保存された認証情報・シークレットのローテーション"
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": [
+          "Zimdown2（Go製ダウンローダ）",
+          "Zimclient2（遠隔操作エージェント）",
+          "zimlog.service"
+        ]
+      },
+      "monitoring": {
+        "description": "mailboxd/Jetty配下の不審なJSPファイル、/etc/pam.d/sudoの改変、zimlog.service等の不審なsystemdユニット、AzCopyの外部ストレージ宛通信を確認する。",
+        "splunk_spl": [],
+        "detection_notes": "IOCはMicrosoft公開分をThe Hacker Newsが引用したもの。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-exploit-zimbra-flaw-to-deploy.html",
+          "title": "Attackers Exploit Zimbra Flaw to Deploy Web Shells and Harvest Authentication Secrets",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "government"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "reference_b",
+      "info_id": "20261001-CVEP-d443e7c0"
+    }
+  ],
+  "trends": {
+    "trends_cve": [
+      {
+        "cve_id": "CVE-2026-102489",
+        "product": "Zammad（ヘルプデスク/チケットOSS・CVE-2026-102489 / CVE-2026-102490 の連鎖）",
+        "vendor": "Zammad",
+        "affected_versions": "CVE-2026-102489: Zammad 6.3.0〜6.5.4（7.0.0〜7.1.3は同欠陥を含むが環境条件により悪用不可）。CVE-2026-102490: 最新alphaを含む全バージョン。DIVDはバージョン7への更新またはインスタンスのオフライン化を推奨",
+        "priority": "high",
+        "cvss_v3": null,
+        "cvss_v4": 9.4,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": false,
+          "actively_exploited": true,
+          "zero_day": true,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "Zammad 7系（DIVD推奨）",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 12,
+        "axis2_score": 1,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-09-30",
+            "description": "DIVDが、自組織ネットワークへの侵害はZammadの2件のゼロデイ（CVE-2026-102489 / CVE-2026-102490）の連鎖で可能になったと説明。セッションハイジャック→Zammadユーザー権限でのRCE→rootへの権限昇格が、自律AIエージェントにより数秒で行われたと報道。"
+          },
+          {
+            "source": "NVD / DIVD CSIRT",
+            "date": "2026-09-30",
+            "description": "CVE-2026-102489（セッションハイジャック→RCE・CVSS v4.0 9.4）とCVE-2026-102490（zammadユーザーからrootへの権限昇格・CVSS v4.0 9.4）がDIVD CSIRTにより公開された。"
+          }
+        ],
+        "overview": "オランダのDIVDは、自組織への侵害がオープンソースのチケット管理システムZammadにおける2件のゼロデイの連鎖で可能になったと公表した（Merlon Securityとともに発見し、Zammadへ通知済み）。CVE-2026-102489はセッションハイジャックからZammadユーザー権限のリモートコード実行に至り、CVE-2026-102490はzammadユーザーからrootへの権限昇格を許す。DIVDは連鎖が「エージェントによる攻撃のため数秒で」実行されたと説明し、ネットワーク分離により侵入の深化は防がれた。攻撃者は未特定。CISA KEV未登録・公開PoCは確認できていない。ZammadはAmnesty InternationalやNextcloud等を含む2,000超の顧客・5.5万ユーザーを持つと報じられている。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "CVE-2026-102489によりセッションをハイジャックし、zammadユーザー権限でリモートコードを実行"
+          },
+          {
+            "step": 2,
+            "description": "CVE-2026-102490によりzammadユーザーからrootへ権限昇格"
+          },
+          {
+            "step": 3,
+            "description": "自律AIエージェントが上記連鎖と後続のデータ持ち出しを数秒で実行（DIVD説明）"
+          }
+        ],
+        "techniques": [
+          {
+            "mitre_id": "T1190",
+            "name": "Exploit Public-Facing Application",
+            "implementation": "Zammadのセッションハイジャック→RCEの悪用（DIVDが侵害経路として説明）"
+          },
+          {
+            "mitre_id": "T1068",
+            "name": "Exploitation for Privilege Escalation",
+            "implementation": "zammadユーザーからrootへの権限昇格脆弱性の悪用"
+          }
+        ],
+        "temp_mitigation": [
+          "Zammadを7系へ更新する（DIVD推奨）、更新できない場合はインスタンスをオフラインにする",
+          "Zammadホストのセッション・認証情報をリセットし、予期しないroot権限のプロセス・設定変更を点検する"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "Zammadホストでzammadユーザーからrootへの権限昇格の痕跡、短時間に連続する不審なセッション利用とコマンド実行を確認する。",
+          "splunk_spl": [],
+          "detection_notes": "DIVDは詳細（エージェントの挙動・攻撃者）を2026-10-01に公表予定としている。"
+        },
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/divd-says-zammad-zero-days-enabled-ai-driven-network-breach",
+            "title": "DIVD says Zammad zero-days enabled AI-driven network breach",
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "sector_impact": [
+          "it",
+          "nonprofit"
+        ],
+        "region_impact": [
+          "EU",
+          "global"
+        ],
+        "exploited_by": [],
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261001-CVEP-5c6aa77a"
+      }
+    ],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-10-01-001",
+        "title": "GitLab: CVE-2026-85706（CVSS 10.0・実悪用確認済み）等のクリティカル脆弱性を旧ブランチへバックポート",
+        "summary": "GitLabは、commits APIの認可処理不備によるファイル不正取得CVE-2026-85706（CVSS 10.0・報道では実環境で悪用済み）とEnterprise Edition限定のCVE-2026-87719（CVSS 9.9・Advanced Search設定・認証情報の露出）について、2026-09-23に19.0.9・18.11.12へバックポートした（先行修正は19.3.2・19.2.6・19.1.8）。CVE-2026-85706は2026-09-13に既報。",
+        "changes_24h": [
+          {
+            "source": "Security NEXT",
+            "date": "2026-09-30",
+            "description": "GitLabが旧ブランチ向けにクリティカル脆弱性のバックポートを実施と報道。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "JP",
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.security-next.com/190854",
+            "title": "GitLab: CVE-2026-85706（CVSS 10.0・実悪用確認済み）等のクリティカル脆弱性を旧ブランチへバックポート",
+            "language": "en",
+            "source": "Security NEXT"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261001-TRND-a614e220"
+      },
+      {
+        "topic_id": "TREND-2026-10-01-002",
+        "title": "SailPoint IdentityIQにCVSS 9.6の未認証RCE脆弱性CVE-2026-12342（修正版提供）",
+        "summary": "SailPointはIdentityIQのWebサービスAPIの入力検証不備により、隣接ネットワークの攻撃者が認証なしで任意コードを実行できる脆弱性CVE-2026-12342（CVSS v3.1 9.6）を2026-09-28に開示し、対応パッチを提供した。悪用は報道範囲では確認できていない。",
+        "changes_24h": [
+          {
+            "source": "Security NEXT",
+            "date": "2026-09-30",
+            "description": "SailPointがIdentityIQの深刻な脆弱性を公表と報道。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "JP",
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.security-next.com/190833",
+            "title": "SailPoint IdentityIQにCVSS 9.6の未認証RCE脆弱性CVE-2026-12342（修正版提供）",
+            "language": "en",
+            "source": "Security NEXT"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261001-TRND-315e9a8e"
+      },
+      {
+        "topic_id": "TREND-2026-10-01-003",
+        "title": "TeamViewerがクライアント/ホストの高深刻度脆弱性の早期パッチ適用を要請",
+        "summary": "TeamViewerは2026-09-29（火）、クライアントおよびホスト向けソフトウェアの高深刻度の脆弱性群について可能な限り早くパッチを適用するよう顧客に促した。CVE番号・悪用有無は本記録の要約範囲では確認できていない。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-09-30",
+            "description": "TeamViewerが重大な脆弱性のパッチ適用を要請と報道。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/teamviewer-urges-users-to-patch-severe-flaws-as-soon-as-possible",
+            "title": "TeamViewerがクライアント/ホストの高深刻度脆弱性の早期パッチ適用を要請",
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261001-TRND-1dce315f"
+      },
+      {
+        "topic_id": "TREND-2026-10-01-004",
+        "title": "OpenSSL（DTLSの再送処理によるヒープメモリ漏えい/クラッシュ）とwolfSSLが高深刻度脆弱性を修正",
+        "summary": "OpenSSLは2026-09-29、DTLSのハンドシェイク再送がより大きなメッセージの途中で開始された場合にヒープメモリが暗号化されずに相手へ漏れる、またはクラッシュする高深刻度の脆弱性を修正した。OpenSSLとwolfSSLの双方で約12件ずつの脆弱性が修正された（SecurityWeek）。悪用は確認されていない。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-09-30",
+            "description": "OpenSSLがDTLSの高深刻度脆弱性を修正と報道。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/09/openssl-fixes-high-severity-dtls-flaw.html",
+            "title": "OpenSSL（DTLSの再送処理によるヒープメモリ漏えい/クラッシュ）とwolfSSLが高深刻度脆弱性を修正",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261001-TRND-8f4de1cc"
+      },
+      {
+        "topic_id": "TREND-2026-10-01-005",
+        "title": "ブラウザ更新: Chrome・Firefox 157が合計100件超の脆弱性を修正",
+        "summary": "GoogleはChromeでクリティカルを含む脆弱性32件を、MozillaはFirefox 157で76件を修正した。リモートからのコード実行やサンドボックス回避につながるものを含む（SecurityWeek）。悪用の報告は本窓の要約範囲では確認できていない。",
+        "changes_24h": [
+          {
+            "source": "Security NEXT",
+            "date": "2026-09-30",
+            "description": "Chrome 32件・Firefox 157で76件の脆弱性修正と報道。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global",
+          "JP"
+        ],
+        "references": [
+          {
+            "url": "https://www.security-next.com/190829",
+            "title": "ブラウザ更新: Chrome・Firefox 157が合計100件超の脆弱性を修正",
+            "language": "en",
+            "source": "Security NEXT"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261001-TRND-3ef7d578"
+      },
+      {
+        "topic_id": "TREND-2026-10-01-006",
+        "title": "Google GTIG報告: AI時代の脆弱性発見・悪用の動向（開示数・悪用数が約2倍）",
+        "summary": "GTIGは、月間の脆弱性開示数が2026年1月の5,045件から7月に10,477件、8月に10,740件へ倍増し、悪用された脆弱性の数もほぼ倍増したと報告した。AIが発見した脆弱性はリモートコード実行につながる割合が高いとされる。統計的分析であり個別の攻撃事案ではない。",
+        "changes_24h": [
+          {
+            "source": "Google Threat Intelligence (Mandiant)",
+            "date": "2026-09-30",
+            "description": "GTIGがAI時代の脆弱性発見・悪用の傾向を公表。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://cloud.google.com/blog/topics/threat-intelligence/vulnerability-discovery-and-exploitation-trends-in-the-ai-era",
+            "title": "Google GTIG報告: AI時代の脆弱性発見・悪用の動向（開示数・悪用数が約2倍）",
+            "language": "en",
+            "source": "Google Threat Intelligence (Mandiant)"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261001-TRND-a4551a29"
+      },
+      {
+        "topic_id": "TREND-2026-10-01-007",
+        "title": "ShinyHunters: FBIが出頭を呼びかけ、グループは「FBIのデータ公開意図はなかった」と反発",
+        "summary": "疑われる幹部の逮捕（既報）を受けてFBIがメンバーに出頭を促したことに対し、ShinyHuntersはFBIから窃取したデータを公開するつもりはなかったと主張している（SecurityWeek）。組織活動への影響は本窓では未確認。",
+        "changes_24h": [
+          {
+            "source": "SecurityWeek",
+            "date": "2026-09-30",
+            "description": "ShinyHuntersがFBIの呼びかけに反応と報道。"
+          }
+        ],
+        "sector_impact": [
+          "government"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.securityweek.com/shinyhunters-defiant-after-fbi-calls-on-members-to-come-forward",
+            "title": "ShinyHunters: FBIが出頭を呼びかけ、グループは「FBIのデータ公開意図はなかった」と反発",
+            "language": "en",
+            "source": "SecurityWeek"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261001-TRND-ef8b9e6d"
+      },
+      {
+        "topic_id": "TREND-2026-10-01-008",
+        "title": "南アフリカの航空管制ネットワークにランサムウェア用ツールキットが設置、支援を要請",
+        "summary": "Dark Readingは、南アフリカが航空管制へのサイバー攻撃を受けて支援を求めたと報じた。少なくとも1つの運用ネットワークにランサムウェア用ツールキットが設置されていたとされる。攻撃者・影響範囲の詳細は本窓の要約では確認できていない。",
+        "changes_24h": [
+          {
+            "source": "Dark Reading",
+            "date": "2026-09-30",
+            "description": "南アフリカの航空管制へのサイバー攻撃と支援要請を報道。"
+          }
+        ],
+        "sector_impact": [
+          "transportation",
+          "government"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.darkreading.com/cyberattacks-data-breaches/south-africa-help-cyberattack-air-traffic-control",
+            "title": "南アフリカの航空管制ネットワークにランサムウェア用ツールキットが設置、支援を要請",
+            "language": "en",
+            "source": "Dark Reading"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261001-TRND-9d25e80d"
+      },
+      {
+        "topic_id": "TREND-2026-10-01-009",
+        "title": "公開GitHubリポジトリで54.3万件超の有効な認証情報が7月時点でも残存",
+        "summary": "BleepingComputerは、公開GitHubリポジトリに漏えいした54.3万件超の認証情報が、プラットフォームの漏えい防止策にもかかわらず2026年7月時点で有効だったと報じた。攻撃者による悪用の有無は要約範囲では確認できていない。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-09-30",
+            "description": "公開GitHubリポジトリの有効な認証情報の残存を報道。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/over-543-000-valid-credentials-exposed-in-public-github-repositories",
+            "title": "公開GitHubリポジトリで54.3万件超の有効な認証情報が7月時点でも残存",
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261001-TRND-2c390ba2"
+      }
+    ]
+  },
+  "apt_main": [],
+  "apt_notable": [
+    {
+      "group_name": "不明（Bitget CEOは北朝鮮の攻撃者と評価・第三者の確認は本窓で未確認）",
+      "aliases": [],
+      "nation_state": "北朝鮮の疑い（被害企業CEOの評価のみ・独立した帰属確認なし）",
+      "attribution_confidence": "low",
+      "campaign_id": "Unattributed-2026-BitgetSecurityApplianceZeroDay",
+      "activity_type": [
+        "new_campaign",
+        "zero_day_exploit"
+      ],
+      "motivation": "financial",
+      "first_seen": "2026-08-31",
+      "last_seen": "2026-09-25",
+      "targets": {
+        "sectors": [
+          "finance"
+        ],
+        "regions": [
+          "APAC",
+          "global"
+        ],
+        "countries": []
+      },
+      "malware": [],
+      "axis_p_score": 5,
+      "axis_q_score": 7,
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-09-30",
+          "description": "Bitgetが、先週約3億8,750万ドルを窃取された侵入は第三者セキュリティ製品のゼロデイ悪用が起点だったと公表。最古の不審活動は2026-08-31、窃取は2026-09-25の約3時間。CEOは北朝鮮の攻撃者と評価。製品ベンダー名は非公表。"
+        }
+      ],
+      "overview": "暗号資産取引所Bitgetは、2026-09-25に約3億8,750万ドルを窃取された事案について、攻撃者が第三者のセキュリティ製品（ベンダー名・CVEは非公表）のゼロデイ脆弱性を悪用して侵入し、ウォレット基盤にウェブシェルとマルウェアを設置したうえ、独自の出金ツールで複数のブロックチェーン（Ethereum・XRP Ledger・Arbitrum・Avalanche・Optimism・BSC・Base）から資金を引き出したと説明した。最古の不審活動は2026-08-31、追加の侵害は2026-09-23〜24。フォレンジックはSlowMistとMandiantが実施した。CEOはIP挙動とブロックチェーン分析を根拠に北朝鮮の攻撃者と評価しているが、独立した第三者による帰属は本窓では確認できていない（帰属は被害企業の主張）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "第三者セキュリティ製品（2製品）のゼロデイを悪用して侵入（製品名は非公表）"
+        },
+        {
+          "step": 2,
+          "description": "ウォレット基盤にウェブシェル・マルウェアを設置"
+        },
+        {
+          "step": 3,
+          "description": "独自の出金ツールで複数チェーンから約3時間で資金を引き出し"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "セキュリティ製品のゼロデイ脆弱性の悪用（Bitget説明）"
+        },
+        {
+          "mitre_id": "T1505.003",
+          "name": "Web Shell",
+          "implementation": "ウォレット基盤へのウェブシェル設置（Bitget説明）"
+        }
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "境界・セキュリティ製品（VPN/WAF/SSL-VPN等）の管理面の露出を点検し、ベンダーの追加情報公開（製品名・CVE）を監視する。暗号資産を扱う組織は出金系の承認フローと異常出金の検知閾値を見直す。",
+      "splunk_spl": [],
+      "detection_notes": "IOC・製品名・CVEが非公表のため検知ルールは提供できない。ベンダー名の公開後に該当製品の悪用を確認する。",
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/bitget-hacked-via-zero-day-in-third-party-security-products",
+          "title": "Bitget hacked via zero-day in third-party security products",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20261001-APTN-fd3bc0b0"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [
+    {
+      "attack_id": "AI-2026-10-01-001",
+      "title": "DIVD侵害の続報: Zammadの2件のゼロデイ連鎖を自律AIエージェントが数秒で実行（オランダ・攻撃者未特定）",
+      "category": "A",
+      "subcategory": "A4",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-P"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it",
+          "nonprofit"
+        ],
+        "regions": [
+          "EU"
+        ],
+        "countries": [
+          "NL"
+        ]
+      },
+      "damage_scale": "DIVDは重大な侵入と説明したが影響の詳細は調査保護のため非公開。ネットワーク分離により侵入の深化は防がれた。警察・データ保護当局・国家サイバーセキュリティセンターへ通知済み。",
+      "burst_count": 2,
+      "burst_status": "below_threshold",
+      "axis_x_score": 8,
+      "axis_y_score": 3,
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-09-30",
+          "description": "DIVDが、侵害はZammadのゼロデイ2件（CVE-2026-102489 / CVE-2026-102490）の連鎖で可能になり、自律AIエージェントがセッションハイジャック・コード実行・root昇格・データ持ち出しを数秒で実行したと説明。エージェントが判断理由を詳細に残していたため再構成できたとされる。ネットワーク分離により侵入の深化は防がれた。"
+        }
+      ],
+      "overview": "既報のDIVD侵害（2026-09-30報）について、DIVDは侵入経路がオープンソースのチケット管理システムZammadの2件のゼロデイ（CVE-2026-102489 / CVE-2026-102490）の連鎖だったと公表した。DIVDは、外部からの指示なしに自律AIエージェントがセッションハイジャック、リモートコード実行、zammadユーザーからrootへの権限昇格、データ持ち出しを数秒で実行したと説明している。エージェントは自身の判断理由を詳細に残しており、DIVDはそれを手がかりに事案を再構成した。攻撃者は未特定。詳細は2026-10-01に追加公表予定。報道は単一ソース（BleepingComputer）と、既報のDIVD自身の発表であり、burstは閾値未満のため低優先度扱いを維持する。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Zammadの2件のゼロデイ（セッションハイジャック→RCE→root昇格）を連鎖"
+        },
+        {
+          "step": 2,
+          "description": "自律AIエージェントが連鎖と後続のデータ持ち出しを数秒で自動実行（DIVD説明）"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "人間の操作とは異なる高速な認証セッション利用とroot昇格の連鎖（数秒規模）"
+        ]
+      },
+      "monitoring": {
+        "description": "Zammad等のチケット系OSSのセッション異常、短時間でのRCE・権限昇格の連鎖を監視する。",
+        "splunk_spl": [],
+        "detection_notes": "詳細は2026-10-01の追加公表待ち。"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/divd-says-zammad-zero-days-enabled-ai-driven-network-breach",
+          "title": "DIVD says Zammad zero-days enabled AI-driven network breach",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b",
+      "info_id": "20261001-AIAT-052ff21e"
+    },
+    {
+      "attack_id": "AI-2026-10-01-002",
+      "title": "カスタムChatGPT（GPTs）偽装＋Googleスポンサー広告経由のClickFixでRAT配布の続報（Huntress: 感染40超）",
+      "category": "A",
+      "subcategory": "A1",
+      "attacker_type": "criminal",
+      "adoption_triggers": [
+        "A-P"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "Huntressは40ユーザー超の感染を確認。",
+      "burst_count": 3,
+      "burst_status": "met",
+      "axis_x_score": 6,
+      "axis_y_score": 3,
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Huntress引用）",
+          "date": "2026-09-30",
+          "description": "Huntressが2026年9月下旬に観測した、悪意あるカスタムGPT「Plus 5.6」から偽Cloudflare CAPTCHAのClickFix、MSI、DLLサイドローディング、.WAV内の暗号化シェルコードを経てRATを導入する一連の手口を公表。感染は40ユーザー超。"
+        }
+      ],
+      "overview": "既報のChatGPTカスタムGPTs偽装によるClickFix攻撃について、Huntressが詳細を公表した。スポンサー検索結果の「chatgpt」から悪意あるカスタムGPT「Plus 5.6」に誘導し、偽のサービス通知からGoogle Sites上のバックアップドメインへ遷移させ、偽のCloudflare CAPTCHAでClickFixを実行させる。PowerShellがMSI（ISOSimple.msi）を実行し、正規のCanon製バイナリ（COTFileReadApp.exe）へのDLLサイドローディング（ceiinfolog.dll・rdCore.dll）で.WAVファイル（Common.Integrator.Preview.wav）内の暗号化シェルコードを読み込み、DNS-over-HTTPS（Cloudflare/Google/Quad9）でC2通信するRATを導入する。RATはカメラ・マイク取得、ブラウザ識別、ファイル検索、追加ペイロード展開が可能で、Huntressは40ユーザー超の感染を確認した。マルウェア名は記事に示されていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Googleのスポンサー検索結果から悪意あるカスタムGPTへ誘導し、偽のサービス通知でGoogle Sites上の遷移先へ誘導"
+        },
+        {
+          "step": 2,
+          "description": "偽Cloudflare CAPTCHAのClickFixでPowerShellを実行しMSIを導入"
+        },
+        {
+          "step": 3,
+          "description": "DLLサイドローディングで.WAV内の暗号化シェルコードを実行し、DoHをC2に使うRATを稼働"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": true,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "chatgpt[.]com/g/g-6ab595ad6554819181b686d4876efb80-plus-5-6",
+          "chatgpt[.]com/g/g-6ab6ba039440819185ed491740b11cf8-plus-5-6",
+          "COTFileReadApp.exe / ceiinfolog.dll / rdCore.dll / Common.Integrator.Preview.wav / ISOSimple.msi"
+        ]
+      },
+      "monitoring": {
+        "description": "PowerShell経由のMSI実行、正規署名バイナリからの未知DLLロード、.WAVからのシェルコード読込、DoH宛の通信を監視する。",
+        "splunk_spl": [],
+        "detection_notes": "IOCはHuntress公開分をThe Hacker Newsが引用したもの。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-abuse-chatgpt-custom-gpts-to.html",
+          "title": "Attackers Abuse ChatGPT Custom GPTs to Deliver RAT via ClickFix Lures",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b",
+      "info_id": "20261001-AIAT-d818da80"
+    },
+    {
+      "attack_id": "AI-2026-10-01-003",
+      "title": "AIコーディングエージェントが社内画像1.3万件超をGitHub公開リポジトリへ露出（Glow報告・請求記録を含む）",
+      "category": "C",
+      "subcategory": "C3",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "C-P"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "300超の組織の開発者による1.3万件超の社内画像（顧客の請求記録・未公開機能の画面を含む）が公開リポジトリに存在（Glow報告）。",
+      "burst_count": 1,
+      "burst_status": "below_threshold",
+      "axis_x_score": 4,
+      "axis_y_score": 4,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-30",
+          "description": "Glowが、コード変更レビュー用のスクリーンショット共有をAIコーディングエージェントに依頼した結果、社内画像が開発者の個人アカウント配下の公開GitHubリポジトリに置かれていたと報告。"
+        }
+      ],
+      "overview": "セキュリティ企業Glowは、コード変更のスクリーンショット共有を依頼されたAIコーディングエージェントが、300超の組織の開発者の社内画像（顧客の請求記録や未公開機能の画面を含む）1.3万件超を、多くは開発者の個人アカウント配下の公開GitHubリポジトリに置いていたと報告した。攻撃者による悪用は記事の要約範囲では確認できておらず、エージェント利用に伴う情報漏えいリスクの実測である。単一ソースのため低優先度扱い。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "開発者がレビュー用のスクリーンショット共有をAIコーディングエージェントに依頼"
+        },
+        {
+          "step": 2,
+          "description": "エージェントが画像を公開GitHubリポジトリへ配置し、社内情報が外部から閲覧可能になる"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "個人アカウント配下の公開リポジトリへの社内画像のアップロード"
+        ]
+      },
+      "monitoring": {
+        "description": "開発者のAIエージェントが個人GitHubアカウントへ書き込む設定・公開リポジトリの画像アップロードを棚卸しする。",
+        "splunk_spl": [],
+        "detection_notes": "悪用の確認はなく設定・運用面の点検が中心。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/ai-coding-agents-exposed-13000-internal.html",
+          "title": "AI Coding Agents Exposed 13,000 Internal Images, Including Billing Records, on GitHub",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b",
+      "info_id": "20261001-AIAT-24454d63"
+    }
+  ],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-10-01-001",
+      "title": "MSP360等の正規RMMを会議招待・PDF偽装で配布し、ScreenConnectを重ねて遠隔アクセスを確立するフィッシング（Microsoft警告）",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "δ"
+      ],
+      "priority": "medium",
+      "product_or_service": "遠隔監視管理（RMM）ツール（MSP360・ScreenConnect）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-30",
+          "description": "Microsoftが、会議招待・PDF風のルアー・ソフト更新を装ってMSP360 RMMの正規インストーラを配布するフィッシングを警告したと報道。"
+        }
+      ],
+      "overview": "Microsoftは、正規のMSP360 RMMインストーラを偽装した名称で配布し、実行されると被害端末への遠隔管理アクセスが確立されるフィッシング活動を警告した。さらにScreenConnectを重ねる二重RMMの手口が報じられている。正規ツールのため署名・レピュテーションによる検知をすり抜けやすい。CVE・帰属は記載されていない。",
+      "recommended_actions": [
+        "許可していないRMMツール（MSP360・ScreenConnect等）の新規インストール・サービス登録をEDR/アプリ許可リストで検知・遮断する",
+        "RMMベンダードメインへの通信をプロキシ/DNSログで棚卸しし、業務上不要な端末からの通信を確認する"
+      ],
+      "monitoring": {
+        "description": "特になし（棚卸し・設定確認が中心）",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-abuse-msp360-to-deploy.html",
+          "title": "MSP360等の正規RMMを会議招待・PDF偽装で配布し、ScreenConnectを重ねて遠隔アクセスを確立するフィッシング（Microsoft警告）",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261001-SOCR-89d17360"
+    },
+    {
+      "rec_id": "SOC-2026-10-01-002",
+      "title": "米国向けCSuite（経営層）フィッシング: Microsoft 365セッションを窃取しRMMツールで遠隔アクセス（ANY.RUN報告）",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "δ"
+      ],
+      "priority": "medium",
+      "product_or_service": "Microsoft 365・RMMツール",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-30",
+          "description": "ANY.RUNが351件のサンドボックス分析から米国向けCSuiteフィッシング活動を追跡と報道。"
+        }
+      ],
+      "overview": "ANY.RUNは、Microsoft 365のセッション窃取とRMMツール導入を組み合わせ、フィッシングを広範なアカウント侵害・不正送金につなげるCSuite活動を351件のサンドボックス分析で追跡した。提出の51%が米国からで、技術・製造・政府・コンサルティング業の露出が高い。",
+      "recommended_actions": [
+        "M365でセッショントークンの再利用（異常な地理・端末）を検知し、条件付きアクセスでトークン保護を有効化する",
+        "経営層・秘書宛のメールの外部リンク・添付の取り扱いを見直し、RMMの許可リスト運用と併せて遮断を確認する"
+      ],
+      "monitoring": {
+        "description": "特になし（棚卸し・設定確認が中心）",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/us-focused-csuite-phishing-steals.html",
+          "title": "米国向けCSuite（経営層）フィッシング: Microsoft 365セッションを窃取しRMMツールで遠隔アクセス（ANY.RUN報告）",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261001-SOCR-a6a5f61f"
+    },
+    {
+      "rec_id": "SOC-2026-10-01-003",
+      "title": "国内企業・団体で相次ぐサイバー被害（京王電鉄ランサムウェア・佐賀大学NAS暗号化・ヤマト運輸「代金後払い」侵害・イープラス個人情報流出・日本郵便受付サービス不正アクセス）",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "国内事業者のWeb/業務システム・NAS",
+      "targets": {
+        "sectors": [
+          "it",
+          "transportation",
+          "education"
+        ],
+        "regions": [
+          "JP"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "ScanNetSecurity / Security NEXT",
+          "date": "2026-09-30",
+          "description": "ScanNetSecurity/Security NEXTが、国内の複数組織でランサムウェア被害・不正アクセス・情報流出を報道。警察庁は2026年上半期のランサムウェア被害件数が過去最多の123件と紹介。"
+        }
+      ],
+      "overview": "京王電鉄へのランサムウェア攻撃、佐賀大学のNASでのファイル暗号化、ヤマト運輸の「クロネコ代金後払いサービス」の第三者による侵害（宅配サービスへの影響なし）、イープラスの払戻し申請顧客の個人情報流出、日本郵便の調査請求Web受付サービスへの不正アクセス（受付一時停止）が報じられた。警察庁は四半期のランサムウェア被害件数が過去最多の123件と紹介している。侵入経路・攻撃者は要約範囲では確認できていない。",
+      "recommended_actions": [
+        "NAS・外部公開の業務システムのパッチ適用状況と、インターネットからの管理画面到達性を点検する",
+        "オフライン/イミュータブルなバックアップを確認し、ID・パスワード窃取起点の侵害に備え多要素認証を全面適用する"
+      ],
+      "monitoring": {
+        "description": "特になし（棚卸し・設定確認が中心）",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/190835",
+          "title": "国内企業・団体で相次ぐサイバー被害（京王電鉄ランサムウェア・佐賀大学NAS暗号化・ヤマト運輸「代金後払い」侵害・イープラス個人情報流出・日本郵便受付サービス不正アクセス）",
+          "language": "ja",
+          "source": "ScanNetSecurity / Security NEXT"
+        }
+      ],
+      "info_id": "20261001-SOCR-956cbffe"
+    },
+    {
+      "rec_id": "SOC-2026-10-01-004",
+      "title": "国税庁・e-Taxを装うフィッシング（還付・控除を口実にアプリへ誘導）",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "国内個人向けサービス（e-Tax・スマートフォンアプリ）",
+      "targets": {
+        "sectors": [
+          "general"
+        ],
+        "regions": [
+          "JP"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-09-30",
+          "description": "Security NEXTが、国税庁・e-Taxを騙り、アプリのインストールへ誘導するフィッシングを確認と報道。"
+        }
+      ],
+      "overview": "国税庁や電子申告サービス「e-Tax」を装い、控除・還付などを口実に利用者をアプリのインストールへ誘導するフィッシングが確認された。詳細（配布元・マルウェア種別）は要約範囲では確認できていない。",
+      "recommended_actions": [
+        "従業員・利用者へ、税務関連の連絡は公式サイト・公式アプリストアからのみ確認するよう周知する",
+        "不審なアプリのインストールを促すSMS/メールのURLをメールゲートウェイ・DNSでブロックする"
+      ],
+      "monitoring": {
+        "description": "特になし（棚卸し・設定確認が中心）",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/190860",
+          "title": "国税庁・e-Taxを装うフィッシング（還付・控除を口実にアプリへ誘導）",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "info_id": "20261001-SOCR-76bbb681"
+    },
+    {
+      "rec_id": "SOC-2026-10-01-005",
+      "title": "Zimbra CVE-2026-73570: Microsoftが侵害後の挙動とIOCを公開（既報KEV・zimlog.service・Zimclient2等）",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "γ"
+      ],
+      "priority": "low",
+      "product_or_service": "Zimbra Collaboration Suite",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-09-30",
+          "description": "MicrosoftがZimbra CVE-2026-73570の悪用後の挙動とIOCを公開と報道。"
+        }
+      ],
+      "overview": "CVE-2026-73570はKEV登録済みの既報事案。Microsoftの公開により、Zimdown2・Zimclient2・zimlog.serviceなどの永続化痕跡とlocalconfig.xmlからの認証情報窃取が具体化した。未パッチ環境に加え、パッチ済みでも過去に侵害された環境の調査が必要。",
+      "recommended_actions": [
+        "zimlog.service・mailboxd配下の不審なJSP・/etc/pam.d/sudoの改変を点検し、Zimbraに保存された資格情報をローテーションする"
+      ],
+      "monitoring": {
+        "description": "特になし（棚卸し・設定確認が中心）",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/09/attackers-exploit-zimbra-flaw-to-deploy.html",
+          "title": "Zimbra CVE-2026-73570: Microsoftが侵害後の挙動とIOCを公開（既報KEV・zimlog.service・Zimclient2等）",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261001-SOCR-23ea874b"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-102427",
+        "product": "Joomla Extension - ordasoft.com - Unauthenticated Remote Code Execution in OrdaS",
+        "reason": "low_score",
+        "reason_detail": "Joomla Extension - ordasoft.com - Unauthenticated Remote Code Execution in OrdaSoft Joomla CCK < 8.3.16 - site/uploader.… CVSS10.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-55107",
+        "product": "Kobako is a Ruby gem that embeds a Wasm-isolated mruby interpreter inside applic",
+        "reason": "low_score",
+        "reason_detail": "Kobako is a Ruby gem that embeds a Wasm-isolated mruby interpreter inside applications, allowing execution of untrusted … CVSS10.0。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-71379",
+        "product": "The file export endpoint allows any unauthenticated attacker to export arbitrary",
+        "reason": "low_score",
+        "reason_detail": "The file export endpoint allows any unauthenticated attacker to export arbitrary database tables by sending a crafted PO… CVSS10.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-76570",
+        "product": "Joomla Extension - joomcode.com - Unauthenticated SQL injection in read and writ",
+        "reason": "low_score",
+        "reason_detail": "Joomla Extension - joomcode.com - Unauthenticated SQL injection in read and write queries in JCTables 1.21.1 - The front… CVSS10.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-96349",
+        "product": "Unauthenticated Remote Code Execution (RCE) in SiteSkite <= 2.1.8 versions.",
+        "reason": "low_score",
+        "reason_detail": "Unauthenticated Remote Code Execution (RCE) in SiteSkite <= 2.1.8 versions.… CVSS10.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102911",
+        "product": "A flaw has been found in zosmaai pi-llm-wiki up to 0.11.7. Affected is an unknow",
+        "reason": "low_score",
+        "reason_detail": "A flaw has been found in zosmaai pi-llm-wiki up to 0.11.7. Affected is an unknown function of the file mcp/index.ts of t… CVSS9.9。窓内でKEV登録・実悪用報道なし。CNA=cna@vuldb.com（アグリゲータ系のためバッチ集約せず個別記録）。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-100512",
+        "product": "Contributor PHP Object Injection in Nested Pages <= 3.3.2 versions.",
+        "reason": "low_score",
+        "reason_detail": "Contributor PHP Object Injection in Nested Pages <= 3.3.2 versions.… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102115",
+        "product": "Kiteworks Core did not correctly validate a parameter submitted to the password ",
+        "reason": "low_score",
+        "reason_detail": "Kiteworks Core did not correctly validate a parameter submitted to the password reset workflow. An unauthenticated attac… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102455",
+        "product": "EasyFlow .NET developed by Digiwin has a Insecure Deserialization vulnerability.",
+        "reason": "low_score",
+        "reason_detail": "EasyFlow .NET developed by Digiwin has a Insecure Deserialization vulnerability. Unauthenticated remote attackers can ex… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102458",
+        "product": "EasyFlow .NET developed by Digiwin has a Missing Authentication vulnerability. U",
+        "reason": "low_score",
+        "reason_detail": "EasyFlow .NET developed by Digiwin has a Missing Authentication vulnerability. Unauthenticated remote attackers can obta… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-103040",
+        "product": "LightLLM through 1.2.0 contains a remote code execution vulnerability in the rou",
+        "reason": "low_score",
+        "reason_detail": "LightLLM through 1.2.0 contains a remote code execution vulnerability in the router profiler service when started with -… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-103041",
+        "product": "LightLLM through 1.2.0 multimodal deployments expose an unauthenticated RPyC cac",
+        "reason": "low_score",
+        "reason_detail": "LightLLM through 1.2.0 multimodal deployments expose an unauthenticated RPyC cache service with pickle deserialization e… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-103110",
+        "product": "Pexip Infinity before 38.2, plus 39.0, 39.1 and 40.0, is affected by improper in",
+        "reason": "low_score",
+        "reason_detail": "Pexip Infinity before 38.2, plus 39.0, 39.1 and 40.0, is affected by improper input validation that allows a remote atta… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-103395",
+        "product": "LightLLM through 1.2.0 visual_only deployments expose an unauthenticated RPyC se",
+        "reason": "low_score",
+        "reason_detail": "LightLLM through 1.2.0 visual_only deployments expose an unauthenticated RPyC service with allow_pickle enabled that des… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-18782",
+        "product": "Improper neutralization of special elements used in an SQL command ('SQL injecti",
+        "reason": "low_score",
+        "reason_detail": "Improper neutralization of special elements used in an SQL command ('SQL injection') vulnerability in Trex Digital Smart… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-55494",
+        "product": "Tugtainer is a self-hosted app for automating updates of Docker containers. Prio",
+        "reason": "low_score",
+        "reason_detail": "Tugtainer is a self-hosted app for automating updates of Docker containers. Prior to version 1.30.4, Tugtainer Agent all… CVSS9.8。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-75873",
+        "product": "The Zella Theme WordPress theme before 2.6.3 does not perform any capability or ",
+        "reason": "low_score",
+        "reason_detail": "The Zella Theme WordPress theme before 2.6.3 does not perform any capability or nonce check on one of its font upload ac… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-82307",
+        "product": "Improper neutralization of special elements used in an SQL command ('SQL injecti",
+        "reason": "low_score",
+        "reason_detail": "Improper neutralization of special elements used in an SQL command ('SQL injection') vulnerability in Dolusoft Software … CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-88920",
+        "product": "An authentication bypass in the DOM security processor in Apache WSS4J allows un",
+        "reason": "low_score",
+        "reason_detail": "An authentication bypass in the DOM security processor in Apache WSS4J allows unauthenticated remote attackers to forge … CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-96350",
+        "product": "Subscriber Privilege Escalation in Estatik <= 4.3.5 versions.",
+        "reason": "low_score",
+        "reason_detail": "Subscriber Privilege Escalation in Estatik <= 4.3.5 versions.… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-97248",
+        "product": "Unauthenticated PHP Object Injection in Booking Activities <= 1.18.7.1 versions.",
+        "reason": "low_score",
+        "reason_detail": "Unauthenticated PHP Object Injection in Booking Activities <= 1.18.7.1 versions.… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-97274",
+        "product": "Unauthenticated Bypass Vulnerability in OAuth Single Sign On – SSO (OAuth Client",
+        "reason": "low_score",
+        "reason_detail": "Unauthenticated Bypass Vulnerability in OAuth Single Sign On – SSO (OAuth Client) <= 7.1.2 versions.… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102149",
+        "product": "Kiteworks Email Protection Gateway did not sufficiently restrict which account a",
+        "reason": "low_score",
+        "reason_detail": "Kiteworks Email Protection Gateway did not sufficiently restrict which account a certificate could be assigned to. This … CVSS9.4。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-103056",
+        "product": "AiSOC versions 7.2.0 before 12.0.0 contain a command injection vulnerability in ",
+        "reason": "low_score",
+        "reason_detail": "AiSOC versions 7.2.0 before 12.0.0 contain a command injection vulnerability in the actions service that builds CrowdStr… CVSS9.4。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-55181",
+        "product": "Tugtainer is a self-hosted app for automating updates of Docker containers. Prio",
+        "reason": "low_score",
+        "reason_detail": "Tugtainer is a self-hosted app for automating updates of Docker containers. Prior to version 1.30.3, Tugtainer's OIDC au… CVSS9.4。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-70356",
+        "product": "The TMS file upload endpoint fails to enforce server-side file type restrictions",
+        "reason": "low_score",
+        "reason_detail": "The TMS file upload endpoint fails to enforce server-side file type restrictions, allowing an attacker to upload and exe… CVSS9.4。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-93903",
+        "product": "LiteSpeed Web Server (LSWS) before 6.3.7 build 1 mishandles internal redirect UR",
+        "reason": "low_score",
+        "reason_detail": "LiteSpeed Web Server (LSWS) before 6.3.7 build 1 mishandles internal redirect URL validation in a certain \"corner case.\"… CVSS9.4。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102147",
+        "product": "A stored cross-site scripting (XSS) weakness in Kiteworks Core could allow an un",
+        "reason": "low_score",
+        "reason_detail": "A stored cross-site scripting (XSS) weakness in Kiteworks Core could allow an unauthenticated attacker to store crafted … CVSS9.3。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-103470",
+        "product": "In Internet2 Grouper before 7.5.1 (in some configurations), a user who is allowe",
+        "reason": "low_score",
+        "reason_detail": "In Internet2 Grouper before 7.5.1 (in some configurations), a user who is allowed to create or edit rules in the User In… CVSS9.3。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-103475",
+        "product": "yii2-starter-kit through 4.2.0 exposes the Yii debug and Gii modules to all IP a",
+        "reason": "low_score",
+        "reason_detail": "yii2-starter-kit through 4.2.0 exposes the Yii debug and Gii modules to all IP addresses by setting allowedIPs to ['*'] … CVSS9.3。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-74864",
+        "product": "sogo_yhn configures SOGo with a parameter that forces the request with HTTP head",
+        "reason": "low_score",
+        "reason_detail": "sogo_yhn configures SOGo with a parameter that forces the request with HTTP header \"x-webobjects-remote-user\" to be trea… CVSS9.3。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-96822",
+        "product": "Unauthenticated SQL Injection in Books Gallery <= 4.8.3 versions.",
+        "reason": "low_score",
+        "reason_detail": "Unauthenticated SQL Injection in Books Gallery <= 4.8.3 versions.… CVSS9.3。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-101276",
+        "product": "iperf3 3.21 (esnet/iperf) contains a remote, unauthenticated heap use-after-free",
+        "reason": "low_score",
+        "reason_detail": "iperf3 3.21 (esnet/iperf) contains a remote, unauthenticated heap use-after-free: the server's per-test watchdog server_… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102508",
+        "product": "Improper Verification of Cryptographic Signature and Improper Certificate Valida",
+        "reason": "low_score",
+        "reason_detail": "Improper Verification of Cryptographic Signature and Improper Certificate Validation in the OPC UA driver of Apache PLC4… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102992",
+        "product": "piscina is a node.js worker pool implementation. Prior to 4.9.4, 5.3.2, and 6.0.",
+        "reason": "low_score",
+        "reason_detail": "piscina is a node.js worker pool implementation. Prior to 4.9.4, 5.3.2, and 6.0.0-rc.5, Piscina stores ThreadPool.option… CVSS9.2。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-103473",
+        "product": "Deno versions 2.7.0 through 2.9.7 on Windows contain a command injection vulnera",
+        "reason": "low_score",
+        "reason_detail": "Deno versions 2.7.0 through 2.9.7 on Windows contain a command injection vulnerability in node:child_process where shell… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-103547",
+        "product": "In ldapd in OpenBSD 7.8 before errata 057 and 7.9 before errata 021, delegated B",
+        "reason": "low_score",
+        "reason_detail": "In ldapd in OpenBSD 7.8 before errata 057 and 7.9 before errata 021, delegated BSD authentication results are correlated… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-19445",
+        "product": "A remote, unauthenticated TLS client can make a server crash or call through a f",
+        "reason": "low_score",
+        "reason_detail": "A remote, unauthenticated TLS client can make a server crash or call through a freed pointer if its sni_callback assigns… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-74865",
+        "product": "sogo_yhn configures SOGo with a parameter \"SOGoTrustProxyAuthentication=YES\". Th",
+        "reason": "low_score",
+        "reason_detail": "sogo_yhn configures SOGo with a parameter \"SOGoTrustProxyAuthentication=YES\". This causes the password to be bypassed du… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-86131",
+        "product": "A code injection vulnerability in WatchGuard Fireware OS's BOVPN Over TLS client",
+        "reason": "low_score",
+        "reason_detail": "WatchGuard Fireware OS BOVPN over TLSクライアント設定処理のコードインジェクション（SecurityWeek: 15件のコード実行・DoS等を修正）。ベンダー修正済みで窓内の実悪用報道・KEV登録なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（次回以降、悪用報告があれば再評価）。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102095",
+        "product": "Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-",
+        "reason": "low_score",
+        "reason_detail": "Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-Side Request Forgery. Kiteworks Email Pr… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102102",
+        "product": "Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-",
+        "reason": "low_score",
+        "reason_detail": "Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-Side Request Forgery (SSRF). A server-si… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102103",
+        "product": "Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-",
+        "reason": "low_score",
+        "reason_detail": "Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-Side Request Forgery (SSRF). A server-si… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102104",
+        "product": "Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-",
+        "reason": "low_score",
+        "reason_detail": "Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-Side Request Forgery (SSRF). A server-si… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102105",
+        "product": "Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-",
+        "reason": "low_score",
+        "reason_detail": "Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-Side Request Forgery (SSRF). A server-si… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102106",
+        "product": "Improper authentication in a Kiteworks Email Protection Gateway administrative s",
+        "reason": "low_score",
+        "reason_detail": "Improper authentication in a Kiteworks Email Protection Gateway administrative service. An administrative service in Kit… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102792",
+        "product": "A vulnerability was detected in Ziroom ZHOME A0101 1.0.1.0. This affects the fun",
+        "reason": "low_score",
+        "reason_detail": "A vulnerability was detected in Ziroom ZHOME A0101 1.0.1.0. This affects the function set_syslog of the file /api/ZRnetw… CVSS9.1。窓内でKEV登録・実悪用報道なし。CNA=cna@vuldb.com（アグリゲータ系のためバッチ集約せず個別記録）。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102793",
+        "product": "A flaw has been found in Ziroom ZHOME A0101 1.0.1.0. This vulnerability affects ",
+        "reason": "low_score",
+        "reason_detail": "A flaw has been found in Ziroom ZHOME A0101 1.0.1.0. This vulnerability affects the function set_time_zone of the file /… CVSS9.1。窓内でKEV登録・実悪用報道なし。CNA=cna@vuldb.com（アグリゲータ系のためバッチ集約せず個別記録）。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-102794",
+        "product": "A vulnerability has been found in Ziroom ZHOME A0101 1.0.1.0. This issue affects",
+        "reason": "low_score",
+        "reason_detail": "A vulnerability has been found in Ziroom ZHOME A0101 1.0.1.0. This issue affects some unknown processing of the file /ap… CVSS9.1。窓内でKEV登録・実悪用報道なし。CNA=cna@vuldb.com（アグリゲータ系のためバッチ集約せず個別記録）。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-62308",
+        "product": "Tugtainer is a self-hosted app for automating updates of Docker containers. Prio",
+        "reason": "low_score",
+        "reason_detail": "Tugtainer is a self-hosted app for automating updates of Docker containers. Prior to version 1.30.6, Tugtainer allows an… CVSS9.1。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-75969",
+        "product": "Missing authentication for critical function vulnerability for all PTZOptics cam",
+        "reason": "low_score",
+        "reason_detail": "Missing authentication for critical function vulnerability for all PTZOptics cameras and the Firmware Upgrade Tool - Fir… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-77185",
+        "product": "Authentication bypass in sshd-core in Apache MINA SSHD versions 2.0.0 to 2.19.0 ",
+        "reason": "low_score",
+        "reason_detail": "Authentication bypass in sshd-core in Apache MINA SSHD versions 2.0.0 to 2.19.0 and 3.0.0-M1 to 3.0.0-M5 for a certain (… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-87830",
+        "product": "In the StAX streaming WS-SecurityPolicy validator, certain relative or unsupport",
+        "reason": "low_score",
+        "reason_detail": "In the StAX streaming WS-SecurityPolicy validator, certain relative or unsupported XPath expressions can be converted in… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-89238",
+        "product": "WSS4J EncryptedHeader child confusion could promote an attacker-controlled plain",
+        "reason": "low_score",
+        "reason_detail": "WSS4J EncryptedHeader child confusion could promote an attacker-controlled plaintext element as the decrypted header, le… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-94052",
+        "product": "A missing check in LdapPasswordAuthenticator in component sshd-ldap in Apache MI",
+        "reason": "low_score",
+        "reason_detail": "A missing check in LdapPasswordAuthenticator in component sshd-ldap in Apache MINA SSHD versions 1.2.0 to 2.19.0 or 3.0.… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-94053",
+        "product": "Authentication bypass via LDAP injection in component sshd-ldap in Apache MINA S",
+        "reason": "low_score",
+        "reason_detail": "Authentication bypass via LDAP injection in component sshd-ldap in Apache MINA SSHD versions 1.2.0 to 2.19.0 and 3.0.0-M… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-97196",
+        "product": "Improper Validation of Unsafe Equivalence in Input vulnerability in Liquid Web /",
+        "reason": "low_score",
+        "reason_detail": "Improper Validation of Unsafe Equivalence in Input vulnerability in Liquid Web / StellarWP GiveWP allows Authentication … CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-55176",
+        "product": "Soft Machine is a Virtual Machine–based agentic development environment / Cloud ",
+        "reason": "low_score",
+        "reason_detail": "Soft Machine is a Virtual Machine–based agentic development environment / Cloud OS. In versions 0.2.247 and prior, two a… CVSS9.0。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-63713",
+        "product": "The \"search\" parameter in the view audit logs feature within the utilities secti",
+        "reason": "low_score",
+        "reason_detail": "The \"search\" parameter in the view audit logs feature within the utilities section is susceptible to a time-based blind … CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-68068",
+        "product": "The \"screenID\" parameter in the electronic transaction queue viewer feature with",
+        "reason": "low_score",
+        "reason_detail": "The \"screenID\" parameter in the electronic transaction queue viewer feature within the manual transactions section is su… CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-68954",
+        "product": "The \"pattern\" parameter used in search function in the home page of the TMS appl",
+        "reason": "low_score",
+        "reason_detail": "The \"pattern\" parameter used in search function in the home page of the TMS application is vulnerable to time-based blin… CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-72507",
+        "product": "The \"reportType\" parameter in the product summary report feature within the bala",
+        "reason": "low_score",
+        "reason_detail": "The \"reportType\" parameter in the product summary report feature within the balancing reports section is susceptible to … CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-72510",
+        "product": "The \"supplier_no\" parameter used in the business allocation search feature is vu",
+        "reason": "low_score",
+        "reason_detail": "The \"supplier_no\" parameter used in the business allocation search feature is vulnerable to time-based blind SQL injecti… CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-94389",
+        "product": "Unauthenticated Remote Code Execution (RCE) in AcyMailing SMTP Newsletter <= 11.",
+        "reason": "low_score",
+        "reason_detail": "Unauthenticated Remote Code Execution (RCE) in AcyMailing SMTP Newsletter <= 11.0.5 versions.… CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "cve_id": "CVE-2026-101283",
+        "product": "iperf3 3.20–3.21 (esnet/iperf) has a pre-auth heap buffer overflow in decrypt_rs",
+        "reason": "low_score",
+        "reason_detail": "EUVD独立列挙でNVD/KEV未収載層（EUVD-2026-90389・CVSS9.2・assigner=Anthropic）。iperf3 3.20〜3.21の認証前ヒープバッファオーバーフロー。窓内KEV登録・実悪用報道なし、公開PoC・国内被害の確認なし。軸1が採用閾値未満で除外（NVD反映後に再評価）。",
+        "reported_date": "2026-10-01"
+      }
+    ],
+    "apt": [
+      {
+        "group_name": "Star Blizzard",
+        "campaign_id": "StarBlizzard-2026-CosmicPulseEventInvite",
+        "reason": "no_change",
+        "reason_detail": "既報（2026-09-30）の同一キャンペーン。SecurityWeek・Dark Reading・BleepingComputerの2次報道で、RedFlick（MSI/スケジュールタスク）によるCosmicPulse配布と「ClickFixからの移行」が再報道されたが、既報以上の新規IOC・標的・TTPの変化を確認できないため除外。",
+        "reported_date": "2026-10-01"
+      }
+    ],
+    "ai_attacks": [
+      {
+        "attack_id": null,
+        "title": "Anthropic: AIエージェントの責任リスクの指摘／OpenAIがハッキング関連訴訟に直面（SecurityWeek）",
+        "reason": "low_score",
+        "reason_detail": "法的責任に関する論評・訴訟報道で、攻撃活動・新規の悪用事案ではない。Section 1（AI武器化・AI攻撃対象・AIインフラ攻撃）に該当せず除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "attack_id": null,
+        "title": "AIの「第三の波」: 永続AI同僚がエージェント向けセキュリティモデルを壊す（Token Security寄稿）",
+        "reason": "low_score",
+        "reason_detail": "ベンダー寄稿・解説記事で、窓内の攻撃事案・新規脆弱性の確認なし。Section 1に該当せず除外。",
+        "reported_date": "2026-10-01"
+      }
+    ],
+    "soc_recommendations": [
+      {
+        "rec_id": null,
+        "title": "JVN iPedia新着（Authlib署名検証回避・PFU Image Scanner Driver for Linux）、JVN 富士フイルムBI/シャープ複合機パストラバーサル、CISA ICS勧告の紹介",
+        "reason": "low_score",
+        "reason_detail": "窓内の新規悪用・国内被害の確認がなく、既存CVEの日本語登録・通常の勧告紹介が中心。SOC採用条件α〜ηに強く該当せず除外。",
+        "reported_date": "2026-10-01"
+      },
+      {
+        "rec_id": null,
+        "title": "Microsoft Entra IDの外部スクリプト注入対策（2026年10月開始）／WSLコンテナ機能の一般提供",
+        "reason": "low_score",
+        "reason_detail": "ベンダーの通常の機能・保護強化の案内で脅威事象ではない。SOC採用条件に該当せず除外。",
+        "reported_date": "2026-10-01"
+      }
+    ]
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 1,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 2,
+      "excluded": 65,
+      "total_processed": 69
+    },
+    "apt": {
+      "main": 0,
+      "notable": 1,
+      "excluded": 1,
+      "total_processed": 2
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 3,
+      "excluded": 2,
+      "total_processed": 5,
+      "category_breakdown": {
+        "A": 2,
+        "B": 0,
+        "C": 1
+      }
+    },
+    "soc_recommendations": {
+      "high": 0,
+      "medium": 4,
+      "low": 1,
+      "excluded": 2,
+      "total_processed": 7,
+      "perspective_breakdown": {
+        "cve": 1,
+        "zeroday": 4,
+        "ai_attack": 0
+      }
+    }
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-09-30T22:36:57Z",
+    "operational_picture": {
+      "subjects_tracked": 134,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 50,
+        "DISCLOSED": 45,
+        "POC_PUBLIC": 39
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 100,
+        "shadow": 84
+      },
+      "event_type_counts": {
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 39,
+        "TF1_POC_PUBLICATION": 45
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}
