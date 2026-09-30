@@ -1,0 +1,189 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-01 08:10 JST
+調査期間: 2026-09-30 07:00 〜 2026-10-01 07:00 JST
+========================================
+
+【ゼロデイ特報】実悪用確認（KEV登録）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-76504 Cisco Catalyst SD-WAN Manager（APIログインセッション認証管理）（Cisco）
+------------------------------------------------------------
+優先度: high
+CVSS v3: 9.8  KEV: 登録済み 2026-09-30  悪用: 確認  FCEB期限: 2026-10-03
+影響バージョン: 全構成（20.9未満は修正版へ移行要。修正版: 20.9.10.1 / 20.12.8.2 / 20.15.6.1 / 20.18.4.1 / 26.1.2.1 / 26.2.1。Cloud Hosted は対策済み）
+
+【24時間以内の変化】
+[Cisco PSIRT 2026-09-30] CVE-2026-76504（SD-WAN Manager APIログインセッション認証管理の認証回避・CVSS 9.8）のアドバイザリを公開。2026年9月にTAC対応中に実悪用を把握したと説明。回避策なし・修正版あり。
+[CISA KEV Catalog 2026-09-30] CISAがCVE-2026-76504をKEVカタログへ追加（FCEB期限2026-10-03・ランサムウェア利用: Unknown）。
+[BleepingComputer / The Hacker News 2026-09-30] Catalyst SD-WAN Managerのゼロデイが管理者権限への昇格に悪用されていると報道。
+
+【概要】
+Cisco Catalyst SD-WAN Managerは、APIログインセッションの認証管理におけるURIエンコードの処理不備（j_security_checkのログインパスで「%6a」等のエンコードを用いる）により、ネットワーク到達性のみで未認証の攻撃者が管理者としてAPIを利用できる脆弱性CVE-2026-76504（CVSS 9.8）を修正した。CiscoはTAC対応中に2026年9月の実悪用を把握したと説明し、CISAが2026-09-30にKEVへ追加した（FCEB期限2026-10-03）。回避策はなく、インターネットに公開されたManagerが最もリスクが高いとされる。攻撃者の帰属・IOC・被害件数は公表されていない（未確認）。
+
+【攻撃の流れ】
+1. SD-WAN ManagerのAPIログインパス（j_security_check）へURIエンコードした細工リクエストを送信し認証規則を回避
+2. 認証なしで管理者としてManager APIを利用（以降の具体的な連鎖は非公開）
+
+【ATT&CK】
+・T1190 Exploit Public-Facing Application: Manager APIログインセッションの認証回避脆弱性の悪用（Ciscoが実悪用を確認）
+
+【暫定対策】
+・修正版（20.9.10.1 / 20.12.8.2 / 20.15.6.1 / 20.18.4.1 / 26.1.2.1 / 26.2.1）へ更新（FCEB期限2026-10-03）
+・Manager APIへのアクセスを信頼できるホストに限定し、インターネットから到達可能な状態を解消する
+・制御コンポーネントをファイアウォール配下に置く
+
+【監視】
+SD-WAN ManagerのWeb/APIアクセスログで、j_security_checkへのURIエンコード（%6a等）を含むリクエストと、その直後の管理者APIの利用を確認する。予期しない管理者アカウント・設定変更の有無を点検する。
+
+【参照】
+・BleepingComputer: Cisco warns of new SD-WAN zero-day exploited in attacks https://www.bleepingcomputer.com/news/security/cisco-warns-of-new-sd-wan-authentication-bypass-zero-day-exploited-in-attacks
+・The Hacker News: Cisco Warns of Attackers Exploiting Critical Authentication Bypass in SD-WAN Manager https://thehackernews.com/2026/09/cisco-warns-of-attackers-exploiting.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（24時間窓内に本編相当のCVEなし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】国際先行
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-84411 MikroTik RouterOS（ウェブ管理のHTTPリクエスト処理）（MikroTik）
+------------------------------------------------------------
+優先度: medium
+CVSS v3: None  KEV: 未登録  悪用: 未確認
+影響バージョン: RouterOS 7.24未満（7.23以降へ更新。最新stable 7.24.4・long-term 7.23.7が2026-09-16から提供）
+
+【24時間以内の変化】
+[BleepingComputer 2026-09-30] CISAがMikroTik RouterOSの認証前RCE/DoSの重大な脆弱性CVE-2026-84411について注意喚起。実悪用は公表されていないと報道。
+
+【概要】
+CISAは、MikroTik RouterOSのウェブ管理のHTTPリクエスト処理における認証前の整数アンダーフローCVE-2026-84411について注意喚起した。単一の細工リクエストでroot権限のコード実行またはDoSが可能とされる。実悪用・PoCは報道範囲では公表されておらず、CVSS値は記事に記載がない。修正版は2026-09-16から提供されている。MikroTikは過去にも別CVEで悪用された経緯がある（報道の言及）。
+
+【攻撃の流れ】
+1. ウェブ管理インターフェースへ細工した単一HTTPリクエストを送信し整数アンダーフローを誘発（認証不要）
+2. root権限のコード実行またはDoS（実悪用は未確認）
+
+【暫定対策】
+・RouterOS 7.23以降へ更新する
+・ウェブ管理（HTTP/HTTPS）をインターネットへ公開せず、ファイアウォール・VPNで接続元を制限する
+
+【監視】
+RouterOSのバージョン棚卸しと、ウェブ管理ポートが外部から到達可能な機器の洗い出し。
+
+【参照】
+・BleepingComputer: CISA warns of critical pre-auth RCE flaw in MikroTik RouterOS https://www.bleepingcomputer.com/news/security/cisa-warns-of-critical-pre-auth-rce-flaw-in-mikrotik-routeros
+
+------------------------------------------------------------
+2. CVE-2026-73570 Zimbra Collaboration Suite（zimbra-snmp・SNMP通知経由の未認証OSコマンドインジェクション）（Synacor / Zimbra）
+------------------------------------------------------------
+優先度: medium
+CVSS v3: 8.9  KEV: 登録済み 2026-08-21  悪用: 確認  FCEB期限: 2026-08-24
+影響バージョン: 10.1.20未満（2026-07-20に修正版提供）
+
+【24時間以内の変化】
+[The Hacker News（Microsoft Security Research引用） 2026-09-30] MicrosoftがCVE-2026-73570の実悪用後の挙動（JSPウェブシェル・リバースシェル・sudo(pam.d)改変による権限昇格・systemd/cron永続化・SSH経由の横展開・localconfig.xmlからの認証情報窃取・AzCopyでの持ち出し試行）を公開。攻撃者の帰属は示されていない。
+
+【概要】
+CVE-2026-73570はKEV登録・実悪用確認済みの既報事案。本窓でMicrosoft Security Researchが侵害後の挙動を公開した。SMTP経由の細工リクエストでOSコマンドを実行し、JSPウェブシェル、リバースシェル、/etc/pam.d/sudoの改変による権限昇格、systemdサービス（zimlog.service）とcronによる永続化、SSH鍵を使った横展開、/opt/zimbra/conf/localconfig.xmlからの認証情報窃取、メールボックスDBへのアクセスとAzCopyによる持ち出し試行を確認した。スキャンは2026-07-28〜08-07に観測されている。帰属は示されていない（未確認）。
+
+【攻撃の流れ】
+1. 細工したSMTP要求でzimbra-snmpのSNMP通知処理を経由しOSコマンドを実行（未認証）
+2. JSPウェブシェル設置・リバースシェル・pam.d/sudo改変で権限昇格、systemd/cronで永続化
+3. localconfig.xmlの認証情報窃取、SSH鍵での横展開、メールボックスDBの収集とAzCopyによる持ち出し試行
+
+【ATT&CK】
+・T1190 Exploit Public-Facing Application: SNMP通知処理経由の未認証OSコマンドインジェクションの悪用
+・T1505.003 Web Shell: JSPウェブシェルの設置
+・T1543.002 Systemd Service: systemdサービス（zimlog.service）による永続化
+
+【暫定対策】
+・10.1.20以降へ更新する
+・更新できない場合はzimbra-snmpをアンインストールしSNMP通知を無効化、SNMP/SMTPへのアクセスを制限する
+・永続的なウェブシェルの走査と、Zimbraに保存された認証情報・シークレットのローテーション
+
+【IOC】
+ファイル/マルウェア名: Zimdown2（Go製ダウンローダ）, Zimclient2（遠隔操作エージェント）, zimlog.service
+
+【監視】
+mailboxd/Jetty配下の不審なJSPファイル、/etc/pam.d/sudoの改変、zimlog.service等の不審なsystemdユニット、AzCopyの外部ストレージ宛通信を確認する。
+
+【参照】
+・The Hacker News: Attackers Exploit Zimbra Flaw to Deploy Web Shells and Harvest Authentication Secrets https://thehackernews.com/2026/09/attackers-exploit-zimbra-flaw-to-deploy.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NVD窓内CVSS9.0以上・EUVD窓内全量のうち採用外 65 件（全件理由付き。詳細はJSON exclusions.cve）:
+・CVE-2026-102427 [low_score] Joomla Extension - ordasoft.com - Unauthenticated Remote Code Execution in OrdaSoft Joomla CCK < 8.3.16 - site/uploader.… CVSS10.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-55107 [low_score] Kobako is a Ruby gem that embeds a Wasm-isolated mruby interpreter inside applications, allowing execution of untrusted … CVSS10.0。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-71379 [low_score] The file export endpoint allows any unauthenticated attacker to export arbitrary database tables by sending a crafted PO… CVSS10.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-76570 [low_score] Joomla Extension - joomcode.com - Unauthenticated SQL injection in read and write queries in JCTables 1.21.1 - The front… CVSS10.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-96349 [low_score] Unauthenticated Remote Code Execution (RCE) in SiteSkite <= 2.1.8 versions.… CVSS10.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102911 [low_score] A flaw has been found in zosmaai pi-llm-wiki up to 0.11.7. Affected is an unknown function of the file mcp/index.ts of t… CVSS9.9。窓内でKEV登録・実悪用報道なし。CNA=cna@vuldb.com（アグリゲータ系のためバッチ集約せず個別記録）。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-100512 [low_score] Contributor PHP Object Injection in Nested Pages <= 3.3.2 versions.… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102115 [low_score] Kiteworks Core did not correctly validate a parameter submitted to the password reset workflow. An unauthenticated attac… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102455 [low_score] EasyFlow .NET developed by Digiwin has a Insecure Deserialization vulnerability. Unauthenticated remote attackers can ex… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102458 [low_score] EasyFlow .NET developed by Digiwin has a Missing Authentication vulnerability. Unauthenticated remote attackers can obta… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-103040 [low_score] LightLLM through 1.2.0 contains a remote code execution vulnerability in the router profiler service when started with -… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-103041 [low_score] LightLLM through 1.2.0 multimodal deployments expose an unauthenticated RPyC cache service with pickle deserialization e… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-103110 [low_score] Pexip Infinity before 38.2, plus 39.0, 39.1 and 40.0, is affected by improper input validation that allows a remote atta… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-103395 [low_score] LightLLM through 1.2.0 visual_only deployments expose an unauthenticated RPyC service with allow_pickle enabled that des… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-18782 [low_score] Improper neutralization of special elements used in an SQL command ('SQL injection') vulnerability in Trex Digital Smart… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-55494 [low_score] Tugtainer is a self-hosted app for automating updates of Docker containers. Prior to version 1.30.4, Tugtainer Agent all… CVSS9.8。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-75873 [low_score] The Zella Theme WordPress theme before 2.6.3 does not perform any capability or nonce check on one of its font upload ac… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-82307 [low_score] Improper neutralization of special elements used in an SQL command ('SQL injection') vulnerability in Dolusoft Software … CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-88920 [low_score] An authentication bypass in the DOM security processor in Apache WSS4J allows unauthenticated remote attackers to forge … CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-96350 [low_score] Subscriber Privilege Escalation in Estatik <= 4.3.5 versions.… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-97248 [low_score] Unauthenticated PHP Object Injection in Booking Activities <= 1.18.7.1 versions.… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-97274 [low_score] Unauthenticated Bypass Vulnerability in OAuth Single Sign On – SSO (OAuth Client) <= 7.1.2 versions.… CVSS9.8。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102149 [low_score] Kiteworks Email Protection Gateway did not sufficiently restrict which account a certificate could be assigned to. This … CVSS9.4。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-103056 [low_score] AiSOC versions 7.2.0 before 12.0.0 contain a command injection vulnerability in the actions service that builds CrowdStr… CVSS9.4。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-55181 [low_score] Tugtainer is a self-hosted app for automating updates of Docker containers. Prior to version 1.30.3, Tugtainer's OIDC au… CVSS9.4。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-70356 [low_score] The TMS file upload endpoint fails to enforce server-side file type restrictions, allowing an attacker to upload and exe… CVSS9.4。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-93903 [low_score] LiteSpeed Web Server (LSWS) before 6.3.7 build 1 mishandles internal redirect URL validation in a certain "corner case."… CVSS9.4。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102147 [low_score] A stored cross-site scripting (XSS) weakness in Kiteworks Core could allow an unauthenticated attacker to store crafted … CVSS9.3。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-103470 [low_score] In Internet2 Grouper before 7.5.1 (in some configurations), a user who is allowed to create or edit rules in the User In… CVSS9.3。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-103475 [low_score] yii2-starter-kit through 4.2.0 exposes the Yii debug and Gii modules to all IP addresses by setting allowedIPs to ['*'] … CVSS9.3。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-74864 [low_score] sogo_yhn configures SOGo with a parameter that forces the request with HTTP header "x-webobjects-remote-user" to be trea… CVSS9.3。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-96822 [low_score] Unauthenticated SQL Injection in Books Gallery <= 4.8.3 versions.… CVSS9.3。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-101276 [low_score] iperf3 3.21 (esnet/iperf) contains a remote, unauthenticated heap use-after-free: the server's per-test watchdog server_… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102508 [low_score] Improper Verification of Cryptographic Signature and Improper Certificate Validation in the OPC UA driver of Apache PLC4… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102992 [low_score] piscina is a node.js worker pool implementation. Prior to 4.9.4, 5.3.2, and 6.0.0-rc.5, Piscina stores ThreadPool.option… CVSS9.2。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-103473 [low_score] Deno versions 2.7.0 through 2.9.7 on Windows contain a command injection vulnerability in node:child_process where shell… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-103547 [low_score] In ldapd in OpenBSD 7.8 before errata 057 and 7.9 before errata 021, delegated BSD authentication results are correlated… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-19445 [low_score] A remote, unauthenticated TLS client can make a server crash or call through a freed pointer if its sni_callback assigns… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-74865 [low_score] sogo_yhn configures SOGo with a parameter "SOGoTrustProxyAuthentication=YES". This causes the password to be bypassed du… CVSS9.2。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-86131 [low_score] WatchGuard Fireware OS BOVPN over TLSクライアント設定処理のコードインジェクション（SecurityWeek: 15件のコード実行・DoS等を修正）。ベンダー修正済みで窓内の実悪用報道・KEV登録なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（次回以降、悪用報告があれば再評価）。
+・CVE-2026-102095 [low_score] Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-Side Request Forgery. Kiteworks Email Pr… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102102 [low_score] Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-Side Request Forgery (SSRF). A server-si… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102103 [low_score] Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-Side Request Forgery (SSRF). A server-si… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102104 [low_score] Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-Side Request Forgery (SSRF). A server-si… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102105 [low_score] Kiteworks Email Protection Gateway before version 9.5.0 is vulnerable to Server-Side Request Forgery (SSRF). A server-si… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102106 [low_score] Improper authentication in a Kiteworks Email Protection Gateway administrative service. An administrative service in Kit… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102792 [low_score] A vulnerability was detected in Ziroom ZHOME A0101 1.0.1.0. This affects the function set_syslog of the file /api/ZRnetw… CVSS9.1。窓内でKEV登録・実悪用報道なし。CNA=cna@vuldb.com（アグリゲータ系のためバッチ集約せず個別記録）。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102793 [low_score] A flaw has been found in Ziroom ZHOME A0101 1.0.1.0. This vulnerability affects the function set_time_zone of the file /… CVSS9.1。窓内でKEV登録・実悪用報道なし。CNA=cna@vuldb.com（アグリゲータ系のためバッチ集約せず個別記録）。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-102794 [low_score] A vulnerability has been found in Ziroom ZHOME A0101 1.0.1.0. This issue affects some unknown processing of the file /ap… CVSS9.1。窓内でKEV登録・実悪用報道なし。CNA=cna@vuldb.com（アグリゲータ系のためバッチ集約せず個別記録）。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-62308 [low_score] Tugtainer is a self-hosted app for automating updates of Docker containers. Prior to version 1.30.6, Tugtainer allows an… CVSS9.1。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-75969 [low_score] Missing authentication for critical function vulnerability for all PTZOptics cameras and the Firmware Upgrade Tool - Fir… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-77185 [low_score] Authentication bypass in sshd-core in Apache MINA SSHD versions 2.0.0 to 2.19.0 and 3.0.0-M1 to 3.0.0-M5 for a certain (… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-87830 [low_score] In the StAX streaming WS-SecurityPolicy validator, certain relative or unsupported XPath expressions can be converted in… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-89238 [low_score] WSS4J EncryptedHeader child confusion could promote an attacker-controlled plaintext element as the decrypted header, le… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-94052 [low_score] A missing check in LdapPasswordAuthenticator in component sshd-ldap in Apache MINA SSHD versions 1.2.0 to 2.19.0 or 3.0.… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-94053 [low_score] Authentication bypass via LDAP injection in component sshd-ldap in Apache MINA SSHD versions 1.2.0 to 2.19.0 and 3.0.0-M… CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-97196 [low_score] Improper Validation of Unsafe Equivalence in Input vulnerability in Liquid Web / StellarWP GiveWP allows Authentication … CVSS9.1。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-55176 [low_score] Soft Machine is a Virtual Machine–based agentic development environment / Cloud OS. In versions 0.2.247 and prior, two a… CVSS9.0。窓内でKEV登録・実悪用報道なし。GHSA起点のOSS勧告。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-63713 [low_score] The "search" parameter in the view audit logs feature within the utilities section is susceptible to a time-based blind … CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-68068 [low_score] The "screenID" parameter in the electronic transaction queue viewer feature within the manual transactions section is su… CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-68954 [low_score] The "pattern" parameter used in search function in the home page of the TMS application is vulnerable to time-based blin… CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-72507 [low_score] The "reportType" parameter in the product summary report feature within the balancing reports section is susceptible to … CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-72510 [low_score] The "supplier_no" parameter used in the business allocation search feature is vulnerable to time-based blind SQL injecti… CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-94389 [low_score] Unauthenticated Remote Code Execution (RCE) in AcyMailing SMTP Newsletter <= 11.0.5 versions.… CVSS9.0。窓内でKEV登録・実悪用報道なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外。
+・CVE-2026-101283 [low_score] EUVD独立列挙でNVD/KEV未収載層（EUVD-2026-90389・CVSS9.2・assigner=Anthropic）。iperf3 3.20〜3.21の認証前ヒープバッファオーバーフロー。窓内KEV登録・実悪用報道なし、公開PoC・国内被害の確認なし。軸1が採用閾値未満で除外（NVD反映後に再評価）。
