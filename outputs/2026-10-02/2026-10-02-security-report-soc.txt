@@ -1,0 +1,101 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-02 08:00 JST
+調査期間: 2026-10-01 07:00 〜 2026-10-02 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. Citrix NetScaler CVE-2026-88771の悪用後ペイロードとIOC（LevelBlue THOR）
+観点: zeroday  採用契機: δ
+------------------------------------------------------------
+優先度: high
+対象: Citrix NetScaler ADC / Gateway
+
+【24時間以内の変化】
+[The Hacker News 2026-10-01] LevelBlue THORが、CVE-2026-88771の悪用後にPerlスクリプトで特権ローカルアカウントを作成し/flash/nsconfigを持ち出し、CSS偽装のPHPウェブシェルを設置する挙動を複数顧客環境で確認したと報告。
+
+【概要】
+既報のNetScaler CVE-2026-88771（KEV収載・実悪用確認済み）について、LevelBlue THORが悪用後の挙動を公開した。スクリプトupdate_c08937.plがsec_monitorアカウント（特権）を作成し、設定データを/tmp/update_result_3567cs.tgzへ圧縮して持ち出し、/var/netscaler/logon/LogonPoint/.local_journalにPHPウェブシェルを設置する。Pythonのmain.pyがリバースシェルを確立する。帰属は未記載。IOC: 64.94.85[.]67 / 31.56.197[.]72 / 23.27.143[.]20 / 45.141.21[.]130、各種ファイルパス。
+
+【推奨アクション】
+・修正版（14.1-73.37 / 13.1-64.23等）へ更新済みでも侵害済みでないか確認する（sec_monitor アカウント・.local_journal・/tmp/update_result_3567cs.tgzの有無）
+・上記IOC IPへの通信をプロキシ/FWログで遡及確認し遮断する
+・/flash/nsconfigの持ち出しが疑われる場合は認証情報・鍵・SAML設定を再発行する
+
+【参照】
+・The Hacker News: Citrix NetScaler Post-Exploitation Payload Creates Superuser, Maps Web Shell to CSS-Like URLs https://thehackernews.com/2026/10/citrix-netscaler-post-exploitation.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+2. ScreenConnectクライアントの攻撃者による悪用（SANS ISC）
+観点: zeroday  採用契機: δ
+------------------------------------------------------------
+優先度: medium
+対象: ConnectWise ScreenConnect
+
+【24時間以内の変化】
+[SANS ISC 2026-10-01] SANS ISCが、攻撃者によるScreenConnectクライアントの悪用事例を公開。
+
+【概要】
+SANS ISCがScreenConnectクライアントを攻撃者が不正利用している事例を共有した。正規RMMの悪用は署名・レピュテーション検知をすり抜けやすい。詳細は一次記事を参照（本窓では要約のみ確認）。
+
+【推奨アクション】
+・許可していないScreenConnectクライアントの新規導入・サービス登録をEDR/許可リストで検知する
+
+【参照】
+・SANS ISC: ScreenConnect Client (Ab)used by Attackers https://isc.sans.edu/
+
+------------------------------------------------------------
+3. WordPressの自己再生型バックドア「SC」（Sucuri）
+観点: cve  採用契機: δ
+------------------------------------------------------------
+優先度: medium
+対象: WordPress
+
+【24時間以内の変化】
+[The Hacker News 2026-10-01] Sucuriが、ファイル・DB・共有メモリの複数経路で清掃後に再生成されるWordPressバックドア（SC_マーカー）を報告。
+
+【概要】
+Sucuriは、ファイル・データベース・共有メモリに永続化し、清掃後に自己再生成するWordPressバックドア（コードネームSC・SC_マーカー）を報告した。初期侵入経路・帰属は本窓で確認できていない。
+
+【推奨アクション】
+・清掃時はファイルだけでなくDB（options等）と共有メモリのSC_マーカーも点検し、全経路を同時に除去する
+・WordPress本体・プラグインを更新し管理者認証情報を再発行する
+
+【参照】
+・The Hacker News: WordPress Backdoor Rebuilds Itself After Cleanup Using Files, Database, and Shared Memory https://thehackernews.com/2026/10/wordpress-backdoor-rebuilds-itself.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+4. MetaMaskが基盤インフラの進行中のセキュリティインシデントを公表（ウォレットへの直接の脅威は確認されず）
+観点: zeroday  採用契機: δ
+------------------------------------------------------------
+優先度: low
+対象: MetaMask（Ethereumバリデータ関連インフラ）
+
+【24時間以内の変化】
+[BleepingComputer / The Hacker News 2026-10-01] MetaMaskがインフラの一部に影響する進行中のインシデントを公表。影響を受けたEthereumバリデータが退出。ウォレットへの即時の脅威は未確認。
+
+【概要】
+MetaMaskは進行中のインフラインシデントを公表し、影響を受けたEthereumバリデータの退出が報じられた。ウォレットへの即時の脅威は確認されていない。原因・帰属・CVEは未公表（未確認）。
+
+【推奨アクション】
+・MetaMask/関連バリデータ運用者は公式発表を監視し、追加情報の公表まで不審な署名要求に注意する
+
+【参照】
+・BleepingComputer: Metamask discloses security incident affecting its infrastructure https://www.bleepingcomputer.com/news/security/metamask-discloses-security-incident-affecting-its-infrastructure
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・Apache Tomcat／WSS4J／NVIDIA／OpenSSL等の定例脆弱性アップデート、国内の不正アクセス・漏えい報道 [low_score] 既存の通常勧告・個別組織の被害報道が中心で、SOC採用条件α〜ηに強く該当せず除外。
+
+網羅スイープ: 候補52件 / 処理52件 / 未処理0件 / KEV窓内追加1件 / EUVD窓内49件（うちNVD/KEV未収載12件）

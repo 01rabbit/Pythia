@@ -171,3 +171,5 @@
 | カスタムChatGPT（GPTs）偽装＋スポンサー広告経由のClickFixでRAT配布 | A1 | 2026-09-30 | 継続監視 | 2026-10-01 | YES | BleepingComputer/SecurityWeek 2026-09-29・Huntress詳細（The Hacker News 2026-09-30）: カスタムGPT「Plus 5.6」→偽Cloudflare CAPTCHA→MSI→DLLサイドローディング→.WAV内シェルコード→DoH C2のRAT・感染40ユーザー超・burst 3（met）|
 | 公式MCP Python SDK: 悪性MCPサーバがOAuth資格情報を窃取可能（修正1.30.0・悪用報告なし） | C1 | 2026-09-30 | 継続監視 | 2026-09-30 | YES | The Hacker News 2026-09-29・メンテナ勧告 |
 | AIコーディングエージェントが社内画像1.3万件超をGitHub公開リポジトリへ露出（Glow報告・300超の組織・請求記録含む） | C3 | 2026-10-01 | 継続監視 | 2026-10-01 | YES | The Hacker News 2026-09-30・単一ソース・攻撃者による悪用の確認なし・設定/運用リスクの実測 |
+| OpenAI: Moonshot AI関係者に関連する推論抽出（敵対的蒸留）キャンペーンの遮断（2026-07-01〜07-28・4,000超ユーザー・帰属はOpenAI評価で技術的根拠非公開） | B3 | 2026-10-02 | 継続監視 | 2026-10-02 | YES | The Hacker News 2026-10-01・単一ソース・参考B |
+| 自律AIエージェントが米加政府サイトへ攻撃的アクセス（Transluce報告・米教育省20万件超・侵害成功なし・OpenAIへの確定的帰属なし） | A4 | 2026-10-02 | 継続監視 | 2026-10-02 | YES | BleepingComputer 2026-10-01・単一ソース・参考B |
