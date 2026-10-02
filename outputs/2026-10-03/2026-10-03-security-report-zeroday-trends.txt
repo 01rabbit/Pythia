@@ -1,0 +1,141 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-03 08:00 JST
+調査期間: 2026-10-02 07:00 〜 2026-10-03 07:00 JST
+========================================
+
+■ Section 2: ゼロデイ・トレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-102489 Zammad（ヘルプデスク/チケットOSS・CVE-2026-102489 / CVE-2026-102490 の連鎖）（Zammad）
+------------------------------------------------------------
+優先度: high
+CVSS v3: —  CVSS v4: 9.4  KEV: 登録済み 2026-10-02  悪用: 確認  FCEB期限: 2026-10-05
+影響バージョン: CVE-2026-102489: Zammad 6.3.0〜6.5.4（7.0.0〜7.1.3は同欠陥を含むが環境条件により悪用不可）。CVE-2026-102490: 最新alphaを含む全バージョン。DIVDはバージョン7への更新またはインスタンスのオフライン化を推奨
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-10-02] CISAがCVE-2026-102489をKEVカタログへ追加（FCEB期限2026-10-05・ランサムウェア利用: Unknown）。2026-09-30にDIVDが連鎖悪用を公表済みの既報案件の状態更新。
+
+【概要】
+オランダのDIVDは、自組織への侵害がオープンソースのチケット管理システムZammadにおける2件のゼロデイの連鎖で可能になったと公表した（Merlon Securityとともに発見し、Zammadへ通知済み）。CVE-2026-102489はセッションハイジャックからZammadユーザー権限のリモートコード実行に至り、CVE-2026-102490はzammadユーザーからrootへの権限昇格を許す。DIVDは連鎖が「エージェントによる攻撃のため数秒で」実行されたと説明し、ネットワーク分離により侵入の深化は防がれた。攻撃者は未特定。2026-10-02にCISA KEVへ追加された（FCEB期限2026-10-05）。公開PoCは確認できていない。ZammadはAmnesty InternationalやNextcloud等を含む2,000超の顧客・5.5万ユーザーを持つと報じられている。
+
+【攻撃の流れ】
+1. CVE-2026-102489によりセッションをハイジャックし、zammadユーザー権限でリモートコードを実行
+2. CVE-2026-102490によりzammadユーザーからrootへ権限昇格
+3. 自律AIエージェントが上記連鎖と後続のデータ持ち出しを数秒で実行（DIVD説明）
+
+【ATT&CK】
+・T1190 Exploit Public-Facing Application: Zammadのセッションハイジャック→RCEの悪用（DIVDが侵害経路として説明）
+・T1068 Exploitation for Privilege Escalation: zammadユーザーからrootへの権限昇格脆弱性の悪用
+
+【暫定対策】
+・Zammadを7系へ更新する（DIVD推奨）、更新できない場合はインスタンスをオフラインにする
+・Zammadホストのセッション・認証情報をリセットし、予期しないroot権限のプロセス・設定変更を点検する
+
+【監視】
+Zammadホストでzammadユーザーからrootへの権限昇格の痕跡、短時間に連続する不審なセッション利用とコマンド実行を確認する。
+
+【参照】
+・BleepingComputer: DIVD says Zammad zero-days enabled AI-driven network breach https://www.bleepingcomputer.com/news/security/divd-says-zammad-zero-days-enabled-ai-driven-network-breach
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. UAT-11587（Cisco Talos追跡クラスタ） / UAT-11587-Antino-2026
+------------------------------------------------------------
+帰属: 中国（Talosが「China-nexus」と評価）（確度 medium）  軸P=7 軸Q=4
+
+【24時間以内の変化】
+[The Hacker News（Cisco Talos分析引用） 2026-10-02] Cisco TalosがChina-nexusのクラスタUAT-11587による、未文書化のRust製バックドアAntinoを使ったアジア8か国の政府・政策機関標的の活動を公開したと報道。
+
+【概要】
+Cisco Talosは、China-nexusとするクラスタUAT-11587が、台湾・インド・フィリピン・カンボジア・パキスタン・タイ・ミャンマー・シリアの政府・政策関連組織（当初は台湾の学術・シンクタンク・市民社会）を標的に、新種のRust製バックドアAntinoを展開していると公表した。偽装送信者のスピアフィッシング、Gmail添付ウィジェットを装うHTML、HTA/WSFステージャ、.NETデシリアライズ連鎖、MS署名バイナリへのDLLサイドローディング、Windows Scripted DiagnosticsによるPowerShell実行を用いる。AntinoはOutlookのメッセージ（command_req_[session_id]プレフィックス）を10秒間隔で確認してコマンドを受け、OneDriveをファイル転送・ハートビートのデッドドロップに使う。帰属判断はTalosの評価（簡体字・zh-CNメタデータ、UTC+08:00のヘッダ、標的の地域性、UNC6384インフラとの関連）に基づく単一ベンダー・二次報道経由の情報である。
+
+【攻撃の流れ】
+1. 偽装送信者のスピアフィッシング（Gmail添付ウィジェット風HTML）からHTA/WSFステージャとJavaScriptダウンローダを実行
+2. .NETデシリアライズ連鎖とMS署名バイナリへのDLLサイドローディングでAntinoを導入
+3. OutlookメッセージでC2コマンドを受信し、OneDriveをデッドドロップにファイル転送・ハートビート
+
+【ATT&CK】
+・T1566 Phishing: 偽装送信者のスピアフィッシング
+・T1574.002 DLL Side-Loading: Microsoft署名バイナリへのDLLサイドローディング
+・T1102 Web Service: OutlookとOneDriveをC2・デッドドロップに利用
+
+【推奨アクション】
+d32tpl7xt7175h.cloudfront[.]netへの通信をプロキシ/DNSログで遡及確認し、MS署名バイナリによる想定外DLLのサイドロード、OutlookやOneDriveへの異常に短い周期のアクセスを点検する。
+
+【IOC】
+・d32tpl7xt7175h.cloudfront[.]net
+
+【参照】
+・The Hacker News: Antino Backdoor Uses Outlook and OneDrive for C2 in China-Nexus Espionage Campaign https://thehackernews.com/2026/10/antino-backdoor-uses-outlook-and.html
+
+------------------------------------------------------------
+2. Warlock（中国系ランサムウェアグループ） / Warlock-SharePoint-ToolShell-2026
+------------------------------------------------------------
+帰属: 中国（Symantec/Carbon Blackが「China-linked」と報告・国家関与の程度は未確認）（確度 medium）  軸P=7 軸Q=5
+
+【24時間以内の変化】
+[BleepingComputer / SecurityWeek（Symantec・Carbon Black報告引用） 2026-10-02] Symantec/Carbon Blackが、Warlockが水道事業者・通信事業者・地方政府機関・大学をSharePointのToolShell脆弱性で侵害した事案を公開したと報道。
+
+【概要】
+Symantec/Carbon Blackは、中国系ランサムウェアグループWarlockが、水道事業者・通信事業者・地域政府機関・大学を標的に、SharePointのToolShell脆弱性（CVE-2025-49704 / 49706 / 53770 / 53771）を初期侵入に悪用したと報告した（報道では欧州・アフリカ・中南米のポルトガル語・スペイン語圏）。侵入後はSharePoint用Webシェル、脆弱ドライバ（CVE-2025-1055のK7RKScan）を使うBYOVDによるAV/EDR無効化、Visual Studio Code Insidersをサービス化したリモートトンネル、NetExecを用い、最終的にWarlockランサムウェアを展開した。確認された事案は7月22日に初期侵入、7月24日に偵察と痕跡削除、7月31日に防御無効化後のランサム展開という経過。SecurityWeekはWarlockが2025年7月からSharePoint脆弱性を悪用していると報じる。IOCは一次報告に含まれるが本窓では未取得。帰属は単一ベンダー・二次報道経由。
+
+【攻撃の流れ】
+1. SharePointのToolShell脆弱性を悪用して初期侵入しWebシェルを設置
+2. 脆弱ドライバによるBYOVDでAV/EDRを無効化し、VS Code Insidersのトンネルとnetexecで横展開・遠隔操作
+3. 防御無効化後にWarlockランサムウェアを展開
+
+【ATT&CK】
+・T1190 Exploit Public-Facing Application: SharePointのToolShell脆弱性の悪用
+・T1505.003 Web Shell: SharePoint上へのWebシェル設置
+・T1562.001 Impair Defenses: Disable or Modify Tools: 脆弱ドライバ（BYOVD）によるAV/EDR無効化
+・T1486 Data Encrypted for Impact: Warlockランサムウェアの展開
+
+【推奨アクション】
+SharePointのToolShell関連4件（CVE-2025-49704 / 49706 / 53770 / 53771）のパッチ適用と侵害調査、脆弱ドライバK7RKScan（CVE-2025-1055）のブロック、VS Code Insidersの未承認サービス導入やNetExec実行の検知を実施する。
+
+【IOC】
+本窓では未取得（一次報告を参照）
+
+【参照】
+・BleepingComputer: Warlock ransomware breach SharePoint in water, telecom operator attacks https://www.bleepingcomputer.com/news/security/warlock-ransomware-breach-sharepoint-in-water-telecom-operator-attacks
+・SecurityWeek: Warlock Expands SharePoint Exploitation in Critical Infrastructure Attacks https://www.securityweek.com/warlock-expands-sharepoint-exploitation-in-critical-infrastructure-attacks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【動向トピック】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・Star Blizzard / NeedyMantis / JADEPUFFER（既報） [already_reported] 窓前（9/28〜9/30）の報道で既報。窓内に新規の変化なし。
+・Mabna Institute（IRGC関連・アミール・バラティ被疑者） [no_change] イラン人被疑者の米国への身柄引渡しという法執行事案で、日次では法執行・摘発を扱わない（週次検証へ移管）ため除外。
+・CloudSyncD（偽Zoomインストーラ配布のmacOSバックドア） [low_score] SecurityWeekの要約のみで帰属・IOC・TTPが確認できず採用条件P〜Wを満たさないため除外。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし（理由: forecaster/forecasts/daily/2026-10-03.md 参照。ZammadのE1は2026-10-02に発生・消費済み、NetScalerのE3も発生済みで、新規IOC・スキャン・PoC公開の実確認もない。Warlock・UAT-11587はベースライン未確立）。
+
+【戦術予報 TF-1（shadow運用・非公開）】
+
+shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。
+
+追跡対象: 135件  状態: {"ACTIVE_EXPLOITATION": 51, "DISCLOSED": 51, "POC_PUBLIC": 33}
+候補: {"abstained": 102, "shadow": 84}

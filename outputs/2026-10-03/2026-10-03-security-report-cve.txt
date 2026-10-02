@@ -1,0 +1,154 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-03 08:00 JST
+調査期間: 2026-10-02 07:00 〜 2026-10-03 07:00 JST
+========================================
+
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-102489 Zammad（ヘルプデスク/チケットOSS・CVE-2026-102489 / CVE-2026-102490 の連鎖）（Zammad）
+------------------------------------------------------------
+優先度: high
+CVSS v3: —  CVSS v4: 9.4  KEV: 登録済み 2026-10-02  悪用: 確認  FCEB期限: 2026-10-05
+影響バージョン: CVE-2026-102489: Zammad 6.3.0〜6.5.4（7.0.0〜7.1.3は同欠陥を含むが環境条件により悪用不可）。CVE-2026-102490: 最新alphaを含む全バージョン。DIVDはバージョン7への更新またはインスタンスのオフライン化を推奨
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-10-02] CISAがCVE-2026-102489をKEVカタログへ追加（FCEB期限2026-10-05・ランサムウェア利用: Unknown）。2026-09-30にDIVDが連鎖悪用を公表済みの既報案件の状態更新。
+
+【概要】
+オランダのDIVDは、自組織への侵害がオープンソースのチケット管理システムZammadにおける2件のゼロデイの連鎖で可能になったと公表した（Merlon Securityとともに発見し、Zammadへ通知済み）。CVE-2026-102489はセッションハイジャックからZammadユーザー権限のリモートコード実行に至り、CVE-2026-102490はzammadユーザーからrootへの権限昇格を許す。DIVDは連鎖が「エージェントによる攻撃のため数秒で」実行されたと説明し、ネットワーク分離により侵入の深化は防がれた。攻撃者は未特定。2026-10-02にCISA KEVへ追加された（FCEB期限2026-10-05）。公開PoCは確認できていない。ZammadはAmnesty InternationalやNextcloud等を含む2,000超の顧客・5.5万ユーザーを持つと報じられている。
+
+【攻撃の流れ】
+1. CVE-2026-102489によりセッションをハイジャックし、zammadユーザー権限でリモートコードを実行
+2. CVE-2026-102490によりzammadユーザーからrootへ権限昇格
+3. 自律AIエージェントが上記連鎖と後続のデータ持ち出しを数秒で実行（DIVD説明）
+
+【ATT&CK】
+・T1190 Exploit Public-Facing Application: Zammadのセッションハイジャック→RCEの悪用（DIVDが侵害経路として説明）
+・T1068 Exploitation for Privilege Escalation: zammadユーザーからrootへの権限昇格脆弱性の悪用
+
+【暫定対策】
+・Zammadを7系へ更新する（DIVD推奨）、更新できない場合はインスタンスをオフラインにする
+・Zammadホストのセッション・認証情報をリセットし、予期しないroot権限のプロセス・設定変更を点検する
+
+【監視】
+Zammadホストでzammadユーザーからrootへの権限昇格の痕跡、短時間に連続する不審なセッション利用とコマンド実行を確認する。
+
+【参照】
+・BleepingComputer: DIVD says Zammad zero-days enabled AI-driven network breach https://www.bleepingcomputer.com/news/security/divd-says-zammad-zero-days-enabled-ai-driven-network-breach
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-90970 GitLab AI Gateway（セルフホスト・Duo Agent Platformのプロンプトテンプレート・サンドボックス逸脱）（GitLab）
+------------------------------------------------------------
+優先度: medium
+CVSS v3: 9.9  CVSS v4: —  KEV: 未登録  悪用: 未確認
+影響バージョン: AI Gateway 18.1.6〜19.1.x全て／19.2.x（19.2.4未満）／19.3.x（19.3.2未満）／19.4.x（19.4.1未満）
+
+【24時間以内の変化】
+[The Hacker News / BleepingComputer 2026-10-02] GitLabがセルフホストAI Gatewayの重大脆弱性CVE-2026-90970（CVSS 9.9）を修正し、即時パッチ適用を呼びかけた。GitLab.com・Dedicatedは対応済み。
+
+【概要】
+GitLabは、セルフホストのAI Gatewayにおいて、Duo Agent Platformへアクセスできるログイン済みユーザーが、細工したフロー設定でプロンプトテンプレートのサンドボックスを逸脱し、ゲートウェイ上で任意コマンドを実行できる可能性がある脆弱性CVE-2026-90970（CVSS 9.9）を公表した。セルフホストのゲートウェイを運用する組織のみが対象。悪用・公開PoCは報道範囲で確認できていない（CISA評価もnone）。
+
+【攻撃の流れ】
+1. Duo Agent Platform権限を持つログイン済みユーザーが細工したフロー設定を投入
+2. プロンプトテンプレートのサンドボックスを逸脱しゲートウェイ上でコマンド実行（実悪用は未確認）
+
+【暫定対策】
+・セルフホストAI Gatewayを19.2.4 / 19.3.2 / 19.4.1へ更新する
+・Duo Agent Platform権限の付与範囲を棚卸しする
+
+【監視】
+AI Gatewayのバージョン棚卸しと、フロー設定の作成・変更ログ、ゲートウェイプロセスからの想定外の子プロセス生成を確認する。実悪用が未確認のため検知シグネチャは提供できない。
+
+【参照】
+・The Hacker News: GitLab Patches Critical 9.9 AI Gateway Flaw Allowing Command Execution on Self-Hosted Servers https://thehackernews.com/2026/10/gitlab-patches-critical-self-hosted-ai.html
+・BleepingComputer: GitLab warns of critical RCE vulnerability in AI Gateway service https://www.bleepingcomputer.com/news/security/gitlab-warns-of-critical-rce-vulnerability-in-ai-gateway-service
+
+------------------------------------------------------------
+2. CVE-2026-63688 Dell Container Storage Modules（CSM）Authorization（csm-authorization-storage gRPCサーバ等）（Dell）
+------------------------------------------------------------
+優先度: medium
+CVSS v3: 10.0  CVSS v4: —  KEV: 未登録  悪用: 未確認
+影響バージョン: CSM 1.18.0未満の全バージョン（回避策なし）
+
+【24時間以内の変化】
+[The Hacker News / BleepingComputer 2026-10-02] DellがContainer Storage Modules（CSM）の重大脆弱性6件（CVE-2026-63688 CVSS 10.0・CVE-2026-63692 10.0・CVE-2026-67269 9.9・CVE-2026-54472 9.8・CVE-2026-61421 9.8・CVE-2026-67273 9.6）を1.18.0で修正し、早期適用を要請したと報道。
+
+【概要】
+Dellは、Kubernetes上のストレージ連携基盤Container Storage Modules（CSM）のAuthorizationモジュールにおいて、認証欠如（CVE-2026-63688・CVE-2026-63692、各CVSS 10.0）、ハードコード認証情報・鍵による管理者トークン偽造（CVE-2026-54472・CVE-2026-61421、各9.8）、テンプレートインジェクション（CVE-2026-67273、9.6）、およびカスタムリソース調整処理の権限管理不備によるクラスタノードのroot権限取得（CVE-2026-67269、9.9）を修正した。報道はcsm-authorizationのセキュリティモデルが完全に迂回され得ると説明する。悪用は報道範囲で未確認。
+
+【攻撃の流れ】
+1. 認証欠如のgRPC/プロキシへ未認証アクセス、または偽造した管理者トークンを提示
+2. ストレージ管理者資格情報の取得・RBAC改変、またはクラスタノードでのroot権限取得（実悪用は未確認）
+
+【暫定対策】
+・CSMを1.18.0へ更新する（回避策なし）
+・csm-authorizationのエンドポイントをクラスタ外へ公開しない
+
+【監視】
+CSM Authorizationのバージョン棚卸しと、csm-authorization-storage gRPC・認可プロキシへの外部到達性、想定外の管理トークン発行・RBAC変更のログを確認する。
+
+【参照】
+・The Hacker News: Dell CSM Flaws Enable Unauthenticated Admin Access and Root on Kubernetes Nodes https://thehackernews.com/2026/10/dell-csm-flaws-enable-unauthenticated.html
+・BleepingComputer: Dell asks admins to patch max severity CSM flaws as soon as possible https://www.bleepingcomputer.com/news/security/new-max-severity-dell-csm-flaws-give-hackers-admin-privileges
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・CVE-2026-103956 [low_score] Missing authentication for critical function in the authentication dependency in Loom for AWS before 1.6.1 all CVSS10.0。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-104610 [low_score] A security vulnerability has been detected in Tenda HG7, HG9 and HG10 300001138_en_xpon. This impacts the func CVSS10.0。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-82041 [low_score] UTMStack before 11.2.16 contains a missing authorization vulnerability in UTMIncidentCommandWebsocket.processC CVSS9.9。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-93698 [low_score] Insufficient validation allows arbitrary commands to be executed via the Multilang adminbin. CVSS9.9。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2023-54405 [low_score] H3C CVM, the Cloud Virtualization Management component of the H3C CAS cloud platform, contains an unauthentica CVSS9.8。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-103764 [low_score] Mooncake transfer engine before 0.3.13 contains an untrusted pointer dereference in ServerSession::readHeader  CVSS9.8。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-104846 [low_score] Seroval facilitates JS value stringification, including complex structures beyond JSON.stringify capabilities. CVSS9.8。窓内でKEV登録・実悪用報道・公開PoCの確認なし。GHSA起点のOSS系。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-14378 [low_score] The DevKit Pro plugin for WordPress is vulnerable to Authentication Bypass Leading to Administrator Account Ta CVSS9.8。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-19652 [low_score] The Divi Membership plugin for WordPress is vulnerable to Privilege Escalation in versions up to, and includin CVSS9.8。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-19660 [low_score] The Divi Membership plugin for WordPress is vulnerable to Authentication Bypass in all versions up to, and inc CVSS9.8。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-82042 [low_score] UTMStack before 11.2.16 contains an authentication bypass vulnerability that allows remote attackers to gain f CVSS9.8。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-94541 [low_score] The WPMobile.App – Android and iOS App Builder plugin for WordPress is vulnerable to authorization bypass in a CVSS9.8。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-97637 [low_score] The JSON API Auth plugin for WordPress is vulnerable to Authentication Bypass via Cached Session Cookie Disclo CVSS9.8。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-103628 [low_score] Out of bounds write in WebGL in Google Chrome prior to 154.0.8037.97 allowed a remote attacker to execute arbi CVSS9.6。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-104848 [low_score] Tinypool is a minimal Node.js worker thread pool implementation. Prior to 2.1.1, Tinypool constructs ThreadPoo CVSS9.5。窓内でKEV登録・実悪用報道・公開PoCの確認なし。GHSA起点のOSS系。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-104849 [low_score] Tinypool is a minimal Node.js worker thread pool implementation. Prior to 2.1.2, Tinypool reads filename from  CVSS9.5。窓内でKEV登録・実悪用報道・公開PoCの確認なし。GHSA起点のOSS系。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-103765 [low_score] Mooncake through 0.3.13.post1 contains a missing authentication vulnerability in the HTTP metadata server /met CVSS9.4。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-104480 [low_score] Discord libdave before 1.2.0 did not reject an MLS Welcome message when the resulting group roster contained a CVSS9.4。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-18397 [low_score] This vulnerability enables unauthenticated remote code execution (RCE) on a victim's machine by exploiting a c CVSS9.4。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-75937 [low_score] A specially crafted HTTP POST request to the web administration interface allows an unauthenticated attacker t CVSS9.4。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-86325 [low_score] A stack-based buffer overflow vulnerability exists in protocol gateways' account management interface. The vul CVSS9.4。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-102795 [low_score] Improper Access Control vulnerability in Apache Traffic Server. This issue affects Apache Traffic Server: from CVSS9.3。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-104019 [low_score] OS command injection in the Studio Space startup validation script in Amazon SageMaker Distribution 2.x before CVSS9.3。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-71449 [low_score] : Use of Hard-coded Cryptographic Key vulnerability in Johnson Controls EasyIO FS32 allows : Retrieve Embedded CVSS9.3。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-104467 [low_score] YesWiki before 4.6.7 contains an authorization bypass vulnerability in ApiService::isAuthorized() that allows  CVSS9.2。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-83632 [low_score] Allocation of resources without limits or throttling, Integer overflow or wraparound, Heap-based buffer overfl CVSS9.2。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-91135 [low_score] Heap-based buffer overflow vulnerability in Apache Thrift C++ THeaderTransport. When an application enables th CVSS9.2。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-103648 [low_score] Path traversal in image-downloader 4.3.0 allows an attacker who can control the download URL to cause download CVSS9.1。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-104611 [low_score] A vulnerability was detected in Tenda AC9 15.03.02.13. Affected is an unknown function of the file /goform/fas CVSS9.1。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-15896 [low_score] The Super Forms – Drag & Drop Form Builder plugin for WordPress is vulnerable to Directory Traversal in all ve CVSS9.1。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-63569 [low_score] Improper input validation in DHAgreement.CalculateAgreement (MTI/A0 two-pass Diffie-Hellman) in Legion of the  CVSS9.1。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-86345 [low_score] A flaw was found in 389-ds-base. The server does not discard plaintext bytes already buffered from a client co CVSS9.0。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-93029 [low_score] There is a stored XSS vulnerability allowing arbitrary code execution in the WHM Manage SSL Hosts interface. CVSS9.0。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-93697 [low_score] There is a stored XSS vulnerability allowing arbitrary code execution in the WHM Mass Modify Accounts interfac CVSS9.0。窓内でKEV登録・実悪用報道・公開PoCの確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2009-20011 [low_score] EUVD独立列挙でNVD/KEV未収載層（EUVD-2009-5121・CVSS10.0・assigner=VulnCheck）。ContentKeeper Web Appliance (now maintained by Impero Software) versions prior to 125.10 are vulnera 2009年付番の古い脆弱性をVulnCheckがEUVD/GHSAへ新規登録したもので、現在の悪用・新規変化の報道なし。軸1が採用閾値未満で除外。
+・CVE-2009-20009 [low_score] EUVD独立列挙でNVD/KEV未収載層（EUVD-2009-5122・CVSS9.3・assigner=VulnCheck）。Belkin Bulldog Plus version 4.0.2 build 1219 contains a stack-based buffer overflow vulnerability in 2009年付番の古い脆弱性をVulnCheckがEUVD/GHSAへ新規登録したもので、現在の悪用・新規変化の報道なし。軸1が採用閾値未満で除外。
+・CVE-2009-20010 [low_score] EUVD独立列挙でNVD/KEV未収載層（EUVD-2009-5120・CVSS9.3・assigner=VulnCheck）。Dogfood CRM version 2.0.10 contains a remote command execution vulnerability in the spell.php script 2009年付番の古い脆弱性をVulnCheckがEUVD/GHSAへ新規登録したもので、現在の悪用・新規変化の報道なし。軸1が採用閾値未満で除外。
+・CVE-2026-95102 [low_score] EUVD独立列挙でNVD/KEV未収載層（EUVD-2026-91824・CVSS9.3・assigner=icscert）。WebSocket endpoints lack proper authentication mechanisms, enabling attackers to impersonate chargin NVD未反映のICS-CERT起点（EUVD-only層）。WebSocket認証欠如によるEV充電器なりすまし。窓内KEV登録・実悪用報道なし。NVD反映後に再評価。軸1が採用閾値未満で除外。
+
+網羅スイープ: 候補41件 / 処理41件 / 未処理0件 / KEV窓内追加2件 / EUVD窓内34件（うちNVD/KEV未収載4件）
