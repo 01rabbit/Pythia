@@ -1,0 +1,336 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-06 08:00 JST
+調査期間: 2026-10-05 07:00 〜 2026-10-06 07:00 JST
+========================================
+
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【本編】
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】
+------------------------------------------------------------
+1. 韓国の銀行（新韓・KB国民・ハナ）への一連の侵害でAI自動化攻撃ツール関与の疑い（調査中・帰属なし）（カテゴリ A/A4）
+------------------------------------------------------------
+軸X=3 軸Y=5  被害: 新韓銀行 約2.5万人の情報・KB国民銀行 約11.9万件のカード情報が流出（報道）。ハナ銀行は営業支援システムの限定的侵害。
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-05] 韓国FSCが緊急会議。大統領が10-04に調査を指示。AI攻撃自動化ツール関与の疑いが報じられた（未確認）。
+
+【概要】
+BleepingComputerによれば、韓国金融委員会（FSC）が緊急会議を開き、新韓銀行（2.5万人の情報）・KB国民銀行（11.9万件のカード情報）・ハナ銀行（営業支援システム）への侵害を調査中。関連サーバーのHTMLタイトルにオープンソースのAI侵入テストシステム『ARTEX AI』に関連する中国語文字列があったとされるが、銀行側はARTEX AIの関与を確認しておらず、特定の攻撃者との関連も示されていない。AI関与は未確認（疑い）。
+
+【検知シグナル】
+・攻撃関連サーバーのHTMLタイトルにAI侵入テストシステム『ARTEX AI』に関連する中国語文字列（銀行側は関与を未確認）
+
+【参照】
+・BleepingComputer: South Korea probes bank breaches amid suspected AI-powered attacks https://www.bleepingcomputer.com/news/security/south-korea-probes-bank-breaches-amid-suspected-ai-powered-attacks
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・Rejetto HFSの脆弱性をAIモデルが発見（CVE-2026-61500） [low_score] AIによる脆弱性発見の事実はSection 2の CVE-2026-61500 に含めて記録済み。AI攻撃カテゴリA/B/Cとしての新規事案ではない。
+
+網羅スイープ: 候補25件 / 処理25件 / 未処理0件 / KEV窓内追加0件 / EUVD窓内25件（うちNVD/KEV未収載0件）
+
+■ Section 2: ゼロデイ・トレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-88779 Citrix NetScaler ADC / NetScaler Gateway（バッファ境界の不適切な制限・DoS・CWE-119）（Citrix）
+------------------------------------------------------------
+優先度: high
+CVSS v3: —  CVSS v4: —  KEV: 登録済み 2026-10-04  悪用: 確認  FCEB期限: 2026-10-07
+影響バージョン: SAML SP/IdP として構成された NetScaler ADC / Gateway（修正版: 14.1-73.41以降・13.1-64.28以降・14.1-FIPS 14.1-73.41以降・13.1-FIPS/NDcPP 13.1-37.282以降）。具体的な影響範囲は Citrix CTX697174 を参照
+
+【24時間以内の変化】
+[The Hacker News / SecurityWeek 2026-10-05] Citrixが CVE-2026-88779（CVSS 8.7）を標的型ゼロデイ攻撃で悪用された脆弱性として修正版を公開したと報道。SAML SP/IdP 構成が条件で、DoS（SAML 展開のオフライン化）につながる。同製品で数日前に修正された CVE-2026-88771 / 88772 の悪用後に発生し、修正済み機器にも影響したとSecurityWeekが報じた。
+
+【概要】
+CVE-2026-88779 は NetScaler ADC / Gateway のメモリオーバーフロー（バッファ境界の不適切な制限）で、SAML サービスプロバイダ（SP）または IdP として構成された機器でサービス拒否につながる（CVSS 8.7）。Citrixは標的型のゼロデイ攻撃で悪用されたことを確認したと報じられ、CISA は 2026-10-04 に KEV へ追加済み（FCEB期限 2026-10-07・昨日既報）。報告者として Bishop Fox と watchTowr が挙げられている。THNによれば同製品の CVE-2026-88771 / 88772（Webシェル設置に悪用）の直後の脆弱性で、SecurityWeek は『数日前にパッチ適用した機器も影響を受けた』と報じる。データの完全性への影響は確認されていない。攻撃主体・標的規模・IOC は未公表で、3つのCVEが同一キャンペーンかは確認できていない（推測を含まない）。
+
+【攻撃の流れ】
+1. SAML SP/IdP 構成のNetScalerへ細工したリクエストを送りメモリオーバーフローを誘発しサービス拒否を起こす（報道に基づく・詳細手順は未公表）
+
+【暫定対策】
+・修正版（14.1-73.41 / 13.1-64.28 / FIPS・NDcPP 版 13.1-37.282 以降）へ更新する（CISA BOD 26-04: 期限2026-10-07）
+・構成に 'add authentication samlAction'（SAML SP）または 'add authentication samlIdPProfile'（SAML IdP）が含まれるか確認し、該当機器を優先して更新する
+・CVE-2026-88771 / 88772 の対応済みでも本件は別CVEのため追加更新が必要
+
+【監視】
+SAML 認証エンドポイントへの異常リクエスト、NetScaler プロセスの予期しない再起動・SAML 認証の突発的な失敗を確認する。悪用手法が未公表のため検知シグネチャは提供できない。
+
+【参照】
+・The Hacker News: New NetScaler Zero-Day Exploited in Targeted Attacks Can Knock SAML Deployments Offline https://thehackernews.com/2026/10/new-netscaler-zero-day-exploited-in.html
+・SecurityWeek: Exploitation of Citrix NetScaler Zero-Day Hits Appliances Patched Days Earlier https://www.securityweek.com/exploitation-of-citrix-netscaler-zero-day-hits-appliances-patched-days-earlier
+・Security NEXT: 米当局、脆弱性4件を「悪用脆弱性リスト」に追加 https://www.security-next.com/191054
+・CISA: CISA KEV Catalog（CVE-2026-88779） https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-61500 Rejetto HTTP File Server（HFS）3.0.0〜3.2.0（弱いPRNGによるセッションCookie署名鍵の予測→管理者セッション偽造→RCE）（Rejetto）
+------------------------------------------------------------
+優先度: high
+CVSS v3: —  CVSS v4: 9.3  KEV: 未登録  悪用: 確認  FCEB期限: —
+影響バージョン: HFS 3.0.0〜3.2.0（3.2.1で修正・2026年7月公開）
+
+【24時間以内の変化】
+[The Hacker News（VulnCheck引用）/ SecurityWeek / BleepingComputer 2026-10-05] VulnCheckが CVE-2026-61500 への悪用試行（小規模な偵察）を2026-10-01に確認したと報道。PoCは2026年9月下旬に公開済み。
+
+【概要】
+Rejetto HFS 3.0.0〜3.2.0 で、セッションCookieの署名鍵導出に弱い擬似乱数（Math.random()）が使われ、ログイン時に開示される乱数出力から生成器の状態を復元して管理者セッションを偽造できる（CVSS 9.3）。管理者権限を得ると server_code 設定機能経由で任意のJavaScriptを実行でき、RCEにつながる。THNによればAnthropicの『Mythos』AIモデルが発見し、2026年9月下旬にAlejandro Ramos氏がPoCを公開、VulnCheckが2026-10-01に中国テレコムのIPから米国・日本の公開HFSへの小規模な偵察を確認した。BleepingComputerは積極的なスキャンを報じる。CISA KEV未登録。同製品では CVE-2024-23692（CVSS 9.8）が2024年に悪用された前例がある。観測は『スキャン・悪用試行』であり、侵害成功の報告は未確認。
+
+【攻撃の流れ】
+1. 未認証でログイン処理から開示される乱数出力を収集し、PRNGの状態を復元してセッション署名鍵を予測
+2. 管理者セッションCookieを偽造して管理インターフェースへアクセス
+3. server_code 設定機能を利用して任意のJavaScriptを実行（RCE）
+
+【ATT&CK】
+・T1190 Exploit Public-Facing Application: インターネット公開のHFSに対する CVE-2026-61500 の悪用試行（VulnCheck報告）
+
+【暫定対策】
+・HFS を 3.2.1 以降へ更新する
+・更新までHFSの管理インターフェースをインターネットへ公開しない（VPN・IP制限）
+・HFSの server_code 設定と管理者セッションの利用履歴を確認する
+
+【監視】
+HFSのログインエンドポイントへの短時間・大量の連続リクエスト、予期しない管理者セッションと server_code 設定の変更を確認する。
+
+【参照】
+・The Hacker News: Attackers Target Rejetto HFS Flaw That Enables Admin Session Forgery and RCE https://thehackernews.com/2026/10/attackers-target-rejetto-hfs-flaw-that.html
+・SecurityWeek: Exploitation Hits Rejetto HFS Vulnerability Discovered by AI https://www.securityweek.com/exploitation-hits-rejetto-hfs-vulnerability-discovered-by-ai
+・BleepingComputer: Rejetto HFS servers now actively scanned for critical RCE flaw https://www.bleepingcomputer.com/news/security/rejetto-hfs-servers-now-actively-scanned-for-critical-rce-flaw
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【動向トピック】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. Cling（ClingSTUN）ボットネットが Realtek Jungle SDK の CVE-2021-35394 等を悪用、STUNをC2チャネルに転用
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News（Nozomi Networks引用）/ SecurityWeek 2026-10-05] ClingSTUN ボットネットの詳細分析を報道。
+
+【概要】
+Nozomi Networksは、Realtek Jungle SDKの重大な既知脆弱性 CVE-2021-35394（CVSS 9.8）の悪用を試みてボットネット『Cling』（FortinetはClingSTUNと呼称）を展開する活動を報告した。ルーターやDVRで永続化するバックドアで、STUNを正規のNAT越え通信に見せかけたC2に転用し、リモートトンネル・プロキシ・DoS・ワーム的拡散に対応する。Realtek・MVPower・Linksys・LB-LINK等の7件以上の脆弱性の悪用コードを内包する。2026-09-05頃から悪用が増加し10月も継続（報道）。SecurityWeekも同活動を報じた。
+
+【参照】
+・The Hacker News: Realtek Jungle SDK Exploit Attempts Deliver Cling Botnet With STUN-Based C2 https://thehackernews.com/2026/10/realtek-jungle-sdk-exploit-attempts.html
+・SecurityWeek: Linux Backdoor Abuses STUN Protocol, Exploits Dozens of Flaws https://www.securityweek.com/linux-backdoor-abuses-stun-protocol-exploits-dozens-of-flaws
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・ShinyHunters（UNC6240）/ Rey [no_change] 構成員とされる人物の拘束という法執行事案で、日次では扱わない（週次検証へ移管）。昨日と変化なし。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし（理由: forecaster/forecasts/daily/2026-10-06.md 参照。CVE-2026-88779は既にKEV収載済みでE1成立済み・Rejetto HFSはKEV確率の根拠不足・T1090は小標本で、予報の起点がない）。
+
+【戦術予報 TF-1（shadow運用・非公開）】
+
+shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。
+
+追跡対象: 122件  状態: {"ACTIVE_EXPLOITATION": 43, "DISCLOSED": 46, "POC_PUBLIC": 33}
+候補: {"abstained": 86, "shadow": 79}
+
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-88779 Citrix NetScaler ADC / NetScaler Gateway（バッファ境界の不適切な制限・DoS・CWE-119）（Citrix）
+------------------------------------------------------------
+優先度: high
+CVSS v3: —  CVSS v4: —  KEV: 登録済み 2026-10-04  悪用: 確認  FCEB期限: 2026-10-07
+影響バージョン: SAML SP/IdP として構成された NetScaler ADC / Gateway（修正版: 14.1-73.41以降・13.1-64.28以降・14.1-FIPS 14.1-73.41以降・13.1-FIPS/NDcPP 13.1-37.282以降）。具体的な影響範囲は Citrix CTX697174 を参照
+
+【24時間以内の変化】
+[The Hacker News / SecurityWeek 2026-10-05] Citrixが CVE-2026-88779（CVSS 8.7）を標的型ゼロデイ攻撃で悪用された脆弱性として修正版を公開したと報道。SAML SP/IdP 構成が条件で、DoS（SAML 展開のオフライン化）につながる。同製品で数日前に修正された CVE-2026-88771 / 88772 の悪用後に発生し、修正済み機器にも影響したとSecurityWeekが報じた。
+
+【概要】
+CVE-2026-88779 は NetScaler ADC / Gateway のメモリオーバーフロー（バッファ境界の不適切な制限）で、SAML サービスプロバイダ（SP）または IdP として構成された機器でサービス拒否につながる（CVSS 8.7）。Citrixは標的型のゼロデイ攻撃で悪用されたことを確認したと報じられ、CISA は 2026-10-04 に KEV へ追加済み（FCEB期限 2026-10-07・昨日既報）。報告者として Bishop Fox と watchTowr が挙げられている。THNによれば同製品の CVE-2026-88771 / 88772（Webシェル設置に悪用）の直後の脆弱性で、SecurityWeek は『数日前にパッチ適用した機器も影響を受けた』と報じる。データの完全性への影響は確認されていない。攻撃主体・標的規模・IOC は未公表で、3つのCVEが同一キャンペーンかは確認できていない（推測を含まない）。
+
+【攻撃の流れ】
+1. SAML SP/IdP 構成のNetScalerへ細工したリクエストを送りメモリオーバーフローを誘発しサービス拒否を起こす（報道に基づく・詳細手順は未公表）
+
+【暫定対策】
+・修正版（14.1-73.41 / 13.1-64.28 / FIPS・NDcPP 版 13.1-37.282 以降）へ更新する（CISA BOD 26-04: 期限2026-10-07）
+・構成に 'add authentication samlAction'（SAML SP）または 'add authentication samlIdPProfile'（SAML IdP）が含まれるか確認し、該当機器を優先して更新する
+・CVE-2026-88771 / 88772 の対応済みでも本件は別CVEのため追加更新が必要
+
+【監視】
+SAML 認証エンドポイントへの異常リクエスト、NetScaler プロセスの予期しない再起動・SAML 認証の突発的な失敗を確認する。悪用手法が未公表のため検知シグネチャは提供できない。
+
+【参照】
+・The Hacker News: New NetScaler Zero-Day Exploited in Targeted Attacks Can Knock SAML Deployments Offline https://thehackernews.com/2026/10/new-netscaler-zero-day-exploited-in.html
+・SecurityWeek: Exploitation of Citrix NetScaler Zero-Day Hits Appliances Patched Days Earlier https://www.securityweek.com/exploitation-of-citrix-netscaler-zero-day-hits-appliances-patched-days-earlier
+・Security NEXT: 米当局、脆弱性4件を「悪用脆弱性リスト」に追加 https://www.security-next.com/191054
+・CISA: CISA KEV Catalog（CVE-2026-88779） https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・CVE-2026-105636 [low_score] Plane 1.4.0未満（webhook配信タスクのSSRF等・CVSS 9.9）。代表CVE ほか Plane 5件（CVE-2026-105637 / 105638 / 105639 / 105640 / 105641）。OSSプロジェクトの個別アドバイザリ（GitHub CNA）。Plane（OSSプロジェクト管理）の複数CVEを同一ベンダー・同一バージョンで1件に集約。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105637 [low_score] Plane 1.4.0未満（ProjectBulkAssetEndpoint・CVSS 9.6）。Plane の一括公開バッチ（代表: CVE-2026-105636）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105638 [low_score] Plane 1.4.0未満（マジックコードログインの検証不備・CVSS 9.1）。Plane の一括公開バッチ（代表: CVE-2026-105636）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105639 [low_score] Plane 1.4.0未満（サインインフローが作成するログイン状態の不備・CVSS 9.8）。Plane の一括公開バッチ（代表: CVE-2026-105636）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105640 [low_score] Plane 1.4.0未満（外部IdPが返すメールアドレスの過信・CVSS 9.1）。Plane の一括公開バッチ（代表: CVE-2026-105636）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105641 [low_score] Plane 1.4.0未満（deployments/aio 配下の設定不備・CVSS 9.8）。Plane の一括公開バッチ（代表: CVE-2026-105636）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105691 [low_score] Penpot 2.18.0未満（SVGエクスポーターの問題・CVSS 9.9）。OSSプロジェクトの個別アドバイザリ（GitHub CNA）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105697 [low_score] Langflow 1.10未満（CVSS 9.9）。代表CVE ほか CVE-2026-105740（Langflow 1.9.0未満・CVSS 9.9）。OSSプロジェクトの個別アドバイザリ（GitHub CNA）。Langflow（AIエージェント構築OSS）の認証済みユーザー前提の問題で、公開PoC・悪用の確認なし。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105740 [low_score] Langflow 1.9.0未満（CVSS 9.9）。Langflow の個別公開（代表: CVE-2026-105697）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105284 [low_score] Totolink A3002MU 1.0.0-B20230403.1455（CVSS 10.0）。代表CVE ほか CVE-2026-105285。VulDB CNAによる低価格ルーターの個別公開。公開エクスプロイトの有無はNVD/EUVDの要約から確認できず、独立した悪用報告なし。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105285 [low_score] Totolink A3002MU 1.0.0-B20230403.1455（CVSS 10.0）。VulDB CNAによる個別公開（代表: CVE-2026-105284）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-100103 [low_score] Perforce P4 Search 2026.4.2未満（サービス認証トークンのリセット・CVSS 10.0）。代表CVE ほか CVE-2026-100102 / CVE-2026-103510。Perforce P4 Search コンテナの同一ベンダー一括公開（2026.4.2で修正）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-100102 [low_score] Perforce P4 Search 2026.4.2未満（Javaデバッグインターフェース有効化・CVSS 9.5）。Perforce の一括公開バッチ（代表: CVE-2026-100103）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-103510 [low_score] Perforce P4 Search 2026.4.2未満（空の認証トークン・CVSS 9.5）。Perforce の一括公開バッチ（代表: CVE-2026-100103）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-88395 [low_score] GouGuOA v6.0.5以前（SQLインジェクション・CVSS 9.8）。利用が限定的な国内外の小規模ソフトウェアのMITRE起点の個別公開。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-97283 [low_score] Liquid Web / StellarWP Advanced Post Manager（WordPress・信頼できないデータのデシリアライゼーション・CVSS 9.8）。WordPressプラグインの個別公開（Patchstack）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-102428 [low_score] OrdaSoft Joomla CCK 8.3.16未満（未認証SQLインジェクション・CVSS 9.3）。Joomla拡張の個別公開。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-103352 [low_score] WordPressプラグイン（SQLインジェクション・CVSS 9.3）。WordPressプラグインの個別公開（Patchstack）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105293 [low_score] Legcord 1.1.0〜1.3.0（テーマIPCのパストラバーサル・CVSS 9.2）。代表CVE ほか CVE-2026-105294。Legcord（Discordクライアント）の個別公開（VulnCheck CNA）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105294 [low_score] Legcord 1.1.0〜1.3.0（設定インジェクション・CVSS 9.1）。Legcord の個別公開（代表: CVE-2026-105293）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-77226 [low_score] Camunda 7.24.0〜7.24.15未満（Adminアプリの不適切な認可・CVSS 9.2）。ベンダー個別アドバイザリ（VulnCheck CNA）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105221 [low_score] gist RubyGem 6.1.0未満（証明書検証不備・CVSS 9.1）。代表CVE ほか CVE-2026-105222 / CVE-2026-105223。TLS証明書検証無効化の系統の一括公開（VulnCheck CNA）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105222 [low_score] alexpechkarev/google-maps Laravelパッケージ 12.16まで（TLS証明書検証の無効化・CVSS 9.1）。VulnCheck CNAの同系統の一括公開（代表: CVE-2026-105221）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-105223 [low_score] maclof kubernetes-client 0.17.0〜0.32.0未満（TLS証明書検証の無効化・CVSS 9.1）。VulnCheck CNAの同系統の一括公開（代表: CVE-2026-105221）。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-79820 [low_score] HPE Integrated Lights-Out（iLO）7 ファームウェア（リモートユーザー検証不備・CVSS 9.0）。ベンダー個別アドバイザリ。国内でもiLO関連のJVN情報が公開されているが別CVEで、本CVEの悪用・PoCは未確認。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+・CVE-2026-90970 [low_score] GitLab AI Gateway（サンドボックス回避・CVSS 9.9）。2026-10-03に既報（reported-cves.md）。本窓の追加情報はSecurity NEXT報道のみで変化なし。 窓内でKEV登録・実悪用報道の確認なし。日本語ソース・国内被害の確認なく軸2=0のため参考A昇格なし。軸1が採用閾値未満で除外（ベンダー個別アドバイザリ・パッチ提供済みの通常公開）。
+
+網羅スイープ: 候補25件 / 処理25件 / 未処理0件 / KEV窓内追加0件 / EUVD窓内25件（うちNVD/KEV未収載0件）
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. Microsoft Exchange Server の権限昇格 CVE-2026-96940（CVSS 8.8・他ユーザーのメールボックス読取）に対する緊急外部更新
+観点: cve  採用契機: η
+------------------------------------------------------------
+優先度: medium
+対象: Microsoft Exchange Server（SE RTM / 2016 CU23 / 2019 CU14-15）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-05] Microsoftが CVE-2026-96940 の定例外セキュリティ更新を公開と報道。
+
+【概要】
+Exchange Server の弱い認可により、認証済み攻撃者が同一組織内の他ユーザーのメールボックスのメール・添付ファイルを読めるようになる（テナント越えは不可）。Exchange Online はサービス側で修正済み。Microsoftは悪用評価を『Exploitation More Likely』とし、実環境での悪用は確認されていない（報道）。
+
+【推奨アクション】
+・オンプレミスの該当 Exchange に定例外更新を適用する
+・更新までメールボックスアクセス監査ログの異常な他者メールボックス参照を確認する
+
+【参照】
+・The Hacker News: Microsoft Exchange Flaw Lets Authenticated Attackers Read Other Users' Mailboxes https://thehackernews.com/2026/10/microsoft-exchange-flaw-lets.html
+------------------------------------------------------------
+2. Dell System Update（DSU）CLI のクリティカルな脆弱性 CVE-2026-86360（パストラバーサル・未認証RCEの可能性）ほか4件を修正
+観点: cve  採用契機: η
+------------------------------------------------------------
+優先度: medium
+対象: Dell System Update（DSU）CLI（PowerEdge サーバー向け）
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-05] DellがDSUのクリティカル脆弱性を修正し早期更新を要請と報道。
+
+【概要】
+CVE-2026-86360 は、未認証のリモート攻撃者がroot権限でコード実行につながり得るパストラバーサル（Dell説明はファイルシステムアクセス）。同時に CVE-2026-63697 / 71168（高・RCE）と CVE-2026-86361 / 86362（高・権限昇格）も修正された。修正版は DSU 2.3.0.0 以降。悪用は報告されていない。
+
+【推奨アクション】
+・DSU を 2.3.0.0 以降へ更新する
+・DSU CLI をネットワークへ公開している場合は到達性を管理ネットワークに限定する
+
+【参照】
+・BleepingComputer: New Dell System Update flaw lets hackers gain root privileges https://www.bleepingcomputer.com/news/security/new-dell-system-update-flaw-lets-hackers-gain-root-privileges
+------------------------------------------------------------
+3. cPanel & WHM のクリティカル脆弱性3件（CVE-2026-93698 ほか）修正
+観点: cve  採用契機: η
+------------------------------------------------------------
+優先度: medium
+対象: cPanel & WHM（WebPros International）
+
+【24時間以内の変化】
+[Security NEXT 2026-10-05] WebPros Internationalが cPanel & WHM の3件のクリティカルな脆弱性の修正を公開と報道（更新公開は2026-09-29）。
+
+【概要】
+CVE-2026-93698（CVSS 9.9）は Multilang adminbin の入力検証不備でroot権限の任意OSコマンド実行につながり得る（低権限アカウントが前提）。CVE-2026-93697 / 93029 は保存型XSS（管理者セッションでスクリプト実行）。修正版番号と悪用状況は取得記事に記載がなく未確認。
+
+【推奨アクション】
+・cPanel & WHM を WebPros の最新セキュリティ更新へ更新する（修正版は公式アドバイザリで確認）
+・共有ホスティング運用では低権限アカウントの棚卸しを行う
+
+【参照】
+・Security NEXT: 「cPanel & WHM」に3件の脆弱性 - いずれも「クリティカル」 https://www.security-next.com/191015
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. Google がオープンソース脆弱性報奨金（OSS VRP）の受付を一時停止、AI生成の無効報告の急増が理由
+観点: ai_attack  採用契機: η
+------------------------------------------------------------
+優先度: low
+対象: Google OSS VRP
+
+【24時間以内の変化】
+[BleepingComputer / SecurityWeek 2026-10-05] AI生成レポートの氾濫によりOSS VRPへの報告受付を一時停止と報道。
+
+【概要】
+GoogleがAI生成の無効な自動レポートの急増を受け、Open Source Software Vulnerability Rewards Program への脆弱性報告の受付を一時停止し対象を絞る。OSS側の脆弱性トリアージ負荷とAI支援による脆弱性発見の増加を示す動向（事実は報道ベース）。
+
+【推奨アクション】
+・OSSメンテナ・脆弱性管理担当は、AI生成報告の増加を前提にトリアージ体制を見直す
+
+【参照】
+・BleepingComputer: Google halts open-source bug bounty program amid AI spam surge https://www.bleepingcomputer.com/news/google/google-halts-open-source-bug-bounty-program-amid-ai-spam-surge
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・Chrome 11件の脆弱性修正（Security NEXT） [low_score] 定例アップデートで、悪用確認・ゼロデイの記載なし。SOC採用条件α〜ηに該当する変化なし。
+
+網羅スイープ: 候補25件 / 処理25件 / 未処理0件 / KEV窓内追加0件 / EUVD窓内25件（うちNVD/KEV未収載0件）
