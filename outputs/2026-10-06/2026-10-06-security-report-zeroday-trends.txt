@@ -1,0 +1,120 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-06 08:00 JST
+調査期間: 2026-10-05 07:00 〜 2026-10-06 07:00 JST
+========================================
+
+■ Section 2: ゼロデイ・トレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-88779 Citrix NetScaler ADC / NetScaler Gateway（バッファ境界の不適切な制限・DoS・CWE-119）（Citrix）
+------------------------------------------------------------
+優先度: high
+CVSS v3: —  CVSS v4: —  KEV: 登録済み 2026-10-04  悪用: 確認  FCEB期限: 2026-10-07
+影響バージョン: SAML SP/IdP として構成された NetScaler ADC / Gateway（修正版: 14.1-73.41以降・13.1-64.28以降・14.1-FIPS 14.1-73.41以降・13.1-FIPS/NDcPP 13.1-37.282以降）。具体的な影響範囲は Citrix CTX697174 を参照
+
+【24時間以内の変化】
+[The Hacker News / SecurityWeek 2026-10-05] Citrixが CVE-2026-88779（CVSS 8.7）を標的型ゼロデイ攻撃で悪用された脆弱性として修正版を公開したと報道。SAML SP/IdP 構成が条件で、DoS（SAML 展開のオフライン化）につながる。同製品で数日前に修正された CVE-2026-88771 / 88772 の悪用後に発生し、修正済み機器にも影響したとSecurityWeekが報じた。
+
+【概要】
+CVE-2026-88779 は NetScaler ADC / Gateway のメモリオーバーフロー（バッファ境界の不適切な制限）で、SAML サービスプロバイダ（SP）または IdP として構成された機器でサービス拒否につながる（CVSS 8.7）。Citrixは標的型のゼロデイ攻撃で悪用されたことを確認したと報じられ、CISA は 2026-10-04 に KEV へ追加済み（FCEB期限 2026-10-07・昨日既報）。報告者として Bishop Fox と watchTowr が挙げられている。THNによれば同製品の CVE-2026-88771 / 88772（Webシェル設置に悪用）の直後の脆弱性で、SecurityWeek は『数日前にパッチ適用した機器も影響を受けた』と報じる。データの完全性への影響は確認されていない。攻撃主体・標的規模・IOC は未公表で、3つのCVEが同一キャンペーンかは確認できていない（推測を含まない）。
+
+【攻撃の流れ】
+1. SAML SP/IdP 構成のNetScalerへ細工したリクエストを送りメモリオーバーフローを誘発しサービス拒否を起こす（報道に基づく・詳細手順は未公表）
+
+【暫定対策】
+・修正版（14.1-73.41 / 13.1-64.28 / FIPS・NDcPP 版 13.1-37.282 以降）へ更新する（CISA BOD 26-04: 期限2026-10-07）
+・構成に 'add authentication samlAction'（SAML SP）または 'add authentication samlIdPProfile'（SAML IdP）が含まれるか確認し、該当機器を優先して更新する
+・CVE-2026-88771 / 88772 の対応済みでも本件は別CVEのため追加更新が必要
+
+【監視】
+SAML 認証エンドポイントへの異常リクエスト、NetScaler プロセスの予期しない再起動・SAML 認証の突発的な失敗を確認する。悪用手法が未公表のため検知シグネチャは提供できない。
+
+【参照】
+・The Hacker News: New NetScaler Zero-Day Exploited in Targeted Attacks Can Knock SAML Deployments Offline https://thehackernews.com/2026/10/new-netscaler-zero-day-exploited-in.html
+・SecurityWeek: Exploitation of Citrix NetScaler Zero-Day Hits Appliances Patched Days Earlier https://www.securityweek.com/exploitation-of-citrix-netscaler-zero-day-hits-appliances-patched-days-earlier
+・Security NEXT: 米当局、脆弱性4件を「悪用脆弱性リスト」に追加 https://www.security-next.com/191054
+・CISA: CISA KEV Catalog（CVE-2026-88779） https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-61500 Rejetto HTTP File Server（HFS）3.0.0〜3.2.0（弱いPRNGによるセッションCookie署名鍵の予測→管理者セッション偽造→RCE）（Rejetto）
+------------------------------------------------------------
+優先度: high
+CVSS v3: —  CVSS v4: 9.3  KEV: 未登録  悪用: 確認  FCEB期限: —
+影響バージョン: HFS 3.0.0〜3.2.0（3.2.1で修正・2026年7月公開）
+
+【24時間以内の変化】
+[The Hacker News（VulnCheck引用）/ SecurityWeek / BleepingComputer 2026-10-05] VulnCheckが CVE-2026-61500 への悪用試行（小規模な偵察）を2026-10-01に確認したと報道。PoCは2026年9月下旬に公開済み。
+
+【概要】
+Rejetto HFS 3.0.0〜3.2.0 で、セッションCookieの署名鍵導出に弱い擬似乱数（Math.random()）が使われ、ログイン時に開示される乱数出力から生成器の状態を復元して管理者セッションを偽造できる（CVSS 9.3）。管理者権限を得ると server_code 設定機能経由で任意のJavaScriptを実行でき、RCEにつながる。THNによればAnthropicの『Mythos』AIモデルが発見し、2026年9月下旬にAlejandro Ramos氏がPoCを公開、VulnCheckが2026-10-01に中国テレコムのIPから米国・日本の公開HFSへの小規模な偵察を確認した。BleepingComputerは積極的なスキャンを報じる。CISA KEV未登録。同製品では CVE-2024-23692（CVSS 9.8）が2024年に悪用された前例がある。観測は『スキャン・悪用試行』であり、侵害成功の報告は未確認。
+
+【攻撃の流れ】
+1. 未認証でログイン処理から開示される乱数出力を収集し、PRNGの状態を復元してセッション署名鍵を予測
+2. 管理者セッションCookieを偽造して管理インターフェースへアクセス
+3. server_code 設定機能を利用して任意のJavaScriptを実行（RCE）
+
+【ATT&CK】
+・T1190 Exploit Public-Facing Application: インターネット公開のHFSに対する CVE-2026-61500 の悪用試行（VulnCheck報告）
+
+【暫定対策】
+・HFS を 3.2.1 以降へ更新する
+・更新までHFSの管理インターフェースをインターネットへ公開しない（VPN・IP制限）
+・HFSの server_code 設定と管理者セッションの利用履歴を確認する
+
+【監視】
+HFSのログインエンドポイントへの短時間・大量の連続リクエスト、予期しない管理者セッションと server_code 設定の変更を確認する。
+
+【参照】
+・The Hacker News: Attackers Target Rejetto HFS Flaw That Enables Admin Session Forgery and RCE https://thehackernews.com/2026/10/attackers-target-rejetto-hfs-flaw-that.html
+・SecurityWeek: Exploitation Hits Rejetto HFS Vulnerability Discovered by AI https://www.securityweek.com/exploitation-hits-rejetto-hfs-vulnerability-discovered-by-ai
+・BleepingComputer: Rejetto HFS servers now actively scanned for critical RCE flaw https://www.bleepingcomputer.com/news/security/rejetto-hfs-servers-now-actively-scanned-for-critical-rce-flaw
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【動向トピック】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. Cling（ClingSTUN）ボットネットが Realtek Jungle SDK の CVE-2021-35394 等を悪用、STUNをC2チャネルに転用
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News（Nozomi Networks引用）/ SecurityWeek 2026-10-05] ClingSTUN ボットネットの詳細分析を報道。
+
+【概要】
+Nozomi Networksは、Realtek Jungle SDKの重大な既知脆弱性 CVE-2021-35394（CVSS 9.8）の悪用を試みてボットネット『Cling』（FortinetはClingSTUNと呼称）を展開する活動を報告した。ルーターやDVRで永続化するバックドアで、STUNを正規のNAT越え通信に見せかけたC2に転用し、リモートトンネル・プロキシ・DoS・ワーム的拡散に対応する。Realtek・MVPower・Linksys・LB-LINK等の7件以上の脆弱性の悪用コードを内包する。2026-09-05頃から悪用が増加し10月も継続（報道）。SecurityWeekも同活動を報じた。
+
+【参照】
+・The Hacker News: Realtek Jungle SDK Exploit Attempts Deliver Cling Botnet With STUN-Based C2 https://thehackernews.com/2026/10/realtek-jungle-sdk-exploit-attempts.html
+・SecurityWeek: Linux Backdoor Abuses STUN Protocol, Exploits Dozens of Flaws https://www.securityweek.com/linux-backdoor-abuses-stun-protocol-exploits-dozens-of-flaws
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・ShinyHunters（UNC6240）/ Rey [no_change] 構成員とされる人物の拘束という法執行事案で、日次では扱わない（週次検証へ移管）。昨日と変化なし。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし（理由: forecaster/forecasts/daily/2026-10-06.md 参照。CVE-2026-88779は既にKEV収載済みでE1成立済み・Rejetto HFSはKEV確率の根拠不足・T1090は小標本で、予報の起点がない）。
+
+【戦術予報 TF-1（shadow運用・非公開）】
+
+shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。
+
+追跡対象: 122件  状態: {"ACTIVE_EXPLOITATION": 43, "DISCLOSED": 46, "POC_PUBLIC": 33}
+候補: {"abstained": 86, "shadow": 79}
