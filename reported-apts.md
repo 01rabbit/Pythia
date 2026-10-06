@@ -247,3 +247,5 @@
 | UAT-11587（Cisco Talos追跡クラスタ・China-nexus・帰属信頼度: 中（Talos単一ベンダー評価）） | UAT-11587-Antino-2026 | 2026-10-03 | 活動継続 | 2026-10-03 | YES | Rust製バックドアAntino（Outlook/OneDriveをC2に利用）・アジア8か国の政府・政策機関標的・The Hacker News引用・IOC一部公開 |
 | Warlock（中国系ランサムウェア・帰属信頼度: 中（Symantec/Carbon Black単一ベンダー評価）） | Warlock-SharePoint-ToolShell-2026 | 2026-10-03 | 活動継続 | 2026-10-03 | YES | SharePoint ToolShell悪用で水道・通信・地方政府・大学を侵害・BYOVD・VS Code Insidersトンネル・BleepingComputer/SecurityWeek |
 | TA419（Proofpoint追跡・China-aligned・帰属信頼度: 中（Proofpoint単一ベンダー評価・THN二次報道）） | TA419-AI-policy-phishing-2026 | 2026-10-05 | 活動継続 | 2026-10-05 | YES | 米国AI政策専門家（シンクタンク・大学・法務）へのMicrosoft AitM認証情報フィッシング・著名人/Anthropic社員へのなりすまし・フレームレスBitB・2025-04以降の活動・日本の防衛関連等も標的と報道・IOC未取得・The Hacker News |
+| CL-STA-1178（Unit 42追跡クラスタ・イラン国家関連・帰属信頼度: 高（Unit 42単一ベンダー評価）） | Blinder-Tunnel-CL-STA-1178-2026 | 2026-10-07 | 活動継続 | 2026-10-07 | YES | 偽Dubai Airports採用誘引・GitHub C2のShelbyLoader V2・イラク通信/航空を標的 |
+| Red Menshen（Rapid7帰属・別名 Earth Bluecrow / DecisiveArchitect / Red Dev 18・帰属信頼度: 中（Rapid7単一ベンダー評価・THN二次報道）） | RedMenshen-BPFDoor-Korea-Taiwan-2026 | 2026-10-07 | 活動継続 | 2026-10-07 | YES | BPFDoor新亜種・BPF Rekoobe・AVERAT・韓国/台湾の通信事業者を標的 |

@@ -1,0 +1,148 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-07 08:00 JST
+調査期間: 2026-10-06 07:00 〜 2026-10-07 07:00 JST
+========================================
+
+■ Section 2: ゼロデイ・トレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（FortiMail CVE-2026-104286 は Section 3 のゼロデイ特報に記載）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CL-STA-1178（Unit 42追跡クラスタ） / Blinder-Tunnel-CL-STA-1178-2026
+------------------------------------------------------------
+帰属: イラン（Unit 42が『Iranian state-aligned』と高確信度で評価）（信頼度: high）  軸P=7 軸Q=3
+
+【24時間以内の変化】
+[Unit 42 2026-10-06] Unit 42が、偽のDubai Airports採用誘引とGitHub C2マルウェアを使うイラン関連の『Blinder Tunnel』キャンペーン（CL-STA-1178）を公表。
+
+【概要】
+Unit 42は、イラン国家関連の脅威アクター（CL-STA-1178）が、偽のDubai Airports採用誘引とGitHubをC2に使うマルウェアでイラク（通信・航空）の重要インフラを狙うキャンペーン『Blinder Tunnel』を公表した。イスラエル組織とUAE航空インフラにも標的化が見られる。主要コンポーネントはShelbyLoader V2（GitHub C2のローダー）、PsProxy.dll（メモリ内PowerShell実行）、ShelbyC2 V2（RAT）、Blackwood（Chiselトンネルのローダー）。Unit 42は、イラン国内ホストのインフラ・イラン音楽プラットフォームを指すメタデータ・標的パターンを根拠に高確信度でイラン国家関連と評価している（帰属は単一ベンダー評価で、本窓では一次報告のRSS要約のみ取得）。
+
+【攻撃の流れ】
+1. 偽のDubai Airports採用誘引（フィッシング）で標的を誘導
+2. 悪意ある.csprojファイル等を用いたMSBuild系の実行とAppDomainManager乗っ取り・DLLサイドローディングでShelbyLoader V2を起動
+3. GitHubリポジトリをC2として利用し、PowerShellをpowershell.exe無しでメモリ上実行。Chiselラッパー（Blackwood）でトンネルを確立
+
+【ATT&CK】
+・T1566 Phishing: 偽の採用誘引（Unit 42記載）
+・T1127 Trusted Developer Utilities Proxy Execution: 悪意ある.csprojファイル（Unit 42記載）
+・T1574.014 AppDomainManager: AppDomainManager乗っ取り（Unit 42記載）
+・T1574.001 DLL Search Order Hijacking: DLLサイドローディング（Unit 42記載）
+・T1059.001 PowerShell: powershell.exeを呼ばないメモリ内PowerShell実行（PsProxy.dll）
+・T1547 Boot or Logon Autostart Execution: レジストリRunキーによる永続化（Unit 42記載）
+
+【IOC】
+IP: 91.107.156[.]29, 87.248.129[.]239, 65.109.214[.]145, 38.180.136[.]127
+ドメイン: cloud.g-drive[.]cam, googeldrive[.]cam, googelmeet[.]online
+IP・ドメインはUnit 42記載のdefang表記のまま。GitHub C2リポジトリ: peakyblinders-tm/myLic。レジストリ: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\MicrosoftRuntime。ハッシュは本窓で未取得。
+
+【推奨アクション】
+github.com への業務外の定常アクセス、.csproj/MSBuildの異常実行、HKCU Run の MicrosoftRuntime キーを確認し、IOCをプロキシ/DNSログで照合する。航空・通信分野は採用担当宛ての不審な応募・採用誘引メールに注意する。
+
+【参照】
+・Unit 42: Blinder Tunnel Campaign Targets Iraqi Infrastructure https://unit42.paloaltonetworks.com/blinder-tunnel-targets-critical-infrastructure
+------------------------------------------------------------
+2. Red Menshen（Rapid7が帰属・別名 Earth Bluecrow / DecisiveArchitect / Red Dev 18） / RedMenshen-BPFDoor-Korea-Taiwan-2026
+------------------------------------------------------------
+帰属: 未記載（THN記事は国家名を明示していない）（信頼度: medium）  軸P=6 軸Q=3
+
+【24時間以内の変化】
+[The Hacker News（Rapid7分析引用） 2026-10-06] Rapid7が、韓国・台湾の通信事業者・ネットワーク機器を狙うLinuxバックドア（BPFDoor新亜種・BPF Rekoobe・AVERAT）がメールセキュリティ製品を装うと報告したとTHNが報道。
+
+【概要】
+Rapid7は、BPFDoorの新亜種・BPF Rekoobe・未報告のLinuxインプラントAVERATが、韓国と台湾の通信事業者・ネットワーク機器でメールセキュリティ製品やシステムプロセスを装い検知を回避していると報告した（THN）。BPFで通信を検査し、C2をSMTP・DNS・HTTPS POSTに偽装する。Rapid7はRed Menshen（別名 Earth Bluecrow・DecisiveArchitect・Red Dev 18）の活動とし、同グループは2021年から中東・アジアの通信事業者を標的にしてきたとされる（帰属は情報源が明示する範囲に限る・単一ベンダー評価）。
+
+【攻撃の流れ】
+1. メールセキュリティ製品（SpamSniper・ShareTech）やシステムデーモン・Oracleプロセスを装うバイナリ名で常駐
+2. BPF（Berkeley Packet Filter）で通信を監視し、C2をSMTP・DNS・HTTPS POST等に偽装して交信（AVERAT は TCP 25 でビーコン）
+
+【ATT&CK】
+・T1036 Masquerading: メールセキュリティ製品・システムデーモン・Oracleプロセスを装う名称
+・T1205 Traffic Signaling: BPFによる通信監視とトリガー待受（BPFDoor系）
+・T1071 Application Layer Protocol: SMTP・DNS・HTTPSを装うC2通信
+
+【IOC】
+IP: なし
+ドメイン: mx.zxopfds[.]com
+AVERAT のC2ドメインと TCP 25 のビーコン通信がTHN記事に記載。ハッシュは未取得。Rapid7一次報告は本窓で未取得。
+
+【推奨アクション】
+Linuxの通信機器・メールゲートウェイでBPFフィルタの不審な登録、TCP 25 への異常な外向き通信、mx.zxopfds[.]com の名前解決を確認する。
+
+【参照】
+・The Hacker News: Linux Backdoors Impersonate Email Security Tools to Evade Detection in Korea and Taiwan https://thehackernews.com/2026/10/linux-backdoors-impersonate-email.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【動向トピック】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. ClickFix の新手口: ブラウザキャッシュにPNG偽装のペイロードを事前取得（Microsoft Threat Intelligence）
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News / Dark Reading 2026-10-06] THNがMicrosoft Threat Intelligenceの投稿を報道。
+
+【概要】
+Microsoft Threat Intelligenceは、侵害サイトがスクリプトのペイロードをPNGに偽装してブラウザキャッシュへ事前取得させ、ユーザーに実行させる新型ClickFixを確認したとXで公表した（THN）。リモートからのダウンロード・実行という典型パターンを避け、Windowsの『ファイル名を指定して実行』の制限を回避する狙いとされる。Dark Readingも同種の進化を報じた。
+
+【参照】
+・The Hacker News: ClickFix Smuggles Payloads Through Browser Cache to Bypass Windows Run Limits https://thehackernews.com/2026/10/clickfix-smuggles-payloads-through.html
+------------------------------------------------------------
+2. Pwn2Own Ireland 2026 初日: 32件のゼロデイが実演され Samsung Galaxy S26 が2回侵害
+------------------------------------------------------------
+【24時間以内の変化】
+[BleepingComputer 2026-10-06] BleepingComputerが競技初日の結果を報道。
+
+【概要】
+BleepingComputerによれば、Pwn2Own Ireland 2026の初日に研究者が32件のゼロデイを悪用し、Samsung Galaxy S26を2回侵害して計38.85万ドルを獲得した。競技で実演された脆弱性はベンダーへ非公開で報告される枠組みで、現時点で野生の悪用を示す情報はない。
+
+【参照】
+・BleepingComputer: Hackers exploit 32 zero-days on first day of Pwn2Own Ireland https://www.bleepingcomputer.com/news/security/hackers-exploit-32-zero-days-on-first-day-of-pwn2own-ireland
+------------------------------------------------------------
+3. 偽のAI広告プラットフォーム（ChatGPT・Gemini・Claude 等）が広告アカウント認証情報とMFAコードを窃取
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News / BleepingComputer 2026-10-06] THN/BleepingComputerが同基盤を報道。
+
+【概要】
+THNによれば、Google Gemini・Anthropic Claude・OpenAI ChatGPT・Perplexity等のAIチャットボットの広告製品を装い、キャンペーン最適化や事業アカウント接続をうたって認証情報とMFAコードを奪う『人間が運用するフィッシング基盤』が確認された。BleepingComputerも広告アカウント窃取を報じた。AI自体への攻撃ではなく、AIブランドを使ったフィッシングである。
+
+【参照】
+・The Hacker News: Fake ChatGPT, Gemini, and Claude Ad Portals Capture Credentials and MFA Codes https://thehackernews.com/2026/10/fake-chatgpt-gemini-and-claude-ad.html
+・BleepingComputer: Fake ChatGPT, Gemini Sites steal advertising accounts, MFA codes https://www.bleepingcomputer.com/news/security/fake-chatgpt-gemini-sites-steal-advertising-accounts-mfa-codes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（本窓の除外なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本日の新規予報なし（理由: forecaster/forecasts/daily/2026-10-07.md 参照。FortiMail CVE-2026-104286 は既にKEV収載済みでE1成立済み・Atlassian CVE-2026-21589 は悪用・PoC未確認でKEV確率の根拠不足・Ninja Forms は認証必須XSSでKEV確率の根拠不足・T1190 は平常範囲で、予報の起点がない）。
+
+【戦術予報 TF-1（shadow運用・非公開）】
+
+shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。
+
+追跡対象: 125件  状態: {"ACTIVE_EXPLOITATION": 45, "DISCLOSED": 47, "POC_PUBLIC": 33}
+候補: {"abstained": 90, "shadow": 80}
+
+網羅スイープ: 候補96件 / 処理96件 / 未処理0件 / KEV窓内追加0件 / EUVD窓内88件（うちNVD/KEV未収載3件）
