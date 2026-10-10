@@ -169,7 +169,10 @@ def score(candidate, index, as_of, universes, coverage_records=None, diagnostics
         fired = False
         blocked = []
         for available, event_start, state, _oid, channel in points:
-            if not (start < event_start and start < available <= deadline):
+            # as_of より後に利用可能になった観測は採点に使わない（固定 --as-of-utc の再現性。
+            # 未来情報の混入を防ぐ。as_of=現在時刻の通常運用では挙動は変わらない）。
+            if not (start < event_start and start < available <= deadline
+                    and available <= as_of):
                 continue
             if not transition_fired(te.get("event_type"), state, te.get("next_state")):
                 continue
