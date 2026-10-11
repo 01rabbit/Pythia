@@ -12,7 +12,7 @@ for downstream AI analysis:
 New items are posted to Slack and written as standardized raw JSON to
 `data/raw/`. In this repository, the root workflow
 (`.github/workflows/daily-pipeline.yml`) runs `watcher.py` once daily at
-06:00 JST; it emits both `news-*.json` (RSS articles) and `cves-*.json`
+03:17 JST; it emits both `news-*.json` (RSS articles) and `cves-*.json`
 (CVE mentions extracted from those articles). `cve_watcher.py` (NVD API)
 is not currently scheduled here. Both collectors can also be run locally.
 
@@ -109,7 +109,7 @@ for **standalone deployment** of this collector as its own repository:
 Both are written to run every 3 hours and support manual `workflow_dispatch`.
 **They do not run in this repository** — GitHub Actions only executes
 workflows in the repository-root `.github/workflows/`, where
-`daily-pipeline.yml` runs `watcher.py` once daily at 06:00 JST instead.
+`daily-pipeline.yml` runs `watcher.py` once daily at 03:17 JST instead.
 `rss-watch.yml` exposes a `force_notify` input for manual runs. Each workflow
 validates its raw JSON output with `jq`, uploads `data/raw/` as a build
 artifact, and auto-commits the updated state files and raw JSON back to the
