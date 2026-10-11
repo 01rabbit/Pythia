@@ -1,6 +1,6 @@
 ---
 name: collect-evidence
-description: RSSフィード収集とEvidence Ledger固定タスク（毎日06:00 JSTに実行・GitHub Actions `daily-pipeline.yml` の代替）
+description: RSSフィード収集とEvidence Ledger固定タスク（毎日03:17 JSTに実行・GitHub Actions `daily-pipeline.yml` の代替）
 ---
 
 # collect-evidence — 日次フィード収集・証跡固定（GitHub Actions代替）
@@ -12,7 +12,7 @@ GitHub Actions の実行時間上限に達し来月まで動かせない間の�
 同ワークフローと**同一の処理・同一のコミットメッセージ規約**を、
 GitHub Actionsではなく Claude Code Routines（本スキル）で実行する。
 
-★このスキルの実行時刻（06:00 JST）は、日次パイプライン本体
+★このスキルの実行時刻（03:17 JST）は、日次パイプライン本体
 （ルート `SKILL.md`・07:00 JST 実行）より前でなければならない。
 `pipeline-forecast-verification.md` の M5 時刻順序ゲートは「証拠が予報固定時刻より
 前に取得されている」ことを前提にしており、本スキルが遅延・失敗すると

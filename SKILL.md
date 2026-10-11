@@ -68,10 +68,10 @@ Section 4: SOC推奨情報
 - `security-intel-collector/data/raw/` の当日・前日分 JSON（`news-YYYY-MM-DD.json` / `cves-YYYY-MM-DD.json`、
   無ければ `news-latest.json` / `cves-latest.json`）を読み込み、`items[]` を Step 1〜2 の調査起点とする
 - **注意: raw ファイル名の日付は UTC 日付である**（collector が `utc_today_str()` で命名）。
-  06:00 JST の収集は 21:00 UTC（前日）に走るため、JST 実施日 D の当日収集分は
+  収集は 18:17 UTC（前日・03:17 JST）に走るため、JST 実施日 D の当日収集分は
   `news-(D-1).json` / `cves-(D-1).json` に入っている。迷ったら `news-latest.json` /
   `cves-latest.json`（最新収集分）を使うこと
-- GitHub Actions（`daily-pipeline.yml`）が毎日 06:00 JST に1回自動収集するため、当日 07:00 JST 時点で当日分が蓄積されている
+- GitHub Actions（`daily-pipeline.yml`）が毎日 03:17 JST に1回自動収集するため（GitHub の schedule 遅延を見込んだ時刻）、当日 07:30 JST 時点で当日分が蓄積されている
 - Web 検索は data/raw に無い情報の補完としてのみ使用する（再現性確保のため）
 - data/raw が取得できない・空の場合はその旨をレポート meta に記録し、Web 検索へフォールバックする
 
@@ -79,7 +79,7 @@ Section 4: SOC推奨情報
 
 判定に使う一次ソースを、**取得時刻と内容ハッシュ付き**で Evidence Ledger へ固定する。
 
-**取得は行わない。** 証跡と被覆記録は 06:00 JST の `daily-pipeline.yml` が固定済みで、
+**取得は行わない。** 証跡と被覆記録は 03:17 JST 起動の `daily-pipeline.yml` が固定済みで、
 ここではその存在と整合を検証するだけである。予報時刻に取り直すと、**予報後に取得した
 証拠を予報が使った**ことになり先見性の主張が崩れる。
 
@@ -118,7 +118,7 @@ python3 scripts/generate_tactical_candidates.py --date "${TODAY}" \
 python3 scripts/validate_tactical_integrity.py --date "${TODAY}" # fail-closed
 python3 scripts/validate_transition_claims.py --date "${TODAY}"   # fail-closed
 
-# 被覆記録は 06:00 JST の daily-pipeline.yml が固定済み。ここでは作らない。
+# 被覆記録は 03:17 JST 起動の daily-pipeline.yml が固定済み。ここでは作らない。
 
 # ★採点が実際に成立しているかを監視する（沈黙を正常と区別する）
 mkdir -p ".cache/daily-security-intel/${TODAY}"
