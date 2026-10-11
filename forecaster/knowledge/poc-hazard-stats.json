@@ -1,0 +1,3255 @@
+{
+  "_comment": "E4（PoC/エクスプロイトコード公開）の窓内発生率を母集団を明示して実測したもの。主層（kev_added_*）の母集団は『KEV 収載済みで公開 PoC がまだ無い CVE』であり、Pythia が実際に発行した E4 予報の条件（実悪用確認済み・PoC 未公開）に近い。したがって p_channel 推定順位1（母集団一致の外部実測）の候補になるが、候補を p_channel に採用するかは人間レビューで判断する。発行済み予報の hit_criteria・的中判定結果の変更には使用禁止（原則D・教訓12）。",
+  "_schema_version": "1.0",
+  "_machine_generated": true,
+  "_generator": "scripts/build_poc_hazard_stats.py",
+  "_generated_on": "2026-10-11",
+  "_issue": "#186",
+  "_source": {
+    "exploit_db_csv": "https://gitlab.com/exploit-database/exploitdb/-/raw/main/files_exploits.csv",
+    "poc_in_github_index": "https://raw.githubusercontent.com/nomi-sec/PoC-in-GitHub/master/README.md",
+    "poc_in_github_cve_json": "https://raw.githubusercontent.com/nomi-sec/PoC-in-GitHub/master/{year}/{cve}.json",
+    "metasploit_metadata": "https://raw.githubusercontent.com/rapid7/metasploit-framework/master/db/modules_metadata_base.json",
+    "kev_feed": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+    "kev_catalog_version": "2026.10.08",
+    "nvd_api": "https://services.nvd.nist.gov/rest/json/cves/2.0",
+    "sample_start": "2024-10-01",
+    "as_of": "2026-10-04",
+    "censor_margin_days": 7,
+    "sample_interval_days": 7,
+    "window_days": 3,
+    "exploit_db_cves_indexed": 25103,
+    "poc_in_github_cves_indexed": 11116,
+    "metasploit_cves_indexed": 3191
+  },
+  "_governance": "knowledge/ の自動書き換え禁止ルール（行動原則5）に従い、再生成は日次ルーチンからは行わず、必ず PR として提案し人間レビューを経てコミットする。",
+  "_definitions": {
+    "first_poc": "Exploit-DB date_added / PoC-in-GitHub リポジトリ created_at / Metasploit mod_time の最小日。strata_without_metasploit は Metasploit を除いた値。",
+    "risk_set": "サンプル日 D の時点で起点条件（KEV 追加が D-k〜D）を満たし、かつ D 時点で first_poc が無い（＝まだ発火していない）CVE。",
+    "fired": "first_poc が [D+1, D+3] に入ること。",
+    "hazard": "fired_total / risk_set_total（全サンプル日でプール）。Wilson 95%CI を併記。",
+    "p_channel_vs_base_rate": "p_channel = P(窓内発火 | Pythia の発行条件)。主層 kev_added_le_7d_no_poc / le_30d_no_poc がこれに最も近い母集団。base_rate = P(窓内発火 | 広い候補母集団)。 nvd_critical_* 層（--with-nvd 時）がこれに当たる。両者は別の量である（教訓17）。"
+  },
+  "_limitations": [
+    "★本ファイルの値を p_channel に自動代入してはならない。主層は Pythia の E4 発行条件に近いが完全一致ではない（Pythia は KEV 収載前の実悪用報道を起点に発行することがある）。採用は pipeline-forecast-verification.md の p_channel 推定順位表の更新として人間レビューを経る。",
+    "PoC ソースは『現在の状態』のダンプである。削除された GitHub リポジトリは PoC-in-GitHub から消えるため、過去の発火は過少に数えられる（生存バイアス）。Exploit-DB は収録削除が稀でこの影響は小さい。",
+    "PoC-in-GitHub の created_at はリポジトリ作成時刻であり、CVE 名を後から付けたリポジトリでは PoC 公開より前の日付になる。KEV 追加前の日付は before_kev に集計され、リスク集合からは除外される方向（保守的）に働く。",
+    "Metasploit の mod_time は最終更新時刻であり初出の上界。モジュール初出が窓内でも mod_time が後日なら発火を取り逃がし、逆に窓内の更新を初出と誤認しうる。主判断には strata_without_metasploit を優先し、差分を Metasploit 由来の不確かさとして読む。",
+    "本統計は PoC が『動作する実証コード』かを判定しない（2026-08-29 の E4 的中判定でプレースホルダコミットを除外した判断は人手による）。収録・作成の有無だけを数える。",
+    "サンプルは週次固定間隔であり、KEV 追加の曜日偏りと位相が固定される。",
+    "fired_total が少ない層（stable=false）の hazard は信頼区間が広い。桁の目安としてのみ読む。",
+    "nvd_critical_* 層は cvssV3Severity=CRITICAL で絞っており、CVSS v4 のみ・v2 のみの CVE を含まない（網羅スイープが severity フィルタを使わない理由と同じ欠落）。base_rate 側の参考値であり p_channel には使わない。",
+    "本統計は的中条件（hit_criteria）を緩める根拠には使用禁止（原則D・教訓12）。使ってよいのは M1-b 頻度ゲートの判定値候補（人間レビュー経由）と base_rate_estimate の情報量測定のみ。"
+  ],
+  "strata": {
+    "kev_added_le_7d_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 364,
+      "risk_set_mean_per_day": 3.5,
+      "fired_total": 35,
+      "hazard": 0.09615,
+      "hazard_wilson_95ci": [
+        0.07,
+        0.1308
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2024-11680",
+        "CVE-2024-55591",
+        "CVE-2024-9680",
+        "CVE-2025-14174",
+        "CVE-2025-24990",
+        "CVE-2025-30400",
+        "CVE-2025-31277",
+        "CVE-2025-33053",
+        "CVE-2025-48595",
+        "CVE-2025-59718",
+        "CVE-2025-67038",
+        "CVE-2025-7775",
+        "CVE-2026-11645",
+        "CVE-2026-1281",
+        "CVE-2026-15409",
+        "CVE-2026-15410",
+        "CVE-2026-18556",
+        "CVE-2026-20127",
+        "CVE-2026-20805",
+        "CVE-2026-21385",
+        "CVE-2026-21510",
+        "CVE-2026-21533",
+        "CVE-2026-2441",
+        "CVE-2026-24858",
+        "CVE-2026-28318",
+        "CVE-2026-32201",
+        "CVE-2026-32202",
+        "CVE-2026-48558",
+        "CVE-2026-56164",
+        "CVE-2026-68820",
+        "CVE-2026-72898",
+        "CVE-2026-7473",
+        "CVE-2026-82078",
+        "CVE-2026-83549",
+        "CVE-2026-94127"
+      ]
+    },
+    "kev_added_le_30d_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 1134,
+      "risk_set_mean_per_day": 10.8,
+      "fired_total": 42,
+      "hazard": 0.03704,
+      "hazard_wilson_95ci": [
+        0.0275,
+        0.0497
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2024-11680",
+        "CVE-2024-47575",
+        "CVE-2024-55591",
+        "CVE-2024-9680",
+        "CVE-2025-14174",
+        "CVE-2025-21479",
+        "CVE-2025-24985",
+        "CVE-2025-24990",
+        "CVE-2025-30400",
+        "CVE-2025-30406",
+        "CVE-2025-31277",
+        "CVE-2025-33053",
+        "CVE-2025-40536",
+        "CVE-2025-4632",
+        "CVE-2025-48595",
+        "CVE-2025-59718",
+        "CVE-2025-67038",
+        "CVE-2025-7775",
+        "CVE-2026-11645",
+        "CVE-2026-1281",
+        "CVE-2026-15409",
+        "CVE-2026-15410",
+        "CVE-2026-18556",
+        "CVE-2026-20127",
+        "CVE-2026-20805",
+        "CVE-2026-21385",
+        "CVE-2026-21510",
+        "CVE-2026-21533",
+        "CVE-2026-2441",
+        "CVE-2026-24858",
+        "CVE-2026-28318",
+        "CVE-2026-32201",
+        "CVE-2026-32202",
+        "CVE-2026-3909",
+        "CVE-2026-48558",
+        "CVE-2026-56164",
+        "CVE-2026-68820",
+        "CVE-2026-72898",
+        "CVE-2026-7473",
+        "CVE-2026-82078",
+        "CVE-2026-83549",
+        "CVE-2026-94127"
+      ]
+    },
+    "kev_added_le_90d_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 3034,
+      "risk_set_mean_per_day": 28.9,
+      "fired_total": 49,
+      "hazard": 0.01615,
+      "hazard_wilson_95ci": [
+        0.0122,
+        0.0213
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2024-11680",
+        "CVE-2024-47575",
+        "CVE-2024-49138",
+        "CVE-2024-55591",
+        "CVE-2024-8963",
+        "CVE-2024-9680",
+        "CVE-2025-14174",
+        "CVE-2025-21333",
+        "CVE-2025-21479",
+        "CVE-2025-24985",
+        "CVE-2025-24990",
+        "CVE-2025-29824",
+        "CVE-2025-30400",
+        "CVE-2025-30406",
+        "CVE-2025-31277",
+        "CVE-2025-33053",
+        "CVE-2025-40536",
+        "CVE-2025-40551",
+        "CVE-2025-4632",
+        "CVE-2025-48595",
+        "CVE-2025-59718",
+        "CVE-2025-67038",
+        "CVE-2025-7775",
+        "CVE-2026-11645",
+        "CVE-2026-1281",
+        "CVE-2026-15409",
+        "CVE-2026-15410",
+        "CVE-2026-18556",
+        "CVE-2026-20127",
+        "CVE-2026-20805",
+        "CVE-2026-21385",
+        "CVE-2026-21510",
+        "CVE-2026-21533",
+        "CVE-2026-2441",
+        "CVE-2026-24858",
+        "CVE-2026-28318",
+        "CVE-2026-32201",
+        "CVE-2026-32202",
+        "CVE-2026-3909",
+        "CVE-2026-3910",
+        "CVE-2026-45498",
+        "CVE-2026-48558",
+        "CVE-2026-56164",
+        "CVE-2026-68820",
+        "CVE-2026-72898",
+        "CVE-2026-7473",
+        "CVE-2026-82078",
+        "CVE-2026-83549",
+        "CVE-2026-94127"
+      ]
+    },
+    "kev_added_any_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 64699,
+      "risk_set_mean_per_day": 616.2,
+      "fired_total": 110,
+      "hazard": 0.0017,
+      "hazard_wilson_95ci": [
+        0.0014,
+        0.002
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2010-1428",
+        "CVE-2014-100005",
+        "CVE-2015-3035",
+        "CVE-2016-20017",
+        "CVE-2017-12637",
+        "CVE-2017-18368",
+        "CVE-2018-19323",
+        "CVE-2019-1003029",
+        "CVE-2019-10068",
+        "CVE-2019-5591",
+        "CVE-2019-7194",
+        "CVE-2019-7195",
+        "CVE-2020-10987",
+        "CVE-2020-15505",
+        "CVE-2020-4427",
+        "CVE-2020-4428",
+        "CVE-2020-5741",
+        "CVE-2020-8260",
+        "CVE-2021-1498",
+        "CVE-2021-22502",
+        "CVE-2021-22681",
+        "CVE-2021-25296",
+        "CVE-2021-25297",
+        "CVE-2021-25298",
+        "CVE-2021-25337",
+        "CVE-2021-27876",
+        "CVE-2021-27877",
+        "CVE-2021-27878",
+        "CVE-2021-31207",
+        "CVE-2021-36942",
+        "CVE-2021-38648",
+        "CVE-2021-39144",
+        "CVE-2021-42258",
+        "CVE-2021-44026",
+        "CVE-2022-22706",
+        "CVE-2022-22960",
+        "CVE-2022-24521",
+        "CVE-2022-24816",
+        "CVE-2022-26352",
+        "CVE-2022-26904",
+        "CVE-2022-28810",
+        "CVE-2023-22952",
+        "CVE-2023-26083",
+        "CVE-2023-33107",
+        "CVE-2023-45249",
+        "CVE-2023-7024",
+        "CVE-2024-11680",
+        "CVE-2024-12356",
+        "CVE-2024-20399",
+        "CVE-2024-21410",
+        "CVE-2024-38112",
+        "CVE-2024-40891",
+        "CVE-2024-45195",
+        "CVE-2024-47575",
+        "CVE-2024-49138",
+        "CVE-2024-53104",
+        "CVE-2024-55591",
+        "CVE-2024-55956",
+        "CVE-2024-8068",
+        "CVE-2024-8963",
+        "CVE-2024-9463",
+        "CVE-2024-9680",
+        "CVE-2025-14174",
+        "CVE-2025-21333",
+        "CVE-2025-21479",
+        "CVE-2025-24085",
+        "CVE-2025-24201",
+        "CVE-2025-24472",
+        "CVE-2025-24985",
+        "CVE-2025-24990",
+        "CVE-2025-29824",
+        "CVE-2025-30400",
+        "CVE-2025-30406",
+        "CVE-2025-31277",
+        "CVE-2025-32709",
+        "CVE-2025-33053",
+        "CVE-2025-40536",
+        "CVE-2025-40551",
+        "CVE-2025-4632",
+        "CVE-2025-48595",
+        "CVE-2025-55177",
+        "CVE-2025-59718",
+        "CVE-2025-67038",
+        "CVE-2025-7775",
+        "CVE-2026-11645",
+        "CVE-2026-1281",
+        "CVE-2026-15409",
+        "CVE-2026-15410",
+        "CVE-2026-18556",
+        "CVE-2026-20127",
+        "CVE-2026-20805",
+        "CVE-2026-21385",
+        "CVE-2026-21510",
+        "CVE-2026-21533",
+        "CVE-2026-2441",
+        "CVE-2026-24858",
+        "CVE-2026-28318",
+        "CVE-2026-32201",
+        "CVE-2026-32202",
+        "CVE-2026-3909",
+        "CVE-2026-3910",
+        "CVE-2026-45498",
+        "CVE-2026-48558",
+        "CVE-2026-56164",
+        "CVE-2026-68820",
+        "CVE-2026-72898",
+        "CVE-2026-7473",
+        "CVE-2026-82078",
+        "CVE-2026-83549",
+        "CVE-2026-94127"
+      ]
+    }
+  },
+  "strata_without_metasploit": {
+    "kev_added_le_7d_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 368,
+      "risk_set_mean_per_day": 3.5,
+      "fired_total": 32,
+      "hazard": 0.08696,
+      "hazard_wilson_95ci": [
+        0.0623,
+        0.1202
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2024-11680",
+        "CVE-2024-55591",
+        "CVE-2024-9680",
+        "CVE-2025-14174",
+        "CVE-2025-24990",
+        "CVE-2025-30400",
+        "CVE-2025-31277",
+        "CVE-2025-33053",
+        "CVE-2025-48595",
+        "CVE-2025-59718",
+        "CVE-2025-67038",
+        "CVE-2025-7775",
+        "CVE-2026-11645",
+        "CVE-2026-15409",
+        "CVE-2026-15410",
+        "CVE-2026-18556",
+        "CVE-2026-20127",
+        "CVE-2026-20805",
+        "CVE-2026-21385",
+        "CVE-2026-21510",
+        "CVE-2026-21533",
+        "CVE-2026-2441",
+        "CVE-2026-24858",
+        "CVE-2026-28318",
+        "CVE-2026-32201",
+        "CVE-2026-32202",
+        "CVE-2026-48558",
+        "CVE-2026-56164",
+        "CVE-2026-68820",
+        "CVE-2026-72898",
+        "CVE-2026-7473",
+        "CVE-2026-94127"
+      ]
+    },
+    "kev_added_le_30d_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 1155,
+      "risk_set_mean_per_day": 11.0,
+      "fired_total": 38,
+      "hazard": 0.0329,
+      "hazard_wilson_95ci": [
+        0.0241,
+        0.0448
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2024-11680",
+        "CVE-2024-47575",
+        "CVE-2024-55591",
+        "CVE-2024-9680",
+        "CVE-2025-14174",
+        "CVE-2025-21479",
+        "CVE-2025-24985",
+        "CVE-2025-24990",
+        "CVE-2025-30400",
+        "CVE-2025-30406",
+        "CVE-2025-31277",
+        "CVE-2025-33053",
+        "CVE-2025-4632",
+        "CVE-2025-48595",
+        "CVE-2025-59718",
+        "CVE-2025-67038",
+        "CVE-2025-7775",
+        "CVE-2026-11645",
+        "CVE-2026-15409",
+        "CVE-2026-15410",
+        "CVE-2026-18556",
+        "CVE-2026-20127",
+        "CVE-2026-20805",
+        "CVE-2026-21385",
+        "CVE-2026-21510",
+        "CVE-2026-21533",
+        "CVE-2026-2441",
+        "CVE-2026-24858",
+        "CVE-2026-28318",
+        "CVE-2026-32201",
+        "CVE-2026-32202",
+        "CVE-2026-3909",
+        "CVE-2026-48558",
+        "CVE-2026-56164",
+        "CVE-2026-68820",
+        "CVE-2026-72898",
+        "CVE-2026-7473",
+        "CVE-2026-94127"
+      ]
+    },
+    "kev_added_le_90d_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 3096,
+      "risk_set_mean_per_day": 29.5,
+      "fired_total": 45,
+      "hazard": 0.01453,
+      "hazard_wilson_95ci": [
+        0.0109,
+        0.0194
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2024-11680",
+        "CVE-2024-1708",
+        "CVE-2024-47575",
+        "CVE-2024-49138",
+        "CVE-2024-55591",
+        "CVE-2024-8963",
+        "CVE-2024-9680",
+        "CVE-2025-14174",
+        "CVE-2025-21333",
+        "CVE-2025-21479",
+        "CVE-2025-24985",
+        "CVE-2025-24990",
+        "CVE-2025-29824",
+        "CVE-2025-30400",
+        "CVE-2025-30406",
+        "CVE-2025-31277",
+        "CVE-2025-33053",
+        "CVE-2025-4632",
+        "CVE-2025-48595",
+        "CVE-2025-59718",
+        "CVE-2025-67038",
+        "CVE-2025-7775",
+        "CVE-2026-11645",
+        "CVE-2026-15409",
+        "CVE-2026-15410",
+        "CVE-2026-18556",
+        "CVE-2026-20127",
+        "CVE-2026-20805",
+        "CVE-2026-21385",
+        "CVE-2026-21510",
+        "CVE-2026-21533",
+        "CVE-2026-2441",
+        "CVE-2026-24858",
+        "CVE-2026-28318",
+        "CVE-2026-32201",
+        "CVE-2026-32202",
+        "CVE-2026-3909",
+        "CVE-2026-3910",
+        "CVE-2026-45498",
+        "CVE-2026-48558",
+        "CVE-2026-56164",
+        "CVE-2026-68820",
+        "CVE-2026-72898",
+        "CVE-2026-7473",
+        "CVE-2026-94127"
+      ]
+    },
+    "kev_added_any_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 66120,
+      "risk_set_mean_per_day": 629.7,
+      "fired_total": 76,
+      "hazard": 0.00115,
+      "hazard_wilson_95ci": [
+        0.0009,
+        0.0014
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2017-12637",
+        "CVE-2018-19323",
+        "CVE-2019-10068",
+        "CVE-2019-5591",
+        "CVE-2020-10987",
+        "CVE-2020-5741",
+        "CVE-2021-22681",
+        "CVE-2021-25337",
+        "CVE-2021-27876",
+        "CVE-2021-27877",
+        "CVE-2021-44026",
+        "CVE-2022-22706",
+        "CVE-2022-24521",
+        "CVE-2022-24816",
+        "CVE-2023-26083",
+        "CVE-2023-33107",
+        "CVE-2023-7024",
+        "CVE-2024-11680",
+        "CVE-2024-12356",
+        "CVE-2024-1708",
+        "CVE-2024-20399",
+        "CVE-2024-21410",
+        "CVE-2024-38112",
+        "CVE-2024-40891",
+        "CVE-2024-45195",
+        "CVE-2024-47575",
+        "CVE-2024-49138",
+        "CVE-2024-53104",
+        "CVE-2024-55591",
+        "CVE-2024-8068",
+        "CVE-2024-8963",
+        "CVE-2024-9463",
+        "CVE-2024-9680",
+        "CVE-2025-14174",
+        "CVE-2025-21333",
+        "CVE-2025-21479",
+        "CVE-2025-24085",
+        "CVE-2025-24201",
+        "CVE-2025-24472",
+        "CVE-2025-24985",
+        "CVE-2025-24990",
+        "CVE-2025-29824",
+        "CVE-2025-30400",
+        "CVE-2025-30406",
+        "CVE-2025-31277",
+        "CVE-2025-32709",
+        "CVE-2025-33053",
+        "CVE-2025-4632",
+        "CVE-2025-48595",
+        "CVE-2025-55177",
+        "CVE-2025-59718",
+        "CVE-2025-67038",
+        "CVE-2025-7775",
+        "CVE-2026-11645",
+        "CVE-2026-15409",
+        "CVE-2026-15410",
+        "CVE-2026-18556",
+        "CVE-2026-20127",
+        "CVE-2026-20805",
+        "CVE-2026-21385",
+        "CVE-2026-21510",
+        "CVE-2026-21533",
+        "CVE-2026-2441",
+        "CVE-2026-24858",
+        "CVE-2026-28318",
+        "CVE-2026-32201",
+        "CVE-2026-32202",
+        "CVE-2026-3909",
+        "CVE-2026-3910",
+        "CVE-2026-45498",
+        "CVE-2026-48558",
+        "CVE-2026-56164",
+        "CVE-2026-68820",
+        "CVE-2026-72898",
+        "CVE-2026-7473",
+        "CVE-2026-94127"
+      ]
+    }
+  },
+  "strata_nvd_critical": {
+    "nvd_critical_le_7d_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 7137,
+      "risk_set_mean_per_day": 68.0,
+      "fired_total": 42,
+      "hazard": 0.00588,
+      "hazard_wilson_95ci": [
+        0.0044,
+        0.0079
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2024-11680",
+        "CVE-2024-51567",
+        "CVE-2024-52433",
+        "CVE-2024-55591",
+        "CVE-2024-9680",
+        "CVE-2024-9796",
+        "CVE-2025-13315",
+        "CVE-2025-24797",
+        "CVE-2025-24813",
+        "CVE-2025-30065",
+        "CVE-2025-30216",
+        "CVE-2025-3248",
+        "CVE-2025-36041",
+        "CVE-2025-37164",
+        "CVE-2025-48827",
+        "CVE-2025-54794",
+        "CVE-2025-5548",
+        "CVE-2025-58360",
+        "CVE-2025-64095",
+        "CVE-2025-66516",
+        "CVE-2025-68472",
+        "CVE-2025-6907",
+        "CVE-2025-7775",
+        "CVE-2026-102425",
+        "CVE-2026-10523",
+        "CVE-2026-1731",
+        "CVE-2026-20127",
+        "CVE-2026-23947",
+        "CVE-2026-24423",
+        "CVE-2026-2763",
+        "CVE-2026-29053",
+        "CVE-2026-34156",
+        "CVE-2026-4800",
+        "CVE-2026-48907",
+        "CVE-2026-56164",
+        "CVE-2026-56290",
+        "CVE-2026-58062",
+        "CVE-2026-69263",
+        "CVE-2026-74936",
+        "CVE-2026-82078",
+        "CVE-2026-86060",
+        "CVE-2026-88773"
+      ]
+    },
+    "nvd_critical_le_30d_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 26866,
+      "risk_set_mean_per_day": 255.9,
+      "fired_total": 68,
+      "hazard": 0.00253,
+      "hazard_wilson_95ci": [
+        0.002,
+        0.0032
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2024-11680",
+        "CVE-2024-43919",
+        "CVE-2024-47575",
+        "CVE-2024-49328",
+        "CVE-2024-50450",
+        "CVE-2024-50477",
+        "CVE-2024-51567",
+        "CVE-2024-52433",
+        "CVE-2024-53704",
+        "CVE-2024-55591",
+        "CVE-2024-9680",
+        "CVE-2024-9796",
+        "CVE-2025-12916",
+        "CVE-2025-13315",
+        "CVE-2025-24797",
+        "CVE-2025-24799",
+        "CVE-2025-24813",
+        "CVE-2025-30065",
+        "CVE-2025-30216",
+        "CVE-2025-30406",
+        "CVE-2025-3248",
+        "CVE-2025-36041",
+        "CVE-2025-37164",
+        "CVE-2025-4632",
+        "CVE-2025-48827",
+        "CVE-2025-54794",
+        "CVE-2025-5548",
+        "CVE-2025-58360",
+        "CVE-2025-64095",
+        "CVE-2025-66301",
+        "CVE-2025-66516",
+        "CVE-2025-68472",
+        "CVE-2025-6907",
+        "CVE-2025-7775",
+        "CVE-2025-9242",
+        "CVE-2026-0257",
+        "CVE-2026-102425",
+        "CVE-2026-10523",
+        "CVE-2026-1731",
+        "CVE-2026-17544",
+        "CVE-2026-19490",
+        "CVE-2026-20127",
+        "CVE-2026-23947",
+        "CVE-2026-24423",
+        "CVE-2026-2763",
+        "CVE-2026-28517",
+        "CVE-2026-29053",
+        "CVE-2026-2964",
+        "CVE-2026-33267",
+        "CVE-2026-34156",
+        "CVE-2026-41452",
+        "CVE-2026-44825",
+        "CVE-2026-4800",
+        "CVE-2026-48907",
+        "CVE-2026-49230",
+        "CVE-2026-49468",
+        "CVE-2026-54433",
+        "CVE-2026-56164",
+        "CVE-2026-56290",
+        "CVE-2026-57827",
+        "CVE-2026-58025",
+        "CVE-2026-58062",
+        "CVE-2026-6644",
+        "CVE-2026-69263",
+        "CVE-2026-74936",
+        "CVE-2026-82078",
+        "CVE-2026-86060",
+        "CVE-2026-88773"
+      ]
+    },
+    "nvd_critical_le_90d_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 79771,
+      "risk_set_mean_per_day": 759.7,
+      "fired_total": 92,
+      "hazard": 0.00115,
+      "hazard_wilson_95ci": [
+        0.0009,
+        0.0014
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2024-11680",
+        "CVE-2024-41713",
+        "CVE-2024-43919",
+        "CVE-2024-46981",
+        "CVE-2024-47575",
+        "CVE-2024-49328",
+        "CVE-2024-50450",
+        "CVE-2024-50477",
+        "CVE-2024-50623",
+        "CVE-2024-51567",
+        "CVE-2024-52433",
+        "CVE-2024-53704",
+        "CVE-2024-55591",
+        "CVE-2024-7808",
+        "CVE-2024-7854",
+        "CVE-2024-8963",
+        "CVE-2024-9326",
+        "CVE-2024-9680",
+        "CVE-2024-9796",
+        "CVE-2025-12543",
+        "CVE-2025-12916",
+        "CVE-2025-13315",
+        "CVE-2025-24797",
+        "CVE-2025-24799",
+        "CVE-2025-24813",
+        "CVE-2025-30065",
+        "CVE-2025-30216",
+        "CVE-2025-30406",
+        "CVE-2025-3248",
+        "CVE-2025-36041",
+        "CVE-2025-37164",
+        "CVE-2025-40536",
+        "CVE-2025-4632",
+        "CVE-2025-4660",
+        "CVE-2025-48827",
+        "CVE-2025-53632",
+        "CVE-2025-54794",
+        "CVE-2025-5548",
+        "CVE-2025-58360",
+        "CVE-2025-6384",
+        "CVE-2025-64095",
+        "CVE-2025-66301",
+        "CVE-2025-66516",
+        "CVE-2025-68472",
+        "CVE-2025-6907",
+        "CVE-2025-7775",
+        "CVE-2025-9242",
+        "CVE-2026-0257",
+        "CVE-2026-102425",
+        "CVE-2026-10523",
+        "CVE-2026-1731",
+        "CVE-2026-17544",
+        "CVE-2026-19490",
+        "CVE-2026-20127",
+        "CVE-2026-2058",
+        "CVE-2026-23947",
+        "CVE-2026-24009",
+        "CVE-2026-24126",
+        "CVE-2026-24423",
+        "CVE-2026-25895",
+        "CVE-2026-2763",
+        "CVE-2026-2796",
+        "CVE-2026-28517",
+        "CVE-2026-29053",
+        "CVE-2026-2964",
+        "CVE-2026-30824",
+        "CVE-2026-32710",
+        "CVE-2026-33267",
+        "CVE-2026-34156",
+        "CVE-2026-41452",
+        "CVE-2026-44825",
+        "CVE-2026-45674",
+        "CVE-2026-46442",
+        "CVE-2026-4800",
+        "CVE-2026-48907",
+        "CVE-2026-49230",
+        "CVE-2026-49268",
+        "CVE-2026-49468",
+        "CVE-2026-54433",
+        "CVE-2026-54917",
+        "CVE-2026-56164",
+        "CVE-2026-56290",
+        "CVE-2026-57827",
+        "CVE-2026-58025",
+        "CVE-2026-58062",
+        "CVE-2026-6644",
+        "CVE-2026-69263",
+        "CVE-2026-74936",
+        "CVE-2026-82078",
+        "CVE-2026-86060",
+        "CVE-2026-88773",
+        "CVE-2026-9586"
+      ]
+    },
+    "nvd_critical_any_no_poc": {
+      "sample_days": 105,
+      "risk_set_total": 393139,
+      "risk_set_mean_per_day": 3744.2,
+      "fired_total": 152,
+      "hazard": 0.00039,
+      "hazard_wilson_95ci": [
+        0.0003,
+        0.0005
+      ],
+      "stable": true,
+      "fired_cves_distinct": [
+        "CVE-2010-20113",
+        "CVE-2010-20121",
+        "CVE-2011-10018",
+        "CVE-2012-10021",
+        "CVE-2012-10023",
+        "CVE-2012-10030",
+        "CVE-2012-10054",
+        "CVE-2012-10060",
+        "CVE-2013-10040",
+        "CVE-2013-10042",
+        "CVE-2013-10048",
+        "CVE-2013-10051",
+        "CVE-2013-10069",
+        "CVE-2014-125117",
+        "CVE-2023-45249",
+        "CVE-2024-10758",
+        "CVE-2024-10915",
+        "CVE-2024-11680",
+        "CVE-2024-12344",
+        "CVE-2024-12356",
+        "CVE-2024-35540",
+        "CVE-2024-41319",
+        "CVE-2024-41713",
+        "CVE-2024-42008",
+        "CVE-2024-43919",
+        "CVE-2024-46981",
+        "CVE-2024-47167",
+        "CVE-2024-47175",
+        "CVE-2024-47575",
+        "CVE-2024-47823",
+        "CVE-2024-48510",
+        "CVE-2024-48840",
+        "CVE-2024-49328",
+        "CVE-2024-50330",
+        "CVE-2024-50450",
+        "CVE-2024-50477",
+        "CVE-2024-50492",
+        "CVE-2024-50526",
+        "CVE-2024-50623",
+        "CVE-2024-51567",
+        "CVE-2024-52433",
+        "CVE-2024-53704",
+        "CVE-2024-55591",
+        "CVE-2024-55956",
+        "CVE-2024-6298",
+        "CVE-2024-7399",
+        "CVE-2024-7808",
+        "CVE-2024-7854",
+        "CVE-2024-8381",
+        "CVE-2024-8963",
+        "CVE-2024-9326",
+        "CVE-2024-9680",
+        "CVE-2024-9796",
+        "CVE-2025-12543",
+        "CVE-2025-12916",
+        "CVE-2025-13315",
+        "CVE-2025-1550",
+        "CVE-2025-23061",
+        "CVE-2025-23211",
+        "CVE-2025-24085",
+        "CVE-2025-24201",
+        "CVE-2025-24797",
+        "CVE-2025-24799",
+        "CVE-2025-24813",
+        "CVE-2025-24865",
+        "CVE-2025-30065",
+        "CVE-2025-30216",
+        "CVE-2025-30406",
+        "CVE-2025-32434",
+        "CVE-2025-3248",
+        "CVE-2025-34111",
+        "CVE-2025-34282",
+        "CVE-2025-36041",
+        "CVE-2025-37164",
+        "CVE-2025-40536",
+        "CVE-2025-43564",
+        "CVE-2025-4632",
+        "CVE-2025-4660",
+        "CVE-2025-47445",
+        "CVE-2025-48827",
+        "CVE-2025-5306",
+        "CVE-2025-5352",
+        "CVE-2025-53632",
+        "CVE-2025-54794",
+        "CVE-2025-5548",
+        "CVE-2025-58360",
+        "CVE-2025-58371",
+        "CVE-2025-6384",
+        "CVE-2025-64095",
+        "CVE-2025-66301",
+        "CVE-2025-66516",
+        "CVE-2025-67727",
+        "CVE-2025-68472",
+        "CVE-2025-6907",
+        "CVE-2025-7775",
+        "CVE-2025-9242",
+        "CVE-2025-9933",
+        "CVE-2026-0257",
+        "CVE-2026-102425",
+        "CVE-2026-10523",
+        "CVE-2026-1731",
+        "CVE-2026-17544",
+        "CVE-2026-19490",
+        "CVE-2026-20127",
+        "CVE-2026-2058",
+        "CVE-2026-22869",
+        "CVE-2026-2329",
+        "CVE-2026-23947",
+        "CVE-2026-24009",
+        "CVE-2026-24126",
+        "CVE-2026-24423",
+        "CVE-2026-24479",
+        "CVE-2026-25895",
+        "CVE-2026-25938",
+        "CVE-2026-25993",
+        "CVE-2026-27495",
+        "CVE-2026-2763",
+        "CVE-2026-2796",
+        "CVE-2026-28517",
+        "CVE-2026-29053",
+        "CVE-2026-29075",
+        "CVE-2026-2964",
+        "CVE-2026-30824",
+        "CVE-2026-31852",
+        "CVE-2026-32710",
+        "CVE-2026-33267",
+        "CVE-2026-33718",
+        "CVE-2026-34156",
+        "CVE-2026-40281",
+        "CVE-2026-41452",
+        "CVE-2026-44825",
+        "CVE-2026-45674",
+        "CVE-2026-46442",
+        "CVE-2026-4800",
+        "CVE-2026-48907",
+        "CVE-2026-49230",
+        "CVE-2026-49268",
+        "CVE-2026-49468",
+        "CVE-2026-54433",
+        "CVE-2026-54917",
+        "CVE-2026-56164",
+        "CVE-2026-56290",
+        "CVE-2026-57827",
+        "CVE-2026-58025",
+        "CVE-2026-58062",
+        "CVE-2026-6644",
+        "CVE-2026-69263",
+        "CVE-2026-74936",
+        "CVE-2026-82078",
+        "CVE-2026-86060",
+        "CVE-2026-88773",
+        "CVE-2026-9586"
+      ]
+    }
+  },
+  "lag_kev_added_to_first_poc": {
+    "n_origin_cves": 550,
+    "with_poc_as_of": 357,
+    "none_as_of": 193,
+    "bins": {
+      "before_kev": 199,
+      "d0_3": 87,
+      "d4_7": 17,
+      "d8_30": 20,
+      "d31_90": 12,
+      "gt_90": 22
+    },
+    "pct": {
+      "before_kev": 0.3618,
+      "d0_3": 0.1582,
+      "d4_7": 0.0309,
+      "d8_30": 0.0364,
+      "d31_90": 0.0218,
+      "gt_90": 0.04
+    },
+    "pct_none_as_of": 0.3509,
+    "_note": "pct は分母に none_as_of（as_of 時点で PoC 未観測）を含む。before_kev は KEV 追加時点で既に PoC があった割合であり、E4 予報を発行する前の『未発火確認』の重要性を示す。",
+    "_origin": "KEV 初回追加日が 2024-10-01 以降の CVE"
+  },
+  "source_coverage_on_kev": {
+    "exploit_db": 74,
+    "github": 337,
+    "metasploit": 116,
+    "any_without_metasploit": 353,
+    "any": 361,
+    "n_origin_cves": 555
+  },
+  "internal_channel_rates": {
+    "_note": "verification 記録から集計した E4 の内部実績（build_kev_hazard_stats.py と同じ集計）。n が小さく信頼区間は広い。",
+    "channels": {
+      "E4": {
+        "total": 2,
+        "hit": 1,
+        "partial": 0,
+        "miss": 1,
+        "hit_rate_strict": 0.5,
+        "hit_rate_including_partial": 0.5,
+        "wilson_95ci": [
+          0.0945,
+          0.9055
+        ]
+      }
+    }
+  },
+  "per_sample_day": [
+    {
+      "date": "2024-10-01",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 15,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 30,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 531,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2024-10-08",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 15,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 32,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 534,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2024-10-15",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 6,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 14,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 35,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 537,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2024-10-22",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 35,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 538,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2024-10-29",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 12,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 35,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 540,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2024-11-05",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 11,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 37,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 542,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2024-11-12",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 5,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 34,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 546,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2024-11-19",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 32,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 545,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2024-11-26",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 6,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 13,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 35,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 551,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2024-12-03",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 16,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 35,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 552,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2024-12-10",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 12,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 31,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 552,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2024-12-17",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 28,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 553,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2024-12-24",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 6,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 33,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 558,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2024-12-31",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 31,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 559,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-01-07",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 9,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 29,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 560,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-01-14",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 7,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 14,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 33,
+          "fired": 2
+        },
+        "kev_added_any_no_poc": {
+          "risk": 566,
+          "fired": 3
+        }
+      }
+    },
+    {
+      "date": "2025-01-21",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 8,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 28,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 562,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-01-28",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 8,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 28,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 563,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-02-04",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 9,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 28,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 565,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-02-11",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 9,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 16,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 33,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 573,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-02-18",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 6,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 13,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 34,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 575,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-02-25",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 6,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 18,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 34,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 581,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2025-03-04",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 7,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 22,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 36,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 584,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-03-11",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 14,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 27,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 46,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 594,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-03-18",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 9,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 24,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 48,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 597,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-03-25",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 4,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 24,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 46,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 599,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-04-01",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 4,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 25,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 49,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 603,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2025-04-08",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 19,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 47,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 599,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-04-15",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 4,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 11,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 45,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 600,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-04-22",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 47,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 601,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2025-04-29",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 9,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 48,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 603,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-05-06",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 48,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 605,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-05-13",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 8,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 15,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 48,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 612,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2025-05-20",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 11,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 19,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 51,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 617,
+          "fired": 3
+        }
+      }
+    },
+    {
+      "date": "2025-05-27",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 19,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 45,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 615,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-06-03",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 7,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 20,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 46,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 621,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2025-06-10",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 5,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 19,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 39,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 621,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2025-06-17",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 13,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 36,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 621,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2025-06-24",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 0,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 7,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 31,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 617,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-07-01",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 31,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 620,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-07-08",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 5,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 32,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 621,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2025-07-15",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 0,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 5,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 30,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 620,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-07-22",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 7,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 31,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 622,
+          "fired": 3
+        }
+      }
+    },
+    {
+      "date": "2025-07-29",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 5,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 8,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 30,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 621,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-08-05",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 8,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 30,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 623,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-08-12",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 8,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 25,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 624,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-08-19",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 21,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 626,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-08-26",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 9,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 22,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 627,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2025-09-02",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 7,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 15,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 625,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2025-09-09",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 5,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 9,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 19,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 628,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-09-16",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 7,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 18,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 628,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-09-23",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 0,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 6,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 18,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 628,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-09-30",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 8,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 18,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 631,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-10-07",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 7,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 20,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 633,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-10-14",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 4,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 9,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 23,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 635,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2025-10-21",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 5,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 11,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 24,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 636,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2025-10-28",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 12,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 25,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 638,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-11-04",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 9,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 23,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 638,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2025-11-11",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 0,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 8,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 22,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 637,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-11-18",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 8,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 22,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 637,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-11-25",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 5,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 22,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 638,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2025-12-02",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 6,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 24,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 640,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-12-09",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 5,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 9,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 24,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 643,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-12-16",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 6,
+          "fired": 2
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 13,
+          "fired": 2
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 28,
+          "fired": 2
+        },
+        "kev_added_any_no_poc": {
+          "risk": 648,
+          "fired": 12
+        }
+      }
+    },
+    {
+      "date": "2025-12-23",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 11,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 28,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 637,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2025-12-30",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 0,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 9,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 24,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 636,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2026-01-06",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 0,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 6,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 20,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 635,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2026-01-13",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 4,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 20,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 637,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-01-20",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 0,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 15,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 634,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2026-01-27",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 4,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 15,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 637,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-02-03",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 4,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 7,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 18,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 640,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2026-02-10",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 9,
+          "fired": 2
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 11,
+          "fired": 2
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 23,
+          "fired": 2
+        },
+        "kev_added_any_no_poc": {
+          "risk": 643,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2026-02-17",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 9,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 14,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 24,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 645,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2026-02-24",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 5,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 14,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 25,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 646,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2026-03-03",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 5,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 18,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 26,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 650,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-03-10",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 7,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 19,
+          "fired": 2
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 28,
+          "fired": 3
+        },
+        "kev_added_any_no_poc": {
+          "risk": 653,
+          "fired": 4
+        }
+      }
+    },
+    {
+      "date": "2026-03-17",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 15,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 27,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 652,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2026-03-24",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 5,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 16,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 30,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 657,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2026-03-31",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 14,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 30,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 656,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2026-04-07",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 0,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 9,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 30,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 654,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-04-14",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 4,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 32,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 657,
+          "fired": 4
+        }
+      }
+    },
+    {
+      "date": "2026-04-21",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 10,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 13,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 40,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 661,
+          "fired": 19
+        }
+      }
+    },
+    {
+      "date": "2026-04-28",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 4,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 15,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 41,
+          "fired": 2
+        },
+        "kev_added_any_no_poc": {
+          "risk": 646,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2026-05-05",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 0,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 14,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 36,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 643,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2026-05-12",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 15,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 34,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 644,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2026-05-19",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 13,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 32,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 641,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2026-05-26",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 30,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 641,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-06-02",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 6,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 31,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 641,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-06-09",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 3
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 7,
+          "fired": 3
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 28,
+          "fired": 3
+        },
+        "kev_added_any_no_poc": {
+          "risk": 643,
+          "fired": 3
+        }
+      }
+    },
+    {
+      "date": "2026-06-16",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 0,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 4,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 24,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 640,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-06-23",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 5,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 23,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 642,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-06-30",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 4,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 4,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 23,
+          "fired": 2
+        },
+        "kev_added_any_no_poc": {
+          "risk": 643,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2026-07-07",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 0,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 21,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 641,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2026-07-14",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 4,
+          "fired": 3
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 7,
+          "fired": 3
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 22,
+          "fired": 3
+        },
+        "kev_added_any_no_poc": {
+          "risk": 645,
+          "fired": 4
+        }
+      }
+    },
+    {
+      "date": "2026-07-21",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 4,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 7,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 14,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 644,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-07-28",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 6,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 13,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 645,
+          "fired": 2
+        }
+      }
+    },
+    {
+      "date": "2026-08-04",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 8,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 15,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 645,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-08-11",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 2
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 10,
+          "fired": 2
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 15,
+          "fired": 2
+        },
+        "kev_added_any_no_poc": {
+          "risk": 646,
+          "fired": 3
+        }
+      }
+    },
+    {
+      "date": "2026-08-18",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 5,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 13,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 643,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-08-25",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 5,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 13,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 642,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2026-09-01",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 1,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 3,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 12,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 643,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-09-08",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 3,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 5,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 14,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 643,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-09-15",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 7,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 8,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 18,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 646,
+          "fired": 0
+        }
+      }
+    },
+    {
+      "date": "2026-09-22",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 6,
+          "fired": 1
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 13,
+          "fired": 1
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 23,
+          "fired": 1
+        },
+        "kev_added_any_no_poc": {
+          "risk": 652,
+          "fired": 1
+        }
+      }
+    },
+    {
+      "date": "2026-09-29",
+      "strata": {
+        "kev_added_le_7d_no_poc": {
+          "risk": 2,
+          "fired": 0
+        },
+        "kev_added_le_30d_no_poc": {
+          "risk": 12,
+          "fired": 0
+        },
+        "kev_added_le_90d_no_poc": {
+          "risk": 21,
+          "fired": 0
+        },
+        "kev_added_any_no_poc": {
+          "risk": 651,
+          "fired": 0
+        }
+      }
+    }
+  ]
+}
