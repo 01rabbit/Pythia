@@ -8,7 +8,11 @@ description: RSSフィード収集とEvidence Ledger固定タスク（毎日03:1
 ## 背景
 
 本タスクは `.github/workflows/daily-pipeline.yml`（Daily Feed Collection）が
-GitHub Actions の実行時間上限に達し来月まで動かせない間の代替である。
+GitHub Actions の実行時間上限に達し動かせない間の代替である。
+**現在の状態（2026-10-11）: Actions は稼働中のため本スキルの Routine「情報収集（臨時）」は
+無効化済み。** 2026-10-06〜07 に Actions と本 Routine が同時に動き二重収集（PR #263）が
+発生したため、収集は Actions に統一した。Actions が再び止まった場合のみ Routines 画面から
+再有効化し、回復後は再度無効化する。
 同ワークフローと**同一の処理・同一のコミットメッセージ規約**を、
 GitHub Actionsではなく Claude Code Routines（本スキル）で実行する。
 
