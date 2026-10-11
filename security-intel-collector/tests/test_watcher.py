@@ -276,3 +276,45 @@ def test_one_feed_failure_does_not_stop_others(env: pytest.MonkeyPatch) -> None:
     assert "https://bad.test/feed" not in seen
     # News raw still written.
     assert (Path("data/raw") / "news-latest.json").exists()
+
+
+def test_dated_raw_merges_across_runs(env: pytest.MonkeyPatch) -> None:
+    """Running twice on the same UTC date must union items, not overwrite.
+
+    Feeds show only their newest N entries; with several runs per day the
+    dated file has to keep what scrolled off between runs.
+    """
+    capture_slack(env)
+    write_feeds([{"name": "A", "url": "https://a.test/feed", "enabled": True, "tags": []}])
+
+    set_parse(env, {"https://a.test/feed": FakeParsed([make_entry(0), make_entry(1)])})
+    watcher.main()
+    # Second run: entry 0 scrolled off, entry 2 appeared.
+    set_parse(env, {"https://a.test/feed": FakeParsed([make_entry(1), make_entry(2)])})
+    watcher.main()
+
+    today = watcher.utc_today_str()
+    dated = json.loads((Path("data/raw") / f"news-{today}.json").read_text("utf-8"))
+    latest = json.loads((Path("data/raw") / "news-latest.json").read_text("utf-8"))
+
+    assert [i["url"] for i in dated["items"]] == [
+        "https://example.com/post-0",
+        "https://example.com/post-1",
+        "https://example.com/post-2",
+    ]
+    assert [i["url"] for i in latest["items"]] == [
+        "https://example.com/post-1",
+        "https://example.com/post-2",
+    ]
+    # new_items accumulate too (entry 2 is the only post-seed new item).
+    assert [i["url"] for i in dated["new_items"]] == ["https://example.com/post-2"]
+    assert len(dated["run_ids"]) == 2
+    assert dated["first_generated_at"]
+
+
+def test_merge_dated_raw_ignores_foreign_or_corrupt_existing() -> None:
+    raw = watcher.build_raw("security_news", [{"id": "x"}], [])
+    assert watcher.merge_dated_raw(None, raw) == raw
+    assert watcher.merge_dated_raw("garbage", raw) == raw
+    other = watcher.build_raw("cve", [{"id": "y"}], [])
+    assert watcher.merge_dated_raw(other, raw) == raw

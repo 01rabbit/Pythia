@@ -308,10 +308,57 @@ def build_raw(
     }
 
 
+def _merge_items(
+    existing: List[Dict[str, Any]], incoming: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """Union of two item lists keyed by ``id``; earlier entries win.
+
+    Items already present keep their original record (including the first
+    ``fetched_at``), and unseen items are appended in incoming order so the
+    file keeps a stable, append-only shape across runs.
+    """
+    seen_ids = {item.get("id") for item in existing if isinstance(item, dict)}
+    merged = list(existing)
+    for item in incoming:
+        key = item.get("id")
+        if key in seen_ids:
+            continue
+        seen_ids.add(key)
+        merged.append(item)
+    return merged
+
+
+def merge_dated_raw(existing: Any, raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Fold this run's raw container into the dated file's existing content.
+
+    The collector now runs several times a day (see
+    ``.github/workflows/daily-pipeline.yml``). Feeds expose only their newest
+    N entries (JVN iPedia publishes dozens within minutes, BleepingComputer
+    keeps about one day), so overwriting the dated file with the latest fetch
+    would drop everything that scrolled off between runs. The dated file is
+    therefore the union of all runs for that UTC date; ``*-latest.json`` keeps
+    the single-run semantics.
+    """
+    if not isinstance(existing, dict) or existing.get("source_type") != raw.get("source_type"):
+        return raw
+    prior_items = existing.get("items") if isinstance(existing.get("items"), list) else []
+    prior_new = existing.get("new_items") if isinstance(existing.get("new_items"), list) else []
+    runs = existing.get("run_ids") if isinstance(existing.get("run_ids"), list) else []
+    if not runs and existing.get("run_id"):
+        runs = [str(existing["run_id"])]
+    merged = dict(raw)
+    merged["items"] = _merge_items(prior_items, raw.get("items", []))
+    merged["new_items"] = _merge_items(prior_new, raw.get("new_items", []))
+    merged["run_ids"] = list(dict.fromkeys(runs + [str(raw.get("run_id"))]))
+    merged["first_generated_at"] = existing.get("first_generated_at") or existing.get("generated_at")
+    return merged
+
+
 def write_raw(prefix: str, raw: Dict[str, Any]) -> None:
-    """Write both the latest and dated raw files for a prefix."""
+    """Write the latest raw file and merge into the dated raw file."""
     dump_json(os.path.join(RAW_DIR, f"{prefix}-latest.json"), raw)
-    dump_json(os.path.join(RAW_DIR, f"{prefix}-{utc_today_str()}.json"), raw)
+    dated_path = os.path.join(RAW_DIR, f"{prefix}-{utc_today_str()}.json")
+    dump_json(dated_path, merge_dated_raw(load_json(dated_path, None), raw))
 
 
 # --- Seen state ------------------------------------------------------------

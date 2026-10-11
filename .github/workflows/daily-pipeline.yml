@@ -2,15 +2,37 @@ name: Daily Feed Collection
 
 on:
   schedule:
-    # 03:17 JST = 18:17 UTC (前日) — Routines実行 (07:30 JST) より前に収集を完了させる。
-    # ★2026-10-11 変更: 旧設定 '0 21 * * *'（06:00 JST）は GitHub の schedule 遅延により
+    # ★2 本の schedule を持つ。
+    #
+    # (1) 締め: 03:17 JST = 18:17 UTC (前日) — Routines実行 (07:30 JST) より前に収集を完了させる。
+    #   2026-10-11 変更: 旧設定 '0 21 * * *'（06:00 JST）は GitHub の schedule 遅延により
     #   実測 09:30〜10:10 JST に起動し、07:30 JST の予報より後になっていた
     #   （2026-09-16〜18・2026-10-05〜11 に実測）。遅延は正時に集中するため、
     #   毎時 00 分を避けた分を指定し、最大 4 時間遅延しても 07:30 JST 前に収まる時刻にする。
     #   18:17 UTC 起動なら遅延込みでも UTC 日付は前日のままであり、raw ファイル名
     #   （UTC 日付）が news-(D-1).json になる SKILL.md Step 0.5 の前提も維持される。
+    #   この回だけが被覆記録（record_source_coverage）と manifest の整合検査を行う。
     - cron: '17 18 * * *'
+    # (2) 多頻度取得: 2 時間おき（1 日 12 回・2026-10-11 追加・Phase A）。
+    #   目的はトークン削減ではなく網羅性と証跡の時刻解像度である。
+    #   - フィードは最新 N 件しか載せない（JVN iPedia 新着は 50 件が 2 分間の公開バッチで
+    #     埋まる・BleepingComputer は約 1 日分）。1 日 1 回では間に流れた分が構造的に落ちる
+    #   - CISA KEV を 2 時間おきに取得すると、E1（KEV 初回追加）の実時刻を ±2 時間で挟める
+    #     （dateAdded は日付のみで、1 日 1 点の取得では同日判定しかできなかった）
+    #   毎時 47 分にずらして正時の遅延集中と締め（18:17）との近接を避ける。
+    #   22 時 UTC（07 時 JST）の回は外す: Routine（07:30 JST）が snapshot_sources の
+    #   manifest ハッシュを run-manifest に記録してから Step 4 で再検査するまでの間に
+    #   manifest が書き換わると run_manifest --verify が落ちるため。
+    #   回数の根拠: リポジトリは private で Actions 無料枠は月 2,000 分。1 回約 1 分 × 12 回/日
+    #   ≒ 月 360 分に収める（情報源別に毎時起動する設計は枠を超えるため採らない）。
+    - cron: '47 0,2,4,6,8,10,12,14,16,18,20 * * *'
   workflow_dispatch:
+
+# 多頻度化で同時起動が起きうるため、同じ main への push を直列化する。
+# cancel-in-progress は false（取得途中の回を捨てない）。
+concurrency:
+  group: pythia-collect
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -18,7 +40,7 @@ permissions:
 jobs:
   collect-feeds:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
@@ -35,33 +57,57 @@ jobs:
         run: pip install -r security-intel-collector/requirements.txt
 
       - name: Run RSS feed collector
+        # watcher.py は同一 UTC 日付の raw ファイルへ union で追記する（上書きしない）。
         run: |
           cd security-intel-collector
           python watcher.py
 
-      - name: Freeze evidence and source coverage
+      - name: Freeze evidence (every run)
         # ★07:30 JST の予報が入力にできるのは「この時点で固定された証跡」だけである。
         #   予報時刻に取り直すと、予報後に取得した証拠を予報が使ったことになり、
-        #   先見性の主張が崩れる。よって取得はここ（03:17 JST 起動）で完結させる。
+        #   先見性の主張が崩れる。よって取得は Actions 側で完結させる。
+        #   同日に同一内容を再取得した場合は retrieved_at_utc を変えず、
+        #   extract.reconfirmed_at_utc に再確認時刻だけを追記する。
         #   フィード取得の失敗は日次を止めない。そのチャネルの被覆が不成立になり、
         #   未確認は miss ではなく not_observed のまま残る（fail-closed）。
         run: |
           TODAY=$(TZ=Asia/Tokyo date +%F)
           python3 scripts/snapshot_sources.py --date "${TODAY}"
           python3 scripts/collect_channel_evidence.py --date "${TODAY}" || true
+
+      - name: Record source coverage and verify ledger (closing run only)
+        # 被覆記録は締めの回だけ書く。被覆は manifest から導出されるため、2 時間おきの回で
+        # 取得した証跡も締めの回の導出に含まれる。回ごとに書くと同日の coverage ファイルが
+        # 重複し、採点側（verify_tactical_forecasts）が同日の複数区間を扱うことになるため。
+        if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 18 * * *'
+        run: |
+          TODAY=$(TZ=Asia/Tokyo date +%F)
           python3 scripts/record_source_coverage.py --rule tf1-exploitation-v3 --from-evidence "${TODAY}"
           python3 scripts/record_source_coverage.py --rule tf1-poc-v3 --from-evidence "${TODAY}"
           python3 scripts/snapshot_sources.py --date "${TODAY}" --verify-only
 
       - name: Commit collected feeds
+        # 日次レポート PR のマージや他の回の push と競合しうるため、rebase して再試行する。
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add security-intel-collector/data/ forecaster/evidence/
           if git diff --cached --quiet; then
             echo "No new feeds collected."
-          else
-            DATE=$(TZ=Asia/Tokyo date +%Y-%m-%d)
-            git commit -m "collect: rss feeds + evidence ${DATE}"
-            git push
+            exit 0
           fi
+          STAMP=$(TZ=Asia/Tokyo date '+%Y-%m-%d %H:%M')
+          git commit -m "collect: rss feeds + evidence ${STAMP} JST"
+          for delay in 5 10 20 40 0; do
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            if [ "${delay}" = 0 ]; then
+              break
+            fi
+            echo "push failed; rebasing and retrying in ${delay}s"
+            sleep "${delay}"
+            git pull --rebase origin main
+          done
+          echo "::error::push to main failed after retries"
+          exit 1

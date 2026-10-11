@@ -125,7 +125,15 @@ Claude Code Routines が毎日 07:00 JST に `SKILL.md` のパイプラインを
 （ルーチンにはルート `SKILL.md` をファイルパス指定で登録する）。
 手動実行も可能（Routine 画面から "Run" をクリック）。
 
-フィード収集・Evidence Ledger 固定（03:17 JST 起動・GitHub の schedule 遅延を見込んだ時刻）は GitHub Actions `daily-pipeline.yml` に統一している。
+フィード収集・Evidence Ledger 固定は GitHub Actions `daily-pipeline.yml` に統一している。
+同ワークフローは **2 時間おき（毎時 47 分・1 日 12 回）の多頻度取得**と、
+**03:17 JST 起動の締め**（GitHub の schedule 遅延を見込んだ時刻・被覆記録と整合検査はこの回だけ）の
+2 本の schedule を持つ（2026-10-11 Phase A）。多頻度化の目的はトークン削減ではなく網羅性と
+証跡の時刻解像度である（JVN iPedia 新着は 50 件が 2 分間の公開バッチで埋まり 1 日 1 回では落ちる・
+KEV を 2 時間おきに取得すると E1 の実時刻を ±2 時間で挟める）。
+raw ファイル（`news-YYYY-MM-DD.json` 等）は同一 UTC 日付の各回を union で追記し、同日に同一内容を
+再取得した証跡は `retrieved_at_utc` を変えず `extract.reconfirmed_at_utc` に再確認時刻だけを足す。
+Actions 無料枠（private・月 2,000 分）に収めるため、情報源別に毎時起動する設計は採らない。
 `.skills/collect-evidence/SKILL.md` は Actions が実行時間上限で止まった際の代替手段であり、
 その間だけ Routines 画面から 03:17 JST の Routine として手動登録する
 （ツール経由での自動登録手段はない）。

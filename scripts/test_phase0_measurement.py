@@ -17,6 +17,7 @@
   9. 2026-08-30 以降の発行日で _schema_version=1.0 だと失敗する
  10. 同一入力から content_sha256 が再現する（決定論）
  11. 既存の検証記録・予報ファイルが本スクリプトで変更されない
+ 12. 同一内容の再取得は retrieved_at_utc を変えず extract.reconfirmed_at_utc に時刻を追記する
 
 使い方:
     python3 scripts/test_phase0_measurement.py
@@ -221,6 +222,23 @@ def main():
     (PASS if a == b else FAIL).append(
         "同一入力から content_sha256 が再現する" if a == b
         else ("content_sha256 の決定論", f"{a} != {b}"))
+
+    # 12. 同日・同一内容の再取得は retrieved_at_utc を変えず、再確認時刻だけを残す
+    #     （2 時間おきの多頻度取得・2026-10-11。E1 の実時刻を下から挟む根拠になる）
+    sys.path.insert(0, SCRIPTS)
+    import snapshot_sources as _ss
+    doc = {"evidence": [{"evidence_id": "ev-20261011-abcde",
+                         "retrieved_at_utc": "2026-10-11T00:40:00Z", "extract": {"count": 1}}]}
+    ok = (_ss.note_reconfirmation(doc, "ev-20261011-abcde", "2026-10-11T02:40:00Z")
+          and _ss.note_reconfirmation(doc, "ev-20261011-abcde", "2026-10-11T02:40:00Z")
+          and not _ss.note_reconfirmation(doc, "ev-20261011-zzzzz", "2026-10-11T04:40:00Z"))
+    entry = doc["evidence"][0]
+    if (ok and entry["retrieved_at_utc"] == "2026-10-11T00:40:00Z"
+            and entry["extract"]["reconfirmed_at_utc"] == ["2026-10-11T02:40:00Z"]
+            and entry["extract"]["count"] == 1):
+        PASS.append("同一内容の再取得は最初の取得時刻を保ち再確認時刻のみ追記する")
+    else:
+        FAIL.append(("同一内容の再取得は最初の取得時刻を保ち再確認時刻のみ追記する", json.dumps(doc)))
 
     # 11. 既存履歴が変更されていない
     status_lines = subprocess.run(

@@ -38,7 +38,7 @@ from datetime import datetime, timedelta, timezone
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from snapshot_sources import (  # noqa: E402
     evidence_id, fetch, find_existing_snapshot, iso, load_manifest,
-    save_snapshot, sha256_bytes, write_manifest,
+    note_reconfirmation, save_snapshot, sha256_bytes, write_manifest,
 )
 from source_channels import host_of, load_registry  # noqa: E402
 
@@ -157,7 +157,9 @@ def main():
                 failed.append(f"{channel}/{feed['name']}")
                 continue
             if entry["evidence_id"] in known:
-                print(f"[skip] {entry['evidence_id']}: 同日に同一内容を取得済み")
+                # 再確認時刻は extract に残す（snapshot_sources.note_reconfirmation 参照）
+                note_reconfirmation(manifest, entry["evidence_id"], entry["retrieved_at_utc"])
+                print(f"[skip] {entry['evidence_id']}: 同日に同一内容を取得済み（再確認時刻を記録）")
                 continue
             manifest["evidence"].append(entry)
             known.add(entry["evidence_id"])
