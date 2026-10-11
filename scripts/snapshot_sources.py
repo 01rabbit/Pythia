@@ -110,6 +110,28 @@ def load_manifest(day):
     }
 
 
+def note_reconfirmation(doc, evidence_id_, retrieved_at_utc):
+    """同日に同一内容を再取得したことを、既存エントリの extract に追記する。
+
+    ★retrieved_at_utc（最初の取得）は書き換えない。先見性の主張は最初の取得時刻で
+      立てる。一方「この時刻にもまだ同じ内容だった」という事実は、E1（KEV 初回追加）
+      の実時刻を下から挟むために必要である（2 時間おきの多頻度取得・2026-10-11）。
+      例: 02:40 と 04:40 に同じカタログ、06:40 に新カタログ → 追加は 04:40〜06:40。
+      再確認時刻を残さなければ下限は最初の取得時刻まで広がってしまう。
+    schema は manifest の追加キーを許さないため、extract（additionalProperties: true）
+    に `reconfirmed_at_utc` の配列として持つ。
+    """
+    for entry in doc.get("evidence", []):
+        if entry.get("evidence_id") != evidence_id_:
+            continue
+        extract = entry.setdefault("extract", {})
+        seen = extract.setdefault("reconfirmed_at_utc", [])
+        if retrieved_at_utc not in seen:
+            seen.append(retrieved_at_utc)
+        return True
+    return False
+
+
 def write_manifest(day, doc):
     path = manifest_path(day)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -336,7 +358,9 @@ def main():
         if ev["evidence_id"] in known:
             # 同日・同一内容の再取得。retrieved_at_utc は最初の取得を正とする
             # （後の取得で時刻を上書きすると先見性の主張が弱くなるため）。
-            print(f"[skip] {ev['evidence_id']}: 同日に同一内容を取得済み")
+            # 「この時刻にも同じ内容だった」は extract.reconfirmed_at_utc に残す。
+            note_reconfirmation(doc, ev["evidence_id"], ev["retrieved_at_utc"])
+            print(f"[skip] {ev['evidence_id']}: 同日に同一内容を取得済み（再確認時刻を記録）")
             continue
         doc["evidence"].append(ev)
         known.add(ev["evidence_id"])

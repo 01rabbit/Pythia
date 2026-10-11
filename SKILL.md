@@ -71,7 +71,10 @@ Section 4: SOC推奨情報
   収集は 18:17 UTC（前日・03:17 JST）に走るため、JST 実施日 D の当日収集分は
   `news-(D-1).json` / `cves-(D-1).json` に入っている。迷ったら `news-latest.json` /
   `cves-latest.json`（最新収集分）を使うこと
-- GitHub Actions（`daily-pipeline.yml`）が毎日 03:17 JST に1回自動収集するため（GitHub の schedule 遅延を見込んだ時刻）、当日 07:30 JST 時点で当日分が蓄積されている
+- GitHub Actions（`daily-pipeline.yml`）が **2 時間おき（毎時 47 分）**に収集し、03:17 JST の締めの回で
+  被覆記録まで固定するため（GitHub の schedule 遅延を見込んだ時刻）、当日 07:30 JST 時点で当日分が蓄積されている。
+  raw の日付ファイルは同一 UTC 日付の各回の **union**（`items[]` は id で重複排除・`run_ids[]` に回数が残る）であり、
+  `*-latest.json` だけが最終回単独の内容である。窓内判定は従来どおり `published_at` で行う
 - Web 検索は data/raw に無い情報の補完としてのみ使用する（再現性確保のため）
 - data/raw が取得できない・空の場合はその旨をレポート meta に記録し、Web 検索へフォールバックする
 

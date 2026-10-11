@@ -31,8 +31,11 @@ GitHub Actions の時間上限が回復し `daily-pipeline.yml` の `schedule:` 
 
 ## 実行手順
 
-以下を `.github/workflows/daily-pipeline.yml` の `collect-feeds` ジョブと
+以下を `.github/workflows/daily-pipeline.yml` の `collect-feeds` ジョブ（**締めの回**）と
 完全に同一の順序・同一のコマンドで実行する（手順を変更・省略しない）。
+同ワークフローは 2026-10-11 以降 2 時間おきの多頻度取得も行うが、本スキルが代替するのは
+03:17 JST の締めの回だけである（多頻度分を Routine で代替すると Routine の実行回数と
+トークンが増えるため行わない。その間の取りこぼしは受け入れる）。
 
 ### Step 1: RSS フィード収集
 
