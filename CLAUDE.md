@@ -30,7 +30,8 @@ config.yml                               ← Pythia の個性定義（スコー�
 SKILL.md                                 ← ★日次パイプラインの実体（Routines にファイルパス指定で登録・予報 Step 3.5 含む）
 .skills/forecast-verification/SKILL.md  ← 週次予報精度検証スキル（火・木 12:00 JST）
 .skills/collect-evidence/SKILL.md       ← 日次フィード収集・証跡固定スキル（06:00 JST・GitHub Actions
-                                           daily-pipeline.yml が実行時間上限で使えない間の代替・2026-09-24 追加）
+                                           daily-pipeline.yml が実行時間上限で使えない間の代替・2026-09-24 追加・
+                                           2026-10-11 に Routine 無効化＝Actions に統一・必要時のみ再有効化）
 
 # ★Pythia の中核：予報エンジン★
 forecaster/README.md                     ← Pythia の育て方・Phaseロードマップ
@@ -124,13 +125,13 @@ Claude Code Routines が毎日 07:00 JST に `SKILL.md` のパイプラインを
 （ルーチンにはルート `SKILL.md` をファイルパス指定で登録する）。
 手動実行も可能（Routine 画面から "Run" をクリック）。
 
-GitHub Actions（`daily-pipeline.yml`）が実行時間上限に達している間は、
-`.skills/collect-evidence/SKILL.md` を毎日 06:00 JST（本体パイプラインの1時間前）の
-Routine として追加登録し、フィード収集・Evidence Ledger 固定を代替する
-（登録は Routines 画面から手動で行う。ツール経由での自動登録手段はない）。
-GitHub Actions の実行時間上限が回復し `daily-pipeline.yml` の `schedule:` を再開する場合は、
-二重収集・競合コミットを避けるため、本 Routine 登録を外すか `daily-pipeline.yml` 側の
-`schedule:` トリガーを止めるか、いずれか一方に統一すること。
+フィード収集・Evidence Ledger 固定（06:00 JST）は GitHub Actions `daily-pipeline.yml` に統一している。
+`.skills/collect-evidence/SKILL.md` は Actions が実行時間上限で止まった際の代替手段であり、
+その間だけ Routines 画面から 06:00 JST の Routine として手動登録する
+（ツール経由での自動登録手段はない）。
+**2026-10-11 時点: Actions は稼働中・代替 Routine「情報収集（臨時）」は無効化済み**
+（2026-10-06〜07 に両者が同時に動き二重収集・PR #263 が発生したため統一した）。
+再び Actions が止まった場合のみ Routine を再有効化し、回復後は必ずどちらか一方に戻すこと。
 
 ## コミットルール
 
