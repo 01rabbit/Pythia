@@ -1,0 +1,104 @@
+{
+  "_schema_version": "1.0",
+  "_run_date": "2026-10-10",
+  "_comment": "日次実行の各ステップの入出力・時刻・内容ハッシュ・版。予報の先見性を第三者が追跡できるようにするための実行記録（改善計画 §10）。",
+  "steps": [
+    {
+      "step": "snapshot_sources",
+      "status": "ok",
+      "started_at_utc": "2026-10-12T02:47:17Z",
+      "ended_at_utc": "2026-10-12T02:47:17Z",
+      "version": "snapshot_sources/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/evidence/manifests/2026/10/2026-10-10.json",
+          "sha256": "9889196e447bd66a90da18044880eb8e1c1260e3b3f8e0f3b8477daabbd67c74"
+        }
+      ],
+      "note": "遡及生成（2026-10-12）: 当日朝に daily-pipeline.yml が固定した Evidence Ledger を --verify-only で検証。取得はしていない"
+    },
+    {
+      "step": "nvd_window_sweep",
+      "status": "ok",
+      "started_at_utc": "2026-10-12T01:10:15Z",
+      "ended_at_utc": "2026-10-12T01:10:15Z",
+      "version": "nvd_window_sweep/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": ".cache/daily-security-intel/2026-10-10/step1-sweep.json",
+          "sha256": "53a28d429c349e5366a8991a2df9deb68900499a736ff81cdcf7e0f2ce10675c"
+        }
+      ],
+      "note": "遡及生成: 2026-10-12 に過去窓を NVD pubStartDate/pubEndDate・KEV dateAdded・EUVD で列挙。CVSS は 2026-10-12 時点の値（事後改訂を含みうる）"
+    },
+    {
+      "step": "backfill_daily_report",
+      "status": "ok",
+      "started_at_utc": "2026-10-12T01:10:15Z",
+      "ended_at_utc": "2026-10-12T01:39:09Z",
+      "version": "SKILL.md Step1-3 (backfill)",
+      "inputs": [
+        "security-intel-collector/data/raw/news-2026-10-10.json",
+        "security-intel-collector/data/raw/cves-2026-10-10.json",
+        ".cache/daily-security-intel/2026-10-10/step1-sweep.json"
+      ],
+      "outputs": [
+        {
+          "path": "outputs/2026-10-10/2026-10-10-security-report.json",
+          "sha256": "09f953999c343615b5e3d30bdcc175d4ac03d34ad950538497f4b30079f83dcc"
+        }
+      ],
+      "note": "本体 Routine 未発火による欠損日を 2026-10-12 に遡及生成。窓終了（2026-10-10 07:00 JST）までの事実のみ使用。予報（Step 3.5-3）・戦術予報（Step 3.6）は発行せず。2026-10-12 02:5x UTC に APT campaign_id を 10-09 初報の FlaxTyphoon-2026-IntegrityTech-MicroScan-FishHub-JointAdvisory へ統一（同一合同勧告の重複採番解消）し、本ハッシュはその修正後の値"
+    },
+    {
+      "step": "normalize_observations",
+      "status": "ok",
+      "started_at_utc": "2026-10-12T01:39:09Z",
+      "ended_at_utc": "2026-10-12T02:46:02Z",
+      "version": "01-normalize.md (backfill)",
+      "inputs": [
+        "outputs/2026-10-10/2026-10-10-security-report.json"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/observations/2026/10/2026-10-10.json",
+          "sha256": "16fc7cbf1ea6fb15b36fcdc3889fb1f8e0a87387767d34131aa10f1fb5b63c42"
+        }
+      ],
+      "note": "available_at_utc は遡及生成の実時刻（2026-10-12）"
+    },
+    {
+      "step": "forecast",
+      "status": "skipped",
+      "started_at_utc": "2026-10-12T02:46:02Z",
+      "ended_at_utc": "2026-10-12T02:46:02Z",
+      "version": "03-forecast.md",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/forecasts/daily/2026-10-10.json",
+          "sha256": "c854fc26cdd57c582610f5e57b76278ec0627683d98316082bfee817eed30f7f"
+        }
+      ],
+      "note": "遡及生成のため予報は発行しない（forecaster/README.md バックフィル方針・後知恵バイアス回避）。forecasts: [] のサイドカーのみ"
+    },
+    {
+      "step": "build_event_store",
+      "status": "ok",
+      "started_at_utc": "2026-10-12T02:46:49Z",
+      "ended_at_utc": "2026-10-12T02:46:49Z",
+      "version": "observation-event-adapter-v1",
+      "inputs": [
+        "forecaster/observations/2026/10/2026-10-10.json"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/events/2026/10/2026-10-10.json",
+          "sha256": "9f8269ffaa3fcfc975db40ae7801454b00806ffe108863a367aa98bb132621e1"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-10 07:00 JST（遡及生成: 2026-10-12T10:39:09+09:00）
+調査期間: 2026-10-09 07:00 〜 2026-10-10 07:00 JST
+本レポートは 2026-10-12 に収集証跡から遡及生成したものである
+========================================
+
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+【本編】
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. Astron Agent（エージェント型ワークフロー基盤）: 既定のコードノードが LocalExecutor で完全な Python 組み込みを露出し認証後 RCE（CVE-2026-108263・CVSS 9.9・GHSA 起点）（カテゴリ C/C1）
+------------------------------------------------------------
+軸X=7 軸Y=1  採用契機: A-R/A-S  被害: 確認された侵害・被害の報告なし（NVD/GHSA 記載の脆弱性公開のみ）
+
+【24時間以内の変化】
+[NVD / GitHub Advisory 2026-10-10] NVD に CVE-2026-108263 が公開（2026-10-09 21:17 UTC・GHSA 起点）。網羅スイープで捕捉。
+
+【概要】
+AI エージェントを構築・実行するエージェント型ワークフロー基盤 Astron Agent の 1.1.2 より前で、/console-api/workflow/code/run と /workflow/v1/run を通る既定のワークフロー・コードノード経路が、CODE_EXEC_TYPE を明示変更しない限り core/workflow/engine/nodes/code/code_node.py の LocalExecutor を選択し、動的コード実行に完全な Python 組み込みを与えるため、権限の低い認証済みユーザーが任意コードを実行できる（NVD 記述・CVSS v3.1 9.9・AV:N/PR:L/S:C）。悪用確認・PoC の報道はなく KEV 未登録。外部ソースの詳細分析は本窓で未取得のため NVD/GHSA 記載の範囲で記録する。
+
+【監視】
+Astron Agent を運用している場合、/workflow/v1/run・/console-api/workflow/code/run の呼び出し元と CODE_EXEC_TYPE 設定を確認し 1.1.2 以降へ更新する。
+Splunk SPL: index=web sourcetype=access_combined (uri_path="/workflow/v1/run" OR uri_path="/console-api/workflow/code/run") | stats count by src_ip, user, uri_path
+コードノードの実行はワークフロー作成者の操作として正常に発生するため、未知ユーザー・時間外・高頻度の実行を異常の起点にする。
+
+【参照】
+・NVD: NVD CVE-2026-108263 https://nvd.nist.gov/vuln/detail/CVE-2026-108263
+------------------------------------------------------------
+2. x64dbg-MCP Server: MCP デバッガツール全機能を認証なしで 0.0.0.0 の HTTP/SSE に公開し、到達可能な任意クライアントが任意コード実行（CVE-2026-107824・CVSS v4 9.3・GHSA 起点）（カテゴリ C/C3）
+------------------------------------------------------------
+軸X=7 軸Y=1  採用契機: A-R/A-S  被害: 確認された侵害・被害の報告なし（NVD/GHSA 記載の脆弱性公開のみ）
+
+【24時間以内の変化】
+[NVD / GitHub Advisory 2026-10-10] NVD に CVE-2026-107824 が公開（2026-10-09 18:17 UTC・GHSA 起点）。網羅スイープで捕捉。
+
+【概要】
+x64dbg 向けのネイティブ Model Context Protocol（MCP）プラグイン x64dbg-MCP Server の 1.1 より前は、デバッガの全機能を HTTP と SSE で認証なしに公開し、既定で 0.0.0.0 を待ち受けるため、既定ポート（x64: 9094 / x32: 9095）へ到達できる未認証のネットワーククライアントがデバッガ経由で任意コードを実行できる（NVD 記述・CVSS v4.0 9.3・AV:N/PR:N）。悪用確認・PoC の報道はなく KEV 未登録。解析端末上の MCP サーバが LAN 全体へ露出する典型例で、AI コーディング/解析エージェント連携基盤（MCP）の既定設定リスクとして記録する（2026-09-11 OmniRoute・2026-09-16 PraisonAI 等と同系統）。
+
+【監視】
+解析端末・開発端末で TCP 9094/9095 の外部からの接続と、ローカル以外へバインドした MCP サーバの存在を確認する。
+Splunk SPL: index=firewall OR index=netflow dest_port IN (9094,9095) action=allowed | stats count by src_ip, dest_ip, dest_port
+MCP サーバは本来 localhost 待ち受けで足りる。LAN 内からの接続は設定ミスか横展開の可能性。
+
+【参照】
+・NVD: NVD CVE-2026-107824 https://nvd.nist.gov/vuln/detail/CVE-2026-107824
+
+【参考情報 A】
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・George Washington 大学の研究「AI チャットボットが逸脱するタイミングを予測する式」（SecurityWeek 2026-10-09） [low_score] 理論的リスク提起（予測モデル研究）で攻撃実証・被害なし。単一ソース（下記 A-P 相当の実証を確認できず）。
+・Adception: Google 広告×Bing リダイレクト経由の偽 Claude for macOS インストーラ ClickFix（BleepingComputer 2026-10-10） [low_score] AI ブランドを誘引に使うフィッシング/ClickFix であり AI 自体への攻撃・AI 武器化ではない。Section 2 トレンド記事 TREND-2026-10-10-002 で扱う（2026-10-07 の偽 AI 広告ポータルと同じ整理）。
+・Anthropic が OSS 向け無償 AI 脆弱性スキャナ「OSS Scanner」を公開、OT セキュリティで11社と連携（THN / SecurityWeek 2026-10-09） [low_score] AI を用いた防御側ツールの公開であり AI 攻撃ではない。SOC 推奨情報 SOC-2026-10-10-009（観点3）で扱う。
+・SailPoint「AI Velocity Paradox」報告 / Dark Reading「Social Engineering AI Agents」/ BleepingComputer（Token Security）「AI エージェントの権限制御」/ OpenAI 安全研究者3名解雇 / HENNGE AI 設立 / Dark Reading「AI 主導の M&A」 [low_score] 一般論・意見記事・スポンサー記事・企業ニュースで、新規の攻撃手法・インシデント・脆弱性の情報を含まない。
+
+網羅スイープ: 候補50件 / 処理50件 / 未処理0件 / KEV窓内追加0件 / EUVD窓内43件（うちNVD/KEV未収載3件）

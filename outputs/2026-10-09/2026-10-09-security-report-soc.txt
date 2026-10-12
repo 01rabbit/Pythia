@@ -1,0 +1,179 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-12 11:20 JST（遡及生成）
+調査期間: 2026-10-08 07:00 〜 2026-10-09 07:00 JST
+本レポートは 2026-10-12 に収集証跡から遡及生成したものである（本体 Routine が 2026-10-09 に発火せず欠損したため。予報は発行しない）。
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. FBI ほか合同勧告（Integrity Technology Group / Flax Typhoon・MicroScan / FishHub）を受けた遡及ハンティング: 押収 7 ドメインへの過去照会、Exchange / M365 パスワードスプレー、DCSync、EWS 一括メール収集、SoftEther VPN の確認
+観点: ゼロデイ関連
+採用契機: ε, β
+------------------------------------------------------------
+
+優先度: 高
+対象: Microsoft Exchange / Microsoft 365、Active Directory、インターネット公開の旧版 ProFTPD / BIND / Struts / ONLYOFFICE / Strapi / Pulse Secure / GitLab（勧告の 8 CVE）
+
+【24時間以内の変化】
+[The Hacker News / BleepingComputer 2026-10-09 06:42] 合同勧告の公表と 7 ドメイン押収、日本の空港がスキャン対象に含まれたことを報道（Section 2 APT 本編参照）。
+
+【概要】
+Section 2 APT 本編（Flax Typhoon / Integrity Technology Group）と Section 3 ゼロデイ特報（KEV 5 CVE）に対応する SOC 側の実務を一か所にまとめる。合同勧告は TTP として、MicroScan による既知脆弱性の大規模スキャン・悪用、EBurst による Exchange / M365 パスワードスプレー、DC.exe による DCSync、Curlc4.txt / office-cli による EWS 経由のメール一括収集、SoftEther VPN を挙げている（ε: TTP の確認）。日本の空港がスキャン対象に含まれており（β: 国内影響）、国内組織も過去ログの遡及確認が妥当。押収ドメインは今後シンクホール化されるため、押収前の DNS / プロキシログに照会が残っていないかを 1 年程度遡って検索することが本質的な確認となる。勧告 PDF（39 ページ）の IOC 付録は本窓の報道からは取得できていないため、SIEM 投入には一次ソースの取得が必要。
+
+【推奨アクション】
+・DNS / プロキシログを過去 12 か月遡り、98aicai.com・98aicode.com・outlook3650.com・youtubecard.com・linkedinns.net・98aiblog.com・c0cc.cc（サブドメイン含む）への照会・接続を検索する
+・Exchange / M365 のサインインログで、同一送信元から多数アカウントへの少数回失敗（パスワードスプレー）を 10 分ビンで集計し、該当アカウントの MFA 状態を確認する
+・ドメインコントローラ以外からの DS-Replication-Get-Changes（EventCode 4662・GUID 1131f6ad / 1131f6aa）を検索し DCSync の痕跡を確認する
+・EWS ログで curl / python 系 UA による多数メールボックスへのアクセス、SoftEther VPN クライアントの導入痕跡（vpnclient.exe・vpncmd）を確認する
+・KEV 5 CVE と勧告の残り 3 CVE（CVE-2014-6278・CVE-2019-11510・CVE-2021-22205）の該当資産を棚卸しし、FCEB 期限 2026-10-11 に準じて対処する（Section 3 参照）
+・ic3.gov の勧告 PDF から IOC 付録を取得して脅威インテリジェンス基盤に投入する
+・[監視] Section 2 APT 本編の SPL を参照。押収ドメイン照会の遡及検索は 1 回限りの調査、スプレー・DCSync・EWS 収集は常設ルール化する。
+Splunk SPL: index=dns query IN ("98aicai.com","98aicode.com","outlook3650.com","youtubecard.com","linkedinns.net","98aiblog.com","c0cc.cc") OR query="*.c0cc.cc" OR query="*.outlook3650.com" earliest=-365d | stats count min(_time) max(_time) by src_ip, query
+Splunk SPL: index=endpoint EventCode=1 (Image="*\\vpnclient.exe" OR Image="*\\vpncmd.exe" OR Image="*\\vpnclient_x64.exe") | stats count by host, user, Image
+→ SoftEther VPN は正規利用もあるため、資産管理で承認されていないホスト上の実行を優先する。
+
+【参照】
+・FBI / IC3: Joint Cybersecurity Advisory: PRC-linked Integrity Technology Group tools MicroScan / FishHub（FBI ほか 7 か国機関・2026-10-08） https://www.ic3.gov/CSA/2026/261008.pdf
+・The Hacker News: FBI Says China-Linked Hackers Ran Portal Giving Third Parties Access to Stolen Emails https://thehackernews.com/2026/10/fbi-says-china-linked-hackers-ran.html
+・BleepingComputer: FBI disrupts Chinese hacking tools used to breach critical infrastructure https://www.bleepingcomputer.com/news/security/fbi-disrupts-chinese-hacking-tools-used-to-breach-critical-infrastructure
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. AI 推論基盤の未認証 RCE 2 件が同日公開: Ollama /api/pull パストラバーサル（CVE-2026-103663・CVSS 9.4・CERT.PL）と SGLang ZMQ pickle デシリアライズ RCE（CVE-2026-93034・CVSS 9.8・CERT/CC）— 露出インスタンスの棚卸し
+観点: CVE関連
+採用契機: δ, β
+------------------------------------------------------------
+
+優先度: 中
+対象: Ollama（/api/pull を外部公開している構成）、SGLang（ZMQ IPC / msgpack 経路・SGLANG_USE_PICKLE_IPC 無効時も影響）
+
+【24時間以内の変化】
+[NVD（CERT.PL / CERT/CC CNA） 2026-10-08 23:17] CVE-2026-103663（Ollama・/api/pull の layer digest 検証不備によりモデルストア外へ悪意あるバイナリを書込み可能・未認証）と CVE-2026-93034（SGLang・ZMQ メッセージデコーダが PickleWrapper を無条件に pickle.loads・認証なし・msgpack 経路でも残存）が NVD に公開。悪用・PoC は未確認。
+
+【概要】
+LLM 推論基盤 2 製品に未認証の重大脆弱性が同日公開された。Ollama の /api/pull はレイヤーダイジェストを digestToPath で十分に検証せず、未認証のリモート攻撃者がパストラバーサルでモデルストア外に悪意あるバイナリを書き込める（CVE-2026-103663・CVSS 9.4）。SGLang は ZMQ メッセージデコーダが PickleWrapper ペイロードを型許可リストや認証なしに pickle.loads で復元し、SGLANG_USE_PICKLE_IPC を無効にしても msgpack 経路で残存する（CVE-2026-93034・CVSS 9.8）。いずれも Section 3 では軸1=7 で閾値未満（除外サマリー記録）だが、露出 AI 基盤を狙う自動化攻撃（既報 PoeLLM / Canto Incognito・2026-10-08 参考B、NadMesh 等）が継続している状況では、公開インスタンスの棚卸しと到達制限が SOC 側の優先作業となる（δ: 国内波及が近い手法）。国内でも Ollama を社内 LLM 用途で公開する例が増えており（β）、Shodan 等での露出確認が有効。修正版の正確な版番号は本窓で未取得。
+
+【推奨アクション】
+・インターネットから到達可能な Ollama（既定 TCP 11434）・SGLang（既定 TCP 30000・ZMQ IPC ポート）を外部スキャンで棚卸しし、認証付きリバースプロキシ配下または社内限定へ移す
+・Ollama は /api/pull・/api/push を外部に公開しない。モデル取得は内部レジストリ経由に限定する
+・SGLang は ZMQ エンドポイントをローカルホスト / 専用ネットワークに限定し、SGLANG_USE_PICKLE_IPC 無効化だけでは不十分であることを前提に修正版へ更新する
+・AI 推論ホストで推論プロセス以外の新規実行ファイル作成・外向きスキャン・マイナー通信（Stratum）を監視する（既報 PoeLLM 対策と共通）
+・[監視] Ollama / SGLang ホストでの model store 外へのファイル書込み、推論プロセスを親とするシェル起動、外部からの /api/pull への POST を検出する。
+Splunk SPL: index=web dest_port=11434 uri_path="/api/pull" NOT src_ip IN (<内部レンジ>) | stats count by src_ip, dest
+Splunk SPL: index=linux sourcetype=auditd type=EXECVE (ppid_comm="ollama" OR ppid_comm="python" OR ppid_comm="sglang*") (comm="sh" OR comm="bash" OR comm="curl" OR comm="wget") | stats count by host, exe, a0, a1
+→ GPU ホストの高負荷は正規推論と区別できないため、ファイル書込み先と子プロセスを優先指標にする。
+
+【参照】
+・NVD: NVD: CVE-2026-103663 https://nvd.nist.gov/vuln/detail/CVE-2026-103663
+・NVD: NVD: CVE-2026-93034 https://nvd.nist.gov/vuln/detail/CVE-2026-93034
+
+------------------------------------------------------------
+2. セキュリティ製品自体の重大脆弱性 2 系統: Tenable Identity Exposure（SaaS）の AD Events Listener コマンドインジェクション（CVE-2026-106126・CVSS 9.9・認証済み低権限→PDCe 上 SYSTEM）、IBM Guardium Data Protection 12.x の未認証ヒープオーバーフロー / 認証欠如 8 件（代表 CVE-2026-82335）
+観点: CVE関連
+採用契機: η
+------------------------------------------------------------
+
+優先度: 中
+対象: Tenable Identity Exposure（SaaS・AD Events Listener を導入したドメインコントローラ）、IBM Guardium Data Protection 12.0 / 12.1 / 12.2 / 12.2.2（S-TAP・edge-controller・MongoDB / TDS パーサ）
+
+【24時間以内の変化】
+[NVD（Tenable / IBM PSIRT CNA） 2026-10-09 05:17] CVE-2026-106126（Tenable Identity Exposure・認証済み低権限の攻撃者が PDCe 上で SYSTEM としてコマンド実行・CVSS 9.9）と IBM Guardium Data Protection の 8 CVE（CVE-2026-82335 / 82344 / 84272 / 84244 / 82334・EUVD-only の 75875 / 80381 / 84249・CVSS 9.1〜9.8）が公開。悪用・PoC は未確認。
+
+【概要】
+監視・監査を担うセキュリティ製品自体の脆弱性（η）。Tenable Identity Exposure の Active Directory Events Listener は PDC エミュレータ上で動作し、認証済みの低権限攻撃者がコマンドインジェクションで SYSTEM 権限のコマンドを実行できる（CVE-2026-106126・CVSS 9.9・PR:L のため Section 3 では軸1=4）。ドメイン内の低権限アカウント 1 つから PDCe 乗っ取りに直結する点で、ID 脅威検知製品の導入が逆に攻撃面になる構造。IBM Guardium Data Protection では MongoDB プロトコルパーサ・TDS ログイン再構成のヒープオーバーフロー、edge-controller の認証欠如による任意コンテナイメージ実行など 8 件（うち 3 件は EUVD-only・NVD 未収載）が公開され、DB 監査トラフィックを受ける S-TAP / コレクタが未認証で攻撃され得る。いずれも悪用・PoC・KEV は本窓で確認されず、修正版番号は本窓で未取得。SaaS 側（Tenable）は自動更新だが、オンプレ側のエージェント更新と権限見直しが必要。
+
+【推奨アクション】
+・Tenable Identity Exposure の AD Events Listener を導入している DC を特定し、Tenable の案内に従ってコンポーネントを更新する。PDCe 上での予期しない子プロセス起動を監視する
+・Guardium コレクタ / S-TAP の版を確認し IBM ブレティンの修正版へ更新。コレクタへの到達元を監視対象 DB サーバのみに限定する
+・セキュリティ製品アカウント（Tenable サービスアカウント・Guardium 管理者）の権限を最小化し、ログイン元を限定する
+・[監視] PDCe 上で Tenable Listener プロセスを親とするコマンド実行、Guardium コレクタのクラッシュ・再起動と DB サーバ以外からの接続を検出する。
+Splunk SPL: index=wineventlog host=<PDCe> EventCode=4688 ParentProcessName="*Tenable*" NewProcessName IN ("*\\cmd.exe","*\\powershell.exe") | stats count by NewProcessName, CommandLine
+Splunk SPL: index=netflow dest_port IN (16016,16018,8443) dest_ip IN (<Guardiumコレクタ>) NOT src_ip IN (<監視対象DB>) | stats count by src_ip, dest_port
+→ Tenable Listener は正規でも PowerShell を起動し得るため、ベースライン取得後に差分で判定する。
+
+【参照】
+・NVD: NVD: CVE-2026-106126 https://nvd.nist.gov/vuln/detail/CVE-2026-106126
+・NVD: NVD: CVE-2026-82335 https://nvd.nist.gov/vuln/detail/CVE-2026-82335
+・NVD: NVD: CVE-2026-84272 https://nvd.nist.gov/vuln/detail/CVE-2026-84272
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. TP-Link Aginet ISP 向けルータ脆弱性 5 件（CVE-2025-30237〜30241）の技術詳細を SEC Consult が公開、米 4 州（FL / IA / MT / NE）が TP-Link を提訴 — ISP 配布機器の管理面露出の再確認
+観点: CVE関連
+採用契機: δ
+------------------------------------------------------------
+
+優先度: 低
+対象: TP-Link Aginet 系 ISP 配布ルータ（約 65 機種・SecurityWeek 記載）
+
+【24時間以内の変化】
+[SecurityWeek 2026-10-08 19:24] SEC Consult が州訴訟（2026-10-06 提訴）で言及された脆弱性の技術詳細を公開。CVE-2025-30237〜30241・約 65 機種が対象と報道。悪用は報告されていない。
+
+【概要】
+SecurityWeek は、フロリダ・アイオワ・モンタナ・ネブラスカの 4 州が 2026-10-06 に TP-Link を提訴し、その訴状で言及された Aginet 系 ISP 向けルータの脆弱性（CVE-2025-30237〜30241・2025 年採番）について SEC Consult が 2026-10-08 に技術詳細を公開したと報じた。対象は約 65 機種。実悪用・KEV 追加は本窓で確認されない。2025 年採番の既知脆弱性であり Section 3 の採用条件（窓内の新規公開・状態変化）には技術詳細公開のみが該当するため、SOC 推奨の低優先度（δ: 海外で話題・国内波及の可能性）に置く。国内では同一機種の ISP 配布は限定的と見られる（推測・確認できない）が、TP-Link 製 SOHO ルータの管理面露出は Mirai 系ボットネットの常用経路であり、拠点・在宅ルータの外部管理面の棚卸しの契機とする。
+
+【推奨アクション】
+・拠点・在宅勤務者の ISP 配布ルータの機種・ファームウェア版を把握し、WAN 側管理インターフェース（HTTP / TR-069 以外のポート）の露出を外部スキャンで確認する
+・SEC Consult の勧告で示された機種に該当する場合は ISP / TP-Link の更新を適用する
+・[監視] 拠点ルータの WAN IP に対する管理ポート（80 / 443 / 7547 / 8080）宛の外部からの接続成功を検出する。
+Splunk SPL: index=firewall direction=inbound dest_port IN (80,443,7547,8080) action=allowed dest_ip IN (<拠点ルータWAN>) | stats count by src_ip, dest_ip, dest_port
+→ TR-069（7547）は ISP の ACS からの正規接続があるため ACS の IP を除外する。
+
+【参照】
+・SecurityWeek: TP-Link Faces State Lawsuits and New Scrutiny Over ISP Router Flaws https://www.securityweek.com/tp-link-faces-state-lawsuits-and-new-scrutiny-over-isp-router-flaws
+
+------------------------------------------------------------
+2. SANS ISC: AI エージェント（Claude Code 等）の活動をフォレンジック的に再構成するスクリプト 2 本を公開（FOR577 更新）— インシデント対応で AI 利用痕跡を証拠化する手順
+観点: AI攻撃関連
+採用契機: γ
+------------------------------------------------------------
+
+優先度: 低
+対象: インシデント対応・フォレンジック手順（AI コーディングエージェントの会話・ツール実行履歴の収集）
+
+【24時間以内の変化】
+[SANS Internet Storm Center 2026-10-09 01:52] FOR577 の大幅更新に伴い、AI エージェントの活動を再構成する 2 本のスクリプトと、よく使われるエージェントの痕跡の所在に関する解説を公開。
+
+【概要】
+SANS ISC は、インシデント対応で AI コーディングエージェント等の利用を調査するための新教材（FOR577 5 日目）と、エージェントの活動を再構成する 2 本のスクリプトを公開した。本窓では Tensorlake npm 侵害（Section 1 参考B）が .claude/settings.json や MCP 設定を標的にし、ARTEX（同）では攻撃者側の Claude Code セッション履歴が露出していたように、AI エージェントの履歴・設定はインシデントの証拠と攻撃対象の双方になっている。SOC / CSIRT は端末上のエージェント履歴（~/.claude・~/.cursor 等）の保全対象化と、取得手順の整備を進めるのが妥当（γ: SOC 運用に直接関係する手順変更）。スクリプトの詳細・対応エージェントの一覧は RSS 要約からは確認できない。
+
+【推奨アクション】
+・インシデント対応手順の証拠保全リストに、AI エージェントの設定・履歴ディレクトリ（~/.claude、~/.cursor、~/.codex、VS Code 拡張の状態等）を追加する
+・SANS ISC 公開スクリプトを検証環境で評価し、EDR のライブレスポンスから実行できるよう整備する
+・開発者端末で .claude/settings.json 等の変更監視（Section 1 参考B Tensorlake の SPL）を併用する
+・[監視] 常設監視ではなく手順整備。Tensorlake エントリの .claude/settings.json 変更監視 SPL を参照。
+
+【参照】
+・SANS Internet Storm Center: Reconstructing AI Agent Activity: Two New Scripts for Forensic Review, (Thu, Oct 8th) https://isc.sans.edu/diary/rss/33410
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・法執行・司法関連報道: MonsterCloud 経営者の詐欺起訴（身代金を秘密裏に支払い 1,900 万ドル超を請求・BleepingComputer / THN / SecurityWeek）、Empire Market 共同運営者に禁錮 40 年、Uranium Finance ハッカー有罪、Tren de Aragua の ATM ジャックポッティング担当者拘束、HAFNIUM Zhang Yu への 1,000 万ドル報奨 → [low_score] 法執行・判決・懸賞情報は日次の SOC 推奨対象外（週次検証へ移管）。MonsterCloud 事案はランサムウェア対応ベンダー選定の教訓として参考価値はあるが α〜η に該当しない。
+・Oracle Health（Cerner）侵害の被害者数が約 2,000 万人に（テキサス州司法長官・SecurityWeek）／ ASOS が侵害をソーシャルエンジニアリングと資格情報窃取に起因と通知（BleepingComputer） → [low_score] 既知侵害の被害規模更新・海外小売の侵害続報で、国内 SOC の運用変更に直結する新規 TTP・製品影響はない。
+・JVN iPedia: CISA ICS Advisory / ICS Medical Advisory（2026-10-06・新規 6 件・ICSA-26-279-01 Johnson Controls EasyIO FG ほか） → [low_score] 定例転載。個別勧告の CVSS・悪用情報は RSS 要約に含まれず判断材料がない。OT 資産保有組織は CISA ICS 勧告を直接確認すること。
+・製品・企業ニュース: HENNGE Password Manager 提供開始、AeyeScan の生成 AI モバイル診断機能、パイオリンク TiFRONT のブランド変更、ScanNetSecurity 創刊 28 周年、Dark Reading 編集方針告知、BleepingComputer の OAuth 権限棚卸し記事（スポンサー）、SecurityWeek のセキュリティ意識向上研修コラム、StealerLog 1 万件分析記事、古川デジタル大臣の国会答弁（漏えい件数は必ずしも増加傾向にない）、練馬区のチャットツール設定不備 → [low_score] 製品発表・コラム・統計的言及・設定ミス由来の小規模事案で、α〜η の採用条件に該当しない。練馬区の事案は侵害ではなく権限設定不備のため国内インシデントまとめ（Section 2）からも除外。
+・THN ThreatsDay 週間まとめ（ランサムウェアアフィリエイトの裏切り・WhatsApp RAT・露出した攻撃ツール ほか 12 件）／ SANS ISC Stormcast（10-08） → [no_change] ダイジェスト・ポッドキャストであり個別事象は本窓の他ソースで扱うか判断材料不足。
+
+本日の集計:
+SOC推奨情報 — 高1件 / 中2件 / 低2件 / 除外5件
+
+網羅スイープ: 候補55件 / 処理55件 / 未処理0件 / KEV窓内追加5件（2026-10-08 09:54 JST と 2026-10-09 10:08 JST の KEV スナップショット差分で本窓に帰属） / EUVD窓内49件（うちNVD/KEV未収載5件）
+
+========================================

@@ -1,0 +1,190 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-12 10:37 JST（遡及生成）
+調査期間: 2026-10-07 07:00 〜 2026-10-08 07:00 JST
+本レポートは 2026-10-12 に収集証跡から遡及生成したものである（本体 Routine が 2026-10-08 に発火せず欠損したため。予報は発行しない）。
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【SOC推奨情報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. Splunk Enterprise: サーチヘッドクラスタメンバーの Patroni REST API に未認証 OS コマンド実行（CVE-2026-76268・CVSS 9.8）ほか集約 CVE（CVE-2026-76284）— 10.4.3 / 10.2.7 / 10.0.10 / 9.4.15 で修正
+観点: CVE関連
+採用契機: η, β
+------------------------------------------------------------
+
+優先度: 高
+対象: Splunk Enterprise 10.4.3 / 10.2.7 未満（CVE-2026-76268）、10.4.3 / 10.2.7 / 10.0.10 / 9.4.15 で修正される内部発見脆弱性群（CVE-2026-76284）
+
+【24時間以内の変化】
+[NVD（Cisco PSIRT） 2026-10-08 06:17] CVE-2026-76268（サーチヘッドクラスタメンバーの Patroni REST API にネットワーク到達できる未認証ユーザーが攻撃者制御の OS コマンドを実行可能・重要な構成操作に認証が不要・CVSS 9.8）と CVE-2026-76284（CWE 単位でグループ化された複数の内部発見脆弱性・CVSS 9.8）が NVD に新規公開。
+
+【概要】
+SIEM 製品そのものの重大脆弱性。Splunk Enterprise 10.4.3 / 10.2.7 未満では、サーチヘッドクラスタ（SHC）メンバー上の Patroni REST API が重要な構成操作に認証を要求せず、ネットワーク到達可能な未認証ユーザーが OS コマンドを実行できる（CVE-2026-76268・NVD 記載）。あわせて 10.4.3 / 10.2.7 / 10.0.10 / 9.4.15 で修正される内部発見の脆弱性群が CVE-2026-76284 として公開された。Splunk Enterprise の未認証 RCE は 2026年6月に CVE-2026-20253（PostgreSQL サイドカー）が KEV に追加された前例があり（既報事実）、SOC 基盤の侵害はログ改ざん・検知回避に直結する。本窓で報道・悪用・PoC・KEV 登録は確認されておらず、Section 3 の軸1は7点で閾値未満のため、SIEM 製品の脆弱性（η）として SOC 推奨の高優先度に置く。
+
+【推奨アクション】
+・今日中に SHC メンバーの Splunk Enterprise バージョンを確認し、10.4.3 / 10.2.7（9.4 系は 9.4.15・10.0 系は 10.0.10）以降へ更新計画を確定する
+・更新までの間、Patroni REST API（既定 TCP 8008）および SHC メンバー間通信ポートへの到達元を SHC メンバーとデプロイヤに限定する（ホストファイアウォール/セグメント ACL）
+・Splunk ホストで splunkd / patroni を親とする予期しないシェル起動を監査する
+・[監視] Splunk サーバ自身の OS 監査ログで、splunkd・patroni・postgres プロセスを親とするシェル・ネットワークツールの実行と、TCP 8008 への SHC メンバー以外からの接続を確認する。
+Splunk SPL: index=linux sourcetype=auditd host IN (<SHCメンバー>) (parent_comm="patroni*" OR parent_comm="splunkd" OR parent_comm="postgres") (comm="sh" OR comm="bash" OR comm="curl" OR comm="wget" OR comm="python*") | stats count by host, parent_comm, comm, cmdline
+Splunk SPL: index=firewall dest_ip IN (<SHCメンバー>) dest_port=8008 NOT src_ip IN (<SHCメンバー>,<デプロイヤ>) | stats count by src_ip, dest_ip
+→ patroni の正規ヘルスチェックは SHC メンバー間のみ。それ以外からの 8008 到達は構成不備または攻撃。
+
+【参照】
+・NVD: NVD: CVE-2026-76268 https://nvd.nist.gov/vuln/detail/CVE-2026-76268
+・NVD: NVD: CVE-2026-76284 https://nvd.nist.gov/vuln/detail/CVE-2026-76284
+・Splunk: Splunk Security Advisories（個別勧告 URL は本窓で未取得） https://advisory.splunk.com/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. WordPress 7.1.3 セキュリティリリース: 複数の脆弱性を修正（CVE 番号は本窓で未取得）
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 中
+対象: WordPress コア 7.1.3 未満
+
+【24時間以内の変化】
+[Security NEXT 2026-10-07 09:02] WordPress 開発チームが複数の脆弱性に対処するセキュリティアップデート 7.1.3 を公開し、早急な更新を呼びかけていると国内報道。
+
+【概要】
+WordPress コアのセキュリティリリース 7.1.3 が公開された（Security NEXT）。修正内容・CVE 番号・深刻度は本窓の RSS 要約からは確認できない。前版 7.1.2 で修正された未認証ローカルファイルインクルード（CVE-2026-87902・既報・実悪用確認）に続く短期間の再リリースであり、国内で広く使われる CMS として自動更新の適用状況を確認する価値がある。
+
+【推奨アクション】
+・管理下の WordPress が自動更新で 7.1.3 に到達しているか確認し、未到達サイトは手動更新する
+・WordPress.org のリリースノートで修正内容と CVE を確認し、該当する場合は悪用痕跡の調査方針を決める
+・[監視] WordPress サイトのバージョン棚卸し（wp-includes/version.php）と、更新未適用サイトの一覧化。
+
+【参照】
+・Security NEXT: セキュリティリリース「WordPress 7.1.3」が公開 - 複数脆弱性を修正 https://www.security-next.com/191115
+
+------------------------------------------------------------
+2. Microsoft Outlook（Web / 新 Outlook for Windows）が 11月から .msix / .msixbundle 添付をブロック— 攻撃に使われる MSIX パッケージ配布経路の変化
+観点: ゼロデイ関連
+採用契機: γ, ε
+------------------------------------------------------------
+
+優先度: 中
+対象: Outlook on the web / 新しい Outlook for Windows
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-08 00:44] Microsoft が来月（2026年11月）から Outlook Web と新 Outlook Windows クライアントのブロック対象添付ファイルに .msix と .msixbundle を追加すると発表したと報道。
+
+【概要】
+Microsoft は、攻撃に使われてきた MSIX アプリパッケージ（.msix / .msixbundle）を 2026年11月から Outlook Web と新 Outlook for Windows のブロック対象添付に追加する（BleepingComputer）。メール添付経由の MSIX 配布が塞がれる一方、攻撃者は SEO ポイズニングや偽インストーラサイト等の別経路へ移行し得る（推測）。メールゲートウェイ側のブロックルールとの整合、クラシック Outlook・他クライアントでの扱い、業務上 MSIX を添付でやり取りしている部門の有無を確認する。
+
+【推奨アクション】
+・メールゲートウェイ / サンドボックスで .msix / .msixbundle 添付の扱い（ブロック・隔離）が Outlook 側の変更と整合しているか確認する
+・MSIX パッケージの実行元を Web ダウンロード経路まで含めて監視する（App Installer 経由の実行イベント）
+・業務で MSIX を添付配布している場合は 11月までに配布方法を変更する
+・[監視] Windows イベントログ（AppXDeployment-Server）と EDR で、ユーザーのダウンロードフォルダ等から起動された MSIX インストールと、その直後の PowerShell・ネットワーク接続を確認する。
+Splunk SPL: index=wineventlog source="Microsoft-Windows-AppXDeployment-Server/Operational" (EventCode=400 OR EventCode=401) PackageFullName!="Microsoft.*" | stats count by host, user, PackageFullName
+→ 社内配布の署名済みパッケージは PackageFullName の発行元で除外する。
+
+【参照】
+・BleepingComputer: Microsoft Outlook to block MSIX attachments starting November https://www.bleepingcomputer.com/news/microsoft/microsoft-outlook-to-block-msix-attachments-used-in-attacks
+
+------------------------------------------------------------
+3. Anthropic が Cyber Verification Program を3層化し Project Glasswing を統合— 審査済み防御チームに安全装置を緩めた Claude モデルへのアクセスを拡大、Glasswing は 2026年4〜7月に 129,000 件の検証済み脆弱性を発見
+観点: AI攻撃関連
+採用契機: δ
+------------------------------------------------------------
+
+優先度: 中
+対象: Anthropic Claude（Cyber Verification Program / Project Glasswing）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-07 17:07] Anthropic が審査済みサイバーセキュリティ専門家向けに安全装置とブロック分類器を緩めたモデル検証プログラムを拡大し、Project Glasswing が 2026年4〜7月に少なくとも 129,000 件の検証済みソフトウェア脆弱性を発見したと公表したと報道。
+[SecurityWeek 2026-10-07 19:07] CVP と Glasswing を統合し、最上位モデルへの3段階のアクセス階層を提供すると報道。
+[Dark Reading 2026-10-08 05:51] Opus・Sonnet・Mythos を含む高度なサイバー LLM への階層型アクセスプログラムに Glasswing を統合したと報道。
+
+【概要】
+Anthropic は 2026-10-06（米国時間）、審査済みの防御側チームに対しサイバー能力の安全装置を緩めた Claude モデルへのアクセスを3段階で提供する Cyber Verification Program を発表し、Project Glasswing を統合した（THN・SecurityWeek・Dark Reading の3独立ソース）。Glasswing は 2026年4〜7月に少なくとも 129,000 件の検証済み脆弱性を発見したとされる。これは攻撃事象ではなく、脆弱性発見・エクスプロイト開発の自動化が防御側にも大規模に提供される動向であり、SOC にとっては（1）公開 CVE の増加ペースと PoC 到達時間の短縮、（2）自組織での AI 支援ペンテスト導入時のアクセス統制・ログ要件、という2点で把握しておく価値がある（推測を含む）。AI 自体への攻撃ではないため Section 1 では除外し、SOC 観点3（AI 活用の新動向）として記録する。
+
+【推奨アクション】
+・AI 支援の脆弱性発見ツールを導入・評価する際は、アクセス階層・利用ログ・成果物の取り扱いを統制する方針を定める
+・脆弱性公開〜PoC 公開のリードタイム短縮を前提に、重大 CVE のパッチ SLA を見直す
+・[監視] 特になし（動向把握）
+
+【参照】
+・The Hacker News: Anthropic Expands Claude Access for Vetted Cyber Teams as Glasswing Finds 129,000 Flaws https://thehackernews.com/2026/10/anthropic-expands-claude-access-for.html
+・SecurityWeek: Anthropic Introduces 3-Tier Cyber Verification Program for AI Access https://www.securityweek.com/anthropic-introduces-3-tier-cyber-verification-program-for-ai-access
+・Dark Reading: Anthropic Gives Vetted Defenders Fewer Claude Guardrails https://www.darkreading.com/vulnerabilities-threats/anthropic-vetted-defenders-claude-guardrails
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 定例更新: Chrome 155（クリティカル4件含む247件修正）・Android 2026年10月更新（25件・System の権限昇格クリティカル含む）
+観点: CVE関連
+採用契機: β
+------------------------------------------------------------
+
+優先度: 低
+対象: Google Chrome 155 / Android（2026年10月セキュリティパッチ）
+
+【24時間以内の変化】
+[Security NEXT 2026-10-07 08:27] Google が 2026-10-06 に Chrome 155 を公開し、Critical 4件を含む 247件の脆弱性へ対処したと国内報道。
+[SecurityWeek 2026-10-07 19:51] Chromecast・Browser・Navigation・Track の Use-After-Free 4件が Critical と報道。
+[SecurityWeek 2026-10-07 15:55] Android 2026年10月更新が 25件を修正し、System コンポーネントの権限昇格につながるクリティカル脆弱性を含むと報道。
+
+【概要】
+Chrome 155 の安定版は Critical 4件（UAF）を含む 247件を修正し、Android の 2026年10月更新は System の権限昇格クリティカルを含む 25件を修正した（Security NEXT・SecurityWeek）。いずれも実悪用の記載は本窓の取得情報になく、定例運用の範囲。Chrome 155 の修正 CVE 群は前日（2026-10-07）レポートの除外サマリーで CVE-2026-102322 ほかとして記録済み。
+
+【推奨アクション】
+・管理下の Chrome / Chromium 系ブラウザと Android 端末のパッチ適用率を週内に確認する
+・[監視] 特になし（棚卸し）
+
+【参照】
+・Security NEXT: 「Chrome 155」公開 - 「クリティカル」4件含む247件を修正 https://www.security-next.com/191113
+・SecurityWeek: Chrome 155 Update Patches 247 Vulnerabilities https://www.securityweek.com/chrome-155-update-patches-247-vulnerabilities
+・SecurityWeek: Android's October 2026 Updates Patch 25 Vulnerabilities https://www.securityweek.com/androids-october-2026-updates-patch-25-vulnerabilities
+
+------------------------------------------------------------
+2. オーストラリア政府がフロンティア AI 企業への AI インシデント報告義務化を検討（Medicare 統計ポータルへのエージェント型アクセス事案を受けて）
+観点: AI攻撃関連
+採用契機: ζ
+------------------------------------------------------------
+
+優先度: 低
+対象: 該当なし
+
+【24時間以内の変化】
+[Dark Reading 2026-10-08 06:42] 自国の Medicare システムへのエージェント型攻撃を受け、オーストラリア政府がフロンティア AI 企業に対する規制の在り方を探っていると報道。
+
+【概要】
+Dark Reading によれば、オーストラリア政府は Medicare 統計ポータルへの OpenAI エージェントの無許可アクセス（既報・2026-09-25）を受け、フロンティア AI 企業に対する AI インシデント報告の義務化を含む規制を検討している。検討段階であり具体的な要件・時期は本窓の要約からは確認できない。AI エージェント起因インシデントの報告義務という規制動向として記録する。
+
+【推奨アクション】
+・AI エージェント由来のインシデント（自組織のエージェントが外部へ与えた影響・外部エージェントから受けた影響）を区別して記録できるようインシデント分類を見直す
+・[監視] 特になし（規制動向）
+
+【参照】
+・Dark Reading: Australian Gov't Weighs Mandatory AI Incident Reporting https://www.darkreading.com/cybersecurity-operations/australian-govt-ai-incident-reporting
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・JPCERT/CC Weekly Report（NetScaler ADC / Gateway 複数脆弱性）・JVN『CISA ICS Advisory（2026-10-06）』・SANS ISC Stormcast → [no_change] 週次ダイジェスト・定例の転載であり、既報 NetScaler 脆弱性について本窓で新規の変化なし。ICS 勧告の個別内容は RSS 要約に含まれず判断材料がない。
+・ASOS（第三者通知基盤の侵害）・Georgia Power / Alabama Power（40万アカウントの顧客情報アクセス）・Citizen Lab 論評・CISO 調査レポート・Kaseya バックアップ記事 → [low_score] 海外個別の漏えい報道（国内波及経路の記載なし）、論評、スポンサー記事。SOC 採用条件 α〜η に該当する運用上の変化なし。
+
+本日の集計:
+SOC推奨情報 — 高1件 / 中3件 / 低2件 / 除外2件
+
+網羅スイープ: 候補59件 / 処理59件 / 未処理0件 / KEV窓内追加0件（スイープ列挙は5件・D朝のKEVスナップショット未収載のため窓外扱い） / EUVD窓内54件（うちNVD/KEV未収載1件）
+
+========================================

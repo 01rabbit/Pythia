@@ -1,0 +1,230 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-10 07:00 JST（遡及生成: 2026-10-12T10:39:09+09:00）
+調査期間: 2026-10-09 07:00 〜 2026-10-10 07:00 JST
+本レポートは 2026-10-12 に収集証跡から遡及生成したものである
+========================================
+
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-105134 Ahsay AhsayCBS（Replication Receiver の OSコマンドインジェクション。認証バイパス CVE-2026-105133 と連鎖して未認証RCE）（Ahsay）
+------------------------------------------------------------
+優先度: critical
+CVSS v3: 10.0  CVSS v4: 9.3  KEV: 未登録  悪用: 確認  PoC: 公開  FCEB期限: —
+EPSS: 0.01843（78.4%ile・モデル日 2026-10-11・2026-10-12 取得値）
+影響バージョン: CNA/NVD 記載では 10.3.2 以前・10.3.4 で修正とされるが、Huntress は 10.3.4 も影響を受けると報告（THN/BleepingComputer）。本窓時点で有効な修正版は確認できない
+修正版: 未提供
+
+【24時間以内の変化】
+[SecurityWeek 2026-10-09] SecurityWeek が CVE-2026-105133 / CVE-2026-105134 の実悪用（Unpatched AhsayCBS Vulnerabilities Exploited in the Wild）を報道。
+[The Hacker News 2026-10-09] THN が Huntress の観測を詳報: 2026-10-07 23:20 UTC から悪用開始、2026-10-08 時点で5組織が影響、Webシェル設置と Microsoft Edge を装う XMRig（edge.exe）展開。NVD が修正版とする 10.3.4 も影響を受けると Huntress が指摘。
+[BleepingComputer 2026-10-10] BleepingComputer も「未修正の AhsayCBS 2件の脆弱性が Webシェル設置・暗号資産マイニングに悪用」と報道（3媒体目）。
+
+【概要】
+バックアップ管理製品 AhsayCBS の認証不備 CVE-2026-105133（ApiStructsAction.java の checkSysPwd()・CVSS v4 5.5）と Replication Receiver の OSコマンドインジェクション CVE-2026-105134（CVSS v4 9.3・CNA 記載 v3.1 10.0・2026-10-05 参考Bで既報・公開エクスプロイトあり）を連鎖させ、未認証でコマンド実行に至る攻撃を Huntress が確認した。悪用は 2026-10-07 23:20 UTC に始まり、2026-10-08 時点で推定5組織、その後同一手口の1件が追加で確認された（広範な悪用の証拠はないと Huntress）。攻撃者は RCE 後に偵察と Webシェル設置を行い、Microsoft Edge を装った XMRig（edge.exe）を配置、curl 経由で PowerShell スクリプト Taskgmr.ps1（タスクマネージャ起動時にマイニングを停止する挙動・AI支援生成の疑いと報道）を起動し、少なくとも1件では certutil.exe で脆弱ドライバ WinRing0x64.sys を TEMP に取得した。NVD は 10.3.4 で修正としているが Huntress は 10.3.4 も影響を受けると報告しており、本窓時点では実質的に修正版のない状態（ゼロデイ扱い）。CISA KEV 未登録（2026-10-10 09:40 JST 時点のスナップショット・カタログ 2026.10.08 で確認）。攻撃主体は未公表。（EPSS は 2026-10-12 取得値・model_date 2026-10-11）
+
+【攻撃の流れ】
+1. インターネット公開の AhsayCBS 管理インタフェースに対し CVE-2026-105133 で認証をバイパス
+2. CVE-2026-105134（Replication Receiver / UpdateReceivers.do）の OSコマンドインジェクションでコマンド実行・偵察・Webシェル設置
+3. Microsoft Edge を装う XMRig（edge.exe）と Taskgmr.ps1 を配置、certutil.exe で WinRing0x64.sys を取得（1件）
+4. 暗号資産マイニングを継続（タスクマネージャ起動時に停止して隠蔽）
+
+【ATT&CK】
+・T1190（initial-access）: Huntress（THN 2026-10-09 / BleepingComputer 2026-10-10）が公開 AhsayCBS の認証バイパスとOSコマンドインジェクションの連鎖悪用を記述
+・T1505.003（persistence）: RCE 後に Webシェルを設置したと Huntress が記述（THN 2026-10-09）
+・T1036.005（defense-evasion）: XMRig を Microsoft Edge を装う edge.exe として配置（THN 2026-10-09）
+・T1105（command-and-control）: curl で Taskgmr.ps1 を起動し certutil.exe で WinRing0x64.sys をダウンロード（THN 2026-10-09）
+・T1496（impact）: XMRig による暗号資産マイニング（THN / BleepingComputer 2026-10-09〜10）
+
+【暫定対策】
+・AhsayCBS 管理インタフェースへの Web アクセスを信頼できる IP に限定するか VPN 経由に限定する（Huntress 推奨）
+・10.3.4 適用済みでも侵害痕跡（Webシェル・edge.exe・Taskgmr.ps1・WinRing0x64.sys・不審な UpdateReceivers.do 呼び出し）を調査する
+・ベンダーの追加修正の公開を監視する（本窓時点では有効な修正版を確認できない）
+
+【IOC】
+ファイル名: edge.exe（%TEMP% 等 Edge 正規パス外）, Taskgmr.ps1, WinRing0x64.sys
+
+【監視】
+AhsayCBS サーバの Web アクセスログで /rps/api/json/UpdateReceivers.do への外部からの呼び出し、Windows プロセス生成ログで Edge 正規パス外の edge.exe・Taskgmr.ps1・certutil によるドライバ取得を確認する。
+Splunk SPL: index=web sourcetype=ahsay* uri_path="/rps/api/json/UpdateReceivers.do" | stats count values(http_method) by src_ip, uri_path, status
+Splunk SPL: index=wineventlog EventCode=4688 (New_Process_Name="*\\edge.exe" NOT New_Process_Name="*\\Microsoft\\Edge\\Application\\msedge.exe") OR Process_Command_Line="*Taskgmr.ps1*" OR (Process_Command_Line="*certutil*" Process_Command_Line="*WinRing0x64.sys*") | stats count by host, New_Process_Name, Process_Command_Line
+msedge.exe（Edge 正規名）と edge.exe の名前差に注目する。AhsayCBS サーバで PowerShell/curl/certutil による外部取得が走ることは通常ない。IP/ハッシュ IoC は本窓で未取得（Huntress 一次ブログを参照）。
+
+【参照】
+・The Hacker News: Attackers Exploit AhsayCBS Flaws to Deploy XMRig Miners Disguised as Microsoft Edge https://thehackernews.com/2026/10/attackers-exploit-ahsaycbs-flaws-to.html
+・SecurityWeek: Unpatched AhsayCBS Vulnerabilities Exploited in the Wild https://www.securityweek.com/unpatched-ahsaycbs-vulnerabilities-exploited-in-the-wild
+・BleepingComputer: Unpatched AhsayCBS flaws exploited to deploy webshells, mine crypto https://www.bleepingcomputer.com/news/security/unpatched-ahsaycbs-flaws-exploited-to-deploy-webshells-mine-crypto
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-107406 NetScaler ADC / NetScaler Gateway（SAML IdP / SAML SP 構成・メモリオーバーフローによる RCE または DoS）（Cloud Software Group（Citrix））
+------------------------------------------------------------
+優先度: high
+CVSS v3: —  CVSS v4: 9.5  KEV: 未登録  悪用: 未確認  PoC: 未確認  FCEB期限: —
+EPSS: 0.00471（38.9%ile・モデル日 2026-10-11・2026-10-12 取得値）
+影響バージョン: SAML IdP 構成: 14.1-73.37〜14.1-73.41（FIPS 含む）、13.1-64.23〜13.1-64.28、13.1-NDcPP 13.1-37.279〜37.282。SAML SP または IdP 構成: 14.1-73.37 未満、14.1-73.37 FIPS 未満、13.1-64.23 未満、13.1-NDcPP 13.1-37.279 未満。修正版: 14.1-73.46 / 13.1-64.29 / 14.1-73.46 FIPS / 13.1.37.283（13.1-FIPS・NDcPP）。Secure Private Access Hybrid の NetScaler も要更新
+修正版: 14.1-73.46 / 13.1-64.29 / 14.1-73.46 FIPS / 13.1.37.283
+
+【24時間以内の変化】
+[SecurityWeek 2026-10-09] SecurityWeek が Citrix の即時パッチ要請（CVE-2026-107406・RCE または DoS）を報道。
+[The Hacker News 2026-10-09] THN が Citrix セキュリティ速報 CTX697191 の詳細（SAML IdP/SP 条件・影響ビルド・修正ビルド・悪用の証拠なし）を報道。
+[BleepingComputer 2026-10-09] BleepingComputer が管理者への即時パッチ適用警告を報道。
+[Security NEXT 2026-10-09] Security NEXT が国内向けに報道（CVSS v4 9.5・SAML 構成に影響・修正版 14.1-73.46 / 13.1-64.29 等）。参考A昇格トリガー該当。
+
+【概要】
+Cloud Software Group は 2026-10-08（現地）にセキュリティ速報 CTX697191 を公開し、NetScaler ADC / NetScaler Gateway のメモリオーバーフロー脆弱性 CVE-2026-107406（CVSS v4.0 9.5・Critical）を修正した。SAML IdP または SAML SP として構成された機器が対象で、特定条件下でリモートコード実行または DoS に至る（Citrix）。発見者は JPMorgan Chase XOR Team（Michael Tucker・Chew Keong Tan・Alex Bernier）と Maxim Suhanov。Citrix は本窓時点で実悪用の証拠はないとし、公開 PoC の報道もない。CISA KEV 未登録（2026-10-10 09:40 JST スナップショット）。Citrix は「add authentication samlAction」（SP）/「add authentication samlIdPProfile」（IdP）の設定有無で該当判定するよう案内しており、回避策は示されていない（修正版への更新のみ）。NetScaler では 2026-09 以降 CVE-2026-88771 / CVE-2026-88772 / CVE-2026-88779 の実悪用が続いており（既報・JPCERT/CC 注意喚起 at260029 は本窓では未更新）、同一製品群の新規 Critical として優先対応が必要。（EPSS は 2026-10-12 取得値・model_date 2026-10-11）
+
+【攻撃の流れ】
+1. SAML IdP/SP として公開された NetScaler に細工した SAML 関連リクエストを送信しメモリオーバーフローを誘発（詳細は未公開・Citrix 記載の範囲）
+2. 条件次第でリモートコード実行またはサービス停止（DoS）に至る
+
+【IOC】
+IoC: 確認されず
+
+【監視】
+NetScaler の SAML 構成有無（samlAction / samlIdPProfile）を棚卸しし、修正版適用まで NetScaler 側のクラッシュ・再起動・SAML 認証エラーの急増を監視する。
+Splunk SPL: index=netscaler sourcetype=citrix:netscaler:syslog ("SAML" OR "samlIdPProfile" OR "samlAction") ("crash" OR "core" OR "restart" OR "FAILED") | timechart span=1h count by host
+Splunk SPL: index=netscaler sourcetype=citrix:netscaler:syslog eventtype=netscaler_aaa action=failure | stats count dc(src_ip) as srcs by host | where count>100
+本脆弱性の悪用痕跡は公開されていないため、SAML 認証処理の異常終了・再起動を間接指標として扱う。計画メンテナンスの再起動は除外する。
+
+【参照】
+・Security NEXT: 「NetScaler ADC/Gateway」に深刻なRCE脆弱性 - SAML構成に影響 https://www.security-next.com/191276
+・The Hacker News: Citrix Patches Critical NetScaler Flaw That Could Enable RCE in SAML Deployments https://thehackernews.com/2026/10/citrix-patches-critical-netscaler-flaw.html
+・BleepingComputer: Citrix warns admins to patch new NetScaler RCE flaw immediately https://www.bleepingcomputer.com/news/security/citrix-warns-admins-to-patch-new-netscaler-rce-flaw-immediately
+・SecurityWeek: Citrix Urges Immediate Patching of Critical NetScaler Vulnerability https://www.securityweek.com/citrix-urges-immediate-patching-of-critical-netscaler-vulnerability
+・Cloud Software Group: NetScaler ADC and NetScaler Gateway Security Bulletin for CVE-2026-107406（CTX697191） https://support.citrix.com/s/article/CTX697191
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-76268 Splunk Enterprise（サーチヘッドクラスタの Patroni REST API・認証欠如による未認証 OSコマンド実行）（Splunk（Cisco））
+------------------------------------------------------------
+優先度: high
+CVSS v3: 9.8  CVSS v4: —  KEV: 未登録  悪用: 未確認  PoC: 未確認  FCEB期限: —
+EPSS: 未取得（2026-10-12 時点でも値なし）
+影響バージョン: Splunk Enterprise 10.4.0〜10.4.2 / 10.2.0〜10.2.6（10.0.x・9.4.x は本 CVE の影響なし）。修正版 10.4.3 / 10.2.7。アドバイザリ SVD-2026-1001 全体の修正版は 10.4.3 / 10.2.7 / 10.0.10 / 9.4.15
+修正版: 10.4.3 / 10.2.7
+
+【24時間以内の変化】
+[Security NEXT 2026-10-09] Security NEXT が「Splunk Enterprise に46件の脆弱性・クリティカル含む」と国内報道（Splunk は 2026-10-07 現地にアドバイザリ3件を公開）。参考A昇格トリガー該当。
+
+【概要】
+Splunk は 2026-10-07（現地）にアドバイザリ SVD-2026-1001 ほかを公開し、Splunk Enterprise と関連アプリの脆弱性計46件（製品・関連アプリ17件、内部発見5件、サードパーティパッケージ24件）を修正した（Security NEXT）。最も深刻な CVE-2026-76268（CVSS v3.1 9.8・CWE-306）は、サーチヘッドクラスタ内で PostgreSQL クラスタを管理する Patroni REST API が重要な構成操作に認証を要求しないため、同 API にネットワーク到達可能な未認証攻撃者が OS コマンドを実行できるもの。10.4.x / 10.2.x が対象で 10.0.x・9.4.x は影響しない。回避策として server.conf の [postgres] に disabled = true を設定し再起動することが示されている（Splunk）。同時修正の CVE-2026-76266（CVSS 7.7）は Linux パッケージ更新処理のローカル権限昇格で、tar ファイルによる更新で回避できる。実悪用・PoC の報道はなく KEV 未登録。SIEM 自体の未認証 RCE であり、SOC 基盤の優先更新対象。EPSS は未取得。
+
+【攻撃の流れ】
+1. サーチヘッドクラスタメンバーの Patroni REST API にネットワーク到達し、認証なしで構成操作を呼び出す
+2. 構成操作経由で OS コマンドを実行し Splunk ホストを制御（アドバイザリ記載の範囲・詳細手順は未公開）
+
+【IOC】
+IoC: 確認されず
+
+【監視】
+Splunk 自身の _internal ログで Patroni / postgres 関連コンポーネントへの外部からのアクセスと想定外の構成変更を確認し、Patroni REST API ポートの外部露出を遮断する。
+Splunk SPL: index=_internal sourcetype=splunkd (component=Patroni OR "patroni" OR "postgres") ("POST" OR "PATCH" OR "config") | stats count by host, component, log_level
+Splunk SPL: index=_internal sourcetype=splunkd_access uri_path="/services/*" status=401 OR status=403 | stats count by clientip, uri_path | sort -count
+Patroni API はクラスタメンバー間通信のみが正常。クラスタ外 IP からの到達があれば構成を疑う。[postgres] disabled=true 適用時は検索ヘッドクラスタの PostgreSQL 依存機能への影響を事前確認する。
+
+【参照】
+・Security NEXT: 「Splunk Enterprise」に46件の脆弱性 - 「クリティカル」も https://www.security-next.com/191241
+・Splunk: SVD-2026-1001: Security Vulnerabilities in Splunk Enterprise - September/October 2026 https://advisory.splunk.com/advisories/SVD-2026-1001
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-102255 SonicWall SMA1000（Appliance WorkPlace インタフェースの事前認証 SSRF）（SonicWall）
+------------------------------------------------------------
+優先度: critical
+CVSS v3: 10.0  CVSS v4: —  KEV: 未登録  悪用: 確認  PoC: 未確認  FCEB期限: —
+EPSS: 0.00477（39.3%ile・モデル日 2026-10-11・2026-10-12 取得値）
+影響バージョン: SMA1000 6210 / 7210 / 8200v。NVD の影響製品記載では 12.4.3-03526（platform-hotfix）・12.5.0-02952（platform-hotfix）以前。修正は 2026-10-06（現地）公開の SNWLID-2026-0017（修正版番号は本窓の取得情報に記載なし）。SMA100 シリーズとファイアウォールの SSL-VPN は影響なし
+修正版: SNWLID-2026-0017 記載の修正版（版番号は未取得）
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-09] BleepingComputer が、2026-10-06 に修正された SMA1000 の最大深刻度脆弱性 CVE-2026-102255 への悪用試行を Previdian（Ryan Dewhurst）のハニーポットが検知したと報道。SonicWall のアドバイザリは実悪用を記載していない。
+
+【概要】
+SonicWall SMA1000（6210 / 7210 / 8200v）の Appliance WorkPlace インタフェースに存在する事前認証 SSRF CVE-2026-102255（CVSS v3.1 10.0・NVD 公開 2026-10-07）について、修正公開（SNWLID-2026-0017・2026-10-06 現地）の3日後に悪用試行が観測された。Previdian の Ryan Dewhurst は、WorkPlace Extraweb インタフェースに対し細工した OPTIONS リクエストでアプライアンス内部の CouchDB（127.0.0.1:5984）に到達し、design document の _rewrite 機能を Basic 認証 admin:admin で呼び出そうとするリクエストをハニーポットで確認したと BleepingComputer に述べた（成功して侵害に至ったかは未判定）。SonicWall は本窓時点で実悪用を公表しておらず、CISA KEV 未登録（2026-10-10 09:40 JST スナップショット）。同じ WorkPlace インタフェースでは 2026-07（CVE-2026-15409 / CVE-2026-15410）と 2026-09（CVE-2026-83548 / CVE-2026-83549）にもゼロデイ SSRF 連鎖が悪用されており（いずれも既報・KEV 登録済み）、同一攻撃面への再攻撃パターンに合致する。Shadowserver は 400 台超の SMA1000 がインターネット露出と把握（ハニーポット・既修正の内訳は不明）。国内報道は本窓で未確認のため参考B。（EPSS は 2026-10-12 取得値・model_date 2026-10-11）
+
+【攻撃の流れ】
+1. 公開された WorkPlace Extraweb インタフェースへ細工した OPTIONS リクエストを送信（事前認証）
+2. SSRF で内部 CouchDB（127.0.0.1:5984）の design document _rewrite を Basic 認証 admin:admin で呼び出す
+3. 成功すればアプライアンス内部サービスの操作・後続侵害に進む可能性（本窓では成功未確認）
+
+【ATT&CK】
+・T1190（initial-access）: Previdian のハニーポットが公開 SMA1000 WorkPlace への CVE-2026-102255 悪用試行（OPTIONS→内部 CouchDB）を観測したと BleepingComputer 2026-10-09 が記述（成功は未確認）
+
+【IOC】
+IoC: 確認されず
+
+【監視】
+SMA1000 の Web アクセスログで OPTIONS メソッド・127.0.0.1:5984 や _rewrite を含むリクエスト、admin:admin の Basic 認証ヘッダを確認する。
+Splunk SPL: index=sonicwall sourcetype=sonicwall:sma* http_method=OPTIONS (uri="*5984*" OR uri="*_rewrite*" OR uri="*127.0.0.1*") | stats count by src_ip, uri, status
+WorkPlace への OPTIONS リクエストで内部ホスト/ポートを含むものは正常業務では発生しない。修正適用後も試行ログは残るため、適用前の到達有無を遡って確認する。
+
+【参照】
+・BleepingComputer: Max severity SonicWall SMA1000 flaw now exploited in attacks https://www.bleepingcomputer.com/news/security/max-severity-sonicwall-sma1000-flaw-now-exploited-in-attacks
+・SonicWall: SonicWall PSIRT SNWLID-2026-0017 https://psirt.global.sonicwall.com/vuln-detail/SNWLID-2026-0017
+・NVD: NVD CVE-2026-102255 https://nvd.nist.gov/vuln/detail/CVE-2026-102255
+------------------------------------------------------------
+2. CVE-2026-82077 PaperCut NG / MF（Scan-to-Fax providerConnector の相対パストラバーサル→コマンド実行・watchTowr WT-2026-0144。既報 CVE-2026-82078 / CVE-2026-81578 のパッチバイパス連鎖で事前認証 RCE）（PaperCut）
+------------------------------------------------------------
+優先度: high
+CVSS v3: —  CVSS v4: —  KEV: 未登録  悪用: 未確認  PoC: 未確認  FCEB期限: —
+EPSS: 0.00738（53.2%ile・モデル日 2026-10-11・2026-10-12 取得値）
+影響バージョン: 26.0.4-PO build 76508 以前が認証バイパス WT-2026-0143 と WT-2026-0144（CVE-2026-82077）に影響。26.0.4-PO build 76530（2026-09-01）で WT-2026-0143 修正、26.0.5（2026-09-10）で CVE-2026-82077 修正（watchTowr）。悪用確認済みの CVE-2026-81578 / CVE-2026-82078 は 26.0.3（既報・KEV 2026-08-31 登録）。MF への影響は記事で明示されず
+修正版: 26.0.5（CVE-2026-82077）/ 26.0.4-PO build 76530（WT-2026-0143）
+
+【24時間以内の変化】
+[watchTowr Labs 2026-10-10] watchTowr Labs が「Death By A Thousand PaperCuts」を公開: 実悪用された CVE-2026-81578 / CVE-2026-82078 の修正に対する連続バイパス（WT-2026-0141〜0143）と新規 post-auth RCE WT-2026-0144（CVE-2026-82077）を解説し、WT-2026-0143 向け検知アーティファクト生成ツールを GitHub で公開。
+
+【概要】
+watchTowr Labs は、2026-08-27 に PaperCut が実悪用を公表した PaperCut NG 26.0.3 の認証バイパス CVE-2026-81578（Tapestry の service パラメータで未認証ページから認証必須フォームへ到達）と post-auth RCE CVE-2026-82078（JDBC 接続 URL 制御）について、初回修正 26.0.4 に対するバイパス WT-2026-0141（82078 修正の回避）・WT-2026-0142（81578 修正の回避・Home ページ経由）、さらに 26.0.4-PO build 76508 に対する WT-2026-0143（Home 経由で Setup Wizard の SetupAdmin に到達し pageValidate を回避して管理者パスワードをリセット）と、新規 post-auth RCE WT-2026-0144＝CVE-2026-82077（Scan-to-Fax providerConnector の未検証相対パストラバーサルからコマンド実行）を報告した。WT-2026-0143 と WT-2026-0144 の組み合わせで完全な事前認証 RCE 連鎖となる。修正は build 76530（2026-09-01・WT-2026-0143）と 26.0.5（2026-09-10・CVE-2026-82077）で提供済み。watchTowr は完全なエクスプロイトは公開せず、WT-2026-0143 の露出確認用 Detection Artefact Generator を公開した。CVE-2026-82077 自体の実悪用報告はなく KEV 未登録（CVE-2026-81578 / CVE-2026-82078 は KEV 2026-08-31 登録・FCEB 期限 2026-09-14・既報）。CVE-2026-82077 の CVSS は本窓の取得情報に記載なし。EPSS 参考: CVE-2026-81578 0.8558（%ile 0.9972）、CVE-2026-82078 0.6353（%ile 0.9920）、CVE-2026-82077 0.0074（%ile 0.5324）（EPSS は 2026-10-12 取得値・model_date 2026-10-11）。
+
+【攻撃の流れ】
+1. 未認証で Home ページ経由（WT-2026-0143）に Setup Wizard の SetupAdmin へ到達し管理者パスワードをリセット（認証バイパス）
+2. 管理者として Scan-to-Fax の providerConnector に相対パストラバーサルを与えコマンド実行（WT-2026-0144 / CVE-2026-82077）
+3. PaperCut サーバ上でのコード実行（watchTowr の解説による・完全なエクスプロイトは非公開）
+
+【IOC】
+IoC: 確認されず
+
+【監視】
+PaperCut Web 管理インタフェースのアクセスログで、未認証元からの Home / SetupAdmin / Setup Wizard 系ページへの到達、providerConnector パラメータに相対パスを含むリクエスト、管理者パスワード変更イベントを確認する。
+Splunk SPL: index=papercut sourcetype=papercut* (uri="*service=*Home*" OR uri="*SetupAdmin*" OR uri="*LogonMessage*") | stats count by src_ip, uri, status
+Splunk SPL: index=papercut sourcetype=papercut* ("providerConnector" AND ("../" OR "..\\")) OR "admin password" | stats count by src_ip, uri
+watchTowr の Detection Artefact Generator（GitHub）で自組織の露出を確認できる。26.0.5 未満が外部到達可能なら侵害前提で調査する。
+
+【参照】
+・watchTowr Labs: Death By A Thousand PaperCuts (PaperCut Pre-Auth RCE Chain and Patch Bypasses WT-2026-0141-0144/CVE-2026-82077/CVE-2026-82078/CVE-2026-81578) https://labs.watchtowr.com/death-by-a-thousand-papercuts-papercut-pre-auth-rce-chain-and-patch-bypasses-wt-2026-0141-0144-cve-2026-82077-cve-2026-82078-cve-2026-81578
+・watchTowr Labs: watchTowr-vs-PaperCut-WT-2026-0143（Detection Artefact Generator） https://github.com/watchTowrlabs/watchTowr-vs-PaperCut-WT-2026-0143
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・CVE-2015-3306 ほか4件（全件: CVE-2015-3306, CVE-2015-5477, CVE-2016-3081, CVE-2021-3199, CVE-2023-22894） [already_reported] ProFTPD / ISC BIND / Apache Struts / ONLYOFFICE Docs / Strapi（CISA KEV 2026-10-08 追加・FCEB 期限 2026-10-11）。KEV 追加（dateAdded 2026-10-08）は前日 2026-10-09 レポート分。本窓の変化（Security NEXT 2026-10-09 報道・THN による Flax Typhoon 悪用の帰属）は APT 本編 FlaxTyphoon-2026-IntegrityTech-MicroScan-FishHub-JointAdvisory に統合して記載し、CVE エントリとしては再掲しない。
+・CVE-2026-96207 ほか4件（全件: CVE-2026-96207, CVE-2026-94510, CVE-2026-77900, CVE-2026-88131, CVE-2026-69435） [low_score] Microsoft Partner Center（10.0）/ Bookings（9.9）/ Azure App Service（9.8）/ Dataverse（9.8）/ Azure SRE Agent（9.6）— クラウドサービス側修正。Microsoft がサービス側で修正する種類のクラウド CVE で利用者の更新操作を要しない（軸1は CVSS≥9 の3点のみで8点未満・国内昇格トリガーなし）。悪用の記載なし・KEV 未登録。SOC-2026-10-10-005 に把握事項として記録。
+・CVE-2026-75875 ほか2件（全件: CVE-2026-75875, CVE-2026-80381, CVE-2026-84249） [low_score] IBM Guardium Data Protection 12.0 / 12.1 / 12.2（パストラバーサル RCE・SQL インジェクション・重要機能の認証欠如、いずれも CVSS 9.8）。単一ベンダー PSIRT の同時公開。未認証リモートからの任意コード実行/管理操作に至り得るが、悪用確認・PoC・KEV の記載なし・国内報道なし（軸1=7点・8点未満）。DB セキュリティ製品のため利用組織は IBM Security Bulletin を確認のこと。
+・CVE-2026-107908 ほか5件（全件: CVE-2026-107908, CVE-2026-5759, CVE-2026-107910, CVE-2026-7827, CVE-2026-107909, CVE-2026-7826） [low_score] FalkorDB 4.20.0 / 4.18.4 / 4.18.1 未満（Bolt ポートのヒープ境界外書込み・認証不備・RDB デコーダの double free / スタックオーバーフロー / 境界外読取、CVSS 9.1〜9.8・securin 採番）。同一製品の同時公開バッチ（グラフ DB）。未認証の Bolt ポート到達や Redis レプリケーションコマンド発行が前提。悪用確認・PoC・KEV の記載なし・国内報道なし。修正版へ更新と Bolt/Redis ポートの非公開を推奨。
+・CVE-2026-94503 ほか6件（全件: CVE-2026-94503, CVE-2026-93947, CVE-2026-96327, CVE-2026-96328, CVE-2026-96330, CVE-2026-96331, CVE-2026-96809） [low_score] WordPress プラグイン/テーマ群（Patchstack CNA）: PX-lab Zombify 1.7.7 以前の無制限ファイルアップロード（10.0）、Shinetheme Traveler 3.2.9 以前 / VibeThemes WPLMS 1.9.9.8.2 未満 / jegtheme JNews Pay Writer 12.0.1 以前 / tagDiv Opt-In Builder 1.7.6 以前 / wpdreams Ajax Search Pro 4.29.1 以前 / MultiNet EduAdmin Booking 6.0.0 未満 の未認証ブラインド SQL インジェクション（各 9.3）。Patchstack 起点の WordPress 向け一括公開（全件 ID と製品を列挙）。個別の悪用確認・PoC の記載なし・KEV 未登録・国内報道なし。Zombify の Web シェルアップロード（10.0）は公開サイトで利用があれば優先更新。
+・CVE-2026-100730 ほか6件（全件: CVE-2026-100730, CVE-2026-105278, CVE-2026-15340, CVE-2026-28745, CVE-2026-33367, CVE-2026-39460, CVE-2026-32645） [low_score] ICS-CERT 採番: openPDC / openHistorian デシリアライズ RCE（9.8）・openPDC Docker 固定管理者資格情報（9.8）・lwIP SMTP バッファオーバーフロー（9.8）・産業機器の既定資格情報/SNMP 無認証管理操作/平文資格情報/工場資格情報残存（9.2〜9.3・製品名は NVD 記述から特定できず）。ICS-CERT の同日公開分。悪用確認・PoC・KEV の記載なし・国内報道なし。CISA ICS Advisory（2026-10-08・JVN 案内）で製品特定が必要なため SOC-2026-10-10-007 に把握事項として記録。
+・CVE-2026-108265 ほか4件（全件: CVE-2026-108265, CVE-2026-108266, CVE-2026-108267, CVE-2026-108268, CVE-2026-108269） [low_score] Privasys / Enclave OS の RA-TLS 実装群（Enclave OS Mini wasm-v0.40.0 未満・Privasys rustls v0.8.1 未満・Privasys Go v0.5.1-go1.26.5 未満・Enclave OS Virtual tdx-v0.2.43 / tdx-gpu-v0.6.27 未満・Remote Attestation TLS Clients 0.5.0 未満: 証明書公開鍵とノンスのみを quote ReportData に束縛し TLS セッションに束縛しないため、エンクレーブ TLS 秘密鍵を得た攻撃者が正規 quote を別接続へ中継可能、CVSS v4 9.1・AC:H/AT:P）。CVE-2026-108267 / 108268 / 108269 は EUVD-only（EUVD-2026-96017 / 96018 / 96019・NVD 窓外）。同一ベンダー（Privasys）の同一設計不備の同時公開。前提条件が厳しく（秘密鍵の事前取得）、悪用確認・PoC・KEV の記載なし。EUVD-only 3件を個別確認し同一事象と判断。
+・CVE-2026-108107 ほか1件（全件: CVE-2026-108107, CVE-2026-108109） [low_score] PHPNuxBill 2025.3.20 以前（radius.php の未認証 SQL インジェクション 9.8・パスワードリセット OTP 総当たりによるアカウント乗っ取り 9.3・VulnCheck 採番）。小規模 OSS 課金システムの同一製品バッチ。悪用確認・PoC の記載なし・KEV 未登録・国内報道なし。
+・CVE-2026-85531 ほか1件（全件: CVE-2026-85531, CVE-2026-86405） [low_score] Sipay Virtual POS Module（OpenCart 26.8.2〜26.9.1 未満 / PrestaShop 26.8.1〜26.9.1 未満・署名検証不備による署名偽装・CVSS 9.8・TR-CERT 採番）。トルコの決済モジュールの同一ベンダー同時公開。悪用確認・KEV の記載なし・国内利用は限定的と見られる。
+・CVE-2026-56857 ほか1件（全件: CVE-2026-56857, CVE-2026-78663） [low_score] Go 標準ライブラリ（os.Root.Mkdir/MkdirAll の Windows ジャンクション経由ルート外ディレクトリ作成 9.8・HTTP/2 サーバの接続レベルフロー制御二重返却 9.1）。悪用確認・PoC・KEV の記載なし。CNA 値で NVD 分析前。依存更新対象として SOC-2026-10-10-010 に記録。
+・CVE-2026-107722 [low_score] fast-jwt 6.2.0〜6.3.0 未満（RSA 公開鍵テキストを HMAC 秘密鍵と誤分類・CVSS 9.8・GHSA 起点）。悪用確認・PoC・KEV の記載なし・国内報道なし（軸1=7点）。アルゴリズム混同につながる不備のため SOC-2026-10-10-010 に依存更新対象として記録。
+・CVE-2026-107806 [low_score] Nginx UI 2.3.8〜2.5.0 未満（認証済み管理者が POST /api/restore に攻撃者制御のバックアップ鍵と manifest を与え app.ini を置換・CVSS v4 9.4・GHSA 起点）。管理者権限（PR:H）前提。悪用確認・PoC・KEV の記載なし。
+・CVE-2026-107726 [low_score] Hazelcast 5.4.5 / 5.5.10 / 5.6.1 未満（クラスタに接続できる悪意あるクライアントによる Java ヒープ・プロセスメモリの任意読取とクラッシュ・CVSS v4 9.3・GHSA 起点）。クラスタへの接続が前提。悪用確認・PoC・KEV の記載なし・国内報道なし。
+・CVE-2026-107845 [low_score] Contao CMS 4.0.0〜5.3.50 / 5.7.12 未満（未認証コメント投稿のメタデータがバックエンドで未エスケープ描画され管理者権限で XSS 実行・CVSS 9.3・UI:R・GHSA 起点）。管理者の操作（UI:R）が必要な XSS。悪用確認・PoC・KEV の記載なし・国内報道なし。
+・CVE-2026-108261 [low_score] TinaCMS 3.14.0 / @tinacms/app 2.5.14 未満（/~/* 管理プレビュー経路のハッシュルータ値から別オリジン iframe URL を構成・CVSS 9.3・UI:R・GHSA 起点）。管理者の操作（UI:R）が必要。悪用確認・PoC・KEV の記載なし。
+・CVE-2026-108264 [low_score] Wizarr 2026.9.1 未満（ウィザードステップの Markdown を非サンドボックス Jinja2 で評価・認証済み編集者/管理者による SSTI・CVSS 9.1・PR:H・GHSA 起点）。高権限（PR:H）前提のメディアサーバ招待管理ツール。悪用確認・KEV の記載なし。
+・CVE-2026-108157 [low_score] Pingvin Share X 0.19.0〜1.22.0 未満（OAuth/OIDC の email_verified 未検査による自動メール紐付けでアカウント乗っ取り・CVSS v4 9.2・AC:H/AT:P・VulnCheck 採番）。OAuth プロバイダ有効時のみ・条件付き。悪用確認・PoC・KEV の記載なし。
+・CVE-2026-107935 [low_score] gvproxy（gvisor-tap-vsock・Red Hat）: 未認証 /services/forwarder/expose エンドポイントのソケットパス未検証によるホスト上の任意ファイル削除（CVSS 9.3・AV:A）。隣接ネットワーク（AV:A）からの到達が前提。悪用確認・PoC・KEV の記載なし・国内報道なし。Podman 等の利用者は Red Hat の修正を確認。
+
+網羅スイープ: 候補50件 / 処理50件 / 未処理0件 / KEV窓内追加0件 / EUVD窓内43件（うちNVD/KEV未収載3件）

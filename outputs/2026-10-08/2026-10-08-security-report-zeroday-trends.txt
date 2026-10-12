@@ -1,0 +1,190 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-12 10:37 JST（遡及生成）
+調査期間: 2026-10-07 07:00 〜 2026-10-08 07:00 JST
+本レポートは 2026-10-12 に収集証跡から遡及生成したものである（本体 Routine が 2026-10-08 に発火せず欠損したため。予報は発行しない）。
+========================================
+
+■ Section 2: ゼロデイ・トレンド
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】（Section 2）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（トラックB由来のゼロデイなし。CVE-2026-21589 / CVE-2026-105192 は Section 3 のゼロデイ特報に記載）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 本編】高信頼・大規模キャンペーン
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. 不明（FortiBleed 認証情報収集キャンペーンの運営者・帰属未確定）（別名: FortiBleed / 国家帰属: 未提示 / 帰属信頼度: unconfirmed）
+活動ID: FortiBleed-2026-CredentialCampaign
+活動タイプ: active_campaign, official_attribution, ttp_update
+------------------------------------------------------------
+
+標的: セクター it, government, finance, manufacturing, critical_infrastructure / 地域 global / 国 不明
+マルウェア: 判明分なし
+関連CVE: CVE-2026-24858
+
+【24時間以内の変化】
+[The Hacker News 2026-10-07 20:56] FBI と米シークレットサービス（USSS）が、インターネット公開の Fortinet FortiGate ファイアウォール / SSL-VPN を狙う FortiBleed 認証情報収集キャンペーンが依然活発であると共同で警告（10-06 米国時間）。累計 86,644 台分の有効認証情報が収集されたと報道。
+[BleepingComputer 2026-10-08 06:28] FBI は攻撃が継続中で、攻撃者が正規の管理者を FortiGate からロックアウトしていると警告したと報道。
+
+【概要】
+既報（2026-06-22 初報・07-02 本編昇格）の FortiBleed キャンペーンについて、FBI と USSS が共同で『依然として活発な脅威』と警告した（THN・BleepingComputer）。キャンペーンは再利用・漏えいした認証情報と旧来の SHA-256 パスワード保存方式を悪用して FortiGate / SSL-VPN ゲートウェイへ侵入するもので、累計 86,644 台分の有効な認証情報を収集したとされる。BleepingComputer によれば、攻撃者は正規管理者をロックアウトする行動を取っている（本窓で新たに報じられた挙動）。攻撃者の帰属は FBI / USSS の警告でも示されておらず、本レポートでも行わない。既報の CVE-2026-24858（FortiCloud SSO SAML バイパス）との関係は本窓の要約に記載がない。
+
+攻撃の流れ（判明分）:
+1. 再利用・漏えいした認証情報（および旧来の SHA-256 パスワード保存方式の弱点）を用いて、インターネット公開の FortiGate 管理インターフェース / SSL-VPN へログインする（FBI/USSS 警告・THN 引用）
+2. 装置の有効な認証情報を収集し、累計 86,644 台分に達した（THN）
+3. 正規管理者のアクセスを失わせる設定変更（ロックアウト）を行う（BleepingComputer）
+
+【新規TTP】
+・[T1078] Valid Accounts — 再利用・漏えいした認証情報で FortiGate / SSL-VPN へ正規ログイン（FBI/USSS 警告の記述）
+・[T1531] Account Access Removal — 正規管理者を FortiGate からロックアウト（BleepingComputer 記載）
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・FortiGate / SSL-VPN の全管理者・VPN アカウントのパスワードをローテーションし MFA を強制する。管理インターフェースのインターネット公開を停止し、信頼ホストに限定する。FortiOS を最新版へ更新して旧来パスワードハッシュ方式を廃止する。管理者アカウントの削除・権限変更・ログイン元の急変を監視する。
+Splunk SPL: index=fortigate sourcetype=fortigate_event (logdesc="Admin login successful" OR action="login") status=success | stats dc(srcip) values(srcip) earliest(_time) latest(_time) by user | where dc(srcip)>1
+Splunk SPL: index=fortigate sourcetype=fortigate_event (logdesc="Object attribute configured" OR cfgpath="system.admin") (cfgattr="*password*" OR cfgattr="*trusthost*" OR msg="*delete*") | stats count by user, srcip, cfgpath, cfgattr
+→ system.admin へのパスワード変更・trusthost 変更・管理者削除が通常の変更管理と一致しない場合はロックアウト攻撃を疑う。VPN ログインの国・ASN の急変も併せて確認する。
+
+【参照】
+・The Hacker News: FBI Warns FortiBleed Remains Active After Amassing 86,644 Fortinet Device Credentials https://thehackernews.com/2026/10/fbi-warns-fortibleed-remains-active.html
+・BleepingComputer: FBI: Ongoing FortiBleed attacks lock out FortiGate VPN admins https://www.bleepingcomputer.com/news/security/fbi-ongoing-fortibleed-attacks-lock-out-fortigate-vpn-admins
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 — 注目動向】信頼性高・規模限定 / 規模大・帰属未確定
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. UAC-0277（CERT-UA 追跡クラスタ・国家帰属は未提示）（別名: WraithTools（Ontinue 既報の MaaS 運営者名義・同一性は CERT-UA 報告では未確認） / 国家帰属: 未提示 / 帰属信頼度: medium）
+活動ID: RIS-2026-Lunex-PsychedelicAMDDriverBYOVD
+活動タイプ: active_campaign, official_attribution
+------------------------------------------------------------
+
+標的: セクター other / 地域 Europe / 国 UA
+マルウェア: LunexStealer（別名 Psychedelic Stealer）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-07 15:57] CERT-UA が、悪意ある JavaScript を注入された 100 超の侵害 Web サイトが偽 Cloudflare 検証を介して LunexStealer（別名 Psychedelic Stealer）を配布していると公表し、活動を UAC-0277 クラスタに帰属（2026年9月観測）。
+
+【概要】
+ウクライナ CERT-UA は、2026年9月に観測した活動として、悪意ある JavaScript を注入された 100 以上の侵害 Web サイトが、偽の Cloudflare 検証画面を使って情報窃取マルウェア LunexStealer（別名 Psychedelic Stealer）を配布していると公表し、脅威クラスタ UAC-0277 に帰属した（THN）。CERT-UA は背後の主体（国家・犯罪組織）を開示していない。既報（2026-09-27・Ontinue 分析）の侵害済みウクライナ系サイト経由の偽 Cloudflare 検証（ClickFix 型）起点の Lunex / Psychedelic Stealer 配布キャンペーンと同一のマルウェアファミリー・配布手口であるため、既存の campaign_id を維持し、グループ名欄に CERT-UA の追跡名を追記する（Ontinue が報じた WraithTools 名義との同一性は CERT-UA 報告からは確認できない）。侵害サイトのリスト・IoC・被害者数は本窓の RSS 要約からは確認できない。
+
+攻撃の流れ（判明分）:
+1. 正規 Web サイト 100 超を侵害し、悪意ある JavaScript を注入する（CERT-UA・THN）
+2. 訪問者に偽の Cloudflare 検証画面を表示し、操作を誘導して LunexStealer を実行させる（THN 見出し・既報 Ontinue 分析の ClickFix 型手口）
+3. 情報窃取（ブラウザ保存の認証情報等・詳細は本窓で未取得）
+
+【新規TTP】
+・[T1189] Drive-by Compromise — 侵害 Web サイトへの悪意ある JavaScript 注入による配布（CERT-UA 記載）
+・[T1204] User Execution — 偽 Cloudflare 検証画面による利用者操作の誘導（THN 記載）
+
+【IoC】
+IoC: 確認されず
+
+【推奨アクション】
+・プロキシ/EDR で『Cloudflare 検証』を装うページからの PowerShell / mshta / 実行ファイル起動を監視する。ブラウザ起点で clipboard から貼り付けられたコマンド実行（ClickFix 型）を検知するルールを有効化する。CERT-UA の原典に IoC が含まれる場合は取得して照合する（本窓では未取得）。
+Splunk SPL: index=endpoint sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational EventCode=1 ParentImage IN ("*\\chrome.exe","*\\msedge.exe","*\\firefox.exe","*\\explorer.exe") Image IN ("*\\powershell.exe","*\\mshta.exe","*\\cmd.exe") CommandLine="*http*" | stats count by host, user, ParentImage, CommandLine
+→ ブラウザ閲覧直後にユーザー権限で起動する PowerShell/mshta（URL を引数に持つ）は ClickFix 型の典型。IT 部門の正規スクリプトは署名・配布元で除外する。
+
+【参照】
+・The Hacker News: 100+ Compromised Websites Use Fake Cloudflare Checks to Deliver LunexStealer https://thehackernews.com/2026/10/100-compromised-websites-use-fake.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】製品単位に紐付かない高インパクト事象・トレンド記事
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+トラックB CVE: 該当なし
+
+------------------------------------------------------------
+1. [トレンド記事] ccTLD レジストリ（.gh / .sl / .as）の侵害により Google ドメインの不正 HTTPS 証明書が発行（Google が 2026-10-06 公表）
+------------------------------------------------------------
+
+【24時間以内の変化】
+[The Hacker News 2026-10-08 03:48] THN が Google の公表（10-06）を報道。
+[BleepingComputer 2026-10-08 05:50] BleepingComputer が ccTLD レジストリ侵害と DNS 改変による Google ドメイン乗っ取りを報道。
+
+【概要】
+Google は 2026-10-06、ガーナ（.gh）・シエラレオネ（.sl）・米領サモア（.as）の3つの国別トップレベルドメインのレジストリ（第三者運営事業者）が侵害され、権威 DNS レコードの改変を通じて複数の Google ドメインの不正な HTTPS 証明書が取得されたと公表した（THN・BleepingComputer）。Google 自身のシステムは侵害されていないが、当該 ccTLD 配下のあらゆるドメインが影響を受け得る。不正証明書を持つ攻撃者は暗号化通信上で正規サイトを装える。攻撃者の帰属・証明書の失効状況・CT ログ上の件数は本窓の RSS 要約からは確認できない。
+
+【参照】
+・The Hacker News: Attackers Hijack .gh, .sl, and .as Registries to Obtain Certificates for Google Domains https://thehackernews.com/2026/10/attackers-hijack-gh-sl-and-as.html
+・BleepingComputer: Hackers hijack Google domains after breaching ccTLD registries https://www.bleepingcomputer.com/news/security/hackers-hijack-google-domains-after-breaching-cctld-registries
+
+------------------------------------------------------------
+2. [トレンド記事] MALFEX: npm 上の悪意あるパッケージ 8件（累計 40,767 ダウンロード）が Overlord RAT と情報窃取マルウェアを配布（CloudSEK / Checkmarx）
+------------------------------------------------------------
+
+【24時間以内の変化】
+[The Hacker News 2026-10-08 02:43] THN が CloudSEK / Checkmarx のレポートを報道。
+
+【概要】
+CloudSEK と Checkmarx が、2023年8月以降に12件のパッケージを公開してきた単独の脅威アクターによる長期の npm サプライチェーン攻撃キャンペーン『MALFEX』を公表した（THN）。うち8件の悪意あるパッケージが累計 40,767 回ダウンロードされ、侵害ホストに情報窃取マルウェアと Overlord RAT を配布する。パッケージ名・IoC・標的の詳細は本窓の RSS 要約からは確認できない。単独アクターの評価は研究者のものであり本レポートで帰属は行わない。
+
+【参照】
+・The Hacker News: Eight Malicious npm Packages Downloaded 40,767 Times Deliver Overlord RAT and Stealer https://thehackernews.com/2026/10/eight-malicious-npm-packages-downloaded.html
+
+------------------------------------------------------------
+3. [トレンド記事] アドバンテスト、2026年2月のランサムウェア攻撃で個人情報が窃取されたことを確認し通知を開始
+------------------------------------------------------------
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-07 19:27] BleepingComputer が通知開始を報道。
+[SecurityWeek 2026-10-07 21:37] SecurityWeek が攻撃から数カ月後の侵害開示を報道。
+
+【概要】
+半導体試験装置大手のアドバンテストは、2026年2月に受けたランサムウェア攻撃でサーバから個人情報が窃取されたことを確認し、影響を受けた個人への通知を開始した（BleepingComputer・SecurityWeek）。攻撃グループ・侵入経路・件数は本窓の RSS 要約からは確認できない。国内企業（グローバル製造業）の被害確定報道として記録する。
+
+【参照】
+・BleepingComputer: Advantest confirms personal information stolen in ransomware attack https://www.bleepingcomputer.com/news/security/advantest-confirms-personal-information-stolen-in-ransomware-attack
+・SecurityWeek: Advantest Discloses Data Breach Months After Ransomware Attack https://www.securityweek.com/advantest-discloses-data-breach-months-after-ransomware-attack
+
+------------------------------------------------------------
+4. [トレンド記事] 国内インシデント報道まとめ（ScanNetSecurity / Security NEXT・2026-10-07）: メールアカウント不正アクセス・Web 改ざん・ランサムウェア・個人情報流出
+------------------------------------------------------------
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-10-07 08:05] ScanNetSecurity が国内インシデント7件を報道。
+[Security NEXT 2026-10-07 23:54] Security NEXT が MrMax・オズモール・千葉銀子会社・GMO infoQ・三重県の事案を報道。
+
+【概要】
+本窓の国内報道では、小田原エンジニアリング（従業員メールアカウント不正アクセス→なりすましメールで取引先に金銭被害）、日本経済新聞社（社員の Microsoft 365 アカウントへの攻撃→悪性サイト誘導メール送信）、日経BP（従業員メールアカウント不正アクセス・26件の個人情報漏えいの可能性）、ニッポンレンタカーアプリ（異なる手法による別の不正アクセス判明）、カイクラサービス紹介サイト（複数の不正プログラム設置・外部送信の形跡なし）、九州電子台湾子会社（ランサムウェア攻撃・復旧完了）、KKR京都くに荘（メールサーバ不正アクセス）、MrMax（アプリ・通販会員の個人情報流出の可能性）、オズモール（不正アクセス・会員情報流出の可能性）、千葉銀行子会社サイト（侵害・顧客情報流出の可能性）、GMOリサーチ＆AI『infoQ』（会員情報流出・ポイント不正交換600件超）、三重県（報告書の個人情報マスク漏れ）が報じられた。いずれも侵入経路・攻撃者の詳細は RSS 要約からは確認できない。メールアカウント乗っ取り起点の事案が3件（小田原エンジニアリング・日経・日経BP）並んだ点は国内 SOC の観測上の特徴として記録する。
+
+【参照】
+・ScanNetSecurity: なりすましメールで取引先に金銭的な被害も ～ 小田原エンジニアリング従業員のメールアカウントに不正アクセス https://scan.netsecurity.ne.jp/article/2026/10/07/56400.html
+・ScanNetSecurity: 日本経済新聞社社員の「マイクロソフト365」のアカウントにサイバー攻撃、悪性サイトに誘導するメールを送信 https://scan.netsecurity.ne.jp/article/2026/10/07/56401.html
+・ScanNetSecurity: 日経BP従業員のメールアカウントに不正アクセス、26件の個人情報が漏えいした可能性 https://scan.netsecurity.ne.jp/article/2026/10/07/56402.html
+・ScanNetSecurity: 異なる手法による別の不正アクセスが判明「ニッポンレンタカーアプリ」 https://scan.netsecurity.ne.jp/article/2026/10/07/56403.html
+・ScanNetSecurity: 「カイクラサービス紹介サイト」に複数の不正プログラム https://scan.netsecurity.ne.jp/article/2026/10/07/56404.html
+・ScanNetSecurity: 九州電子 台湾子会社にランサムウェア攻撃 https://scan.netsecurity.ne.jp/article/2026/10/07/56405.html
+・ScanNetSecurity: KKR京都くに荘のメールサーバに不正アクセス https://scan.netsecurity.ne.jp/article/2026/10/07/56406.html
+・Security NEXT: アプリや通販サイト会員の個人情報が流出 - MrMax https://www.security-next.com/191135
+・Security NEXT: 「オズモール」に不正アクセス - 会員の個人情報流出の可能性 https://www.security-next.com/190796
+・Security NEXT: 千葉銀の子会社サイトで侵害 - 個人情報流出の可能性 https://www.security-next.com/190509
+・Security NEXT: GMOアンケートサイトに不正アクセス - 個人情報が流出、ポイント不正交換も https://www.security-next.com/191138
+・Security NEXT: 社会医療法人の報告書、個人情報をマスク処理せず掲載 - 三重県 https://www.security-next.com/190920
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+遡及生成のため予報は発行しない（2026-10-12 生成）。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】APT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Qilin（RaaS） / Qilin-2026-JapanArrestExtraditionGermany → [low_score] SecurityWeek（2026-10-07）: 2026年5月に日本で拘束された Qilin ランサムウェア関与の容疑者がドイツへ引き渡された。法執行・摘発情報は日次収集対象外（週次検証へ移管・pipeline-1b-apt.md）。Qilin の活動自体の変化（P〜W）は本窓で確認されない。
+・ShinyHunters（UNC6240） / ShinyHunters-2026-BoeingSpinoffExtortion → [insufficient_evidence] Krebs on Security（2026-10-07）: ヨルダン・アンマンの10代の容疑者『Rey』が拘束され FBI に協力中とされ、拘束時に Boeing から分離された事業部門を恐喝していたと報道。単一ソース（Krebs 独自取材）で被害組織の公式確認はなく、法執行要素が主。既報 ShinyHunters 各行の備考更新候補として提案ファイルに記録。
+
+本日の集計:
+APT — 本編1件 / 注目動向1件 / 除外2件
+
+網羅スイープ: 候補59件 / 処理59件 / 未処理0件 / KEV窓内追加0件（スイープ列挙は5件・D朝のKEVスナップショット未収載のため窓外扱い） / EUVD窓内54件（うちNVD/KEV未収載1件）
+
+========================================

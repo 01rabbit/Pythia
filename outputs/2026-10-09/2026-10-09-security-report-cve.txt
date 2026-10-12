@@ -1,0 +1,564 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-12 11:20 JST（遡及生成）
+調査期間: 2026-10-08 07:00 〜 2026-10-09 07:00 JST
+本レポートは 2026-10-12 に収集証跡から遡及生成したものである（本体 Routine が 2026-10-09 に発火せず欠損したため。予報は発行しない）。
+========================================
+
+■ Section 3: 製品別CVE
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】パッチ未提供 / PoC公開済み / 実悪用確認
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2015-3306 / ProFTPD（mod_copy モジュール・SITE CPFR/CPTO コマンドによる未認証ファイル読み書き）（ProFTPD Project）
+対象: ProFTPD 1.3.5 系（mod_copy 有効時）。修正版: 1.3.5a 以降（2015 年提供）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: v3 10.0 (Critical)
+EPSS: 0.99497 / percentile 0.99945（model_date 2026-10-11・2026-10-12 取得値（遡及生成・窓当時の値ではない））
+状態: KEV登録済み / 実悪用確認 / PoC公開
+KEV登録日: 2026-10-08 / FCEB期限: 2026-10-11
+悪用主体: Flax Typhoon / Integrity Technology Group（FBI ほか合同勧告 2026-10-08 が本CVEを悪用対象として明示）
+パッチ提供: 提供済み（1.3.5a 以降（2015 年提供））
+
+【24時間以内の変化】
+[CISA KEV（Evidence Ledger ev-20261009-fb162） 2026-10-09 05:09] KEV カタログ 2026.10.08（dateReleased 2026-10-08T20:09:18Z）に dateAdded=2026-10-08・dueDate=2026-10-11 で新規収載。2026-10-08 09:54 JST スナップショット（2026.10.04）には未収載。
+[The Hacker News 2026-10-09 03:32] FBI と 6 か国の機関が合同勧告を公表。中国企業 Integrity Technology Group に結び付く攻撃者が本CVEを含む既知脆弱性の悪用に用いたツール MicroScan / FishHub を運用していたと報道（本CVEは勧告で KEV 新規追加分として言及）。
+[BleepingComputer 2026-10-09 06:42] FBI が Flax Typhoon の運用する MicroScan / FishHub の 7 ドメインを押収したと報道。勧告が挙げる 8 CVE に本CVEが含まれる。
+
+【概要】
+2015 年公開の ProFTPD mod_copy 脆弱性（未認証で任意ファイルの複製＝書込みが可能・CVSS 10.0・Metasploit / Exploit-DB にモジュール公開済み）が、本窓で CISA KEV に新規追加された。CISA KEV への追加時刻は、Evidence Ledger の KEV スナップショットで挟み込める: 2026-10-08 09:54 JST 取得分（ev-20261008-f51fe・カタログ 2026.10.04・1734件）には未収載、2026-10-09 10:08 JST 取得分（ev-20261009-fb162・カタログ 2026.10.08・1739件）には収載。カタログ 2026.10.08 の dateReleased は 2026-10-08T20:09:18Z（2026-10-09 05:09 JST）で本窓内。 同日公開の FBI ほか 7 か国合同勧告は、中国企業 Integrity Technology Group（Flax Typhoon と重複）に結び付く攻撃者が Mirai ボットネットと組み合わせたスキャンツール MicroScan で既知脆弱性を悪用しており、本CVEを含む 8 件のうち 5 件が KEV に新規追加されたと述べている（THN・BleepingComputer 経由）。11 年前の脆弱性が KEV に入った事実は、公開 FTP サーバの残存が依然として国家系の初期侵入経路になっていることを示す（観測）。国内の注意喚起（JPCERT/CC・IPA）は本窓で確認できない。EPSS は 2026-10-12 取得値（model_date 2026-10-11）であり窓当時の値ではない。
+
+攻撃の流れ:
+1. インターネット公開の ProFTPD（mod_copy 有効）を MicroScan 等でスキャンし版・モジュールを特定（合同勧告の記述範囲）
+2. 未認証で SITE CPFR / SITE CPTO コマンドを送り、Web 公開ディレクトリ等へ任意ファイルを複製してウェブシェル等を配置（Metasploit モジュールの公知手口）
+3. 配置したファイルの実行による RCE・内部展開（推測・勧告の個別事例は RSS 要約からは確認できない）
+
+【ATT&CK】
+・T1190（initial-access）: FBI ほか合同勧告（2026-10-08・THN / BleepingComputer 経由）が、インターネット公開システムの既知脆弱性（本CVEを含む 8 件）を MicroScan でスキャン・悪用して初期侵入する手口を記述しているため T1190 を付与。本CVE単体の悪用事例の詳細は勧告本文（39 ページの IOC 付録）にあり RSS 要約からは確認できない
+
+【暫定緩和策】
+・ProFTPD を 1.3.5a 以降へ更新するか mod_copy を無効化（LoadModule mod_copy.c を外す）
+・インターネット公開 FTP の必要性を再評価し、不要なら閉塞。必要なら送信元制限と匿名ログイン無効化
+・FCEB 期限 2026-10-11（KEV 収載から 3 日・CISA が緊急度の高い扱いを示す短期限）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・FTP サーバログで SITE CPFR / SITE CPTO コマンドの受信、特に Web 公開ディレクトリ配下への CPTO 先指定を検出する。
+Splunk SPL: index=ftp sourcetype=proftpd ("SITE CPFR" OR "SITE CPTO") | stats count values(src_ip) by dest_host, command | where count>0
+→ 正規運用で mod_copy を使う組織は稀であり、CPTO の宛先が /var/www・cgi-bin 等であれば侵害試行として扱う。
+
+JPCERT/CC・IPA 発行状況（24h 窓内）: 未発行 — CVE-2015-3306 は24時間窓内に注意喚起の発行を確認できず
+
+【参照】
+・CISA: CISA Known Exploited Vulnerabilities Catalog（Evidence Ledger スナップショット ev-20261009-fb162・カタログ 2026.10.08） https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+・NVD: NVD: CVE-2015-3306 https://nvd.nist.gov/vuln/detail/CVE-2015-3306
+・The Hacker News: FBI Says China-Linked Hackers Ran Portal Giving Third Parties Access to Stolen Emails https://thehackernews.com/2026/10/fbi-says-china-linked-hackers-ran.html
+・BleepingComputer: FBI disrupts Chinese hacking tools used to breach critical infrastructure https://www.bleepingcomputer.com/news/security/fbi-disrupts-chinese-hacking-tools-used-to-breach-critical-infrastructure
+・FBI / IC3: Joint Cybersecurity Advisory: PRC-linked Integrity Technology Group tools MicroScan / FishHub（FBI ほか 7 か国機関・2026-10-08） https://www.ic3.gov/CSA/2026/261008.pdf
+
+------------------------------------------------------------
+2. CVE-2015-5477 / ISC BIND（TKEY クエリ処理の REQUIRE アサーション失敗による named 停止・DoS）（ISC）
+対象: BIND 9.1.0〜9.8.x、9.9.0〜9.9.7-P1、9.10.0〜9.10.2-P2。修正版: 9.9.7-P2 / 9.10.2-P3 以降（2015 年提供）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: v3 7.5 (High)
+EPSS: 0.99409 / percentile 0.99941（model_date 2026-10-11・2026-10-12 取得値（遡及生成・窓当時の値ではない））
+状態: KEV登録済み / 実悪用確認 / PoC公開
+KEV登録日: 2026-10-08 / FCEB期限: 2026-10-11
+悪用主体: Flax Typhoon / Integrity Technology Group（FBI ほか合同勧告 2026-10-08 が本CVEを悪用対象として明示）
+パッチ提供: 提供済み（9.9.7-P2 / 9.10.2-P3 以降（2015 年提供））
+
+【24時間以内の変化】
+[CISA KEV（Evidence Ledger ev-20261009-fb162） 2026-10-09 05:09] KEV カタログ 2026.10.08（dateReleased 2026-10-08T20:09:18Z）に dateAdded=2026-10-08・dueDate=2026-10-11 で新規収載。2026-10-08 09:54 JST スナップショット（2026.10.04）には未収載。
+[The Hacker News 2026-10-09 03:32] FBI と 6 か国の機関が合同勧告を公表。中国企業 Integrity Technology Group に結び付く攻撃者が本CVEを含む既知脆弱性の悪用に用いたツール MicroScan / FishHub を運用していたと報道（本CVEは勧告で KEV 新規追加分として言及）。
+[BleepingComputer 2026-10-09 06:42] FBI が Flax Typhoon の運用する MicroScan / FishHub の 7 ドメインを押収したと報道。勧告が挙げる 8 CVE に本CVEが含まれる。
+
+【概要】
+2015 年公開の BIND TKEY 処理 DoS（1 パケットで権威・キャッシュ双方の named を停止・Exploit-DB に PoC あり）が本窓で CISA KEV に新規追加された。CISA KEV への追加時刻は、Evidence Ledger の KEV スナップショットで挟み込める: 2026-10-08 09:54 JST 取得分（ev-20261008-f51fe・カタログ 2026.10.04・1734件）には未収載、2026-10-09 10:08 JST 取得分（ev-20261009-fb162・カタログ 2026.10.08・1739件）には収載。カタログ 2026.10.08 の dateReleased は 2026-10-08T20:09:18Z（2026-10-09 05:09 JST）で本窓内。 RCE ではなく DoS のみの脆弱性が KEV に追加されたのは、FBI ほか合同勧告が Integrity Technology Group 関連の攻撃者の悪用対象 8 CVE の一つとして挙げたためと報道から読み取れる（THN・BleepingComputer）。DNS サーバ停止は可用性攻撃としての利用が想定され（推測）、合同勧告の具体的な悪用文脈は RSS 要約からは確認できない。KEV の forensicTriage は本CVEのみ『No』。EPSS は 2026-10-12 取得値（model_date 2026-10-11）であり窓当時の値ではない。
+
+攻撃の流れ:
+1. インターネットに応答する BIND 9 の版を特定（勧告の記述範囲）
+2. 細工した TKEY クエリ 1 パケットを送信し、named をアサーション失敗で停止させる（公知の PoC）
+
+【ATT&CK】
+・T1190（initial-access）: FBI ほか合同勧告（2026-10-08・THN / BleepingComputer 経由）が、インターネット公開システムの既知脆弱性（本CVEを含む 8 件）を MicroScan でスキャン・悪用して初期侵入する手口を記述しているため T1190 を付与。本CVE単体の悪用事例の詳細は勧告本文（39 ページの IOC 付録）にあり RSS 要約からは確認できない
+
+【暫定緩和策】
+・BIND を 9.9.7-P2 / 9.10.2-P3 以降（現行は 9.18/9.20 系）へ更新
+・外部公開 DNS は再帰を無効化し、TKEY を含む不要なクエリ種別を ACL / RRL で制限
+・FCEB 期限 2026-10-11（KEV 収載から 3 日・CISA が緊急度の高い扱いを示す短期限）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・named のクラッシュ再起動（assertion failure ログ）と、直前の TKEY クエリ受信を突合する。
+Splunk SPL: index=dns sourcetype=named ("REQUIRE" AND "failed") OR "exiting (due to assertion failure)" | stats count by host, _time
+→ TKEY クエリは通常トラフィックでは極めて稀。送信元 IP を勧告 IOC（PDF 付録）と照合する。
+
+JPCERT/CC・IPA 発行状況（24h 窓内）: 未発行 — CVE-2015-5477 は24時間窓内に注意喚起の発行を確認できず
+
+【参照】
+・CISA: CISA Known Exploited Vulnerabilities Catalog（Evidence Ledger スナップショット ev-20261009-fb162・カタログ 2026.10.08） https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+・NVD: NVD: CVE-2015-5477 https://nvd.nist.gov/vuln/detail/CVE-2015-5477
+・The Hacker News: FBI Says China-Linked Hackers Ran Portal Giving Third Parties Access to Stolen Emails https://thehackernews.com/2026/10/fbi-says-china-linked-hackers-ran.html
+・BleepingComputer: FBI disrupts Chinese hacking tools used to breach critical infrastructure https://www.bleepingcomputer.com/news/security/fbi-disrupts-chinese-hacking-tools-used-to-breach-critical-infrastructure
+・FBI / IC3: Joint Cybersecurity Advisory: PRC-linked Integrity Technology Group tools MicroScan / FishHub（FBI ほか 7 か国機関・2026-10-08） https://www.ic3.gov/CSA/2026/261008.pdf
+
+------------------------------------------------------------
+3. CVE-2016-3081 / Apache Struts 2（Dynamic Method Invocation 有効時の method: プレフィックスによる OGNL コード実行）（Apache Software Foundation）
+対象: Struts 2.3.20〜2.3.28（2.3.20.3 / 2.3.24.3 を除く・DMI 有効時）。修正版: 2.3.28.1 以降（2016 年提供）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: v3 8.1 (High)
+EPSS: 0.96052 / percentile 0.99877（model_date 2026-10-11・2026-10-12 取得値（遡及生成・窓当時の値ではない））
+状態: KEV登録済み / 実悪用確認 / PoC公開
+KEV登録日: 2026-10-08 / FCEB期限: 2026-10-11
+悪用主体: Flax Typhoon / Integrity Technology Group（FBI ほか合同勧告 2026-10-08 が本CVEを悪用対象として明示）
+パッチ提供: 提供済み（2.3.28.1 以降（2016 年提供））
+
+【24時間以内の変化】
+[CISA KEV（Evidence Ledger ev-20261009-fb162） 2026-10-09 05:09] KEV カタログ 2026.10.08（dateReleased 2026-10-08T20:09:18Z）に dateAdded=2026-10-08・dueDate=2026-10-11 で新規収載。2026-10-08 09:54 JST スナップショット（2026.10.04）には未収載。
+[The Hacker News 2026-10-09 03:32] FBI と 6 か国の機関が合同勧告を公表。中国企業 Integrity Technology Group に結び付く攻撃者が本CVEを含む既知脆弱性の悪用に用いたツール MicroScan / FishHub を運用していたと報道（本CVEは勧告で KEV 新規追加分として言及）。
+[BleepingComputer 2026-10-09 06:42] FBI が Flax Typhoon の運用する MicroScan / FishHub の 7 ドメインを押収したと報道。勧告が挙げる 8 CVE に本CVEが含まれる。
+
+【概要】
+2016 年公開の Struts 2 DMI 経由 RCE（S2-032・Metasploit モジュール公開済み・CVSS 8.1・AC:H）が本窓で CISA KEV に新規追加された。CISA KEV への追加時刻は、Evidence Ledger の KEV スナップショットで挟み込める: 2026-10-08 09:54 JST 取得分（ev-20261008-f51fe・カタログ 2026.10.04・1734件）には未収載、2026-10-09 10:08 JST 取得分（ev-20261009-fb162・カタログ 2026.10.08・1739件）には収載。カタログ 2026.10.08 の dateReleased は 2026-10-08T20:09:18Z（2026-10-09 05:09 JST）で本窓内。 FBI ほか合同勧告が Integrity Technology Group 関連攻撃者の悪用対象として挙げる 8 CVE に含まれる（THN・BleepingComputer）。Struts 2 の旧版は国内の業務系 Web アプリに残存例が多く（過去の S2-045 等の国内被害・既報事実）、本CVEも公開 Web サーバのスキャン対象になっている可能性が高い（推測）。EPSS は 2026-10-12 取得値（model_date 2026-10-11）であり窓当時の値ではない。
+
+攻撃の流れ:
+1. 公開 Web アプリから Struts 2 の版と DMI 有効状態を推定（勧告の記述範囲）
+2. method: プレフィックス付きパラメータに OGNL 式を埋め込んだ HTTP リクエストを送り、サーバ上でコマンド実行（Metasploit struts_dmi_exec の公知手口）
+3. ウェブシェル配置・認証情報取得・内部展開（推測）
+
+【ATT&CK】
+・T1190（initial-access）: FBI ほか合同勧告（2026-10-08・THN / BleepingComputer 経由）が、インターネット公開システムの既知脆弱性（本CVEを含む 8 件）を MicroScan でスキャン・悪用して初期侵入する手口を記述しているため T1190 を付与。本CVE単体の悪用事例の詳細は勧告本文（39 ページの IOC 付録）にあり RSS 要約からは確認できない
+
+【暫定緩和策】
+・Struts 2.3.28.1 以降（現行は 6.x・2.5 系は EoL）へ更新し、struts.enable.DynamicMethodInvocation=false を設定
+・WAF で method: プレフィックスおよび OGNL 構文（#_memberAccess・@java.lang.Runtime 等）を含むリクエストを遮断
+・FCEB 期限 2026-10-11（KEV 収載から 3 日・CISA が緊急度の高い扱いを示す短期限）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Web アクセスログで『method:』パラメータや OGNL 構文を含むリクエスト、および Java プロセスからのシェル起動を検出する。
+Splunk SPL: index=web (uri_query="*method:*" OR uri_query="*#_memberAccess*" OR uri_query="*@java.lang.Runtime*") | stats count values(src_ip) by dest, uri_path
+Splunk SPL: index=endpoint sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational EventCode=1 ParentImage="*\\java.exe" (Image="*\\cmd.exe" OR Image="*\\powershell.exe") | stats count by host, CommandLine
+→ 正規アプリで method: プレフィックスを使う設計は稀。Linux では java 親プロセスからの /bin/sh 起動（auditd execve）を同様に監視する。
+
+JPCERT/CC・IPA 発行状況（24h 窓内）: 未発行 — CVE-2016-3081 は24時間窓内に注意喚起の発行を確認できず
+
+【参照】
+・CISA: CISA Known Exploited Vulnerabilities Catalog（Evidence Ledger スナップショット ev-20261009-fb162・カタログ 2026.10.08） https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+・NVD: NVD: CVE-2016-3081 https://nvd.nist.gov/vuln/detail/CVE-2016-3081
+・The Hacker News: FBI Says China-Linked Hackers Ran Portal Giving Third Parties Access to Stolen Emails https://thehackernews.com/2026/10/fbi-says-china-linked-hackers-ran.html
+・BleepingComputer: FBI disrupts Chinese hacking tools used to breach critical infrastructure https://www.bleepingcomputer.com/news/security/fbi-disrupts-chinese-hacking-tools-used-to-breach-critical-infrastructure
+・FBI / IC3: Joint Cybersecurity Advisory: PRC-linked Integrity Technology Group tools MicroScan / FishHub（FBI ほか 7 か国機関・2026-10-08） https://www.ic3.gov/CSA/2026/261008.pdf
+
+------------------------------------------------------------
+4. CVE-2021-3199 / ONLYOFFICE Document Server（ファイル変換コンポーネントの入力検証不備による未認証 RCE）（ONLYOFFICE）
+対象: ONLYOFFICE Document Server 5.6.3 未満。修正版: 5.6.3 以降（2020-12 提供）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: v3 9.8 (Critical)
+EPSS: 0.19352 / percentile 0.97296（model_date 2026-10-11・2026-10-12 取得値（遡及生成・窓当時の値ではない））
+状態: KEV登録済み / 実悪用確認 / PoC公開
+KEV登録日: 2026-10-08 / FCEB期限: 2026-10-11
+悪用主体: Flax Typhoon / Integrity Technology Group（FBI ほか合同勧告 2026-10-08 が本CVEを悪用対象として明示）
+パッチ提供: 提供済み（5.6.3 以降（2020-12 提供））
+
+【24時間以内の変化】
+[CISA KEV（Evidence Ledger ev-20261009-fb162） 2026-10-09 05:09] KEV カタログ 2026.10.08（dateReleased 2026-10-08T20:09:18Z）に dateAdded=2026-10-08・dueDate=2026-10-11 で新規収載。2026-10-08 09:54 JST スナップショット（2026.10.04）には未収載。
+[The Hacker News 2026-10-09 03:32] FBI と 6 か国の機関が合同勧告を公表。中国企業 Integrity Technology Group に結び付く攻撃者が本CVEを含む既知脆弱性の悪用に用いたツール MicroScan / FishHub を運用していたと報道（本CVEは勧告で KEV 新規追加分として言及）。
+[BleepingComputer 2026-10-09 06:42] FBI が Flax Typhoon の運用する MicroScan / FishHub の 7 ドメインを押収したと報道。勧告が挙げる 8 CVE に本CVEが含まれる。
+
+【概要】
+2021 年公開の ONLYOFFICE Document Server 未認証 RCE（CVSS 9.8・GitHub に PoC 公開済み）が本窓で CISA KEV に新規追加された。CISA KEV への追加時刻は、Evidence Ledger の KEV スナップショットで挟み込める: 2026-10-08 09:54 JST 取得分（ev-20261008-f51fe・カタログ 2026.10.04・1734件）には未収載、2026-10-09 10:08 JST 取得分（ev-20261009-fb162・カタログ 2026.10.08・1739件）には収載。カタログ 2026.10.08 の dateReleased は 2026-10-08T20:09:18Z（2026-10-09 05:09 JST）で本窓内。 FBI ほか合同勧告が Integrity Technology Group 関連攻撃者の悪用対象として挙げる 8 CVE に含まれる（THN・BleepingComputer）。ONLYOFFICE はセルフホスト型グループウェア（Nextcloud 連携等）に同梱されることが多く、公開インスタンスの版管理が遅れがちな層が標的になり得る（推測）。EPSS は 2026-10-12 取得値（model_date 2026-10-11）であり窓当時の値ではない。
+
+攻撃の流れ:
+1. 公開された ONLYOFFICE Document Server を特定（勧告の記述範囲）
+2. ファイル変換コンポーネントへ細工した変換リクエストを送り、未認証で任意コードを実行（公開 PoC の手口）
+3. 文書サーバ上の認証情報・連携先トークンの取得と横展開（推測）
+
+【ATT&CK】
+・T1190（initial-access）: FBI ほか合同勧告（2026-10-08・THN / BleepingComputer 経由）が、インターネット公開システムの既知脆弱性（本CVEを含む 8 件）を MicroScan でスキャン・悪用して初期侵入する手口を記述しているため T1190 を付与。本CVE単体の悪用事例の詳細は勧告本文（39 ページの IOC 付録）にあり RSS 要約からは確認できない
+
+【暫定緩和策】
+・Document Server を最新版（少なくとも 5.6.3 以降）へ更新
+・変換 API（/ConvertService.ashx・/converter）への到達元を連携アプリ・社内に限定
+・FCEB 期限 2026-10-11（KEV 収載から 3 日・CISA が緊急度の高い扱いを示す短期限）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・ONLYOFFICE の変換サービスへの外部からの POST と、ds:docservice / x2t プロセスからの予期しない子プロセス起動を検出する。
+Splunk SPL: index=linux sourcetype=auditd type=EXECVE (ppid_comm="x2t" OR ppid_comm="docservice" OR ppid_comm="node") (comm="sh" OR comm="bash" OR comm="curl" OR comm="wget") | stats count by host, exe, a0, a1
+→ 変換サービスは通常 Nextcloud / 社内連携サーバからのみ呼ばれる。外部 IP からの直接呼出しは侵害試行として扱う。
+
+JPCERT/CC・IPA 発行状況（24h 窓内）: 未発行 — CVE-2021-3199 は24時間窓内に注意喚起の発行を確認できず
+
+【参照】
+・CISA: CISA Known Exploited Vulnerabilities Catalog（Evidence Ledger スナップショット ev-20261009-fb162・カタログ 2026.10.08） https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+・NVD: NVD: CVE-2021-3199 https://nvd.nist.gov/vuln/detail/CVE-2021-3199
+・The Hacker News: FBI Says China-Linked Hackers Ran Portal Giving Third Parties Access to Stolen Emails https://thehackernews.com/2026/10/fbi-says-china-linked-hackers-ran.html
+・BleepingComputer: FBI disrupts Chinese hacking tools used to breach critical infrastructure https://www.bleepingcomputer.com/news/security/fbi-disrupts-chinese-hacking-tools-used-to-breach-critical-infrastructure
+・FBI / IC3: Joint Cybersecurity Advisory: PRC-linked Integrity Technology Group tools MicroScan / FishHub（FBI ほか 7 か国機関・2026-10-08） https://www.ic3.gov/CSA/2026/261008.pdf
+
+------------------------------------------------------------
+5. CVE-2023-22894 / Strapi（Headless CMS・ユーザー関係フィルタリングによる機微フィールド漏えい・CVE-2023-22621 との連鎖で RCE）（Strapi）
+対象: Strapi 4.5.5 以前（v3 系を含む）。修正版: 4.5.6 以降（2023 年提供・影響版は EoL の可能性と KEV 注記）
+------------------------------------------------------------
+
+優先度: 必須
+CVSS: v3 7.2 (High)
+EPSS: 0.03609 / percentile 0.89206（model_date 2026-10-11・2026-10-12 取得値（遡及生成・窓当時の値ではない））
+状態: KEV登録済み / 実悪用確認
+KEV登録日: 2026-10-08 / FCEB期限: 2026-10-11
+悪用主体: Flax Typhoon / Integrity Technology Group（FBI ほか合同勧告 2026-10-08 が本CVEを悪用対象として明示）
+パッチ提供: 提供済み（4.5.6 以降（2023 年提供・影響版は EoL の可能性と KEV 注記））
+
+【24時間以内の変化】
+[CISA KEV（Evidence Ledger ev-20261009-fb162） 2026-10-09 05:09] KEV カタログ 2026.10.08（dateReleased 2026-10-08T20:09:18Z）に dateAdded=2026-10-08・dueDate=2026-10-11 で新規収載。2026-10-08 09:54 JST スナップショット（2026.10.04）には未収載。
+[The Hacker News 2026-10-09 03:32] FBI と 6 か国の機関が合同勧告を公表。中国企業 Integrity Technology Group に結び付く攻撃者が本CVEを含む既知脆弱性の悪用に用いたツール MicroScan / FishHub を運用していたと報道（本CVEは勧告で KEV 新規追加分として言及）。
+[BleepingComputer 2026-10-09 06:42] FBI が Flax Typhoon の運用する MicroScan / FishHub の 7 ドメインを押収したと報道。勧告が挙げる 8 CVE に本CVEが含まれる。
+
+【概要】
+2023 年公開の Strapi 情報漏えい（認証情報を含むユーザーフィールドをフィルタ経由で推測・抽出可能。CISA ADP では CVSS 7.2・NVD 一次評価 4.9・PR:H）が本窓で CISA KEV に新規追加された。KEV 注記は CVE-2023-22621 との連鎖で RCE に至り得ることと、影響版が EoL の可能性があるため製品廃棄の検討を求めている。CISA KEV への追加時刻は、Evidence Ledger の KEV スナップショットで挟み込める: 2026-10-08 09:54 JST 取得分（ev-20261008-f51fe・カタログ 2026.10.04・1734件）には未収載、2026-10-09 10:08 JST 取得分（ev-20261009-fb162・カタログ 2026.10.08・1739件）には収載。カタログ 2026.10.08 の dateReleased は 2026-10-08T20:09:18Z（2026-10-09 05:09 JST）で本窓内。 FBI ほか合同勧告が Integrity Technology Group 関連攻撃者の悪用対象として挙げる 8 CVE に含まれる（THN・BleepingComputer）。単体の技術深刻度は 5 件中最も低い（軸1=7）が、KEV 追加・実悪用確認（+5）を根拠にゼロデイ特報へ置く。EPSS は 2026-10-12 取得値（model_date 2026-10-11）であり窓当時の値ではない。
+
+攻撃の流れ:
+1. 公開 Strapi 管理 API を特定（勧告の記述範囲）
+2. リレーションフィルタ（filters[...][password][$startsWith] 等）で管理者のパスワードハッシュ・リセットトークン等を 1 文字ずつ推測して抽出（公知の手口）
+3. 取得した資格情報で管理者としてログインし、CVE-2023-22621（テンプレートインジェクション）と連鎖して RCE（KEV 注記）
+
+【ATT&CK】
+・T1190（initial-access）: FBI ほか合同勧告（2026-10-08・THN / BleepingComputer 経由）が、インターネット公開システムの既知脆弱性（本CVEを含む 8 件）を MicroScan でスキャン・悪用して初期侵入する手口を記述しているため T1190 を付与。本CVE単体の悪用事例の詳細は勧告本文（39 ページの IOC 付録）にあり RSS 要約からは確認できない
+
+【暫定緩和策】
+・Strapi を 4.5.6 以降（現行 5.x）へ更新。EoL 版は移行または廃棄
+・管理 API（/api/users・/admin）への到達元制限と、管理者パスワード・API トークンのローテーション
+・FCEB 期限 2026-10-11（KEV 収載から 3 日・CISA が緊急度の高い扱いを示す短期限）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Strapi の REST API で user/role へのフィルタ付きクエリ（$startsWith・$contains を password / resetPasswordToken に適用）の連続要求を検出する。
+Splunk SPL: index=web dest_app=strapi uri_query="*filters*" (uri_query="*password*" OR uri_query="*resetPasswordToken*" OR uri_query="*registrationToken*") | stats count by src_ip, uri_path | where count>20
+→ 同一送信元から数十〜数百回の短時間フィルタ要求は推測攻撃の典型。成功後の管理者ログイン（admin/login）を併せて確認する。
+
+JPCERT/CC・IPA 発行状況（24h 窓内）: 未発行 — CVE-2023-22894 は24時間窓内に注意喚起の発行を確認できず
+
+【参照】
+・CISA: CISA Known Exploited Vulnerabilities Catalog（Evidence Ledger スナップショット ev-20261009-fb162・カタログ 2026.10.08） https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+・NVD: NVD: CVE-2023-22894 https://nvd.nist.gov/vuln/detail/CVE-2023-22894
+・The Hacker News: FBI Says China-Linked Hackers Ran Portal Giving Third Parties Access to Stolen Emails https://thehackernews.com/2026/10/fbi-says-china-linked-hackers-ran.html
+・BleepingComputer: FBI disrupts Chinese hacking tools used to breach critical infrastructure https://www.bleepingcomputer.com/news/security/fbi-disrupts-chinese-hacking-tools-used-to-breach-critical-infrastructure
+・FBI / IC3: Joint Cybersecurity Advisory: PRC-linked Integrity Technology Group tools MicroScan / FishHub（FBI ほか 7 か国機関・2026-10-08） https://www.ic3.gov/CSA/2026/261008.pdf
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】真に必要な脆弱性
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A】国内で影響・被害が確認されているもの
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-76750 / HPE Networking ClearPass Policy Manager（CPPM・ネットワークアクセス制御・未認証デシリアライゼーション RCE。同一勧告の主要CVE: CVE-2026-76752 / CVE-2026-79796（未認証の認証バイパス）・CVE-2026-79798（SQLi）・CVE-2026-79805（パストラバーサル）ほか全28件・クリティカル10件）（Hewlett Packard Enterprise）
+対象: HPE Networking ClearPass Policy Manager（影響版・修正版は HPE 勧告 hpesbnw05158en_us 参照。Security NEXT 記事には版番号の記載なし）
+------------------------------------------------------------
+
+優先度: 高
+CVSS:  (Critical)
+状態: KEV未登録・悪用未確認
+パッチ提供: 提供済み（HPE セキュリティアップデート（2026-10-06 勧告））
+
+【24時間以内の変化】
+[Security NEXT 2026-10-08 08:40] HPE が 2026-10-06 に公表した ClearPass Policy Manager の脆弱性 28 件（クリティカル 10 件）を国内メディアが報道。勧告時点で脆弱性に関する議論やエクスプロイトコードの公開は確認されていないと記載。
+
+【概要】
+HPE のネットワークアクセス制御製品 ClearPass Policy Manager に 28 件の脆弱性（うちクリティカル 10 件）が公表され、Security NEXT が本窓で報道した。記事が挙げるのは、Web 管理インターフェースの SQL インジェクション（CVE-2026-79798・低権限リモート攻撃者が任意の DB コマンド実行）、Web 管理 IF / API の認証バイパス（CVE-2026-76752・未認証で管理者権限取得、CVE-2026-79796）、信頼できないデータのデシリアライゼーション（CVE-2026-76750・未認証 RCE の可能性）、パストラバーサル（CVE-2026-79805）。影響コンポーネントは Web UI・API・エンドポイントエージェント・クライアントソフトウェアに及ぶ。HPE は勧告時点でエクスプロイト公開や議論を確認していない。前々日（2026-10-07）レポートでは NVD 一括公開 16 件を除外サマリーに記録しており、本窓は国内報道（Security NEXT）を参考A昇格トリガーとして初採用する。CVSS 個別値・影響版は記事に記載がなく、RSS 要約と記事本文からは確認できない。NAC は社内ネットワークの認証基盤であり、認証バイパスは全端末の接続制御無効化に直結する（推測）。
+
+攻撃の流れ:
+1. 到達可能な CPPM の Web 管理 IF / API に対し、認証バイパス（CVE-2026-76752 / 79796）で管理者権限を取得、またはデシリアライゼーション（CVE-2026-76750）で未認証コード実行（記事記載の脆弱性構造に基づく。実悪用の報告なし）
+2. NAC ポリシー改変・RADIUS 共有秘密や AD 連携資格情報の取得（推測）
+
+【対処】
+・HPE 勧告 hpesbnw05158en_us に従い修正版へ更新
+・CPPM の管理 IF / API を管理セグメントに限定し、インターネットおよび一般ユーザーセグメントから遮断
+・更新までの間、管理 IF のアクセスログで未認証状態からの管理操作成功を監視
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・CPPM の管理 IF / API への認証前リクエストに続く管理操作（ポリシー変更・管理者作成）と、CPPM ホスト上の予期しない子プロセス起動を検出する。
+Splunk SPL: index=nac sourcetype=clearpass:audit (action="Add" OR action="Modify") object IN ("Admin User","Enforcement Policy","Service") | stats count values(src_ip) by user, object
+→ 変更管理と一致しない管理者作成・ポリシー変更を優先する。
+
+JPCERT/CC・IPA 発行状況（24h 窓内）: 未発行 — CVE-2026-76750 は24時間窓内に注意喚起の発行を確認できず
+
+【参照】
+・Security NEXT: HPEネットワークアクセス制御製品に深刻な脆弱性 - 「クリティカル」10件 https://www.security-next.com/191180
+・NVD: NVD: CVE-2026-76750 https://nvd.nist.gov/vuln/detail/CVE-2026-76750
+
+------------------------------------------------------------
+2. CVE-2026-63688 / Dell Container Storage Modules（CSM）Authorization（csm-authorization-storage gRPC の認証欠如によるストレージアレイ管理者資格情報の未認証取得。同時公表 CVE-2026-63692（未認証の権限昇格・CVSS 10.0）ほか全37件・製品CVE 6件が CVSS 9.0 以上）（Dell Technologies）
+対象: Dell CSM Authorization 1.18.0 未満（DSA-2026-448・2026-10-01 公表）。修正版 1.18.0
+------------------------------------------------------------
+
+優先度: 高
+CVSS: v3 10.0 (Critical)
+状態: KEV未登録・悪用未確認
+パッチ提供: 提供済み（CSM 1.18.0）
+
+【24時間以内の変化】
+[Security NEXT 2026-10-08 11:36] Dell CSM の複数脆弱性（重要度クリティカル）を国内メディアが報道。既報（2026-10-03 参考B）からの状態変化は国内報道のみで、悪用・PoC・KEV の変化なし。
+
+【概要】
+既報（2026-10-03 参考B）の Dell Container Storage Modules の脆弱性群を Security NEXT が本窓で報道した。CVE-2026-63688 は csm-authorization-storage の gRPC エンドポイントが認証を欠き、未認証の攻撃者がストレージアレイの管理者資格情報を取得できるもの（CVSS 10.0）。同時公表の CVE-2026-63692 も未認証の権限昇格で CVSS 10.0。DSA-2026-448 は依存コンポーネント更新を含む 37 件を扱い、製品固有 CVE のうち 6 件が CVSS 9.0 以上。悪用・PoC・KEV 登録は本窓で確認されない。軸1=7（未認証 +3・CVSS +3・普及 +1）で閾値未満だが、国内報道により参考A昇格トリガーが成立したため参考Aへ移す（既報の参考B → 参考A）。Kubernetes 上で Dell ストレージ（PowerFlex / PowerScale / PowerMax 等）を使う国内企業は該当し得る。
+
+攻撃の流れ:
+1. Kubernetes クラスタ内または到達可能なネットワークから csm-authorization-storage の gRPC ポートへ未認証で接続（NVD 記載の脆弱性構造）
+2. ストレージアレイの管理者資格情報を取得し、アレイ管理 IF へ直接ログイン（推測）
+
+【対処】
+・CSM Authorization を 1.18.0 へ更新
+・csm-authorization の gRPC / proxy サービスへ NetworkPolicy で到達元を限定
+・ストレージアレイ管理者資格情報をローテーション
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Kubernetes の NetworkPolicy ログ / サービスメッシュで csm-authorization への想定外 Pod・外部からの接続と、ストレージアレイ管理 IF への新規送信元ログインを検出する。
+Splunk SPL: index=k8s sourcetype=kube:audit objectRef.namespace="authorization" verb IN ("create","patch") | stats count by user.username, objectRef.resource
+→ アレイ側（Unisphere / PowerScale OneFS）の管理ログインを CSM 以外の送信元で絞る。
+
+JPCERT/CC・IPA 発行状況（24h 窓内）: 未発行 — CVE-2026-63688 は24時間窓内に注意喚起の発行を確認できず
+
+【参照】
+・Security NEXT: Dellのコンテナストレージ製品に複数の脆弱性 - 重要度「クリティカル」 https://www.security-next.com/191191
+・NVD: NVD: CVE-2026-63688 https://nvd.nist.gov/vuln/detail/CVE-2026-63688
+
+------------------------------------------------------------
+3. CVE-2026-92861 / Android アプリ「チケット流通センター」（ウェイブダッシュ・ハードコードされた API キー CWE-798。同時公表 CVE-2026-92862: カスタム URL スキームの処理不備 CWE-939）（株式会社ウェイブダッシュ）
+対象: チケット流通センター Android 版 4.1.9 以前。修正版 4.2.0（起動時に強制更新）
+------------------------------------------------------------
+
+優先度: 低
+CVSS: v3 4.0 (Medium)
+状態: KEV未登録・悪用未確認
+パッチ提供: 提供済み（4.2.0）
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-10-08 08:00] JVN#53292492（2026-10-06 公表）を国内メディアが報道。
+
+【概要】
+国内のチケット売買サービス「チケット流通センター」の Android アプリ 4.1.9 以前に、外部サービス連携用 API キーのハードコード（CVE-2026-92861・CVSS v3.0 4.0・AV:L）と、カスタム URL スキームの処理不備により悪意あるアプリからの Intent で任意サイトを表示させられる問題（CVE-2026-92862・CVSS 3.3・フィッシング誘導）が JVN#53292492 として公表され、ScanNetSecurity が本窓で報道した。報告者はブロードバンドセキュリティ 佐藤光喜氏（IPA 届出・JPCERT/CC 調整）。開発者は 4.2.0 でキーを削除・旧キーを無効化し、起動時の強制更新を実施。技術深刻度は低い（軸1=0）が、JVN 発行・国内報道の参考A昇格トリガーに該当するため参考Aに記録する。悪用の報告はない。
+
+攻撃の流れ:
+1. 端末上の悪意あるアプリが APK から API キーを抽出（CVE-2026-92861）、または Intent で本アプリに悪意あるサイトを表示させフィッシング（CVE-2026-92862）（JVN 記載）
+
+【対処】
+・利用者は 4.2.0 以降へ更新（起動時に強制更新される）
+・開発側は旧 API キーの無効化済み（JVN 記載）
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・個人利用アプリのため SOC 監視対象外。MDM 配下の端末では旧版の残存を確認する。
+
+JPCERT/CC・IPA・JVN 発行状況（24h 窓内）:
+発行あり: JVN#53292492（JPCERT/CC 調整・IPA 届出） https://jvn.jp/jp/JVN53292492/
+
+【参照】
+・JVN: JVN#53292492: Android アプリ「チケット流通センター」における複数の脆弱性 https://jvn.jp/jp/JVN53292492/
+・ScanNetSecurity: Android アプリ「チケット流通センター」に複数の脆弱性 https://scan.netsecurity.ne.jp/article/2026/10/08/56410.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B】海外で先行・国内波及に注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. CVE-2026-107406 / NetScaler ADC / NetScaler Gateway（SAML SP または IdP 構成時のメモリオーバーフローによる RCE / DoS・CTX697191・EUVD-2026-95315・NVD 未収載）（Cloud Software Group（Citrix / NetScaler））
+対象: 14.1-73.37 未満・13.1-64.23 未満（SAML SP または IdP 構成）、14.1-73.37〜73.41・13.1-64.23〜64.28（SAML IdP 構成）、13.1-FIPS / NDcPP 13.1-37.283 未満。修正版: 14.1-73.46、13.1-64.29、14.1-FIPS 14.1-73.46、13.1-FIPS/NDcPP 13.1-37.283。12.1 / 13.0 は EoL で未修正
+------------------------------------------------------------
+
+優先度: 高
+CVSS: v4 9.5 (Critical)
+EPSS: 0.00471 / percentile 0.38911（model_date 2026-10-11・2026-10-12 取得値（遡及生成・窓当時の値ではない））
+状態: KEV未登録・悪用未確認
+パッチ提供: 提供済み（14.1-73.46 / 13.1-64.29 / 13.1-37.283（FIPS・NDcPP））
+
+【24時間以内の変化】
+[EUVD（ENISA）/ NetScaler CTX697191 2026-10-09 06:18] NetScaler CNA 採番の CVE-2026-107406（CVSS v4.0 9.5・AV:N/AC:H/AT:N/PR:N）が EUVD-2026-95315 として窓内公開。スイープ時点で NVD 未収載（EUVD-only 層）。悪用に関する記載なし。
+
+【概要】
+NetScaler ADC / Gateway を SAML SP または IdP として構成している場合に、メモリオーバーフローにより未認証のリモートコード実行またはサービス拒否に至る脆弱性（CVSS v4.0 9.5・AC:H・CWE-119）が本窓終盤（2026-10-09 06:18 JST・EUVD 公開時刻）に公開された。NVD はスイープ時点で未収載であり、EUVD 独立列挙（EUVD-only 5 件の 1 つ）で捕捉した。修正版は 14.1-73.46 / 13.1-64.29 / 13.1-37.283（FIPS・NDcPP）。発見者クレジットは JPMorgan Chase の XOR Team。悪用・PoC・KEV は本窓で確認されず、NetScaler 勧告にも悪用の記載はない。NetScaler は 2025〜26 年に CitrixBleed 2 / CVE-2026-88779 等で KEV 追加が続いた境界機器であり、SAML 構成に限定されるものの未認証 RCE は高い注目度となる（推測）。国内報道・注意喚起は本窓で確認できない。EPSS は 2026-10-12 取得値（model_date 2026-10-11）であり窓当時の値ではない。
+
+攻撃の流れ:
+1. SAML SP / IdP として構成された NetScaler に対し、細工した SAML メッセージを送信してメモリオーバーフローを誘発（勧告の記述範囲・実悪用の報告なし）
+2. RCE の場合はアプライアンス上での永続化・セッション窃取（推測）
+
+【対処】
+・修正版（14.1-73.46 / 13.1-64.29 / 13.1-37.283）へ更新。12.1 / 13.0 は EoL のためサポート版へ移行
+・更新までの間、SAML 構成の必要性を確認し、不要であれば SAML アクションを無効化
+・更新後にアクティブセッションを終了（kill icaconnection / aaa session）し、再認証を強制
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・NetScaler の SAML 処理に関するクラッシュ（nsppe コアダンプ・プロセス再起動）と、SAML エンドポイント（/cgi/samlauth・/saml/login）への異常長リクエストを検出する。
+Splunk SPL: index=netscaler sourcetype=citrix:netscaler:syslog ("nsppe" AND ("core" OR "crash" OR "restart")) | stats count by host, _time
+Splunk SPL: index=netscaler sourcetype=citrix:netscaler:appfw url IN ("*/cgi/samlauth*","*/saml/*") | stats count avg(request_size) max(request_size) by src_ip
+→ SAML を使わない構成では該当なし。パケットエンジンの再起動が複数回続く場合は DoS 試行を疑う。
+
+JPCERT/CC・IPA 発行状況（24h 窓内）: 未発行 — CVE-2026-107406 は24時間窓内に注意喚起の発行を確認できず
+
+【参照】
+・GitHub Advisory Database / EUVD: GHSA-x62m-6223-4vq2 / EUVD-2026-95315: CVE-2026-107406 NetScaler ADC and Gateway memory overflow（CTX697191） https://github.com/advisories/GHSA-x62m-6223-4vq2
+
+------------------------------------------------------------
+2. CVE-2026-78401 / IBM Security Verify Access / IBM Verify Identity Access（アクセス管理・リバースプロキシ WebSEAL。未認証デシリアライゼーション RCE。同時公開: CVE-2026-78406（同・未認証 RCE 9.8）・CVE-2026-19491（未認証の認証バイパス 9.1）・CVE-2026-16823（認証不備によるセキュリティ制限バイパス 9.1）・CVE-2026-16916（認証済み RCE 9.1））（IBM）
+対象: IBM Security Verify Access 10.0〜10.0.9.2、IBM Verify Identity Access 11.0〜11.0.3。修正版は IBM セキュリティブレティン参照（本窓では版番号未取得）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: v3 9.8 (Critical)
+状態: KEV未登録・悪用未確認
+パッチ提供: 提供済み（IBM セキュリティブレティン記載の修正版）
+
+【24時間以内の変化】
+[NVD（IBM PSIRT CNA） 2026-10-09 06:18] IBM Security Verify Access / Verify Identity Access の 5 CVE（未認証デシリアライゼーション RCE 2 件・未認証の認証バイパス 2 件・認証済み RCE 1 件・CVSS 9.1〜9.8）が NVD に一括公開。
+
+【概要】
+IBM のアクセス管理製品 IBM Security Verify Access 10.0〜10.0.9.2 および後継の IBM Verify Identity Access 11.0〜11.0.3 に、信頼できないデータのデシリアライゼーションによりリモートの未認証攻撃者が任意コードを実行できる脆弱性 2 件（CVE-2026-78401 / CVE-2026-78406・各 CVSS 9.8）が公開された。同時に、不適切な認証による認証バイパス（CVE-2026-19491・9.1）、セキュリティ制限のバイパス（CVE-2026-16823・9.1）、保護機構の失敗による認証済み RCE（CVE-2026-16916・9.1）も公開されている。同製品は WebSEAL リバースプロキシとして企業 Web アプリの認証境界に置かれることが多く、未認証 RCE は SSO セッションや背後アプリ全体の侵害に直結し得る（推測）。悪用・PoC・KEV・報道は本窓で確認されず、IBM ブレティンの修正版番号・ベクタの詳細は本窓で未取得。国内昇格トリガーなしのため参考B。
+
+攻撃の流れ:
+1. 到達可能な Verify Access（WebSEAL / 管理 IF）へ細工したシリアライズデータを送信し、未認証でコード実行（NVD 記載の脆弱性構造・実悪用の報告なし）
+2. 認証境界上での資格情報・セッション窃取と背後アプリへの横展開（推測）
+
+【対処】
+・IBM ブレティンの修正版へ更新
+・管理 IF（LMI）をインターネットから遮断し、WebSEAL のジャンクション以外の到達を制限
+・更新までの間、アプライアンス上の予期しないプロセス起動・外向き通信を監視
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・Verify Access アプライアンスの監査ログで未認証状態からの管理操作成功、WebSEAL のクラッシュ/再起動、アプライアンスからの新規外向き接続を検出する。
+Splunk SPL: index=iam sourcetype=ibm:isva:audit (outcome="SUCCESS" AND authn_type="none") OR event_type="admin_login" | stats count values(src_ip) by user, event_type
+→ アプライアンスは外向き通信が限定的。新規宛先への接続は侵害の強いシグナル。
+
+JPCERT/CC・IPA 発行状況（24h 窓内）: 未発行 — CVE-2026-78401 は24時間窓内に注意喚起の発行を確認できず
+
+【参照】
+・NVD: NVD: CVE-2026-78401 https://nvd.nist.gov/vuln/detail/CVE-2026-78401
+・NVD: NVD: CVE-2026-78406 https://nvd.nist.gov/vuln/detail/CVE-2026-78406
+・NVD: NVD: CVE-2026-19491 https://nvd.nist.gov/vuln/detail/CVE-2026-19491
+
+------------------------------------------------------------
+3. CVE-2026-14502 / IBM DataPower Gateway（API / 統合ゲートウェイ・LDAP 認証で空パスワードを拒否しないことによるリモートからの管理者アクセス。同時公開: CVE-2026-14269（未認証ヒープオーバーフロー RCE 9.8）・CVE-2026-15762 / CVE-2026-16340（境界外書込み RCE 9.8・後者は RFC2047 encoded-word パーサ）・CVE-2026-14992（バッファオーバーフロー 9.8）・CVE-2026-14991（ローカル 9.8）・CVE-2026-14990（未認証 XSS 9.3））（IBM）
+対象: IBM DataPower Gateway 10.5.0.0〜10.5.0.22、10.6.1〜10.6.6、10.6.0.0〜10.6.0.10、11.0.0.0〜11.0.0.2（CVE-2026-14990 は 10.6.0.0〜10.6.0.10 のみ）。修正版は IBM セキュリティブレティン参照（本窓では版番号未取得）
+------------------------------------------------------------
+
+優先度: 高
+CVSS: v3 9.8 (Critical)
+状態: KEV未登録・悪用未確認
+パッチ提供: 提供済み（IBM セキュリティブレティン記載の修正版）
+
+【24時間以内の変化】
+[NVD（IBM PSIRT CNA） 2026-10-08 22:17] IBM DataPower Gateway の 7 CVE（空パスワードによる管理者アクセス・未認証ヒープオーバーフロー・境界外書込み RCE 等・CVSS 9.3〜9.8）が 2026-10-08 13:17〜15:17 UTC に NVD に一括公開。
+
+【概要】
+IBM の API / 統合ゲートウェイ DataPower Gateway に、LDAP 認証時に空パスワードを拒否しないためリモート攻撃者が管理者アクセスを得られる脆弱性（CVE-2026-14502・CVSS 9.8）と、未認証リモート攻撃者による任意コード実行につながるヒープベースバッファオーバーフロー（CVE-2026-14269）、境界外書込み（CVE-2026-15762、CVE-2026-16340＝RFC2047 encoded-word パーサ）、バッファオーバーフロー（CVE-2026-14992）、ローカルのバッファオーバーフロー（CVE-2026-14991）、未認証 XSS（CVE-2026-14990・9.3）の計 7 件が NVD に一括公開された。影響版は 10.5.0.0〜10.5.0.22 / 10.6.x / 11.0.0.0〜11.0.0.2 と広い。DataPower は金融・公共の API 境界やメッセージ変換に用いられる境界機器であり、空パスワードでの管理者アクセスは設定次第で即座に悪用可能な構造（推測）。悪用・PoC・KEV・報道は本窓で確認されず、IBM ブレティンの修正版番号は未取得。IBM PSIRT 単一ベンダーの一括公開だが、代表 CVE を参考Bに置き全件を併記する。
+
+攻撃の流れ:
+1. LDAP 認証を構成した DataPower の管理 IF / サービスへ空パスワードで認証を試み管理者アクセス（CVE-2026-14502・NVD 記載）、または細工したメッセージで未認証メモリ破壊（CVE-2026-14269 / 15762 / 16340）
+2. ゲートウェイ経由のトラフィック傍受・バックエンド資格情報の取得（推測）
+
+【対処】
+・IBM ブレティンの修正版へ更新
+・LDAP 連携の管理ログインで空パスワードを拒否するよう LDAP 側（bind 設定）でも制御し、管理 IF を管理網に限定
+・メール（RFC2047）を処理しないサービスでは関連機能を無効化
+
+【IoC】
+IoC: 確認されず
+
+【監視ポイント】
+・DataPower の管理ログイン（WebGUI / SSH / REST 管理 IF）で空または異常に短い資格情報による成功、アプライアンスのクラッシュ・再起動（境界外書込みの試行）を検出する。
+Splunk SPL: index=datapower sourcetype=ibm:datapower:log (category="auth" AND result="success") | stats count dc(src_ip) by user, mgmt_interface
+Splunk SPL: index=datapower sourcetype=ibm:datapower:log ("crash" OR "core dump" OR "reboot") | stats count by host, _time
+→ LDAP 連携管理者の成功ログインで送信元が管理網外のものを優先。
+
+JPCERT/CC・IPA 発行状況（24h 窓内）: 未発行 — CVE-2026-14502 は24時間窓内に注意喚起の発行を確認できず
+
+【参照】
+・NVD: NVD: CVE-2026-14502 https://nvd.nist.gov/vuln/detail/CVE-2026-14502
+・NVD: NVD: CVE-2026-14269 https://nvd.nist.gov/vuln/detail/CVE-2026-14269
+・NVD: NVD: CVE-2026-16340 https://nvd.nist.gov/vuln/detail/CVE-2026-16340
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・CVE-2026-21589 (Atlassian Data Center 8製品（未認証の任意ファイル読取り）) → [already_reported] 既報（2026-10-07 本編・2026-10-08 ゼロデイ特報で active_exploitation に更新済み）。本窓では SecurityWeek（2026-10-08 23:04 JST）が Previdian ハニーポット観測として 10-06 以降 190 件の悪用試行・32 IP・10 か国、watchTowr の PoC（Crowd 資格情報ファイル→Jira 管理者）を報道したが、exploitation_stage は active_exploitation のまま変化なし。KEV は 2026-10-09 10:08 JST スナップショット（2026.10.08）でも未収載。Atlassian の暫定策（修正版適用・公開停止・WAF ルール）は既報のとおり。
+・CVE-2026-102255 (SonicWall SMA1000（Appliance Work Place の事前認証 SSRF）) → [already_reported] 既報（2026-10-08 本編）。本窓では SecurityWeek（2026-10-08 21:37 JST）が SonicWall / Splunk の修正をまとめて報道（SNWLID-2026-0017・CVE-2026-102255 CVSS 10.0・同時修正 CVE-2026-102256 / 102257 / 102258・影響 12.4.3-03526 以前 / 12.5.0-02952 以前・修正 12.4.3-03670 / 12.5.0-03082・悪用の証拠なし・ファイアウォールの SSL-VPN は対象外）。状態変化なし。同時修正 3 件の CVE 番号は既報時点で未取得だったため提案ファイルに備考追記として記録。
+・CVE-2026-76268 (Splunk Enterprise（SHC Patroni REST API の未認証 OS コマンド実行）) → [already_reported] 既報（2026-10-08 SOC 高優先度）。本窓では SecurityWeek（2026-10-08 21:37 JST）が SVD-2026-1001（17 CVE・CVE-2026-76268 CVSS 9.8・影響 10.4.3 / 10.2.7 未満・10.0.x / 9.4.x は対象外・回避策 server.conf [postgres] disabled=true・CVE-2026-76266 ローカル権限昇格 7.7 ほか）を報道。状態変化なし（悪用・PoC・KEV なし）。
+・CVE-2026-76471 ほか7件（全件: CVE-2026-76471, CVE-2026-76465, CVE-2026-76485, CVE-2026-76486, CVE-2026-76501, CVE-2026-76455, CVE-2026-76459, CVE-2026-76464） (Cisco NX-OS Software（Nexus 3000/9000・NX-API / NGOAM / MPLS OAM / SRv6 OAM の未認証 root RCE/DoS）) → [already_reported] 既報（2026-10-08 参考B）。本窓では Security NEXT（2026-10-08 10:07 JST・14 件修正・半数がクリティカル）、BleepingComputer（2026-10-09 00:26 JST・5 件のクリティカルで Nexus スイッチ乗っ取り）、SecurityWeek（00:28 JST・Cisco が計 12 件のクリティカルを修正）が報道。Cisco は悪用を確認しておらず、Software Checker・機能無効化（NX-API / NGOAM / SRv6）を案内。軸2 は国内報道で +3 となるが軸1≥8 かつ軸2<4 のため参考B判定は不変で、セクション変更なし。別勧告の Cisco Smart Software Manager On-Prem（CVE-2026-76480 / 76482 / 76483 / 76484）は 2026-10-08 レポートで除外記録済み。
+・CVE-2026-12260 (NetBoard CRM デモプラットフォーム（/module/auth/recovery.php の user-name パラメータ SQLi・INCIBE CNA）) → [low_score] CVSS 10.0 だがデモ用プラットフォームで実環境利用は限定的。悪用・PoC・KEV・報道は本窓になし。 軸1=6（未認証 +3・CVSS +3）で閾値未満・国内昇格トリガーなし。
+・CVE-2026-106126 (Tenable Identity Exposure（SaaS・AD Events Listener のコマンドインジェクション・認証済み低権限→PDCe 上 SYSTEM）) → [low_score] CVSS 9.9 だが認証済み（PR:L）。悪用・PoC・KEV・報道は本窓になし。 軸1=4（CVSS +3・普及 +1）で閾値未満。セキュリティ製品（ID 脅威検知）の脆弱性としてη条件により Section 4 SOC 推奨 中優先度 SOC-2026-10-09-003 に記録。
+・CVE-2026-103646 (WordPress プラグイン Ultimate Multisite 2.17.0 未満（未認証のアカウント乗っ取り・WPScan CNA）) → [low_score] CVSS 9.8・未認証ログアウト状態のチェックアウトを既存アカウントへ紐付けてログインできる。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満・国内昇格トリガーなし。
+・CVE-2026-103692 (WordPress プラグイン Frontend Dashboard 3.0.5 未満（未認証の任意 PHP 関数呼出しによる管理者乗っ取り・WPScan CNA）) → [low_score] CVSS 9.8・未認証。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満・国内昇格トリガーなし。WordPress プラグインの未認証乗っ取りは公開後短期で大規模スキャンに移行する傾向（既報事実）があり継続監視。
+・CVE-2026-104075 (TVU Networks Receiver/Transceiver ファームウェア 7.9 未満（POST /tvu/Login の UserName 空指定による認証バイパス・VulnCheck CNA）) → [low_score] CVSS 9.8・放送用映像伝送機器。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満・国内昇格トリガーなし。同製品の CVE-2026-104076 と同一勧告。
+・CVE-2026-104076 (TVU Networks Receiver/Transceiver ファームウェア 7.9 未満（REST API 認証欠如による設定読取り・改変・VulnCheck CNA）) → [low_score] CVSS 9.3。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満・国内昇格トリガーなし。
+・CVE-2026-105110 (Iskratel Innbox GPON ONT（login.xgi CGI の CLI パラメータによる未認証 root OS コマンドインジェクション・TuranSec CNA）) → [low_score] CVSS 9.8・ISP 配布型 ONT。悪用・PoC・KEV・報道は本窓になし。 軸1=9（未認証 +3・境界機器 +3・CVSS +3）だが軸2=0 で、ISP 向け地域限定機器として参考B掲載は見送り除外に記録（判断）。Mirai 系ボットネットの標的になり得るため継続監視。
+・CVE-2026-107459 (Openfind SecuShare Pro（未認証 OS コマンドインジェクション・TWCERT CNA）) → [low_score] CVSS 9.8・台湾製ファイル共有製品。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満・国内昇格トリガーなし。
+・CVE-2026-107699 (npm ppt2png 0.0.6 以前（child_process.exec の入出力パス未検証による OS コマンドインジェクション・VulnCheck CNA）) → [low_score] CVSS 9.8・利用規模小の npm パッケージ。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満。
+・CVE-2026-107700 (npm dot-access 0.0.3〜1.0.0（get() のパスを Function 本体へ連結するコードインジェクション・VulnCheck CNA）) → [low_score] CVSS 9.8。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満。
+・CVE-2026-107703 (npm @enmaso/node-convert 1.0.0 以前（ImageMagick 呼出しの OS コマンドインジェクション・VulnCheck CNA）) → [low_score] CVSS 9.8。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満。
+・CVE-2026-107704 (Ruby gem image_optimizer 1.3.0〜1.9.0（identify_format の OS コマンドインジェクション・VulnCheck CNA）) → [low_score] CVSS 9.8。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満。
+・CVE-2026-107779 (Dromara Skyeye（同梱 xxl-job-admin の認証欠如による GLUE_SHELL ジョブ実行・VulnCheck CNA）) → [low_score] CVSS 9.8・中国系 OSS 業務システム。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満。同製品の CVE-2026-107780 / 107781 と同時公開。
+・CVE-2026-107780 (Dromara Skyeye（/post/TtsController/textToSpeech の format パラメータによる未認証 OS コマンドインジェクション・VulnCheck CNA）) → [low_score] CVSS 9.8。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満。
+・CVE-2026-107781 (Dromara Skyeye（OnlyOffice 保存コールバックの SSRF・認可欠如・VulnCheck CNA）) → [low_score] CVSS 9.1。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満。
+・CVE-2026-82335 ほか7件（全件: CVE-2026-82335, CVE-2026-82344, CVE-2026-84272, CVE-2026-84244, CVE-2026-82334, CVE-2026-75875, CVE-2026-80381, CVE-2026-84249） (IBM Guardium Data Protection 12.0〜12.2.2（単一ベンダー IBM PSIRT の一括公開・うち CVE-2026-75875 / 80381 / 84249 は EUVD-only 層）) → [low_score] MongoDB プロトコルパーサのヒープオーバーフロー（CVE-2026-82335・9.8）、S-TAP TDS ログイン再構成の未認証ヒープオーバーフロー（CVE-2026-82344・9.8）、edge-controller の認証欠如による任意コンテナイメージ実行（CVE-2026-84272・9.8）、未認証ストアド XSS（CVE-2026-84244・9.3）、TDS7 LOGIN7 パーサの境界外読取り（CVE-2026-82334・9.1）、EUVD-only のパストラバーサル RCE（CVE-2026-75875・9.8）・SQLi（CVE-2026-80381・9.8）・重要機能の認証欠如（CVE-2026-84249・9.8）。悪用・PoC・KEV・報道は本窓になし。 DB 監査製品は通常 DB セグメント内に閉じるため軸1=7（未認証 +3・CVSS +3・普及 +1）で閾値未満・国内昇格トリガーなし。セキュリティ製品の脆弱性（η）として SOC 推奨 中優先度 SOC-2026-10-09-003 で Tenable と併記。
+・CVE-2026-85097 (WordPress プラグイン Bricksforge 3.1.8.9 以前（temporaryFileUploads の URL 未検証による未認証任意ファイルアップロード・Wordfence CNA）) → [low_score] CVSS 9.8・未認証。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満・国内昇格トリガーなし。
+・CVE-2026-9209 (mJobTime build 15.7.3.32 以前（Login.aspx 管理ハンドラの未認証 SQL 実行・DBA 権限・VulnCheck CNA）) → [low_score] CVSS 9.8・建設業向け勤怠製品（米国）。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満。
+・CVE-2026-92555 (AKINSOFT WOLVOX Control Panel 26.02.25〜26.02.26 未満（送信データへの機微情報挿入・TR-CERT CNA）) → [low_score] CVSS 9.8・トルコ国内向け業務ソフト。悪用・PoC・KEV・報道は本窓になし。 軸1=4 で閾値未満。
+・CVE-2026-19218 (AKINSOFT MyRezzta 2.06.03〜2.07.01 未満（脆弱なパスワード回復機構・TR-CERT CNA）) → [low_score] CVSS 9.1。悪用・PoC・KEV・報道は本窓になし。 軸1=4 で閾値未満。
+・CVE-2026-93034 (SGLang（LLM 推論サーバ・ZMQ メッセージデコーダの pickle.loads 無条件デシリアライズによる任意コード実行・CERT/CC CNA）) → [low_score] CVSS 9.8・SGLANG_USE_PICKLE_IPC 無効時も msgpack 経路で残存。悪用・PoC・KEV・報道は本窓になし。 軸1=7（未認証 +3・CVSS +3・普及 +1）で閾値未満・国内昇格トリガーなし。AI 推論基盤の露出リスクとして Section 4 SOC 推奨 中優先度 SOC-2026-10-09-002 に Ollama と併記。
+・CVE-2026-103663 (Ollama（/api/pull の layer digest 検証不備によるパストラバーサル・モデルストア外への悪意あるバイナリ書込み・CERT.PL CNA）) → [low_score] CVSS 9.4・未認証。悪用・PoC・KEV・報道は本窓になし。 軸1=7 で閾値未満・国内昇格トリガーなし。露出 Ollama を狙う自動化攻撃の前例（既報事実）があり Section 4 SOC 推奨 中優先度 SOC-2026-10-09-002 に記録。
+・CVE-2026-107282 (AsyncHttpClient 3.0.13 / 2.16.1 未満（クロスホストリダイレクト時のプロキシ・接続プール選択不整合・GHSA 起点）) → [low_score] CVSS 9.4（GHSA）・Java HTTP クライアントライブラリ。悪用・PoC・KEV・報道は本窓になし。 悪用には特定のリダイレクト条件が必要で軸1=4 で閾値未満。スイープの GHSA 起点 1 件。
+・CVE-2026-107640 (Integrics Enswitch 3.13〜4.4（/api/json/user/password/update/ の reset パラメータ省略による未認証パスワード変更・VulnCheck CNA）) → [low_score] CVSS 9.3・VoIP 課金/交換ソフト。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満。
+・CVE-2026-107510 (Infoblox（トラブルシューティングコマンドの引数インジェクションによる権限昇格・認証済み高権限・Infoblox CNA）) → [low_score] CVSS 9.1 だが PR:H。悪用・PoC・KEV・報道は本窓になし。 軸1=4 で閾値未満・影響製品名は NVD 記述に明示なし。
+・CVE-2026-17609 (WordPress プラグイン Super Forms 6.3.316 以前（submit_form の任意ディレクトリ削除・Wordfence CNA）) → [low_score] CVSS 9.1・未認証だが影響は削除（可用性）。悪用・PoC・KEV・報道は本窓になし。 軸1=3 で閾値未満。
+・CVE-2026-79842 (HPE Intelligent Management Center（iMC）7.3 E0713 未満（認証バイパス・HPE CNA）) → [low_score] CVSS 9.1・ネットワーク管理製品。悪用・PoC・KEV・報道は本窓になし。 軸1=7（認証バイパス +3・CVSS +3・普及 +1）で閾値未満・国内昇格トリガーなし（Security NEXT 報道は ClearPass のみ）。ネットワーク管理製品の認証バイパスとして継続監視。
+・CVE-2026-88647 (GnuTLS 3.8.13（Common Name フォールバックのホスト名検証バイパス・MITRE CNA）) → [low_score] CVSS 9.1（MITRE/NVD）・盗聴には細工証明書と中間者位置が必要。悪用・PoC・KEV・報道は本窓になし。 軸1=4 で閾値未満。CVE-2026-95210 と同時公開。
+・CVE-2026-95210 (GnuTLS 3.8.13（無効な拡張を含む証明書の受理・MITRE CNA）) → [low_score] CVSS 9.1。悪用・PoC・KEV・報道は本窓になし。 軸1=4 で閾値未満。
+・CVE-2026-107722 (npm fast-jwt 6.2.0〜6.3.0 未満（PEM ヘッダ前に非空白文字を持つ RSA 公開鍵を HMAC 秘密として誤分類・アルゴリズム混同・GHSA-ww5h-9m49-7xx4・EUVD-2026-95347・NVD 未収載）) → [low_score] CVSS 9.8（EUVD 記載の CNA 値・NVD 未収載のため暫定）。公開鍵が既知であれば HMAC 署名の偽造により JWT 検証をバイパスし得るが、特定の鍵フォーマット条件が必要。悪用・PoC・KEV・報道は本窓になし。 軸1=6 で閾値未満。EUVD-only 層（スイープ 5 件のうち IBM Guardium 3 件は上記集約、NetScaler 1 件は参考B採用）。
+・CVE-2025-30237 ほか4件（全件: CVE-2025-30237, CVE-2025-30238, CVE-2025-30239, CVE-2025-30240, CVE-2025-30241） (TP-Link Aginet ISP 向けルータ（SEC Consult が 2026-10-08 に技術詳細公開・米 4 州の提訴で言及）) → [low_score] 2025 年採番の既知脆弱性で、本窓の変化は SEC Consult の技術詳細公開と州訴訟報道（SecurityWeek 2026-10-08 19:24 JST）。悪用・KEV は本窓で確認されず、ISP 配布機器で国内影響は限定的。Section 4 SOC 推奨 低優先度 SOC-2026-10-09-004 に記録。
+・CVE-2026-72898 (Metabase（BI プラットフォーム・未認証 RCE）) → [already_reported] 既報（2026-08-08・active_exploitation）。本窓では JPCERT/CC 注意喚起 at260030（2026-10-08）が国内の個人情報漏えい事案の一類型（ケースC）として本CVEの悪用を挙げ、THN・Security NEXT が報道。exploitation_stage は変化なし。Section 2 トレンド記事 TREND-2026-10-09-001 で扱う。
+
+本日の集計:
+CVE — ゼロデイ特報5件 / 本編0件 / 参考A3件 / 参考B3件 / 除外36件
+
+網羅スイープ: 候補55件 / 処理55件 / 未処理0件 / KEV窓内追加5件（2026-10-08 09:54 JST と 2026-10-09 10:08 JST の KEV スナップショット差分で本窓に帰属） / EUVD窓内49件（うちNVD/KEV未収載5件）
+
+========================================
