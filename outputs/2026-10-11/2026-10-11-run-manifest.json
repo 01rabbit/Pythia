@@ -1,0 +1,104 @@
+{
+  "_schema_version": "1.0",
+  "_run_date": "2026-10-11",
+  "_comment": "日次実行の各ステップの入出力・時刻・内容ハッシュ・版。予報の先見性を第三者が追跡できるようにするための実行記録（改善計画 §10）。",
+  "steps": [
+    {
+      "step": "snapshot_sources",
+      "status": "ok",
+      "started_at_utc": "2026-10-12T02:47:17Z",
+      "ended_at_utc": "2026-10-12T02:47:17Z",
+      "version": "snapshot_sources/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/evidence/manifests/2026/10/2026-10-11.json",
+          "sha256": "b0cc903a9fa40d6df7870712d82f4e88250c3f3045eb83579fe72f2345fc4954"
+        }
+      ],
+      "note": "遡及生成（2026-10-12）: 当日朝に daily-pipeline.yml が固定した Evidence Ledger を --verify-only で検証。取得はしていない"
+    },
+    {
+      "step": "nvd_window_sweep",
+      "status": "ok",
+      "started_at_utc": "2026-10-12T01:10:37Z",
+      "ended_at_utc": "2026-10-12T01:10:37Z",
+      "version": "nvd_window_sweep/1.0",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": ".cache/daily-security-intel/2026-10-11/step1-sweep.json",
+          "sha256": "fd5a733d7367f8de32408ec56a56a5452b1643f60b093ede88c65a749a8febe6"
+        }
+      ],
+      "note": "遡及生成: 2026-10-12 に過去窓を NVD pubStartDate/pubEndDate・KEV dateAdded・EUVD で列挙。CVSS は 2026-10-12 時点の値（事後改訂を含みうる）"
+    },
+    {
+      "step": "backfill_daily_report",
+      "status": "ok",
+      "started_at_utc": "2026-10-12T01:10:37Z",
+      "ended_at_utc": "2026-10-12T01:26:20Z",
+      "version": "SKILL.md Step1-3 (backfill)",
+      "inputs": [
+        "security-intel-collector/data/raw/news-2026-10-11.json",
+        "security-intel-collector/data/raw/cves-2026-10-11.json",
+        ".cache/daily-security-intel/2026-10-11/step1-sweep.json"
+      ],
+      "outputs": [
+        {
+          "path": "outputs/2026-10-11/2026-10-11-security-report.json",
+          "sha256": "f902a1f2da46dc0fd2789d41438b3cf360ce6f95d8cc2d0f474e0a5f455d079e"
+        }
+      ],
+      "note": "本体 Routine 未発火による欠損日を 2026-10-12 に遡及生成。窓終了（2026-10-11 07:00 JST）までの事実のみ使用。予報（Step 3.5-3）・戦術予報（Step 3.6）は発行せず"
+    },
+    {
+      "step": "normalize_observations",
+      "status": "ok",
+      "started_at_utc": "2026-10-12T01:26:20Z",
+      "ended_at_utc": "2026-10-12T01:26:20Z",
+      "version": "01-normalize.md (backfill)",
+      "inputs": [
+        "outputs/2026-10-11/2026-10-11-security-report.json"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/observations/2026/10/2026-10-11.json",
+          "sha256": "720a994cecc33a5a67d0b25723d3fb8ac7f6b8699a5eb4e30df51ce084327b11"
+        }
+      ],
+      "note": "available_at_utc は遡及生成の実時刻（2026-10-12）"
+    },
+    {
+      "step": "forecast",
+      "status": "skipped",
+      "started_at_utc": "2026-10-12T01:26:20Z",
+      "ended_at_utc": "2026-10-12T01:26:20Z",
+      "version": "03-forecast.md",
+      "inputs": [],
+      "outputs": [
+        {
+          "path": "forecaster/forecasts/daily/2026-10-11.json",
+          "sha256": "83a427d270789e5334e63ba292657500f2c7d06e09d5623406a99a891f4b0a8f"
+        }
+      ],
+      "note": "遡及生成のため予報は発行しない（forecaster/README.md バックフィル方針・後知恵バイアス回避）。forecasts: [] のサイドカーのみ"
+    },
+    {
+      "step": "build_event_store",
+      "status": "ok",
+      "started_at_utc": "2026-10-12T02:46:49Z",
+      "ended_at_utc": "2026-10-12T02:46:49Z",
+      "version": "observation-event-adapter-v1",
+      "inputs": [
+        "forecaster/observations/2026/10/2026-10-11.json"
+      ],
+      "outputs": [
+        {
+          "path": "forecaster/events/2026/10/2026-10-11.json",
+          "sha256": "5fc2a9aa2b10efe8fd727795afdb8d28b5077dcb5e2f8c4e8d5c2f0b3bdd1d3a"
+        }
+      ]
+    }
+  ]
+}
