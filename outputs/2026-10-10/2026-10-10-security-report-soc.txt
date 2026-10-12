@@ -1,0 +1,280 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-10 07:00 JST（遡及生成: 2026-10-12T10:39:09+09:00）
+調査期間: 2026-10-09 07:00 〜 2026-10-10 07:00 JST
+本レポートは 2026-10-12 に収集証跡から遡及生成したものである
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. IPA が「不正アクセスによる漏えい等の事案を踏まえ、速やかに実施すべき対策等について」を公表、JPCERT/CC も注意喚起 at260030 を更新 — 国内で相次ぐ会員・アカウントサービスからの大規模漏えい（ローソン・ブックオフ・JGC Digital 等）
+観点: zeroday  採用契機: α/β
+------------------------------------------------------------
+優先度: high
+対象: 外部公開の自社構築アプリ・会員/アカウントサービス・利用中の外部クラウド/VPN サービス全般
+
+【24時間以内の変化】
+[IPA 2026-10-09] IPA が重要なセキュリティ情報として「不正アクセスによる漏えい等の事案を踏まえ、速やかに実施すべき対策等について」を公表（Evidence Ledger の IPA フィード・Last-Modified 2026-10-09 06:15 UTC）。
+[JPCERT/CC 2026-10-09] JPCERT/CC が注意喚起「直近で相次いでいる国内組織における不正アクセスに関する注意喚起」（at260030）を更新。
+[Security NEXT / ScanNetSecurity 2026-10-09] ローソン（ローソンID 2,155,345 件）、ブックオフ（会員管理システム）、JGC Digital（BI ツール Metabase・約6万件）、戸田建設（取引先情報）、アバハウス、大気社マレーシア子会社（メールアカウント）、ランドハウジング（内見予約システム）の不正アクセス公表が同日に報道。
+
+【概要】
+IPA は、金融・通信ほか多数の国内組織で個人情報を大量に保有するオンライン/アカウントサービスからの漏えいが相次ぎ、窃取データの公開脅迫や不正販売など二次被害も増えているとして、経営層主導で速やかに実施すべき対策を公表した。IPA は特定製品・サービスの脆弱性を原因と確認しておらず、公開事例からは外部公開アプリ/サービスの侵害とアカウント侵害が主な侵入口と見ている。即時確認事項は (1) 自社構築・運用の外部公開アプリの全件把握と直近1カ月→3カ月のログ異常確認・未適用パッチの適用、(2) 利用中の外部サービス（クラウド・VPN 含む）の全社棚卸しとログイン失敗・不審な送信元 IP・時間帯のログ確認、未知アカウント・無効化済みアカウントの再有効化の確認、(3) 異常があればインシデントとして対応し専門ベンダーへ調査依頼、(4) 保有データの見直しと公的機関が公開する不審 IP・侵害指標の監視。恒久対策として公開範囲の縮小・MFA・権限/API 連携の見直し・ログ範囲と保存期間の見直し・暗号化、サプライチェーン（海外拠点・委託先）への展開を求め、METI 経営ガイドラインと 2027-03 開始予定の SCS 評価制度に言及。同日 JPCERT/CC も同趣旨の注意喚起 at260030 を更新した（更新内容の差分は RSS からは確認できない）。本窓では Security NEXT / ScanNetSecurity がローソン・ブックオフ・JGC Digital（Metabase）・戸田建設・アバハウス・大気社・ランドハウジングの不正アクセス公表を報道しており（ローソン以外は見出しのみ取得・詳細は未確認）、注意喚起が指す連鎖の実例。
+
+【推奨アクション】
+・外部公開アプリ・会員サービス・管理画面（BI ツール・予約システム等）の全件棚卸しと、直近1〜3カ月のアクセスログ異常（エラー急増・パターン逸脱）の確認を今日中に着手する
+・クラウド/VPN/SaaS の全アカウントで未知アカウント・再有効化済みアカウント・不審な送信元/時間帯のログインを確認し MFA 未適用を解消する
+・異常を1件でも確認したらインシデントとして扱い、専門ベンダーへの調査依頼と個人情報保護委員会への報告要否を判断する
+・IPA / JPCERT/CC / 警察庁等が今後公開する不審 IP・侵害指標を SIEM の監視リストに取り込む運用を用意する
+
+【監視】
+公開アプリ・SaaS の認証ログで失敗の急増、新規送信元 ASN/国、営業時間外ログイン、管理アカウントの作成/再有効化を監視する。
+Splunk SPL: index=auth action=failure | stats count dc(user) as users by src_ip | where count>50 OR users>10
+Splunk SPL: index=auth action=success earliest=-30d | iplocation src_ip | stats dc(Country) as countries values(Country) by user | where countries>2
+Splunk SPL: index=wineventlog (EventCode=4720 OR EventCode=4722 OR EventCode=4728) | stats count by host, Subject_Account_Name, Target_Account_Name
+IPA は保存期間や可視範囲がサービス事業者ごとに異なる点を注意しており、ログが取れていない SaaS は提供側へ照会が必要。
+
+【参照】
+・IPA: 不正アクセスによる漏えい等の事案を踏まえ、速やかに実施すべき対策等について https://www.ipa.go.jp/security/security-alert/2026/alert20261009.html
+・JPCERT/CC: 注意喚起: 直近で相次いでいる国内組織における不正アクセスに関する注意喚起（更新） https://www.jpcert.or.jp/at/2026/at260030.html
+・Security NEXT: ローソンIDと予約サービスに不正アクセス- 個人情報が流出 https://www.security-next.com/191245
+・Security NEXT: 会員管理システムに不正アクセス、個人情報が流出 - ブックオフ https://www.security-next.com/191255
+・ScanNetSecurity: JGC Digital が利用する BI ツール「Metabase」に不正アクセス、約 6 万件の情報が取得されたことを確認 https://scan.netsecurity.ne.jp/article/2026/10/09/56422.html
+・ScanNetSecurity: 戸田建設に不正アクセス、取引先に関する情報が漏えい https://scan.netsecurity.ne.jp/article/2026/10/09/56425.html
+・Security NEXT: システムに不正アクセス、顧客への不審メールで判明 - アバハウス https://www.security-next.com/190998
+・ScanNetSecurity: 大気社のマレーシアグループ会社従業員のメールアカウントに不正アクセス、不審メールの送信を確認 https://scan.netsecurity.ne.jp/article/2026/10/09/56424.html
+・ScanNetSecurity: ランドハウジングが登録する内見予約システムに不正アクセス、運営会社に原因究明を要請 https://scan.netsecurity.ne.jp/article/2026/10/09/56423.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. AnyDesk Linux 8.0.2 の事前認証ヒープバッファオーバーフロー（root 権限 RCE・CVE 未採番）の完全エクスプロイト「AnyPwn」が GitHub で公開
+観点: zeroday  採用契機: δ
+------------------------------------------------------------
+優先度: medium
+対象: AnyDesk Linux 8.0.2 以前（修正版 8.0.3・2026-06 / 最新 8.1.0）。Windows / macOS は影響なし（AnyDesk）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-09] THN が、V12 security team（Rick de Jager 氏・コードレビューエンジン V12 で発見）が 2026-10-08 に完全エクスプロイト AnyPwn を GitHub で公開したと報道。
+
+【概要】
+AnyDesk Linux のセッションプロトコルで mode-5 ストリームパケットを処理する際、宣言ペイロード長に16バイトのヘッダを32ビット演算でオーバーフロー検査なく加算するため、サイズがラップして過小な割り当てとなるヒープバッファオーバーフローが存在し、接続承認前に root でコマンド実行できる（ROP チェーン・確率的で失敗時はサービスがクラッシュ）。AnyDesk は 2026-06 の 8.0.3 で修正したが、変更履歴は「クラッシュにつながるバグを修正」とのみ記載し、2026-10-09 時点で CVE 未採番・正式アドバイザリなし。公開エクスプロイトは 8.0.2 向けで、8.0.1 等への該当は未確認。同じコードパスが AnyDesk のリレーサーバ経由でも到達可能なことを研究者が Frida で確認しているが、リレー経由の完全な悪用は未実証。実悪用の報道はない。CVE 未採番かつ修正済みのため CVE トラックには載せず、PoC 公開済みの監視対象外事象として SOC 推奨で記録する（後日 CVE 採番時に Section 3 へ移行）。
+
+【推奨アクション】
+・Linux 端末・サーバの AnyDesk を 8.0.3 以降（可能なら 8.1.0）へ更新し、資産管理で 8.0.2 以前の残存を確認する
+・更新できない間は TCP 7070 への到達元を制限する（AnyDesk 推奨）
+・リレーサーバ経由の到達可能性が未解決のため、Linux 上の AnyDesk サービスの異常終了（クラッシュ）を悪用失敗の兆候として監視する
+
+【監視】
+Linux ホストで anydesk プロセスのセグメンテーション違反・再起動の連続と、TCP 7070 への外部からの接続を監視する。
+Splunk SPL: index=linux sourcetype=syslog ("anydesk" AND ("segfault" OR "core dumped" OR "Main process exited")) | stats count by host | where count>2
+Splunk SPL: index=firewall dest_port=7070 action=allowed NOT src_ip IN (10.0.0.0/8,172.16.0.0/12,192.168.0.0/16) | stats count by src_ip, dest_ip
+エクスプロイトは確率的で失敗時にクラッシュするため、短時間の連続クラッシュは試行の指標になる。
+
+【参照】
+・The Hacker News: Researchers Publish Working Exploit for Pre-Auth AnyDesk Linux Flaw That Gives Root Access https://thehackernews.com/2026/10/researchers-publish-working-exploit-for.html
+------------------------------------------------------------
+2. Tenable Nessus 10.12.4 以前の9件の脆弱性（TNS-2026-26・Critical CVE-2026-103947 CVSS 9.1 含む）— 脆弱性診断ツール自体の更新
+観点: cve  採用契機: η
+------------------------------------------------------------
+優先度: medium
+対象: Tenable Nessus 10.12.4 以前（修正版 10.12.5）
+
+【24時間以内の変化】
+[Security NEXT 2026-10-09] Security NEXT が Tenable のアドバイザリ TNS-2026-26（2026-10-01 現地公開）を国内報道。
+
+【概要】
+Tenable は Nessus 10.12.5 で9件の脆弱性を修正した。Critical の CVE-2026-103947（CVSS v3.1 9.1）はダウンロードしたコンテンツの検証不十分で、悪用には高い権限が必要だがシステム侵害に至り得る。High の4件は CVE-2026-103946（低権限ユーザーによる SQL インジェクション・Nessus 内データの読取/改変）、CVE-2026-103948（長さ値の不適切な処理）、CVE-2026-103950（型混同）、CVE-2026-103951（境界外書込み）（CVSS 8.3 または 7.2）。Medium 3件・Low 1件の詳細は記事に記載なし。悪用確認・PoC の報道はない。診断ツールは資産全体への認証情報を保持するため、侵害時の影響が大きい（η: セキュリティ製品の脆弱性）。
+
+【推奨アクション】
+・Nessus を 10.12.5 以降へ更新し、Nessus 管理 UI の到達元を診断担当ネットワークに限定する
+・Nessus に登録している認証スキャン用クレデンシャルの権限と保管状況を見直す
+
+【監視】
+特になし（棚卸し・更新確認が中心）
+
+【参照】
+・Security NEXT: 脆弱性診断ツール「Nessus」に複数の脆弱性 - 「クリティカル」も https://www.security-next.com/191268
+・Tenable: Tenable TNS-2026-26 https://www.tenable.com/security/tns-2026-26
+------------------------------------------------------------
+3. Microsoft: Windows Update 署名証明書の更新（2027-05-17 / 2027-06-19 失効）で、未サポート版・更新未適用の Windows はセキュリティ更新を受信不能に
+観点: cve  採用契機: γ
+------------------------------------------------------------
+優先度: medium
+対象: Windows 10 / 11、Windows Server 2016〜2025（WSUS 配信環境を除く）
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-09] BleepingComputer が Microsoft の Windows release health（Message Center MC1491763 併記）の告知を報道。
+
+【概要】
+Microsoft は Windows Update の証明書失効（2027-05-17 と 2027-06-19）に伴い証明書を更新し、サポート対象版には既に新証明書を配信済みで最新状態なら対応不要とした。一方、未サポート版や所定の更新未適用の端末は Windows Update サービスへのアクセスを失い更新を受信できなくなる。必要最小更新は、Windows 11 25H2 以降: 不要／Windows 11 24H2・Windows Server 2025: 2025-09 更新以降を 2027-06-19 まで／その他サポート中の Windows 11・Server 2022・Windows 10: 2026-07 更新以降を 2027-06-19 まで／Windows 10 Enterprise 2019 LTSC・Server 2019・Server 2016: 2026-07 更新以降を 2027-05-17 まで／それ以外はサポート版へ移行。WSUS から更新を受ける端末は対象外。SOC としてはパッチ適用の空白が固定化する端末の棚卸しが必要（Windows 10 Home/Pro の扱いは記事で言及なし）。
+
+【推奨アクション】
+・資産管理で 2026-07 以前の累積更新に留まる Windows 端末・サーバ（特に Server 2016/2019・LTSC）を抽出し 2027-05 までの更新計画を作る
+・未サポート版（移行不能な OT/組込み端末等）はネットワーク分離と代替緩和策を前提に扱う
+
+【監視】
+特になし（棚卸し・更新確認が中心）
+
+【参照】
+・BleepingComputer: Microsoft: Outdated Windows devices will stop receiving security updates https://www.bleepingcomputer.com/news/microsoft/microsoft-outdated-windows-devices-will-lose-security-protection-next-year
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. Microsoft クラウドサービスの Critical CVE 5件（Partner Center 10.0 / Bookings 9.9 / Azure App Service 9.8 / Dataverse 9.8 / Azure SRE Agent 9.6）— サービス側修正・利用者操作不要
+観点: cve  採用契機: β
+------------------------------------------------------------
+優先度: low
+対象: Microsoft Partner Center / Microsoft Bookings / Azure App Service / Microsoft Dataverse / Azure SRE Agent
+
+【24時間以内の変化】
+[NVD 2026-10-09] NVD に Microsoft CNA の5件が公開（2026-10-08 23:17 UTC）。網羅スイープで捕捉。
+
+【概要】
+網羅スイープで NVD 窓内公開の Microsoft クラウドサービス CVE 5件を捕捉した: CVE-2026-96207（Partner Center・証明書検証不備による権限昇格・CVSS 10.0）、CVE-2026-94510（Bookings・ユーザー制御キーによる認可バイパス・9.9）、CVE-2026-77900（Azure App Service・重要機能の認証欠如によるコード実行・9.8）、CVE-2026-88131（Dataverse・信頼できないデータのデシリアライズによるコード実行・9.8）、CVE-2026-69435（Azure SRE Agent・認可欠如による権限昇格・9.6）。いずれも Microsoft 側でサービスを修正する種類の CVE（Microsoft の CVE 公開慣行）で、利用者の更新操作は不要と見られるが、NVD 記述以上の情報（MSRC の記載・悪用有無）は本窓で未取得。国内でも広く利用されるサービス群のため把握事項として記録する。
+
+【推奨アクション】
+・MSRC の該当 CVE ページで「お客様の対応は不要（No customer action required）」の記載を確認し、必要なら Azure/M365 の監査ログで該当期間の異常な権限変更を確認する
+
+【監視】
+特になし（棚卸し・更新確認が中心）
+
+【参照】
+・NVD: NVD CVE-2026-96207（Microsoft Partner Center） https://nvd.nist.gov/vuln/detail/CVE-2026-96207
+・Microsoft: Microsoft Security Update Guide https://msrc.microsoft.com/update-guide/
+------------------------------------------------------------
+2. IBM DataPower Gateway に36件の脆弱性（CVSS 9.8 の Critical 6件・未認証リモートコード実行 CVE-2026-14269 等）
+観点: cve  採用契機: β
+------------------------------------------------------------
+優先度: low
+対象: IBM DataPower Gateway（影響・修正版は IBM Security Bulletin 参照）
+
+【24時間以内の変化】
+[Security NEXT 2026-10-09] Security NEXT が IBM のアドバイザリ（2026-09-28 現地公開）を国内報道。
+
+【概要】
+IBM は API ゲートウェイ製品 DataPower Gateway の36件の脆弱性をアップデートで修正した。うち6件は CVSS v3.1 9.8 の Critical で、CVE-2026-14269（ヒープバッファオーバーフロー・未認証リモートからの任意コード実行）、CVE-2026-15762 / CVE-2026-16340（境界外メモリ書込み・リモートコード実行）、CVE-2026-14991（任意コード実行）、CVE-2026-14992（バッファオーバーフロー）、CVE-2026-14502（LDAP 認証で空パスワードを適切に拒否せず管理者権限取得）が記事で名指しされている。影響・修正版は記事に記載がなく IBM Security Bulletin（node/7289775）の確認が必要。悪用確認の報道はない。アドバイザリ自体は 2026-09-28 公開で、本窓の変化は国内報道（Security NEXT）。
+
+【推奨アクション】
+・DataPower Gateway を利用している場合は IBM Security Bulletin で修正版を確認して適用し、LDAP 認証構成では空パスワード拒否の挙動を確認する
+
+【監視】
+特になし（棚卸し・更新確認が中心）
+
+【参照】
+・Security NEXT: APIゲートウェイ製品「IBM DataPower Gateway」に複数脆弱性 https://www.security-next.com/191271
+------------------------------------------------------------
+3. CISA ICS Advisory（2026-10-08）と ICS-CERT 採番の CVSS 9 超 CVE 7件（openPDC / openHistorian のデシリアライズ RCE・Docker イメージ固定管理者資格情報、lwIP SMTP バッファオーバーフロー、工業機器の既定資格情報・SNMP 無認証管理操作）
+観点: cve  採用契機: δ
+------------------------------------------------------------
+優先度: low
+対象: Grid Protection Alliance openPDC / openHistorian、lwIP、ICS-CERT 採番の産業機器（製品名は NVD 記述から特定できず）
+
+【24時間以内の変化】
+[JVN 2026-10-09] JVN が CISA ICS Advisory / ICS Medical Advisory（2026年10月08日）の公表を案内。
+[NVD 2026-10-10] NVD に ICS-CERT 採番の CVSS 9.2〜9.8 の7件が公開（2026-10-09 14:17〜15:17 UTC）。網羅スイープで捕捉。
+
+【概要】
+網羅スイープで ICS-CERT（ics-cert@hq.dhs.gov）採番の CVSS 9.0 超 CVE 7件を捕捉した。openPDC / openHistorian のサービスコンソールがクライアント供給データ構造をデシリアライズし、Windows 認証未使用時は未認証で到達可能な CVE-2026-100730（9.8）、openPDC 公開 Docker イメージに初回変更強制のない固定管理者資格情報が含まれる CVE-2026-105278（9.8）、lwIP SMTP クライアントの入力サイズ未検査によるバッファオーバーフロー CVE-2026-15340（9.8）、および製品名が NVD 記述から特定できない産業機器の既定資格情報の脆弱な暗号化保存 CVE-2026-28745（9.3）、SNMP による無認証の管理操作（設定取得・アカウント変更・ファームウェア更新）CVE-2026-33367（9.3）、設定ファイル内平文資格情報と SNMP 起動の TFTP 転送 CVE-2026-39460（9.3）、既定工場資格情報の残存 CVE-2026-32645（9.2）。JVN は同日 CISA ICS Advisory（2026-10-08）の公表を案内しており、該当アドバイザリで製品を特定する必要がある。悪用確認の報道はなく KEV 未登録。電力監視（PDC/ヒストリアン）や組込み TCP/IP スタック（lwIP）は国内 OT でも利用例があるため把握事項として記録。
+
+【推奨アクション】
+・CISA ICS Advisory（2026-10-08 公開分）で該当製品を特定し、openPDC / openHistorian 利用者はサービスコンソールの到達範囲と Docker イメージの管理者パスワード変更を確認する
+・lwIP を組み込む機器のベンダー通知を確認し、SNMP の無認証管理操作が可能な機器は SNMP の到達元制限を行う
+
+【監視】
+特になし（棚卸し・更新確認が中心）
+
+【参照】
+・JVN: CISA ICS Advisory / ICS Medical Advisory（2026年10月08日） https://jvn.jp/vu/JVNVU91137775/
+・NVD: NVD CVE-2026-100730（openPDC / openHistorian） https://nvd.nist.gov/vuln/detail/CVE-2026-100730
+------------------------------------------------------------
+4. 国産製品の JVN 公表: Movable Type の複数脆弱性（JVN#91153973・IPA 2026-10-07）と MCC Universal Library for Linux（uldaq）のスタックバッファオーバーフロー（JVN#13510969）を ScanNetSecurity が報道
+観点: cve  採用契機: α
+------------------------------------------------------------
+優先度: low
+対象: シックス・アパート Movable Type / Measurement Computing Universal Library for Linux（uldaq）
+
+【24時間以内の変化】
+[ScanNetSecurity 2026-10-09] ScanNetSecurity が Movable Type の複数脆弱性（JVN 2026-10-07 公表・IPA 同日注意喚起）と uldaq のバッファオーバーフロー（JVN 2026-10-06 公表）を報道。
+
+【概要】
+ScanNetSecurity は 2026-10-09 に、シックス・アパートの CMS「Movable Type」の複数脆弱性（JVN#91153973・2026-10-07 公表・IPA も同日「重要なセキュリティ情報」として掲載）と、Measurement Computing の Universal Library for Linux（uldaq）のスタックベースバッファオーバーフロー（JVN#13510969・2026-10-06 公表）を報道した。CVE ID・CVSS・影響/修正版は RSS 要約・JVN フィード要約からは取得できず、JVN 本文の確認が必要。悪用確認の報道はない。Movable Type は国内の企業・自治体サイトで広く使われ、過去に Movable Type の脆弱性が実悪用された事例があるため、公開サーバ上の版確認を推奨（本件での悪用は未確認・推測を含まない）。
+
+【推奨アクション】
+・Movable Type を外部公開している場合は JVN#91153973 で影響版を確認し最新版へ更新する
+・計測機器制御に uldaq を利用する Linux ホストは JVN#13510969 の修正版へ更新する
+
+【監視】
+特になし（棚卸し・更新確認が中心）
+
+【参照】
+・ScanNetSecurity: Movable Type に複数の脆弱性 https://scan.netsecurity.ne.jp/article/2026/10/09/56421.html
+・JVN: Movable Typeにおける複数の脆弱性（JVN#91153973） https://jvn.jp/jp/JVN91153973/
+・IPA: 「Movable Type」における複数の脆弱性について（JVN#91153973） https://www.ipa.go.jp/security/security-alert/2026/20261007-jvn.html
+・ScanNetSecurity: MCC 製 Universal Library for Linux (uldaq) にバッファオーバーフローの脆弱性 https://scan.netsecurity.ne.jp/article/2026/10/09/56419.html
+・JVN: MCC製Universal Library for Linux (uldaq)におけるバッファオーバーフローの脆弱性（JVN#13510969） https://jvn.jp/jp/JVN13510969/
+------------------------------------------------------------
+5. Anthropic が OSS プロジェクト向けの無償 AI 脆弱性スキャナ「OSS Scanner」（オプトイン・Project Glasswing の知見）を公開、OT セキュリティで11社と連携
+観点: ai_attack  採用契機: δ
+------------------------------------------------------------
+優先度: low
+対象: オープンソースプロジェクト（オプトイン）
+
+【24時間以内の変化】
+[The Hacker News / SecurityWeek 2026-10-09] THN と SecurityWeek が Anthropic の発表（2026-10-08 木曜）を報道。
+
+【概要】
+Anthropic は、Claude で脆弱性を発見した Project Glasswing の経験に基づくオプトイン型の脆弱性スキャンサービス「OSS Scanner」を発表し、参加プロジェクトは最強モデルによる定期的なセキュリティスキャンを無償で受けられるとした（THN）。SecurityWeek は、モデル生成の脆弱性報告が人手レビューなしでオプトインしたメンテナーへ送られる点と、OT セキュリティで11社と連携することを報じた。AI による脆弱性発見の自動化が OSS 側の修正速度（と公開 CVE の増加）に影響する動向として、SOC の脆弱性管理運用に関係する（観点3）。攻撃ではない。
+
+【推奨アクション】
+・依存 OSS の修正頻度・CVE 公開数の増加を見込み、SCA/SBOM による依存更新の運用頻度を見直す
+・モデル生成の脆弱性報告は未レビューで届く設計のため、自組織の OSS がオプトインする場合はトリアージ体制を整える
+
+【監視】
+特になし（棚卸し・更新確認が中心）
+
+【参照】
+・The Hacker News: Anthropic Launches Free AI Vulnerability Scanner for Open-Source Projects https://thehackernews.com/2026/10/anthropic-launches-free-ai.html
+・SecurityWeek: Anthropic Fast-Tracks AI Bug Reports to OSS Maintainers, Taps 11 Firms for OT Security https://www.securityweek.com/anthropic-fast-tracks-ai-bug-reports-to-oss-maintainers-taps-11-firms-for-ot-security
+------------------------------------------------------------
+6. 広く使われる OSS ライブラリの CVSS 9 超 CVE: fast-jwt（RSA 公開鍵を HMAC 秘密鍵と誤分類・CVE-2026-107722・9.8）、Go 標準ライブラリ os.Root（Windows ジャンクション経由のディレクトリ作成・CVE-2026-56857・9.8）と HTTP/2 フロー制御二重返却（CVE-2026-78663・9.1）
+観点: cve  採用契機: β
+------------------------------------------------------------
+優先度: low
+対象: fast-jwt 6.2.0〜6.3.0 未満（npm）/ Go 標準ライブラリ（os.Root・net/http HTTP/2）
+
+【24時間以内の変化】
+[NVD / GitHub Advisory 2026-10-09] NVD に3件が公開（2026-10-08 22:17〜23:17 UTC）。網羅スイープで捕捉。
+
+【概要】
+網羅スイープで依存ライブラリ系の CVSS 9 超 3件を捕捉した。fast-jwt の CVE-2026-107722（9.8・GHSA 起点）は 6.2.0 から 6.3.0 未満で、PEM ヘッダ前に非空白文字（コメント・制御文字・ゼロ幅文字・ラッパーテキスト）がある RSA 公開鍵テキストを HMAC 秘密鍵と誤分類する（src/crypto.js の publicKeyPemMatcher が先頭固定のため）。アルゴリズム混同による署名検証回避につながり得る種類の不備で、鍵文字列の取り扱いに依存する。Go の CVE-2026-56857（9.8）は Windows で Root.Mkdir / Root.MkdirAll の対象が空の場所を指すジャンクションの場合にルート外へディレクトリを作成できるもの、CVE-2026-78663（9.1）は HTTP/2 サーバがストリームリセット時とハンドラ読取時に接続レベルのフロー制御を二重に返却し、MaxReceiveBufferPerConnection の上限を迂回できるもの（総バッファ量は依然制限される）。いずれも悪用確認・PoC の報道はなく KEV 未登録。CVSS は CNA 値で NVD 分析前。アプリケーション依存関係の更新対象として記録。
+
+【推奨アクション】
+・SCA/SBOM で fast-jwt 6.2.x 利用を抽出し 6.3.0 以降へ更新する。鍵をコメント付き PEM 文字列で渡していないか確認する
+・Go 製の自社サービス・ツールは修正版 Go ツールチェーンで再ビルドする（Windows で os.Root を使う場合と HTTP/2 公開サーバを優先）
+
+【監視】
+特になし（棚卸し・更新確認が中心）
+
+【参照】
+・NVD: NVD CVE-2026-107722（fast-jwt） https://nvd.nist.gov/vuln/detail/CVE-2026-107722
+・NVD: NVD CVE-2026-56857（Go os.Root） https://nvd.nist.gov/vuln/detail/CVE-2026-56857
+・NVD: NVD CVE-2026-78663（Go HTTP/2） https://nvd.nist.gov/vuln/detail/CVE-2026-78663
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・TP-Link に対する米4州の追加提訴（ルータの安全性と中国との関係・THN 2026-10-09） [low_score] 訴訟・政策ニュースで SOC 運用上の新規アクションなし。
+・SecurityWeek「In Other News」週次ダイジェスト（韓国銀行侵害での AI 利用〔2026-10-06 既報〕・Tensorlake npm SDK 侵害・NVIDIA GPU モニタ露出・Empire 管理者に40年等） [insufficient_evidence] 一行言及のダイジェストで個別事象の詳細を確認できない。Tensorlake npm SDK 侵害は一次情報が取得でき次第再評価（記録のみ）。
+・Dark Reading の分析・意見記事（AI 主導のサイバー M&A・ASOS 侵害と顧客向け SaaS・経営層家族への訓練・FBI vs ShinyHunters 動画） [low_score] 一般的な啓発・分析記事で新規データ・アクションなし。
+・TOPPAN 委託業務での個人情報誤送付 / 鴨川市ふるさと納税アンケートの設定不備（Security NEXT 2026-10-09） [low_score] 操作ミス・設定不備による漏えいで攻撃事象ではなく、SOC 採用条件 α〜η に該当しない。
+・SANS ISC Stormcast（2026-10-09 ポッドキャスト） [low_score] 日次ポッドキャストの告知で個別の新規観測データなし。
+
+網羅スイープ: 候補50件 / 処理50件 / 未処理0件 / KEV窓内追加0件 / EUVD窓内43件（うちNVD/KEV未収載3件）

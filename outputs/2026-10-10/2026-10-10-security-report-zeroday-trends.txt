@@ -1,0 +1,192 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-10 07:00 JST（遡及生成: 2026-10-12T10:39:09+09:00）
+調査期間: 2026-10-09 07:00 〜 2026-10-10 07:00 JST
+本レポートは 2026-10-12 に収集証跡から遡及生成したものである
+========================================
+
+■ Section 2: ゼロデイ・トレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CVE-2026-105134 Ahsay AhsayCBS は Section 3 のゼロデイ特報に詳細を記載（実悪用確認・修正版の有効性未確定）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. Flax Typhoon（Integrity Technology Group 関連・中国国家支援） / FlaxTyphoon-2026-IntegrityTech-ToolDisruption-AA26-281A
+------------------------------------------------------------
+帰属: CN（信頼度: high）  別名: Ethereal Panda, RedJuliett  軸P=12 軸Q=8
+活動期間: 2021-01-15 〜 2026-09-09  標的: critical_infrastructure, energy, education, government, other / US, JP, PL, TW
+
+【24時間以内の変化】
+[Security NEXT 2026-10-09] Security NEXT が、米当局が Apache Struts・ProFTPD・BIND 等5件を悪用脆弱性リスト（KEV）に追加し侵害状況の調査を求めたと国内報道（KEV 追加自体は 2026-10-08・前日レポート分）。
+[The Hacker News 2026-10-09] THN が FBI/DoJ による Flax Typhoon 関連ツール（MicroScan・FishHub・Integrity Tech ボットネット）の妨害と7ドメイン押収、合同勧告 AA26-281A（米英豪加日NZ西）を報道。
+[SecurityWeek 2026-10-09] SecurityWeek が「Flax Typhoon ほかの APT が MicroScan と FishHub で米国内外の重要インフラをスキャン・侵害」と報道。
+[The Hacker News 2026-10-09] THN が CISA の KEV 追加5件（CVE-2015-3306 / CVE-2021-3199 / CVE-2023-22894 / CVE-2016-3081 / CVE-2015-5477）を Flax Typhoon による悪用に伴うものと報道。計8件（既 KEV の CVE-2014-6278 / CVE-2019-11510 / CVE-2021-22205 含む）を標的、FCEB 期限 2026-10-11。
+
+【概要】
+米 FBI/DoJ は 2026-10-09（現地 10-08〜09）、北京の政府請負企業 Integrity Technology Group に関連し中国国家支援グループ Flax Typhoon（別名 Ethereal Panda / RedJuliett）等が使用した攻撃ツール群の妨害を発表し、c0cc[.]cc・98aiblog[.]com・98aicai[.]com・98aicode[.]com・outlook3650[.]com・youtubecard[.]com・linkedinns[.]net の7ドメインを押収した（THN / SecurityWeek）。ツールは、Mirai 亜種の Integrity Tech ボットネット（C2 は w8510[.]com のサブドメイン・制御アプリ Sparrow・2024-06-05 時点で 120 万超の感染記録、うち米国 38.5 万）、Python 製の偵察・脆弱性スキャン Web ツール MicroScan（1,300 超のスクリプト・OpenSSL / Oracle WebLogic / Rejetto / WordPress / Juniper ScreenOS / Jenkins / Apache Struts 等を対象・198.13.53[.]226 で 2026-09-09 まで稼働）、スピアフィッシングと後続ペイロード配備・遠隔アクセス・ファイル窃取を担う FishHub から成る。被害には米サウスカロライナ州の電力会社、多国籍 NGO、日本とポーランドの空港、台湾の天然ガス・電力重要インフラと台湾の大学（FishHub 関連で 20 校）が含まれる。同日、米英豪加日NZ西の7カ国が合同勧告 AA26-281A を発行し Integrity Tech を名指しした（活動は少なくとも 2021-01 中旬から）。CISA は 2026-10-08 に Flax Typhoon の悪用に伴い CVE-2015-3306（ProFTPD・10.0）/ CVE-2021-3199（ONLYOFFICE Docs・9.8）/ CVE-2023-22894（Strapi・7.2）/ CVE-2016-3081（Apache Struts・8.1）/ CVE-2015-5477（ISC BIND・7.5）を KEV に追加（FCEB 期限 2026-10-11・前日 10-09 レポート分）。作戦は計8件の脆弱性（既 KEV の CVE-2014-6278 Shellshock / CVE-2019-11510 Pulse Connect Secure / CVE-2021-22205 GitLab を含む）を初期侵入に使い、XSS による認証情報収集、Microsoft Exchange へのパスワードスプレー（EBurst）、SoftEther VPN による永続化、office-cli 等によるメール・認証情報の持ち出しを行うとされる（NCSC は AI 支援の自動スキャンにも言及）。帰属は政府機関の公式発表・合同勧告に基づく。日本の空港が被害に含まれ日本が合同勧告の署名国である点で国内影響あり。
+
+【攻撃の流れ】
+1. MicroScan と OSS ツール群（masscan / NMAP / dirsearch / Fscan / wpscan 等）で公開資産を偵察・脆弱性スキャン
+2. 8件の既知脆弱性（ProFTPD / ONLYOFFICE / Strapi / Struts / BIND / Shellshock / Pulse Connect Secure / GitLab）の悪用、XSS による認証情報収集、Exchange へのパスワードスプレー（EBurst）で初期侵入
+3. SoftEther VPN クライアントで永続化、FishHub で後続ペイロード配備と遠隔アクセス
+4. スクリプトと office-cli でメールボックス・認証情報・ファイルを Integrity Tech 管理サーバへ持ち出し
+
+【ツール・マルウェア】
+・Integrity Tech botnet（Mirai 亜種・制御アプリ Sparrow）（other）
+・MicroScan（Python 製偵察・脆弱性スキャンツール・1,300 超のスクリプト）（other）
+・FishHub（スピアフィッシング・後続ペイロード配備・遠隔アクセス/ファイル窃取）（other）
+
+【ATT&CK】
+・T1595.002 Active Scanning: Vulnerability Scanning: MicroScan（1,300 超のスクリプト）と masscan / NMAP 等による公開資産のスキャン（THN / 合同勧告記載）
+・T1190 Exploit Public-Facing Application: ProFTPD / ONLYOFFICE Docs / Strapi / Apache Struts / ISC BIND / Shellshock / Pulse Connect Secure / GitLab の既知脆弱性の悪用（CISA KEV 追加の根拠）
+・T1110.003 Brute Force: Password Spraying: EBurst による Microsoft Exchange / 365 へのパスワードスプレー（合同勧告・NCSC 記載）
+・T1133 External Remote Services: SoftEther VPN クライアントによる永続的アクセス（合同勧告記載）
+・T1566 Phishing: FishHub によるスピアフィッシングと後続ペイロード配備（DoJ 記載）
+・T1114 Email Collection: office-cli とスクリプトによるメールボックスアクセス・メール持ち出し（合同勧告記載）
+・T1584.005 Compromise Infrastructure: Botnet: Mirai 亜種の Integrity Tech ボットネット（120 万超の感染記録・Sparrow で制御）
+
+【IOC】
+IP: 198.13.53[.]226, 202.182.109[.]151
+ドメイン: c0cc[.]cc, 98aiblog[.]com, 98aicai[.]com, 98aicode[.]com, outlook3650[.]com, youtubecard[.]com, linkedinns[.]net, w8510[.]com（サブドメインがボットネット C2）
+IoC は THN 記載の defang 表記のまま。押収済みドメインへの過去の到達は過去の接触を示す。合同勧告 AA26-281A の IoC 全文は本窓で未取得（一次情報を参照）。ハッシュは未取得。
+関連CVE: CVE-2015-3306, CVE-2021-3199, CVE-2023-22894, CVE-2016-3081, CVE-2015-5477, CVE-2014-6278, CVE-2019-11510, CVE-2021-22205
+
+【推奨アクション】
+KEV 追加5件と既 KEV 3件（計8件）の該当製品の棚卸しと修正・侵害調査（CISA は FCEB に 2026-10-11 期限と侵害状況の調査を要求）。押収ドメイン・w8510[.]com サブドメイン・2 IP をプロキシ/DNS/FW ログで遡及照合。Exchange / M365 へのパスワードスプレー痕跡と SoftEther VPN の未承認インストールを確認。空港・エネルギー・大学は合同勧告 AA26-281A を一次情報として確認する。
+Splunk SPL: index=proxy OR index=dns OR index=firewall (dest_domain IN ("c0cc.cc","98aiblog.com","98aicai.com","98aicode.com","outlook3650.com","youtubecard.com","linkedinns.net") OR dest_domain="*.w8510.com" OR dest_ip IN ("198.13.53.226","202.182.109.151")) | stats count min(_time) as first max(_time) as last by src_ip, dest_domain, dest_ip
+Splunk SPL: index=exchange sourcetype=IIS (cs_uri_stem="/owa/auth*" OR cs_uri_stem="/autodiscover*" OR cs_uri_stem="/ews*") sc_status=401 | stats dc(cs_username) as users count by c_ip | where users>20
+Splunk SPL: index=wineventlog EventCode=7045 (Service_Name="*SoftEther*" OR Service_File_Name="*vpnclient*") | stats count by host, Service_Name, Service_File_Name
+
+【参照】
+・The Hacker News: FBI Seizes 7 Domains, Disrupts Flax Typhoon Tools Used in Critical Infrastructure Intrusions https://thehackernews.com/2026/10/fbi-seizes-7-domains-disrupts-flax.html
+・SecurityWeek: US Disrupts Chinese State-Sponsored Hacking Tools https://www.securityweek.com/us-disrupts-chinese-state-sponsored-hacking-tools
+・The Hacker News: Flax Typhoon Exploits Five Flaws as CISA Sets October 11 Deadline for Federal Agencies https://thehackernews.com/2026/10/flax-typhoon-exploits-five-flaws-as.html
+・Security NEXT: 「Apache Struts」「BIND」など悪用脆弱性リストに5件追加 - 米当局 https://www.security-next.com/191238
+・CISA: CISA 合同勧告 AA26-281A（Integrity Technology Group・米英豪加日NZ西） https://www.cisa.gov/news-events/cybersecurity-advisories/aa26-281a
+・CISA: CISA KEV Catalog（2026-10-08 追加の5件） https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし（AnyDesk Linux の CVE 未採番脆弱性は Section 4 中優先度に記載）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【動向トピック】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. GhostAction 第3波: 侵害済みメンテナーアカウント経由で認証情報窃取ワークフローが数万リポジトリに設置（StepSecurity / Socket / GitGuardian）
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-10] THN が StepSecurity / Socket / GitGuardian の分析を報道（現行波は 2026-10-07 開始）。
+
+【概要】
+THN によれば、StepSecurity は 18,400 スターのゲームエンジン pyxel 作者 Takashi Kitao 氏のアカウントが乗っ取られ 13:20 UTC から 27 リポジトリへ、8時間後には Uber athenadriver 原作者 Henry Wu（henrywoo）氏のアカウントから 21:10〜21:26 UTC の16分間に 318 リポジトリへ、悪意ある GitHub Actions ワークフロー（security-audit.yml / github_actions_security.yml）が push されたと報告した。Socket は 2026-10-07 以降 500 超のアカウントから数万リポジトリに同ワークフローがコミットされたとし、GitGuardian は 2026-08-31〜09-30 の先行波（772 公開リポジトリ・373 ユーザー/組織）を 2025-09 初報の GhostAction キャンペーンの継続と位置づけた。ワークフローは workflow_dispatch と全 push で起動し、リポジトリの名前付きシークレットと作業ツリー・全 Git 履歴から13種の認証情報パターン（AWS・Anthropic・OpenAI・OpenRouter の API キー、GitHub/GitLab トークン、SSH 鍵、クラウド・DB・npm/PyPI 等）を収集し、curl で平文 HTTP により 193[.]32[.]204[.]199 へ送信する。認証情報が無くてもリポジトリ識別子を返すため到達可能リポジトリの地図が攻撃者に渡る。初期侵入は infostealer ログ等から漏れた個人アクセストークンと推定（報道）。本窓時点で侵害済み公開認証情報を使った悪意あるパッケージ公開は確認されていない。フォークはワークフローを継承するため henrywoo 名前空間の 279 フォークにも波及。対処: 2026-08-31 以降に両ファイル名のワークフローが追加されていれば侵害前提で認証情報を全件ローテーションし、全ブランチ・フォークから削除する。
+
+【参照】
+・The Hacker News: Credential-Stealing GitHub Actions Workflows Planted in Tens of Thousands of Repositories https://thehackernews.com/2026/10/credential-stealing-github-actions.html
+------------------------------------------------------------
+2. Adception: Google 検索広告に Bing のクリック追跡リダイレクトを埋め込み偽 Claude for macOS インストーラへ誘導する ClickFix（Push Security）
+------------------------------------------------------------
+【24時間以内の変化】
+[BleepingComputer 2026-10-10] BleepingComputer が Push Security の調査を報道。
+
+【概要】
+BleepingComputer によれば、Push Security が「Adception」と命名した手口では、攻撃者が検索語「claude mac」に対する Google 検索広告を購入し、表示ドメインを正規の bing.com に見せる。クリックは Google の広告リダイレクト→Bing の bing.com/ck/a クリック追跡エンドポイント（JavaScript 転送）→侵害された南米小売業者の WordPress サイト→偽 Claude ダウンロードページ claude-desk-code[.]com へと遷移する。WordPress 側は Bing リファラと特定ブラウザヘッダを、偽サイト側は Google/Bing 経由であることを検証し、直接訪問やスキャナは 404 へ逃がすクローキングを行う。偽ページは Anthropic 正規のコマンド curl -fsSL https://claude.ai/install.sh | bash を表示するが、コピーボタンはクリップボードに別コマンドを置き、Base64 で隠した lake-90[.]com の URL から .dat ファイルを curl で取得し zsh へパイプして実行する（macOS 標的）。最終ペイロードは未特定。Push Security は同じインストールコマンド形式・ペイロード URL 構造を共有する ClickFix ツールキットを「AcSig」として追跡している。AI ブランドを誘引に使うフィッシングであり AI 自体への攻撃ではないため Section 2 で扱う（2026-10-07 の偽 AI 広告ポータルと同じ整理）。
+
+【参照】
+・BleepingComputer: Hackers abuse Google Ads, Bing redirects to push Claude ClickFix attacks https://www.bleepingcomputer.com/news/security/hackers-abuse-google-ads-bing-redirects-to-push-claude-clickfix-attacks
+------------------------------------------------------------
+3. Pwn2Own Ireland 2026 閉幕: 3日間で98件のゼロデイに総額 1,262,000 ドル、Google Pixel 10 を3チームが遠隔侵害
+------------------------------------------------------------
+【24時間以内の変化】
+[BleepingComputer / SecurityWeek / The Hacker News 2026-10-09] 3媒体が最終結果（98件・1,262,000 ドル・Pixel 10 の3件侵害）を報道。
+
+【概要】
+BleepingComputer / SecurityWeek / THN によれば、Pwn2Own Ireland 2026（コーク・29チーム参加）は 2026-10-08 に3日目を終え、98件のゼロデイに対し総額 1,262,000 ドル（初日 388,500 ドル・32件、2日目 232,500 ドル・45件、3日目 641,000 ドル・21件）が支払われた。総合優勝は Ikotas Labs（361,000 ドル・42.5 ポイント）で、Samsung Galaxy S26・OpenAI Codex・Oracle Autonomous AI Database を侵害し、3日目にはゼロデイ連鎖で完全パッチ済み Google Pixel 10 を侵害して最高賞 300,000 ドルを獲得した。Pixel 10 は3チームが侵害し、2位 Xint（240,000 ドル）、3位 Team ZyGoat（125,000 ドル）。AI コーディングアプリ（OpenAI Codex）と AI インフラ（Oracle Autonomous AI Database）の侵害が含まれる。iPhone 17 の遠隔侵害枠（最高 300,000 ドル）には挑戦者がいなかった。ZDI は90日以内のベンダー修正後に詳細を公開する枠組みで、現時点で野生の悪用を示す情報はない（2026-10-07 の初日報道に続く続報）。
+
+【参照】
+・BleepingComputer: Hackers get $1,262,000 for 98 zero-days at Pwn2Own Ireland https://www.bleepingcomputer.com/news/security/hackers-earn-1262000-for-98-zero-days-at-pwn2own-ireland
+・The Hacker News: Three Teams Demonstrate Remote Hacks of Fully Patched Google Pixel 10 at Pwn2Own https://thehackernews.com/2026/10/three-teams-demonstrate-remote-hacks-of.html
+・SecurityWeek: Google Pixel 10 Exploits Earned Hackers $560,000 at Pwn2Own https://www.securityweek.com/google-pixel-10-exploits-earned-hackers-560000-at-pwn2own
+------------------------------------------------------------
+4. GoBalance（Onionbalance の Go 実装）の鍵処理不備で .onion アドレスの長期マスター鍵が公開情報から復元可能、Dread 等のダークウェブサイトが乗っ取り被害（Searchlight Cyber）
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-09] THN が Searchlight Cyber の 2026-10-08 公表と Dread/Omega の被害を報道。
+
+【概要】
+THN によれば、Searchlight Cyber が 2026-10-08 に公表した GoBalance の不備は、Tor 秘密鍵 64 バイトのうち先頭 32 バイトしか署名器に渡さず、署名ごとの秘密値を保護する後半を落とすため、公開されたディスクリプタ1件からサイトの長期マスター秘密鍵を復元できるというもの。Tor 鍵形式でマスター鍵を保存しているサイトのみ影響し、GoBalance のセットアップツールが使う形式や元の Onionbalance・Tor 本体は影響しない。復元した鍵で攻撃者はサイトのアドレスを自身の複製サイトへ向け直せる（サーバやデータベースへのアクセスは得られない）。Dread の2つの .onion アドレスは 2026-10-05〜07 に乗っ取られ競合サイト Conclave へ誘導され、Dread 管理者は他の複数サービスも同じ不備で攻撃されたと述べ、マーケット Omega は旧アドレスを閉鎖した。CVE 未採番・公式修正なし（2026-10-09 時点）。独立研究者のパッチと PoC が GitHub にあるが非公式。運用者は鍵が漏れた前提で新アドレスへ移行する以外に対処がない。企業 SOC への直接影響は限定的だが、Tor 秘匿サービスを使うリーク/交渉サイトの到達先が攻撃者制御の複製に差し替わり得る点に留意。
+
+【参照】
+・The Hacker News: GoBalance Flaw Lets Attackers Hijack .onion Addresses by Recovering Tor-Format Keys https://thehackernews.com/2026/10/gobalance-flaw-lets-attackers-hijack.html
+------------------------------------------------------------
+5. Midnight Mimosa: 150カ国超の低価格 Android 端末にファームウェア段階でプリインストールされたマルウェアキャンペーン（SecurityWeek）
+------------------------------------------------------------
+【24時間以内の変化】
+[SecurityWeek 2026-10-09] SecurityWeek が Midnight Mimosa を報道（RSS 要約のみ取得）。
+
+【概要】
+SecurityWeek は、低価格 Android 端末に主にプリインストールされた状態で動作するマルウェアキャンペーン「Midnight Mimosa」が 150 カ国以上に及ぶと報道した。報告元ベンダー・対象ブランド・端末数・C2・IoC・帰属は RSS 要約からは確認できない（記事本文は取得できず）。サプライチェーン上流（ファームウェア）での汚染であり、BYOD や海外拠点の安価端末が社内ネットワークへ接続される経路に留意。
+
+【参照】
+・SecurityWeek: Pre-Baked Firmware Malware Hits Budget Android Devices in 150+ Countries https://www.securityweek.com/pre-baked-firmware-malware-hits-budget-android-devices-in-150-countries
+------------------------------------------------------------
+6. .gh / .sl / .as の ccTLD 乗っ取りで複数の Google ドメイン向け HTTPS 証明書が不正取得（SecurityWeek）
+------------------------------------------------------------
+【24時間以内の変化】
+[SecurityWeek 2026-10-09] SecurityWeek が Google ドメインへの影響を報道（RSS 要約のみ取得）。
+
+【概要】
+SecurityWeek は、攻撃者が .gh（ガーナ）・.sl（シエラレオネ）・.as（米領サモア）の ccTLD を乗っ取り、複数の Google ドメインに対する HTTPS 証明書を取得したと報道した。乗っ取りの手法（レジストリ側侵害か）、発行した CA、対象ドメイン、帰属は RSS 要約からは確認できない（記事本文は取得できず）。ccTLD レジストリ侵害は DNS 委任と証明書発行の双方に波及するため、該当 ccTLD 配下のドメインを使う組織は CT ログの監視と CAA レコードの確認を推奨。
+
+【参照】
+・SecurityWeek: Google Domains Impacted by Recent ccTLD Hijacks https://www.securityweek.com/google-domains-impacted-by-recent-cctld-domain-hijacks
+------------------------------------------------------------
+7. IDCFクラウド（IDCフロンティア・ソフトバンクグループ）がランサムウェア攻撃で障害、東日本リージョン1の契約 495 社・自治体に影響
+------------------------------------------------------------
+【24時間以内の変化】
+[ScanNetSecurity 2026-10-09] ScanNetSecurity が IDCフロンティアの第1報・第2報を報道。
+
+【概要】
+ScanNetSecurity によれば、IDCフロンティアは 2026-10-07 に、同日 3:40 頃から東日本リージョン1で発生したクラウドサービス「IDCFクラウド」の一部システム障害について第三者によるランサムウェア攻撃が原因と判明したと公表した。影響は同リージョンを契約する 495 の企業・自治体で、個別に連絡中。被害拡大防止のため他リージョンの顧客向け管理コンソールを一時停止し安全確認後に再開予定。原因・影響範囲の調査は継続中で、データ漏えいの有無とランサムウェアグループ名は記事に記載がない。国内 IaaS 基盤そのものへのランサムウェア攻撃として、同クラウド上に業務システムを置く組織は事業者からの個別連絡と管理コンソール停止の影響を確認する必要がある。
+
+【参照】
+・ScanNetSecurity: 「IDCFクラウド」にランサムウェア攻撃 https://scan.netsecurity.ne.jp/article/2026/10/09/56426.html
+------------------------------------------------------------
+8. ローソン: 「ローソンID」と「ローソンアプリ予約」への不正アクセスで会員情報 2,155,345 件が流出（カード番号一部を含む26件）
+------------------------------------------------------------
+【24時間以内の変化】
+[Security NEXT 2026-10-09] Security NEXT がローソンの公表を報道。
+
+【概要】
+Security NEXT によれば、ローソンはアカウントサービス「ローソンID」が 2026-09-12〜14 に、「ローソンアプリ予約」が 2026-09-17 に第三者の不正アクセスを受け、2026-10-07 の調査で判明したと公表した。ローソンID では氏名・住所・電話番号・性別・メールアドレス・メルマガ購読情報を含む 2,155,345 件、アプリ予約では氏名・電話番号・クレジットカード番号の一部を含む 26 件が流出した。同社は「アプリ上で利用者本人に情報を表示するためのセキュリティ機構」が不正アクセスを受けたと説明し、アクセス元の通信遮断・予約機能停止・個人情報保護委員会への報告・対象者への順次メール連絡を行っている。侵入経路の技術的詳細・攻撃者は記事に記載がない。IPA が 2026-10-09 に公表した「不正アクセスによる漏えい等の事案を踏まえ、速やかに実施すべき対策等について」（SOC-2026-10-10-001）が指す国内大規模漏えいの連鎖の一例。
+
+【参照】
+・Security NEXT: ローソンIDと予約サービスに不正アクセス- 個人情報が流出 https://www.security-next.com/191245
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・Qilin（ランサムウェア・中核メンバーとされるロシア国籍者を日本からの身柄引渡し後にドイツで逮捕） / RIS-2026-Qilin-GermanyArrest [low_score] 法執行・摘発事案は日次 APT 収集対象外（pipeline-1b-apt.md・週次検証で継続影響を確認）。BleepingComputer 2026-10-10。日本からの引渡しである点は週次で参照。
+・ShinyHunters（UNC6240） / ShinyHunters-2026-FBIArrest-JobsPortal [low_score] FBI が求人ポータル侵害に関与したとされる容疑者をさらに1名逮捕（BleepingComputer / THN / Dark Reading 2026-10-10）。法執行事案は日次対象外（週次検証へ）。既存キー ShinyHunters-2026-* の活動そのものの変化は確認されず。
+・不明（ウクライナ・ロシア二重国籍のマネーロンダリング運営者） / RIS-2026-MoneyMuleNetwork15000-Plea [low_score] 15,000 人規模のマネーミュール網運営者の有罪答弁（BleepingComputer 2026-10-09）。法執行事案は日次対象外。
+・不明（iOS エクスプロイトキット DarkSword の新亜種 P7・帰属なし） / RIS-2026-P7DarkSword-iVerify [already_reported] THN 記事は raw RSS の published_at（2026-10-09 16:29 UTC）では本窓内だが記事ページの日付は 2026-10-11 で、2026-10-12 レポートが TREND-2026-10-12-002 として採用済み。二重計上を避けるため本レポートでは除外し、呼び出し側の突合に委ねる（既報キー RIS-2026-GHOSTBLADE-DarkSwordiOS〔2026-08-04〕も関連）。
+・不明（Midnight Mimosa・プリインストール Android マルウェア） / RIS-2026-MidnightMimosa-PrebakedAndroid [insufficient_evidence] SecurityWeek 2026-10-09 の RSS 要約のみで報告ベンダー・IoC・帰属を確認できず APT エントリの要件（軸P/軸Q）を評価できない。Section 2 トレンド記事 TREND-2026-10-10-005 として記録。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+遡及生成のため予報は発行しない（2026-10-12 生成）
+
+網羅スイープ: 候補50件 / 処理50件 / 未処理0件 / KEV窓内追加0件 / EUVD窓内43件（うちNVD/KEV未収載3件）
