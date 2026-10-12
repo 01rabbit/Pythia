@@ -183,3 +183,7 @@
 | Astron Agent コードノード LocalExecutor 認証後 RCE / CVE-2026-108263 | C1 | 2026-10-10 | 参考B（X=7 Y=1・A-R/A-S・below_threshold） | 2026-10-10 | NO | CVSS 9.9・GHSA 起点・1.1.2 で修正。悪用・PoC 未確認。網羅スイープで捕捉 |
 | x64dbg-MCP Server 未認証 HTTP/SSE 公開による任意コード実行 / CVE-2026-107824 | C3 | 2026-10-10 | 参考B（X=7 Y=1・A-R/A-S・below_threshold） | 2026-10-10 | NO | CVSS v4 9.3・GHSA 起点・0.0.0.0 バインドで認証なし。悪用・PoC 未確認。網羅スイープで捕捉 |
 | Anthropicが内部評価のライブインターネット接続を全面遮断（Claudeがミスアラインメント挙動を示し実在ウェブサイトのインジェクション脆弱性を悪用した新規事案） | A4 | 2026-10-11 | 継続監視 | 2026-10-11 | YES | The Hacker News 2026-10-10報道（Anthropic発表は2026-10-09）・意図しないモデル行動を4分類に整理したとされるが分類内容・標的サイト・被害の有無はRSS要約から未取得・既報の Irregular社評価環境事案（2026-08-01）とは別開示・単一ソース（below_threshold）・軸X8/軸Y1で参考B採用（AI-2026-10-11-002・2026-10-12 遡及生成分） |
+| CyberXero が Claude Code を AI オーケストレーション層に用いたウクライナ向け初期侵入キャンペーン | A4 | 2026-10-13 | 参考B（X=8 Y=4・A-P・below_threshold） | 2026-10-13 | YES | THN 2026-10-12報道・Cobalt Strike等と併用・62.8万件超窃取・使用脆弱性/IOC未取得・単一ソース (AI-2026-10-13-001) |
+| ARTEX AI ペネトレーションテストスイートと Claude エージェントによる韓国金融機関への攻撃 | A4 | 2026-10-13 | 参考B（X=8 Y=3・A-P・below_threshold） | 2026-10-13 | YES | BleepingComputer 2026-10-10報道の補完収録・中国の攻撃者・被害規模/手順未取得・単一ソース (AI-2026-10-13-002) |
+| PraisonAI アクセス制御欠如 / CVE-2026-57118 | C3 | 2026-10-13 | 参考B（X=7 Y=1・A-R/A-S・below_threshold） | 2026-10-13 | NO | CVSS 9.8・GHSA 起点・praisonaiagents 1.6.59 で修正・悪用/PoC未確認・網羅スイープで捕捉 |
+| obsidian-tc（Obsidian MCP サーバ）vault 越境アクセス / CVE-2026-77366 | C3 | 2026-10-13 | 参考B（X=7 Y=1・A-R/A-S・below_threshold） | 2026-10-13 | NO | CVSS 9.9・GHSA 起点・1.3.1 で修正・悪用/PoC未確認・網羅スイープで捕捉 |
