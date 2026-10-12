@@ -1,0 +1,159 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-12 11:20 JST（遡及生成）
+調査期間: 2026-10-08 07:00 〜 2026-10-09 07:00 JST
+本レポートは 2026-10-12 に収集証跡から遡及生成したものである（本体 Routine が 2026-10-09 に発火せず欠損したため。予報は発行しない）。
+========================================
+
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+調査期間: 2026-10-08 〜 2026-10-09
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 本編】実害確認・重大インシデント
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし（本窓では持続性チェック閾値を満たす本編級の実害事案なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考B】技術実証・国内波及注意
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+------------------------------------------------------------
+1. ARTEX: オープンソースの LLM マルチエージェント型自律ペンテストツールが韓国金融機関（新韓銀行・Yegaram 貯蓄銀行）へのデータ窃取攻撃に使用（CrowdStrike）— 既報の疑いが帰属付きの詳細分析に進展
+カテゴリ: AA4 / 攻撃者種別: 犯罪組織
+------------------------------------------------------------
+
+採用契機: A-P, A-Q, A-W
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: セクター finance / 地域 Asia
+被害規模: 新韓銀行・Yegaram 貯蓄銀行からデータが持ち出された（THN・CrowdStrike）。件数・金額は未公表
+持続性チェック: 48h内独立ソース1件（below_threshold）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-08 23:12] CrowdStrike Intelligence の分析として、2026 年 9 月下旬〜10 月上旬の韓国金融機関への攻撃に AI ペンテストツール ARTEX が使われ、新韓銀行・Yegaram 貯蓄銀行からデータが窃取されたと報道。既報（2026-10-06 参考B・BleepingComputer・AI 関与は未確認）からの状態変化: AI ツールの使用が CrowdStrike により確認。
+
+【概要】
+既報（2026-10-06 参考B・『ARTEX AI 関与の疑い・未確認』）の韓国銀行侵害について、The Hacker News が CrowdStrike Intelligence の分析を報じ、AI ツールの使用が確認された。ARTEX は Autumn-27 名義で公開されていたオープンソースの LLM マルチエージェント型自律ペンテストツール（現在はクローズドソース化）で、2026 年 9 月下旬〜10 月上旬に韓国の金融機関を標的にした攻撃に使われ、新韓銀行と Yegaram 貯蓄銀行からデータが持ち出された。攻撃者の ARTEX インスタンス（38.244.50[.]120）は DeepSeek v4.1-flash・GLM-5.3・Grok 4.6 を組み合わせ、香港のバックボーン IP を使い、公開ディレクトリに Claude Code のセッション履歴が露出していた。再販業者 xcai[.]pro と Telegram @YY520CN が関連し、CrowdStrike は中国語話者の金銭目的の攻撃者と推定するが特定グループへの帰属はしていない。韓国金融委員会・金融監督院が警告を出した。本窓の独立ソースは THN のみ（既報の BleepingComputer 10-05 は 48 時間窓外）で持続性チェック閾値未満のため、実害確認済みでも参考Bに留める（規則: 3 件未満は参考B上限）。ATLAS タクティクスは情報源に明示がなく『調査中』。
+
+攻撃の流れ:
+1. 攻撃者が ARTEX インスタンス（複数 LLM を束ねた自律ペンテストエージェント）を香港経由のインフラに展開（THN）
+2. ARTEX が標的金融機関の公開面を自律的に偵察・侵入し、データを窃取（THN・侵入経路の技術詳細は記事に記載なし）
+3. 窃取データの持ち出し。再販・利用経路は xcai[.]pro / Telegram と関連（THN）
+
+【IoC / 検知シグナル】
+URL/Domain: 38.244.50[.]120（ARTEX インスタンス IP）, xcai[.]pro（再販業者）
+検知シグナル: 単一送信元からの短時間・多段階・多ツールの偵察→悪用の連鎖（人手より速いテンポ） / LLM API への大量呼出しを伴う攻撃インフラ（攻撃側の特徴・被害側では観測不可） / 韓国金融機関向けのアクセスで香港 ASN の送信元
+
+【監視・対策ポイント】
+・外部からの偵察が数分〜数十分で多数の脆弱性クラスを横断的に試行するパターン（自律エージェントのテンポ）を WAF / IDS で検出し、38.244.50[.]120 と xcai[.]pro への通信・参照を遡及検索する。
+Splunk SPL: index=web src_ip="38.244.50.120" OR dest_host="xcai.pro" earliest=-60d | stats count by src_ip, dest, uri_path
+Splunk SPL: index=waf | bin _time span=10m | stats dc(signature_category) as cats count by src_ip, _time | where cats>=5
+→ 多カテゴリの同時試行は商用スキャナでも出る。既知スキャナ UA / IP を除外した上で、認証成功・データ取得に至ったセッションを優先する。
+
+【参照】
+・The Hacker News: ARTEX AI Pentesting Tool Used in Data Theft Attacks on South Korean Financial Firms https://thehackernews.com/2026/10/artex-ai-pentesting-tool-used-in-data.html
+
+------------------------------------------------------------
+2. AgentCorruption: AWS Bedrock AgentCore の実行ロール既定権限を 1 プロンプトから悪用し、組織内の全エージェントのコード・会話・Secrets Manager へ到達し得た設計上の弱点（Zenity Labs・SecTor）— AWS は 09-29 までに既定ロールを縮小
+カテゴリ: BB1 / 攻撃者種別: 研究者実証
+------------------------------------------------------------
+
+採用契機: A-S, A-T
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: LLM01
+対象: セクター it / 地域 global
+被害規模: 実被害なし（研究者による実証・AWS は仕様どおりの挙動と説明）
+持続性チェック: 48h内独立ソース1件（below_threshold）
+
+【24時間以内の変化】
+[Dark Reading 2026-10-09 05:39] Zenity Labs が SecTor で AgentCorruption を公表。1 プロンプトでエージェントに IMDS から実行ロールの一時資格情報を取得させ、既定の広範なロールで他エージェントのコード・会話・Secrets Manager へ到達、メモリ汚染で永続化する手口（Dark Reading 記事は 403 のため要約と二次ソースで確認）。AWS は 2026-09-29 までに既定ロールを縮小、2026-02-14 以降の新規エージェントは IMDSv2。
+
+【概要】
+Zenity Labs は SecTor（2026-10-08）で、AWS Bedrock AgentCore の設計上の弱点「AgentCorruption」を公表した。攻撃者がエージェントに 1 つのプロンプトを与え、インスタンスメタデータサービス（IMDS）から実行ロールの一時資格情報を取得させると、AgentCore の既定ロールが広範だったため、同一アカウント内の全エージェントのコード一覧・ダウンロード、他エージェントの呼出し、会話履歴の閲覧、Secrets Manager の読取りが可能で、エージェントのメモリ汚染により永続化もできた。AWS は 2026-09-29 までに既定ロールを縮小し、2026-02-14 以降に作成された新規エージェントは IMDSv2 を使う。AWS は『期待される挙動』であり脆弱性ではないとし CVE は採番されていない。実環境での悪用は報告されていない。既報の CoreBreak（CVE-2026-18830・2026-08-07）とは別個体で、本件に CVE を割り当てない。単一ソース（Dark Reading）で参考B。
+
+攻撃の流れ:
+1. 攻撃者がエージェントの入力（直接または間接プロンプトインジェクション）で IMDS への問い合わせを指示（Zenity Labs）
+2. 実行ロールの一時資格情報を取得し、既定ロールの権限で bedrock-agentcore API を呼び、他エージェントのコード・会話・Secrets Manager を読み取る（Zenity Labs）
+3. エージェントのメモリに悪意ある指示を書き込み永続化（Zenity Labs）
+
+【IoC / 検知シグナル】
+IoC: 確認されず
+検知シグナル: エージェント実行ロールによる IMDS 由来資格情報の、エージェント本来の業務と無関係な API 呼出し（ListAgentRuntimes・GetAgentRuntime・secretsmanager:GetSecretValue） / エージェントのメモリ更新に外部由来の指示文
+
+【監視・対策ポイント】
+・CloudTrail で AgentCore 実行ロールの一時資格情報が本来の業務外の API（他エージェントの列挙・取得、Secrets Manager、IAM）を呼んだイベントを検出する。
+Splunk SPL: index=aws sourcetype=aws:cloudtrail userIdentity.sessionContext.sessionIssuer.userName="*AgentCore*" eventName IN ("ListAgentRuntimes","GetAgentRuntime","GetSecretValue","ListSecrets","InvokeAgentRuntime") | stats count by userIdentity.arn, eventName, sourceIPAddress
+→ 既定ロールを縮小済みでも、独自に広い権限を付けたロールは同じ経路が残る。ロールの権限棚卸しを並行する。
+
+【参照】
+・Dark Reading: 'AgentCorruption' Puts AWS Environments At Risk With Single Prompt https://www.darkreading.com/cloud-security/agentcorruption-aws-environments-at-risk-single-prompt
+
+------------------------------------------------------------
+3. Tensorlake npm 0.5.144 が ChainDrop / Shai-Hulud ワームに侵害 — AI エージェント設定（Claude / Cursor / Kiro / Windsurf / Zed の MCP 設定）と .claude/settings.json を標的化、Ethereum コントラクトをフォールバック C2 に（Socket / StepSecurity）
+カテゴリ: CC6 / 攻撃者種別: 犯罪組織
+------------------------------------------------------------
+
+採用契機: A-Q, A-X
+MITRE ATLAS: 該当タクティクスなし / 調査中
+OWASP: 該当なし
+対象: セクター it / 地域 global
+被害規模: 侵害パッケージ 1 件（tensorlake 0.5.144）。下流の感染数は未公表。既報 ChainDrop は累計 400 超パッケージ
+持続性チェック: 48h内独立ソース1件（below_threshold）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-08 14:46] Tensorlake の npm SDK 0.5.144 に ChainDrop / Shai-Hulud 系の難読化ペイロードが混入（Socket・StepSecurity）。preinstall の package/lib/setup.mjs が Bun を導入して package/lib/Math_Symbol.js を実行し、npm / GitHub / AWS 資格情報、Vault / Kubernetes シークレット、SSH 鍵、.env、ウォレット、AI エージェントの MCP 設定を窃取。最初の不正コミットは 2026-10-07 01:20 UTC。
+
+【概要】
+The Hacker News は Socket と StepSecurity の分析として、Tensorlake アプリケーション向け TypeScript SDK「tensorlake」の npm 0.5.144 が ChainDrop / Shai-Hulud サプライチェーン攻撃の一部として侵害されたと報じた。preinstall スクリプト package/lib/setup.mjs が Bun ランタイムを導入して package/lib/Math_Symbol.js を実行し、npm・GitHub・AWS の資格情報、Vault / Kubernetes シークレット、SSH 鍵、.env、暗号資産ウォレットに加え、Claude / Cursor / Kiro / Windsurf / Zed の MCP 設定ファイルを収集し、.claude/settings.json と .vscode/tasks.json を植え付けて開発環境内で再実行の足場を作る。C2 は iseekaigogo[.]com:443/router、到達不能時は Ethereum コントラクト 0xb614155Fd88114d40549b259457Bcf921Df091B9 からフォールバック先を取得し、窃取データは「Shai-Hulud: Here We Go Again」名の GitHub リポジトリへ公開、トークンが失効した場合はワイパーとして振る舞う。最初の不正コミットは 2026-10-07 01:20 UTC。既報 ChainDrop（RIS-2026-ChainDrop-KeyvNpmWorm・Claude Code hooks 悪用・C6）の継続であり、AI エージェント設定を窃取・改変の対象とする点が AI 攻撃動向として該当する。Unit 42 の Web3 C2 分析（Section 2 TREND-2026-10-09-004）が同系統の C2 進化を扱う。単一ソースで参考B。
+
+攻撃の流れ:
+1. 侵害されたメンテナ資格情報で tensorlake 0.5.144 を npm に公開（THN・2026-10-07 01:20 UTC）
+2. npm install 時の preinstall（setup.mjs）が Bun を導入し Math_Symbol.js を実行（THN）
+3. 資格情報・シークレット・MCP 設定を収集し iseekaigogo[.]com または Ethereum コントラクト経由のフォールバック C2 へ送信、GitHub リポジトリへ公開。.claude/settings.json / .vscode/tasks.json を植え付け（THN）
+4. 窃取した npm / GitHub トークンで他パッケージへ自己増殖。トークン失効時はワイパー動作（THN）
+
+【IoC / 検知シグナル】
+URL/Domain: iseekaigogo[.]com:443/router, Ethereum コントラクト 0xb614155Fd88114d40549b259457Bcf921Df091B9, GitHub リポジトリ名『Shai-Hulud: Here We Go Again』
+検知シグナル: npm install 時の bun バイナリ取得と package/lib/Math_Symbol.js の実行 / 開発者端末からの iseekaigogo[.]com 宛 TLS、Ethereum RPC エンドポイント（eth_call）宛の通信 / ホームディレクトリ配下の .claude/settings.json・.vscode/tasks.json の新規作成/変更 / ~/.claude.json・~/.cursor/mcp.json 等 MCP 設定ファイルの読取り
+
+【監視・対策ポイント】
+・tensorlake 0.5.144 の依存ロックファイル検索、開発者端末での preinstall 由来の bun 実行と C2 / Ethereum RPC 通信、.claude/settings.json の意図しない変更を検出する。
+Splunk SPL: index=proxy (dest_host="iseekaigogo.com" OR dest_host IN ("*.infura.io","*.alchemy.com","cloudflare-eth.com")) src_category=developer | stats count by src_ip, dest_host
+Splunk SPL: index=endpoint sourcetype=XmlWinEventLog:Microsoft-Windows-Sysmon/Operational EventCode=11 TargetFilename IN ("*\\.claude\\settings.json","*\\.vscode\\tasks.json") | stats count by host, user, Image
+Splunk SPL: index=endpoint EventCode=1 (Image="*\\bun.exe" OR Image="*/bun") ParentImage IN ("*\\node.exe","*/node","*/npm") | stats count by host, CommandLine
+→ Bun を正規に使う開発者は除外リストで扱う。tensorlake を直接使う組織は少ないが、推移的依存で入る可能性を lockfile で確認する。npm / GitHub / AWS トークンの一括ローテーションを検討。
+
+【参照】
+・The Hacker News: Tensorlake npm Package Compromised to Deliver Shai-Hulud Credential-Stealing Worm https://thehackernews.com/2026/10/tensorlake-npm-package-compromised-to.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 参考A】国内影響・実害注目
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃 — 日次サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+本窓の AI 攻撃動向は 3 件とも参考B。既報の韓国銀行侵害は CrowdStrike の分析で AI ペンテストツール ARTEX（DeepSeek / GLM / Grok を束ねた自律エージェント）の使用が確認され実害付きの A4 事案となったが、本窓の独立ソースは THN 1 件で持続性チェック閾値（3 件）未満のため規則上は参考B上限。AgentCorruption（Zenity Labs）は AWS Bedrock AgentCore の既定ロールの広さをプロンプト 1 つで悪用する設計上の弱点で、AWS は仕様どおりとして CVE 未採番・既定ロールは縮小済み。Tensorlake npm 侵害は ChainDrop / Shai-Hulud の継続で、Claude / Cursor 等の MCP 設定窃取と .claude/settings.json の植付けという AI エージェント設定の標的化が続く。バースト検出閾値超過（6 件以上）のトピックはなし。SANS ISC の AI エージェント・フォレンジック教材は SOC 推奨で扱った。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】AI攻撃
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+・Microsoft Teams がサードパーティのディープフェイク検知・なりすまし防止ツール連携を追加予定（BleepingComputer 2026-10-08） → [low_score] 防御側の製品機能追加であり AI 攻撃事象ではない。SOC 推奨の採用条件（γ: SIEM/EDR 等の仕様変更）にも直接該当しないため記録のみ。
+・SANS ISC: AI エージェント活動を再構成するフォレンジック用スクリプト 2 本を公開（FOR577 更新・2026-10-08） → [low_score] 攻撃事象ではなく調査手法の提供。Section 4 SOC 推奨 低優先度 SOC-2026-10-09-005 に記録。
+・Rein Security が AI エージェントのランタイム保護で 2,500 万ドルを調達（SecurityWeek 2026-10-08） → [low_score] 資金調達ニュースであり攻撃事象ではない。
+
+本日の集計:
+AI攻撃 — 本編0件 / 参考A0件 / 参考B3件 / 除外3件
+カテゴリ内訳: A（武器化）1件 / B（攻撃対象）1件 / C（インフラ）1件
+
+網羅スイープ: 候補55件 / 処理55件 / 未処理0件 / KEV窓内追加5件（2026-10-08 09:54 JST と 2026-10-09 10:08 JST の KEV スナップショット差分で本窓に帰属） / EUVD窓内49件（うちNVD/KEV未収載5件）
+
+========================================
