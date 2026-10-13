@@ -1,0 +1,129 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-14 08:10 JST
+調査期間: 2026-10-13 07:00 〜 2026-10-14 07:00 JST
+========================================
+
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-104935 Ivanti Connect Secure（認証回避＋RCE の連鎖。3件目の権限昇格は未修正）（CVSS 8.6）
+------------------------------------------------------------
+優先度: critical  軸1=14 軸2=4  KEV登録: あり（追加 2026-10-13・期限 2026-10-16）  悪用: 確認  パッチ: あり
+影響バージョン: Connect Secure 25.1.3.0 より前（CVE 記載）。22.7R2.14 以前は影響なし。Volexity が調査した侵害アプライアンスは『最新パッチ適用済み』の 22.8R2.4 で、CVE 記載の影響範囲と整合しない点は記事で未調整（THN）
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-10-13] CISA が CVE-2026-104935 を KEV へ追加（期限 2026-10-16・ランサムウェア利用: Unknown）。
+[BleepingComputer / The Hacker News / SecurityWeek / Volexity 2026-10-13] Ivanti が Connect Secure のゼロデイ悪用を警告し即時パッチを要請。Volexity が3件のゼロデイ連鎖で root 権限に至る未認証 RCE を公表（UTA0576・初期悪用 2026-10-03）。
+
+【概要】
+Ivanti Connect Secure（ICS）の認証回避と RCE（CVE-2026-104935・Ivanti 評価 CVSS 8.6）が『限定的な実環境悪用』を受けて修正され、CISA が 2026-10-13 に KEV へ追加した（期限 10-16）。Volexity によれば攻撃者（UTA0576）は3件のゼロデイを連鎖させて未認証で root としてコマンドを実行し、うち2件は修正済み、権限昇格の1件は未修正（Ivanti は将来リリースで修正予定）。エクスプロイトはライブラリをメモリ上でのみ書き換え、変更した設定データを復元するため Ivanti の Integrity Checker Tool を回避し、バックドアや Web シェルも残さずコマンドごとに連鎖を再実行していた。侵害後は保存済み認証情報（LDAP ドメイン認証情報を含む）の窃取、Active Directory 内のパスワード探索、パスワードスプレーが確認された。Volexity は動機を『低い確度で金銭目的（諜報ではない）』と評価している。被害数と、アップグレードで既存の侵害が除去されるかは未公表。恒久修正が未完のため、KEV 期限内に適用できる修正に加えて露出の最小化と痕跡調査が必要。
+
+【攻撃フロー】
+1. 細工リクエストで ICS の認証を回避し（CVE-2026-104935 の1段目）、cgi-server ユーザーとしてコマンドを実行
+2. 権限昇格（CVE 未付与・未修正）で root 権限を取得
+3. メモリ上のみの書き換えで Integrity Checker を回避しつつ、コマンドごとに連鎖を再実行
+4. 保存済み認証情報（LDAP 等）を窃取し、AD 内のパスワード探索・パスワードスプレーへ展開
+
+【ATT&CK】
+・T1190 Exploit Public-Facing Application: ICS の認証回避と RCE の連鎖を未認証で悪用（Ivanti/Volexity）
+・T1068 Exploitation for Privilege Escalation: cgi-server ユーザーから root への権限昇格（未修正の3件目・Volexity）
+・T1110.003 Password Spraying: 侵害後にパスワードスプレー攻撃を実施（Volexity）
+
+【暫定緩和策】
+・修正版（25.1.3.0 以降）へ即時更新する（KEV 期限 2026-10-16）。ただし3件目の権限昇格は未修正のため、更新だけでは連鎖が完全には閉じない可能性がある（推測）
+・ICS の管理・ユーザー向けインタフェースの到達元を最小化し、Ivanti の追加リリースと侵害調査手順（External ICT を含む）を確認する
+・LDAP 等の ICS に保存された認証情報の漏えいを前提に、サービスアカウントの資格情報をローテーションする
+
+【IOC】
+・ips: 108.165.147[.]64
+・urls: /dana-na/auth/url_default/welcome.cgi（大量リクエスト）
+・filenames: /data/.icscap/（ディレクトリ）
+
+【監視】
+ICS の Web ログで /dana-na/auth/url_default/welcome.cgi への大量リクエストと、URL パスと値が一致しない X-DSCGI-PATH ヘッダを確認する。/data/.icscap/ の存在を点検する。侵害後の LDAP バインドの急増・パスワードスプレーを AD 側で確認する。
+Splunk SPL: index=ivanti sourcetype=ivanti:ics (uri_path="/dana-na/auth/url_default/welcome.cgi") | stats count by src_ip, uri_path | where count>100
+Splunk SPL: index=ad sourcetype=WinEventLog:Security EventCode=4625 | bin _time span=10m | stats dc(user) as users count by src_ip, _time | where users>10
+IOC は Volexity が調査した1件の侵害に基づく。攻撃者はバックドア・Web シェルを残さないため、ファイル検査だけでは侵害を否定できない。
+
+【参照】
+・The Hacker News: Attacker Chains Three Ivanti Connect Secure Zero-Days for Root Access, Only Two Patched So Far https://thehackernews.com/2026/10/attacker-chains-three-ivanti-connect.html
+・BleepingComputer: Ivanti warns of Connect Secure zero-day exploited in attacks https://www.bleepingcomputer.com/news/security/ivanti-warns-of-connect-secure-zero-day-exploited-in-attacks
+・SecurityWeek: Ivanti Zero-Day Chain Gave Attackers Root Access to Fully Patched VPN https://www.securityweek.com/ivanti-zero-day-chain-gave-attackers-root-access-to-fully-patched-vpn
+------------------------------------------------------------
+2. CVE-2026-96951 Microsoft Windows Shell（コマンドインジェクションによるセキュリティ機能バイパス・Mark of the Web 回避）（CVSS 8.8）
+------------------------------------------------------------
+優先度: high  軸1=11 軸2=3  KEV登録: あり（追加 2026-10-13・期限 2026-10-16）  悪用: 確認  パッチ: あり
+影響バージョン: Windows 各版（影響範囲の詳細は MSRC 月例アップデートを参照。本窓では未取得）
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-10-13] CISA が CVE-2026-96951 を KEV へ追加（期限 2026-10-16・ランサムウェア利用: Unknown）。
+[BleepingComputer / SANS ISC 2026-10-13] Microsoft 2026年10月の月例で、実悪用が確認された Windows Shell のゼロデイとして報道。
+
+【概要】
+Microsoft の2026年10月月例（Patch Tuesday）で、Windows Shell の CVE-2026-96951（CVSS 8.8・コマンドインジェクション起因のセキュリティ機能バイパス）が『実悪用確認済み』として修正された。BleepingComputer によれば Mark of the Web（MotW）の保護を回避する。CISA が同日 KEV へ追加した（期限 2026-10-16）。攻撃者・悪用の規模・初期侵入経路（ユーザーが開くファイル形式等）は本窓の取得情報にない。MotW 回避は『ダウンロードしたファイルが警告なしに実行される』経路の前提となるため、メール添付・ダウンロードファイル経由の初期アクセスと組み合わされる可能性がある（推測）。
+
+【攻撃フロー】
+1. 細工したファイル/リンクを被害者の Windows 環境へ配布（経路は未取得）
+2. Windows Shell の脆弱性で MotW によるセキュリティ警告を回避
+3. 警告なしに後続のコード実行へ（詳細は未取得）
+
+【ATT&CK】
+・T1553.005 Subvert Trust Controls: Mark-of-the-Web Bypass: Windows Shell の脆弱性で Mark of the Web の保護を回避（BleepingComputer の記述）
+
+【暫定緩和策】
+・2026年10月の月例累積更新を速やかに適用する（KEV 期限 2026-10-16）
+・適用までの間、インターネット経由のファイル受領経路（メール添付・ダウンロード）に対するフィルタリングとファイル実行の制限を強化する
+
+【監視】
+MotW が付与されたファイルが警告なしに実行される挙動、Explorer/Shell からの不審な子プロセス起動を監視する。
+
+【参照】
+・BleepingComputer: Microsoft October 2026 Patch Tuesday fixes 1,411 flaws, 3 zero-days https://www.bleepingcomputer.com/news/microsoft/microsoft-october-2026-patch-tuesday-fixes-1-411-flaws-3-zero-days
+・SANS Internet Storm Center: October 2026 Microsoft Patch Tuesday https://isc.sans.edu/diary/rss/33422
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・CVE-2024-34323 ほか1件（全件: CVE-2024-34323, CVE-2026-52394） / ProPhoenix Law RMS（CVE-2024-34323）/ DeepSeek V4（CVE-2026-52394） / 理由: low_score — MITRE 採番の単発。ベンダー情報・悪用確認なし。
+・CVE-2026-100133 ほか25件（全件: CVE-2026-100133, CVE-2026-103848, CVE-2026-103849, CVE-2026-105895, CVE-2026-105899, CVE-2026-105903, CVE-2026-106612, CVE-2026-106619, CVE-2026-106620, CVE-2026-106621, CVE-2026-106622, CVE-2026-106624, CVE-2026-106626, CVE-2026-106629, CVE-2026-106630, CVE-2026-48382, CVE-2026-48383, CVE-2026-75732, CVE-2026-75994, CVE-2026-83662, CVE-2026-90530, CVE-2026-90531, CVE-2026-90532, CVE-2026-91013, CVE-2026-92464, CVE-2026-92909） / Adobe Commerce / ColdFusion / Experience Manager 等（APSB 2026-10 の一括公開バッチ） / 理由: low_score — 単一ベンダーPSIRT の一括公開バッチ（Adobe は 10 製品で 140 件を修正）。悪用確認・公開PoC・KEV 記載なし。修正版は配布済み。
+・CVE-2026-108971 ほか5件（全件: CVE-2026-108971, CVE-2026-109108, CVE-2026-109109, CVE-2026-109110, CVE-2026-109157, CVE-2026-109520） / Wavlink / D-Link / TRENDnet / Colorful iGameCenter 等のSOHOルータ・周辺機器（VulDB CNA） / 理由: low_score — VulDB 起点の個別アドバイザリ群。ベンダー修正情報は未確認、悪用確認・KEV 記載なし。バッチ集約（前日までと同種の SOHO 機器群）。
+・CVE-2026-109573 ほか12件（全件: CVE-2026-109573, CVE-2026-110112, CVE-2026-110116, CVE-2026-110130, CVE-2026-49950, CVE-2026-63146, CVE-2026-63149, CVE-2026-63158, CVE-2026-63159, CVE-2026-63160, CVE-2026-74040, CVE-2026-74041, CVE-2026-74043） / Dockhand / Omnispace Agora Project / Wazuh / phpMyFAQ / Xorbits Xoscar / Risesoft-y9 等のOSS（VulnCheck CNA） / 理由: low_score — VulnCheck 起点のOSS個別アドバイザリ群。修正版の提示あり、悪用確認・公開PoC・KEV 記載なし。利用規模が限定的で軸2が低い。
+・CVE-2026-102989 ほか12件（全件: CVE-2026-102989, CVE-2026-103928, CVE-2026-104192, CVE-2026-104252, CVE-2026-44828, CVE-2026-53709, CVE-2026-54454, CVE-2026-55183, CVE-2026-55562, CVE-2026-55675, CVE-2026-55695, CVE-2026-77459, CVE-2026-94603） / Podman / Argo CD / Vitess / MCP Context Forge / Dragonfly / RClone Manager / TanStack Router / Metabase / Qexo / OpenCATS / FearlessCMS / Cronicle / Salty docs 等のOSS（GHSA 起点） / 理由: low_score — GHSA 起点のOSS個別アドバイザリ群。修正版あり、悪用確認・KEV 記載なし。Podman（CVE-2026-94603）・Argo CD（CVE-2026-77459）は修正済みで悪用の報告がなく継続監視対象外。
+・CVE-2026-65162 ほか1件（全件: CVE-2026-65162, CVE-2026-65173） / NVIDIA AIStore for Linux / 理由: low_score — NVIDIA PSIRT のバッチ。悪用確認・KEV 記載なし。
+・CVE-2026-106042 ほか1件（全件: CVE-2026-106042, CVE-2026-109412） / Ivanti Xtraction 2026.4 未満 / Ivanti Neurons Patch for Intune / 理由: low_score — 同日公開の Ivanti 他製品。修正版あり、悪用確認・KEV 記載なし（悪用は Connect Secure の CVE-2026-104935 のみで別途採用）。
+・CVE-2026-89107 ほか2件（全件: CVE-2026-89107, CVE-2026-89108, CVE-2026-89110） / SAP S/4HANA / NetWeaver Visual Composer / Manufacturing Integration and Intelligence（SAP 2026-10 更新） / 理由: low_score — SAP 月例更新のバッチ。悪用確認・KEV 記載なし（同月の CVE-2026-89111 は Section 2 注目CVEとして別途採用）。
+・CVE-2026-82101 ほか6件（全件: CVE-2026-82101, CVE-2026-82103, CVE-2026-82110, CVE-2026-90920, CVE-2026-93895, CVE-2026-93909, CVE-2026-96119） / IBM i / Maximo AI Service / DataStage on Cloud Pak for Data / WebSphere Liberty / 理由: low_score — IBM PSIRT の一括公開バッチ。悪用確認・公開PoC・KEV 記載なし。多くが認証後の悪用を前提。
+・CVE-2026-100202 ほか60件（全件: CVE-2026-100202, CVE-2026-100219, CVE-2026-100222, CVE-2026-102210, CVE-2026-102238, CVE-2026-105008, CVE-2026-105010, CVE-2026-105016, CVE-2026-69634, CVE-2026-69639, CVE-2026-69705, CVE-2026-69883, CVE-2026-69886, CVE-2026-70024, CVE-2026-70096, CVE-2026-70147, CVE-2026-70153, CVE-2026-70157, CVE-2026-70188, CVE-2026-70242, CVE-2026-70279, CVE-2026-70291, CVE-2026-70300, CVE-2026-83517, CVE-2026-83519, CVE-2026-83578, CVE-2026-83693, CVE-2026-83748, CVE-2026-83770, CVE-2026-83780, CVE-2026-83782, CVE-2026-83862, CVE-2026-83869, CVE-2026-83910, CVE-2026-83935, CVE-2026-84015, CVE-2026-85792, CVE-2026-85806, CVE-2026-85809, CVE-2026-85814, CVE-2026-85818, CVE-2026-85928, CVE-2026-88092, CVE-2026-88102, CVE-2026-88156, CVE-2026-88178, CVE-2026-96096, CVE-2026-96113, CVE-2026-96219, CVE-2026-96252, CVE-2026-96320, CVE-2026-96864, CVE-2026-96909, CVE-2026-96924, CVE-2026-96934, CVE-2026-97016, CVE-2026-97749, CVE-2026-97805, CVE-2026-97814, CVE-2026-97815, CVE-2026-97816） / Microsoft 2026-10 月例の CVSS 9.0 以上（Windows 各コンポーネント・Office Outlook/Word/PowerPoint・Exchange・ASP.NET Core・AD FS・Schannel・VS Code 等） / 理由: low_score — Patch Tuesday の一括公開バッチ（過去最多 1,411 件）。悪用確認・公開PoC・KEV 記載なし（実悪用は CVE-2026-96951 のみで、Section 2 ゼロデイ特報として別途採用）。修正は月例累積更新で配布済み。
+・CVE-2026-106173 / Fortinet 製品（パストラバーサル） / 理由: low_score — Fortinet PSIRT の公開。悪用確認・KEV 記載なし。修正あり。
+・CVE-2026-69227 / Esri Portal for ArcGIS（portaladmin 内部 API の未認証アクセス） / 理由: low_score — 修正あり、悪用確認・KEV 記載なし。
+・CVE-2026-87689 / Metasploit Framework Web Service REST API の資格情報ストア露出 / 理由: low_score — 攻撃ツール側の脆弱性。悪用確認・KEV 記載なし。
+・CVE-2026-109705 ほか1件（全件: CVE-2026-109705, CVE-2026-109707） / Mozilla Firefox（サンドボックス脱出等・Firefox 修正版） / 理由: low_score — Firefox 修正リリースの脆弱性。悪用確認・KEV 記載なし。
+・CVE-2026-44415 ほか3件（全件: CVE-2026-44415, CVE-2026-63350, CVE-2026-63353, CVE-2026-63354） / Siemens 産業用機器（トレースファイル処理等） / 理由: low_score — Siemens ProductCERT のバッチ。悪用確認・KEV 記載なし。ICS 製品はローカル/管理者操作前提。
+・CVE-2026-105445 / Docker Hub（account-to-organization 変換のトークン再割当） / 理由: low_score — Docker が 2026-09-30 にサーバー側で修正済み。Docker は悪用の証拠なしと表明（THN）。
+・CVE-2026-109758 / Perforce Helix Authentication Service（既定 SCIM トークン残存） / 理由: low_score — 設定不備型で悪用確認・KEV 記載なし。
+・CVE-2026-75120 / OpenText EnCase SAFE Agents / 理由: low_score — 悪用確認・KEV 記載なし。
+・CVE-2026-77099 / Commvault CVFS / 理由: low_score — ベンダー修正版提示済み、悪用確認・KEV 記載なし。
+・CVE-2026-92892 / JFrog 製品（特定構成下の任意コード実行） / 理由: low_score — 特定構成限定、悪用確認・KEV 記載なし。
+・CVE-2026-97381 / Legacy Update（ActiveX コントロールの origin 検証不備・EUVD のみ・GHSA 起点） / 理由: low_score — EUVD-only 層（NVD 反映前・窓終端 21:08Z 公開）。修正版あり、悪用確認なし。NVD 反映後に再評価。
+・CVE-2026-97229 ほか1件（全件: CVE-2026-97229, CVE-2026-89111） / GitLab CE/EE / SAP Cloud SDK for Python（採用先の相互参照） / 理由: low_score — 除外ではなく採用済み: Section 2 注目CVE（trends_cve）。突合用の相互参照記載。
+・CVE-2026-104935 ほか1件（全件: CVE-2026-104935, CVE-2026-96951） / Ivanti Connect Secure / Microsoft Windows Shell（採用先の相互参照） / 理由: low_score — 除外ではなく採用済み: Section 2 ゼロデイ特報（KEV 窓内追加2件）。突合用の相互参照記載。
+
+網羅スイープ: 候補154件 / 処理154件 / 未処理0件 / KEV窓内追加2件 / EUVD窓内149件（うちNVD/KEV未収載1件）

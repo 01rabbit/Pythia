@@ -1,0 +1,1404 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-10-14",
+    "generated_at": "2026-10-14T08:00:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-10-13T07:00:00+09:00",
+      "to": "2026-10-14T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.10.13",
+      "candidates": 154,
+      "handled": 154,
+      "unhandled": 0,
+      "kev_added_in_window": 2,
+      "ghsa_origin_over_threshold": 13,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 149,
+        "euvd_only": 1
+      }
+    }
+  },
+  "zero_day_special": [
+    {
+      "cve_id": "CVE-2026-104935",
+      "product": "Ivanti Connect Secure（認証回避＋RCE の連鎖。3件目の権限昇格は未修正）",
+      "vendor": "Ivanti",
+      "affected_versions": "Connect Secure 25.1.3.0 より前（CVE 記載）。22.7R2.14 以前は影響なし。Volexity が調査した侵害アプライアンスは『最新パッチ適用済み』の 22.8R2.4 で、CVE 記載の影響範囲と整合しない点は記事で未調整（THN）",
+      "priority": "critical",
+      "cvss_v3": 8.6,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": true,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "25.1.3.0 以降（22.8R2.5 / 25.1.3.1 も非影響として記載）。連鎖の3件目（権限昇格・CVE 未付与）は未修正で『今後数週間の将来リリース』予定（Ivanti）",
+        "eta": "数週間以内（Ivanti 表明）"
+      },
+      "fceb_deadline": "2026-10-16",
+      "kev_date_added": "2026-10-13",
+      "axis1_score": 14,
+      "axis2_score": 4,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV Catalog",
+          "date": "2026-10-13",
+          "description": "CISA が CVE-2026-104935 を KEV へ追加（期限 2026-10-16・ランサムウェア利用: Unknown）。"
+        },
+        {
+          "source": "BleepingComputer / The Hacker News / SecurityWeek / Volexity",
+          "date": "2026-10-13",
+          "description": "Ivanti が Connect Secure のゼロデイ悪用を警告し即時パッチを要請。Volexity が3件のゼロデイ連鎖で root 権限に至る未認証 RCE を公表（UTA0576・初期悪用 2026-10-03）。"
+        }
+      ],
+      "overview": "Ivanti Connect Secure（ICS）の認証回避と RCE（CVE-2026-104935・Ivanti 評価 CVSS 8.6）が『限定的な実環境悪用』を受けて修正され、CISA が 2026-10-13 に KEV へ追加した（期限 10-16）。Volexity によれば攻撃者（UTA0576）は3件のゼロデイを連鎖させて未認証で root としてコマンドを実行し、うち2件は修正済み、権限昇格の1件は未修正（Ivanti は将来リリースで修正予定）。エクスプロイトはライブラリをメモリ上でのみ書き換え、変更した設定データを復元するため Ivanti の Integrity Checker Tool を回避し、バックドアや Web シェルも残さずコマンドごとに連鎖を再実行していた。侵害後は保存済み認証情報（LDAP ドメイン認証情報を含む）の窃取、Active Directory 内のパスワード探索、パスワードスプレーが確認された。Volexity は動機を『低い確度で金銭目的（諜報ではない）』と評価している。被害数と、アップグレードで既存の侵害が除去されるかは未公表。恒久修正が未完のため、KEV 期限内に適用できる修正に加えて露出の最小化と痕跡調査が必要。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "細工リクエストで ICS の認証を回避し（CVE-2026-104935 の1段目）、cgi-server ユーザーとしてコマンドを実行"
+        },
+        {
+          "step": 2,
+          "description": "権限昇格（CVE 未付与・未修正）で root 権限を取得"
+        },
+        {
+          "step": 3,
+          "description": "メモリ上のみの書き換えで Integrity Checker を回避しつつ、コマンドごとに連鎖を再実行"
+        },
+        {
+          "step": 4,
+          "description": "保存済み認証情報（LDAP 等）を窃取し、AD 内のパスワード探索・パスワードスプレーへ展開"
+        }
+      ],
+      "techniques": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "ICS の認証回避と RCE の連鎖を未認証で悪用（Ivanti/Volexity）"
+        },
+        {
+          "mitre_id": "T1068",
+          "name": "Exploitation for Privilege Escalation",
+          "implementation": "cgi-server ユーザーから root への権限昇格（未修正の3件目・Volexity）"
+        },
+        {
+          "mitre_id": "T1110.003",
+          "name": "Password Spraying",
+          "implementation": "侵害後にパスワードスプレー攻撃を実施（Volexity）"
+        }
+      ],
+      "temp_mitigation": [
+        "修正版（25.1.3.0 以降）へ即時更新する（KEV 期限 2026-10-16）。ただし3件目の権限昇格は未修正のため、更新だけでは連鎖が完全には閉じない可能性がある（推測）",
+        "ICS の管理・ユーザー向けインタフェースの到達元を最小化し、Ivanti の追加リリースと侵害調査手順（External ICT を含む）を確認する",
+        "LDAP 等の ICS に保存された認証情報の漏えいを前提に、サービスアカウントの資格情報をローテーションする"
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [
+          "108.165.147[.]64"
+        ],
+        "domains": [],
+        "hashes": [],
+        "urls": [
+          "/dana-na/auth/url_default/welcome.cgi（大量リクエスト）"
+        ],
+        "filenames": [
+          "/data/.icscap/（ディレクトリ）"
+        ]
+      },
+      "monitoring": {
+        "description": "ICS の Web ログで /dana-na/auth/url_default/welcome.cgi への大量リクエストと、URL パスと値が一致しない X-DSCGI-PATH ヘッダを確認する。/data/.icscap/ の存在を点検する。侵害後の LDAP バインドの急増・パスワードスプレーを AD 側で確認する。",
+        "splunk_spl": [
+          "index=ivanti sourcetype=ivanti:ics (uri_path=\"/dana-na/auth/url_default/welcome.cgi\") | stats count by src_ip, uri_path | where count>100",
+          "index=ad sourcetype=WinEventLog:Security EventCode=4625 | bin _time span=10m | stats dc(user) as users count by src_ip, _time | where users>10"
+        ],
+        "detection_notes": "IOC は Volexity が調査した1件の侵害に基づく。攻撃者はバックドア・Web シェルを残さないため、ファイル検査だけでは侵害を否定できない。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/attacker-chains-three-ivanti-connect.html",
+          "title": "Attacker Chains Three Ivanti Connect Secure Zero-Days for Root Access, Only Two Patched So Far",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/ivanti-warns-of-connect-secure-zero-day-exploited-in-attacks",
+          "title": "Ivanti warns of Connect Secure zero-day exploited in attacks",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://www.securityweek.com/ivanti-zero-day-chain-gave-attackers-root-access-to-fully-patched-vpn",
+          "title": "Ivanti Zero-Day Chain Gave Attackers Root Access to Fully Patched VPN",
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "government",
+        "finance"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [
+        "UTA0576（Volexity の追跡名・動機は低確度で金銭目的）"
+      ],
+      "section_route": "product_cve",
+      "report_section": "zero_day_special",
+      "info_id": "20261014-CVEP-104935a1"
+    },
+    {
+      "cve_id": "CVE-2026-96951",
+      "product": "Microsoft Windows Shell（コマンドインジェクションによるセキュリティ機能バイパス・Mark of the Web 回避）",
+      "vendor": "Microsoft",
+      "affected_versions": "Windows 各版（影響範囲の詳細は MSRC 月例アップデートを参照。本窓では未取得）",
+      "priority": "high",
+      "cvss_v3": 8.8,
+      "cvss_v4": null,
+      "cvss_severity": "High",
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": true,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "2026-10 月例（Patch Tuesday）の累積更新",
+        "eta": null
+      },
+      "fceb_deadline": "2026-10-16",
+      "kev_date_added": "2026-10-13",
+      "axis1_score": 11,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV Catalog",
+          "date": "2026-10-13",
+          "description": "CISA が CVE-2026-96951 を KEV へ追加（期限 2026-10-16・ランサムウェア利用: Unknown）。"
+        },
+        {
+          "source": "BleepingComputer / SANS ISC",
+          "date": "2026-10-13",
+          "description": "Microsoft 2026年10月の月例で、実悪用が確認された Windows Shell のゼロデイとして報道。"
+        }
+      ],
+      "overview": "Microsoft の2026年10月月例（Patch Tuesday）で、Windows Shell の CVE-2026-96951（CVSS 8.8・コマンドインジェクション起因のセキュリティ機能バイパス）が『実悪用確認済み』として修正された。BleepingComputer によれば Mark of the Web（MotW）の保護を回避する。CISA が同日 KEV へ追加した（期限 2026-10-16）。攻撃者・悪用の規模・初期侵入経路（ユーザーが開くファイル形式等）は本窓の取得情報にない。MotW 回避は『ダウンロードしたファイルが警告なしに実行される』経路の前提となるため、メール添付・ダウンロードファイル経由の初期アクセスと組み合わされる可能性がある（推測）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "細工したファイル/リンクを被害者の Windows 環境へ配布（経路は未取得）"
+        },
+        {
+          "step": 2,
+          "description": "Windows Shell の脆弱性で MotW によるセキュリティ警告を回避"
+        },
+        {
+          "step": 3,
+          "description": "警告なしに後続のコード実行へ（詳細は未取得）"
+        }
+      ],
+      "techniques": [
+        {
+          "mitre_id": "T1553.005",
+          "name": "Subvert Trust Controls: Mark-of-the-Web Bypass",
+          "implementation": "Windows Shell の脆弱性で Mark of the Web の保護を回避（BleepingComputer の記述）"
+        }
+      ],
+      "temp_mitigation": [
+        "2026年10月の月例累積更新を速やかに適用する（KEV 期限 2026-10-16）",
+        "適用までの間、インターネット経由のファイル受領経路（メール添付・ダウンロード）に対するフィルタリングとファイル実行の制限を強化する"
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "MotW が付与されたファイルが警告なしに実行される挙動、Explorer/Shell からの不審な子プロセス起動を監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/microsoft/microsoft-october-2026-patch-tuesday-fixes-1-411-flaws-3-zero-days",
+          "title": "Microsoft October 2026 Patch Tuesday fixes 1,411 flaws, 3 zero-days",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://isc.sans.edu/diary/rss/33422",
+          "title": "October 2026 Microsoft Patch Tuesday",
+          "language": "en",
+          "source": "SANS Internet Storm Center"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "government",
+        "finance"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "zero_day_special",
+      "info_id": "20261014-CVEP-96951a1"
+    }
+  ],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [
+      {
+        "cve_id": "CVE-2026-97229",
+        "product": "GitLab CE/EE（CI/CD 設定内の正規表現検証不備による未認証 RCE）",
+        "vendor": "GitLab",
+        "affected_versions": "19.2 系は 19.2.8 より前、19.3 系は 19.3.5 より前、19.4 系は 19.4.2 より前。修正: 19.2.8 / 19.3.5 / 19.4.2",
+        "priority": "high",
+        "cvss_v3": 10.0,
+        "cvss_v4": null,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": false,
+          "actively_exploited": false,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "19.2.8 / 19.3.5 / 19.4.2",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 13,
+        "axis2_score": 2,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "The Hacker News / Security NEXT",
+            "date": "2026-10-13",
+            "description": "GitLab が 2026-10-12（現地）のセキュリティリリースで CVE-2026-97229（CVSS 10.0）を修正。前日の『最大深刻度 RCE』警告の CVE 番号・影響範囲が確定。"
+          }
+        ],
+        "overview": "GitLab は CE/EE の CI/CD 設定内で、細工した正規表現により『一定条件下で未認証ユーザーが GitLab サーバー上で任意コードを実行し得る』脆弱性 CVE-2026-97229（CVSS 10.0・正規表現検証の不備）を修正した。影響は 19.2 系（19.2.8 未満）、19.3 系（19.3.5 未満）、19.4 系（19.4.2 未満）。同一リリースで 24 件が修正された（Security NEXT）。本窓では悪用の報告・公開 PoC・KEV 登録はない。GitLab は直近でも CVE-2026-85706（CVSS 10.0）が公開直後に実環境で探索された例があり、セルフホスト環境の更新遅延が狙われやすい（THN の関連言及）。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "細工した正規表現を含む CI/CD 設定を GitLab へ投入（未認証・一定条件下）"
+          },
+          {
+            "step": 2,
+            "description": "正規表現検証の不備を突き GitLab サーバー上で任意コードを実行"
+          }
+        ],
+        "techniques": [],
+        "temp_mitigation": [
+          "19.2.8 / 19.3.5 / 19.4.2 以降へ更新する",
+          "更新までの間、セルフホスト GitLab のインターネット到達性を制限する"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "CI/CD 設定の作成・変更イベントと GitLab サーバー上の不審な子プロセスを監視する。",
+          "splunk_spl": [],
+          "detection_notes": null
+        },
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/gitlab-patches-cvss-100-flaw-that-could.html",
+            "title": "GitLab Patches CVSS 10.0 Flaw That Could Let Unauthenticated Users Run Server Code",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.security-next.com/191308",
+            "title": "「GitLab」が「クリティカル」脆弱性含む24件の修正を実施",
+            "language": "ja",
+            "source": "Security NEXT"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": [],
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261014-CVET-97229a1"
+      },
+      {
+        "cve_id": "CVE-2026-89111",
+        "product": "SAP Cloud SDK for Python（マルチテナント BTP アプリの OAuth2 SSRF による資格情報流出）",
+        "vendor": "SAP",
+        "affected_versions": "SAP Cloud SDK for Python を使うマルチテナント BTP アプリ（影響バージョン・修正版番号は本窓で未取得）",
+        "priority": "high",
+        "cvss_v3": 10.0,
+        "cvss_v4": null,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": false,
+          "actively_exploited": false,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "SAP セキュリティノート 2026-10 参照（版番号未取得）",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 12,
+        "axis2_score": 2,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "BleepingComputer / The Hacker News",
+            "date": "2026-10-13",
+            "description": "SAP が10月のセキュリティ更新（20件）で Cloud SDK for Python の CVSS 10.0 を公開。"
+          }
+        ],
+        "overview": "SAP Cloud SDK for Python に、tenant_subdomain パラメータを制御できる攻撃者が OAuth2 トークン要求を攻撃者管理のサーバーへ向けさせ、アプリのクライアント資格情報を窃取できる SSRF（CVE-2026-89111・CVSS 10.0）がある。SAP の説明では攻撃者がテナントのサブドメインを制御できる必要があり、影響は BTP 上のマルチテナントアプリに限られる。悪用・公開 PoC・KEV 登録は本窓で確認されていない。窃取された資格情報は他のテナントや連携サービスへの横展開に使われ得る（推測）。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "tenant_subdomain を攻撃者が制御して OAuth2 トークン要求の宛先を攻撃者サーバーへ変更"
+          },
+          {
+            "step": 2,
+            "description": "クライアント資格情報が攻撃者サーバーへ送信される"
+          }
+        ],
+        "techniques": [],
+        "temp_mitigation": [
+          "SAP の10月セキュリティノートに従い SDK を更新する",
+          "影響を受ける可能性のあるクライアント資格情報をローテーションし、tenant_subdomain の入力検証を確認する"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "BTP アプリから想定外のホストへ向かう OAuth2 トークン要求（宛先ドメインの逸脱）を監視する。",
+          "splunk_spl": [],
+          "detection_notes": null
+        },
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/sap-discloses-critical-cvss-10-flaw-in.html",
+            "title": "SAP Discloses Critical CVSS 10 Flaw in Cloud SDK for Python Allowing OAuth2 Credential Theft",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/sap-warns-of-maximum-severity-oauth2-ssrf-security-flaw",
+            "title": "SAP warns of maximum severity OAuth2 SSRF security flaw",
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": [],
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261014-CVET-89111a1"
+      }
+    ],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-10-14-001",
+        "title": "Microsoft 2026年10月月例が過去最多の 1,411 件を修正、ゼロデイ3件（実悪用1・公開済み2）",
+        "summary": "BleepingComputer によれば Microsoft の2026年10月月例は過去最多の 1,411 件（10月前半に修正済みの 348 件を除く）を修正し、うち実悪用1件（Windows Shell の CVE-2026-96951・KEV 追加済み）と公開済み2件（.NET Framework の WDAC バイパス CVE-2026-108398・Google Project Zero の James Forshaw が発見／MessagePack-CSharp の DoS CVE-2026-92707）を含む。Critical は 70 件（RCE 57・権限昇格 11・なりすまし 2）。SANS ISC は総数を 1,417 件・Critical 76 件と集計しており、集計方法で件数が異なる。本窓の CVSS 9.0 以上の Microsoft CVE（多くは認証不要のネットワーク経由 RCE）は除外サマリーにバッチ記録したが、いずれも悪用確認はない。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer / SANS ISC",
+            "date": "2026-10-13",
+            "description": "Microsoft が10月月例を公開。ゼロデイ3件（実悪用1・公開済み2）。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/microsoft/microsoft-october-2026-patch-tuesday-fixes-1-411-flaws-3-zero-days",
+            "title": "Microsoft October 2026 Patch Tuesday fixes 1,411 flaws, 3 zero-days",
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://isc.sans.edu/diary/rss/33422",
+            "title": "October 2026 Microsoft Patch Tuesday",
+            "language": "en",
+            "source": "SANS Internet Storm Center"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261014-TRND-t0000001"
+      },
+      {
+        "topic_id": "TREND-2026-10-14-002",
+        "title": "フランスのスーパー数百店で Danfoss 冷却管理コントローラが乗っ取られ冷蔵庫・冷凍庫が加温される",
+        "summary": "THN によれば、2026-10-11 夜、フランスの数百のスーパーで Danfoss 製の冷却管理コントローラ（AK-SM / AK-SC 系。保守業者が遠隔管理できる）が遠隔操作され、冷蔵庫・冷凍庫が最大 50℃ まで加温されて食品の廃棄を余儀なくされた（AFP は Intermarché/Netto で少なくとも 300 店、Reuters は約 150 店と報道。Coopérative U 80 店、Carrefour 80 店、Monoprix 約 30 店ほか）。侵入経路は 2026-10-13 時点で未確定で、CERT-FR は脆弱性・ファームウェア版・侵入経路を明示していない。Danfoss は被害の大半が更新対象外の旧機種（AK-SM 800 は 2021年終了等）だと説明し、交換を促している。帰属は誰も示しておらず、パリ検察が捜査中。Sekoia は欧州の他国（スペイン・ポルトガル・ポーランド・ドイツ・ベルギー）にも影響があると Reuters に述べたが詳細は不明。管理インタフェースがインターネットから到達可能な個体が多数あるとの Claroty の研究がある（攻撃観測ではない）。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-10-13",
+            "description": "Danfoss コントローラ経由の攻撃で仏小売数百店の冷却設備が加温された事案の詳細（CERT-FR 指針含む）が報道された。"
+          }
+        ],
+        "sector_impact": [
+          "retail",
+          "manufacturing",
+          "critical_infrastructure"
+        ],
+        "region_impact": [
+          "EU",
+          "FR"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/attackers-heat-french-supermarket.html",
+            "title": "Attackers Heat French Supermarket Fridges Up to 50°C by Hijacking Danfoss Controllers",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.securityweek.com/refrigeration-controller-hack-spoils-food-across-european-supermarkets",
+            "title": "Refrigeration Controller Hack Spoils Food Across European Supermarkets",
+            "language": "en",
+            "source": "SecurityWeek"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261014-TRND-t0000002"
+      },
+      {
+        "topic_id": "TREND-2026-10-14-003",
+        "title": "低価格 Android 端末のファームウェアに悪意あるソフトが事前導入され、住宅用プロキシ化（Bitdefender『Midnight Mimosa』）",
+        "summary": "THN によれば、MediaTek プラットフォームの複数ブランドの低価格 Android スマートフォンに、ファームウェアへ組み込まれたマルウェアが出荷時から含まれ、攻撃者がアプリを密かにインストールし、広告詐欺を行い、端末を住宅用プロキシにしている。Bitdefender が『Midnight Mimosa』として追跡している（対象ブランド・規模は要約から未取得）。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-10-13",
+            "description": "Bitdefender が出荷時マルウェアの活動（Midnight Mimosa）を公表したと THN が報道。"
+          }
+        ],
+        "sector_impact": [
+          "consumer",
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/low-cost-android-phones-ship-with.html",
+            "title": "Low-Cost Android Phones Ship With Preinstalled Malware That Turns Them Into Residential Proxies",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261014-TRND-t0000003"
+      },
+      {
+        "topic_id": "TREND-2026-10-14-004",
+        "title": "Meta が GitHub 侵害でコードと従業員など 1,500 人の個人データが持ち出されたと公表",
+        "summary": "SecurityWeek によれば、Meta は GitHub 上の侵害でハッカーがコードと約 1,500 人の個人データ（対象の大半は米国の Meta 従業員）を持ち出したと説明し、クレジット監視サービスを提供している。侵入経路・攻撃者は要約から確認できない。",
+        "changes_24h": [
+          {
+            "source": "SecurityWeek",
+            "date": "2026-10-13",
+            "description": "Meta が GitHub 侵害の影響（約 1,500 人）を公表。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "US"
+        ],
+        "references": [
+          {
+            "url": "https://www.securityweek.com/meta-says-hackers-took-code-personal-data-of-1500-in-github-breach",
+            "title": "Meta Says Hackers Took Code, Personal Data of 1,500 in GitHub Breach",
+            "language": "en",
+            "source": "SecurityWeek"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261014-TRND-t0000004"
+      },
+      {
+        "topic_id": "TREND-2026-10-14-005",
+        "title": "GitHub が npm の Trusted Publishing 設定を作成48時間で失効させる措置（1,500 超のパッケージがハイジャックされ得た欠陥）",
+        "summary": "THN によれば、GitHub は未検証の npm Trusted Publishing 設定を作成から 48 時間で失効させる措置を取った。研究者が、他人のパッケージの認証情報を盗まずに新バージョンを公開できることを見出し、1,500 超のパッケージが影響を受け得たとされる。設定は初回の公開成功後に検証済みとなり失効の対象外になる。悪用の有無は要約から未取得。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-10-13",
+            "description": "GitHub が npm Trusted Publishing の未検証設定を48時間で失効させる措置を発表。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/github-tightens-npm-publishing-after.html",
+            "title": "GitHub Tightens npm Publishing After Flaw Left 1,500+ Packages Vulnerable to Hijacking",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261014-TRND-t0000005"
+      },
+      {
+        "topic_id": "TREND-2026-10-14-006",
+        "title": "Adobe が10製品で 140 件の脆弱性を修正（Commerce・ColdFusion・Experience Manager 等）",
+        "summary": "SecurityWeek によれば、Adobe は Commerce・Photoshop・ColdFusion・Substance 3D・Dimension・FrameMaker・Bridge 等の10製品で 140 件の脆弱性を修正した。網羅スイープでは CVSS 9.0 以上の Adobe CVE を多数捕捉しており、除外サマリーにバッチで記録した（本窓では悪用・公開 PoC の報告はない）。",
+        "changes_24h": [
+          {
+            "source": "SecurityWeek",
+            "date": "2026-10-13",
+            "description": "Adobe が10月のセキュリティ更新を公開。"
+          }
+        ],
+        "sector_impact": [
+          "it",
+          "retail"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.securityweek.com/adobe-patches-140-vulnerabilities-across-10-products",
+            "title": "Adobe Patches 140 Vulnerabilities Across 10 Products",
+            "language": "en",
+            "source": "SecurityWeek"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261014-TRND-t0000006"
+      },
+      {
+        "topic_id": "TREND-2026-10-14-007",
+        "title": "ローソンのアカウントサービスに不正アクセス、215万5,345件のローソンIDが漏えい（国内）",
+        "summary": "ScanNetSecurity によれば、ローソンのアカウントサービスへの不正アクセスにより 215 万 5,345 件のローソン ID が漏えいした。侵入手口・漏えい項目は要約から未取得。同日、JPCERT/CC が国内組織への不正アクセスに関する注意喚起（API 悪用などへの対策を推奨）を公開し、個人情報保護委員会も大規模漏えい事案を踏まえた注意喚起を行ったと報じられている（内容は要約から未取得）。",
+        "changes_24h": [
+          {
+            "source": "ScanNetSecurity",
+            "date": "2026-10-13",
+            "description": "ローソン ID 215 万件の漏えいと、JPCERT/CC・個人情報保護委員会の注意喚起が報じられた。"
+          }
+        ],
+        "sector_impact": [
+          "retail",
+          "consumer"
+        ],
+        "region_impact": [
+          "JP"
+        ],
+        "references": [
+          {
+            "url": "https://scan.netsecurity.ne.jp/article/2026/10/13/56434.html",
+            "title": "ローソンのアカウントサービスに不正アクセス、215 万 5,345 件のローソン ID が漏えい",
+            "language": "ja",
+            "source": "ScanNetSecurity"
+          },
+          {
+            "url": "https://scan.netsecurity.ne.jp/article/2026/10/13/56428.html",
+            "title": "JPCERT/CC、国内組織への不正アクセスに関する注意喚起を公開 API悪用などへの対策を推奨",
+            "language": "ja",
+            "source": "ScanNetSecurity"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261014-TRND-t0000007"
+      }
+    ]
+  },
+  "apt_main": [],
+  "apt_notable": [
+    {
+      "group_name": "UTA0576（Volexity の追跡名・Ivanti Connect Secure ゼロデイ連鎖の運用者）",
+      "aliases": [
+        "UTA0576"
+      ],
+      "nation_state": null,
+      "attribution_confidence": "low",
+      "campaign_id": "UTA0576-2026-IvantiConnectSecureZeroDayChain",
+      "activity_type": [
+        "new_campaign",
+        "zero_day_exploit"
+      ],
+      "motivation": "financial",
+      "first_seen": "2026-10-03",
+      "last_seen": "2026-10-13",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "malware": [],
+      "axis_p_score": 6,
+      "axis_q_score": 4,
+      "changes_24h": [
+        {
+          "source": "The Hacker News / Volexity",
+          "date": "2026-10-13",
+          "description": "Volexity が UTA0576 による Ivanti Connect Secure の3件ゼロデイ連鎖（初期悪用 2026-10-03）を公表。動機は低い確度で金銭目的と評価。"
+        }
+      ],
+      "overview": "Volexity は、Ivanti Connect Secure の3件のゼロデイ（うち2件修正済み、権限昇格1件は未修正）を連鎖させて未認証で root 権限のコマンド実行に至る攻撃者を UTA0576 として追跡している。調査した1件の侵害では 2026-10-03 から悪用が始まり、Integrity Checker Tool を回避し、バックドアを残さず、保存済み認証情報の窃取、AD 内のパスワード探索、パスワードスプレーを行った。Volexity は動機を『低い確度で金銭目的』と評価しており、国家・既知グループへの帰属は示されていない（本レポートでも行わない）。被害件数は未公表。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "ICS の認証回避と RCE を連鎖して cgi-server として実行（CVE-2026-104935 ほか）"
+        },
+        {
+          "step": 2,
+          "description": "未修正の権限昇格で root 取得、メモリ上のみで痕跡を抑制"
+        },
+        {
+          "step": 3,
+          "description": "保存済み認証情報の窃取、AD 内パスワード探索、パスワードスプレー"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "ICS ゼロデイ連鎖の悪用（Volexity）"
+        },
+        {
+          "mitre_id": "T1068",
+          "name": "Exploitation for Privilege Escalation",
+          "implementation": "root への権限昇格（Volexity）"
+        },
+        {
+          "mitre_id": "T1110.003",
+          "name": "Password Spraying",
+          "implementation": "侵害後のパスワードスプレー（Volexity）"
+        }
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [
+          "108.165.147[.]64"
+        ],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": [
+          "/data/.icscap/"
+        ]
+      },
+      "recommended_actions": "ICS を修正版へ更新し、露出を最小化する。/data/.icscap/ と welcome.cgi への大量リクエスト・X-DSCGI-PATH 不一致を点検し、ICS に保存された LDAP 等の認証情報をローテーションする。未修正の3件目に関する Ivanti の追加リリースを監視する。",
+      "splunk_spl": [],
+      "detection_notes": "IOC は単一インシデントに基づく。Integrity Checker は回避されるため、同ツールの正常結果は侵害否定の根拠にならない。",
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/attacker-chains-three-ivanti-connect.html",
+          "title": "Attacker Chains Three Ivanti Connect Secure Zero-Days for Root Access, Only Two Patched So Far",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "related_cves": [
+        "CVE-2026-104935"
+      ],
+      "report_section": "apt_notable",
+      "info_id": "20261014-APTN-uta0576a"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-10-14-001",
+      "title": "Ivanti Connect Secure ゼロデイ連鎖（CVE-2026-104935）— 修正適用と侵害痕跡の調査を並行する",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "high",
+      "product_or_service": "Ivanti Connect Secure（25.1.3.0 未満）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Volexity / BleepingComputer",
+          "date": "2026-10-13",
+          "description": "Ivanti が悪用を警告、CISA が KEV 追加（期限 10-16）。Volexity が3件連鎖を公表。"
+        }
+      ],
+      "overview": "KEV 期限は 2026-10-16。連鎖の1件（権限昇格）は未修正で、バックドアを残さず Integrity Checker を回避するため、修正適用だけでは侵害の有無を判断できない。ICS を運用する組織は適用と調査を同時に進める。",
+      "recommended_actions": [
+        "25.1.3.0 以降へ更新し、管理・ユーザー面の到達元を最小化する",
+        "welcome.cgi への大量リクエスト、X-DSCGI-PATH 不一致、/data/.icscap/、IP 108.165.147[.]64 を点検する",
+        "ICS に保存された LDAP 等の資格情報をローテーションし、AD のパスワードスプレー痕跡を確認する"
+      ],
+      "monitoring": {
+        "description": "ICS の Web ログと AD の認証失敗イベントを監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/attacker-chains-three-ivanti-connect.html",
+          "title": "Attacker Chains Three Ivanti Connect Secure Zero-Days for Root Access, Only Two Patched So Far",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261014-SOCR-00000001"
+    },
+    {
+      "rec_id": "SOC-2026-10-14-002",
+      "title": "Windows Shell の実悪用ゼロデイ CVE-2026-96951 — 10月月例の優先適用（KEV 期限 10-16）",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "high",
+      "product_or_service": "Microsoft Windows（10月月例）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-10-13",
+          "description": "Microsoft が実悪用を確認、CISA が KEV 追加（期限 10-16）。"
+        }
+      ],
+      "overview": "Mark of the Web を回避するセキュリティ機能バイパス。月例が過去最多の 1,411 件で適用の優先順位付けが難しいため、KEV 登録の本件を最優先にする。",
+      "recommended_actions": [
+        "10月月例の累積更新を適用する（期限 2026-10-16）",
+        "メール添付・ダウンロード経路のファイル実行制限を一時的に強化する"
+      ],
+      "monitoring": {
+        "description": "MotW 付きファイルが警告なしに実行される挙動を監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/microsoft/microsoft-october-2026-patch-tuesday-fixes-1-411-flaws-3-zero-days",
+          "title": "Microsoft October 2026 Patch Tuesday fixes 1,411 flaws, 3 zero-days",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20261014-SOCR-00000002"
+    },
+    {
+      "rec_id": "SOC-2026-10-14-003",
+      "title": "Danfoss 冷却管理コントローラ攻撃（仏小売）— 管理インタフェースの露出と旧機種の棚卸し",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "high",
+      "product_or_service": "Danfoss AK-SM / AK-SC 系冷却管理コントローラ",
+      "targets": {
+        "sectors": [
+          "retail",
+          "critical_infrastructure"
+        ],
+        "regions": [
+          "EU",
+          "FR"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-13",
+          "description": "仏小売数百店で遠隔操作による加温被害。CERT-FR が切断・アクセス制限を推奨。"
+        }
+      ],
+      "overview": "侵入経路は未確定だが、CERT-FR はコントローラの切断またはアクセスのフィルタリングを推奨している。旧機種（更新対象外）が被害の大半とされるため、冷蔵・空調の遠隔管理装置を持つ小売・食品物流は露出の棚卸しを行う。",
+      "recommended_actions": [
+        "遠隔管理対象の冷却・空調コントローラをインターネットから切り離すか、VPN・許可元 IP に限定する",
+        "侵害が疑われる場合は CERT-FR の手順（アクセスを保守業者に限定・初期化・修正適用・秘密情報の変更・アカウント確認・再設定）に従う",
+        "更新対象外の旧機種は交換計画を立てる"
+      ],
+      "monitoring": {
+        "description": "コントローラ管理 UI への外部からのアクセスと設定変更（設定温度の変更）を監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/attackers-heat-french-supermarket.html",
+          "title": "Attackers Heat French Supermarket Fridges Up to 50°C by Hijacking Danfoss Controllers",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261014-SOCR-00000003"
+    },
+    {
+      "rec_id": "SOC-2026-10-14-004",
+      "title": "GitLab CVE-2026-97229（CVSS 10.0）— セルフホスト環境を 19.2.8 / 19.3.5 / 19.4.2 へ更新",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "medium",
+      "product_or_service": "GitLab CE/EE（セルフホスト）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News / Security NEXT",
+          "date": "2026-10-13",
+          "description": "GitLab が 24 件を修正。CVE-2026-97229 の影響範囲が確定。"
+        }
+      ],
+      "overview": "未認証の RCE（一定条件下）。悪用は未確認だが、前例として GitLab の CVSS 10.0 脆弱性が公開直後に探索された。",
+      "recommended_actions": [
+        "19.2.8 / 19.3.5 / 19.4.2 以降へ更新する",
+        "更新までインターネット到達性を制限し、CI/CD 設定の変更を監査する"
+      ],
+      "monitoring": {
+        "description": "CI/CD 設定の変更イベントと GitLab サーバー上の不審プロセスを監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/gitlab-patches-cvss-100-flaw-that-could.html",
+          "title": "GitLab Patches CVSS 10.0 Flaw That Could Let Unauthenticated Users Run Server Code",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261014-SOCR-00000004"
+    },
+    {
+      "rec_id": "SOC-2026-10-14-005",
+      "title": "SAP Cloud SDK for Python CVE-2026-89111（CVSS 10.0）— BTP マルチテナントアプリの資格情報ローテーション",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "medium",
+      "product_or_service": "SAP Cloud SDK for Python / SAP BTP",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer / The Hacker News",
+          "date": "2026-10-13",
+          "description": "SAP が10月の更新で公開。"
+        }
+      ],
+      "overview": "tenant_subdomain を制御できる攻撃者が OAuth2 クライアント資格情報を窃取できる。BTP のマルチテナントアプリで SDK を使う組織は更新と資格情報の再発行を検討する。",
+      "recommended_actions": [
+        "SAP セキュリティノートに従い SDK を更新する",
+        "テナントサブドメインの入力検証を確認し、クライアント資格情報をローテーションする"
+      ],
+      "monitoring": {
+        "description": "BTP アプリから想定外ホストへの OAuth2 トークン要求を監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/sap-discloses-critical-cvss-10-flaw-in.html",
+          "title": "SAP Discloses Critical CVSS 10 Flaw in Cloud SDK for Python Allowing OAuth2 Credential Theft",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261014-SOCR-00000005"
+    },
+    {
+      "rec_id": "SOC-2026-10-14-006",
+      "title": "SonicWall SMA1000 CVE-2026-102255・Bricksforge CVE-2026-85097 — 継続監視（本窓で新規の状態変化なし）",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "medium",
+      "product_or_service": "SonicWall SMA1000 / WordPress Bricksforge",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Dark Reading",
+          "date": "2026-10-12",
+          "description": "Dark Reading が SMA1000 の SSRF が攻撃下にあると報道（既報の継続）。"
+        }
+      ],
+      "overview": "いずれも既報で KEV 未登録（本窓の KEV 追加は Ivanti・Windows Shell の2件のみ）。修正適用状況の確認を継続する。",
+      "recommended_actions": [
+        "SMA1000 は SNWLID-2026-0017 の修正を適用し WorkPlace の外部公開を最小化する",
+        "Bricksforge は修正版の有無を確認し、未修正なら無効化して uploads 配下の不審 PHP を点検する"
+      ],
+      "monitoring": {
+        "description": "既報の監視手順を継続する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.darkreading.com/vulnerabilities-threats/max-severity-ssrf-flaw-sonicwall-sma-devices-under-attack",
+          "title": "Maximum-Severity SSRF Flaw in SonicWall SMA Devices Under Attack",
+          "language": "en",
+          "source": "Dark Reading"
+        }
+      ],
+      "info_id": "20261014-SOCR-00000006"
+    },
+    {
+      "rec_id": "SOC-2026-10-14-007",
+      "title": "npm Trusted Publishing の未検証設定が 48 時間で失効 — 設定の検証と公開ワークフローの点検",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "low",
+      "product_or_service": "npm / GitHub Actions Trusted Publishing",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-13",
+          "description": "GitHub が措置を発表。"
+        }
+      ],
+      "overview": "Trusted Publishing を設定したが初回公開が済んでいないパッケージは 48 時間で設定が失効する。公開が止まる可能性があるため、新規設定のメンテナーは初回公開まで速やかに実施する。",
+      "recommended_actions": [
+        "自組織の npm パッケージの Trusted Publishing 設定を棚卸しし、未検証のものは初回公開で検証済みにする",
+        "不審なバージョン公開がないか公開履歴を確認する"
+      ],
+      "monitoring": {
+        "description": "npm の公開イベントと発行元ワークフローを監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/github-tightens-npm-publishing-after.html",
+          "title": "GitHub Tightens npm Publishing After Flaw Left 1,500+ Packages Vulnerable to Hijacking",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261014-SOCR-00000007"
+    },
+    {
+      "rec_id": "SOC-2026-10-14-008",
+      "title": "出荷時マルウェア入り低価格 Android 端末（Midnight Mimosa）— 調達端末の確認",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "low",
+      "product_or_service": "MediaTek 搭載の低価格 Android 端末",
+      "targets": {
+        "sectors": [
+          "consumer",
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-13",
+          "description": "Bitdefender が公表。"
+        }
+      ],
+      "overview": "ファームウェアに悪意あるソフトが組み込まれ、住宅用プロキシ化される。対象ブランドは要約から未取得のため、業務用に低価格端末を調達する組織は Bitdefender の報告で該当機種を確認する。",
+      "recommended_actions": [
+        "業務利用の低価格 Android 端末の調達元とファームウェアを確認する",
+        "MDM で未承認アプリの導入を検知する"
+      ],
+      "monitoring": {
+        "description": "端末から不審な外部プロキシ通信がないか確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/low-cost-android-phones-ship-with.html",
+          "title": "Low-Cost Android Phones Ship With Preinstalled Malware That Turns Them Into Residential Proxies",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261014-SOCR-00000008"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2024-34323 ほか1件（全件: CVE-2024-34323, CVE-2026-52394）",
+        "product": "ProPhoenix Law RMS（CVE-2024-34323）/ DeepSeek V4（CVE-2026-52394）",
+        "reason": "low_score",
+        "reason_detail": "MITRE 採番の単発。ベンダー情報・悪用確認なし。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-100133 ほか25件（全件: CVE-2026-100133, CVE-2026-103848, CVE-2026-103849, CVE-2026-105895, CVE-2026-105899, CVE-2026-105903, CVE-2026-106612, CVE-2026-106619, CVE-2026-106620, CVE-2026-106621, CVE-2026-106622, CVE-2026-106624, CVE-2026-106626, CVE-2026-106629, CVE-2026-106630, CVE-2026-48382, CVE-2026-48383, CVE-2026-75732, CVE-2026-75994, CVE-2026-83662, CVE-2026-90530, CVE-2026-90531, CVE-2026-90532, CVE-2026-91013, CVE-2026-92464, CVE-2026-92909）",
+        "product": "Adobe Commerce / ColdFusion / Experience Manager 等（APSB 2026-10 の一括公開バッチ）",
+        "reason": "low_score",
+        "reason_detail": "単一ベンダーPSIRT の一括公開バッチ（Adobe は 10 製品で 140 件を修正）。悪用確認・公開PoC・KEV 記載なし。修正版は配布済み。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-108971 ほか5件（全件: CVE-2026-108971, CVE-2026-109108, CVE-2026-109109, CVE-2026-109110, CVE-2026-109157, CVE-2026-109520）",
+        "product": "Wavlink / D-Link / TRENDnet / Colorful iGameCenter 等のSOHOルータ・周辺機器（VulDB CNA）",
+        "reason": "low_score",
+        "reason_detail": "VulDB 起点の個別アドバイザリ群。ベンダー修正情報は未確認、悪用確認・KEV 記載なし。バッチ集約（前日までと同種の SOHO 機器群）。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-109573 ほか12件（全件: CVE-2026-109573, CVE-2026-110112, CVE-2026-110116, CVE-2026-110130, CVE-2026-49950, CVE-2026-63146, CVE-2026-63149, CVE-2026-63158, CVE-2026-63159, CVE-2026-63160, CVE-2026-74040, CVE-2026-74041, CVE-2026-74043）",
+        "product": "Dockhand / Omnispace Agora Project / Wazuh / phpMyFAQ / Xorbits Xoscar / Risesoft-y9 等のOSS（VulnCheck CNA）",
+        "reason": "low_score",
+        "reason_detail": "VulnCheck 起点のOSS個別アドバイザリ群。修正版の提示あり、悪用確認・公開PoC・KEV 記載なし。利用規模が限定的で軸2が低い。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-102989 ほか12件（全件: CVE-2026-102989, CVE-2026-103928, CVE-2026-104192, CVE-2026-104252, CVE-2026-44828, CVE-2026-53709, CVE-2026-54454, CVE-2026-55183, CVE-2026-55562, CVE-2026-55675, CVE-2026-55695, CVE-2026-77459, CVE-2026-94603）",
+        "product": "Podman / Argo CD / Vitess / MCP Context Forge / Dragonfly / RClone Manager / TanStack Router / Metabase / Qexo / OpenCATS / FearlessCMS / Cronicle / Salty docs 等のOSS（GHSA 起点）",
+        "reason": "low_score",
+        "reason_detail": "GHSA 起点のOSS個別アドバイザリ群。修正版あり、悪用確認・KEV 記載なし。Podman（CVE-2026-94603）・Argo CD（CVE-2026-77459）は修正済みで悪用の報告がなく継続監視対象外。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-65162 ほか1件（全件: CVE-2026-65162, CVE-2026-65173）",
+        "product": "NVIDIA AIStore for Linux",
+        "reason": "low_score",
+        "reason_detail": "NVIDIA PSIRT のバッチ。悪用確認・KEV 記載なし。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-106042 ほか1件（全件: CVE-2026-106042, CVE-2026-109412）",
+        "product": "Ivanti Xtraction 2026.4 未満 / Ivanti Neurons Patch for Intune",
+        "reason": "low_score",
+        "reason_detail": "同日公開の Ivanti 他製品。修正版あり、悪用確認・KEV 記載なし（悪用は Connect Secure の CVE-2026-104935 のみで別途採用）。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-89107 ほか2件（全件: CVE-2026-89107, CVE-2026-89108, CVE-2026-89110）",
+        "product": "SAP S/4HANA / NetWeaver Visual Composer / Manufacturing Integration and Intelligence（SAP 2026-10 更新）",
+        "reason": "low_score",
+        "reason_detail": "SAP 月例更新のバッチ。悪用確認・KEV 記載なし（同月の CVE-2026-89111 は Section 2 注目CVEとして別途採用）。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-82101 ほか6件（全件: CVE-2026-82101, CVE-2026-82103, CVE-2026-82110, CVE-2026-90920, CVE-2026-93895, CVE-2026-93909, CVE-2026-96119）",
+        "product": "IBM i / Maximo AI Service / DataStage on Cloud Pak for Data / WebSphere Liberty",
+        "reason": "low_score",
+        "reason_detail": "IBM PSIRT の一括公開バッチ。悪用確認・公開PoC・KEV 記載なし。多くが認証後の悪用を前提。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-100202 ほか60件（全件: CVE-2026-100202, CVE-2026-100219, CVE-2026-100222, CVE-2026-102210, CVE-2026-102238, CVE-2026-105008, CVE-2026-105010, CVE-2026-105016, CVE-2026-69634, CVE-2026-69639, CVE-2026-69705, CVE-2026-69883, CVE-2026-69886, CVE-2026-70024, CVE-2026-70096, CVE-2026-70147, CVE-2026-70153, CVE-2026-70157, CVE-2026-70188, CVE-2026-70242, CVE-2026-70279, CVE-2026-70291, CVE-2026-70300, CVE-2026-83517, CVE-2026-83519, CVE-2026-83578, CVE-2026-83693, CVE-2026-83748, CVE-2026-83770, CVE-2026-83780, CVE-2026-83782, CVE-2026-83862, CVE-2026-83869, CVE-2026-83910, CVE-2026-83935, CVE-2026-84015, CVE-2026-85792, CVE-2026-85806, CVE-2026-85809, CVE-2026-85814, CVE-2026-85818, CVE-2026-85928, CVE-2026-88092, CVE-2026-88102, CVE-2026-88156, CVE-2026-88178, CVE-2026-96096, CVE-2026-96113, CVE-2026-96219, CVE-2026-96252, CVE-2026-96320, CVE-2026-96864, CVE-2026-96909, CVE-2026-96924, CVE-2026-96934, CVE-2026-97016, CVE-2026-97749, CVE-2026-97805, CVE-2026-97814, CVE-2026-97815, CVE-2026-97816）",
+        "product": "Microsoft 2026-10 月例の CVSS 9.0 以上（Windows 各コンポーネント・Office Outlook/Word/PowerPoint・Exchange・ASP.NET Core・AD FS・Schannel・VS Code 等）",
+        "reason": "low_score",
+        "reason_detail": "Patch Tuesday の一括公開バッチ（過去最多 1,411 件）。悪用確認・公開PoC・KEV 記載なし（実悪用は CVE-2026-96951 のみで、Section 2 ゼロデイ特報として別途採用）。修正は月例累積更新で配布済み。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-106173",
+        "product": "Fortinet 製品（パストラバーサル）",
+        "reason": "low_score",
+        "reason_detail": "Fortinet PSIRT の公開。悪用確認・KEV 記載なし。修正あり。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-69227",
+        "product": "Esri Portal for ArcGIS（portaladmin 内部 API の未認証アクセス）",
+        "reason": "low_score",
+        "reason_detail": "修正あり、悪用確認・KEV 記載なし。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-87689",
+        "product": "Metasploit Framework Web Service REST API の資格情報ストア露出",
+        "reason": "low_score",
+        "reason_detail": "攻撃ツール側の脆弱性。悪用確認・KEV 記載なし。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-109705 ほか1件（全件: CVE-2026-109705, CVE-2026-109707）",
+        "product": "Mozilla Firefox（サンドボックス脱出等・Firefox 修正版）",
+        "reason": "low_score",
+        "reason_detail": "Firefox 修正リリースの脆弱性。悪用確認・KEV 記載なし。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-44415 ほか3件（全件: CVE-2026-44415, CVE-2026-63350, CVE-2026-63353, CVE-2026-63354）",
+        "product": "Siemens 産業用機器（トレースファイル処理等）",
+        "reason": "low_score",
+        "reason_detail": "Siemens ProductCERT のバッチ。悪用確認・KEV 記載なし。ICS 製品はローカル/管理者操作前提。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-105445",
+        "product": "Docker Hub（account-to-organization 変換のトークン再割当）",
+        "reason": "low_score",
+        "reason_detail": "Docker が 2026-09-30 にサーバー側で修正済み。Docker は悪用の証拠なしと表明（THN）。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-109758",
+        "product": "Perforce Helix Authentication Service（既定 SCIM トークン残存）",
+        "reason": "low_score",
+        "reason_detail": "設定不備型で悪用確認・KEV 記載なし。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-75120",
+        "product": "OpenText EnCase SAFE Agents",
+        "reason": "low_score",
+        "reason_detail": "悪用確認・KEV 記載なし。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-77099",
+        "product": "Commvault CVFS",
+        "reason": "low_score",
+        "reason_detail": "ベンダー修正版提示済み、悪用確認・KEV 記載なし。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-92892",
+        "product": "JFrog 製品（特定構成下の任意コード実行）",
+        "reason": "low_score",
+        "reason_detail": "特定構成限定、悪用確認・KEV 記載なし。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-97381",
+        "product": "Legacy Update（ActiveX コントロールの origin 検証不備・EUVD のみ・GHSA 起点）",
+        "reason": "low_score",
+        "reason_detail": "EUVD-only 層（NVD 反映前・窓終端 21:08Z 公開）。修正版あり、悪用確認なし。NVD 反映後に再評価。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-97229 ほか1件（全件: CVE-2026-97229, CVE-2026-89111）",
+        "product": "GitLab CE/EE / SAP Cloud SDK for Python（採用先の相互参照）",
+        "reason": "low_score",
+        "reason_detail": "除外ではなく採用済み: Section 2 注目CVE（trends_cve）。突合用の相互参照記載。",
+        "reported_date": "2026-10-14"
+      },
+      {
+        "cve_id": "CVE-2026-104935 ほか1件（全件: CVE-2026-104935, CVE-2026-96951）",
+        "product": "Ivanti Connect Secure / Microsoft Windows Shell（採用先の相互参照）",
+        "reason": "low_score",
+        "reason_detail": "除外ではなく採用済み: Section 2 ゼロデイ特報（KEV 窓内追加2件）。突合用の相互参照記載。",
+        "reported_date": "2026-10-14"
+      }
+    ],
+    "apt": [],
+    "ai_attacks": [],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 2,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 23,
+      "total_processed": 25
+    },
+    "apt": {
+      "main": 0,
+      "notable": 1,
+      "excluded": 0,
+      "total_processed": 1
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 0,
+      "total_processed": 0,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 3,
+      "medium": 3,
+      "low": 2,
+      "excluded": 0,
+      "total_processed": 8,
+      "perspective_breakdown": {
+        "cve": 5,
+        "zeroday": 3,
+        "ai_attack": 0
+      }
+    }
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-10-13T22:33:34Z",
+    "operational_picture": {
+      "subjects_tracked": 144,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 50,
+        "DISCLOSED": 67,
+        "POC_PUBLIC": 27
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 100,
+        "shadow": 94
+      },
+      "event_type_counts": {
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 27,
+        "TF1_POC_PUBLICATION": 67
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}

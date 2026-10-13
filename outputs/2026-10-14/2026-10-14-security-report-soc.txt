@@ -1,0 +1,171 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-14 08:10 JST
+調査期間: 2026-10-13 07:00 〜 2026-10-14 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-14-001 Ivanti Connect Secure ゼロデイ連鎖（CVE-2026-104935）— 修正適用と侵害痕跡の調査を並行する
+------------------------------------------------------------
+【24時間以内の変化】
+[Volexity / BleepingComputer 2026-10-13] Ivanti が悪用を警告、CISA が KEV 追加（期限 10-16）。Volexity が3件連鎖を公表。
+
+【概要】
+KEV 期限は 2026-10-16。連鎖の1件（権限昇格）は未修正で、バックドアを残さず Integrity Checker を回避するため、修正適用だけでは侵害の有無を判断できない。ICS を運用する組織は適用と調査を同時に進める。
+
+【推奨アクション】
+・25.1.3.0 以降へ更新し、管理・ユーザー面の到達元を最小化する
+・welcome.cgi への大量リクエスト、X-DSCGI-PATH 不一致、/data/.icscap/、IP 108.165.147[.]64 を点検する
+・ICS に保存された LDAP 等の資格情報をローテーションし、AD のパスワードスプレー痕跡を確認する
+
+【監視】
+ICS の Web ログと AD の認証失敗イベントを監視する。
+
+【参照】
+・The Hacker News: Attacker Chains Three Ivanti Connect Secure Zero-Days for Root Access, Only Two Patched So Far https://thehackernews.com/2026/10/attacker-chains-three-ivanti-connect.html
+------------------------------------------------------------
+SOC-2026-10-14-002 Windows Shell の実悪用ゼロデイ CVE-2026-96951 — 10月月例の優先適用（KEV 期限 10-16）
+------------------------------------------------------------
+【24時間以内の変化】
+[BleepingComputer 2026-10-13] Microsoft が実悪用を確認、CISA が KEV 追加（期限 10-16）。
+
+【概要】
+Mark of the Web を回避するセキュリティ機能バイパス。月例が過去最多の 1,411 件で適用の優先順位付けが難しいため、KEV 登録の本件を最優先にする。
+
+【推奨アクション】
+・10月月例の累積更新を適用する（期限 2026-10-16）
+・メール添付・ダウンロード経路のファイル実行制限を一時的に強化する
+
+【監視】
+MotW 付きファイルが警告なしに実行される挙動を監視する。
+
+【参照】
+・BleepingComputer: Microsoft October 2026 Patch Tuesday fixes 1,411 flaws, 3 zero-days https://www.bleepingcomputer.com/news/microsoft/microsoft-october-2026-patch-tuesday-fixes-1-411-flaws-3-zero-days
+------------------------------------------------------------
+SOC-2026-10-14-003 Danfoss 冷却管理コントローラ攻撃（仏小売）— 管理インタフェースの露出と旧機種の棚卸し
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-13] 仏小売数百店で遠隔操作による加温被害。CERT-FR が切断・アクセス制限を推奨。
+
+【概要】
+侵入経路は未確定だが、CERT-FR はコントローラの切断またはアクセスのフィルタリングを推奨している。旧機種（更新対象外）が被害の大半とされるため、冷蔵・空調の遠隔管理装置を持つ小売・食品物流は露出の棚卸しを行う。
+
+【推奨アクション】
+・遠隔管理対象の冷却・空調コントローラをインターネットから切り離すか、VPN・許可元 IP に限定する
+・侵害が疑われる場合は CERT-FR の手順（アクセスを保守業者に限定・初期化・修正適用・秘密情報の変更・アカウント確認・再設定）に従う
+・更新対象外の旧機種は交換計画を立てる
+
+【監視】
+コントローラ管理 UI への外部からのアクセスと設定変更（設定温度の変更）を監視する。
+
+【参照】
+・The Hacker News: Attackers Heat French Supermarket Fridges Up to 50°C by Hijacking Danfoss Controllers https://thehackernews.com/2026/10/attackers-heat-french-supermarket.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-14-004 GitLab CVE-2026-97229（CVSS 10.0）— セルフホスト環境を 19.2.8 / 19.3.5 / 19.4.2 へ更新
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News / Security NEXT 2026-10-13] GitLab が 24 件を修正。CVE-2026-97229 の影響範囲が確定。
+
+【概要】
+未認証の RCE（一定条件下）。悪用は未確認だが、前例として GitLab の CVSS 10.0 脆弱性が公開直後に探索された。
+
+【推奨アクション】
+・19.2.8 / 19.3.5 / 19.4.2 以降へ更新する
+・更新までインターネット到達性を制限し、CI/CD 設定の変更を監査する
+
+【監視】
+CI/CD 設定の変更イベントと GitLab サーバー上の不審プロセスを監視する。
+
+【参照】
+・The Hacker News: GitLab Patches CVSS 10.0 Flaw That Could Let Unauthenticated Users Run Server Code https://thehackernews.com/2026/10/gitlab-patches-cvss-100-flaw-that-could.html
+------------------------------------------------------------
+SOC-2026-10-14-005 SAP Cloud SDK for Python CVE-2026-89111（CVSS 10.0）— BTP マルチテナントアプリの資格情報ローテーション
+------------------------------------------------------------
+【24時間以内の変化】
+[BleepingComputer / The Hacker News 2026-10-13] SAP が10月の更新で公開。
+
+【概要】
+tenant_subdomain を制御できる攻撃者が OAuth2 クライアント資格情報を窃取できる。BTP のマルチテナントアプリで SDK を使う組織は更新と資格情報の再発行を検討する。
+
+【推奨アクション】
+・SAP セキュリティノートに従い SDK を更新する
+・テナントサブドメインの入力検証を確認し、クライアント資格情報をローテーションする
+
+【監視】
+BTP アプリから想定外ホストへの OAuth2 トークン要求を監視する。
+
+【参照】
+・The Hacker News: SAP Discloses Critical CVSS 10 Flaw in Cloud SDK for Python Allowing OAuth2 Credential Theft https://thehackernews.com/2026/10/sap-discloses-critical-cvss-10-flaw-in.html
+------------------------------------------------------------
+SOC-2026-10-14-006 SonicWall SMA1000 CVE-2026-102255・Bricksforge CVE-2026-85097 — 継続監視（本窓で新規の状態変化なし）
+------------------------------------------------------------
+【24時間以内の変化】
+[Dark Reading 2026-10-12] Dark Reading が SMA1000 の SSRF が攻撃下にあると報道（既報の継続）。
+
+【概要】
+いずれも既報で KEV 未登録（本窓の KEV 追加は Ivanti・Windows Shell の2件のみ）。修正適用状況の確認を継続する。
+
+【推奨アクション】
+・SMA1000 は SNWLID-2026-0017 の修正を適用し WorkPlace の外部公開を最小化する
+・Bricksforge は修正版の有無を確認し、未修正なら無効化して uploads 配下の不審 PHP を点検する
+
+【監視】
+既報の監視手順を継続する。
+
+【参照】
+・Dark Reading: Maximum-Severity SSRF Flaw in SonicWall SMA Devices Under Attack https://www.darkreading.com/vulnerabilities-threats/max-severity-ssrf-flaw-sonicwall-sma-devices-under-attack
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-14-007 npm Trusted Publishing の未検証設定が 48 時間で失効 — 設定の検証と公開ワークフローの点検
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-13] GitHub が措置を発表。
+
+【概要】
+Trusted Publishing を設定したが初回公開が済んでいないパッケージは 48 時間で設定が失効する。公開が止まる可能性があるため、新規設定のメンテナーは初回公開まで速やかに実施する。
+
+【推奨アクション】
+・自組織の npm パッケージの Trusted Publishing 設定を棚卸しし、未検証のものは初回公開で検証済みにする
+・不審なバージョン公開がないか公開履歴を確認する
+
+【監視】
+npm の公開イベントと発行元ワークフローを監視する。
+
+【参照】
+・The Hacker News: GitHub Tightens npm Publishing After Flaw Left 1,500+ Packages Vulnerable to Hijacking https://thehackernews.com/2026/10/github-tightens-npm-publishing-after.html
+------------------------------------------------------------
+SOC-2026-10-14-008 出荷時マルウェア入り低価格 Android 端末（Midnight Mimosa）— 調達端末の確認
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-13] Bitdefender が公表。
+
+【概要】
+ファームウェアに悪意あるソフトが組み込まれ、住宅用プロキシ化される。対象ブランドは要約から未取得のため、業務用に低価格端末を調達する組織は Bitdefender の報告で該当機種を確認する。
+
+【推奨アクション】
+・業務利用の低価格 Android 端末の調達元とファームウェアを確認する
+・MDM で未承認アプリの導入を検知する
+
+【監視】
+端末から不審な外部プロキシ通信がないか確認する。
+
+【参照】
+・The Hacker News: Low-Cost Android Phones Ship With Preinstalled Malware That Turns Them Into Residential Proxies https://thehackernews.com/2026/10/low-cost-android-phones-ship-with.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（本窓のSOC除外なし）
+
+網羅スイープ: 候補154件 / 処理154件 / 未処理0件 / KEV窓内追加2件 / EUVD窓内149件（うちNVD/KEV未収載1件）
