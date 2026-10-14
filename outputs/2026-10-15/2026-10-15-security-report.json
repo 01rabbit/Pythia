@@ -1,0 +1,1445 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-10-15",
+    "generated_at": "2026-10-15T08:10:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-10-14T07:00:00+09:00",
+      "to": "2026-10-15T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.10.14",
+      "candidates": 97,
+      "handled": 97,
+      "unhandled": 0,
+      "kev_added_in_window": 4,
+      "ghsa_origin_over_threshold": 14,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 87,
+        "euvd_only": 0
+      }
+    }
+  },
+  "zero_day_special": [
+    {
+      "cve_id": "CVE-2026-76519",
+      "product": "Cisco Secure Email Gateway（AMP ファイルレピュテーション経由の未認証ファイル書込み→root コマンド実行）",
+      "vendor": "Cisco",
+      "affected_versions": "File Reputation（AMP）が有効でメールポリシーに割り当て済み、かつ Content Scanner Tools が 25.3.0.5525 より前の物理/仮想 SEG。Secure Email and Web Manager / Secure Web Appliance は影響なし（THN）",
+      "priority": "critical",
+      "cvss_v3": 9.8,
+      "cvss_v4": null,
+      "cvss_severity": "Critical",
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": true,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "AsyncOS 15.5.5-014 / 16.5.0-780、Content Scanner Tools 25.3.0.5525 以降（再起動不要）。AsyncOS 16.0 は修正なし（修正済みリリースへ移行）。回避策なし（Cisco）",
+        "eta": null
+      },
+      "fceb_deadline": "2026-10-17",
+      "kev_date_added": "2026-10-14",
+      "axis1_score": 15,
+      "axis2_score": 4,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV Catalog",
+          "date": "2026-10-14",
+          "description": "CISA が CVE-2026-76519 を KEV へ追加（期限 2026-10-17・ランサムウェア利用: Unknown）。"
+        },
+        {
+          "source": "BleepingComputer / The Hacker News / Cisco",
+          "date": "2026-10-14",
+          "description": "Cisco が SEG の実悪用ゼロデイを公表し修正版を公開。被害台数・攻撃者・root 取得の有無は未公表。"
+        }
+      ],
+      "overview": "Cisco は Secure Email Gateway（SEG）の AMP ファイルレピュテーション機能で、細工した添付ファイルを含むメールにより未認証のリモート攻撃者が基盤 OS に任意のファイルを書き込める脆弱性 CVE-2026-76519（CVSS 9.8）が実環境で悪用されていると公表した（THN）。書込みに成功すると root 権限でコマンドを実行され得る。悪用された台数・攻撃者・root 取得の有無・IOC・マルウェア名は未公表。同製品では 2026-09-14 公表の SQL インジェクション CVE-2026-76461（未認証 root コマンド実行・KEV 収載）に続く実悪用であり、Cisco は同時期のハードニングリリースの CVE のうち2件が悪用されていると述べている。回避策はなく、修正版または Content Scanner Tools の更新が必要。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "細工した添付ファイル付きメールを SEG 経由で送付（未認証）"
+        },
+        {
+          "step": 2,
+          "description": "AMP ファイルレピュテーションの不備で OS 上に任意ファイルを書込み"
+        },
+        {
+          "step": 3,
+          "description": "書込みファイルを足掛かりに root 権限でコマンド実行（Cisco の記述）"
+        }
+      ],
+      "techniques": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "インターネット側から到達するメールゲートウェイの脆弱性を未認証で悪用（Cisco）"
+        }
+      ],
+      "temp_mitigation": [
+        "Content Scanner Tools を 25.3.0.5525 以降へ更新し contentscannerstatus で確認する",
+        "AsyncOS を 15.5.5-014 / 16.5.0-780 へ更新する（16.0 は修正版へ移行）",
+        "侵害確認は system_logs の grep \"System Security\" 結果（Suspected compromise indicator）と、外部 IP への不審なアップロード/ダウンロードの FW ログ点検を併用する",
+        "侵害時は仮想アプライアンスの法的証拠を保全してから修正版に再構築し、旧構成をインポートせず資格情報と鍵を更新する"
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "SEG の system_logs で 'System Security' の判定結果を確認する。SEG から外部 IP への想定外のアップロード・外部からのダウンロードを FW/プロキシログで確認する。",
+        "splunk_spl": [],
+        "detection_notes": "Cisco は IOC・攻撃者インフラを公表していない。root 取得後は痕跡が隠される可能性があるためネットワーク側ログでの確認も併用する。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/cisco-warns-of-active-attacks.html",
+          "title": "Cisco Warns of Active Attacks Exploiting New Critical Secure Email Gateway Vulnerability",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/cisco-patches-actively-exploited-secure-email-gateway-zero-day",
+          "title": "Cisco patches new Secure Email Gateway zero-day exploited in attacks",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "government",
+        "finance"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "zero_day_special",
+      "info_id": "20261015-CVEP-76519a1"
+    },
+    {
+      "cve_id": "CVE-2026-0322",
+      "product": "Palo Alto Networks PAN-OS（管理インタフェースの認証済み RCE・root 権限）",
+      "vendor": "Palo Alto Networks",
+      "affected_versions": "PAN-OS の管理インタフェース（具体的な影響バージョンは本日取得した情報源で未確認。EUVD 記載は『認証済みでネットワーク到達可能な攻撃者が root で任意コード実行』）",
+      "priority": "high",
+      "cvss_v3": null,
+      "cvss_v4": 8.6,
+      "cvss_severity": "High",
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "ベンダーアドバイザリ参照（本日は修正版番号を一次情報で未確認）",
+        "eta": null
+      },
+      "fceb_deadline": "2026-10-17",
+      "kev_date_added": "2026-10-14",
+      "axis1_score": 9,
+      "axis2_score": 3,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV Catalog / EUVD",
+          "date": "2026-10-14",
+          "description": "CISA が CVE-2026-0322 を KEV へ追加（期限 2026-10-17）。EUVD はベンダー（palo_alto）の記述と CVSS v4.0 8.6 を収録。"
+        }
+      ],
+      "overview": "Palo Alto Networks の PAN-OS 管理インタフェースに、認証済みでネットワーク到達可能な攻撃者がファイアウォール上で root 権限の任意コードを実行できる脆弱性 CVE-2026-0322（CVSS v4.0 8.6・PR:H）があり、CISA が 2026-10-14 に KEV へ追加した（期限 10-17）。ベンダーは管理インタフェースを信頼できる内部 IP に限定する推奨構成でリスクが軽減されると述べている（EUVD 収録の記述）。本窓では報道記事（二次情報）による悪用の詳細・攻撃者・被害規模は確認できていない。KEV 追加が悪用の根拠であり、悪用手口の詳細は不明。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "管理インタフェースへ到達できる認証済みアカウントで接続（前提: 管理面の露出または資格情報の入手）"
+        },
+        {
+          "step": 2,
+          "description": "RCE により root 権限で任意コードを実行"
+        }
+      ],
+      "techniques": [],
+      "temp_mitigation": [
+        "PAN-OS の管理インタフェースをインターネットに公開せず、信頼できる内部 IP のみに限定する",
+        "ベンダーアドバイザリで修正版を確認して適用する（KEV 期限 2026-10-17）"
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "PAN-OS 管理インタフェースへの接続元 IP と管理者アカウントの不審なログインを確認する。",
+        "splunk_spl": [],
+        "detection_notes": "悪用の詳細・IOC は本窓で未確認。"
+      },
+      "references": [
+        {
+          "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+          "title": "CISA Known Exploited Vulnerabilities Catalog（2026-10-14 追加分）",
+          "language": "en",
+          "source": "CISA"
+        },
+        {
+          "url": "https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-101495",
+          "title": "EUVD-2026-101495",
+          "language": "en",
+          "source": "ENISA EUVD"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "zero_day_special",
+      "info_id": "20261015-CVEP-0322a1"
+    },
+    {
+      "cve_id": "CVE-2026-105134",
+      "product": "Ahsay AhsayCBS（認証回避 CVE-2026-105133 と Replication Receiver の OS コマンドインジェクション CVE-2026-105134 の連鎖）",
+      "vendor": "Ahsay",
+      "affected_versions": "AhsayCBS 10.3.2 以前（VulDB 記載）。Huntress は 10.3.4.0 でも修正が不完全で影響を受けると報告",
+      "priority": "critical",
+      "cvss_v3": null,
+      "cvss_v4": 10.0,
+      "cvss_severity": "Critical",
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": true,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "ホットフィックス 10.3.4.45 と再起動（Ahsay が 10.3.4.0 の修正不完全を認めたと報じられている）",
+        "eta": null
+      },
+      "fceb_deadline": "2026-10-17",
+      "kev_date_added": "2026-10-14",
+      "axis1_score": 15,
+      "axis2_score": 4,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV Catalog",
+          "date": "2026-10-14",
+          "description": "CISA が CVE-2026-105133・CVE-2026-105134 を KEV へ追加（期限 2026-10-17）。"
+        },
+        {
+          "source": "Huntress / SecurityWeek / BleepingComputer / The Hacker News（検索結果の要約）",
+          "date": "2026-10-08",
+          "description": "Huntress が 2026-10-07 23:20 UTC に初回悪用を観測、10-08 時点で5組織を確認。JSP Web シェルと XMRig マイナーが投下された。"
+        }
+      ],
+      "overview": "AhsayCBS（バックアップ管理サーバ）の認証回避 CVE-2026-105133（checkSysPwd・VulDB v4.0 6.9）と Replication Receiver の OS コマンドインジェクション CVE-2026-105134（v4.0 10.0）が連鎖して未認証 RCE（SYSTEM 権限と報じられる）に至り、実環境で悪用されている。CISA が 2026-10-14 に両 CVE を KEV へ追加した（期限 10-17）。Huntress は 2026-10-07 に初回悪用を観測し、JSP Web シェルと Microsoft Edge を装った XMRig の投下を報告した。Ahsay は 2026-10-10 に 10.3.4.0 では両 CVE が完全には修正されていないと説明しホットフィックス 10.3.4.45 を案内した。EUVD は PoC 公開済みとして収録している。以上は検索結果の要約に基づく二次情報で、一次レポートの全文は本日未確認。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "CVE-2026-105133 の認証回避で AhsayCBS の API へ未認証アクセス"
+        },
+        {
+          "step": 2,
+          "description": "CVE-2026-105134（UpdateReceivers.do の引数 random）で OS コマンドを実行"
+        },
+        {
+          "step": 3,
+          "description": "JSP Web シェルと XMRig マイナーを設置（Huntress）"
+        }
+      ],
+      "techniques": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "AhsayCBS の認証回避と OS コマンドインジェクションを連鎖（Huntress ほか報道）"
+        },
+        {
+          "mitre_id": "T1505.003",
+          "name": "Web Shell",
+          "implementation": "JSP Web シェルの設置（Huntress）"
+        },
+        {
+          "mitre_id": "T1496",
+          "name": "Resource Hijacking",
+          "implementation": "XMRig マイナーの投下（Huntress）"
+        }
+      ],
+      "temp_mitigation": [
+        "ホットフィックス 10.3.4.45 を適用し再起動する（10.3.4.0 では不十分）",
+        "AhsayCBS の管理面・Replication Receiver をインターネットから到達不能にする",
+        "適用前に JSP Web シェル、Edge を装う実行ファイル、不審な常駐プロセスを点検する"
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "monitoring": {
+        "description": "AhsayCBS の Web ディレクトリ内の新規 JSP ファイルと /rps/api/json/UpdateReceivers.do への外部リクエストを確認する。",
+        "splunk_spl": [],
+        "detection_notes": "具体的な IOC 値は本日未取得。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/attackers-exploit-ahsaycbs-flaws-to.html",
+          "title": "Attackers Exploit AhsayCBS Flaws to Drop Webshells and XMRig Cryptominer",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.huntress.com/blog/ahsaycbs-flaws-exploit",
+          "title": "Threat Actors Exploit Critical AhsayCBS Flaws to Drop Webshells and XMRig Cryptominer",
+          "language": "en",
+          "source": "Huntress"
+        }
+      ],
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [],
+      "section_route": "product_cve",
+      "report_section": "zero_day_special",
+      "info_id": "20261015-CVEP-105134a1"
+    }
+  ],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [
+      {
+        "cve_id": "CVE-2026-110447",
+        "product": "Collabora Online - Built-in CODE Server（Nextcloud アプリ richdocumentscode・未認証コマンドインジェクション）",
+        "vendor": "Collabora / Nextcloud",
+        "affected_versions": "richdocumentscode 26.4.302 以前（26.4.303 未満）。スタンドアロンの Collabora Online と Nextcloud Office（richdocuments）は影響なし（THN）",
+        "priority": "high",
+        "cvss_v3": null,
+        "cvss_v4": 9.2,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": false,
+          "actively_exploited": true,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "26.4.303 以降（またはアプリ削除。無効化では閉じない）。26.4.402 は一部環境で起動不具合の報告",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 12,
+        "axis2_score": 4,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-10-14",
+            "description": "アドバイザリと CVE が公開。管理者3名の報告により 2026-09-10 から Web シェル設置を伴う攻撃が記録されていた。"
+          }
+        ],
+        "overview": "Nextcloud の任意アプリ Collabora Online - Built-in CODE Server の proxy.php?status が、ローカル CODE サーバ停止時にリクエストパス内のシェルコマンドを実行する未認証コマンドインジェクション（CVE-2026-110447・EUVD v4.0 9.2）で、2026-09-10 の初回攻撃から Web シェルが設置されている。修正は 2026-09-11 の 26.4.303 だが CVE の公表は 10-14 で、公表までの約1か月は悪用が先行した（事実）。KEV 収載はない。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "CODE サーバ停止時に /apps/richdocumentscode/proxy.php?status へ細工したパスを送る（未認証）"
+          },
+          {
+            "step": 2,
+            "description": "埋め込まれたシェルコマンドが実行され Web シェルが設置される"
+          }
+        ],
+        "techniques": [
+          {
+            "mitre_id": "T1190",
+            "name": "Exploit Public-Facing Application",
+            "implementation": "proxy.php?status への未認証リクエストでコマンド注入（THN）"
+          },
+          {
+            "mitre_id": "T1505.003",
+            "name": "Web Shell",
+            "implementation": "apps/richdocumentscode/ 配下へ PHP Web シェルを設置（THN）"
+          }
+        ],
+        "temp_mitigation": [
+          "richdocumentscode を 26.4.303 以降へ更新するか削除する（無効化は不可）",
+          "Nextcloud 29 以前は EOL のため更新不能。移行を計画する",
+          "apps/richdocumentscode/ 配下の不審な .php（shr/shx で始まる名前）を点検する"
+        ],
+        "ioc": {
+          "confirmed": true,
+          "ips": [
+            "139.28[.]18[.]122",
+            "89.38[.]98[.]50"
+          ],
+          "domains": [
+            "webhook[.]site"
+          ],
+          "hashes": [
+            "4b9fbd0663fbfd6028fc216ed18e0d6ef3ae498a7fdc97083e4b0ce3cec40562"
+          ],
+          "urls": [],
+          "filenames": [
+            "shrf4645.php",
+            "shxa35d0.php",
+            "shx5cf91.php",
+            "shxd33ce.php",
+            "shxf4645.php",
+            "shx13a86.php"
+          ]
+        },
+        "monitoring": {
+          "description": "Web サーバログで /apps/richdocumentscode/proxy.php?status への %2e%2e、$(、${IFS}、base64 -d を含むリクエストを確認する。",
+          "splunk_spl": [],
+          "detection_notes": "IOC は THN が記載した3名の管理者の報告に基づく。"
+        },
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/hackers-backdoor-nextcloud-servers.html",
+            "title": "Hackers Backdoor Nextcloud Servers Through Critical Flaw in Collabora’s Built-in CODE App",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": [],
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261015-CVET-110447a1"
+      },
+      {
+        "cve_id": "CVE-2026-106931",
+        "product": "EG Secure SiteGuard Server Edition（統計機能の OS コマンドインジェクション）",
+        "vendor": "EGセキュアソリューションズ",
+        "affected_versions": "SiteGuard Server Edition の Apache 版・Nginx 版・IIS 版（統計機能が有効な場合・初期設定で有効）。具体的なバージョンは Security NEXT 記事に記載なし",
+        "priority": "high",
+        "cvss_v3": 7.8,
+        "cvss_v4": 8.5,
+        "cvss_severity": "High",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": false,
+          "actively_exploited": true,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "ベンダーアドバイザリ（EG-Secure）・JVN88474777 を参照（修正版番号は記事に記載なし）",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 10,
+        "axis2_score": 4,
+        "jpcert_ipa": {
+          "issued": true,
+          "entries": [
+            {
+              "source": "JPCERT/CC",
+              "title": "注意喚起: SiteGuard Server Edition の OS コマンドインジェクション（CVE-2026-106931）",
+              "url": "https://www.jpcert.or.jp/at/2026/at260032.html",
+              "date": "2026-10-14"
+            }
+          ]
+        },
+        "changes_24h": [
+          {
+            "source": "Security NEXT / JPCERT/CC",
+            "date": "2026-10-14",
+            "description": "EG セキュアソリューションズが悪用確認を伴うアドバイザリを公表（9月29日に契約者へ個別通知済み）。JPCERT/CC が注意喚起を発行。"
+          }
+        ],
+        "overview": "国産 WAF「SiteGuard Server Edition」に OS コマンドインジェクション CVE-2026-106931（CVSS v4.0 8.5 / v3.0 7.8）があり、悪用が確認されたとベンダーが公表した。実行権限は Apache/Nginx 版で root、IIS 版で SYSTEM。2026-09-29 にサポート契約者へ個別通知、10-14 に公開アドバイザリ。JPCERT/CC が注意喚起（AT-2026-0032）を発行した。KEV 収載はない。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "統計機能に対する細工リクエストで OS コマンドを注入"
+          },
+          {
+            "step": 2,
+            "description": "root（Apache/Nginx 版）または SYSTEM（IIS 版）で任意コマンドが実行される"
+          }
+        ],
+        "techniques": [
+          {
+            "mitre_id": "T1190",
+            "name": "Exploit Public-Facing Application",
+            "implementation": "WAF 製品の統計機能への未認証または到達可能な入力を悪用（ベンダーが悪用確認と公表・手口の詳細は未取得）"
+          }
+        ],
+        "temp_mitigation": [
+          "ベンダー（EG-Secure）のアドバイザリに従い修正版へ更新する",
+          "更新までは統計機能の無効化など、ベンダー案内の回避策を適用する",
+          "JPCERT/CC 注意喚起とベンダー案内の IOC・確認方法を参照して侵害調査を行う"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "SiteGuard の統計機能に関連するリクエストと、WAF ホスト上の不審な子プロセスを確認する。",
+          "splunk_spl": [],
+          "detection_notes": "IOC は本日未取得。"
+        },
+        "references": [
+          {
+            "url": "https://www.security-next.com/191420",
+            "title": "国産WAF「SiteGuard Server Edition」に脆弱性 - 悪用も確認",
+            "language": "ja",
+            "source": "Security NEXT"
+          },
+          {
+            "url": "https://www.jpcert.or.jp/at/2026/at260032.html",
+            "title": "注意喚起: SiteGuard Server EditionにおけるOSコマンドインジェクションの脆弱性（CVE-2026-106931）に関する注意喚起",
+            "language": "ja",
+            "source": "JPCERT/CC"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "JP"
+        ],
+        "exploited_by": [],
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261015-CVET-106931a1"
+      },
+      {
+        "cve_id": "CVE-2026-103671",
+        "product": "EC-CUBE 4 系 公式 Amazon Pay プラグイン（CV1 対応版・Web パラメータの外部制御によるリダイレクト）",
+        "vendor": "EC-CUBE",
+        "affected_versions": "CV1 対応版 1.2.9 以前",
+        "priority": "medium",
+        "cvss_v3": 4.7,
+        "cvss_v4": 5.3,
+        "cvss_severity": "Medium",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": false,
+          "actively_exploited": true,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "1.3.1（1.2.9 以前から直接更新不可・CV2 対応版への移行を推奨）",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 6,
+        "axis2_score": 3,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "Security NEXT / JVN",
+            "date": "2026-10-14",
+            "description": "EC-CUBE が攻撃確認済みとして告知（JVN43511918）。"
+          }
+        ],
+        "overview": "EC-CUBE 4 系の公式 Amazon Pay プラグイン（CV1 対応版 1.2.9 以前）で、不変と想定される Web パラメータを外部から制御され、決済中の利用者が任意サイトへ誘導され得る脆弱性 CVE-2026-103671（CVSS v4.0 5.3 / v3.0 4.7・ベンダー評価は高）。ベンダーは攻撃を確認したとして早急な対策を呼びかけている。KEV 収載・攻撃者の特定はない。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "決済フロー中のパラメータを改ざんしたリンクを利用者に踏ませる"
+          },
+          {
+            "step": 2,
+            "description": "利用者が任意サイトへリダイレクトされアカウント情報が露出し得る"
+          }
+        ],
+        "techniques": [],
+        "temp_mitigation": [
+          "1.3.1 へ更新できない 1.2.9 以前は CV2 対応版へ移行する",
+          "決済ページ周辺の不審なリダイレクトを監視する"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "決済プラグイン経由のリダイレクト先ドメインを確認する。",
+          "splunk_spl": [],
+          "detection_notes": null
+        },
+        "references": [
+          {
+            "url": "https://www.security-next.com/191457",
+            "title": "「EC-CUBE」の公式決済プラグインに緊急脆弱性 - すでに悪用も",
+            "language": "ja",
+            "source": "Security NEXT"
+          }
+        ],
+        "sector_impact": [
+          "retail"
+        ],
+        "region_impact": [
+          "JP"
+        ],
+        "exploited_by": [],
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261015-CVET-103671a1"
+      }
+    ],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-10-15-001",
+        "title": "10月月例の余波: Windows の RDP 障害と SmartScreen VBS エンクレーブの研究",
+        "summary": "10月月例（過去最多 1,413 件・SecurityWeek/THN 集計）の余波として、Microsoft が最近の更新に起因するリモートデスクトップ障害を認め（BleepingComputer）、THN は Windows SmartScreen の VBS エンクレーブで研究者が 4 バイト書込みとタイミングの不具合を使いコードを実行した概念実証を報じた（実悪用の報告なし）。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer / The Hacker News",
+            "date": "2026-10-14",
+            "description": "RDP 障害の公表と SmartScreen エンクレーブ研究の公開。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/four-byte-write-and-timing-bug-let.html",
+            "title": "Four-Byte Write and Timing Bug Let Researchers Run Code in Windows SmartScreen Enclave",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261015-TRND-t0000001"
+      },
+      {
+        "topic_id": "TREND-2026-10-15-002",
+        "title": "Hirudo: パッチ済みの銀行アプリに差し替えて自己防御を回避する Android トロイの木馬",
+        "summary": "ThreatFabric によれば Hirudo はインドネシアの銀行アプリ8本を、セキュリティチェックをアプリ内部から回避するよう改変した版に置き換えるバンキングトロイの木馬で、金融詐欺の新たな段階とされる（THN/BleepingComputer）。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News / BleepingComputer",
+            "date": "2026-10-14",
+            "description": "ThreatFabric が Hirudo の詳細を公表。"
+          }
+        ],
+        "sector_impact": [
+          "finance"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/hirudo-android-trojan-uses-patched.html",
+            "title": "Hirudo Android Trojan Uses Patched Banking Apps to Bypass Their Built-In Security Checks",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261015-TRND-t0000002"
+      },
+      {
+        "topic_id": "TREND-2026-10-15-003",
+        "title": "Microsoft と Health-ISAC が中国語圏フィッシング基盤（YAM Store・CoGUI・Iron Man）を裁判所命令で妨害",
+        "summary": "Microsoft は連邦裁判所の命令に基づき、10億通超のフィッシングを支えたとされる3つのフィッシングキットのドメインを押収した（SecurityWeek/BleepingComputer/THN）。",
+        "changes_24h": [
+          {
+            "source": "SecurityWeek / BleepingComputer",
+            "date": "2026-10-14",
+            "description": "ドメイン押収による妨害を公表。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.securityweek.com/microsoft-disrupts-chinese-language-phishing-market-behind-1b-messages",
+            "title": "Microsoft Disrupts Chinese-Language Phishing Market Behind 1B+ Messages",
+            "language": "en",
+            "source": "SecurityWeek"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261015-TRND-t0000003"
+      },
+      {
+        "topic_id": "TREND-2026-10-15-004",
+        "title": "Ledger がアジアの販売店に出荷停止を要請（ウォレット改ざんのサプライチェーン攻撃）",
+        "summary": "Ledger は、デバイスの改ざん調査中として、インドネシア・シンガポール・タイ・フィリピン・ベトナム・マレーシア・香港の再販業者・代理店に販売停止と店頭撤去を求めた（BleepingComputer）。改ざんの手口・規模は要約から未取得。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-10-14",
+            "description": "販売停止要請を報道。"
+          }
+        ],
+        "sector_impact": [
+          "finance"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/ledger-asks-sellers-across-asia-to-halt-sales-after-supply-chain-attack",
+            "title": "Ledger asks sellers across Asia to halt sales after supply-chain attack",
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261015-TRND-t0000004"
+      },
+      {
+        "topic_id": "TREND-2026-10-15-005",
+        "title": "AI 関連: XBOW が公開 OpenAI モデルで Chrome フルチェーンを構築、AI 発見の Linux カーネル脆弱性 Vghost（CVE-2026-74580）",
+        "summary": "XBOW は GPT-5.6 Sol のエージェントを用い、未知の Chrome の脆弱性3件（V8 の CVE-2026-85045・WebP デコーダ・Crashpad の CVE-2026-78952）を連鎖させたフルチェーンを構築し、Google から最高額 25 万ドルの報奨金を得た（約 4 万ドルの AI 利用料・Google は修正済み・悪用の報告なし）。別件で Tencent Zhuque Lab が AI で見つけた vhost の CVE-2026-74580（Vghost）はローカル root とゲストからホストメモリ書込みを可能にする。いずれも攻撃の観測ではなく研究・防御側の成果で、AI による脆弱性発見・エクスプロイト構築のコスト低下を示す事例（推測を含む評価は行わない）。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-10-14",
+            "description": "XBOW の成果と Vghost を報道。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/researchers-used-public-openai-model-to.html",
+            "title": "Researchers Used a Public OpenAI Model to Build a $250,000 Chrome Full-Chain Exploit in Six Days",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://thehackernews.com/2026/10/ai-found-linux-kernel-flaw-gives-local.html",
+            "title": "AI-Found Linux Kernel Flaw Gives Local Users Root, and Can Break a Guest Out to the Host",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261015-TRND-t0000005"
+      }
+    ]
+  },
+  "apt_main": [],
+  "apt_notable": [
+    {
+      "group_name": "Famous Chollima（北朝鮮のリモート IT ワーカー詐欺スキームを運用すると報じられる脅威グループ。WageMole とも）",
+      "aliases": [
+        "WageMole"
+      ],
+      "nation_state": "KP",
+      "attribution_confidence": "medium",
+      "campaign_id": "FamousChollima-2026-ITWorker-LaptopFarmTakedown",
+      "activity_type": [
+        "law_enforcement_disruption",
+        "fraud"
+      ],
+      "motivation": "financial",
+      "first_seen": "2019-01-01",
+      "last_seen": "2026-10-14",
+      "targets": {
+        "sectors": [
+          "it",
+          "finance"
+        ],
+        "regions": [
+          "NA"
+        ],
+        "countries": [
+          "US"
+        ]
+      },
+      "malware": [],
+      "axis_p_score": 6,
+      "axis_q_score": 6,
+      "changes_24h": [
+        {
+          "source": "BleepingComputer / The Hacker News / SecurityWeek",
+          "date": "2026-10-14",
+          "description": "米司法省が Famous Chollima の活動を妨害：テキサス州の約40拠点を捜索（9/21〜25）、約187台のノート PC・KVM を押収、2名を逮捕、計14名を起訴。"
+        }
+      ],
+      "overview": "BleepingComputer によれば米司法省は 'Lonestar Roundup' として、北朝鮮のリモート IT ワーカーが所在を隠すための『ラップトップファーム』約40拠点を捜索し、約187台を押収、米国籍2名を逮捕した。起訴は計14名（米国人と中国人）で、オハイオ州の起訴状は 2019年〜2025年7月の間に米企業約70社に影響し約300万ドルが北朝鮮側に渡ったと記述する。別件として中国人被告12名への同種起訴も発表された。グループ名・北朝鮮との関連は報道が『一般に追跡されている』と記述するもので、本レポートが独自に帰属したものではない。新規の侵入キャンペーンではなく、法執行による妨害と過去の詐欺スキームの公表である。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "偽装・盗用した身元で米企業のリモート IT 職に応募・就業（起訴状の記述）"
+        },
+        {
+          "step": 2,
+          "description": "米国内の協力者宅のノート PC（ラップトップファーム）経由で米国内からの就業を装う"
+        },
+        {
+          "step": 3,
+          "description": "報酬を送金・洗浄し北朝鮮側へ送金（マネーロンダリング・ワイヤー詐欺の容疑）"
+        }
+      ],
+      "ttps": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "recommended_actions": "採用時の身元確認を強化し、リモート勤務者の端末の物理所在・KVM/リモートデスクトップ利用・同一住所の複数従業員の端末を点検する。",
+      "splunk_spl": [],
+      "detection_notes": "手口の詳細は報道要約のみで ATT&CK 技術の明示がないため TTP は付与しない。",
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/fbi-raids-dprk-it-worker-laptop-farms-in-texas-us-nationals-arrested",
+          "title": "FBI raids DPRK IT worker laptop farms in Texas, US nationals arrested",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://thehackernews.com/2026/10/us-shuts-down-over-40-laptop-farms.html",
+          "title": "U.S. Shuts Down Over 40 Laptop Farms, Charges 14 in North Korean IT Worker Fraud",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "related_cves": [],
+      "report_section": "apt_notable",
+      "info_id": "20261015-APTN-famchol1"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-10-15-001",
+      "title": "Cisco Secure Email Gateway ゼロデイ CVE-2026-76519 — 修正適用と侵害確認（KEV 期限 10-17）",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "high",
+      "product_or_service": "Cisco Secure Email Gateway（AsyncOS 15.5/16.0/16.5）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV Catalog",
+          "date": "2026-10-14",
+          "description": "CISA が CVE-2026-76519 を KEV へ追加（期限 2026-10-17・ランサムウェア利用: Unknown）。"
+        },
+        {
+          "source": "BleepingComputer / The Hacker News / Cisco",
+          "date": "2026-10-14",
+          "description": "Cisco が SEG の実悪用ゼロデイを公表し修正版を公開。被害台数・攻撃者・root 取得の有無は未公表。"
+        }
+      ],
+      "overview": "回避策がない実悪用ゼロデイ。修正版または Content Scanner Tools 25.3.0.5525 を適用し、system_logs と FW ログで侵害を確認する。",
+      "recommended_actions": [
+        "修正版へ更新し contentscannerstatus で確認する",
+        "grep \"System Security\" system_logs の判定結果を確認する",
+        "侵害時は証拠保全後に再構築し資格情報と鍵を更新する"
+      ],
+      "monitoring": {
+        "description": "SEG から外部 IP への想定外の通信を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/cisco-warns-of-active-attacks.html",
+          "title": "Cisco Warns of Active Attacks Exploiting New Critical Secure Email Gateway Vulnerability",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/cisco-patches-actively-exploited-secure-email-gateway-zero-day",
+          "title": "Cisco patches new Secure Email Gateway zero-day exploited in attacks",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20261015-SOCR-00000001"
+    },
+    {
+      "rec_id": "SOC-2026-10-15-002",
+      "title": "AhsayCBS 連鎖悪用（CVE-2026-105133 / CVE-2026-105134）— 10.3.4.0 は不完全、ホットフィックス適用",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "high",
+      "product_or_service": "Ahsay AhsayCBS",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV Catalog",
+          "date": "2026-10-14",
+          "description": "CISA が CVE-2026-105133・CVE-2026-105134 を KEV へ追加（期限 2026-10-17）。"
+        },
+        {
+          "source": "Huntress / SecurityWeek / BleepingComputer / The Hacker News（検索結果の要約）",
+          "date": "2026-10-08",
+          "description": "Huntress が 2026-10-07 23:20 UTC に初回悪用を観測、10-08 時点で5組織を確認。JSP Web シェルと XMRig マイナーが投下された。"
+        }
+      ],
+      "overview": "KEV 追加（期限 10-17）。Web シェルとマイナーの投下が確認されている。バックアップ基盤の侵害はデータ復旧能力に直結する。",
+      "recommended_actions": [
+        "ホットフィックス 10.3.4.45 を適用し再起動する",
+        "管理面を非公開にし、JSP Web シェルとマイナーを点検する"
+      ],
+      "monitoring": {
+        "description": "AhsayCBS 配下の新規 JSP を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/attackers-exploit-ahsaycbs-flaws-to.html",
+          "title": "Attackers Exploit AhsayCBS Flaws to Drop Webshells and XMRig Cryptominer",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.huntress.com/blog/ahsaycbs-flaws-exploit",
+          "title": "Threat Actors Exploit Critical AhsayCBS Flaws to Drop Webshells and XMRig Cryptominer",
+          "language": "en",
+          "source": "Huntress"
+        }
+      ],
+      "info_id": "20261015-SOCR-00000002"
+    },
+    {
+      "rec_id": "SOC-2026-10-15-003",
+      "title": "Nextcloud の Collabora CODE アプリ（CVE-2026-110447）— 9月から悪用、更新または削除",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "high",
+      "product_or_service": "Nextcloud + Collabora Online Built-in CODE Server",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-14",
+          "description": "アドバイザリと CVE が公開。管理者3名の報告により 2026-09-10 から Web シェル設置を伴う攻撃が記録されていた。"
+        }
+      ],
+      "overview": "CVE 公表の約1か月前から Web シェル設置が記録されていた。無効化では閉じず、更新か削除が必要。",
+      "recommended_actions": [
+        "richdocumentscode を 26.4.303 以降へ更新、または削除する",
+        "apps/richdocumentscode/ の不審な .php を点検し IOC を照合する"
+      ],
+      "monitoring": {
+        "description": "proxy.php?status への異常リクエストを確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/hackers-backdoor-nextcloud-servers.html",
+          "title": "Hackers Backdoor Nextcloud Servers Through Critical Flaw in Collabora’s Built-in CODE App",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261015-SOCR-00000003"
+    },
+    {
+      "rec_id": "SOC-2026-10-15-004",
+      "title": "SiteGuard Server Edition（CVE-2026-106931）— 悪用確認、JPCERT/CC 注意喚起",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "high",
+      "product_or_service": "SiteGuard Server Edition",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT / JPCERT/CC",
+          "date": "2026-10-14",
+          "description": "EG セキュアソリューションズが悪用確認を伴うアドバイザリを公表（9月29日に契約者へ個別通知済み）。JPCERT/CC が注意喚起を発行。"
+        }
+      ],
+      "overview": "国内製 WAF の悪用確認。WAF が侵害されるとその背後の防御が失われる。",
+      "recommended_actions": [
+        "ベンダー案内に従い更新または回避策を適用する",
+        "侵害調査を行う"
+      ],
+      "monitoring": {
+        "description": "WAF ホストの不審な子プロセスを確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/191420",
+          "title": "国産WAF「SiteGuard Server Edition」に脆弱性 - 悪用も確認",
+          "language": "ja",
+          "source": "Security NEXT"
+        },
+        {
+          "url": "https://www.jpcert.or.jp/at/2026/at260032.html",
+          "title": "注意喚起: SiteGuard Server EditionにおけるOSコマンドインジェクションの脆弱性（CVE-2026-106931）に関する注意喚起",
+          "language": "ja",
+          "source": "JPCERT/CC"
+        }
+      ],
+      "info_id": "20261015-SOCR-00000004"
+    },
+    {
+      "rec_id": "SOC-2026-10-15-005",
+      "title": "PAN-OS 管理インタフェースの RCE（CVE-2026-0322）— 管理面の到達性を制限し修正を確認",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "medium",
+      "product_or_service": "Palo Alto Networks PAN-OS",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV Catalog / EUVD",
+          "date": "2026-10-14",
+          "description": "CISA が CVE-2026-0322 を KEV へ追加（期限 2026-10-17）。EUVD はベンダー（palo_alto）の記述と CVSS v4.0 8.6 を収録。"
+        }
+      ],
+      "overview": "KEV 追加（期限 10-17）。認証済み前提だが管理面の露出と資格情報の窃取が前提条件になり得る。",
+      "recommended_actions": [
+        "管理インタフェースを信頼できる内部 IP に限定する",
+        "ベンダーアドバイザリで修正版を確認して適用する"
+      ],
+      "monitoring": {
+        "description": "管理インタフェースの接続元を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+          "title": "CISA Known Exploited Vulnerabilities Catalog（2026-10-14 追加分）",
+          "language": "en",
+          "source": "CISA"
+        },
+        {
+          "url": "https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-101495",
+          "title": "EUVD-2026-101495",
+          "language": "en",
+          "source": "ENISA EUVD"
+        }
+      ],
+      "info_id": "20261015-SOCR-00000005"
+    },
+    {
+      "rec_id": "SOC-2026-10-15-006",
+      "title": "EC-CUBE の Amazon Pay プラグイン（CVE-2026-103671）— 1.2.9 以前は CV2 対応版へ移行",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "EC-CUBE 4 系 Amazon Pay プラグイン",
+      "targets": {
+        "sectors": [
+          "retail"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT / JVN",
+          "date": "2026-10-14",
+          "description": "EC-CUBE が攻撃確認済みとして告知（JVN43511918）。"
+        }
+      ],
+      "overview": "攻撃確認済みだが影響は誘導・情報露出。1.2.9 以前は直接更新できない。",
+      "recommended_actions": [
+        "1.3.1 または CV2 対応版へ移行する"
+      ],
+      "monitoring": {
+        "description": "決済時のリダイレクト先を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/191457",
+          "title": "「EC-CUBE」の公式決済プラグインに緊急脆弱性 - すでに悪用も",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "info_id": "20261015-SOCR-00000006"
+    },
+    {
+      "rec_id": "SOC-2026-10-15-007",
+      "title": "curl 8.23.0（HTTP/2 アップロードの脆弱性）と Chrome 152 系の更新確認",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "low",
+      "product_or_service": "curl / Google Chrome",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-14",
+          "description": "curl が 8.23.0 で HTTP/2 アップロードのメモリ破壊を修正。PoC は実環境条件が厳しい。"
+        }
+      ],
+      "overview": "curl は悪意ある受信サーバがクライアントのメモリを破壊できる。XBOW の Chrome チェーンは 152.0.7977.82 以降で修正済み。",
+      "recommended_actions": [
+        "curl を 8.23.0 へ更新する",
+        "Chrome を 152.0.7977.82 以降へ更新する"
+      ],
+      "monitoring": {
+        "description": "実行中の curl/Chrome のバージョンを資産管理で確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/curl-patches-http2-upload-flaw-after.html",
+          "title": "curl Patches HTTP/2 Upload Flaw After PoC Demonstrates Client-Side Code Execution",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261015-SOCR-00000007"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2020-37281 ほか21件（全件: CVE-2020-37281, CVE-2020-37282, CVE-2026-109439, CVE-2026-110612, CVE-2026-110616, CVE-2026-110628, CVE-2026-110631, CVE-2026-110632, CVE-2026-110634, CVE-2026-110635, CVE-2026-110636, CVE-2026-110638, CVE-2026-110639, CVE-2026-110640, CVE-2026-110643, CVE-2026-110644, CVE-2026-110645, CVE-2026-110646, CVE-2026-110649, CVE-2026-110650, CVE-2026-110770, CVE-2026-97381）",
+        "product": "OSS パッケージ・小規模製品（VulnCheck 起点）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-101950 ほか22件（全件: CVE-2026-101950, CVE-2026-101954, CVE-2026-101955, CVE-2026-101956, CVE-2026-101967, CVE-2026-101980, CVE-2026-101982, CVE-2026-101983, CVE-2026-101986, CVE-2026-101990, CVE-2026-101997, CVE-2026-102031, CVE-2026-102037, CVE-2026-102062, CVE-2026-102068, CVE-2026-102070, CVE-2026-102084, CVE-2026-102175, CVE-2026-102178, CVE-2026-102182, CVE-2026-33789, CVE-2026-33792, CVE-2026-33796）",
+        "product": "Juniper Networks Junos OS / Junos OS Evolved（Juniper SIRT の一括公開バッチ）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-102476 ほか1件（全件: CVE-2026-102476, CVE-2026-103415）",
+        "product": "その他の個別アドバイザリ（emo@eclipse.org）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-102748 ほか21件（全件: CVE-2026-102748, CVE-2026-102893, CVE-2026-108390, CVE-2026-110136, CVE-2026-110142, CVE-2026-110144, CVE-2026-110149, CVE-2026-110152, CVE-2026-110159, CVE-2026-110161, CVE-2026-110165, CVE-2026-55572, CVE-2026-55573, CVE-2026-55680, CVE-2026-55683, CVE-2026-55684, CVE-2026-77371, CVE-2026-77524, CVE-2026-85714, CVE-2026-86002, CVE-2026-91881, CVE-2026-92152）",
+        "product": "OSS プロジェクト（GitHub CNA 起点）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-103904 ほか1件（全件: CVE-2026-103904, CVE-2026-89310）",
+        "product": "その他の個別アドバイザリ（a6d3dc9e-0591-4a13-bce7-0f5b31ff6158）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-104748 ほか8件（全件: CVE-2026-104748, CVE-2026-104800, CVE-2026-107594, CVE-2026-110002, CVE-2026-87855, CVE-2026-92097, CVE-2026-93388, CVE-2026-97657, CVE-2026-97668）",
+        "product": "WordPress プラグイン/テーマ（Wordfence・WPScan・Patchstack 等）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-107424 ほか1件（全件: CVE-2026-107424, CVE-2026-108291）",
+        "product": "その他の個別アドバイザリ（audit@patchstack.com）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-108065",
+        "product": "その他の個別アドバイザリ（cve@rapid7.com）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-110392",
+        "product": "その他の個別アドバイザリ（PSIRT@samsung.com）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-110536",
+        "product": "その他の個別アドバイザリ（cna@vuldb.com）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-14851",
+        "product": "その他の個別アドバイザリ（cve-coordination@incibe.es）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-15176 ほか2件（全件: CVE-2026-15176, CVE-2026-93479, CVE-2026-97205）",
+        "product": "NGINX Plus / NGINX Open Source（F5 の公開）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-16740 ほか1件（全件: CVE-2026-16740, CVE-2026-16741）",
+        "product": "その他の個別アドバイザリ（iletisim@usom.gov.tr）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-59774",
+        "product": "その他の個別アドバイザリ（88ee5874-cf24-4952-aea0-31affedb7ff2）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約）。",
+        "reported_date": "2026-10-15"
+      },
+      {
+        "cve_id": "CVE-2026-74580, CVE-2026-85045, CVE-2026-78952（全件）",
+        "product": "Linux vhost（Vghost）/ Chrome V8・Crashpad",
+        "reason": "low_score",
+        "reason_detail": "AI 研究由来で修正済み。悪用確認なし。動向トピックに記録。",
+        "reported_date": "2026-10-15"
+      }
+    ],
+    "apt": [],
+    "ai_attacks": [],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 3,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 15,
+      "total_processed": 21
+    },
+    "apt": {
+      "main": 0,
+      "notable": 1,
+      "excluded": 0,
+      "total_processed": 1
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 0,
+      "total_processed": 0,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 4,
+      "medium": 2,
+      "low": 1,
+      "excluded": 0,
+      "total_processed": 7,
+      "perspective_breakdown": {
+        "cve": 4,
+        "zeroday": 3,
+        "ai_attack": 0
+      }
+    }
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-10-14T22:32:43Z",
+    "operational_picture": {
+      "subjects_tracked": 149,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 55,
+        "DISCLOSED": 67,
+        "POC_PUBLIC": 27
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 110,
+        "shadow": 94
+      },
+      "event_type_counts": {
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 27,
+        "TF1_POC_PUBLICATION": 67
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}
