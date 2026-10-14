@@ -1,0 +1,156 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-15 08:15 JST
+調査期間: 2026-10-14 07:00 〜 2026-10-15 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-15-001 Cisco Secure Email Gateway ゼロデイ CVE-2026-76519 — 修正適用と侵害確認（KEV 期限 10-17）
+------------------------------------------------------------
+【24時間以内の変化】
+[CISA KEV Catalog 2026-10-14] CISA が CVE-2026-76519 を KEV へ追加（期限 2026-10-17・ランサムウェア利用: Unknown）。
+[BleepingComputer / The Hacker News / Cisco 2026-10-14] Cisco が SEG の実悪用ゼロデイを公表し修正版を公開。被害台数・攻撃者・root 取得の有無は未公表。
+
+【概要】
+回避策がない実悪用ゼロデイ。修正版または Content Scanner Tools 25.3.0.5525 を適用し、system_logs と FW ログで侵害を確認する。
+
+【推奨アクション】
+・修正版へ更新し contentscannerstatus で確認する
+・grep "System Security" system_logs の判定結果を確認する
+・侵害時は証拠保全後に再構築し資格情報と鍵を更新する
+
+【監視】
+SEG から外部 IP への想定外の通信を確認する。
+
+【参照】
+・The Hacker News: Cisco Warns of Active Attacks Exploiting New Critical Secure Email Gateway Vulnerability https://thehackernews.com/2026/10/cisco-warns-of-active-attacks.html
+・BleepingComputer: Cisco patches new Secure Email Gateway zero-day exploited in attacks https://www.bleepingcomputer.com/news/security/cisco-patches-actively-exploited-secure-email-gateway-zero-day
+------------------------------------------------------------
+SOC-2026-10-15-002 AhsayCBS 連鎖悪用（CVE-2026-105133 / CVE-2026-105134）— 10.3.4.0 は不完全、ホットフィックス適用
+------------------------------------------------------------
+【24時間以内の変化】
+[CISA KEV Catalog 2026-10-14] CISA が CVE-2026-105133・CVE-2026-105134 を KEV へ追加（期限 2026-10-17）。
+[Huntress / SecurityWeek / BleepingComputer / The Hacker News（検索結果の要約） 2026-10-08] Huntress が 2026-10-07 23:20 UTC に初回悪用を観測、10-08 時点で5組織を確認。JSP Web シェルと XMRig マイナーが投下された。
+
+【概要】
+KEV 追加（期限 10-17）。Web シェルとマイナーの投下が確認されている。バックアップ基盤の侵害はデータ復旧能力に直結する。
+
+【推奨アクション】
+・ホットフィックス 10.3.4.45 を適用し再起動する
+・管理面を非公開にし、JSP Web シェルとマイナーを点検する
+
+【監視】
+AhsayCBS 配下の新規 JSP を確認する。
+
+【参照】
+・The Hacker News: Attackers Exploit AhsayCBS Flaws to Drop Webshells and XMRig Cryptominer https://thehackernews.com/2026/10/attackers-exploit-ahsaycbs-flaws-to.html
+・Huntress: Threat Actors Exploit Critical AhsayCBS Flaws to Drop Webshells and XMRig Cryptominer https://www.huntress.com/blog/ahsaycbs-flaws-exploit
+------------------------------------------------------------
+SOC-2026-10-15-003 Nextcloud の Collabora CODE アプリ（CVE-2026-110447）— 9月から悪用、更新または削除
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-14] アドバイザリと CVE が公開。管理者3名の報告により 2026-09-10 から Web シェル設置を伴う攻撃が記録されていた。
+
+【概要】
+CVE 公表の約1か月前から Web シェル設置が記録されていた。無効化では閉じず、更新か削除が必要。
+
+【推奨アクション】
+・richdocumentscode を 26.4.303 以降へ更新、または削除する
+・apps/richdocumentscode/ の不審な .php を点検し IOC を照合する
+
+【監視】
+proxy.php?status への異常リクエストを確認する。
+
+【参照】
+・The Hacker News: Hackers Backdoor Nextcloud Servers Through Critical Flaw in Collabora’s Built-in CODE App https://thehackernews.com/2026/10/hackers-backdoor-nextcloud-servers.html
+------------------------------------------------------------
+SOC-2026-10-15-004 SiteGuard Server Edition（CVE-2026-106931）— 悪用確認、JPCERT/CC 注意喚起
+------------------------------------------------------------
+【24時間以内の変化】
+[Security NEXT / JPCERT/CC 2026-10-14] EG セキュアソリューションズが悪用確認を伴うアドバイザリを公表（9月29日に契約者へ個別通知済み）。JPCERT/CC が注意喚起を発行。
+
+【概要】
+国内製 WAF の悪用確認。WAF が侵害されるとその背後の防御が失われる。
+
+【推奨アクション】
+・ベンダー案内に従い更新または回避策を適用する
+・侵害調査を行う
+
+【監視】
+WAF ホストの不審な子プロセスを確認する。
+
+【参照】
+・Security NEXT: 国産WAF「SiteGuard Server Edition」に脆弱性 - 悪用も確認 https://www.security-next.com/191420
+・JPCERT/CC: 注意喚起: SiteGuard Server EditionにおけるOSコマンドインジェクションの脆弱性（CVE-2026-106931）に関する注意喚起 https://www.jpcert.or.jp/at/2026/at260032.html
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-15-005 PAN-OS 管理インタフェースの RCE（CVE-2026-0322）— 管理面の到達性を制限し修正を確認
+------------------------------------------------------------
+【24時間以内の変化】
+[CISA KEV Catalog / EUVD 2026-10-14] CISA が CVE-2026-0322 を KEV へ追加（期限 2026-10-17）。EUVD はベンダー（palo_alto）の記述と CVSS v4.0 8.6 を収録。
+
+【概要】
+KEV 追加（期限 10-17）。認証済み前提だが管理面の露出と資格情報の窃取が前提条件になり得る。
+
+【推奨アクション】
+・管理インタフェースを信頼できる内部 IP に限定する
+・ベンダーアドバイザリで修正版を確認して適用する
+
+【監視】
+管理インタフェースの接続元を確認する。
+
+【参照】
+・CISA: CISA Known Exploited Vulnerabilities Catalog（2026-10-14 追加分） https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+・ENISA EUVD: EUVD-2026-101495 https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-101495
+------------------------------------------------------------
+SOC-2026-10-15-006 EC-CUBE の Amazon Pay プラグイン（CVE-2026-103671）— 1.2.9 以前は CV2 対応版へ移行
+------------------------------------------------------------
+【24時間以内の変化】
+[Security NEXT / JVN 2026-10-14] EC-CUBE が攻撃確認済みとして告知（JVN43511918）。
+
+【概要】
+攻撃確認済みだが影響は誘導・情報露出。1.2.9 以前は直接更新できない。
+
+【推奨アクション】
+・1.3.1 または CV2 対応版へ移行する
+
+【監視】
+決済時のリダイレクト先を確認する。
+
+【参照】
+・Security NEXT: 「EC-CUBE」の公式決済プラグインに緊急脆弱性 - すでに悪用も https://www.security-next.com/191457
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-15-007 curl 8.23.0（HTTP/2 アップロードの脆弱性）と Chrome 152 系の更新確認
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-14] curl が 8.23.0 で HTTP/2 アップロードのメモリ破壊を修正。PoC は実環境条件が厳しい。
+
+【概要】
+curl は悪意ある受信サーバがクライアントのメモリを破壊できる。XBOW の Chrome チェーンは 152.0.7977.82 以降で修正済み。
+
+【推奨アクション】
+・curl を 8.23.0 へ更新する
+・Chrome を 152.0.7977.82 以降へ更新する
+
+【監視】
+実行中の curl/Chrome のバージョンを資産管理で確認する。
+
+【参照】
+・The Hacker News: curl Patches HTTP/2 Upload Flaw After PoC Demonstrates Client-Side Code Execution https://thehackernews.com/2026/10/curl-patches-http2-upload-flaw-after.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（本窓のSOC除外なし）
+
+網羅スイープ: 候補97件 / 処理97件 / 未処理0件 / KEV窓内追加4件 / EUVD窓内87件（うちNVD/KEV未収載0件）
