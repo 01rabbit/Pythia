@@ -1,0 +1,421 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-16 07:40 JST
+調査期間: 2026-10-15 07:00 〜 2026-10-16 07:00 JST
+========================================
+
+■ Section 2: ゼロデイ・トレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-102764 BeyondTrust Remote Support（旧 Bomgar・アプライアンス内部コンポーネントのメッセージ発信元検証不備→任意ファイル操作／任意ファイルアップロード）（CVSS 9.3）
+------------------------------------------------------------
+優先度: critical  軸1=15 軸2=4  KEV登録: なし  悪用: 確認  パッチ: あり
+影響バージョン: Remote Support（自己ホスト型）。GTIG は『サポート対象の全バージョンで 26.2.3 まで』と記述。SaaS は 2026-10-09 に修正済み。
+
+【24時間以内の変化】
+[Google Threat Intelligence Group 2026-10-15] GTIG が CVE-2026-102764 を 2026 年 8 月下旬からゼロデイとして悪用していた活動を公表し、SAWFLY（Web シェル）と BARECLAW（SOCKS5 トンネラー）の配備を ARMORY CASTLE（旧 UNC5221）に帰属。
+[BeyondTrust 2026-10-09] SaaS テナントへ修正を適用済み。アドバイザリ BT26-05 は 10-15 に公開。
+
+【概要】
+GTIG によれば、BeyondTrust Remote Support のアプライアンスで内部コンポーネントがメッセージの発信元を十分に検証せず、攻撃者が任意ファイル操作（アップロード）を行える。CVE-2026-102764（NVD 記載は CVSS v4.0 9.3）。GTIG は 2026 年 8 月下旬にゼロデイとして悪用された侵入を観測し、追跡中の疑い PRC 関連の諜報アクター ARMORY CASTLE の活動と帰属した（GTIG の記述）。侵入では /app_84304470.php への POST で SAWFLY Web シェルを設置し、/bin/sh を SUID root でコピーして権限昇格、独自 CLI bt-secrets で資格情報金庫をダンプし、ログを削除、管理者ポータルで Jump Item/Team ロールを Administrator に引き上げ、ファイル転送サービスで文書を持ち出した。C2 は WebSocket 上の SOCKS5 トンネラー BARECLAW（TCP 19800）。KEV 未収載（本窓時点）。被害組織名・件数は GTIG が公表していない。
+
+【攻撃フロー】
+1. /app_84304470.php への POST でアップロード（ステージング）し、Web ルートへ SAWFLY Web シェル（mangoapi.php）を設置
+2. /bin/sh を /usr/bin/dbus-authd にコピーし SUID root を付与して権限昇格、bt-secrets で資格情報金庫をダンプ
+3. zz-root-persist スクリプトで NOPASSWD sudoers を追加して永続化、ログを削除
+4. 管理者資格情報で管理ポータルへログインし Jump Item/Team ロールを引き上げ、リモートサポートセッション開始とファイル転送で文書を持ち出し（C2 は BARECLAW SOCKS5-over-WebSocket）
+
+【ATT&CK】
+T1190 Exploit Public-Facing Application: インターネット側のアプライアンスに対しゼロデイの任意ファイルアップロードを悪用（GTIG）
+T1505.003 Web Shell: SAWFLY（PHP Web シェル）を Web ルートへ設置（GTIG）
+T1090 Proxy: BARECLAW（SOCKS5-over-WebSocket トンネラー）による通信中継（GTIG）
+
+【暫定緩和策】
+- BT26-05 を適用（自己ホスト型 24.3.1 以降は BT26-05-RS）。SaaS は対応不要
+- インターネットに公開された脆弱な自己ホスト型アプライアンスは侵害されている可能性があるとみなし、変更前に証拠を保全して外部ログを収集する（攻撃者がオンボックスのログを削除している）
+- 侵害確認時・不明時は clean な修正版イメージから再構築し、修正または再構築の後に依存順序で資格情報をローテーションする
+- 管理画面を IP 制限、SSO＋フィッシング耐性 MFA、既定 Jump Item ロールを No Access にし、ログは TLS で SIEM へ転送する
+
+【IOC】
+hashes: dc14e215269a93fdbc4c1a80b984c23faf7af0911c6dbb85309796a6f2ae95fb, 1f19b9a27d79c11bda00a1e8faf74a7fdd683d38ccef1b60df2fd0307e3aa462
+filenames: mangoapi.php, ingredi_ws, app_84304470.php, /usr/bin/dbus-authd
+
+【監視】
+user_changed によるロール引き上げ、想定外の .php パス、想定外送信元からの WebSocket アップグレード、syslog 転送の欠落、/login 設定の変更を監視する。
+GTIG は YARA ルール G_Hunting_Webshell_SAWFLY_1 / G_Hunting_Backdoor_BARECLAW_1 を公開。ハッシュ2件は mangoapi.php（SAWFLY）と ingredi_ws（BARECLAW）の順。追加 IOC は GTI コレクション（要登録）にある。
+
+【参照】
+- ARMORY CASTLE Exploits BeyondTrust (Google Threat Intelligence Group) https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust
+
+------------------------------------------------------------
+2. CVE-2026-21589 Atlassian Data Center 8製品（Bitbucket / Confluence / Jira Software / Jira Service Management / Bamboo / Crowd / Crucible / Fisheye・未認証の任意ファイル読取り）（CVSS 9.3）
+------------------------------------------------------------
+優先度: critical  軸1=15 軸2=4  KEV登録: あり（追加 2026-10-15・期限 2026-10-18）  悪用: 確認  パッチ: あり
+影響バージョン: Atlassian アドバイザリ記載の各 Data Center 製品の影響バージョン（詳細は既報行を参照）
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-10-15] CISA が CVE-2026-21589 を KEV へ追加（期限 2026-10-18・ランサムウェア利用: Unknown）。10-07 の悪用試行観測から約 8 日後。
+[ENISA EUVD 2026-10-15] EUVD が exploited_since を 2026-10-15 として記録（KEV 由来の集約で独立した観測ではない）。
+
+【概要】
+Atlassian Data Center 系 8 製品の未認証任意ファイル読取り CVE-2026-21589（CVSS v4.0 9.3）が 2026-10-15 に CISA KEV へ追加された。既報のとおり公開技術詳細から短時間で悪用試行が始まり、公開 PoC（watchTowr）が存在し、Previdian ハニーポットでも悪用試行が観測されていた。KEV 追加は E1 の成立にあたる事実であり、悪用の主体・被害件数は公表されていない。
+
+【攻撃フロー】
+1. 未認証でアプリケーション Web ルート配下の特定ファイルへアクセス（Atlassian の記述）
+2. 読み取った資格情報ファイル等を足掛かりに管理者権限を得る手順が公開 PoC で示されている（既報・watchTowr）
+
+【ATT&CK】
+T1190 Exploit Public-Facing Application: インターネットに公開された Data Center 製品を未認証で悪用
+
+【暫定緩和策】
+- Atlassian の修正版へ更新する（KEV 期限 2026-10-18）
+- 更新前後で資格情報ファイルの露出有無を確認し、必要に応じて資格情報を更新する
+
+【監視】
+各製品の想定外ファイル取得アクセスと、管理者アカウントの新規作成・権限変更を監視する。
+
+【参照】
+- CISA Known Exploited Vulnerabilities Catalog (CISA) https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. ARMORY CASTLE（GTIG が疑い PRC 関連の諜報アクターと評価・旧 UNC5221）（ArmoryCastle-2026-BeyondTrustZeroDay）
+------------------------------------------------------------
+帰属確度: medium  軸P=8 軸Q=6  最終観測: 2026-10-15
+
+【24時間以内の変化】
+[Google Threat Intelligence Group 2026-10-15] GTIG が BeyondTrust Remote Support のゼロデイ CVE-2026-102764 悪用と SAWFLY/BARECLAW 配備を ARMORY CASTLE に帰属。
+
+【概要】
+GTIG は CVE-2026-102764 のゼロデイ悪用と SAWFLY・BARECLAW の配備を、疑い PRC 関連の諜報アクター ARMORY CASTLE（旧 UNC5221）に帰属し、『ツールと TTP は過去の ARMORY CASTLE の活動と整合する』と述べる。GTIG は高い確度でエッジ機器のゼロデイ悪用を今後も続けると評価する（GTIG の評価であり本レポートの予測ではない）。被害組織は非公表。帰属は GTIG の記述に依拠し、本レポートは独自に帰属していない。
+
+【攻撃フロー】
+1. BeyondTrust Remote Support のゼロデイで SAWFLY Web シェルを設置
+2. 権限昇格・資格情報金庫のダンプ・ログ削除・永続化
+3. 管理者資格情報で管理ポータルを操作しファイル転送で文書持出し、BARECLAW で通信中継
+
+【ATT&CK】
+T1190 Exploit Public-Facing Application
+T1505.003 Web Shell
+T1090 Proxy
+
+【IOC】
+hashes: dc14e215269a93fdbc4c1a80b984c23faf7af0911c6dbb85309796a6f2ae95fb, 1f19b9a27d79c11bda00a1e8faf74a7fdd683d38ccef1b60df2fd0307e3aa462
+filenames: mangoapi.php, ingredi_ws
+
+【推奨アクション】
+BT26-05 を適用し、侵害を前提に証拠保全・再構築・資格情報ローテーションを行う（詳細は CVE-2026-102764 項）。
+
+【検知メモ】
+GTIG の YARA ルール G_Hunting_Webshell_SAWFLY_1 / G_Hunting_Backdoor_BARECLAW_1 を利用できる。
+
+関連CVE: CVE-2026-102764
+
+【参照】
+- ARMORY CASTLE Exploits BeyondTrust (Google Threat Intelligence Group) https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. Silent Lynx（Cisco Talos: UAT-6275／Recorded Future: TAG-193。THN は『カザフスタン関連と評価』と記述）（SilentLynx-2026-CISGovernment）
+------------------------------------------------------------
+帰属確度: low  軸P=5 軸Q=5  最終観測: 2026-08-31
+
+【24時間以内の変化】
+[The Hacker News 2026-10-15] 2025年6月〜2026年8月の活動を整理した報道。2026年4月に CVE-2025-8088（WinRAR）を初めて配送に武器化。
+
+【概要】
+THN によれば Silent Lynx は 2025 年 6 月から 2026 年 8 月にかけ、マクロ付き文書、PS2EXE ダウンローダー、GitHub 上の PowerShell、細工した WinRAR アーカイブ（CVE-2025-8088）の 4 系統の感染チェーンで CIS 諸国の政府機関を標的にした。侵害済み政府アカウントからのスピアフィッシングに外交・貿易・エネルギー・航空の誘引を用いる。関連グループ（YoroTrooper 等）との関係は『疑い』で直接の指標重複は無いとされる。帰属・別名は報道の記述で、本レポートは独自に判断していない。
+
+【攻撃フロー】
+1. 侵害済み政府アカウントからのスピアフィッシング（マクロ文書／LNK 入り RAR／CVE-2025-8088 の RAR）
+2. PS2EXE ダウンローダーや GitHub 上の PowerShell でリバースシェル（PickleShell 等）を配備
+3. スタートアップフォルダや計画タスクで永続化
+
+【ATT&CK】
+T1566 Phishing
+
+【推奨アクション】
+WinRAR を修正版へ更新し、RAR 内 LNK と GitHub 由来 PowerShell 実行を検知対象にする。
+
+【検知メモ】
+IOC は報道に無く Talos／Recorded Future の原報告を参照。TTP は報道が明示するスピアフィッシングのみ付与。
+
+関連CVE: CVE-2025-8088
+
+【参照】
+- Silent Lynx Exploits WinRAR Flaw to Deploy Reverse Shell in CIS Government Attacks (The Hacker News) https://thehackernews.com/2026/10/silent-lynx-exploits-winrar-flaw-to.html
+
+------------------------------------------------------------
+2. Candiru（イスラエルの政府向けスパイウェア開発企業）（Candiru-2026-AlJazeeraAds）
+------------------------------------------------------------
+帰属確度: medium  軸P=5 軸Q=4  最終観測: 2026-10-15
+
+【24時間以内の変化】
+[The Hacker News / Citizen Lab 2026-10-15] Citizen Lab が Al Jazeera の端末への Candiru ゼロクリック感染が通常のオンライン広告経由だったと報告。
+
+【概要】
+THN によれば Citizen Lab は、Candiru が Al Jazeera の端末に通常のオンライン広告を経由してスパイウェアを感染させたと報告した。広告の読み込み時（場合により画面外の背景読み込み）に実行され、クリック等の操作を要しない。使用された脆弱性の CVE は取得できていない。帰属は Citizen Lab の評価に依拠する。
+
+【攻撃フロー】
+1. 攻撃者が制御する広告枠へ悪性コンテンツを配信
+2. 広告読み込みだけで端末上でコードが実行（ゼロクリック）
+3. スパイウェアを常駐
+
+【推奨アクション】
+高リスク対象者は Lockdown 相当の設定・OS 更新・広告ブロックを検討する。
+
+【検知メモ】
+技術詳細（CVE・IOC）は報道に無く TTP は付与しない。
+
+【参照】
+- Citizen Lab Traces Zero-Click Candiru Spyware Infections at Al Jazeera to Targeted Online Ads (The Hacker News) https://thehackernews.com/2026/10/citizen-lab-traces-zero-click-candiru.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-105740 Langflow（MCP サーバー設定 stdio 経由の認証後 RCE）（CVSS 9.9）
+------------------------------------------------------------
+優先度: high  軸1=12 軸2=4  KEV登録: なし  悪用: 確認  パッチ: あり
+影響バージョン: 1.9.0 未満
+
+【24時間以内の変化】
+[Previdian（THN 経由） 2026-10-15] ハニーポットで 2026-09-19 以降 1,423 件・27 IP・約 15 か国の悪用試行を観測。10-11 以降は 333 件、10-15 には 66 件。
+
+【概要】
+THN によれば Previdian は Langflow の CVE-2026-105740（CVSS 9.9・認証後 RCE）に対する悪用試行をハニーポットで観測した。MCP サーバー設定のユーザー指定 command が検証なしに bash -c に渡され、サーバー一覧取得時に実行される。観測された手順はバージョン確認、/api/v1/auto_login、一般的な資格情報でのログイン、取得したトークンでの MCP エンドポイント利用で、ペイロードは LANGFLOW_SECRET_KEY と LANGFLOW_SUPERUSER_PASSWORD の窃取や id/whoami の確認だった。ハニーポット上の試行であり、実環境での侵害成立は報告されていない。
+
+【攻撃フロー】
+1. 弱い／既定の資格情報でログイン（auto_login が有効な場合はそれを利用）
+2. POST /api/v2/mcp/servers/{name} に悪意ある command を登録
+3. GET /api/v2/mcp/servers?action_count=true で実行を誘発し秘密鍵・パスワードを窃取
+
+【ATT&CK】
+T1190 Exploit Public-Facing Application: 公開された Langflow の API を悪用
+T1078 Valid Accounts: ログインに一般的な資格情報を使用（観測された手順）
+
+【暫定緩和策】
+- 1.9.0 以降へ更新する
+- LANGFLOW_AUTO_LOGIN=false に設定し、信頼できないネットワークへ公開しない
+- /api/v2/mcp/servers/ への不審な要求と認証ログを確認する
+
+【IOC】
+ips: 192.255.229.92, 146.70.211.112:18764
+
+【監視】
+POST /api/v2/mcp/servers/ と GET /api/v2/mcp/servers?action_count=true の組み合わせ、/api/v1/auto_login への要求を監視する。
+
+【参照】
+- Langflow's Critical Authenticated RCE Flaw Targeted in 1,423 Honeypot Exploit Attempts (The Hacker News) https://thehackernews.com/2026/10/langflows-critical-authenticated-rce.html
+
+------------------------------------------------------------
+2. CVE-2026-108097 Drupal コア Field UI モジュール（コントリビュートモジュール経由の RCE 経路）（CVSS 不明）
+------------------------------------------------------------
+優先度: high  軸1=11 軸2=3  KEV登録: なし  悪用: 未確認  パッチ: あり
+影響バージョン: 11.4.x / 11.3.x / 10.6.x の未修正版ほか（EOL 系列は修正なし）。THN は影響範囲を明示していない
+
+【24時間以内の変化】
+[Drupal Security Team（THN 経由） 2026-10-14] Drupal が 10-14 に修正版を公開。Drupal の独自リスク評価 19/25（Critical）。公開エクスプロイトと悪用報告は 10-15 時点でなし。
+
+【概要】
+Drupal コアの Field UI に重大な脆弱性 CVE-2026-108097。コア単独では到達できないが、コントリビュートモジュール経由のコード実行経路が複数あり、少なくとも 1 つは認証不要と Drupal が述べる。修正版は 10-14 公開。サポート終了系列（11.2 以下、10.5 以下、Drupal 8/9）には修正がなく、THN は報告サイトの 28.5% が影響対象かつ修正なしの系列と記す。別の Entity List モジュール CVE-2026-108099（RCE）はコア更新では直らない。悪用は報告されていない。
+
+【攻撃フロー】
+1. コントリビュートモジュール経由で Field UI の欠陥に到達（Drupal の記述）
+2. サーバー上でコードを実行
+
+【暫定緩和策】
+- 修正版へ更新する（11.3.x / 10.6.x は 2026 年 12 月にセキュリティサポート終了）
+- 更新不可なら field_ui モジュールをアンインストールする
+- Entity List モジュールを 3.0.10 に更新する
+
+【監視】
+Field UI の管理画面（フィールド管理・表示管理）への想定外アクセスを確認する。
+
+【参照】
+- Drupal Patches Critical Field UI Flaw With Unauthenticated RCE Path via Contributed Modules (The Hacker News) https://thehackernews.com/2026/10/drupal-patches-critical-core-rce-flaw.html
+- 「Drupal」に脆弱性 - 拡張モジュールとの組み合わせで深刻な影響も (Security NEXT) https://www.security-next.com/191516
+
+------------------------------------------------------------
+3. CVE-2026-96889 Next.js（SVG 処理 librsvg／sharp 経由のコード実行）。同時修正: use cache の RCE（GHSA-673q-mjm6-r5xr・CVE なし）（CVSS 不明）
+------------------------------------------------------------
+優先度: high  軸1=11 軸2=3  KEV登録: なし  悪用: 未確認  パッチ: あり
+影響バージョン: CVE-2026-96889: 10.0.0〜15.5.27 と 16.0.0〜16.4.0。glibc 系 Linux で dangerouslyAllowSVG または next/og（Node.js ランタイム）使用時
+
+【24時間以内の変化】
+[Vercel（THN 経由） 2026-10-14] 帯域外セキュリティ更新で 2 件の未認証 RCE（Vercel 評価 CVSS 9.5）と DoS を修正。10-15 時点で悪用報告なし。
+
+【概要】
+Next.js が 10-14 に帯域外の更新を出し、use cache（Cache Components）の RCE（16.0.0〜16.4.0・CVE なし）と SVG 処理（librsvg）の RCE CVE-2026-96889 を修正した。Vercel の評価は 9.5、Red Hat は 7.8 と評価が割れる。Server Actions の DoS も同時修正。悪用報告はない。CVE の付かない 2 件があり npm audit が検出しない可能性がある。
+
+【攻撃フロー】
+1. use cache 関数が複数の型付き配列を返す構成、または SVG 最適化を許可した構成で外部入力が処理される
+2. サーバー上でコードを実行（Vercel の記述）
+
+【暫定緩和策】
+- 16.4.1（v16）または 15.5.28（v15）へ更新し再ビルド・再デプロイする
+- v15 では npm ls sharp で 0.35.5 以降を確認する
+- SVG のみ未更新の場合は sharp.block で VipsForeignLoadSvg を遮断する
+
+【監視】
+SVG 最適化の有効設定（dangerouslyAllowSVG）と next/og の利用箇所を棚卸しする。
+
+【参照】
+- Next.js Ships Out-of-Band Patch for Two Critical RCE Flaws in Caching and SVG Processing (The Hacker News) https://thehackernews.com/2026/10/nextjs-ships-out-of-band-patch-for-two.html
+
+------------------------------------------------------------
+4. CVE-2026-99999 Linux カーネル ネットワークスタック（ipv4 checksum_start 検証不備・通称 PwnEscape・ゲスト VM からホストメモリ読取り）（CVSS 9.3）
+------------------------------------------------------------
+優先度: high  軸1=10 軸2=3  KEV登録: なし  悪用: 未確認  パッチ: あり
+影響バージョン: 公式記事は影響範囲を明示していない。修正済み: 5.10.272 / 5.15.223 / 6.1.190 / 6.6.159 / 6.12.113 / 6.18.57 / 7.2.11
+
+【24時間以内の変化】
+[The Hacker News / pwn.ai 2026-10-15] 研究者が Vercel の本番サンドボックスでホストメモリ漏えいを実証（1 パケット約 32 バイト）。Vercel が確認。実環境の悪用報告なし・KEV 未収載。
+
+【概要】
+Linux カーネルの CVE-2026-99999（NVD 反映中・CVSS v3.1 9.3・ローカル攻撃・スコープ変更あり）。ゲスト VM 内のコードが細工したチェックサム情報でホストネットワークヘッダを破壊し、ホストメモリを読める。研究者は Vercel の本番サンドボックスでの漏えいを実証し、クラッシュとコード実行は自前の検証環境のみで示した。実環境での悪用は報告されていない。
+
+【攻撃フロー】
+1. ゲスト VM 内で細工したチェックサムメタデータを持つパケットを送出
+2. ホストカーネルの skb_checksum_help がヘッダを破壊し、ホストメモリが漏えい
+
+【暫定緩和策】
+- ホストカーネルを修正版（またはベンダービルド）へ更新して再起動する（ゲストのみの更新では直らない）
+- 暫定策は Vercel の例: ネスト仮想化の無効化、Firecracker jailer 下の microVM 運用（影響の限定のみ）
+
+【監視】
+マルチテナントのホストカーネル版数と、ベンダーのバックポート状況を確認する。
+
+【参照】
+- Critical PwnEscape Linux Kernel Vulnerability Lets Guest VMs Read Host Memory (The Hacker News) https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html
+
+------------------------------------------------------------
+5. CVE-2026-110447 Collabora Online Built-in CODE Server（Nextcloud richdocumentscode・未認証コマンド実行）[既報・悪用状況の更新]（CVSS 9.2）
+------------------------------------------------------------
+優先度: high  軸1=12 軸2=4  KEV登録: なし  悪用: 確認  パッチ: あり
+影響バージョン: richdocumentscode 26.4.302 以前（既報）
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-15] 攻撃者が CVE-2026-110447 を悪用して Nextcloud サーバーにバックドアを設置していると報道（既報の 2026-09-10 以降の悪用を二次情報が追認）。KEV は未収載。
+
+【概要】
+既報の CVE-2026-110447 について BleepingComputer が悪用によるバックドア設置を報じた。KEV には未収載（本窓時点）。新たな攻撃主体・被害件数は本窓で確認できていない。
+
+【攻撃フロー】
+1. richdocumentscode の proxy.php を未認証で悪用してコマンド実行
+2. Web シェル等のバックドアを設置
+
+【ATT&CK】
+T1190 Exploit Public-Facing Application: 公開 Nextcloud の Collabora CODE アプリを悪用
+T1505.003 Web Shell: バックドア設置（報道。既報では Web シェル設置）
+
+【暫定緩和策】
+- richdocumentscode 26.4.303 以降へ更新し、Web ルート配下の不審なファイルを点検する
+
+【監視】
+proxy.php?status への外部からのアクセスと新規 PHP ファイルを確認する。
+
+【参照】
+- Hackers exploit Collabora RCE flaw to backdoor Nextcloud servers (BleepingComputer) https://www.bleepingcomputer.com/news/security/hackers-exploit-collabora-rce-flaw-to-backdoor-nextcloud-servers
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃トレンド】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. Unit 42: FortiManager CVE-2024-47575 悪用で FortiGate 500 台超へ PEERSTITCH インプラント
+------------------------------------------------------------
+【24時間以内の変化】
+[Unit 42 2026-10-14] PEERSTITCH 調査報告を公開。
+
+【概要】
+Unit 42 は CVE-2024-47575（FortiManager）を悪用して 500 台超のファイアウォールを標的にし、メモリ常駐の ARM64 マルウェア PEERSTITCH を配備した侵入を調査したと報告した（要約のみ取得・攻撃者の帰属は取得できていない）。
+
+【参照】
+- Unit 42 Uncovers PEERSTITCH, a Stealthy FortiGate Implant (Unit 42) https://unit42.paloaltonetworks.com/fortimanager-cve-2024-47575-peerstitch-malware/
+
+------------------------------------------------------------
+2. 仏スーパー約 700 店の冷却システム攻撃が Copeland・Dixell コントローラーへ拡大
+------------------------------------------------------------
+【24時間以内の変化】
+[SecurityWeek / Dark Reading 2026-10-15] 影響が Copeland・Dixell 製コントローラーへ拡大と報道。
+
+【概要】
+SecurityWeek によれば約 700 の仏スーパーが被害を受け、攻撃は Copeland と Dixell のコントローラーに及ぶ。名乗り出た主体はない。Dark Reading は未更新の冷却 OT ファームウェアで数百店が数百万ユーロを失ったと報じる。
+
+【参照】
+- Supermarket Refrigeration Attack Widens to Copeland, Dixell Controllers (SecurityWeek) https://www.securityweek.com/supermarket-refrigeration-attack-widens-to-copeland-dixell-controllers
+- EU Grocers Pay a Steep Price for Unpatched Fridge Firmware (Dark Reading) https://www.darkreading.com/ics-ot-security/eu-grocers-unpatched-fridge-firmware
+
+------------------------------------------------------------
+3. GhostAction: GitHub アカウント約 1,900 件を侵害し 3 万超のリポジトリを標的に
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News / GitGuardian 2026-10-15] GhostAction の急増を報道。
+
+【概要】
+GitGuardian によれば GhostAction は 10-08〜09 に約 1,900 ユーザーの GitHub アカウントを侵害し、公開リポジトリの CI から 3,174 件のシークレット窃取を試みた。
+
+【参照】
+- GhostAction Compromises About 1,900 GitHub Accounts, Targets Over 30,000 Repositories (The Hacker News) https://thehackernews.com/2026/10/ghostaction-compromises-about-1900.html
+
+------------------------------------------------------------
+4. マルウェア・不正収益化の報道: Arch AUR 偽パッケージ、プロキシジャック、Android RAT Hirudo、CikaBika Bot
+------------------------------------------------------------
+【24時間以内の変化】
+[BleepingComputer / SecurityWeek 2026-10-15] 各マルウェア・不正収益化の報道。
+
+【概要】
+BleepingComputer は AUR に yay/paru を偽装した悪性パッケージが root 権限でマルウェアを配布と報道。D-Link/Ubiquiti 機器 34 か国のプロキシジャック、Hirudo（銀行アプリを偽物に差し替える Android RAT）、CikaBika（Discord を C2 に使う RAT）も報じられた。いずれも攻撃者の帰属は報道に無い。
+
+【参照】
+- Fake Arch Linux packages push malware with root privileges (BleepingComputer) https://www.bleepingcomputer.com/news/security/fake-arch-linux-packages-push-malware-with-root-privileges
+- Hackers hijack D-Link, Ubiquiti devices to resell your stolen bandwidth (BleepingComputer) https://www.bleepingcomputer.com/news/security/hackers-hijack-d-link-ubiquiti-devices-to-resell-your-stolen-bandwidth
+- Novel Android RAT 'Hirudo' Replaces Banking Apps With Trojanized Copies (SecurityWeek) https://www.securityweek.com/novel-android-banking-rat-hirudo-replaces-banking-apps-with-trojanized-copies
+
+------------------------------------------------------------
+5. NGINX が 5 件の脆弱性を修正（1.30.6 / 1.31.7）
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-15] NGINX 修正版公開を報道。
+
+【概要】
+F5 は 10-14 に NGINX 1.30.6 / 1.31.7 で 5 件を修正。メモリ破壊 3 件はワーカークラッシュまたは条件付き RCE（特定構成が必要）、TLS セッション偽造でクライアント証明書検証を回避しうる 1 件を含む。悪用報告は取得できていない（CVE 番号は取得できず）。
+
+【参照】
+- NGINX Fixes 5 Flaws, Including Possible RCE and a TLS Bug That May Skip Client-Cert Checks (The Hacker News) https://thehackernews.com/2026/10/nginx-fixes-5-flaws-including-possible.html
+
+------------------------------------------------------------
+6. 国内: 連続不正アクセス注意喚起と各社インシデント
+------------------------------------------------------------
+【24時間以内の変化】
+[JPCERT/CC / ScanNetSecurity / Security NEXT 2026-10-15] 国内インシデント報道が集中。
+
+【概要】
+JPCERT/CC が国内組織での相次ぐ不正アクセスに関する注意喚起と攻撃手法調査を公開。ScanNetSecurity は両毛システムズのランサムウェア、バイトル最大 388 万件のメールアドレス漏えい、第一生命グループ人事システム約 12 万名の可能性、ファインズ予約システム約 153 万件などを報じた。
+
+【参照】
+- Cisco メールセキュリティ製品の添付ファイル処理に脆弱性 - すでに悪用も (Security NEXT) https://www.security-next.com/191479
+
+------------------------------------------------------------
+7. Help TDS と Hotejka／ROI777 の関連、Cloudflare Pages 2 万超ドメインがサポート詐欺を設置
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-15] Help TDS の関連づけを報道。
+
+【概要】
+THN によれば Help TDS は 2017 年頃から稼働するトラフィック分配システムで、ロシア語圏アフィリエイトプログラム Hotejka（ROI777 の再ブランドとみられる）と関連する。
+
+【参照】
+- Help TDS Linked to Hotejka as 20,000+ Cloudflare Pages Domains Host Tech Support Scams (The Hacker News) https://thehackernews.com/2026/10/help-tds-linked-to-hotejka-as-20000.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+発行 1 件（forecaster/forecasts/daily/2026-10-16.md 参照）: fc-20261016-1 BeyondTrust Remote Support CVE-2026-102764 の CISA KEV 初回追加（fast_72h・E1・確度: 低・予報確率 0.35・期限 2026-10-19）。
+

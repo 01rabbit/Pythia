@@ -1,0 +1,138 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-16 07:40 JST
+調査期間: 2026-10-15 07:00 〜 2026-10-16 07:00 JST
+========================================
+
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-102764 BeyondTrust Remote Support（旧 Bomgar・アプライアンス内部コンポーネントのメッセージ発信元検証不備→任意ファイル操作／任意ファイルアップロード）（CVSS 9.3）
+------------------------------------------------------------
+優先度: critical  軸1=15 軸2=4  KEV登録: なし  悪用: 確認  パッチ: あり
+影響バージョン: Remote Support（自己ホスト型）。GTIG は『サポート対象の全バージョンで 26.2.3 まで』と記述。SaaS は 2026-10-09 に修正済み。
+
+【24時間以内の変化】
+[Google Threat Intelligence Group 2026-10-15] GTIG が CVE-2026-102764 を 2026 年 8 月下旬からゼロデイとして悪用していた活動を公表し、SAWFLY（Web シェル）と BARECLAW（SOCKS5 トンネラー）の配備を ARMORY CASTLE（旧 UNC5221）に帰属。
+[BeyondTrust 2026-10-09] SaaS テナントへ修正を適用済み。アドバイザリ BT26-05 は 10-15 に公開。
+
+【概要】
+GTIG によれば、BeyondTrust Remote Support のアプライアンスで内部コンポーネントがメッセージの発信元を十分に検証せず、攻撃者が任意ファイル操作（アップロード）を行える。CVE-2026-102764（NVD 記載は CVSS v4.0 9.3）。GTIG は 2026 年 8 月下旬にゼロデイとして悪用された侵入を観測し、追跡中の疑い PRC 関連の諜報アクター ARMORY CASTLE の活動と帰属した（GTIG の記述）。侵入では /app_84304470.php への POST で SAWFLY Web シェルを設置し、/bin/sh を SUID root でコピーして権限昇格、独自 CLI bt-secrets で資格情報金庫をダンプし、ログを削除、管理者ポータルで Jump Item/Team ロールを Administrator に引き上げ、ファイル転送サービスで文書を持ち出した。C2 は WebSocket 上の SOCKS5 トンネラー BARECLAW（TCP 19800）。KEV 未収載（本窓時点）。被害組織名・件数は GTIG が公表していない。
+
+【攻撃フロー】
+1. /app_84304470.php への POST でアップロード（ステージング）し、Web ルートへ SAWFLY Web シェル（mangoapi.php）を設置
+2. /bin/sh を /usr/bin/dbus-authd にコピーし SUID root を付与して権限昇格、bt-secrets で資格情報金庫をダンプ
+3. zz-root-persist スクリプトで NOPASSWD sudoers を追加して永続化、ログを削除
+4. 管理者資格情報で管理ポータルへログインし Jump Item/Team ロールを引き上げ、リモートサポートセッション開始とファイル転送で文書を持ち出し（C2 は BARECLAW SOCKS5-over-WebSocket）
+
+【ATT&CK】
+T1190 Exploit Public-Facing Application: インターネット側のアプライアンスに対しゼロデイの任意ファイルアップロードを悪用（GTIG）
+T1505.003 Web Shell: SAWFLY（PHP Web シェル）を Web ルートへ設置（GTIG）
+T1090 Proxy: BARECLAW（SOCKS5-over-WebSocket トンネラー）による通信中継（GTIG）
+
+【暫定緩和策】
+- BT26-05 を適用（自己ホスト型 24.3.1 以降は BT26-05-RS）。SaaS は対応不要
+- インターネットに公開された脆弱な自己ホスト型アプライアンスは侵害されている可能性があるとみなし、変更前に証拠を保全して外部ログを収集する（攻撃者がオンボックスのログを削除している）
+- 侵害確認時・不明時は clean な修正版イメージから再構築し、修正または再構築の後に依存順序で資格情報をローテーションする
+- 管理画面を IP 制限、SSO＋フィッシング耐性 MFA、既定 Jump Item ロールを No Access にし、ログは TLS で SIEM へ転送する
+
+【IOC】
+hashes: dc14e215269a93fdbc4c1a80b984c23faf7af0911c6dbb85309796a6f2ae95fb, 1f19b9a27d79c11bda00a1e8faf74a7fdd683d38ccef1b60df2fd0307e3aa462
+filenames: mangoapi.php, ingredi_ws, app_84304470.php, /usr/bin/dbus-authd
+
+【監視】
+user_changed によるロール引き上げ、想定外の .php パス、想定外送信元からの WebSocket アップグレード、syslog 転送の欠落、/login 設定の変更を監視する。
+GTIG は YARA ルール G_Hunting_Webshell_SAWFLY_1 / G_Hunting_Backdoor_BARECLAW_1 を公開。ハッシュ2件は mangoapi.php（SAWFLY）と ingredi_ws（BARECLAW）の順。追加 IOC は GTI コレクション（要登録）にある。
+
+【参照】
+- ARMORY CASTLE Exploits BeyondTrust (Google Threat Intelligence Group) https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust
+
+------------------------------------------------------------
+2. CVE-2026-21589 Atlassian Data Center 8製品（Bitbucket / Confluence / Jira Software / Jira Service Management / Bamboo / Crowd / Crucible / Fisheye・未認証の任意ファイル読取り）（CVSS 9.3）
+------------------------------------------------------------
+優先度: critical  軸1=15 軸2=4  KEV登録: あり（追加 2026-10-15・期限 2026-10-18）  悪用: 確認  パッチ: あり
+影響バージョン: Atlassian アドバイザリ記載の各 Data Center 製品の影響バージョン（詳細は既報行を参照）
+
+【24時間以内の変化】
+[CISA KEV Catalog 2026-10-15] CISA が CVE-2026-21589 を KEV へ追加（期限 2026-10-18・ランサムウェア利用: Unknown）。10-07 の悪用試行観測から約 8 日後。
+[ENISA EUVD 2026-10-15] EUVD が exploited_since を 2026-10-15 として記録（KEV 由来の集約で独立した観測ではない）。
+
+【概要】
+Atlassian Data Center 系 8 製品の未認証任意ファイル読取り CVE-2026-21589（CVSS v4.0 9.3）が 2026-10-15 に CISA KEV へ追加された。既報のとおり公開技術詳細から短時間で悪用試行が始まり、公開 PoC（watchTowr）が存在し、Previdian ハニーポットでも悪用試行が観測されていた。KEV 追加は E1 の成立にあたる事実であり、悪用の主体・被害件数は公表されていない。
+
+【攻撃フロー】
+1. 未認証でアプリケーション Web ルート配下の特定ファイルへアクセス（Atlassian の記述）
+2. 読み取った資格情報ファイル等を足掛かりに管理者権限を得る手順が公開 PoC で示されている（既報・watchTowr）
+
+【ATT&CK】
+T1190 Exploit Public-Facing Application: インターネットに公開された Data Center 製品を未認証で悪用
+
+【暫定緩和策】
+- Atlassian の修正版へ更新する（KEV 期限 2026-10-18）
+- 更新前後で資格情報ファイルの露出有無を確認し、必要に応じて資格情報を更新する
+
+【監視】
+各製品の想定外ファイル取得アクセスと、管理者アカウントの新規作成・権限変更を監視する。
+
+【参照】
+- CISA Known Exploited Vulnerabilities Catalog (CISA) https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- CVE-2026-110957 ほか1件（全件: CVE-2026-110957, CVE-2026-110958） / Wavlink 無線ルーター（VulDB 起点） [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（VulDB は公開エクスプロイトの存在を記載するが独立確認なし・組み込み機器の個別 CVE）（バッチ集約） [個別CVEはCVE本文参照]
+- CVE-2026-105037 ほか3件（全件: CVE-2026-105037, CVE-2026-105038, CVE-2026-105039, CVE-2026-105032） / EnergizeLab station-middleware / Eilik [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約） [個別CVEはCVE本文参照]
+- CVE-2026-110812 / （CVE-2026-110812 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-57155 / （CVE-2026-57155 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-108587 ほか1件（全件: CVE-2026-108587, CVE-2026-109145） / WordPress プラグイン（Patchstack/Wordfence/WPScan 起点） [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約） [個別CVEはCVE本文参照]
+- CVE-2026-109686 / （CVE-2026-109686 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-109694 / （CVE-2026-109694 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-109892 / （CVE-2026-109892 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-110911 / （CVE-2026-110911 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-84731 / （CVE-2026-84731 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-57496 / （CVE-2026-57496 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-93483 / （CVE-2026-93483 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-105474 / （CVE-2026-105474 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-16438 ほか1件（全件: CVE-2026-16438, CVE-2026-16436） / Mitsubishi Electric GENESIS64 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約） [個別CVEはCVE本文参照]
+- CVE-2026-50612 / （CVE-2026-50612 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-101287 / （CVE-2026-101287 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-108497 / （CVE-2026-108497 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-109688 / （CVE-2026-109688 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-109698 / （CVE-2026-109698 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-110862 ほか3件（全件: CVE-2026-110862, CVE-2026-110858, CVE-2026-110864, CVE-2026-110867） / VulnCheck 起点 OSS（Better Auth・GitPython・Renovate） [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外（バッチ集約） [個別CVEはCVE本文参照]
+- CVE-2026-19863 / （CVE-2026-19863 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-34006 / （CVE-2026-34006 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-47218 / （CVE-2026-47218 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-47786 / （CVE-2026-47786 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-50619 / （CVE-2026-50619 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-102469 / （CVE-2026-102469 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-102946 / （CVE-2026-102946 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-108335 / （CVE-2026-108335 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-108336 / （CVE-2026-108336 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-111235 / （CVE-2026-111235 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-47168 / （CVE-2026-47168 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-55240 / （CVE-2026-55240 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-94603 / （CVE-2026-94603 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-77459 / （CVE-2026-77459 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-77524 / （CVE-2026-77524 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-104252 / （CVE-2026-104252 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-102989 / （CVE-2026-102989 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+- CVE-2026-102748 / （CVE-2026-102748 [low_score] 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。ベンダー修正情報の公開または単一ソース公開で、本窓の報道・EUVD exploited・KEV で悪用確認・公開PoC・KEV 記載を確認できず除外。 [個別CVEはCVE本文参照]
+
