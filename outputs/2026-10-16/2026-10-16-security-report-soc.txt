@@ -1,0 +1,141 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-16 07:40 JST
+調査期間: 2026-10-15 07:00 〜 2026-10-16 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-16-001 BeyondTrust Remote Support ゼロデイ CVE-2026-102764 — BT26-05 適用と侵害前提の調査
+------------------------------------------------------------
+対象: BeyondTrust Remote Support（自己ホスト型）
+【24時間以内の変化】
+[GTIG 2026-10-15] 8 月下旬からのゼロデイ悪用と疑い PRC 関連アクターへの帰属を公表。
+
+【概要】
+オンボックスのログが削除されるため外部ログでの確認が必要。公開された自己ホスト型は侵害されている可能性を前提にする。
+【推奨アクション】
+- BT26-05 / BT26-05-RS を適用する
+- 証拠を保全し、必要なら clean なイメージから再構築する
+- 修正・再構築後に資格情報をローテーションする
+【監視】
+user_changed のロール引き上げ、想定外の .php、WebSocket アップグレードを監視する。
+
+【参照】
+- ARMORY CASTLE Exploits BeyondTrust (Google Threat Intelligence Group) https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust
+
+------------------------------------------------------------
+SOC-2026-10-16-002 Atlassian Data Center CVE-2026-21589 — KEV 追加（期限 10-18）
+------------------------------------------------------------
+対象: Atlassian Data Center 系 8 製品
+【24時間以内の変化】
+[CISA KEV Catalog 2026-10-15] KEV へ追加（期限 2026-10-18）。
+
+【概要】
+公開 PoC が存在し悪用試行が観測済み。未更新の Data Center は即時更新が必要。
+【推奨アクション】
+- 修正版へ更新する
+- 資格情報ファイルの露出有無を確認して更新する
+【監視】
+各製品の管理者アカウント新規作成・権限変更を監視する。
+
+【参照】
+- CISA Known Exploited Vulnerabilities Catalog (CISA) https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+------------------------------------------------------------
+SOC-2026-10-16-003 Langflow CVE-2026-105740 — 悪用試行が継続（1.9.0 未満）
+------------------------------------------------------------
+対象: Langflow
+【24時間以内の変化】
+[Previdian（THN 経由） 2026-10-15] ハニーポットで 1,423 件の悪用試行。
+
+【概要】
+AI アプリ基盤で、秘密鍵やスーパーユーザーのパスワード窃取が観測された。
+【推奨アクション】
+- 1.9.0 以降へ更新する
+- LANGFLOW_AUTO_LOGIN=false にして外部公開を避ける
+【監視】
+/api/v2/mcp/servers/ への要求を監視する。
+
+【参照】
+- Langflow's Critical Authenticated RCE Flaw Targeted in 1,423 Honeypot Exploit Attempts (The Hacker News) https://thehackernews.com/2026/10/langflows-critical-authenticated-rce.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-16-004 Drupal コア Field UI CVE-2026-108097 と Next.js 帯域外更新 — 修正適用
+------------------------------------------------------------
+対象: Drupal 11.4/11.3/10.6、Next.js 15/16
+【24時間以内の変化】
+[The Hacker News 2026-10-15] 両者とも悪用報告なし・修正版公開。
+
+【概要】
+いずれも未認証 RCE へ至る経路を含む。EOL 系列の Drupal は修正が出ないため移行が必要。
+【推奨アクション】
+- Drupal を 11.4.10 / 11.3.19 / 10.6.19 へ更新、更新不可なら field_ui を無効化
+- Next.js を 16.4.1 / 15.5.28 へ更新し sharp 0.35.5 以降を確認
+【監視】
+Field UI 管理画面と SVG 最適化の利用を棚卸しする。
+
+【参照】
+- Drupal Patches Critical Field UI Flaw (The Hacker News) https://thehackernews.com/2026/10/drupal-patches-critical-core-rce-flaw.html
+- Next.js Ships Out-of-Band Patch (The Hacker News) https://thehackernews.com/2026/10/nextjs-ships-out-of-band-patch-for-two.html
+
+------------------------------------------------------------
+SOC-2026-10-16-005 Linux カーネル PwnEscape CVE-2026-99999 — マルチテナント基盤のホスト更新
+------------------------------------------------------------
+対象: Linux カーネル（仮想化ホスト）
+【24時間以内の変化】
+[The Hacker News 2026-10-15] Vercel サンドボックスでホストメモリ漏えいを実証。
+
+【概要】
+ゲスト VM から実行できる攻撃者がいる基盤が対象。
+【推奨アクション】
+- ホストカーネルを修正版へ更新し再起動する
+【監視】
+ホストカーネル版数を棚卸しする。
+
+【参照】
+- Critical PwnEscape Linux Kernel Vulnerability (The Hacker News) https://thehackernews.com/2026/10/critical-pwnescape-linux-kernel.html
+
+------------------------------------------------------------
+SOC-2026-10-16-006 JPCERT/CC: 国内組織への連続不正アクセスに関する注意喚起
+------------------------------------------------------------
+対象: 国内組織全般
+【24時間以内の変化】
+[JPCERT/CC 2026-10-15] Weekly Report で注意喚起、Eyes で攻撃手法の調査を公開。
+
+【概要】
+国内で不正アクセスが相次いでいる。公開資産の認証とリモートデスクトップ接続の点検が有効。
+【推奨アクション】
+- JPCERT/CC の注意喚起と調査結果を確認し、外部公開された認証面と RDP を点検する
+【監視】
+リモートデスクトップ接続の外部到達性を確認する。
+
+【参照】
+- JPCERT/CC 関連（Security NEXT） (Security NEXT) https://www.security-next.com/191479
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-16-007 AhsayCBS 修正の不備に対する追加修正（CVE-2026-105133 / 105134）
+------------------------------------------------------------
+対象: Ahsay AhsayCBS
+【24時間以内の変化】
+[The Hacker News 2026-10-15] 不完全なパッチ後の追加修正を報道。
+
+【概要】
+既報。KEV 期限は 10-17 のため更新状況を再確認する。
+【推奨アクション】
+- 最新の修正を適用する
+【監視】
+新規 JSP と XMRig を確認する。
+
+【参照】
+- AhsayCBS Flaws Exploited to Deploy Web Shells Get New Fixes (The Hacker News) https://thehackernews.com/2026/10/ahsaycbs-flaws-exploited-to-deploy-web.html
+
