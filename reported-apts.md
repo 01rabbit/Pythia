@@ -255,3 +255,6 @@
 | ARMORY CASTLE（GTIG が疑いPRC関連の諜報アクターと評価・旧 UNC5221・帰属信頼度: 中（GTIGの帰属）） | ArmoryCastle-2026-BeyondTrustZeroDay | 2026-10-16 | 本編（P=8 Q=6） | 2026-10-16 | YES | BeyondTrust Remote Support ゼロデイ CVE-2026-102764 悪用（2026年8月下旬）・SAWFLY/BARECLAW・GTIG 2026-10-15公表・T1190/T1505.003/T1090 |
 | Silent Lynx（Talos: UAT-6275／Recorded Future: TAG-193・帰属信頼度: 低（報道の記述）） | SilentLynx-2026-CISGovernment | 2026-10-16 | 注目動向（P=5 Q=5） | 2026-10-16 | YES | CIS諸国政府機関へのスピアフィッシング・2026-04にCVE-2025-8088(WinRAR)を初めて配送に利用・THN報道 |
 | Candiru（イスラエルのスパイウェア開発企業・帰属信頼度: 中（Citizen Labの評価）） | Candiru-2026-AlJazeeraAds | 2026-10-16 | 注目動向（P=5 Q=4） | 2026-10-16 | YES | Al Jazeera端末へのオンライン広告経由ゼロクリック感染・Citizen Lab報告（THN経由）・CVE/IOC未取得 |
+| CL-UNK-1211（Unit 42 暫定クラスタ名・帰属なし・帰属信頼度: 低） | CLUNK1211-2026-AIEspionageGovLinux | 2026-10-17 | 本編（P=7 Q=5） | 2026-10-17 | YES | 政府機関Linux基盤・SysGoRAT/PHP Webシェル・AI生成の兆候・2025-10〜2026-04・Unit 42 2026-10-15公表・T1505.003/T1070.006 |
+| UNC7017（GTIG追跡名・帰属なし・帰属信頼度: 低） | UNC7017-2026-AOMEIUpdateTamper | 2026-10-17 | 本編（P=7 Q=5） | 2026-10-17 | YES | AOMEI Backupper更新サーバー改ざん・CROSSROAD/SHINYROAD/Adaptix・2026-05〜07の5〜10分窓・11か国以上・T1195.002 |
+| UAT-11985（Cisco Talos追跡名・帰属なし・帰属信頼度: 低） | UAT11985-2026-TaiwanResearchAitM | 2026-10-17 | 注目動向（P=5 Q=3） | 2026-10-17 | YES | 台湾研究機関関係者へ偽イベント招待・Google AitM（MFA中継）・AI生成文面の可能性・T1566 |

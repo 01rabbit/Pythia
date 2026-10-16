@@ -1,0 +1,97 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-17 07:55 JST
+調査期間: 2026-10-16 07:00 〜 2026-10-17 07:00 JST
+========================================
+
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-102764 BeyondTrust Remote Support（旧 Bomgar・アプライアンス内部コンポーネントのメッセージ発信元検証不備→任意ファイル操作／任意ファイルアップロード）（CVSS 9.3）
+------------------------------------------------------------
+優先度: critical  軸1=15 軸2=4  KEV登録: あり  悪用: 確認  パッチ: あり
+影響バージョン: Remote Support（自己ホスト型）。GTIG は『サポート対象の全バージョンで 26.2.3 まで』と記述。SaaS は 2026-10-09 に修正済み。
+
+【24時間以内の変化】
+[CISA KEV（スイープ機械列挙） 2026-10-16] CVE-2026-102764 が CISA KEV に追加（dateAdded 2026-10-16・期限 2026-10-19・ランサムウェア利用は Unknown）。昨日の GTIG 公表（8月下旬からのゼロデイ悪用）から約1日後。[既報・KEV登録の更新]
+[BleepingComputer / The Hacker News / SecurityWeek / Dark Reading 2026-10-16] GTIG の報告を各誌が報道（China-linked / ARMORY CASTLE。独立した追加確認ではなく二次報道）。
+
+【概要】
+GTIG によれば、BeyondTrust Remote Support のアプライアンスで内部コンポーネントがメッセージの発信元を十分に検証せず、攻撃者が任意ファイル操作（アップロード）を行える。CVE-2026-102764（NVD 記載は CVSS v4.0 9.3）。GTIG は 2026 年 8 月下旬にゼロデイとして悪用された侵入を観測し、追跡中の疑い PRC 関連の諜報アクター ARMORY CASTLE の活動と帰属した（GTIG の記述）。侵入では /app_84304470.php への POST で SAWFLY Web シェルを設置し、/bin/sh を SUID root でコピーして権限昇格、独自 CLI bt-secrets で資格情報金庫をダンプし、ログを削除、管理者ポータルで Jump Item/Team ロールを Administrator に引き上げ、ファイル転送サービスで文書を持ち出した。C2 は WebSocket 上の SOCKS5 トンネラー BARECLAW（TCP 19800）。被害組織名・件数は GTIG が公表していない。 本窓で CISA KEV に追加された（2026-10-16・期限 2026-10-19）。
+
+【攻撃フロー】
+1. /app_84304470.php への POST でアップロード（ステージング）し、Web ルートへ SAWFLY Web シェル（mangoapi.php）を設置
+2. /bin/sh を /usr/bin/dbus-authd にコピーし SUID root を付与して権限昇格、bt-secrets で資格情報金庫をダンプ
+3. zz-root-persist スクリプトで NOPASSWD sudoers を追加して永続化、ログを削除
+4. 管理者資格情報で管理ポータルへログインし Jump Item/Team ロールを引き上げ、リモートサポートセッション開始とファイル転送で文書を持ち出し（C2 は BARECLAW SOCKS5-over-WebSocket）
+
+【ATT&CK】
+T1190 Exploit Public-Facing Application: インターネット側のアプライアンスに対しゼロデイの任意ファイルアップロードを悪用（GTIG）
+T1505.003 Web Shell: SAWFLY（PHP Web シェル）を Web ルートへ設置（GTIG）
+T1090 Proxy: BARECLAW（SOCKS5-over-WebSocket トンネラー）による通信中継（GTIG）
+
+【暫定緩和策】
+- BT26-05 を適用（自己ホスト型 24.3.1 以降は BT26-05-RS）。SaaS は対応不要
+- インターネットに公開された脆弱な自己ホスト型アプライアンスは侵害されている可能性があるとみなし、変更前に証拠を保全して外部ログを収集する（攻撃者がオンボックスのログを削除している）
+- 侵害確認時・不明時は clean な修正版イメージから再構築し、修正または再構築の後に依存順序で資格情報をローテーションする
+- 管理画面を IP 制限、SSO＋フィッシング耐性 MFA、既定 Jump Item ロールを No Access にし、ログは TLS で SIEM へ転送する
+
+【IOC】
+hashes: dc14e215269a93fdbc4c1a80b984c23faf7af0911c6dbb85309796a6f2ae95fb, 1f19b9a27d79c11bda00a1e8faf74a7fdd683d38ccef1b60df2fd0307e3aa462
+filenames: mangoapi.php, ingredi_ws, app_84304470.php, /usr/bin/dbus-authd
+
+【監視】
+user_changed によるロール引き上げ、想定外の .php パス、想定外送信元からの WebSocket アップグレード、syslog 転送の欠落、/login 設定の変更を監視する。
+
+【参照】
+- ARMORY CASTLE Exploits BeyondTrust (Google Threat Intelligence Group) https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust
+- BeyondTrust patches zero-day exploited in attacks since August (BleepingComputer) https://www.bleepingcomputer.com/news/security/beyondtrust-patches-zero-day-exploited-in-attacks-since-august
+- CISA KEV Catalog (CISA) https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考情報 B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+該当なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- CVE-2026-94169 ほか1件（全件: CVE-2026-94169, CVE-2026-94388） / Patchstack 起点 WordPress テーマ／プラグイン（The Grid ほか）
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（WordPress 個別プラグイン・ベンダー修正情報のみ） （バッチ集約）
+- CVE-2026-103768 ほか5件（全件: CVE-2026-103768, CVE-2026-104730, CVE-2026-104798, CVE-2026-109219, CVE-2026-109515, CVE-2026-89079） / Wordfence 起点 WordPress プラグイン（ELEX HelpDesk / Sunshine Photo Cart / My Calendar / Mang Board / MailOptin / Theme My Login）
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（WordPress プラグイン個別 CVE・単一ソース公開） （バッチ集約）
+- CVE-2026-95182 / DeepSeek Harness (dsh)（信頼できない検索パス）
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（MITRE CNA 単独公開・悪用報告なし。AI ツール関連だが本窓に追加報道なし）
+- CVE-2026-85746 ほか2件（全件: CVE-2026-85746, CVE-2026-85748, CVE-2026-92262） / MariaDB Server（GHSA 起点）
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（修正版提供・CVSS 9.9 だが認証後の条件付き。悪用報告なし） （バッチ集約）
+- CVE-2026-49868 ほか2件（全件: CVE-2026-49868, CVE-2026-102692, CVE-2026-102693） / RIOT OS（IoT 向け OS・GHSA 起点）
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（組み込み OS の個別 CVE） （バッチ集約）
+- CVE-2026-111281 ほか21件（全件: CVE-2026-111281, CVE-2026-111322, CVE-2026-111329, CVE-2026-111626, CVE-2026-111641, CVE-2026-111643, CVE-2026-111673, CVE-2026-111687, CVE-2026-111690, CVE-2026-111692, CVE-2026-111693, CVE-2026-111704, CVE-2026-111708, CVE-2026-111711, CVE-2026-111283, CVE-2026-111312, CVE-2026-111391, CVE-2026-111636, CVE-2026-111663, CVE-2026-111356, CVE-2026-111675, CVE-2026-111691） / VulnCheck 起点の OSS／小規模製品の一括公開（Jooan 監視カメラ・Archon・JuggleIM・Damselfly・FastapiAdmin・IceCMS・SGLang・BMC Helix Network Management ほか）
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（VulnCheck CNA の単一ベンダー一括公開バッチ。BMC Helix は修正済み版 26.3.01・SGLang は AI 推論基盤だが悪用報告なし。個別の CVE は本窓で追加報道なし） （バッチ集約）
+- CVE-2026-111444 / Wheels（MySQL/MariaDB バックスラッシュエスケープ時の SQL インジェクション）
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外
+- CVE-2026-110916 / Google Chrome（NVD 9.6）
+  理由(low_score): 注目CVE（trends_cve）として個別記載済みのため二重掲載せず参照のみ。
+- CVE-2026-18516 ほか5件（全件: CVE-2026-18516, CVE-2026-57169, CVE-2026-102608, CVE-2026-44977, CVE-2026-96620, CVE-2026-94134） / Crafty Controller / Dockhand / ZoneMinder / Countly / Claude Agent SDK / Apache Airflow SSH provider
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（個別 OSS の修正公開・悪用報告なし。Claude Agent SDK は 0.2.121 で修正） （バッチ集約）
+- CVE-2026-105279 ほか2件（全件: CVE-2026-105279, CVE-2026-97851, CVE-2026-107617） / CISA ICS 勧告系（DICOM アーカイブ・EseeCloud ハードコード資格情報）
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（ICS-CERT 勧告の個別 CVE） （バッチ集約）
+- CVE-2026-109587 ほか2件（全件: CVE-2026-109587, CVE-2026-109588, CVE-2026-102551） / FreeRTOS-Kernel（Arm Cortex-R82 MPU ポート）/ IPv6 RA 処理（AMZN CNA）
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（Amazon CNA 一括公開・組み込み RTOS） （バッチ集約）
+- CVE-2026-111472 / TSG Profleet（SQL インジェクション・INCIBE）
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外
+- CVE-2026-105192 / LMCache（安全でないデシリアライズによる RCE・EUVD-2026-94261・EUVD-only）
+  理由(low_score): 窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（EUVD のみの層：NVD 未反映。JFrog CNA・GHSA 起点・EPSS 0.48 は EUVD 表示。個別判断済み・悪用報告なし）
+

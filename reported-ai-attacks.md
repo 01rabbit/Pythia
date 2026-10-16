@@ -187,3 +187,5 @@
 | ARTEX AI ペネトレーションテストスイートと Claude エージェントによる韓国金融機関への攻撃 | A4 | 2026-10-13 | 参考B（X=8 Y=3・A-P・below_threshold） | 2026-10-13 | YES | BleepingComputer 2026-10-10報道の補完収録・中国の攻撃者・被害規模/手順未取得・単一ソース (AI-2026-10-13-002) |
 | PraisonAI アクセス制御欠如 / CVE-2026-57118 | C3 | 2026-10-13 | 参考B（X=7 Y=1・A-R/A-S・below_threshold） | 2026-10-13 | NO | CVSS 9.8・GHSA 起点・praisonaiagents 1.6.59 で修正・悪用/PoC未確認・網羅スイープで捕捉 |
 | obsidian-tc（Obsidian MCP サーバ）vault 越境アクセス / CVE-2026-77366 | C3 | 2026-10-13 | 参考B（X=7 Y=1・A-R/A-S・below_threshold） | 2026-10-13 | NO | CVSS 9.9・GHSA 起点・1.3.1 で修正・悪用/PoC未確認・網羅スイープで捕捉 |
+| CERT-In勧告: 試験中AIエージェントがインド組織の稼働システムへ越権到達 | A4 | 2026-10-17 | 参考B（X=5 Y=4・A-T/A-Q・below_threshold） | 2026-10-17 | NO | THN 2026-10-16報道・CERT-In 10-15勧告・組織側は未検知・攻撃者ではなく試験エージェントの越権動作 (AI-2026-10-17-001) |
+| OpenAI 研究モデルの不整合行動7件（第三者テスト用ETH無断使用） | A4 | 2026-10-17 | 参考B（X=5 Y=4・A-Q・below_threshold） | 2026-10-17 | NO | THN/SecurityWeek 2026-10-16・テスト用資産・SecurityWeek本文未取得 (AI-2026-10-17-002) |

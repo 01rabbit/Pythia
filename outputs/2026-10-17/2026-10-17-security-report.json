@@ -1,0 +1,1542 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-10-17",
+    "generated_at": "2026-10-17T07:50:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-10-16T07:00:00+09:00",
+      "to": "2026-10-17T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.10.16",
+      "candidates": 55,
+      "handled": 55,
+      "unhandled": 0,
+      "kev_added_in_window": 2,
+      "ghsa_origin_over_threshold": 10,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 47,
+        "euvd_only": 1
+      }
+    }
+  },
+  "zero_day_special": [
+    {
+      "cve_id": "CVE-2026-102764",
+      "product": "BeyondTrust Remote Support（旧 Bomgar・アプライアンス内部コンポーネントのメッセージ発信元検証不備→任意ファイル操作／任意ファイルアップロード）",
+      "vendor": "BeyondTrust",
+      "affected_versions": "Remote Support（自己ホスト型）。GTIG は『サポート対象の全バージョンで 26.2.3 まで』と記述。SaaS は 2026-10-09 に修正済み。",
+      "priority": "critical",
+      "cvss_v3": null,
+      "cvss_v4": 9.3,
+      "cvss_severity": "Critical",
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "status": {
+        "kev_registered": true,
+        "poc_published": false,
+        "actively_exploited": true,
+        "zero_day": true,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "BT26-05。自己ホスト型 24.3.1 以降は BT26-05-RS を /appliance から適用。24.3.1 より古い版は先に更新が必要（更新しても過去の侵害は是正されない）。SaaS は顧客作業不要",
+        "eta": null
+      },
+      "fceb_deadline": "2026-10-19",
+      "kev_date_added": "2026-10-16",
+      "axis1_score": 15,
+      "axis2_score": 4,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV（スイープ機械列挙）",
+          "date": "2026-10-16",
+          "description": "CVE-2026-102764 が CISA KEV に追加（dateAdded 2026-10-16・期限 2026-10-19・ランサムウェア利用は Unknown）。昨日の GTIG 公表（8月下旬からのゼロデイ悪用）から約1日後。[既報・KEV登録の更新]"
+        },
+        {
+          "source": "BleepingComputer / The Hacker News / SecurityWeek / Dark Reading",
+          "date": "2026-10-16",
+          "description": "GTIG の報告を各誌が報道（China-linked / ARMORY CASTLE。独立した追加確認ではなく二次報道）。"
+        }
+      ],
+      "overview": "GTIG によれば、BeyondTrust Remote Support のアプライアンスで内部コンポーネントがメッセージの発信元を十分に検証せず、攻撃者が任意ファイル操作（アップロード）を行える。CVE-2026-102764（NVD 記載は CVSS v4.0 9.3）。GTIG は 2026 年 8 月下旬にゼロデイとして悪用された侵入を観測し、追跡中の疑い PRC 関連の諜報アクター ARMORY CASTLE の活動と帰属した（GTIG の記述）。侵入では /app_84304470.php への POST で SAWFLY Web シェルを設置し、/bin/sh を SUID root でコピーして権限昇格、独自 CLI bt-secrets で資格情報金庫をダンプし、ログを削除、管理者ポータルで Jump Item/Team ロールを Administrator に引き上げ、ファイル転送サービスで文書を持ち出した。C2 は WebSocket 上の SOCKS5 トンネラー BARECLAW（TCP 19800）。被害組織名・件数は GTIG が公表していない。 本窓で CISA KEV に追加された（2026-10-16・期限 2026-10-19）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "/app_84304470.php への POST でアップロード（ステージング）し、Web ルートへ SAWFLY Web シェル（mangoapi.php）を設置"
+        },
+        {
+          "step": 2,
+          "description": "/bin/sh を /usr/bin/dbus-authd にコピーし SUID root を付与して権限昇格、bt-secrets で資格情報金庫をダンプ"
+        },
+        {
+          "step": 3,
+          "description": "zz-root-persist スクリプトで NOPASSWD sudoers を追加して永続化、ログを削除"
+        },
+        {
+          "step": 4,
+          "description": "管理者資格情報で管理ポータルへログインし Jump Item/Team ロールを引き上げ、リモートサポートセッション開始とファイル転送で文書を持ち出し（C2 は BARECLAW SOCKS5-over-WebSocket）"
+        }
+      ],
+      "techniques": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "インターネット側のアプライアンスに対しゼロデイの任意ファイルアップロードを悪用（GTIG）"
+        },
+        {
+          "mitre_id": "T1505.003",
+          "name": "Web Shell",
+          "implementation": "SAWFLY（PHP Web シェル）を Web ルートへ設置（GTIG）"
+        },
+        {
+          "mitre_id": "T1090",
+          "name": "Proxy",
+          "implementation": "BARECLAW（SOCKS5-over-WebSocket トンネラー）による通信中継（GTIG）"
+        }
+      ],
+      "temp_mitigation": [
+        "BT26-05 を適用（自己ホスト型 24.3.1 以降は BT26-05-RS）。SaaS は対応不要",
+        "インターネットに公開された脆弱な自己ホスト型アプライアンスは侵害されている可能性があるとみなし、変更前に証拠を保全して外部ログを収集する（攻撃者がオンボックスのログを削除している）",
+        "侵害確認時・不明時は clean な修正版イメージから再構築し、修正または再構築の後に依存順序で資格情報をローテーションする",
+        "管理画面を IP 制限、SSO＋フィッシング耐性 MFA、既定 Jump Item ロールを No Access にし、ログは TLS で SIEM へ転送する"
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [],
+        "domains": [],
+        "hashes": [
+          "dc14e215269a93fdbc4c1a80b984c23faf7af0911c6dbb85309796a6f2ae95fb",
+          "1f19b9a27d79c11bda00a1e8faf74a7fdd683d38ccef1b60df2fd0307e3aa462"
+        ],
+        "urls": [],
+        "filenames": [
+          "mangoapi.php",
+          "ingredi_ws",
+          "app_84304470.php",
+          "/usr/bin/dbus-authd"
+        ]
+      },
+      "monitoring": {
+        "description": "user_changed によるロール引き上げ、想定外の .php パス、想定外送信元からの WebSocket アップグレード、syslog 転送の欠落、/login 設定の変更を監視する。",
+        "splunk_spl": [],
+        "detection_notes": "GTIG は YARA ルール G_Hunting_Webshell_SAWFLY_1 / G_Hunting_Backdoor_BARECLAW_1 を公開。ハッシュ2件は mangoapi.php（SAWFLY）と ingredi_ws（BARECLAW）の順。追加 IOC は GTI コレクション（要登録）にある。"
+      },
+      "references": [
+        {
+          "url": "https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust",
+          "title": "ARMORY CASTLE Exploits BeyondTrust",
+          "language": "en",
+          "source": "Google Threat Intelligence Group"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/beyondtrust-patches-zero-day-exploited-in-attacks-since-august",
+          "title": "BeyondTrust patches zero-day exploited in attacks since August",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+          "title": "CISA KEV Catalog",
+          "language": "en",
+          "source": "CISA"
+        }
+      ],
+      "sector_impact": [
+        "it",
+        "government"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "exploited_by": [
+        "ARMORY CASTLE（旧 UNC5221・GTIG の帰属）"
+      ],
+      "section_route": "product_cve",
+      "report_section": "zero_day_special",
+      "info_id": "20261017-CVEP-fad2d952"
+    }
+  ],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [
+      {
+        "cve_id": "CVE-2025-61624",
+        "product": "Fortinet FortiOS / FortiPAM / FortiProxy ほか（パストラバーサル・CWE-22）",
+        "vendor": "Fortinet",
+        "affected_versions": "NVD 記載: FortiOS 7.6.0〜7.6.4・7.4.0〜7.4.9・7.2/7.0/6.4 全バージョン、FortiPAM 1.0〜1.7.0、FortiProxy 7.6.0〜7.6.4 ほか複数製品（完全な一覧は NVD / Fortinet PSIRT 参照）",
+        "priority": "medium",
+        "cvss_v3": 6.5,
+        "cvss_v4": null,
+        "cvss_severity": "Medium",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": true,
+          "poc_published": false,
+          "actively_exploited": true,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "Fortinet PSIRT の修正版（NVD 公開 2026-04-14・版数は Fortinet アドバイザリ参照）",
+          "eta": null
+        },
+        "fceb_deadline": "2026-10-19",
+        "kev_date_added": "2026-10-16",
+        "axis1_score": 6,
+        "axis2_score": 2,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "CISA KEV",
+            "date": "2026-10-16",
+            "description": "CVE-2025-61624 が CISA KEV に追加（期限 2026-10-19・ランサムウェア利用 Unknown）。KEV 追加の根拠となる悪用の詳細（攻撃主体・手口）は本窓で一次ソースを確認できていない。"
+          }
+        ],
+        "overview": "NVD によれば Fortinet 複数製品に認証済み特権攻撃者が制限ディレクトリ外のパスにアクセスできるパストラバーサル（CWE-22）があり、NVD 基本値は CVSS v3.1 6.5（Fortinet 自己評価 6.0 の併記あり。スイープ機械列挙では EUVD が 5.4 を表示）。2026-04-14 公開で、本窓（2026-10-16）に CISA KEV へ追加された。実悪用の具体内容（誰がどの環境を狙ったか）は取得できていない。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "認証済み特権アカウントでパス操作によりファイルを読み書き（NVD の記述に基づく概要。実際の悪用手順は未確認）"
+          }
+        ],
+        "techniques": [],
+        "temp_mitigation": [
+          "Fortinet PSIRT の該当アドバイザリに従い修正版へ更新（KEV 期限 2026-10-19）",
+          "管理インターフェースを信頼ネットワークに限定し、管理者アカウントの監査を行う"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "管理インターフェースの不審なファイル操作ログ・設定変更を確認する。",
+          "splunk_spl": [],
+          "detection_notes": null
+        },
+        "references": [
+          {
+            "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "title": "CISA KEV Catalog（CVE-2025-61624）",
+            "language": "en",
+            "source": "CISA"
+          },
+          {
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2025-61624",
+            "title": "NVD CVE-2025-61624",
+            "language": "en",
+            "source": "NVD"
+          }
+        ],
+        "sector_impact": "it",
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": null,
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261017-CVEP-55cd549e"
+      },
+      {
+        "cve_id": "CVE-2026-103849",
+        "product": "Adobe Commerce / Magento（BlockStrap・テンプレートエンジンの特殊要素の不適切な無害化→任意コード実行）",
+        "vendor": "Adobe",
+        "affected_versions": "Adobe Commerce / Magento（影響版の詳細は Adobe アドバイザリ APSB 参照。BleepingComputer 本文は取得できず未確認）",
+        "priority": "high",
+        "cvss_v3": 10.0,
+        "cvss_v4": null,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": false,
+          "actively_exploited": false,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "Adobe 2026-10-13 のアドバイザリで修正提供（版数は Adobe 参照）",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 10,
+        "axis2_score": 2,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-10-16",
+            "description": "研究者が『まもなく悪用される恐れ』と警告（悪用は未確認）。NVD は 2026-10-13 に公開し CVSS v3.1 10.0・ユーザー操作不要・スコープ変更ありと記載。"
+          }
+        ],
+        "overview": "NVD によれば Adobe Commerce にテンプレートエンジン用の特殊要素の不適切な無害化があり、ユーザー操作なしで任意コード実行に至りうる（CVSS v3.1 10.0）。BleepingComputer は研究者の話として、Magento・Adobe Commerce サーバー上で任意 PHP を実行できる最高深刻度の欠陥で悪用が近いと報じた。実悪用・公開 PoC は本窓で確認できていない。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "未認証でテンプレート処理に特殊要素を注入し、サーバー上で任意の PHP コードを実行（報道の記述の要約・手順の詳細は未確認）"
+          }
+        ],
+        "techniques": [],
+        "temp_mitigation": [
+          "Adobe の 2026-10-13 付アドバイザリの修正を適用する",
+          "適用までの間、WAF で該当経路への不審な入力を監視する"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "Commerce サーバーの Web ルート配下の新規 PHP ファイルと異常な子プロセスを確認する。",
+          "splunk_spl": [],
+          "detection_notes": null
+        },
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/critical-blockstrap-flaw-lets-hackers-run-code-on-magento-servers",
+            "title": "Critical BlockStrap flaw lets hackers run code on Magento servers",
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-103849",
+            "title": "NVD CVE-2026-103849",
+            "language": "en",
+            "source": "NVD"
+          }
+        ],
+        "sector_impact": "retail",
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": null,
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261017-CVEP-8d2c0558"
+      },
+      {
+        "cve_id": "CVE-2026-110916",
+        "product": "Google Chrome（Desktop・不適切な入力検証によるサンドボックス外コード実行の可能性）",
+        "vendor": "Google",
+        "affected_versions": "155.0.8059.84 より前の Chrome（デスクトップ）",
+        "priority": "medium",
+        "cvss_v3": 9.6,
+        "cvss_v4": null,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": false,
+          "actively_exploited": false,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "Chrome 155.0.8059.84 以降",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 7,
+        "axis2_score": 1,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "NVD / Security NEXT",
+            "date": "2026-10-16",
+            "description": "NVD が CVE-2026-110916 を CVSS v3.1 9.6 で公開（Chromium 自己評価は Medium）。Security NEXT は Chrome の更新（Critical を含む修正）を報道。悪用の報告なし。"
+          }
+        ],
+        "overview": "NVD によれば Chrome 155.0.8059.84 より前でデスクトップの入力検証不備により、細工した HTML ページからサンドボックス外のコード実行に至る可能性がある（NVD は CVSS 9.6・ユーザー操作要・Chromium の自己評価は Medium で食い違う）。実悪用は報告されていない。Security NEXT は前回更新から2日での Chrome 更新を報じたが、その更新が本 CVE を含むかは確認していない。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "細工した HTML ページを閲覧させる（NVD の記述に基づく）"
+          }
+        ],
+        "techniques": [],
+        "temp_mitigation": [
+          "Chrome を 155.0.8059.84 以降へ更新し再起動を促す"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "ブラウザ管理基盤でバージョン分布を確認する。",
+          "splunk_spl": [],
+          "detection_notes": null
+        },
+        "references": [
+          {
+            "url": "https://www.security-next.com/191540",
+            "title": "「Chrome」にセキュリティアップデート - 前回更新から2日",
+            "language": "ja",
+            "source": "Security NEXT"
+          },
+          {
+            "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-110916",
+            "title": "NVD CVE-2026-110916",
+            "language": "en",
+            "source": "NVD"
+          }
+        ],
+        "sector_impact": "it",
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": null,
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261017-CVEP-0b7623ac"
+      }
+    ],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-10-17-001",
+        "title": "BAE Systems へのサイバー攻撃で米連邦破産裁判所の通知システムが停止",
+        "summary": "米裁判所行政局は、政府請負業者 BAE Systems へのサイバー攻撃により連邦破産裁判所の通知システムが停止したと説明した（BleepingComputer・SecurityWeek。攻撃者・手口は本窓時点で未公表）。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-10-16",
+            "description": "BAE Systems 攻撃による連邦裁判所業務への影響を報道。"
+          }
+        ],
+        "sector_impact": [
+          "government"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/bae-systems-cyberattack-disrupts-us-federal-court-operations",
+            "title": "BAE Systems cyberattack disrupts US federal court operations",
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261017-TRND-b407b60a"
+      },
+      {
+        "topic_id": "TREND-2026-10-17-002",
+        "title": "バーガーキング日本法人で顧客情報約1,118万件が流出",
+        "summary": "Burger King Japan が、顧客情報 1,118 万件を保存するサーバーへ攻撃者がアクセスしたと公表（BleepingComputer・Security NEXT）。侵入経路・攻撃者は未公表。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-10-16",
+            "description": "約 1,118 万件の顧客記録への不正アクセスを報道。"
+          }
+        ],
+        "sector_impact": [
+          "retail"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/burger-king-japan-data-breach-exposes-11-million-customer-records",
+            "title": "Burger King Japan data breach exposes 11 million customer records",
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://www.security-next.com/",
+            "title": "Security NEXT（バーガーキング アプリ会員情報流出）",
+            "language": "ja",
+            "source": "Security NEXT"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261017-TRND-1fc7831b"
+      },
+      {
+        "topic_id": "TREND-2026-10-17-003",
+        "title": "国内で相次ぐ情報流出：IPA が特別相談窓口と緊急対策を公表",
+        "summary": "IPA が不正アクセスによる漏えい等の事案を踏まえ速やかに実施すべき対策を公表し、被害が疑わしい段階でも相談できる特別相談窓口を設置した（ScanNetSecurity・Security NEXT）。ソースネクスト（約2,252万件の可能性）、三井不動産（資格情報の不正利用）など国内事案の報道も続く。",
+        "changes_24h": [
+          {
+            "source": "IPA / Security NEXT",
+            "date": "2026-10-16",
+            "description": "IPA が対策公表と特別相談窓口の設置を発表。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.security-next.com/",
+            "title": "Security NEXT（IPA 特別相談窓口）",
+            "language": "ja",
+            "source": "Security NEXT"
+          },
+          {
+            "url": "https://scan.netsecurity.ne.jp/",
+            "title": "ScanNetSecurity（IPA、速やかに実施すべき対策）",
+            "language": "ja",
+            "source": "ScanNetSecurity"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261017-TRND-584eeca2"
+      },
+      {
+        "topic_id": "TREND-2026-10-17-004",
+        "title": "OpenBSD 7.9 の root 昇格エクスプロイト公開：37年前の共有メモリ整数オーバーフローを連鎖",
+        "summary": "Calif が OpenBSD 7.9 で、約37年前の整数オーバーフローと別のカーネル欠陥を連鎖して root を得る概念実証コードを公開した。KARL・SMAP・SMEP を回避する（THN）。OpenBSD は修正配布済み。CVE 番号は本窓で確認できていない。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-10-16",
+            "description": "Calif が詳細な解説と PoC を公開（ローカル権限昇格）。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/researchers-demonstrate-openbsd-root.html",
+            "title": "Researchers Demonstrate OpenBSD Root Exploit Chaining 37-Year-Old Shared-Memory Bug",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261017-TRND-79d87882"
+      },
+      {
+        "topic_id": "TREND-2026-10-17-005",
+        "title": "F5・Juniper が重大な脆弱性を修正",
+        "summary": "SecurityWeek によれば F5 と Juniper Networks がリモートコード実行や機器の完全掌握につながりうる重大な脆弱性を修正した。CVE・悪用状況は本文を取得できず未確認（見出しと要約のみ）。",
+        "changes_24h": [
+          {
+            "source": "SecurityWeek",
+            "date": "2026-10-16",
+            "description": "F5 / Juniper の修正公開を報道。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.securityweek.com/f5-juniper-networks-patch-critical-vulnerabilities",
+            "title": "F5, Juniper Networks Patch Critical Vulnerabilities",
+            "language": "en",
+            "source": "SecurityWeek"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261017-TRND-af8251e9"
+      },
+      {
+        "topic_id": "TREND-2026-10-17-006",
+        "title": "AI ブランドなりすまし（偽 Claude・ChatGPT）攻撃が増加、開発者を標的に",
+        "summary": "Dark Reading によれば、人気の AI ブランドを騙るキャンペーンが増え、ClickFix 類似の手口で企業従業員を狙っている。具体的な数値・IOC は要約のみで取得できていない。",
+        "changes_24h": [
+          {
+            "source": "Dark Reading",
+            "date": "2026-10-16",
+            "description": "AI ブランドなりすまし攻撃の増加を報道。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.darkreading.com/application-security/fake-claude-chatgpt-attacks-developers-risk",
+            "title": "Fake Claude, ChatGPT Attacks Surge, Putting Developers at Risk",
+            "language": "en",
+            "source": "Dark Reading"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261017-TRND-bd337d10"
+      },
+      {
+        "topic_id": "TREND-2026-10-17-007",
+        "title": "Unit 42：2026年9月の初期アクセス上位5ベクター",
+        "summary": "Unit 42 が 2026 年 9 月に観測した初期アクセス経路の上位 5 つをまとめた（本文は取得できず見出しのみ。内訳は未確認）。",
+        "changes_24h": [
+          {
+            "source": "Unit 42",
+            "date": "2026-10-16",
+            "description": "月次の初期アクセス統計を公開。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://unit42.paloaltonetworks.com/top-5-initial-access-vectors-september-2026",
+            "title": "Top 5 Initial Access Threat Vectors Observed by Unit 42 in September 2026",
+            "language": "en",
+            "source": "Unit 42"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261017-TRND-0a0be52f"
+      }
+    ]
+  },
+  "apt_main": [
+    {
+      "activity_type": [
+        "espionage",
+        "web_shell",
+        "credential_theft"
+      ],
+      "motivation": "espionage",
+      "first_seen": "2025-10-01",
+      "last_seen": "2026-04-30",
+      "malware": [
+        "SysGoRAT",
+        "PHP web shells",
+        "revsocks",
+        "pysoxy",
+        "GSocket"
+      ],
+      "recommended_actions": "Plesk 配下の PHP 設定（auto_prepend_file）と不審な PHP ファイルを点検し、公開サーバーの PwnKit 対策（polkit 更新）と CVE-2025-55182 の修正適用を確認する。transfer.sh 等への外向き通信を監視する。",
+      "splunk_spl": [],
+      "detection_notes": "記事は ATT&CK ID として T1070.006 のみ明示。他 ID は手口の記述（systemd/cron 永続化・Web シェル）に基づく機械的対応で、Unit 42 の明示ではない。SolarWinds 名のログは名称借用で、SolarWinds 侵害の証拠はないと Unit 42 は述べる。IOC は一部のみ転記（全量は原典参照）。",
+      "related_cves": [
+        "CVE-2025-55182",
+        "CVE-2021-4034"
+      ],
+      "ioc": {
+        "confirmed": true,
+        "ips": [
+          "104.194.158.65",
+          "45.88.188.140",
+          "198.23.185.234",
+          "138.68.244.146",
+          "185.21.136.6",
+          "72.61.89.179"
+        ],
+        "domains": [
+          "magento[.]ink",
+          "solidmonpe[.]com",
+          "wibu-bau-bawang[.]online",
+          "beraskencur[.]site"
+        ],
+        "hashes": [
+          "2bf7992e6260c1a98c709fa98ec766fb9f27692f338b30b43ac821b824fd849e",
+          "c527b94e3d21824a674face4cd9d862e536b60ccbf54573839e3360f99188343",
+          "1505a3a727f8899b2ad343519f7bf9c438b8b802f8d6b854f5db3b52f857c76a"
+        ],
+        "urls": [],
+        "filenames": [
+          "plesk_sys_driver.php",
+          ".libsystemd-helper",
+          ".libpython-helper",
+          "Solarwinds.StatusLog.txt"
+        ]
+      },
+      "group_name": "CL-UNK-1211（Unit 42 の暫定クラスタ名・国家／犯罪の別は未確定）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "low",
+      "campaign_id": "CLUNK1211-2026-AIEspionageGovLinux",
+      "targets": {
+        "sectors": [
+          "government",
+          "it"
+        ],
+        "regions": [
+          "unknown"
+        ],
+        "countries": []
+      },
+      "axis_p_score": 7,
+      "axis_q_score": 5,
+      "changes_24h": [
+        {
+          "source": "Unit 42",
+          "date": "2026-10-15",
+          "description": "2025年10月〜2026年4月の政府機関 Linux 基盤への侵入活動（AI 生成・AI エージェント実行の兆候あり）を CL-UNK-1211 として公表。"
+        }
+      ],
+      "overview": "Unit 42 によれば、CL-UNK-1211 は政府・国家関連機関の Linux サーバー、MSSQL、政府メールサーバー、Plesk 等のホスティング環境を標的に、Go 製マルチプラットフォーム RAT『SysGoRAT』（WebSocket C2）、PHP Web シェル、認証情報窃取（.bashrc の sudo エイリアス・PHP ログイン記録）、LinPEAS・PwnKit による権限昇格を用いた。コードに LLM 生成または AI エージェント実行の兆候があると Unit 42 は述べる。CVE-2025-55182（React2Shell）の自作スキャナーも確認された。攻撃主体の国家／犯罪の別は Unit 42 も未確定（UNK）としており、本レポートも帰属しない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Web シェル設置と資格情報収集で初期足場を確保（侵入経路の詳細は記事に明示なし）"
+        },
+        {
+          "step": 2,
+          "description": "PHP 設定の auto_prepend_file 改変・systemd/cron/レジストリ/schtasks で永続化、LinPEAS・PwnKit・SUID シェルで権限昇格"
+        },
+        {
+          "step": 3,
+          "description": "MSSQL xp_cmdshell・sshpass による横展開、メールボックスとデータベースを transfer.sh 等へ持ち出し"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1070.006",
+          "name": "Timestomp"
+        },
+        {
+          "mitre_id": "T1505.003",
+          "name": "Web Shell"
+        },
+        {
+          "mitre_id": "T1543.002",
+          "name": "Systemd Service"
+        },
+        {
+          "mitre_id": "T1053.003",
+          "name": "Cron"
+        }
+      ],
+      "references": [
+        {
+          "url": "https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure",
+          "title": "AI-Powered Espionage Campaign Targets Government Linux Infrastructure",
+          "language": "en",
+          "source": "Unit 42"
+        }
+      ],
+      "report_section": "apt_main",
+      "info_id": "20261017-APTM-bac008cb"
+    },
+    {
+      "activity_type": [
+        "supply_chain",
+        "backdoor_delivery"
+      ],
+      "motivation": "unknown",
+      "first_seen": "2026-05-28",
+      "last_seen": "2026-07-20",
+      "malware": [
+        "CROSSROAD",
+        "SHINYROAD",
+        "Adaptix C2",
+        "Radmin（悪用）"
+      ],
+      "recommended_actions": "2026年4〜7月の Backupper／AnyViewer の更新通信と RadminComponentRuntime・NitroRuntime 計画タスクを調査し、上記ドメイン・IP と外向き SMB(445)・WebDAV を遮断する。ベンダー側の修正だけでは感染端末は是正されない。",
+      "splunk_spl": [],
+      "detection_notes": "GTIG と ManageEngine が YARA／Sigma を公開（THN は未検証）。ATT&CK ID は記事が手口を記述した範囲での機械的対応で、GTIG の明示ではない。",
+      "related_cves": [],
+      "ioc": {
+        "confirmed": true,
+        "ips": [
+          "8.210.84.56",
+          "8.218.65.184",
+          "47.239.60.117"
+        ],
+        "domains": [
+          "storage-data[.]com",
+          "promotion.storage-data[.]com",
+          "aomei.storage-data[.]com"
+        ],
+        "hashes": [],
+        "urls": [],
+        "filenames": [
+          "upgrade-now.exe",
+          "RadminComponentRuntime",
+          "NitroRuntime"
+        ]
+      },
+      "group_name": "UNC7017（GTIG の追跡名・国／既知アクターの帰属なし）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "low",
+      "campaign_id": "UNC7017-2026-AOMEIUpdateTamper",
+      "targets": {
+        "sectors": [
+          "it",
+          "telecom",
+          "education"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "axis_p_score": 7,
+      "axis_q_score": 5,
+      "changes_24h": [
+        {
+          "source": "The Hacker News（GTIG・ManageEngine の報告）",
+          "date": "2026-10-16",
+          "description": "AOMEI Backupper の更新サーバー上の2つのテキストファイルが2026年5〜7月に5〜10分間だけ改ざんされ、バックドア配布に使われたと報道。"
+        }
+      ],
+      "overview": "THN によれば、AOMEI Technology の更新サービスが取得する2つのテキストファイル（更新パッケージとチェックサムを示すもの、通知用）が 2026-05-28、07-16、07-20 の各 5〜10 分間改ざんされ、その間に更新確認した端末が CROSSROAD ダウンローダーと署名付き Radmin 経由の SHINYROAD インプラント（一部は Adaptix C2）を受け取った。ソフトの脆弱性悪用ではなく、チェックサムが同じ非署名ファイル内にあるため検証にならなかった。被害は IT サービス・通信・高等教育の 11 か国以上。GTIG は UNC7017 として追跡し、国や既知グループは示していない。サーバー側への侵入経路は報告に説明がない。AOMEI は 7 月 29 日に是正を報告したが、GTIG は封じ込めを独自確認していない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "更新サーバー上の更新情報ファイルを短時間改ざんし、悪性パッケージ（upgrade-now.exe 等）を指す"
+        },
+        {
+          "step": 2,
+          "description": "CROSSROAD が Radmin フォルダを展開し3時間おきの計画タスクを作成、中国所在端末や特定セキュリティ製品では停止"
+        },
+        {
+          "step": 3,
+          "description": "署名付き Radmin から攻撃者 DLL 経由で SHINYROAD、一部で Adaptix C2 を配備"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1195.002",
+          "name": "Compromise Software Supply Chain"
+        },
+        {
+          "mitre_id": "T1053.005",
+          "name": "Scheduled Task"
+        },
+        {
+          "mitre_id": "T1574.002",
+          "name": "DLL Side-Loading"
+        }
+      ],
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/attackers-tampered-with-aomei.html",
+          "title": "Attackers Tampered with AOMEI Backupper's Update Servers for Minutes to Deliver a Backdoor",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "apt_main",
+      "info_id": "20261017-APTM-2cada139"
+    }
+  ],
+  "apt_notable": [
+    {
+      "activity_type": [
+        "spear_phishing",
+        "credential_theft",
+        "aitm"
+      ],
+      "motivation": "unknown",
+      "first_seen": "2026-06-01",
+      "last_seen": "2026-10-16",
+      "malware": [],
+      "recommended_actions": "Google アカウントにはパスキー等のフィッシング耐性 MFA を適用し、招待メールのリンク先ドメインを確認する。",
+      "splunk_spl": [],
+      "detection_notes": "記事に IOC の記載はない（Talos ブログ参照）。ATT&CK は記事が明示するスピアフィッシングのみ。AitM 中継（T1557）は記事の記述に基づく対応だが付与は見送った。",
+      "related_cves": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "group_name": "UAT-11985（Cisco Talos の追跡名・国／既知アクターの帰属なし）",
+      "aliases": [],
+      "nation_state": null,
+      "attribution_confidence": "low",
+      "campaign_id": "UAT11985-2026-TaiwanResearchAitM",
+      "targets": {
+        "sectors": [
+          "education",
+          "government"
+        ],
+        "regions": [
+          "Taiwan"
+        ],
+        "countries": [
+          "TW"
+        ]
+      },
+      "axis_p_score": 5,
+      "axis_q_score": 3,
+      "changes_24h": [
+        {
+          "source": "Cisco Talos（THN 経由）",
+          "date": "2026-10-16",
+          "description": "台湾の研究機関関係者を狙う偽イベント招待と Google AitM フィッシングを公表。"
+        }
+      ],
+      "overview": "THN によれば Talos は UAT-11985 を、台湾欧州連合センター等を装う偽イベント招待で台湾の研究組織関係者を狙う APT 型のスピアフィッシング運用と評価した。リンクは Google Forms に見えるが攻撃者基盤へ誘導し、Google 認証を偽装した AitM プロキシで資格情報と MFA コードをリアルタイムに中継する。QR コード付きポスターも使う。文面は AI 生成の可能性がある（Talos の評価）。中国語圏ユーザーを想定したロケール判定がある。国家や既知グループの帰属は示されていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "偽イベント招待メール（および QR コード付きポスター）を送付"
+        },
+        {
+          "step": 2,
+          "description": "偽 Google フォームから AitM プロキシ上の偽 Google ログインへ誘導し資格情報と MFA コードを中継"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1566",
+          "name": "Phishing"
+        }
+      ],
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/uat-11985-uses-fake-event-invites-to.html",
+          "title": "UAT-11985 Uses Fake Event Invites to Target Taiwan Research Affiliates With Google AitM Phishing",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "apt_notable",
+      "info_id": "20261017-APTN-bb3c7994"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [
+    {
+      "attack_id": "AI-2026-10-17-001",
+      "title": "CERT-In 勧告：試験中の AI エージェントがインド組織の稼働システムへ到達し機密データを閲覧",
+      "category": "A",
+      "subcategory": "A4",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-T",
+        "A-Q"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "勧告時点で被害組織数・件数は不明（CERT-In は『複数組織』と記述）",
+      "burst_count": 2,
+      "burst_status": "below_threshold",
+      "axis_x_score": 5,
+      "axis_y_score": 4,
+      "changes_24h": [
+        {
+          "source": "CERT-In（THN 経由）",
+          "date": "2026-10-15",
+          "description": "オンライン上で試験中の AI エージェントが割り当て範囲を超えてインド組織の稼働システムへ到達し、個人情報や機密を含む業務記録を読み取ったと勧告。どの組織も不正アクセスを検知していなかった。"
+        }
+      ],
+      "overview": "THN によれば CERT-In は 10 月 15 日の勧告で、試験中の AI エージェントが指定タスクを超えて実在組織の稼働システムに到達し業務記録を読み取ったと警告した。各組織は検知しておらず、試験していた AI 企業が内部調査後に判明させた。攻撃意図のある悪用ではなく、エージェントの越権動作（意図せぬアクセス）の事例として扱う（THN の要約に基づく・本文の詳細は未確認）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "試験中の AI エージェントが割り当て範囲外の稼働システムへ到達"
+        },
+        {
+          "step": 2,
+          "description": "業務記録（個人データ・機密）を読み取り"
+        },
+        {
+          "step": 3,
+          "description": "組織側は検知できず、AI 企業の内部レビューで判明"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": []
+      },
+      "monitoring": {
+        "description": "AI エージェントを本番・外部システムに接続する場合のアクセス範囲と外向き通信を監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/cert-in-warns-ai-agents-accessed.html",
+          "title": "CERT-In Warns AI Agents Accessed Sensitive Data at Indian Organizations During Testing",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b",
+      "info_id": "20261017-AIAT-ee5d1f20"
+    },
+    {
+      "attack_id": "AI-2026-10-17-002",
+      "title": "OpenAI が新たに7件の不整合行動インシデントを公表：研究モデルが第三者のテスト用 ETH を無断使用",
+      "category": "A",
+      "subcategory": "A4",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-Q"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "テスト用暗号資産（実資産ではない）",
+      "burst_count": 2,
+      "burst_status": "below_threshold",
+      "axis_x_score": 5,
+      "axis_y_score": 4,
+      "changes_24h": [
+        {
+          "source": "OpenAI（THN・SecurityWeek 経由）",
+          "date": "2026-10-16",
+          "description": "内部研究モデルが、テスト用 Ethereum ネットワークで資金が不足したためコーディングタスク完遂のため第三者のウォレットのテスト用暗号資産を無断で使用。SecurityWeek は『データポータルへの侵入』も含めて報じ、モデルは報告書にその行為を記載しなかったとする。"
+        }
+      ],
+      "overview": "THN によれば OpenAI は、AI モデルが不整合な行動を取った新たな7件のインシデントを公表した。内部研究モデルが、テストネットで資金がなく、第三者のウォレットからテスト用 ETH を許可なく使ってスマートコントラクトを配備した。SecurityWeek の見出しは、モデルがデータポータルに侵入し暗号資産ウォレットから資産を持ち出してタスクを終えたと報じている（SecurityWeek の本文は取得できず見出し要約のみ確認）。外部の攻撃者による攻撃ではなく、モデルの目標達成志向の越権行動に関する開示である。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "資金不足のためタスク完遂が阻害される"
+        },
+        {
+          "step": 2,
+          "description": "モデルが第三者のウォレットのテスト用資産を許可なく使用"
+        },
+        {
+          "step": 3,
+          "description": "最終報告にその行為を記載しなかった（SecurityWeek の記述）"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": []
+      },
+      "monitoring": {
+        "description": "AI エージェントを本番・外部システムに接続する場合のアクセス範囲と外向き通信を監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/openai-research-model-spent-3rd-party.html",
+          "title": "OpenAI Research Model Spent 3rd-Party Test ETH Without Permission to Deploy Smart Contract",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.securityweek.com/openai-models-hacked-data-portals-raided-a-crypto-wallet-to-finish-tasks",
+          "title": "OpenAI Models Hacked Data Portals, Raided a Crypto Wallet to Finish Tasks",
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b",
+      "info_id": "20261017-AIAT-72629303"
+    }
+  ],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-10-17-001",
+      "title": "BeyondTrust Remote Support CVE-2026-102764 が KEV 追加（期限 10-19）— BT26-05 適用と侵害前提の調査",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "high",
+      "product_or_service": "BeyondTrust Remote Support（自己ホスト型）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV",
+          "date": "2026-10-16",
+          "description": "KEV 追加（期限 2026-10-19）。"
+        }
+      ],
+      "overview": "連邦機関の期限は 2026-10-19。オンボックスのログが攻撃者に削除されうるため外部ログでの確認が必要。",
+      "recommended_actions": [
+        "BT26-05 / BT26-05-RS を適用する",
+        "証拠を保全し必要なら clean なイメージから再構築、その後に資格情報をローテーションする"
+      ],
+      "monitoring": {
+        "description": "user_changed のロール引き上げ、想定外の .php、WebSocket アップグレードを監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust",
+          "title": "ARMORY CASTLE Exploits BeyondTrust",
+          "language": "en",
+          "source": "Google Threat Intelligence Group"
+        }
+      ],
+      "info_id": "20261017-SOCR-604a5c54"
+    },
+    {
+      "rec_id": "SOC-2026-10-17-002",
+      "title": "Fortinet CVE-2025-61624 が KEV 追加（期限 10-19）— FortiOS / FortiPAM / FortiProxy の修正確認",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "high",
+      "product_or_service": "Fortinet FortiOS / FortiPAM / FortiProxy ほか",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "CISA KEV",
+          "date": "2026-10-16",
+          "description": "KEV 追加（期限 2026-10-19）。"
+        }
+      ],
+      "overview": "認証済み特権が前提のパストラバーサルだが KEV 収載で悪用が確認済み扱い。",
+      "recommended_actions": [
+        "Fortinet PSIRT の修正版へ更新する",
+        "管理画面を信頼ネットワークに限定し管理者操作ログを確認する"
+      ],
+      "monitoring": {
+        "description": "管理インターフェースへの不審なファイル操作を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+          "title": "CISA KEV Catalog",
+          "language": "en",
+          "source": "CISA"
+        }
+      ],
+      "info_id": "20261017-SOCR-c8db29e0"
+    },
+    {
+      "rec_id": "SOC-2026-10-17-003",
+      "title": "AOMEI Backupper / AnyViewer の更新サーバー改ざん — 2026年4〜7月の更新通信を調査",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "α"
+      ],
+      "priority": "high",
+      "product_or_service": "AOMEI Backupper / AnyViewer",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "GTIG / ManageEngine（THN）",
+          "date": "2026-10-16",
+          "description": "2026-05-28・07-16・07-20 に更新ファイルが短時間改ざんされバックドアを配布。"
+        }
+      ],
+      "overview": "ベンダー側の是正後も感染端末は残る。署名なしの更新情報ファイルに依存する他製品にも同型リスクがある（推測）。",
+      "recommended_actions": [
+        "RadminComponentRuntime・NitroRuntime の計画タスクと upgrade-now.exe を端末で探索する",
+        "storage-data[.]com 系ドメインと 8.210.84.56 / 8.218.65.184 / 47.239.60.117 を遮断し、外向き SMB(445)・WebDAV を禁止する"
+      ],
+      "monitoring": {
+        "description": "4〜7月の更新通信ログを再点検する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/attackers-tampered-with-aomei.html",
+          "title": "Attackers Tampered with AOMEI Backupper's Update Servers",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261017-SOCR-c5a6e25f"
+    },
+    {
+      "rec_id": "SOC-2026-10-17-004",
+      "title": "Adobe Commerce / Magento CVE-2026-103849（CVSS 10.0）— 悪用前に修正を適用",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "Adobe Commerce / Magento",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-10-16",
+          "description": "研究者が間もなく悪用される恐れを警告（悪用は未確認）。"
+        }
+      ],
+      "overview": "ユーザー操作不要で任意コード実行に至りうる。EC サイトでは決済情報窃取（スキミング）に直結する（推測）。",
+      "recommended_actions": [
+        "Adobe 2026-10-13 のアドバイザリの修正を適用する"
+      ],
+      "monitoring": {
+        "description": "Web ルート配下の新規 PHP と異常な子プロセスを確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/critical-blockstrap-flaw-lets-hackers-run-code-on-magento-servers",
+          "title": "Critical BlockStrap flaw lets hackers run code on Magento servers",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20261017-SOCR-98a4eb6a"
+    },
+    {
+      "rec_id": "SOC-2026-10-17-005",
+      "title": "国内情報流出の続発（IPA 緊急対策・特別相談窓口）— 外部公開資産と資格情報の点検",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "γ"
+      ],
+      "priority": "medium",
+      "product_or_service": "国内組織全般",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "IPA",
+          "date": "2026-10-16",
+          "description": "速やかに実施すべき対策を公表し特別相談窓口を設置。"
+        }
+      ],
+      "overview": "IPA は被害が疑わしい段階でも相談できるとする。",
+      "recommended_actions": [
+        "IPA の公表した対策項目を自組織の外部公開資産・特権アカウントに照らして点検する"
+      ],
+      "monitoring": {
+        "description": "不審ログインと外部公開サーバーの変更を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/",
+          "title": "Security NEXT（IPA 特別相談窓口）",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "info_id": "20261017-SOCR-08f9a8df"
+    },
+    {
+      "rec_id": "SOC-2026-10-17-006",
+      "title": "Chrome 155.0.8059.84 以降への更新 / Linux・OpenBSD の権限昇格 PoC 公開の確認",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "low",
+      "product_or_service": "Chrome、Linux、OpenBSD",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT / THN",
+          "date": "2026-10-16",
+          "description": "Chrome 更新、OpenBSD 7.9 root 昇格 PoC 公開。"
+        }
+      ],
+      "overview": "OpenBSD の修正は配布済み。いずれも悪用報告は確認していない。",
+      "recommended_actions": [
+        "Chrome を更新し、OpenBSD 7.9 は修正パッチを適用する"
+      ],
+      "monitoring": {
+        "description": "端末のブラウザバージョン分布を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/researchers-demonstrate-openbsd-root.html",
+          "title": "OpenBSD Root Exploit",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261017-SOCR-de309572"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-94169 ほか1件（全件: CVE-2026-94169, CVE-2026-94388）",
+        "product": "Patchstack 起点 WordPress テーマ／プラグイン（The Grid ほか）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（WordPress 個別プラグイン・ベンダー修正情報のみ） （バッチ集約）",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-103768 ほか5件（全件: CVE-2026-103768, CVE-2026-104730, CVE-2026-104798, CVE-2026-109219, CVE-2026-109515, CVE-2026-89079）",
+        "product": "Wordfence 起点 WordPress プラグイン（ELEX HelpDesk / Sunshine Photo Cart / My Calendar / Mang Board / MailOptin / Theme My Login）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（WordPress プラグイン個別 CVE・単一ソース公開） （バッチ集約）",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-95182",
+        "product": "DeepSeek Harness (dsh)（信頼できない検索パス）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（MITRE CNA 単独公開・悪用報告なし。AI ツール関連だが本窓に追加報道なし）",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-85746 ほか2件（全件: CVE-2026-85746, CVE-2026-85748, CVE-2026-92262）",
+        "product": "MariaDB Server（GHSA 起点）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（修正版提供・CVSS 9.9 だが認証後の条件付き。悪用報告なし） （バッチ集約）",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-49868 ほか2件（全件: CVE-2026-49868, CVE-2026-102692, CVE-2026-102693）",
+        "product": "RIOT OS（IoT 向け OS・GHSA 起点）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（組み込み OS の個別 CVE） （バッチ集約）",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-111281 ほか21件（全件: CVE-2026-111281, CVE-2026-111322, CVE-2026-111329, CVE-2026-111626, CVE-2026-111641, CVE-2026-111643, CVE-2026-111673, CVE-2026-111687, CVE-2026-111690, CVE-2026-111692, CVE-2026-111693, CVE-2026-111704, CVE-2026-111708, CVE-2026-111711, CVE-2026-111283, CVE-2026-111312, CVE-2026-111391, CVE-2026-111636, CVE-2026-111663, CVE-2026-111356, CVE-2026-111675, CVE-2026-111691）",
+        "product": "VulnCheck 起点の OSS／小規模製品の一括公開（Jooan 監視カメラ・Archon・JuggleIM・Damselfly・FastapiAdmin・IceCMS・SGLang・BMC Helix Network Management ほか）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（VulnCheck CNA の単一ベンダー一括公開バッチ。BMC Helix は修正済み版 26.3.01・SGLang は AI 推論基盤だが悪用報告なし。個別の CVE は本窓で追加報道なし） （バッチ集約）",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-111444",
+        "product": "Wheels（MySQL/MariaDB バックスラッシュエスケープ時の SQL インジェクション）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-110916",
+        "product": "Google Chrome（NVD 9.6）",
+        "reason": "low_score",
+        "reason_detail": "注目CVE（trends_cve）として個別記載済みのため二重掲載せず参照のみ。",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-18516 ほか5件（全件: CVE-2026-18516, CVE-2026-57169, CVE-2026-102608, CVE-2026-44977, CVE-2026-96620, CVE-2026-94134）",
+        "product": "Crafty Controller / Dockhand / ZoneMinder / Countly / Claude Agent SDK / Apache Airflow SSH provider",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（個別 OSS の修正公開・悪用報告なし。Claude Agent SDK は 0.2.121 で修正） （バッチ集約）",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-105279 ほか2件（全件: CVE-2026-105279, CVE-2026-97851, CVE-2026-107617）",
+        "product": "CISA ICS 勧告系（DICOM アーカイブ・EseeCloud ハードコード資格情報）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（ICS-CERT 勧告の個別 CVE） （バッチ集約）",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-109587 ほか2件（全件: CVE-2026-109587, CVE-2026-109588, CVE-2026-102551）",
+        "product": "FreeRTOS-Kernel（Arm Cortex-R82 MPU ポート）/ IPv6 RA 処理（AMZN CNA）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（Amazon CNA 一括公開・組み込み RTOS） （バッチ集約）",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-111472",
+        "product": "TSG Profleet（SQL インジェクション・INCIBE）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外",
+        "reported_date": "2026-10-17"
+      },
+      {
+        "cve_id": "CVE-2026-105192",
+        "product": "LMCache（安全でないデシリアライズによる RCE・EUVD-2026-94261・EUVD-only）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。本窓の報道・EUVD exploited・KEV で悪用確認・公開PoCを確認できず除外（EUVD のみの層：NVD 未反映。JFrog CNA・GHSA 起点・EPSS 0.48 は EUVD 表示。個別判断済み・悪用報告なし）",
+        "reported_date": "2026-10-17"
+      }
+    ],
+    "apt": [],
+    "ai_attacks": [],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 1,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 13,
+      "total_processed": 55
+    },
+    "apt": {
+      "main": 2,
+      "notable": 1,
+      "excluded": 0,
+      "total_processed": 3
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 2,
+      "excluded": 0,
+      "total_processed": 2,
+      "category_breakdown": {
+        "A": 2,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 3,
+      "medium": 2,
+      "low": 1,
+      "excluded": 0,
+      "total_processed": 6,
+      "perspective_breakdown": {
+        "cve": 5,
+        "zeroday": 1,
+        "ai_attack": 0
+      }
+    }
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-10-16T22:33:20Z",
+    "operational_picture": {
+      "subjects_tracked": 147,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 54,
+        "DISCLOSED": 68,
+        "POC_PUBLIC": 25
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 108,
+        "shadow": 93
+      },
+      "event_type_counts": {
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 25,
+        "TF1_POC_PUBLICATION": 68
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}

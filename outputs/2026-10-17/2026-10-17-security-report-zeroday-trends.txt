@@ -1,0 +1,339 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-17 07:55 JST
+調査期間: 2026-10-16 07:00 〜 2026-10-17 07:00 JST
+========================================
+
+■ Section 2: ゼロデイ・トレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-102764 BeyondTrust Remote Support（旧 Bomgar・アプライアンス内部コンポーネントのメッセージ発信元検証不備→任意ファイル操作／任意ファイルアップロード）（CVSS 9.3）
+------------------------------------------------------------
+優先度: critical  軸1=15 軸2=4  KEV登録: あり  悪用: 確認  パッチ: あり
+影響バージョン: Remote Support（自己ホスト型）。GTIG は『サポート対象の全バージョンで 26.2.3 まで』と記述。SaaS は 2026-10-09 に修正済み。
+
+【24時間以内の変化】
+[CISA KEV（スイープ機械列挙） 2026-10-16] CVE-2026-102764 が CISA KEV に追加（dateAdded 2026-10-16・期限 2026-10-19・ランサムウェア利用は Unknown）。昨日の GTIG 公表（8月下旬からのゼロデイ悪用）から約1日後。[既報・KEV登録の更新]
+[BleepingComputer / The Hacker News / SecurityWeek / Dark Reading 2026-10-16] GTIG の報告を各誌が報道（China-linked / ARMORY CASTLE。独立した追加確認ではなく二次報道）。
+
+【概要】
+GTIG によれば、BeyondTrust Remote Support のアプライアンスで内部コンポーネントがメッセージの発信元を十分に検証せず、攻撃者が任意ファイル操作（アップロード）を行える。CVE-2026-102764（NVD 記載は CVSS v4.0 9.3）。GTIG は 2026 年 8 月下旬にゼロデイとして悪用された侵入を観測し、追跡中の疑い PRC 関連の諜報アクター ARMORY CASTLE の活動と帰属した（GTIG の記述）。侵入では /app_84304470.php への POST で SAWFLY Web シェルを設置し、/bin/sh を SUID root でコピーして権限昇格、独自 CLI bt-secrets で資格情報金庫をダンプし、ログを削除、管理者ポータルで Jump Item/Team ロールを Administrator に引き上げ、ファイル転送サービスで文書を持ち出した。C2 は WebSocket 上の SOCKS5 トンネラー BARECLAW（TCP 19800）。被害組織名・件数は GTIG が公表していない。 本窓で CISA KEV に追加された（2026-10-16・期限 2026-10-19）。
+
+【攻撃フロー】
+1. /app_84304470.php への POST でアップロード（ステージング）し、Web ルートへ SAWFLY Web シェル（mangoapi.php）を設置
+2. /bin/sh を /usr/bin/dbus-authd にコピーし SUID root を付与して権限昇格、bt-secrets で資格情報金庫をダンプ
+3. zz-root-persist スクリプトで NOPASSWD sudoers を追加して永続化、ログを削除
+4. 管理者資格情報で管理ポータルへログインし Jump Item/Team ロールを引き上げ、リモートサポートセッション開始とファイル転送で文書を持ち出し（C2 は BARECLAW SOCKS5-over-WebSocket）
+
+【ATT&CK】
+T1190 Exploit Public-Facing Application: インターネット側のアプライアンスに対しゼロデイの任意ファイルアップロードを悪用（GTIG）
+T1505.003 Web Shell: SAWFLY（PHP Web シェル）を Web ルートへ設置（GTIG）
+T1090 Proxy: BARECLAW（SOCKS5-over-WebSocket トンネラー）による通信中継（GTIG）
+
+【暫定緩和策】
+- BT26-05 を適用（自己ホスト型 24.3.1 以降は BT26-05-RS）。SaaS は対応不要
+- インターネットに公開された脆弱な自己ホスト型アプライアンスは侵害されている可能性があるとみなし、変更前に証拠を保全して外部ログを収集する（攻撃者がオンボックスのログを削除している）
+- 侵害確認時・不明時は clean な修正版イメージから再構築し、修正または再構築の後に依存順序で資格情報をローテーションする
+- 管理画面を IP 制限、SSO＋フィッシング耐性 MFA、既定 Jump Item ロールを No Access にし、ログは TLS で SIEM へ転送する
+
+【IOC】
+hashes: dc14e215269a93fdbc4c1a80b984c23faf7af0911c6dbb85309796a6f2ae95fb, 1f19b9a27d79c11bda00a1e8faf74a7fdd683d38ccef1b60df2fd0307e3aa462
+filenames: mangoapi.php, ingredi_ws, app_84304470.php, /usr/bin/dbus-authd
+
+【監視】
+user_changed によるロール引き上げ、想定外の .php パス、想定外送信元からの WebSocket アップグレード、syslog 転送の欠落、/login 設定の変更を監視する。
+
+【参照】
+- ARMORY CASTLE Exploits BeyondTrust (Google Threat Intelligence Group) https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-beyondtrust
+- BeyondTrust patches zero-day exploited in attacks since August (BleepingComputer) https://www.bleepingcomputer.com/news/security/beyondtrust-patches-zero-day-exploited-in-attacks-since-august
+- CISA KEV Catalog (CISA) https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+CL-UNK-1211（Unit 42 の暫定クラスタ名・国家／犯罪の別は未確定） / CLUNK1211-2026-AIEspionageGovLinux
+------------------------------------------------------------
+帰属確度: low  軸P=7 軸Q=5  対象: government, it / unknown
+
+【24時間以内の変化】
+[Unit 42 2026-10-15] 2025年10月〜2026年4月の政府機関 Linux 基盤への侵入活動（AI 生成・AI エージェント実行の兆候あり）を CL-UNK-1211 として公表。
+
+【概要】
+Unit 42 によれば、CL-UNK-1211 は政府・国家関連機関の Linux サーバー、MSSQL、政府メールサーバー、Plesk 等のホスティング環境を標的に、Go 製マルチプラットフォーム RAT『SysGoRAT』（WebSocket C2）、PHP Web シェル、認証情報窃取（.bashrc の sudo エイリアス・PHP ログイン記録）、LinPEAS・PwnKit による権限昇格を用いた。コードに LLM 生成または AI エージェント実行の兆候があると Unit 42 は述べる。CVE-2025-55182（React2Shell）の自作スキャナーも確認された。攻撃主体の国家／犯罪の別は Unit 42 も未確定（UNK）としており、本レポートも帰属しない。
+
+【攻撃フロー】
+1. Web シェル設置と資格情報収集で初期足場を確保（侵入経路の詳細は記事に明示なし）
+2. PHP 設定の auto_prepend_file 改変・systemd/cron/レジストリ/schtasks で永続化、LinPEAS・PwnKit・SUID シェルで権限昇格
+3. MSSQL xp_cmdshell・sshpass による横展開、メールボックスとデータベースを transfer.sh 等へ持ち出し
+
+【ATT&CK】
+T1070.006 Timestomp
+T1505.003 Web Shell
+T1543.002 Systemd Service
+T1053.003 Cron
+
+【IOC】
+ips: 104.194.158.65, 45.88.188.140, 198.23.185.234, 138.68.244.146, 185.21.136.6, 72.61.89.179
+domains: magento[.]ink, solidmonpe[.]com, wibu-bau-bawang[.]online, beraskencur[.]site
+hashes: 2bf7992e6260c1a98c709fa98ec766fb9f27692f338b30b43ac821b824fd849e, c527b94e3d21824a674face4cd9d862e536b60ccbf54573839e3360f99188343, 1505a3a727f8899b2ad343519f7bf9c438b8b802f8d6b854f5db3b52f857c76a
+filenames: plesk_sys_driver.php, .libsystemd-helper, .libpython-helper, Solarwinds.StatusLog.txt
+
+【推奨アクション】
+Plesk 配下の PHP 設定（auto_prepend_file）と不審な PHP ファイルを点検し、公開サーバーの PwnKit 対策（polkit 更新）と CVE-2025-55182 の修正適用を確認する。transfer.sh 等への外向き通信を監視する。
+
+【検知メモ】
+記事は ATT&CK ID として T1070.006 のみ明示。他 ID は手口の記述（systemd/cron 永続化・Web シェル）に基づく機械的対応で、Unit 42 の明示ではない。SolarWinds 名のログは名称借用で、SolarWinds 侵害の証拠はないと Unit 42 は述べる。IOC は一部のみ転記（全量は原典参照）。
+
+【参照】
+- AI-Powered Espionage Campaign Targets Government Linux Infrastructure (Unit 42) https://unit42.paloaltonetworks.com/ai-campaign-targets-linux-infrastructure
+
+------------------------------------------------------------
+UNC7017（GTIG の追跡名・国／既知アクターの帰属なし） / UNC7017-2026-AOMEIUpdateTamper
+------------------------------------------------------------
+帰属確度: low  軸P=7 軸Q=5  対象: it, telecom, education / global
+
+【24時間以内の変化】
+[The Hacker News（GTIG・ManageEngine の報告） 2026-10-16] AOMEI Backupper の更新サーバー上の2つのテキストファイルが2026年5〜7月に5〜10分間だけ改ざんされ、バックドア配布に使われたと報道。
+
+【概要】
+THN によれば、AOMEI Technology の更新サービスが取得する2つのテキストファイル（更新パッケージとチェックサムを示すもの、通知用）が 2026-05-28、07-16、07-20 の各 5〜10 分間改ざんされ、その間に更新確認した端末が CROSSROAD ダウンローダーと署名付き Radmin 経由の SHINYROAD インプラント（一部は Adaptix C2）を受け取った。ソフトの脆弱性悪用ではなく、チェックサムが同じ非署名ファイル内にあるため検証にならなかった。被害は IT サービス・通信・高等教育の 11 か国以上。GTIG は UNC7017 として追跡し、国や既知グループは示していない。サーバー側への侵入経路は報告に説明がない。AOMEI は 7 月 29 日に是正を報告したが、GTIG は封じ込めを独自確認していない。
+
+【攻撃フロー】
+1. 更新サーバー上の更新情報ファイルを短時間改ざんし、悪性パッケージ（upgrade-now.exe 等）を指す
+2. CROSSROAD が Radmin フォルダを展開し3時間おきの計画タスクを作成、中国所在端末や特定セキュリティ製品では停止
+3. 署名付き Radmin から攻撃者 DLL 経由で SHINYROAD、一部で Adaptix C2 を配備
+
+【ATT&CK】
+T1195.002 Compromise Software Supply Chain
+T1053.005 Scheduled Task
+T1574.002 DLL Side-Loading
+
+【IOC】
+ips: 8.210.84.56, 8.218.65.184, 47.239.60.117
+domains: storage-data[.]com, promotion.storage-data[.]com, aomei.storage-data[.]com
+filenames: upgrade-now.exe, RadminComponentRuntime, NitroRuntime
+
+【推奨アクション】
+2026年4〜7月の Backupper／AnyViewer の更新通信と RadminComponentRuntime・NitroRuntime 計画タスクを調査し、上記ドメイン・IP と外向き SMB(445)・WebDAV を遮断する。ベンダー側の修正だけでは感染端末は是正されない。
+
+【検知メモ】
+GTIG と ManageEngine が YARA／Sigma を公開（THN は未検証）。ATT&CK ID は記事が手口を記述した範囲での機械的対応で、GTIG の明示ではない。
+
+【参照】
+- Attackers Tampered with AOMEI Backupper's Update Servers for Minutes to Deliver a Backdoor (The Hacker News) https://thehackernews.com/2026/10/attackers-tampered-with-aomei.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+UAT-11985（Cisco Talos の追跡名・国／既知アクターの帰属なし） / UAT11985-2026-TaiwanResearchAitM
+------------------------------------------------------------
+帰属確度: low  軸P=5 軸Q=3  対象: education, government / Taiwan
+
+【24時間以内の変化】
+[Cisco Talos（THN 経由） 2026-10-16] 台湾の研究機関関係者を狙う偽イベント招待と Google AitM フィッシングを公表。
+
+【概要】
+THN によれば Talos は UAT-11985 を、台湾欧州連合センター等を装う偽イベント招待で台湾の研究組織関係者を狙う APT 型のスピアフィッシング運用と評価した。リンクは Google Forms に見えるが攻撃者基盤へ誘導し、Google 認証を偽装した AitM プロキシで資格情報と MFA コードをリアルタイムに中継する。QR コード付きポスターも使う。文面は AI 生成の可能性がある（Talos の評価）。中国語圏ユーザーを想定したロケール判定がある。国家や既知グループの帰属は示されていない。
+
+【攻撃フロー】
+1. 偽イベント招待メール（および QR コード付きポスター）を送付
+2. 偽 Google フォームから AitM プロキシ上の偽 Google ログインへ誘導し資格情報と MFA コードを中継
+
+【ATT&CK】
+T1566 Phishing
+
+【推奨アクション】
+Google アカウントにはパスキー等のフィッシング耐性 MFA を適用し、招待メールのリンク先ドメインを確認する。
+
+【検知メモ】
+記事に IOC の記載はない（Talos ブログ参照）。ATT&CK は記事が明示するスピアフィッシングのみ。AitM 中継（T1557）は記事の記述に基づく対応だが付与は見送った。
+
+【参照】
+- UAT-11985 Uses Fake Event Invites to Target Taiwan Research Affiliates With Google AitM Phishing (The Hacker News) https://thehackernews.com/2026/10/uat-11985-uses-fake-event-invites-to.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2025-61624 Fortinet FortiOS / FortiPAM / FortiProxy ほか（パストラバーサル・CWE-22）（CVSS 6.5）
+------------------------------------------------------------
+優先度: medium  軸1=6 軸2=2  KEV登録: あり  悪用: 確認  パッチ: あり
+影響バージョン: NVD 記載: FortiOS 7.6.0〜7.6.4・7.4.0〜7.4.9・7.2/7.0/6.4 全バージョン、FortiPAM 1.0〜1.7.0、FortiProxy 7.6.0〜7.6.4 ほか複数製品（完全な一覧は NVD / Fortinet PSIRT 参照）
+
+【24時間以内の変化】
+[CISA KEV 2026-10-16] CVE-2025-61624 が CISA KEV に追加（期限 2026-10-19・ランサムウェア利用 Unknown）。KEV 追加の根拠となる悪用の詳細（攻撃主体・手口）は本窓で一次ソースを確認できていない。
+
+【概要】
+NVD によれば Fortinet 複数製品に認証済み特権攻撃者が制限ディレクトリ外のパスにアクセスできるパストラバーサル（CWE-22）があり、NVD 基本値は CVSS v3.1 6.5（Fortinet 自己評価 6.0 の併記あり。スイープ機械列挙では EUVD が 5.4 を表示）。2026-04-14 公開で、本窓（2026-10-16）に CISA KEV へ追加された。実悪用の具体内容（誰がどの環境を狙ったか）は取得できていない。
+
+【攻撃フロー】
+1. 認証済み特権アカウントでパス操作によりファイルを読み書き（NVD の記述に基づく概要。実際の悪用手順は未確認）
+
+【暫定緩和策】
+- Fortinet PSIRT の該当アドバイザリに従い修正版へ更新（KEV 期限 2026-10-19）
+- 管理インターフェースを信頼ネットワークに限定し、管理者アカウントの監査を行う
+
+【監視】
+管理インターフェースの不審なファイル操作ログ・設定変更を確認する。
+
+【参照】
+- CISA KEV Catalog（CVE-2025-61624） (CISA) https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+- NVD CVE-2025-61624 (NVD) https://nvd.nist.gov/vuln/detail/CVE-2025-61624
+
+------------------------------------------------------------
+2. CVE-2026-103849 Adobe Commerce / Magento（BlockStrap・テンプレートエンジンの特殊要素の不適切な無害化→任意コード実行）（CVSS 10.0）
+------------------------------------------------------------
+優先度: high  軸1=10 軸2=2  KEV登録: なし  悪用: 未確認  パッチ: あり
+影響バージョン: Adobe Commerce / Magento（影響版の詳細は Adobe アドバイザリ APSB 参照。BleepingComputer 本文は取得できず未確認）
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-16] 研究者が『まもなく悪用される恐れ』と警告（悪用は未確認）。NVD は 2026-10-13 に公開し CVSS v3.1 10.0・ユーザー操作不要・スコープ変更ありと記載。
+
+【概要】
+NVD によれば Adobe Commerce にテンプレートエンジン用の特殊要素の不適切な無害化があり、ユーザー操作なしで任意コード実行に至りうる（CVSS v3.1 10.0）。BleepingComputer は研究者の話として、Magento・Adobe Commerce サーバー上で任意 PHP を実行できる最高深刻度の欠陥で悪用が近いと報じた。実悪用・公開 PoC は本窓で確認できていない。
+
+【攻撃フロー】
+1. 未認証でテンプレート処理に特殊要素を注入し、サーバー上で任意の PHP コードを実行（報道の記述の要約・手順の詳細は未確認）
+
+【暫定緩和策】
+- Adobe の 2026-10-13 付アドバイザリの修正を適用する
+- 適用までの間、WAF で該当経路への不審な入力を監視する
+
+【監視】
+Commerce サーバーの Web ルート配下の新規 PHP ファイルと異常な子プロセスを確認する。
+
+【参照】
+- Critical BlockStrap flaw lets hackers run code on Magento servers (BleepingComputer) https://www.bleepingcomputer.com/news/security/critical-blockstrap-flaw-lets-hackers-run-code-on-magento-servers
+- NVD CVE-2026-103849 (NVD) https://nvd.nist.gov/vuln/detail/CVE-2026-103849
+
+------------------------------------------------------------
+3. CVE-2026-110916 Google Chrome（Desktop・不適切な入力検証によるサンドボックス外コード実行の可能性）（CVSS 9.6）
+------------------------------------------------------------
+優先度: medium  軸1=7 軸2=1  KEV登録: なし  悪用: 未確認  パッチ: あり
+影響バージョン: 155.0.8059.84 より前の Chrome（デスクトップ）
+
+【24時間以内の変化】
+[NVD / Security NEXT 2026-10-16] NVD が CVE-2026-110916 を CVSS v3.1 9.6 で公開（Chromium 自己評価は Medium）。Security NEXT は Chrome の更新（Critical を含む修正）を報道。悪用の報告なし。
+
+【概要】
+NVD によれば Chrome 155.0.8059.84 より前でデスクトップの入力検証不備により、細工した HTML ページからサンドボックス外のコード実行に至る可能性がある（NVD は CVSS 9.6・ユーザー操作要・Chromium の自己評価は Medium で食い違う）。実悪用は報告されていない。Security NEXT は前回更新から2日での Chrome 更新を報じたが、その更新が本 CVE を含むかは確認していない。
+
+【攻撃フロー】
+1. 細工した HTML ページを閲覧させる（NVD の記述に基づく）
+
+【暫定緩和策】
+- Chrome を 155.0.8059.84 以降へ更新し再起動を促す
+
+【監視】
+ブラウザ管理基盤でバージョン分布を確認する。
+
+【参照】
+- 「Chrome」にセキュリティアップデート - 前回更新から2日 (Security NEXT) https://www.security-next.com/191540
+- NVD CVE-2026-110916 (NVD) https://nvd.nist.gov/vuln/detail/CVE-2026-110916
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【トレンド動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. BAE Systems へのサイバー攻撃で米連邦破産裁判所の通知システムが停止
+------------------------------------------------------------
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-16] BAE Systems 攻撃による連邦裁判所業務への影響を報道。
+
+【概要】
+米裁判所行政局は、政府請負業者 BAE Systems へのサイバー攻撃により連邦破産裁判所の通知システムが停止したと説明した（BleepingComputer・SecurityWeek。攻撃者・手口は本窓時点で未公表）。
+
+【参照】
+- BAE Systems cyberattack disrupts US federal court operations (BleepingComputer) https://www.bleepingcomputer.com/news/security/bae-systems-cyberattack-disrupts-us-federal-court-operations
+
+------------------------------------------------------------
+2. バーガーキング日本法人で顧客情報約1,118万件が流出
+------------------------------------------------------------
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-16] 約 1,118 万件の顧客記録への不正アクセスを報道。
+
+【概要】
+Burger King Japan が、顧客情報 1,118 万件を保存するサーバーへ攻撃者がアクセスしたと公表（BleepingComputer・Security NEXT）。侵入経路・攻撃者は未公表。
+
+【参照】
+- Burger King Japan data breach exposes 11 million customer records (BleepingComputer) https://www.bleepingcomputer.com/news/security/burger-king-japan-data-breach-exposes-11-million-customer-records
+- Security NEXT（バーガーキング アプリ会員情報流出） (Security NEXT) https://www.security-next.com/
+
+------------------------------------------------------------
+3. 国内で相次ぐ情報流出：IPA が特別相談窓口と緊急対策を公表
+------------------------------------------------------------
+
+【24時間以内の変化】
+[IPA / Security NEXT 2026-10-16] IPA が対策公表と特別相談窓口の設置を発表。
+
+【概要】
+IPA が不正アクセスによる漏えい等の事案を踏まえ速やかに実施すべき対策を公表し、被害が疑わしい段階でも相談できる特別相談窓口を設置した（ScanNetSecurity・Security NEXT）。ソースネクスト（約2,252万件の可能性）、三井不動産（資格情報の不正利用）など国内事案の報道も続く。
+
+【参照】
+- Security NEXT（IPA 特別相談窓口） (Security NEXT) https://www.security-next.com/
+- ScanNetSecurity（IPA、速やかに実施すべき対策） (ScanNetSecurity) https://scan.netsecurity.ne.jp/
+
+------------------------------------------------------------
+4. OpenBSD 7.9 の root 昇格エクスプロイト公開：37年前の共有メモリ整数オーバーフローを連鎖
+------------------------------------------------------------
+
+【24時間以内の変化】
+[The Hacker News 2026-10-16] Calif が詳細な解説と PoC を公開（ローカル権限昇格）。
+
+【概要】
+Calif が OpenBSD 7.9 で、約37年前の整数オーバーフローと別のカーネル欠陥を連鎖して root を得る概念実証コードを公開した。KARL・SMAP・SMEP を回避する（THN）。OpenBSD は修正配布済み。CVE 番号は本窓で確認できていない。
+
+【参照】
+- Researchers Demonstrate OpenBSD Root Exploit Chaining 37-Year-Old Shared-Memory Bug (The Hacker News) https://thehackernews.com/2026/10/researchers-demonstrate-openbsd-root.html
+
+------------------------------------------------------------
+5. F5・Juniper が重大な脆弱性を修正
+------------------------------------------------------------
+
+【24時間以内の変化】
+[SecurityWeek 2026-10-16] F5 / Juniper の修正公開を報道。
+
+【概要】
+SecurityWeek によれば F5 と Juniper Networks がリモートコード実行や機器の完全掌握につながりうる重大な脆弱性を修正した。CVE・悪用状況は本文を取得できず未確認（見出しと要約のみ）。
+
+【参照】
+- F5, Juniper Networks Patch Critical Vulnerabilities (SecurityWeek) https://www.securityweek.com/f5-juniper-networks-patch-critical-vulnerabilities
+
+------------------------------------------------------------
+6. AI ブランドなりすまし（偽 Claude・ChatGPT）攻撃が増加、開発者を標的に
+------------------------------------------------------------
+
+【24時間以内の変化】
+[Dark Reading 2026-10-16] AI ブランドなりすまし攻撃の増加を報道。
+
+【概要】
+Dark Reading によれば、人気の AI ブランドを騙るキャンペーンが増え、ClickFix 類似の手口で企業従業員を狙っている。具体的な数値・IOC は要約のみで取得できていない。
+
+【参照】
+- Fake Claude, ChatGPT Attacks Surge, Putting Developers at Risk (Dark Reading) https://www.darkreading.com/application-security/fake-claude-chatgpt-attacks-developers-risk
+
+------------------------------------------------------------
+7. Unit 42：2026年9月の初期アクセス上位5ベクター
+------------------------------------------------------------
+
+【24時間以内の変化】
+[Unit 42 2026-10-16] 月次の初期アクセス統計を公開。
+
+【概要】
+Unit 42 が 2026 年 9 月に観測した初期アクセス経路の上位 5 つをまとめた（本文は取得できず見出しのみ。内訳は未確認）。
+
+【参照】
+- Top 5 Initial Access Threat Vectors Observed by Unit 42 in September 2026 (Unit 42) https://unit42.paloaltonetworks.com/top-5-initial-access-vectors-september-2026
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+本日の新規予報なし（Step A'〜D のいずれも発行条件を満たさず。詳細は forecaster/forecasts/daily/2026-10-17.md）。
+昨日発行の fc-20261016-1（BeyondTrust CVE-2026-102764 の KEV 初回追加）の判定は検証ステージが行う。
+
