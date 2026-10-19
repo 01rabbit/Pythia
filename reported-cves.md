@@ -652,3 +652,8 @@
 | CVE-2026-103849 | Adobe Commerce/Magento（BlockStrap・テンプレートエンジン経由の任意コード実行） | 2026-10-17 | none | 2026-10-17 | YES | NVD v3.1 10.0・2026-10-13公開・Adobe修正・研究者が悪用間近と警告・実悪用/PoC未確認・Section 2 注目CVE(trends_cve) |
 | CVE-2026-110916 | Google Chrome Desktop（155.0.8059.84未満・入力検証不備） | 2026-10-17 | none | 2026-10-17 | NO | NVD v3.1 9.6（Chromium自己評価Medium）・悪用報告なし・Section 2 注目CVE(trends_cve) |
 | CVE-2026-108099 | Drupal コントリビュートモジュール Entity List（RCE・sa-contrib-2026-218） | 2026-10-18 | none | 2026-10-18 | YES | 修正3.0.10・コアCVE-2026-108097（既報）と同時公表・認証不要経路あり・Drupalが悪用コード出現を警告・実悪用/PoC未確認・Section 2 注目CVE(trends_cve) |
+| CVE-2026-15176 | F5 NGINX（ngx_http_v3_module・重大・定例外パッチ） | 2026-10-20 | none | 2026-10-20 | YES | F5が悪用未確認・非既定設定が条件・コード実行はASLR無効/回避時・K000162416等・Section 4 SOC(medium)・Section 2 トレンド |
+| CVE-2026-97205 | F5 NGINX（ngx_http_v3_module・AIO/SSI関連・重大・定例外パッチ） | 2026-10-20 | none | 2026-10-20 | YES | CVE-2026-15176と同時公表・F5が悪用未確認・Section 4 SOC(medium) |
+| CVE-2026-93479 | F5 NGINX（map ディレクティブ・重大・定例外パッチ） | 2026-10-20 | none | 2026-10-20 | YES | CVE-2026-15176と同時公表・F5が悪用未確認・Section 4 SOC(medium) |
+| CVE-2026-111862 | Rank Math SEO PRO for WordPress 3.0系一部版（サプライチェーン侵害） | 2026-10-20 | none | 2026-10-20 | YES | NVD v3.1 9.8・Wordfence CNA・EUVD-2026-104460・窓内で悪用規模/主体の報道未確認・除外サマリー（続報で再評価） |
+| CVE-2026-110936 | Siemens Software Center（V4.0.9.8未満・EUVD-only） | 2026-10-20 | none | 2026-10-20 | YES | EUVDが窓内に悪用フラグ（euvd_exploited_in_window）・CVSS 8.4・NVD/KEV/他ソースで裏付けなし・除外サマリー（続報確認） |
