@@ -1,0 +1,179 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-21 07:50 JST
+調査期間: 2026-10-20 07:00 〜 2026-10-21 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-21-001 SiteGuard Server Edition CVE-2026-106931 が KEV 追加（期限 10-23）— 更新前に診断情報を保全
+------------------------------------------------------------
+対象: SiteGuard Server Edition（EGセキュアソリューションズ）
+
+【24時間以内の変化】
+[CISA KEV 2026-10-20] KEV 追加（期限 2026-10-23）。ベンダーは 10-14 に悪用確認を告知済み。
+
+【概要】
+国産 WAF の統計機能（既定で有効）に root／SYSTEM 権限の OS コマンド実行が可能な脆弱性。ベンダーが悪用を確認している。更新で攻撃痕跡が消える可能性があるため、適用前の診断情報の取得が必要。
+【推奨アクション】
+- Ver8.00 Update5（FreeBSD 版は Ver7.00 Update6）へ更新するか、ベンダー提供パッチを適用する
+- 適用前に管理画面の［診断情報］をダウンロードして保全し、侵害調査に備える
+- Ver2.20 以降・統計機能有効の環境を棚卸しし、侵害を前提に WAF ホストの不審なプロセス・設定改変を点検する
+【監視】
+WAF ホストの想定外のプロセス起動・外向き通信、統計処理関連ファイルの改変を監視する。
+
+【参照】
+- SiteGuard Server EditionにおけるOSコマンドインジェクションの脆弱性(緊急) (EGセキュアソリューションズ) https://www.eg-secure.co.jp/siteguard/news/alert-202610-1
+- JVN#88474777 (JVN) https://jvn.jp/jp/JVN88474777/
+
+------------------------------------------------------------
+SOC-2026-10-21-002 Siemens Software Center CVE-2026-110936（KEV 追加・ClickFix で悪用）— 4.0.9.8 へ更新と IOC 探索
+------------------------------------------------------------
+対象: Siemens Software Center
+
+【24時間以内の変化】
+[CISA KEV / The Hacker News 2026-10-20] KEV 追加（期限 2026-11-03）。Siemens が悪用を確認、Romulus 基盤の ClickFix 活動に関連。
+
+【概要】
+署名済み正規アプリを DLL サイドローディングのキャリアとして悪用し、リモートアクセス型トロイの木馬を展開する手口。
+【推奨アクション】
+- Software Center を 4.0.9.8 以上へ更新し、起動して適用する
+- Siemens 共有の IOC（96.62.218[.]59、wizardexpensive[.]com、2.27.248[.]127）を遮断・過去ログ検索する
+- msiexec.exe を親に AppData\Local\Programs から起動する SiemensSoftwareCenter.exe を探索する
+【監視】
+msiexec.exe → AllMyBasic.msi → SiemensSoftwareCenter.exe の連鎖、archive.dll のロードを監視する。
+
+【参照】
+- ClickFix Attackers Exploit Siemens Software Center Flaw to Deploy Remote Access Trojan (The Hacker News) https://thehackernews.com/2026/10/clickfix-attackers-exploit-siemens.html
+
+------------------------------------------------------------
+SOC-2026-10-21-003 Plex Media Server の連鎖4件（CVE-2026-96652／96654／96655／96656）が KEV 追加 — 1.43.3.10861 へ更新
+------------------------------------------------------------
+対象: Plex Media Server
+
+【24時間以内の変化】
+[CISA KEV 2026-10-20] 4 件が KEV 追加（96654／96656 は期限 2026-10-23、96652／96655 は 2026-11-03）。
+
+【概要】
+KEV は 4 件を相互に連鎖可能と記述。前日報道の Plex2Shell との対応は未確認（推測）。
+【推奨アクション】
+- Plex Media Server を 1.43.3.10861 以降へ更新する
+- インターネット直接公開を止め、リモートアクセスを見直す
+- マイナー／プロキシの常駐など侵害の兆候を点検する
+【監視】
+Plex サーバーの外向き通信・高 CPU 使用率・想定外の子プロセスを監視する。
+
+【参照】
+- Important security update for Plex Media Server v1.43.2 and earlier (Plex) https://forums.plex.tv/t/important-security-update-for-plex-media-server-v1-43-2-and-earlier/942319
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-21-004 PAN-OS CVE-2026-0257: ランサムウェア運用者が VPN から vCenter／ESXi／VMDK へピボット — 仮想化基盤の防御確認
+------------------------------------------------------------
+対象: PAN-OS／Prisma Access（GlobalProtect）、VMware vCenter／ESXi
+
+【24時間以内の変化】
+[Unit 42 2026-10-20] Qilin／INC が悪用主体と明記、仮想化層への直接ピボットを報告。
+
+【概要】
+パッチ（2026-05）未適用の GlobalProtect が MFA バイパスの足場になり、vCenter 経由で ESXi の execInstalledOnly を無効化、DC の VMDK をオフラインで解析する。ゲスト内 EDR を回避される。
+【推奨アクション】
+- PAN-OS の修正版適用を確認し、GlobalProtect の成功ログインを遡って確認する
+- vCenter／ESXi 管理面を VPN 経由の到達から分離し、execInstalledOnly の設定変更を監視する
+- Veeam の既知脆弱性（CVE-2023-27532）の修正を確認する
+【監視】
+vCenter の新規管理者・ESXi の execInstalledOnly 変更、DC の VMDK への異常な読み取り、RMM ツールの新規導入を監視する。
+
+【参照】
+- Threat Brief: Active Exploitation of PAN-OS CVE-2026-0257 (Updated October 20) (Unit 42) https://unit42.paloaltonetworks.com/active-exploitation-of-pan-os-cve-2026-0257/
+
+------------------------------------------------------------
+SOC-2026-10-21-005 FortiSIEM CVE-2026-106173 に公開 PoC（認証不要 RCE）— 7.5.1 への更新と 27918 番ポート制限
+------------------------------------------------------------
+対象: Fortinet FortiSIEM 7.5.0
+
+【24時間以内の変化】
+[The Hacker News 2026-10-20] Horizon3.ai が PoC を公開。実悪用は未確認。
+
+【概要】
+gRPC サービスのパストラバーサル＋NUL バイトで任意ファイル上書きし、cron 実行スクリプトの改変で RCE に至る。
+【推奨アクション】
+- 7.5.1 以上へ更新する（7.6 は影響なし）
+- TCP 27918 を管理ネットワークに限定する
+- /opt/charting/redishb.sh の改変有無を確認する
+【監視】
+TCP 27918 への想定外の接続とスクリプト改変を監視する。
+
+【参照】
+- Critical FortiSIEM Flaw Gets Public Exploit PoC for Unauthenticated Remote Code Execution (The Hacker News) https://thehackernews.com/2026/10/critical-fortisiem-flaw-gets-public.html
+
+------------------------------------------------------------
+SOC-2026-10-21-006 OVHcloud CLI v0.11.0〜v0.15.0 の配布物差し替え（10-19 12:47〜14:21 UTC）— 影響確認と秘密情報のローテーション
+------------------------------------------------------------
+対象: OVHcloud CLI
+
+【24時間以内の変化】
+[The Hacker News 2026-10-20] OVHcloud が侵害範囲を告知し v0.16.0 を公開。
+
+【概要】
+ハッシュ未検証のインストール経路でその時間帯に取得した場合、ディスク上の秘密情報が窃取された可能性がある。
+【推奨アクション】
+- 該当時間帯に CLI を導入・更新・CI で取得した環境を特定し、v0.16.0 へ更新する
+- 該当環境の API キー・トークン・クラウド資格情報をローテーションする
+- CI の取得はハッシュをピン止めする
+【監視】
+OVHcloud API の想定外の利用元・利用量を監査ログで確認する。
+
+【参照】
+- Hackers Hijack Five OVHcloud CLI Releases to Distribute Secret-Stealing Malware (The Hacker News) https://thehackernews.com/2026/10/hackers-hijack-five-ovhcloud-cli.html
+
+------------------------------------------------------------
+SOC-2026-10-21-007 eMudhra 中間 CA 鍵8件の侵害 — Go 1.27.3／1.26.10 へ更新、eMudhra 発行証明書の利用確認
+------------------------------------------------------------
+対象: Go（標準ライブラリ）、eMudhra（emSign）発行の TLS／コード署名証明書
+
+【24時間以内の変化】
+[The Hacker News / Dark Reading 2026-10-20] Mozilla／Chrome が侵害を確認し配布停止、Go が緊急更新。
+
+【概要】
+Chrome／Firefox は失効リストで配信済みでブラウザ側の対応は不要。Go ベースのプログラムは更新するまで拒否機能がない。当該チェーンの TLS 証明書は CT に未記録で悪用の証拠はない。
+【推奨アクション】
+- Go でビルドしたツール・サービスを 1.27.3／1.26.10 以降で再ビルドする
+- eMudhra 発行の証明書を使う接続が拒否される影響を確認し、必要なら別 CA へ切り替える
+- eMudhra の公式見解・失効状況を継続確認する
+【監視】
+TLS 検証エラーの増加（eMudhra 発行チェーン）を監視する。
+
+【参照】
+- Eight eMudhra CA Keys Compromised, Triggering Emergency Fixes Across Browsers and Software (The Hacker News) https://thehackernews.com/2026/10/eight-emudhra-ca-keys-compromised.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-21-008 Roundcube Webmail 1.7.5／1.6.20 のセキュリティ更新（IMAP コマンド注入・SSRF フィルタ回避など20件）
+------------------------------------------------------------
+対象: Roundcube Webmail
+
+【24時間以内の変化】
+[Security NEXT 2026-10-19] 1.7.5／1.6.20 を公開。CVE 番号・CVSS はアドバイザリ時点で未提示。
+
+【概要】
+IMAP 改行コードによるコマンド注入、メールヘッダ注入、SSRF フィルタ回避、SVG／CSS による外部コンテンツ制限回避、CSRF 検証回避、XSS など。悪用の報告は確認していない。
+【推奨アクション】
+- Roundcube を 1.7.5 または 1.6.20 へ更新する
+【監視】
+Roundcube の IMAP 関連エラーと不審な外部コンテンツ取得を監視する。
+
+【参照】
+- 「Roundcube Webmail」にセキュリティ更新 - 複数の脆弱性を解消 (Security NEXT) https://www.security-next.com/191672
+
+

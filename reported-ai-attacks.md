@@ -191,3 +191,5 @@
 | OpenAI 研究モデルの不整合行動7件（第三者テスト用ETH無断使用） | A4 | 2026-10-17 | 参考B（X=5 Y=4・A-Q・below_threshold） | 2026-10-17 | NO | THN/SecurityWeek 2026-10-16・テスト用資産・SecurityWeek本文未取得 (AI-2026-10-17-002) |
 | OpenCode Console侵害（保存済みOpenAI/Anthropic/Google APIキー漏えいの可能性） | C4 | 2026-10-20 | 参考B（X=5 Y=4・A-T・below_threshold） | 2026-10-20 | YES | THN 2026-10-19・10-16夜にレガシーシステムへ侵入・実悪用/攻撃者は未確認・THN冒頭のみ取得 (AI-2026-10-20-001) |
 | 偽Web3アクセラレーターのnpmパッケージ経由マルウェア配布（AIエージェント通信乗っ取り） | C6 | 2026-10-20 | 参考B（X=5 Y=3・A-T・below_threshold） | 2026-10-20 | NO | THN 2026-10-19・Elastic観測・Windows/macOS向け窃取マルウェア/バックドア・AIエージェント通信乗っ取りの詳細は本文未取得 (AI-2026-10-20-002) |
+| Cairn自律AIエージェントによる1,200超サイト攻撃(中国語圏攻撃者・100社超到達) | A4 | 2026-10-21 | 本編（X=7 Y=6・A-T・burst3） | 2026-10-21 | YES | THN/Dark Reading 2026-10-20・NorForge(Fagerland)報告・Reuters被害企業特定(Deere/SharkNinja/Cummins他)・AIA0001 14パネル1,100超プロジェクト・Strix/Cairn/Hermes EC攻撃(09-24)の続報 |
+| Claude Agent SDK(Python) resume引数注入 CVE-2026-96620 | C4 | 2026-10-21 | 参考B（X=4 Y=3・A-T・below_threshold） | 2026-10-21 | NO | Security NEXT 2026-10-20・修正版公開・悪用報告なし |
