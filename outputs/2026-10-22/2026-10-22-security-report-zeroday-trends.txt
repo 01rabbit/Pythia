@@ -1,0 +1,242 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-22 07:50 JST
+調査期間: 2026-10-21 07:00 〜 2026-10-22 07:00 JST
+========================================
+
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし：本窓の CISA KEV 追加は0件。KEV カタログ版 2026.10.21）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+BronzeSandcastle-2026-SandboxieSideload Bronze Sandcastle（Sophos 追跡名・新規クラスター）
+------------------------------------------------------------
+帰属: China-aligned（Sophos の記述・UTC+8 の活動時間帯が根拠）（信頼度: medium）/ 軸P=6 軸Q=4
+標的: government, it / フィリピン, 台湾, アフガニスタン, ナミビア, （韓国の可能性）
+
+【24時間以内の変化】
+[The Hacker News（Sophos） 2026-10-21] Sophos が未報告の中国系クラスター Bronze Sandcastle を公表。Sandboxie 等の正規署名付き実行ファイルへの DLL サイドローディングでバックドアを展開。
+
+【概要】
+THN が報じた Sophos（Gabor Szappanos）の調査によれば、Bronze Sandcastle は 2025 年 8 月〜2026 年 8 月に、Sandboxie の SandboxieWUAU.exe に悪意ある sbiedll.dll を読み込ませる等の DLL サイドローディングでバックドアを展開した。ペイロードは暗号化 config.ini から読み込まれメモリ上で実行され、ネットワーク・アカウント列挙、キーロガー、スクリーンショット機能を持つ。タスキングは file.io／gofile.io／ably.net 経由で、v1.1.7 は GitHub アカウントから暗号化設定を取得（現在は閲覧不可）。被害は フィリピン・台湾・アフガニスタン・ナミビアで確認、韓国も可能性。ペイロードは暗号化されるため静的検知が効きにくく、Sophos は挙動検知（DLL がローカルファイルを読んでメモリ内で実行）を推奨。
+
+【攻撃フロー】
+1. 正規署名付き実行ファイル（Sandboxie・javaw・Krita 等）と悪意ある DLL を同梱
+2. DLL が暗号化 config.ini を読みメモリ上でバックドアを実行
+3. file.io／gofile.io／ably.net／GitHub 経由でタスキング・設定取得
+
+【TTP】
+- T1574.001 DLL
+
+【IOC】
+- domains: dc.cathaypacifice[.]com, net.dpworldto[.]com, file[.]io（正規サービスの悪用）, gofile[.]io（同）, ably[.]net／ably[.]io（同）
+- urls: github[.]com/LatonyCharnleyaW（閲覧不可）
+- filenames: sbiedll.dll, config.ini
+
+【推奨アクション】
+正規実行ファイルが同一ディレクトリの未署名 DLL を読み込む挙動（Sandboxie・javaw・Krita 等）の監視、file.io／gofile.io／ably.net への異常通信の確認、DLL がローカルファイルを読んでメモリ内で実行する挙動検知。
+
+【検知メモ】
+ATT&CK ID は THN が T1574.001 のみ明示（それ以外の手口は ATT&CK 対応せず）。アクターは Sophos 命名の新規クラスターで既知グループとの対応は明示されていない。
+
+【参照】
+- China-Aligned Bronze Sandcastle Abuses Sandboxie DLL Sideloading to Deploy Backdoors (The Hacker News) https://thehackernews.com/2026/10/china-aligned-bronze-sandcastle-abuses.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+PartisanZmiy-2026-VasilekVMwareTools Partisan Zmiy（別名 Cyber Partisans・Solar 帰属）
+------------------------------------------------------------
+帰属: Belarus-aligned hacktivist（Solar の記述）（信頼度: medium）/ 軸P=5 軸Q=3
+標的: healthcare / ロシア
+
+【24時間以内の変化】
+[The Hacker News（Solar／Rostelecom 子会社） 2026-10-21] Solar が 2025 年 12 月に発見した約2年に及ぶロシア医療機関への侵入を公表（破壊活動なし・信頼関係を利用したアクセス維持が目的と Solar が仮説）。
+
+【概要】
+THN が報じた Solar の調査によれば、Partisan Zmiy（Cyber Partisans）は、ロシアの医療機関に最大約2年（2024 年初〜2025 年 12 月発見）潜伏した。Vasilek バックドア（Telegram で C2・持ち出し）を VMware Tools ディレクトリへの改ざん（vmtools.dll の置換・vmauad サービスで永続化）で隠し、GOST トンネルを毎週土曜 22〜23 時に起動した。初期侵入経路は不明。同グループの他の作戦では Pryanik ワイパー等を確認しているが、今回は破壊は確認されていない。Solar はロシアの ISP による Telegram 遮断で C2 が不安定になっていると指摘。IOC は記事に記載なし。
+
+【攻撃フロー】
+1. 初期侵入経路は不明
+2. VMware Tools ディレクトリに悪意ある実行ファイルを配置し vmtools.dll を置換、vmauad サービスで永続化
+3. Vasilek が Telegram で C2、GOST トンネルを毎週土曜夜に起動
+
+【TTP】
+- T1564.003 Hidden Window
+
+【IOC】
+- filenames: vmtools.dll, authd.exe, vmauad
+
+【推奨アクション】
+VMware Tools ディレクトリへの書込み・vmtools.dll の改変、VMware を装うサービス（vmauad）の監査、想定外の Telegram 通信と毎週土曜夜の定期トンネル、イベントログ消去の監視。
+
+【検知メモ】
+帰属は Solar（ロシアのセキュリティ企業）の主張。ATT&CK ID は THN が T1564.003 のみ明示。IOC は記事に無く Solar のブログに記載がありうる（未確認）。
+
+【参照】
+- Hackers Hid Vasilek Backdoor in VMware Tools During 2-Year Russian Healthcare Intrusion (The Hacker News) https://thehackernews.com/2026/10/hackers-hid-vasilek-backdoor-in-vmware.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外製品）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+CVE-2026-109618 PHP（OOM 時の longjmp 処理＝PHP2Shell）
+------------------------------------------------------------
+ベンダー: PHP Group / 影響: PHP 8.5.12 未満／8.4.27 未満／8.3.36 未満／8.2.35 未満（情報源：PHP 5.4 まで遡る広範囲。8.1 以前は公式更新なし・ソースバックポートのみ）
+CVSS v3: 9.8 / v4: 9.2 / KEV: 未収載 / PoC: 公開 / 実悪用: 未確認
+パッチ: 8.5.12／8.4.27／8.3.36／8.2.35 以降（ディストリビューションは旧版番号のまま修正を含む場合あり）
+
+【24時間以内の変化】
+[The Hacker News（watchTowr・Cloudflare 引用） 2026-10-21] PHP が計画の 10-22 から前倒しで 14:00 UTC に修正版を公開。watchTowr は 14:19 UTC 時点で両 CVE への『悪用試行』を報告（Cloudflare も攻撃試行とペイロード変更を観測）。侵入成功の確認報告はなし。KEV 未収載。
+
+【概要】
+THN によれば、PHP は OOM 時に longjmp() で現在のコンテキストを抜けるが、リクエストメモリを指すグローバル状態が残る場合があり、未認証のリモートコード実行に至る（PHP 評価 CVSS v4.0 9.2・NVD の v3.1 は 9.8）。Wiz Research・Calif・OpenAI Codex Security が発見。Calif が 10-20 に PoC 動画を誤って投稿し、watchTowr が再現。Cloudflare が事前に攻撃試行を観測、watchTowr が 10-21 14:19 UTC に悪用試行を報告した。個別サーバーでの侵入成功は未確認。オランダの DigiD 等と BambooHR が予防的に停止した。
+
+【攻撃フロー】
+1. 細工した大容量マルチパート要求などでメモリ上限に到達させる
+2. longjmp による異常脱出で壊れたグローバル状態が残る
+3. mod_php 等で未認証のコード実行（情報源が単一リクエストでの実証と記述）
+
+【ATT&CK】
+- T1190 Exploit Public-Facing Application: 細工したマルチパート要求等で PHP 実行環境（mod_php／PHP-FPM 等）の脆弱性を未認証で突く（情報源の記述：mod_php で単一の未認証リクエストによる実証）
+
+【暫定対策】
+- PHP を 8.5.12／8.4.27／8.3.36／8.2.35 以降へ更新する（ディストリビューションの changelog で CVE を確認）
+- 暫定: memory_limit=-1 を固定し post_max_size を低く保ち、Web サーバー／プロキシでリクエストサイズを制限（RLIMIT_AS／RLIMIT_DATA は使わない）
+- 更新後は新しいハードメモリ上限でプロセスが終了し得るため設定を見直す
+
+【監視】
+マルチパート要求後のメモリ上限エラー・HTTP 500 の連続、PHPSESSID の異常に大きい応答 Cookie、PHP ワーカーの原因不明の再起動を監視する。
+
+【参照】
+- PHP Issues Emergency Patches for Two Critical PHP2Shell RCE Flaws as Exploit Attempts Emerge (The Hacker News) https://thehackernews.com/2026/10/php-issues-emergency-patches-for-two.html
+- Threat Brief: Critical Vulnerabilities in PHP: CVE-2026-109618, CVE-2026-109619 (Unit 42) https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/
+- 「PHP」に2件の深刻なRCE脆弱性 - アップデートを公開 (Security NEXT) https://www.security-next.com/191749
+
+------------------------------------------------------------
+CVE-2026-109619 PHP（グローバル状態／セッションアップロード進捗＝PHP2Shell）
+------------------------------------------------------------
+ベンダー: PHP Group / 影響: PHP 8.5.12 未満／8.4.27 未満／8.3.36 未満／8.2.35 未満（情報源：PHP 5.4 まで遡る広範囲。8.1 以前は公式更新なし・ソースバックポートのみ）
+CVSS v3: 9.8 / v4: 9.2 / KEV: 未収載 / PoC: 公開 / 実悪用: 未確認
+パッチ: 8.5.12／8.4.27／8.3.36／8.2.35 以降（ディストリビューションは旧版番号のまま修正を含む場合あり）
+
+【24時間以内の変化】
+[The Hacker News（watchTowr・Cloudflare 引用） 2026-10-21] PHP が計画の 10-22 から前倒しで 14:00 UTC に修正版を公開。watchTowr は 14:19 UTC 時点で両 CVE への『悪用試行』を報告（Cloudflare も攻撃試行とペイロード変更を観測）。侵入成功の確認報告はなし。KEV 未収載。
+
+【概要】
+THN によれば、PHP が一時的にリクエストメモリを指すグローバル状態を保持し、条件次第で解放後も参照が残ることで未認証 RCE に至る（PHP 評価 CVSS v4.0 9.2）。CVE-2026-109618 と同時に修正され、同じ発見者・同じ悪用試行報告（watchTowr・Cloudflare）が当たる。個別の侵入成功は未確認・KEV 未収載。
+
+【攻撃フロー】
+1. 細工したリクエストでセッションアップロード進捗等のグローバル状態を誤用する
+2. 解放済みメモリへの参照が残る
+3. コード実行（詳細な連鎖は未公表）
+
+【ATT&CK】
+- T1190 Exploit Public-Facing Application: 細工したマルチパート要求等で PHP 実行環境（mod_php／PHP-FPM 等）の脆弱性を未認証で突く（情報源の記述：mod_php で単一の未認証リクエストによる実証）
+
+【暫定対策】
+- PHP を修正版へ更新する
+- 暫定: session.upload_progress.enabled=0 にして全ワーカーを再起動、PHP 8.5 では fatal_error_backtraces=0（全変種は防げない）
+
+【監視】
+CVE-2026-109618 と同様に異常な PHPSESSID 応答 Cookie・ワーカー再起動を監視する。
+
+【参照】
+- PHP Issues Emergency Patches for Two Critical PHP2Shell RCE Flaws as Exploit Attempts Emerge (The Hacker News) https://thehackernews.com/2026/10/php-issues-emergency-patches-for-two.html
+- Threat Brief: Critical Vulnerabilities in PHP: CVE-2026-109618, CVE-2026-109619 (Unit 42) https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/
+- 「PHP」に2件の深刻なRCE脆弱性 - アップデートを公開 (Security NEXT) https://www.security-next.com/191749
+
+------------------------------------------------------------
+CVE-2026-110264 GitLab CE/EE（Onigmo 正規表現コンパイル時の整数オーバーフロー）
+------------------------------------------------------------
+ベンダー: GitLab / 影響: 自己ホスト型 GitLab の全リリース（7.0〜19.5 の修正前）。GitLab.com は対応済み・Dedicated は 19.3.5-internal0／19.4.2-internal0 以降で対応済み
+CVSS v3: None / v4: None / KEV: 未収載 / PoC: 未確認 / 実悪用: 未確認
+パッチ: 19.5.1／19.4.3／19.3.6／19.2.9／19.1.9／19.0.10／18.11.13
+
+【24時間以内の変化】
+[The Hacker News（GitLab 公表） 2026-10-21] GitLab が CVSS 10.0 の未認証 RCE（CVE-2026-110264）を修正。悪用の兆候なし・KEV 未収載・公開 PoC の記載なし。
+
+【概要】
+THN によれば、GitLab が同梱・修正する正規表現エンジン Onigmo で、細工した正規表現のコンパイル時に整数オーバーフローが起き、条件次第で未認証ユーザーが自己ホスト型サーバー上で任意コードを実行できる（CVSS 10.0・条件の詳細は未公表）。GitLab は悪用の兆候はないと述べている。10-12 に修正した別の CVE-2026-97229（19.2 以降が対象）で更新済みの環境も今回の修正の対象になる。回避策は無くパッチ適用のみ。
+
+【攻撃フロー】
+1. 細工した正規表現を GitLab に処理させる（条件は未公表）
+2. Onigmo のコンパイル時に整数オーバーフロー
+3. 未認証で任意コード実行
+
+【暫定対策】
+- 自己ホスト型 GitLab を 19.5.1／19.4.3／19.3.6／19.2.9／19.1.9／19.0.10／18.11.13 以降へ更新する（19.4.3・19.3.6 は DB 変更で単一ノードはダウンタイムあり）
+- GitLab 公開の Sigma 検知ルール（Onigmo native worker crash／Org mode render error burst）を適用する
+
+【監視】
+Onigmo ネイティブワーカーのクラッシュ、Org mode レンダリングエラーの急増を監視する。
+
+【参照】
+- Critical GitLab Flaw (CVSS 10.0) Could Allow Unauthenticated RCE Across 12 Years of Releases (The Hacker News) https://thehackernews.com/2026/10/critical-gitlab-flaw-cvss-100-could.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃トレンド】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+TREND-2026-10-22-001 UpdraftCentral 接続キーの窃取で WordPress サイトにバックドア設置（UpdraftPlus 400万超導入・未知の攻撃者）
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News（Patchstack・Nethemba） 2026-10-21] TeamUpdraft が顧客データ流出と接続キーの悪用を公表。IOC（プラグイン名・アカウント名・IP 43.250.53[.]42）が公開。
+
+【概要】
+THN／Patchstack／Nethemba によれば、TeamUpdraft の顧客データベースへの不正アクセス（10-17〜18 発見）で UpdraftCentral・UpdraftVault・UpdraftClone の接続キー等が流出し、攻撃者は 10-18〜19 の約18時間、有効なキーで署名付き plugin.upload_plugin コマンドを送って接続先サイトにバックドアプラグインを導入した（Patchstack が 99 種のプラグイン名を観測）。バックドアは特定の URL パラメーターと 32 文字トークンで隠し管理者権限ユーザー（data-ops43 等）を作成する。攻撃者は『不明』。CVE の付与はなし。UpdraftPlus 1.26.13／2.26.13 が 10-18 22:00 BST 以前の接続を切断。
+
+【参照】
+- Attackers Abuse UpdraftCentral Keys to Plant Backdoors on WordPress Sites (The Hacker News) https://thehackernews.com/2026/10/attackers-abuse-updraftcentral-keys-to.html
+
+------------------------------------------------------------
+TREND-2026-10-22-002 Tor 出口リレー300超の乗っ取りで SSH 接続を傍受（10-1〜5・攻撃者不明）
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-21] 10-21 に詳細が報じられた（事象自体は 10-1〜5）。鍵認証への移行・known_hosts の確認を推奨。
+
+【概要】
+THN によれば、研究者 kaba が 10-2 に約3,000の出口を走査し、SSH を同一の12台の傍受サーバーへリダイレクトする333の出口を確認。公開ディレクトリ解析では 59 運営者の 377 リレーが 10-1〜4 に攻撃者の出口ポリシーへ切り替わり、ピーク時（10-4）に出口容量の 7.46% を占めた。Tor Project が 10-4 から BadExit 等で対処し 10-5 17:00 UTC までに合意から排除。パスワード認証で傍受サーバーのホスト鍵を受け入れた利用者のパスワードが窃取された可能性がある。攻撃者は不明で、運営者 1 名の Ebury 感染との関連は未確認。
+
+【参照】
+- Attackers Hijacked Over 300 Tor Exit Relays to Intercept SSH Connections (The Hacker News) https://thehackernews.com/2026/10/attackers-hijacked-over-300-tor-exit.html
+
+------------------------------------------------------------
+TREND-2026-10-22-003 Oracle 2026年10月 CPU：1,295件の修正（CVSS 9.0以上112件・最大10.0が6件）
+------------------------------------------------------------
+【24時間以内の変化】
+[Security NEXT 2026-10-21] Oracle CPU の公開と NVD 反映。実悪用・公開 PoC は未確認。
+
+【概要】
+Security NEXT によれば、Oracle は 10-20 に四半期定例パッチ（CPU）で 1,295件（重複排除後 1,209 CVE）を修正。Fusion Middleware 206・E-Business Suite 194・Communications 110・MySQL 98・Java SE 55。CVSS 9.0以上は112件。E-Business Suite の Workflow Notification Mailer の CVE-2026-101809（CVSS 10.0）は HTTP で未認証に悪用可能。悪用の報告は本窓で確認できていない。窓内の NVD 公開分は網羅スイープで機械列挙し、除外サマリーに理由付きで記録した。
+
+【参照】
+- Oracle、四半期定例パッチで1295件を修正 - 深刻な脆弱性も (Security NEXT) https://www.security-next.com/191734
+
+------------------------------------------------------------
+TREND-2026-10-22-004 Chrome 156 公開：353件の脆弱性を修正（クリティカル6件・うち2件は AI 支援による発見）
+------------------------------------------------------------
+【24時間以内の変化】
+[Security NEXT 2026-10-21] Chrome 156 の安定版公開。悪用報告なし。
+
+【概要】
+Security NEXT によれば、Google は Chrome 156（156.0.8078.47／.48）で CVE ベース353件（クリティカル6・高61）を修正。CVE-2026-113271（Accessibility の UAF）は Anthropic の研究者が Claude の支援で報告、CVE-2026-113303（WebRTC）は OpenAI Codex Security 経由の報告。実悪用の記載は確認できていない。配信は数日〜数週間かけて行われる。
+
+【参照】
+- 「Chrome 156」公開、脆弱性353件を修正 - 「クリティカル」6件 (Security NEXT) https://www.security-next.com/191702
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+本日の新規予報なし。理由: 2026-10-19 23:00 JST 以降 Evidence Ledger（取得時刻・内容ハッシュ付きの証跡）が固定されておらず、M5 時刻順序ゲートが要求する evidence_ids を示せないため（事実）。PHP2Shell（CVE-2026-109618／109619）は KEV 未収載で悪用試行が報告されており E1 候補だが、証跡なしでは発行しない。先回り監視: PHP2Shell と GitLab CVE-2026-110264 の KEV 追加・悪用成功の初報。
+

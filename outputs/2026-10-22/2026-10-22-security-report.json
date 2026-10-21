@@ -1,0 +1,1392 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-10-22",
+    "generated_at": "2026-10-22T07:50:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-10-21T07:00:00+09:00",
+      "to": "2026-10-22T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.10.21",
+      "candidates": 132,
+      "handled": 132,
+      "unhandled": 0,
+      "kev_added_in_window": 0,
+      "ghsa_origin_over_threshold": 3,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 33,
+        "euvd_only": 0
+      }
+    },
+    "data_gaps": [
+      "security-intel-collector/data/raw と Evidence Ledger は 2026-10-19 23:00 JST（UTC 14:00）の収集を最後に更新が止まり、2026-10-20 JST 以降の機械収集データと当日の証跡 manifest が存在しない（3日連続）。ニュースは RSS の直接読み出し（Web 補完）で収集。BleepingComputer／SecurityWeek／CISA Advisories／IPA／ScanNetSecurity／Mandiant の RSS は XML 解析に失敗または空で、記事の取りこぼしがありうる。"
+    ]
+  },
+  "zero_day_special": [],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [
+      {
+        "cve_id": "CVE-2026-109618",
+        "product": "PHP（OOM 時の longjmp 処理＝PHP2Shell）",
+        "vendor": "PHP Group",
+        "affected_versions": "PHP 8.5.12 未満／8.4.27 未満／8.3.36 未満／8.2.35 未満（情報源：PHP 5.4 まで遡る広範囲。8.1 以前は公式更新なし・ソースバックポートのみ）",
+        "priority": "high",
+        "cvss_v3": 9.8,
+        "cvss_v4": 9.2,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": true,
+          "actively_exploited": false,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "8.5.12／8.4.27／8.3.36／8.2.35 以降（ディストリビューションは旧版番号のまま修正を含む場合あり）",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 13,
+        "axis2_score": 8,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "The Hacker News（watchTowr・Cloudflare 引用）",
+            "date": "2026-10-21",
+            "description": "PHP が計画の 10-22 から前倒しで 14:00 UTC に修正版を公開。watchTowr は 14:19 UTC 時点で両 CVE への『悪用試行』を報告（Cloudflare も攻撃試行とペイロード変更を観測）。侵入成功の確認報告はなし。KEV 未収載。"
+          }
+        ],
+        "overview": "THN によれば、PHP は OOM 時に longjmp() で現在のコンテキストを抜けるが、リクエストメモリを指すグローバル状態が残る場合があり、未認証のリモートコード実行に至る（PHP 評価 CVSS v4.0 9.2・NVD の v3.1 は 9.8）。Wiz Research・Calif・OpenAI Codex Security が発見。Calif が 10-20 に PoC 動画を誤って投稿し、watchTowr が再現。Cloudflare が事前に攻撃試行を観測、watchTowr が 10-21 14:19 UTC に悪用試行を報告した。個別サーバーでの侵入成功は未確認。オランダの DigiD 等と BambooHR が予防的に停止した。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "細工した大容量マルチパート要求などでメモリ上限に到達させる"
+          },
+          {
+            "step": 2,
+            "description": "longjmp による異常脱出で壊れたグローバル状態が残る"
+          },
+          {
+            "step": 3,
+            "description": "mod_php 等で未認証のコード実行（情報源が単一リクエストでの実証と記述）"
+          }
+        ],
+        "techniques": [
+          {
+            "mitre_id": "T1190",
+            "name": "Exploit Public-Facing Application",
+            "implementation": "細工したマルチパート要求等で PHP 実行環境（mod_php／PHP-FPM 等）の脆弱性を未認証で突く（情報源の記述：mod_php で単一の未認証リクエストによる実証）"
+          }
+        ],
+        "temp_mitigation": [
+          "PHP を 8.5.12／8.4.27／8.3.36／8.2.35 以降へ更新する（ディストリビューションの changelog で CVE を確認）",
+          "暫定: memory_limit=-1 を固定し post_max_size を低く保ち、Web サーバー／プロキシでリクエストサイズを制限（RLIMIT_AS／RLIMIT_DATA は使わない）",
+          "更新後は新しいハードメモリ上限でプロセスが終了し得るため設定を見直す"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "マルチパート要求後のメモリ上限エラー・HTTP 500 の連続、PHPSESSID の異常に大きい応答 Cookie、PHP ワーカーの原因不明の再起動を監視する。",
+          "splunk_spl": [],
+          "detection_notes": null
+        },
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/php-issues-emergency-patches-for-two.html",
+            "title": "PHP Issues Emergency Patches for Two Critical PHP2Shell RCE Flaws as Exploit Attempts Emerge",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/",
+            "title": "Threat Brief: Critical Vulnerabilities in PHP: CVE-2026-109618, CVE-2026-109619",
+            "language": "en",
+            "source": "Unit 42"
+          },
+          {
+            "url": "https://www.security-next.com/191749",
+            "title": "「PHP」に2件の深刻なRCE脆弱性 - アップデートを公開",
+            "language": "ja",
+            "source": "Security NEXT"
+          }
+        ],
+        "sector_impact": [
+          "it",
+          "government"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": null,
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261022-CVEP-6a9aaec1"
+      },
+      {
+        "cve_id": "CVE-2026-109619",
+        "product": "PHP（グローバル状態／セッションアップロード進捗＝PHP2Shell）",
+        "vendor": "PHP Group",
+        "affected_versions": "PHP 8.5.12 未満／8.4.27 未満／8.3.36 未満／8.2.35 未満（情報源：PHP 5.4 まで遡る広範囲。8.1 以前は公式更新なし・ソースバックポートのみ）",
+        "priority": "high",
+        "cvss_v3": 9.8,
+        "cvss_v4": 9.2,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": true,
+          "actively_exploited": false,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "8.5.12／8.4.27／8.3.36／8.2.35 以降（ディストリビューションは旧版番号のまま修正を含む場合あり）",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 13,
+        "axis2_score": 8,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "The Hacker News（watchTowr・Cloudflare 引用）",
+            "date": "2026-10-21",
+            "description": "PHP が計画の 10-22 から前倒しで 14:00 UTC に修正版を公開。watchTowr は 14:19 UTC 時点で両 CVE への『悪用試行』を報告（Cloudflare も攻撃試行とペイロード変更を観測）。侵入成功の確認報告はなし。KEV 未収載。"
+          }
+        ],
+        "overview": "THN によれば、PHP が一時的にリクエストメモリを指すグローバル状態を保持し、条件次第で解放後も参照が残ることで未認証 RCE に至る（PHP 評価 CVSS v4.0 9.2）。CVE-2026-109618 と同時に修正され、同じ発見者・同じ悪用試行報告（watchTowr・Cloudflare）が当たる。個別の侵入成功は未確認・KEV 未収載。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "細工したリクエストでセッションアップロード進捗等のグローバル状態を誤用する"
+          },
+          {
+            "step": 2,
+            "description": "解放済みメモリへの参照が残る"
+          },
+          {
+            "step": 3,
+            "description": "コード実行（詳細な連鎖は未公表）"
+          }
+        ],
+        "techniques": [
+          {
+            "mitre_id": "T1190",
+            "name": "Exploit Public-Facing Application",
+            "implementation": "細工したマルチパート要求等で PHP 実行環境（mod_php／PHP-FPM 等）の脆弱性を未認証で突く（情報源の記述：mod_php で単一の未認証リクエストによる実証）"
+          }
+        ],
+        "temp_mitigation": [
+          "PHP を修正版へ更新する",
+          "暫定: session.upload_progress.enabled=0 にして全ワーカーを再起動、PHP 8.5 では fatal_error_backtraces=0（全変種は防げない）"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "CVE-2026-109618 と同様に異常な PHPSESSID 応答 Cookie・ワーカー再起動を監視する。",
+          "splunk_spl": [],
+          "detection_notes": null
+        },
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/php-issues-emergency-patches-for-two.html",
+            "title": "PHP Issues Emergency Patches for Two Critical PHP2Shell RCE Flaws as Exploit Attempts Emerge",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/",
+            "title": "Threat Brief: Critical Vulnerabilities in PHP: CVE-2026-109618, CVE-2026-109619",
+            "language": "en",
+            "source": "Unit 42"
+          },
+          {
+            "url": "https://www.security-next.com/191749",
+            "title": "「PHP」に2件の深刻なRCE脆弱性 - アップデートを公開",
+            "language": "ja",
+            "source": "Security NEXT"
+          }
+        ],
+        "sector_impact": [
+          "it",
+          "government"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": null,
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261022-CVEP-7695706d"
+      },
+      {
+        "cve_id": "CVE-2026-110264",
+        "product": "GitLab CE/EE（Onigmo 正規表現コンパイル時の整数オーバーフロー）",
+        "vendor": "GitLab",
+        "affected_versions": "自己ホスト型 GitLab の全リリース（7.0〜19.5 の修正前）。GitLab.com は対応済み・Dedicated は 19.3.5-internal0／19.4.2-internal0 以降で対応済み",
+        "priority": "high",
+        "cvss_v3": null,
+        "cvss_v4": null,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": false,
+          "actively_exploited": false,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "19.5.1／19.4.3／19.3.6／19.2.9／19.1.9／19.0.10／18.11.13",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 13,
+        "axis2_score": 4,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "The Hacker News（GitLab 公表）",
+            "date": "2026-10-21",
+            "description": "GitLab が CVSS 10.0 の未認証 RCE（CVE-2026-110264）を修正。悪用の兆候なし・KEV 未収載・公開 PoC の記載なし。"
+          }
+        ],
+        "overview": "THN によれば、GitLab が同梱・修正する正規表現エンジン Onigmo で、細工した正規表現のコンパイル時に整数オーバーフローが起き、条件次第で未認証ユーザーが自己ホスト型サーバー上で任意コードを実行できる（CVSS 10.0・条件の詳細は未公表）。GitLab は悪用の兆候はないと述べている。10-12 に修正した別の CVE-2026-97229（19.2 以降が対象）で更新済みの環境も今回の修正の対象になる。回避策は無くパッチ適用のみ。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "細工した正規表現を GitLab に処理させる（条件は未公表）"
+          },
+          {
+            "step": 2,
+            "description": "Onigmo のコンパイル時に整数オーバーフロー"
+          },
+          {
+            "step": 3,
+            "description": "未認証で任意コード実行"
+          }
+        ],
+        "techniques": [],
+        "temp_mitigation": [
+          "自己ホスト型 GitLab を 19.5.1／19.4.3／19.3.6／19.2.9／19.1.9／19.0.10／18.11.13 以降へ更新する（19.4.3・19.3.6 は DB 変更で単一ノードはダウンタイムあり）",
+          "GitLab 公開の Sigma 検知ルール（Onigmo native worker crash／Org mode render error burst）を適用する"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "Onigmo ネイティブワーカーのクラッシュ、Org mode レンダリングエラーの急増を監視する。",
+          "splunk_spl": [],
+          "detection_notes": null
+        },
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/critical-gitlab-flaw-cvss-100-could.html",
+            "title": "Critical GitLab Flaw (CVSS 10.0) Could Allow Unauthenticated RCE Across 12 Years of Releases",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": null,
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261022-CVEP-6bde959f"
+      }
+    ],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-10-22-001",
+        "title": "UpdraftCentral 接続キーの窃取で WordPress サイトにバックドア設置（UpdraftPlus 400万超導入・未知の攻撃者）",
+        "summary": "THN／Patchstack／Nethemba によれば、TeamUpdraft の顧客データベースへの不正アクセス（10-17〜18 発見）で UpdraftCentral・UpdraftVault・UpdraftClone の接続キー等が流出し、攻撃者は 10-18〜19 の約18時間、有効なキーで署名付き plugin.upload_plugin コマンドを送って接続先サイトにバックドアプラグインを導入した（Patchstack が 99 種のプラグイン名を観測）。バックドアは特定の URL パラメーターと 32 文字トークンで隠し管理者権限ユーザー（data-ops43 等）を作成する。攻撃者は『不明』。CVE の付与はなし。UpdraftPlus 1.26.13／2.26.13 が 10-18 22:00 BST 以前の接続を切断。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News（Patchstack・Nethemba）",
+            "date": "2026-10-21",
+            "description": "TeamUpdraft が顧客データ流出と接続キーの悪用を公表。IOC（プラグイン名・アカウント名・IP 43.250.53[.]42）が公開。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/attackers-abuse-updraftcentral-keys-to.html",
+            "title": "Attackers Abuse UpdraftCentral Keys to Plant Backdoors on WordPress Sites",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261022-TRND-67a85f35"
+      },
+      {
+        "topic_id": "TREND-2026-10-22-002",
+        "title": "Tor 出口リレー300超の乗っ取りで SSH 接続を傍受（10-1〜5・攻撃者不明）",
+        "summary": "THN によれば、研究者 kaba が 10-2 に約3,000の出口を走査し、SSH を同一の12台の傍受サーバーへリダイレクトする333の出口を確認。公開ディレクトリ解析では 59 運営者の 377 リレーが 10-1〜4 に攻撃者の出口ポリシーへ切り替わり、ピーク時（10-4）に出口容量の 7.46% を占めた。Tor Project が 10-4 から BadExit 等で対処し 10-5 17:00 UTC までに合意から排除。パスワード認証で傍受サーバーのホスト鍵を受け入れた利用者のパスワードが窃取された可能性がある。攻撃者は不明で、運営者 1 名の Ebury 感染との関連は未確認。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-10-21",
+            "description": "10-21 に詳細が報じられた（事象自体は 10-1〜5）。鍵認証への移行・known_hosts の確認を推奨。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/attackers-hijacked-over-300-tor-exit.html",
+            "title": "Attackers Hijacked Over 300 Tor Exit Relays to Intercept SSH Connections",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261022-TRND-c5c0e81c"
+      },
+      {
+        "topic_id": "TREND-2026-10-22-003",
+        "title": "Oracle 2026年10月 CPU：1,295件の修正（CVSS 9.0以上112件・最大10.0が6件）",
+        "summary": "Security NEXT によれば、Oracle は 10-20 に四半期定例パッチ（CPU）で 1,295件（重複排除後 1,209 CVE）を修正。Fusion Middleware 206・E-Business Suite 194・Communications 110・MySQL 98・Java SE 55。CVSS 9.0以上は112件。E-Business Suite の Workflow Notification Mailer の CVE-2026-101809（CVSS 10.0）は HTTP で未認証に悪用可能。悪用の報告は本窓で確認できていない。窓内の NVD 公開分は網羅スイープで機械列挙し、除外サマリーに理由付きで記録した。",
+        "changes_24h": [
+          {
+            "source": "Security NEXT",
+            "date": "2026-10-21",
+            "description": "Oracle CPU の公開と NVD 反映。実悪用・公開 PoC は未確認。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.security-next.com/191734",
+            "title": "Oracle、四半期定例パッチで1295件を修正 - 深刻な脆弱性も",
+            "language": "ja",
+            "source": "Security NEXT"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261022-TRND-d7d22daa"
+      },
+      {
+        "topic_id": "TREND-2026-10-22-004",
+        "title": "Chrome 156 公開：353件の脆弱性を修正（クリティカル6件・うち2件は AI 支援による発見）",
+        "summary": "Security NEXT によれば、Google は Chrome 156（156.0.8078.47／.48）で CVE ベース353件（クリティカル6・高61）を修正。CVE-2026-113271（Accessibility の UAF）は Anthropic の研究者が Claude の支援で報告、CVE-2026-113303（WebRTC）は OpenAI Codex Security 経由の報告。実悪用の記載は確認できていない。配信は数日〜数週間かけて行われる。",
+        "changes_24h": [
+          {
+            "source": "Security NEXT",
+            "date": "2026-10-21",
+            "description": "Chrome 156 の安定版公開。悪用報告なし。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://www.security-next.com/191702",
+            "title": "「Chrome 156」公開、脆弱性353件を修正 - 「クリティカル」6件",
+            "language": "ja",
+            "source": "Security NEXT"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261022-TRND-07f5a872"
+      }
+    ]
+  },
+  "apt_main": [
+    {
+      "activity_type": [
+        "espionage"
+      ],
+      "motivation": "espionage",
+      "first_seen": "2025-08-01",
+      "last_seen": "2026-08-31",
+      "malware": [
+        "Sophos 命名の未命名バックドア（v1.1.5／v1.1.7）"
+      ],
+      "recommended_actions": "正規実行ファイルが同一ディレクトリの未署名 DLL を読み込む挙動（Sandboxie・javaw・Krita 等）の監視、file.io／gofile.io／ably.net への異常通信の確認、DLL がローカルファイルを読んでメモリ内で実行する挙動検知。",
+      "splunk_spl": [],
+      "detection_notes": "ATT&CK ID は THN が T1574.001 のみ明示（それ以外の手口は ATT&CK 対応せず）。アクターは Sophos 命名の新規クラスターで既知グループとの対応は明示されていない。",
+      "related_cves": [],
+      "ioc": {
+        "confirmed": true,
+        "ips": [],
+        "domains": [
+          "dc.cathaypacifice[.]com",
+          "net.dpworldto[.]com",
+          "file[.]io（正規サービスの悪用）",
+          "gofile[.]io（同）",
+          "ably[.]net／ably[.]io（同）"
+        ],
+        "hashes": [],
+        "urls": [
+          "github[.]com/LatonyCharnleyaW（閲覧不可）"
+        ],
+        "filenames": [
+          "sbiedll.dll",
+          "config.ini"
+        ]
+      },
+      "group_name": "Bronze Sandcastle（Sophos 追跡名・新規クラスター）",
+      "aliases": [],
+      "nation_state": "China-aligned（Sophos の記述・UTC+8 の活動時間帯が根拠）",
+      "attribution_confidence": "medium",
+      "campaign_id": "BronzeSandcastle-2026-SandboxieSideload",
+      "targets": {
+        "sectors": [
+          "government",
+          "it"
+        ],
+        "regions": [
+          "フィリピン",
+          "台湾",
+          "アフガニスタン",
+          "ナミビア",
+          "（韓国の可能性）"
+        ],
+        "countries": []
+      },
+      "axis_p_score": 6,
+      "axis_q_score": 4,
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Sophos）",
+          "date": "2026-10-21",
+          "description": "Sophos が未報告の中国系クラスター Bronze Sandcastle を公表。Sandboxie 等の正規署名付き実行ファイルへの DLL サイドローディングでバックドアを展開。"
+        }
+      ],
+      "overview": "THN が報じた Sophos（Gabor Szappanos）の調査によれば、Bronze Sandcastle は 2025 年 8 月〜2026 年 8 月に、Sandboxie の SandboxieWUAU.exe に悪意ある sbiedll.dll を読み込ませる等の DLL サイドローディングでバックドアを展開した。ペイロードは暗号化 config.ini から読み込まれメモリ上で実行され、ネットワーク・アカウント列挙、キーロガー、スクリーンショット機能を持つ。タスキングは file.io／gofile.io／ably.net 経由で、v1.1.7 は GitHub アカウントから暗号化設定を取得（現在は閲覧不可）。被害は フィリピン・台湾・アフガニスタン・ナミビアで確認、韓国も可能性。ペイロードは暗号化されるため静的検知が効きにくく、Sophos は挙動検知（DLL がローカルファイルを読んでメモリ内で実行）を推奨。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "正規署名付き実行ファイル（Sandboxie・javaw・Krita 等）と悪意ある DLL を同梱"
+        },
+        {
+          "step": 2,
+          "description": "DLL が暗号化 config.ini を読みメモリ上でバックドアを実行"
+        },
+        {
+          "step": 3,
+          "description": "file.io／gofile.io／ably.net／GitHub 経由でタスキング・設定取得"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1574.001",
+          "name": "DLL"
+        }
+      ],
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/china-aligned-bronze-sandcastle-abuses.html",
+          "title": "China-Aligned Bronze Sandcastle Abuses Sandboxie DLL Sideloading to Deploy Backdoors",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "apt_main",
+      "info_id": "20261022-APTM-c0751f50"
+    }
+  ],
+  "apt_notable": [
+    {
+      "activity_type": [
+        "espionage",
+        "hacktivism"
+      ],
+      "motivation": "hacktivism",
+      "first_seen": "2024-01-01",
+      "last_seen": "2025-12-31",
+      "malware": [
+        "Vasilek（Telegram C2・v1.5.8）",
+        "vmauad",
+        "GOST トンネル"
+      ],
+      "recommended_actions": "VMware Tools ディレクトリへの書込み・vmtools.dll の改変、VMware を装うサービス（vmauad）の監査、想定外の Telegram 通信と毎週土曜夜の定期トンネル、イベントログ消去の監視。",
+      "splunk_spl": [],
+      "detection_notes": "帰属は Solar（ロシアのセキュリティ企業）の主張。ATT&CK ID は THN が T1564.003 のみ明示。IOC は記事に無く Solar のブログに記載がありうる（未確認）。",
+      "related_cves": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": [
+          "vmtools.dll",
+          "authd.exe",
+          "vmauad"
+        ]
+      },
+      "group_name": "Partisan Zmiy（別名 Cyber Partisans・Solar 帰属）",
+      "aliases": [
+        "Cyber Partisans"
+      ],
+      "nation_state": "Belarus-aligned hacktivist（Solar の記述）",
+      "attribution_confidence": "medium",
+      "campaign_id": "PartisanZmiy-2026-VasilekVMwareTools",
+      "targets": {
+        "sectors": [
+          "healthcare"
+        ],
+        "regions": [
+          "ロシア"
+        ],
+        "countries": []
+      },
+      "axis_p_score": 5,
+      "axis_q_score": 3,
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Solar／Rostelecom 子会社）",
+          "date": "2026-10-21",
+          "description": "Solar が 2025 年 12 月に発見した約2年に及ぶロシア医療機関への侵入を公表（破壊活動なし・信頼関係を利用したアクセス維持が目的と Solar が仮説）。"
+        }
+      ],
+      "overview": "THN が報じた Solar の調査によれば、Partisan Zmiy（Cyber Partisans）は、ロシアの医療機関に最大約2年（2024 年初〜2025 年 12 月発見）潜伏した。Vasilek バックドア（Telegram で C2・持ち出し）を VMware Tools ディレクトリへの改ざん（vmtools.dll の置換・vmauad サービスで永続化）で隠し、GOST トンネルを毎週土曜 22〜23 時に起動した。初期侵入経路は不明。同グループの他の作戦では Pryanik ワイパー等を確認しているが、今回は破壊は確認されていない。Solar はロシアの ISP による Telegram 遮断で C2 が不安定になっていると指摘。IOC は記事に記載なし。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "初期侵入経路は不明"
+        },
+        {
+          "step": 2,
+          "description": "VMware Tools ディレクトリに悪意ある実行ファイルを配置し vmtools.dll を置換、vmauad サービスで永続化"
+        },
+        {
+          "step": 3,
+          "description": "Vasilek が Telegram で C2、GOST トンネルを毎週土曜夜に起動"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1564.003",
+          "name": "Hidden Window"
+        }
+      ],
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/hackers-hid-vasilek-backdoor-in-vmware.html",
+          "title": "Hackers Hid Vasilek Backdoor in VMware Tools During 2-Year Russian Healthcare Intrusion",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "apt_notable",
+      "info_id": "20261022-APTM-5acb77ee"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [
+    {
+      "attack_id": "AI-2026-10-22-001",
+      "title": "LiteLLM 1.107.0 の PyPI／Docker 配布物が侵害され資格情報窃取・バックドアを配布（エンジニア3人の GitHub アカウント経由・攻撃者の特定なし）",
+      "category": "C",
+      "subcategory": "C6",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-T"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "PyPI の LiteLLM 1.107.0 wheel（Windows／macOS／Linux 各種）と Docker イメージが対象。パッケージは隔離・悪意ある Docker イメージは削除済み。被害件数・感染数は未公表。",
+      "burst_count": 1,
+      "burst_status": "below_threshold",
+      "axis_x_score": 8,
+      "axis_y_score": 7,
+      "changes_24h": [
+        {
+          "source": "The Hacker News（StepSecurity 引用）",
+          "date": "2026-10-21",
+          "description": "LiteLLM の director of security が、3人のエンジニアの GitHub アカウント（GitHub CLI の OAuth トークン窃取の可能性）で悪意ある版が公開されたと説明。"
+        }
+      ],
+      "overview": "THN によれば、LiteLLM 1.107.0 の wheel に cook.pth（import cook を Python 起動時に自動実行）が含まれ、資格情報窃取機能（StepSecurity 命名 privcollect：クラウド資格情報・秘密鍵・ブラウザデータ・AI ツール認証ファイル・環境変数・LiteLLM プロキシ設定を収集し HTTP POST で送信）と、GitHub のデッドドロップを1時間ごとに確認して Python コードを実行するバックドアを持つ。THN は特定の攻撃者に帰属しておらず、3月の TeamPCP 関連の LiteLLM 侵害と起動挙動が同じと記すのみ（同一主体とは明示していない）。LiteLLM は関係トークンを失効し、未確認の追加アクセスの可能性は排除できていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "エンジニア3人の GitHub アカウント（窃取した OAuth トークンの可能性）で release ワークフローを起動・承認"
+        },
+        {
+          "step": 2,
+          "description": "悪意ある wheel／Docker イメージを PyPI／レジストリへ公開"
+        },
+        {
+          "step": 3,
+          "description": "インストール後 cook.pth 経由で資格情報窃取とバックドアが起動"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": true,
+        "domains": [
+          "litellm[.]dev/healthcheck（持ち出し先 HTTP POST）"
+        ],
+        "hashes": [],
+        "detection_signals": [
+          "cook.pth の存在",
+          "github[.]com/letters9813 の domain.txt をデッドドロップとして参照する通信"
+        ]
+      },
+      "monitoring": {
+        "description": "Python の site-packages における cook.pth の出現、litellm[.]dev への HTTP POST、GitHub のデッドドロップへの定期的アクセスを監視する。",
+        "splunk_spl": [],
+        "detection_notes": "悪意ある版は 1.107.0 のみ（情報源）。1.106.2 をダイジェスト固定で利用することが推奨されている。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/litellm-compromised-in-supply-chain.html",
+          "title": "LiteLLM Compromised in Supply Chain Attack Delivering Credential Stealer and Backdoor",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20261022-AIAT-0565e2cd"
+    }
+  ],
+  "ai_attacks_reference_b": [
+    {
+      "attack_id": "AI-2026-10-22-002",
+      "title": "Unit 42 が BUGSTER を報告：Hermes Agent＋DeepSeek V4 を Telegram 経由で操作し複数種のサイバー犯罪を実行（インドの大学等を標的）",
+      "category": "A",
+      "subcategory": "A4",
+      "attacker_type": "criminal",
+      "adoption_triggers": [
+        "A-T"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "education",
+          "retail"
+        ],
+        "regions": [
+          "IN"
+        ],
+        "countries": [
+          "IN"
+        ]
+      },
+      "damage_scale": "インドの大学サイトへのブルートフォース（1件で有効なログインを確認）、別大学の MongoDB から 5,200 件超の学生・教職員 PII を持ち出し。他は計画・準備段階（VoIP 詐欺・暗号資産保有者の偵察）。",
+      "burst_count": 1,
+      "burst_status": "below_threshold",
+      "axis_x_score": 6,
+      "axis_y_score": 4,
+      "changes_24h": [
+        {
+          "source": "Unit 42",
+          "date": "2026-10-21",
+          "description": "Unit 42 が BUGSTER（金銭目的・英語話者・過去の報告なし）の AI 支援犯罪活動の分析を公表。"
+        }
+      ],
+      "overview": "Unit 42 によれば、BUGSTER は Hermes Agent フレームワーク（推論エンジンに DeepSeek V4・Telegram で制御・システムプロンプトの上書きで安全制御を無効化）と、権限・サンドボックス制御を回避する設定の Cursor IDE を用い、侦察・ブルートフォース・DB 窃取・EC サイトの API トークン抽出・WPA ハンドシェイクのクラウド GPU 解析・Python 製 C2 リスナー（Windows リバースシェル）・Go 製の資格情報スキャナーを実行した。基本的なツールに AI 生成のスクリプトを組み合わせて実害を出した、と評価している。Unit 42 は複数の無関係な攻撃者が同じ Hermes＋DeepSeek の組み合わせを採用していると記す。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Telegram 経由で Hermes Agent（DeepSeek V4）に指示し侦察・攻撃スクリプトを生成"
+        },
+        {
+          "step": 2,
+          "description": "WordPress へのブルートフォース、MongoDB の持ち出し、EC の API トークン抽出"
+        },
+        {
+          "step": 3,
+          "description": "Python 製 C2 とリバースシェル、資格情報スキャナーで継続"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": false,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "Hermes Agent／Cursor の権限回避設定の使用（攻撃者側の痕跡）"
+        ]
+      },
+      "monitoring": {
+        "description": "WordPress へのパスワード総当たり、MongoDB への外部からの認証なしアクセス、EC の管理 API トークンの外部使用を監視する。",
+        "splunk_spl": [],
+        "detection_notes": "AI 利用の判別手段は未公表。"
+      },
+      "references": [
+        {
+          "url": "https://unit42.paloaltonetworks.com/ai-assisted-cybercrime-analysis/",
+          "title": "\"Next Exploit Opportunities\": How a Threat Actor Used AI to Help Plan and Execute Multiple Types of Cybercrime Activities",
+          "language": "en",
+          "source": "Unit 42"
+        }
+      ],
+      "report_section": "ai_attacks_reference_b",
+      "info_id": "20261022-AIAT-4431f3ed"
+    }
+  ],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-10-22-001",
+      "title": "PHP2Shell（CVE-2026-109618／109619・未認証 RCE）の悪用試行が報告 — 修正版へ即時更新",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "high",
+      "product_or_service": "PHP（mod_php・PHP-FPM・php-cgi・FrankenPHP・LiteSpeed）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-21",
+          "description": "修正版公開（10-21 14:00 UTC）と同時期に watchTowr・Cloudflare が悪用試行を報告。KEV 未収載。"
+        }
+      ],
+      "overview": "PHP の OOM 処理とグローバル状態に起因する未認証 RCE（CVSS v4.0 9.2）。侵入成功の確認はないが、PoC 動画の誤公開と再現があり悪用試行が始まっている。",
+      "recommended_actions": [
+        "PHP 8.5.12／8.4.27／8.3.36／8.2.35 以降へ更新（ディストリビューションは changelog で CVE を確認）。8.1 以前はバックポート適用",
+        "更新まで memory_limit=-1 固定・post_max_size 低め・プロキシでのリクエストサイズ制限、session.upload_progress.enabled=0 とワーカー再起動",
+        "WAF ルール（Cloudflare 等）は暫定策であり更新の代替にならない"
+      ],
+      "monitoring": {
+        "description": "マルチパート要求後のメモリ上限エラー・HTTP 500 連続、巨大な PHPSESSID 応答 Cookie、ワーカーの不明な再起動。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/php-issues-emergency-patches-for-two.html",
+          "title": "PHP Issues Emergency Patches for Two Critical PHP2Shell RCE Flaws as Exploit Attempts Emerge",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/",
+          "title": "Threat Brief: Critical Vulnerabilities in PHP: CVE-2026-109618, CVE-2026-109619",
+          "language": "en",
+          "source": "Unit 42"
+        },
+        {
+          "url": "https://www.security-next.com/191749",
+          "title": "「PHP」に2件の深刻なRCE脆弱性 - アップデートを公開",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "info_id": "20261022-SOCR-2feefcdf"
+    },
+    {
+      "rec_id": "SOC-2026-10-22-002",
+      "title": "GitLab CVE-2026-110264（CVSS 10.0・未認証 RCE）— 自己ホスト型は修正版へ更新",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "high",
+      "product_or_service": "GitLab CE/EE（自己ホスト型）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-21",
+          "description": "GitLab が全リリース対象の未認証 RCE を修正。悪用の兆候なし・回避策なし。"
+        }
+      ],
+      "overview": "Onigmo の正規表現コンパイルにおける整数オーバーフロー。10-12 の別修正（CVE-2026-97229）で更新済みの環境も再度更新が必要。",
+      "recommended_actions": [
+        "19.5.1／19.4.3／19.3.6／19.2.9／19.1.9／19.0.10／18.11.13 以降へ更新（19.4.3・19.3.6 は DB 変更あり）",
+        "GitLab 公開の Sigma 検知ルールを適用し、外部公開インスタンスのアクセス元を確認する"
+      ],
+      "monitoring": {
+        "description": "Onigmo ネイティブワーカーのクラッシュ、Org mode レンダリングエラーの急増。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/critical-gitlab-flaw-cvss-100-could.html",
+          "title": "Critical GitLab Flaw (CVSS 10.0) Could Allow Unauthenticated RCE Across 12 Years of Releases",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261022-SOCR-fb0b38e2"
+    },
+    {
+      "rec_id": "SOC-2026-10-22-003",
+      "title": "LiteLLM 1.107.0 の供給網侵害 — インストール有無の確認と資格情報のローテーション",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "A-T"
+      ],
+      "priority": "high",
+      "product_or_service": "LiteLLM（PyPI・Docker）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-21",
+          "description": "悪意ある 1.107.0 が公開され PyPI で隔離。資格情報窃取とバックドア。"
+        }
+      ],
+      "overview": "cook.pth による Python 起動時の自動実行で、クラウド資格情報・秘密鍵・AI ツール認証情報が持ち出される。",
+      "recommended_actions": [
+        "1.107.0 を導入した環境を特定し、そこで扱った全資格情報（クラウド・API キー・SSH 鍵・LiteLLM プロキシ設定）をクリーンな環境から失効・再発行",
+        "1.106.2 へダイジェスト固定で戻す",
+        "site-packages の cook.pth と litellm[.]dev への通信を検索"
+      ],
+      "monitoring": {
+        "description": "cook.pth の出現、litellm[.]dev への HTTP POST、GitHub デッドドロップ参照。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/litellm-compromised-in-supply-chain.html",
+          "title": "LiteLLM Compromised in Supply Chain Attack Delivering Credential Stealer and Backdoor",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261022-SOCR-4e721a93"
+    },
+    {
+      "rec_id": "SOC-2026-10-22-004",
+      "title": "UpdraftPlus／UpdraftCentral 利用の WordPress サイト：不審な管理者・プラグインの点検",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "UpdraftPlus（1.26.12／2.26.12 未満）・UpdraftCentral",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-21",
+          "description": "接続キー流出を悪用したバックドアプラグイン導入（10-18〜19）。UpdraftPlus 1.26.13／2.26.13 公開。"
+        }
+      ],
+      "overview": "正規の管理経路（署名付きコマンド）で導入されるため、通常のプラグイン脆弱性対策では検知しにくい。",
+      "recommended_actions": [
+        "UpdraftPlus を 1.26.13／2.26.13 以降へ更新し接続キーを削除、ダッシュボードへ直接ログインして管理者・プラグイン（Must-Use タブ含む）を点検",
+        "data-ops43 等の不審アカウントと『Small maintenance toolkit』ヘッダーのプラグインを検索、管理者パスワード変更",
+        "侵害が疑われる場合は 10-17 以前のバックアップへ復元"
+      ],
+      "monitoring": {
+        "description": "未知の管理者アカウントの作成、不審プラグインの新規導入、43.250.53[.]42 からのアクセス。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/attackers-abuse-updraftcentral-keys-to.html",
+          "title": "Attackers Abuse UpdraftCentral Keys to Plant Backdoors on WordPress Sites",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261022-SOCR-a1e98849"
+    },
+    {
+      "rec_id": "SOC-2026-10-22-005",
+      "title": "Tor 経由の SSH パスワード認証利用者：10-1〜5 の傍受の可能性を確認",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "Tor 出口リレー・SSH",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-21",
+          "description": "乗っ取られた出口 377 リレーで SSH が傍受サーバーへ誘導された。攻撃者は不明。"
+        }
+      ],
+      "overview": "Tor 経由でパスワード認証した SSH で、変更されたホスト鍵を受け入れた場合は資格情報が窃取された可能性がある。",
+      "recommended_actions": [
+        "10-1〜5 に Tor 経由でパスワード SSH を行った場合は当該パスワードを変更し、known_hosts の想定外の鍵を削除",
+        "SSH は鍵認証へ移行し、パスワード認証を無効化する",
+        "Ebury 感染の兆候をサーバーで確認する"
+      ],
+      "monitoring": {
+        "description": "ホスト鍵変更の警告、想定外の鍵での接続。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/attackers-hijacked-over-300-tor-exit.html",
+          "title": "Attackers Hijacked Over 300 Tor Exit Relays to Intercept SSH Connections",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261022-SOCR-ccd94d1d"
+    },
+    {
+      "rec_id": "SOC-2026-10-22-006",
+      "title": "Oracle 2026年10月 CPU 適用の優先付け（EBS・Fusion Middleware・WebLogic）",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "γ"
+      ],
+      "priority": "medium",
+      "product_or_service": "Oracle E-Business Suite・Fusion Middleware・WebLogic 等",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-10-21",
+          "description": "10-20 に CPU 1,295件公開。CVSS 9.0以上 112件。悪用報告なし。"
+        }
+      ],
+      "overview": "外部公開の EBS（CVE-2026-101809・未認証 HTTP）・WebLogic・Identity／Access Manager を優先する。",
+      "recommended_actions": [
+        "インターネット公開の EBS・WebLogic・OAM／OIM から優先適用し、公開の要否を見直す"
+      ],
+      "monitoring": {
+        "description": "対象製品へ向く未認証 HTTP 要求の急増。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/191734",
+          "title": "Oracle、四半期定例パッチで1295件を修正 - 深刻な脆弱性も",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "info_id": "20261022-SOCR-fadb8134"
+    },
+    {
+      "rec_id": "SOC-2026-10-22-007",
+      "title": "Chrome 156 への更新（353件修正・クリティカル6件）",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "γ"
+      ],
+      "priority": "low",
+      "product_or_service": "Google Chrome（156.0.8078.47／.48 以降）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Security NEXT",
+          "date": "2026-10-21",
+          "description": "Chrome 156 公開。悪用報告なし。"
+        }
+      ],
+      "overview": "展開に数日〜数週間かかるため手動で更新確認を促す。",
+      "recommended_actions": [
+        "管理端末の Chrome を 156.0.8078.47 以降へ更新し再起動を促す"
+      ],
+      "monitoring": {
+        "description": "古いバージョンの Chrome の残存台数。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.security-next.com/191702",
+          "title": "「Chrome 156」公開、脆弱性353件を修正 - 「クリティカル」6件",
+          "language": "ja",
+          "source": "Security NEXT"
+        }
+      ],
+      "info_id": "20261022-SOCR-f98329e5"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-101420 ほか63件（全件: CVE-2026-101420, CVE-2026-101446, CVE-2026-101484, CVE-2026-101499, CVE-2026-101501, CVE-2026-101503, CVE-2026-101521, CVE-2026-101528, CVE-2026-101529, CVE-2026-101537, CVE-2026-101590, CVE-2026-101634, CVE-2026-101763, CVE-2026-101765, CVE-2026-101767, CVE-2026-101808, CVE-2026-101809, CVE-2026-60432, CVE-2026-83396, CVE-2026-83397, CVE-2026-83399, CVE-2026-87251, CVE-2026-87302, CVE-2026-87337, CVE-2026-87347, CVE-2026-91214, CVE-2026-91216, CVE-2026-91218, CVE-2026-91220, CVE-2026-91221, CVE-2026-91222, CVE-2026-91224, CVE-2026-91225, CVE-2026-91230, CVE-2026-91231, CVE-2026-91232, CVE-2026-91233, CVE-2026-91234, CVE-2026-91235, CVE-2026-91236, CVE-2026-91241, CVE-2026-91243, CVE-2026-91250, CVE-2026-91251, CVE-2026-91265, CVE-2026-91299, CVE-2026-91305, CVE-2026-91323, CVE-2026-91341, CVE-2026-91354, CVE-2026-91408, CVE-2026-91490, CVE-2026-91491, CVE-2026-91495, CVE-2026-91622, CVE-2026-91624, CVE-2026-91637, CVE-2026-91638, CVE-2026-91644, CVE-2026-91655, CVE-2026-91656, CVE-2026-91658, CVE-2026-91663, CVE-2026-91665）",
+        "product": "Oracle 2026年10月 CPU（CVE 群）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。Oracle 四半期 CPU の一括公開。Section 2 トレンドの Oracle CPU 項で全体を記録。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（ベンダー／CNA 公表のみ・悪用報告なし。最大CVSS 10.0） （バッチ集約）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2025-31699 ほか7件（全件: CVE-2025-31699, CVE-2026-111809, CVE-2026-111811, CVE-2026-111812, CVE-2026-111813, CVE-2026-111814, CVE-2026-111815, CVE-2026-111816）",
+        "product": "Apache Traffic Server",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。Apache Traffic Server の一括公開。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（ベンダー／CNA 公表のみ・悪用報告なし。最大CVSS 10.0） （バッチ集約）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-113736 ほか2件（全件: CVE-2026-113736, CVE-2026-113744, CVE-2026-114268）",
+        "product": "Tenda／D-Link 製ルーター（個別 CVE）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。個別プロダクトの CVE。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（ベンダー／CNA 公表のみ・悪用報告なし。最大CVSS 10.0） （バッチ集約）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-20043 ほか4件（全件: CVE-2026-20043, CVE-2026-76466, CVE-2026-76473, CVE-2026-76474, CVE-2026-76475）",
+        "product": "Cisco（Expressway／Cisco 所有 OSS ほか）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。Cisco の一括公開。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（ベンダー／CNA 公表のみ・悪用報告なし。最大CVSS 9.8） （バッチ集約）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-112992 ほか28件（全件: CVE-2026-112992, CVE-2026-113007, CVE-2026-113014, CVE-2026-113020, CVE-2026-113023, CVE-2026-113056, CVE-2026-113072, CVE-2026-113078, CVE-2026-113084, CVE-2026-113089, CVE-2026-113116, CVE-2026-113126, CVE-2026-113138, CVE-2026-113169, CVE-2026-113171, CVE-2026-113186, CVE-2026-113189, CVE-2026-113211, CVE-2026-113222, CVE-2026-113235, CVE-2026-113252, CVE-2026-113261, CVE-2026-113263, CVE-2026-113270, CVE-2026-113283, CVE-2026-113300, CVE-2026-113328, CVE-2026-113336, CVE-2026-113342）",
+        "product": "Google Chrome 156（CVE 群）",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.0 以上（NVD/EUVD の機械列挙）。Chrome 156 の一括公開バッチ。Section 2 トレンドの Chrome 156 項で件数・クリティカル6件を記録。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（ベンダー／CNA 公表のみ・悪用報告なし。最大CVSS 9.6） （バッチ集約）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-105944",
+        "product": "Apache Pulsar Manager is a web console for administering Apache Pulsar clusters.",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 10.0（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-111832",
+        "product": "Unrestricted Upload of File with Dangerous Type vulnerability in WP Mailster WP ",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 10.0（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-81212",
+        "product": "IBM DataStage on Cloud Pak for Data 5.4.0.0 allows an unauthenticated user to pe",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 10.0（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-111834",
+        "product": "Unrestricted Upload of File with Dangerous Type vulnerability in Kitae Park Mang",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.9（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-71195",
+        "product": "In OpenStack Manila before 23.0.1, multiple Manila API operations on public shar",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.9（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-111183",
+        "product": "GStreamer rtpL16depay Heap-based Buffer Overflow Remote Code Execution Vulnerabi",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.8（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-114108",
+        "product": "HKUDS Vibe-Trading from 0.1.0 before 0.1.7 contains a missing authentication vul",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.8（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-114119",
+        "product": "Best Practice Software Bp Premier before 1.14.1.1128 uses a hardcoded Microsoft ",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.8（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-92559",
+        "product": "IBM App Connect Enterprise 13.0.1.0 through 13.0.8.2 could allow a remote attack",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.8（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-96639",
+        "product": "Pillow is a Python imaging library. From 11.0.0 until 13.0.0, multi-frame loader",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.8（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-112408",
+        "product": "Missing verification of source of a communication channel in the default_bucket(",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.4（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-113788",
+        "product": "Lagoon is an application delivery platform for Kubernetes. Versions prior to 2.3",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.4（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-111852",
+        "product": "Improper Neutralization of Special Elements used in an SQL Command ('SQL Injecti",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.3（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-105869",
+        "product": "Apache Pulsar's MultiRolesTokenAuthorizationProvider authorizes a client with al",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.2（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-114053",
+        "product": "vLLM from 0.7.3 before 0.31.0 forwards the request-supplied mm_processor_kwargs.",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.2（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-114087",
+        "product": "Trigger.dev before 4.5.6 self-hosted Docker Compose deployments using the defaul",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.2（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-114403",
+        "product": "PHPOffice PHPPresentation through 1.2.0 contains an insecure deserialization vul",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.2（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-114493",
+        "product": "LocalAI v4.6.0 through v4.11.0 contains a server-side request forgery vulnerabil",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.2（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-114139",
+        "product": "Sentry-Javascript is an official Sentry SDKs for JavaScript. From 9.36.0 until 9",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.1（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-87095",
+        "product": "Sensitive information disclosure and manipulation due to improper authorization ",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.1（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      },
+      {
+        "cve_id": "CVE-2026-89035",
+        "product": "MikroTik RouterOS through 7.24.5 contains a session token replay vulnerability i",
+        "reason": "low_score",
+        "reason_detail": "窓内公開の CVSS 9.1（NVD/EUVD の機械列挙）。本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なしのため除外（個別プロダクトの CVE・ベンダー／CNA 公表のみ・悪用報告なし）",
+        "reported_date": "2026-10-22"
+      }
+    ],
+    "apt": [],
+    "ai_attacks": [],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 26,
+      "total_processed": 132
+    },
+    "apt": {
+      "main": 1,
+      "notable": 1,
+      "excluded": 0,
+      "total_processed": 2
+    },
+    "ai_attacks": {
+      "main": 1,
+      "reference_a": 0,
+      "reference_b": 1,
+      "excluded": 0,
+      "total_processed": 2,
+      "category_breakdown": {
+        "A": 1,
+        "B": 0,
+        "C": 1
+      }
+    },
+    "soc_recommendations": {
+      "high": 3,
+      "medium": 3,
+      "low": 1,
+      "excluded": 0,
+      "total_processed": 7,
+      "perspective_breakdown": {
+        "cve": 4,
+        "zeroday": 2,
+        "ai_attack": 1
+      }
+    }
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-10-21T22:36:25Z",
+    "operational_picture": {
+      "subjects_tracked": 141,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 59,
+        "DISCLOSED": 67,
+        "POC_PUBLIC": 15
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 118,
+        "shadow": 82
+      },
+      "event_type_counts": {
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 15,
+        "TF1_POC_PUBLICATION": 67
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}

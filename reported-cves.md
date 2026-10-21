@@ -664,3 +664,6 @@
 | CVE-2026-96655 | Plex Media Server（SSRF CWE-918 transcode/universal） | 2026-10-21 | active_exploitation | 2026-10-21 | YES | ★KEV追加2026-10-20（期限11-03）・EUVD表示5.3・連鎖4件の一つ・Section 2 ゼロデイ特報 |
 | CVE-2026-106173 | Fortinet FortiSIEM 7.5.0（gRPC QueryResultReq パストラバーサル→RCE） | 2026-10-21 | poc_public | 2026-10-21 | YES | CVSS9.4・7.5.1で修正（先週）・Horizon3.aiが認証不要RCEのPoC公開(10-20)・KEV未収載・実悪用未確認・Section 2 注目CVE(trends_cve) |
 | CVE-2026-96620 | Claude Agent SDK for Python（resumeオプション引数注入） | 2026-10-21 | none | 2026-10-21 | YES | Security NEXT 2026-10-20・修正版公開・悪用報告なし・Section 1 AI参考B(C4) |
+| CVE-2026-109618 | PHP（OOM longjmp・PHP2Shell・未認証RCE） | 2026-10-22 | poc_public | 2026-10-22 | YES | PHP評価CVSS v4.0 9.2（NVD v3.1 9.8）・8.5.12/8.4.27/8.3.36/8.2.35で修正・PoC動画誤公開＋watchTowr再現・watchTowr/Cloudflareが悪用試行報告（侵入成功未確認）・KEV未収載・Section 2 注目CVE(trends) |
+| CVE-2026-109619 | PHP（グローバル状態・PHP2Shell・未認証RCE） | 2026-10-22 | poc_public | 2026-10-22 | YES | PHP評価CVSS v4.0 9.2・109618と同時修正・同悪用試行報告・KEV未収載・Section 2 注目CVE(trends) |
+| CVE-2026-110264 | GitLab CE/EE（Onigmo正規表現整数オーバーフロー・自己ホスト型全リリース） | 2026-10-22 | none | 2026-10-22 | YES | CVSS10.0・未認証RCE・19.5.1/19.4.3/19.3.6/19.2.9/19.1.9/19.0.10/18.11.13で修正・悪用の兆候なし・KEV未収載・Section 2 注目CVE(trends) |

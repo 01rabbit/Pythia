@@ -1,0 +1,163 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-22 07:50 JST
+調査期間: 2026-10-21 07:00 〜 2026-10-22 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-22-001 PHP2Shell（CVE-2026-109618／109619・未認証 RCE）の悪用試行が報告 — 修正版へ即時更新
+------------------------------------------------------------
+対象: PHP（mod_php・PHP-FPM・php-cgi・FrankenPHP・LiteSpeed）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-21] 修正版公開（10-21 14:00 UTC）と同時期に watchTowr・Cloudflare が悪用試行を報告。KEV 未収載。
+
+【概要】
+PHP の OOM 処理とグローバル状態に起因する未認証 RCE（CVSS v4.0 9.2）。侵入成功の確認はないが、PoC 動画の誤公開と再現があり悪用試行が始まっている。
+【推奨アクション】
+- PHP 8.5.12／8.4.27／8.3.36／8.2.35 以降へ更新（ディストリビューションは changelog で CVE を確認）。8.1 以前はバックポート適用
+- 更新まで memory_limit=-1 固定・post_max_size 低め・プロキシでのリクエストサイズ制限、session.upload_progress.enabled=0 とワーカー再起動
+- WAF ルール（Cloudflare 等）は暫定策であり更新の代替にならない
+
+【監視】
+マルチパート要求後のメモリ上限エラー・HTTP 500 連続、巨大な PHPSESSID 応答 Cookie、ワーカーの不明な再起動。
+
+【参照】
+- PHP Issues Emergency Patches for Two Critical PHP2Shell RCE Flaws as Exploit Attempts Emerge (The Hacker News) https://thehackernews.com/2026/10/php-issues-emergency-patches-for-two.html
+- Threat Brief: Critical Vulnerabilities in PHP: CVE-2026-109618, CVE-2026-109619 (Unit 42) https://unit42.paloaltonetworks.com/cve-2026-109618-cve-2026-109619/
+- 「PHP」に2件の深刻なRCE脆弱性 - アップデートを公開 (Security NEXT) https://www.security-next.com/191749
+
+------------------------------------------------------------
+SOC-2026-10-22-002 GitLab CVE-2026-110264（CVSS 10.0・未認証 RCE）— 自己ホスト型は修正版へ更新
+------------------------------------------------------------
+対象: GitLab CE/EE（自己ホスト型）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-21] GitLab が全リリース対象の未認証 RCE を修正。悪用の兆候なし・回避策なし。
+
+【概要】
+Onigmo の正規表現コンパイルにおける整数オーバーフロー。10-12 の別修正（CVE-2026-97229）で更新済みの環境も再度更新が必要。
+【推奨アクション】
+- 19.5.1／19.4.3／19.3.6／19.2.9／19.1.9／19.0.10／18.11.13 以降へ更新（19.4.3・19.3.6 は DB 変更あり）
+- GitLab 公開の Sigma 検知ルールを適用し、外部公開インスタンスのアクセス元を確認する
+
+【監視】
+Onigmo ネイティブワーカーのクラッシュ、Org mode レンダリングエラーの急増。
+
+【参照】
+- Critical GitLab Flaw (CVSS 10.0) Could Allow Unauthenticated RCE Across 12 Years of Releases (The Hacker News) https://thehackernews.com/2026/10/critical-gitlab-flaw-cvss-100-could.html
+
+------------------------------------------------------------
+SOC-2026-10-22-003 LiteLLM 1.107.0 の供給網侵害 — インストール有無の確認と資格情報のローテーション
+------------------------------------------------------------
+対象: LiteLLM（PyPI・Docker）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-21] 悪意ある 1.107.0 が公開され PyPI で隔離。資格情報窃取とバックドア。
+
+【概要】
+cook.pth による Python 起動時の自動実行で、クラウド資格情報・秘密鍵・AI ツール認証情報が持ち出される。
+【推奨アクション】
+- 1.107.0 を導入した環境を特定し、そこで扱った全資格情報（クラウド・API キー・SSH 鍵・LiteLLM プロキシ設定）をクリーンな環境から失効・再発行
+- 1.106.2 へダイジェスト固定で戻す
+- site-packages の cook.pth と litellm[.]dev への通信を検索
+
+【監視】
+cook.pth の出現、litellm[.]dev への HTTP POST、GitHub デッドドロップ参照。
+
+【参照】
+- LiteLLM Compromised in Supply Chain Attack Delivering Credential Stealer and Backdoor (The Hacker News) https://thehackernews.com/2026/10/litellm-compromised-in-supply-chain.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-22-004 UpdraftPlus／UpdraftCentral 利用の WordPress サイト：不審な管理者・プラグインの点検
+------------------------------------------------------------
+対象: UpdraftPlus（1.26.12／2.26.12 未満）・UpdraftCentral
+
+【24時間以内の変化】
+[The Hacker News 2026-10-21] 接続キー流出を悪用したバックドアプラグイン導入（10-18〜19）。UpdraftPlus 1.26.13／2.26.13 公開。
+
+【概要】
+正規の管理経路（署名付きコマンド）で導入されるため、通常のプラグイン脆弱性対策では検知しにくい。
+【推奨アクション】
+- UpdraftPlus を 1.26.13／2.26.13 以降へ更新し接続キーを削除、ダッシュボードへ直接ログインして管理者・プラグイン（Must-Use タブ含む）を点検
+- data-ops43 等の不審アカウントと『Small maintenance toolkit』ヘッダーのプラグインを検索、管理者パスワード変更
+- 侵害が疑われる場合は 10-17 以前のバックアップへ復元
+
+【監視】
+未知の管理者アカウントの作成、不審プラグインの新規導入、43.250.53[.]42 からのアクセス。
+
+【参照】
+- Attackers Abuse UpdraftCentral Keys to Plant Backdoors on WordPress Sites (The Hacker News) https://thehackernews.com/2026/10/attackers-abuse-updraftcentral-keys-to.html
+
+------------------------------------------------------------
+SOC-2026-10-22-005 Tor 経由の SSH パスワード認証利用者：10-1〜5 の傍受の可能性を確認
+------------------------------------------------------------
+対象: Tor 出口リレー・SSH
+
+【24時間以内の変化】
+[The Hacker News 2026-10-21] 乗っ取られた出口 377 リレーで SSH が傍受サーバーへ誘導された。攻撃者は不明。
+
+【概要】
+Tor 経由でパスワード認証した SSH で、変更されたホスト鍵を受け入れた場合は資格情報が窃取された可能性がある。
+【推奨アクション】
+- 10-1〜5 に Tor 経由でパスワード SSH を行った場合は当該パスワードを変更し、known_hosts の想定外の鍵を削除
+- SSH は鍵認証へ移行し、パスワード認証を無効化する
+- Ebury 感染の兆候をサーバーで確認する
+
+【監視】
+ホスト鍵変更の警告、想定外の鍵での接続。
+
+【参照】
+- Attackers Hijacked Over 300 Tor Exit Relays to Intercept SSH Connections (The Hacker News) https://thehackernews.com/2026/10/attackers-hijacked-over-300-tor-exit.html
+
+------------------------------------------------------------
+SOC-2026-10-22-006 Oracle 2026年10月 CPU 適用の優先付け（EBS・Fusion Middleware・WebLogic）
+------------------------------------------------------------
+対象: Oracle E-Business Suite・Fusion Middleware・WebLogic 等
+
+【24時間以内の変化】
+[Security NEXT 2026-10-21] 10-20 に CPU 1,295件公開。CVSS 9.0以上 112件。悪用報告なし。
+
+【概要】
+外部公開の EBS（CVE-2026-101809・未認証 HTTP）・WebLogic・Identity／Access Manager を優先する。
+【推奨アクション】
+- インターネット公開の EBS・WebLogic・OAM／OIM から優先適用し、公開の要否を見直す
+
+【監視】
+対象製品へ向く未認証 HTTP 要求の急増。
+
+【参照】
+- Oracle、四半期定例パッチで1295件を修正 - 深刻な脆弱性も (Security NEXT) https://www.security-next.com/191734
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-22-007 Chrome 156 への更新（353件修正・クリティカル6件）
+------------------------------------------------------------
+対象: Google Chrome（156.0.8078.47／.48 以降）
+
+【24時間以内の変化】
+[Security NEXT 2026-10-21] Chrome 156 公開。悪用報告なし。
+
+【概要】
+展開に数日〜数週間かかるため手動で更新確認を促す。
+【推奨アクション】
+- 管理端末の Chrome を 156.0.8078.47 以降へ更新し再起動を促す
+
+【監視】
+古いバージョンの Chrome の残存台数。
+
+【参照】
+- 「Chrome 156」公開、脆弱性353件を修正 - 「クリティカル」6件 (Security NEXT) https://www.security-next.com/191702
+
+
