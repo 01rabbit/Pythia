@@ -193,3 +193,5 @@
 | 偽Web3アクセラレーターのnpmパッケージ経由マルウェア配布（AIエージェント通信乗っ取り） | C6 | 2026-10-20 | 参考B（X=5 Y=3・A-T・below_threshold） | 2026-10-20 | NO | THN 2026-10-19・Elastic観測・Windows/macOS向け窃取マルウェア/バックドア・AIエージェント通信乗っ取りの詳細は本文未取得 (AI-2026-10-20-002) |
 | Cairn自律AIエージェントによる1,200超サイト攻撃(中国語圏攻撃者・100社超到達) | A4 | 2026-10-21 | 本編（X=7 Y=6・A-T・burst3） | 2026-10-21 | YES | THN/Dark Reading 2026-10-20・NorForge(Fagerland)報告・Reuters被害企業特定(Deere/SharkNinja/Cummins他)・AIA0001 14パネル1,100超プロジェクト・Strix/Cairn/Hermes EC攻撃(09-24)の続報 |
 | Claude Agent SDK(Python) resume引数注入 CVE-2026-96620 | C4 | 2026-10-21 | 参考B（X=4 Y=3・A-T・below_threshold） | 2026-10-21 | NO | Security NEXT 2026-10-20・修正版公開・悪用報告なし |
+| LiteLLM 1.107.0 PyPI/Docker供給網侵害（エンジニア3人のGitHubアカウント経由・攻撃者特定なし） | C6 | 2026-10-22 | 本編（X=8 Y=7・A-T・burst1） | 2026-10-22 | YES | THN/StepSecurity 2026-10-21・cook.pth＋資格情報窃取(privcollect)＋GitHubデッドドロップのバックドア・PyPI隔離済み・2026-06 TeamPCP事案とは同一主体と明示されず |
+| BUGSTER: Hermes Agent+DeepSeek V4によるAI支援サイバー犯罪 | A4 | 2026-10-22 | 参考B（X=6 Y=4・A-T・below_threshold） | 2026-10-22 | NO | Unit 42 2026-10-21・インドの大学でPII 5,200件超持ち出し・金銭目的・過去の報告なし |
