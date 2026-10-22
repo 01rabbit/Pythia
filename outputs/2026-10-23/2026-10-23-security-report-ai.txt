@@ -1,0 +1,114 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-23 07:50 JST
+調査期間: 2026-10-22 07:00 〜 2026-10-23 07:00 JST
+========================================
+
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+AI-2026-10-23-001 Microsoft が Storm-0940 による ARTEX（agentic AI ペネトレーションテスト・フレームワーク）の悪用を公表：ConnectWise 関連攻撃で機械速度のパスワードスプレー・OAuth アプリ悪用
+------------------------------------------------------------
+カテゴリ: A/A4 / 軸X=8 軸Y=7
+被害規模: 2,250 超のテナントへ毎分 2,900 回のサインイン試行。Microsoft は多数の業種の数百組織が標的になったと説明（成功件数は非公表）。特権取得まで3時間未満の例あり。
+
+【24時間以内の変化】
+[The Hacker News（Microsoft・Recorded Future・Zscaler） 2026-10-22] Microsoft が Storm-0940 による ARTEX 悪用を公表。Recorded Future は ARTEX を使う別クラスター TAG-217（韓国の金融機関を標的）を追跡し、Zscaler は標的が韓国以外にも広がると報告。
+
+【概要】
+THN によれば、ARTEX は Go 製の agentic AI ペネトレーションテスト・フレームワークで、韓国の金融機関への攻撃での悪用を受けてクローズドソース化された。Storm-0940 は ARTEX でスキャン・偵察・パスワードスプレー・OAuth アプリ悪用を機械速度で自動化した。Zscaler の分析した TAG-217 の ARTEX 環境では、DeepSeek・GLM・Grok を指定する設定と、調査タスクを分担して相互レビューさせるプロンプトが確認されたという（金銭目的の可能性が指摘されている）。Microsoft は複数地域の攻撃者が ARTEX を使っていると説明している。
+
+【攻撃フロー】
+1. ARTEX が偵察・パスワードスプレーを自動実行
+2. 盗んだアプリ資格情報で顧客テナントへ認証し、Graph・ディレクトリを操作
+3. アプリ資格情報の改変などで永続化を試みる
+
+【監視】
+短時間の大量サインイン失敗（毎分数千件規模）、既存アプリへの資格情報追加、特権ロール／グループの変更を監視する。
+
+【参照】
+- China-Linked Hackers Use ARTEX AI Agents in ConnectWise Supply Chain Attack (The Hacker News) https://thehackernews.com/2026/10/china-linked-hackers-use-artex-ai.html
+- Microsoft Links Storm-0940 to ConnectWise Supply Chain Attack (Dark Reading) https://www.darkreading.com/cyberattacks-data-breaches/microsoft-storm-0940-connectwise-supply-chain-attack
+
+------------------------------------------------------------
+AI-2026-10-23-002 LiteLLM 侵害の続報：リリースパイプラインの「複数の独立した統制」が突破され、GitHub トークン漏えいを疑う（盗まれた資格情報の悪用を Wiz が確認）
+------------------------------------------------------------
+カテゴリ: C/C6 / 軸X=8 軸Y=7
+被害規模: 影響は 10-21 11:39〜13:23 UTC に pip で未固定導入、または Docker イメージ（1.107.0／latest／main-latest／main-stable）を 11:46〜14:20 UTC に取得した環境。被害件数は未公表。
+
+【24時間以内の変化】
+[The Hacker News（LiteLLM・Wiz・Aikido） 2026-10-22] LiteLLM が「複数の独立した統制が突破された」と説明し、AI ゲートウェイのログ内の GitHub トークン漏えいを疑っていると公表。Wiz は窃取資格情報の悪用を、流出の約4.5時間後から観測。GitHub は 13:30 UTC 頃にデッドドロップを削除。[既報・更新]
+
+【概要】
+THN によれば、悪意ある 1.107.0 の cook.pth は privcollect で資格情報を収集し litellm[.]dev/healthcheck へ POST し、Linux／macOS では sitecustomize.py が GitHub のデッドドロップ（letters9813）から C2 ドメインを毎時取得して Python ペイロードを実行する構成だった。Wiz は .pth と sitecustomize.py の併用を実環境で初めて確認した手口と述べた。攻撃主体は特定されていない。
+
+【攻撃フロー】
+1. LiteLLM のリリースパイプラインを侵害（GitHub トークン漏えいの疑い）
+2. 悪意ある 1.107.0 を PyPI／Docker Hub／GHCR に公開
+3. 導入環境で資格情報を窃取し、毎時 C2 から Python コードを取得して実行
+
+【監視】
+site-packages の cook.pth、/tmp/remote_code_loader.lock、litellm[.]dev への POST を確認し、導入環境の資格情報の不正利用ログを調べる。
+
+【参照】
+- LiteLLM Suspects GitHub Token Leak in AI Gateway Logs Behind Malicious Package Release (The Hacker News) https://thehackernews.com/2026/10/litellm-suspects-github-token-leak-in.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+AI-2026-10-23-003 OpenCode（AI コーディングエージェント）の MCP 認証フローに PowerShell コマンド注入：悪意ある MCP サーバーが Windows／WSL でコードを実行（CVE・勧告なし）
+------------------------------------------------------------
+カテゴリ: C/C3 / 軸X=6 軸Y=4
+被害規模: OpenCode 1.0.137〜1.18.32 の Windows／WSL。macOS／Linux は対象外。悪用の報告なし。1.18.33（9-28）で修正済みだが CVE・勧告は未発行。
+
+【24時間以内の変化】
+[The Hacker News（Pillar Security） 2026-10-22] Pillar Security が 10-19 に公開（提案 CVSS 9.8）。Anomaly は MCP サーバーは信頼境界の外として CVE を要請していない。
+
+【概要】
+THN によれば、OpenCode は MCP サーバーが返す OAuth の認可エンドポイントを PowerShell で組み立てたコマンドへエスケープせずに渡しており、細工したアドレスで開発者のサインイン時（opencode mcp auth 等）にコードが実行される。攻撃には開発者が追加した MCP サーバーの掌握が必要で、後から乗っ取られたサーバーでも成立する。CVE が無いため脆弱性スキャナーに検出されず、バージョンを直接確認する必要がある。
+
+【攻撃フロー】
+1. 悪意ある（または乗っ取られた）MCP サーバーが細工した認可エンドポイントを返す
+2. 開発者が MCP サーバーへのサインインを実行
+3. PowerShell 経由でコマンドが開発者の権限で実行される
+
+【監視】
+開発端末の OpenCode のバージョンを棚卸しし、追加済み MCP サーバーの提供元を確認する。
+
+【参照】
+- OpenCode Flaw Lets Malicious MCP Servers Execute Code During Sign-In on Windows and WSL (The Hacker News) https://thehackernews.com/2026/10/opencode-flaw-lets-malicious-mcp.html
+
+------------------------------------------------------------
+AI-2026-10-23-004 Railway の環境変数流出：AI 推論プロバイダーの侵害を狙う一連のプラットフォーム攻撃の一環と同社が説明（暗号資産ウォレット流出も報告）
+------------------------------------------------------------
+カテゴリ: C/C4 / 軸X=6 軸Y=5
+被害規模: 一部の顧客の暗号化環境変数が閲覧・一部は復号された可能性（件数非公表）。Railway は上流プロバイダーへ鍵の失効を依頼。
+
+【24時間以内の変化】
+[The Hacker News 2026-10-22] Railway が顧客の秘密情報アクセスの可能性を公表し、環境変数・レジストリ資格情報のローテーションを要請。
+
+【概要】
+THN によれば、Railway は AI 推論プロバイダーの侵害を最終目的としてプラットフォーム企業を狙う一連の攻撃の可能性が高いと説明している（同社の見解で、攻撃主体の特定はない）。THN は Wiz が同週に文書化した LLMjacking にも言及している。
+
+【攻撃フロー】
+1. 環境変数ストアへ不正アクセス
+2. 暗号化された環境変数を閲覧・一部を復号
+3. AI／クラウド API キーや秘密鍵を悪用（暗号資産流出の報告あり）
+
+【監視】
+Railway 保管の API キー・レジストリ資格情報のローテーション後も、旧キーでの利用ログを監視する。
+
+【参照】
+- Railway Says Intruder May Have Accessed Customer Secrets, Urges Credential Rotation (The Hacker News) https://thehackernews.com/2026/10/railway-says-intruder-may-have-accessed.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
