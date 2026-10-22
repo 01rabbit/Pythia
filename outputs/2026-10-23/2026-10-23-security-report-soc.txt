@@ -1,0 +1,182 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-23 07:50 JST
+調査期間: 2026-10-22 07:00 〜 2026-10-23 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-23-001 Arista VeloCloud Orchestrator（CVE-2026-114625）の悪用確認 — 修正版へ更新・アクセス制限・証拠保全
+------------------------------------------------------------
+対象: Arista VeloCloud Orchestrator（オンプレミス版）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-22] Arista が悪用を確認。VCO で3件目の悪用済み脆弱性（今回はログインが必要）。
+
+【概要】
+read-only アカウントから最上位権限に昇格できる SQL インジェクション。VCO は既定で公開され、7 月・9 月の修正版でも影響を受ける。KEV 未収載。
+【推奨アクション】
+- 5.2.3.18／6.1.3.10／6.4.2.12 以降へ更新（Hosted／Dedicated は修正済み）
+- 更新前に VCO のログ（Web アクセス・バックエンド・システム）を保全する
+- 管理 Web を信頼できるネットワークに限定し、IP 74.82.197[.]86／38.54.50[.]151 との通信を調査する
+- バックドアのデーモン・Web シェル・管理者アクティビティの不審な変更を点検する
+
+【監視】
+URL 状の異常なパス構成要素・エンコード文字・高頻度リクエスト、ホストからの想定外の外向き通信。
+
+【参照】
+- Arista Warns of Critical VeloCloud SQL Injection Zero-Day Exploited in Attacks (The Hacker News) https://thehackernews.com/2026/10/arista-warns-of-critical-velocloud-sql.html
+
+------------------------------------------------------------
+SOC-2026-10-23-002 PHP2Shell（CVE-2026-109618／109619）— CISA が即時適用を勧告・公開前の悪用試行も報告（修正版へ更新）
+------------------------------------------------------------
+対象: PHP（mod_php・PHP-FPM・php-cgi 等）
+
+【24時間以内の変化】
+[The Hacker News／Security NEXT 2026-10-22] Amazon が 10-17 の悪用試行を報告、CISA が即時適用を勧告。KEV 未収載。
+
+【概要】
+未認証 RCE。侵入成功の確認報告はないが、CrowdStrike は悪用の痕跡がほぼ残らないと指摘している。
+【推奨アクション】
+- PHP 8.5.12／8.4.27／8.3.36／8.2.35 以降へ更新（8.1 以前はバックポート）
+- 更新が困難なら当該サーバーのインターネット公開を控える（CISA）
+- 暫定: memory_limit=-1 固定・リクエストサイズ制限・session.upload_progress.enabled=0
+
+【監視】
+メモリ上限エラー（単発のメモリ制限 fatal）、巨大な PHPSESSID 応答 Cookie、ワーカーの不明な再起動。
+
+【参照】
+- Someone Tried to Exploit PHP2Shell 4 Days Before the Vulnerabilities Were Publicly Disclosed (The Hacker News) https://thehackernews.com/2026/10/someone-tried-to-exploit-php2shell-4.html
+- 米当局、「PHP脆弱性」の即修正を勧告 - 困難ならオフラインに (Security NEXT) https://www.security-next.com/191766
+- 「PHP」の深刻なRCE脆弱性「PHP2Shell」 - 悪用試行を観測 (Security NEXT) https://www.security-next.com/191788
+
+------------------------------------------------------------
+SOC-2026-10-23-003 Microsoft 365 の ConnectWise 関連アプリ（Storm-0940／ARTEX）— アプリの資格情報・権限変更とサインイン失敗の点検
+------------------------------------------------------------
+対象: Microsoft Entra ID／Microsoft 365・ConnectWise Cloud Backup 連携
+
+【24時間以内の変化】
+[The Hacker News 2026-10-22] Microsoft が Storm-0940 の ConnectWise Cloud Backup 侵害と ARTEX による顧客テナントへの認証を公表。
+
+【概要】
+ConnectWise のクラウドアプリの ID を使い、インタラクティブなサインインなしで顧客環境へ認証される。
+【推奨アクション】
+- Entra ID で ConnectWise 関連エンタープライズアプリの同意範囲・資格情報追加・特権ロール変更を確認し、不審なものを取り消す
+- 144.172.64[.]99 を遮断し、10-10 以降の大量サインイン失敗を検索する
+- アプリの資格情報をローテーションし、不要なアプリ権限を削る
+
+【監視】
+アプリ資格情報の追加・更新、サービスプリンシパルへの特権付与、Graph の大量 API 呼び出し。
+
+【参照】
+- China-Linked Hackers Use ARTEX AI Agents in ConnectWise Supply Chain Attack (The Hacker News) https://thehackernews.com/2026/10/china-linked-hackers-use-artex-ai.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-23-004 eMudhra 中間 CA 8件の秘密鍵侵害 — 当該 CA 配下の証明書と信頼設定の棚卸し
+------------------------------------------------------------
+対象: eMudhra の中間 CA 証明書
+
+【24時間以内の変化】
+[Unit 42／The Hacker News 2026-10-22] Unit 42 が封じ込め手順付きで分析を公開。eMudhra は世界向け SSL/TLS 事業から撤退を決定。
+
+【概要】
+8件の中間 CA の秘密鍵が復元可能とされ、未承認の TLS 署名や MitM のリスクが指摘されている。悪用の報告は確認できない。
+【推奨アクション】
+- 自組織が信頼・利用する eMudhra 発行の証明書を棚卸しし、Unit 42 の封じ込めガイドに沿って対応を検討する
+- OS／ブラウザベンダーの失効・信頼リストからの除外の発表を確認する
+
+【監視】
+想定外の発行元（eMudhra 配下）の証明書の使用、証明書の透明性ログ。
+
+【参照】
+- EMudhra Intermediate CA Certificates Compromised (Unit 42) https://unit42.paloaltonetworks.com/emudhra-certificate-compromise/
+
+------------------------------------------------------------
+SOC-2026-10-23-005 Railway 保管の環境変数・レジストリ資格情報の流出可能性 — ローテーションと利用ログ確認
+------------------------------------------------------------
+対象: Railway（PaaS）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-22] Railway が一部顧客の環境変数アクセスを公表。
+
+【概要】
+API キー・DB 資格情報・秘密鍵が漏えいした可能性があり、暗号資産ウォレットの流出も報告されている。
+【推奨アクション】
+- Railway の環境変数（API キー）とプライベートレジストリ資格情報をローテーションする
+- 上流プロバイダー側で旧キーの利用ログを確認し、不審な呼び出しを調べる
+
+【監視】
+旧キーでの AI／クラウド API 呼び出し、想定外のモデル利用料金の増加。
+
+【参照】
+- Railway Says Intruder May Have Accessed Customer Secrets, Urges Credential Rotation (The Hacker News) https://thehackernews.com/2026/10/railway-says-intruder-may-have-accessed.html
+
+------------------------------------------------------------
+SOC-2026-10-23-006 Node.js 22.23.4／24.22.1／26.12.1 へ更新（Brotli 範囲外書込みほか10件）
+------------------------------------------------------------
+対象: Node.js（22.x・24.x・26.x）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-22] Node.js が 10-21 に10件を修正。10-22 に PoC 公開（標準ビルドではクラッシュまで）。悪用報告なし。
+
+【概要】
+Brotli の範囲外書込み（CVE-2026-111497）は外部入力の Brotli 展開が影響範囲。EOL の 20.x 以前は修正されない。
+【推奨アクション】
+- 22.23.4／24.22.1／26.12.1 以降へ更新し、20.x 以前は対応系列へ移行する
+- Brotli を同梱する他ソフトウェアの更新も確認する
+
+【監視】
+Node.js プロセスの異常終了。
+
+【参照】
+- Node.js Brotli Decoder Bug Could Allow Remote Code Execution in All Supported Versions (The Hacker News) https://thehackernews.com/2026/10/nodejs-brotli-decoder-bug-could-allow.html
+
+------------------------------------------------------------
+SOC-2026-10-23-007 Linux KSMBD の未修正 RCE 2件（ZDI-CAN-33774／33549）— KSMBD の稼働確認と暴露の最小化
+------------------------------------------------------------
+対象: Linux カーネル KSMBD（内蔵 SMB サーバー）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-22] ZDI が修正なしで公開リストへ報告。メインラインに修正なし・CVE 未採番。
+
+【概要】
+ZDI-CAN-33774 は認証前に port 445 から到達可能（CVSS 9.0）。悪用の報告は確認できない。
+【推奨アクション】
+- systemctl status ksmbd／lsmod | grep ksmbd で稼働を確認し、不要なら無効化する
+- port 445 のインターネット公開を避け、アクセス元を制限する
+- 配布元カーネルの修正版を継続確認する
+
+【監視】
+KSMBD ホストへの短時間の大量 SMB1 パケット後の SMB2 パケット、カーネルクラッシュ。
+
+【参照】
+- Two CVSS 9.0 Linux KSMBD RCE Flaws Disclosed on Public Mailing Lists Before Kernel Fixes (The Hacker News) https://thehackernews.com/2026/10/two-cvss-90-linux-ksmbd-rce-flaws.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-23-008 OpenCode を 1.18.33 以降へ更新（Windows／WSL・MCP サインイン時のコマンド注入）
+------------------------------------------------------------
+対象: OpenCode（AI コーディングエージェント）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-22] Pillar Security が公開。CVE・勧告なしで修正済み（1.18.33）。
+
+【概要】
+CVE が無くスキャナーに出ないため、バージョンの直接確認が必要。
+【推奨アクション】
+- OpenCode を 1.18.33 以降へ更新し、追加済み MCP サーバーの提供元を確認する
+
+【監視】
+OpenCode のバージョン（1.0.137〜1.18.32）の残存。
+
+【参照】
+- OpenCode Flaw Lets Malicious MCP Servers Execute Code During Sign-In on Windows and WSL (The Hacker News) https://thehackernews.com/2026/10/opencode-flaw-lets-malicious-mcp.html
+
