@@ -68,7 +68,7 @@ scripts/check_report_consistency.py      ← 日次コミット前の JSON×派�
 #   E1（KEV初回追加）は外部機関の反応を測る補助計器（IF-1）として残すが中核には置かない。
 scripts/tactical_states.py               ← TF-1 の状態機械と許可遷移の唯一の定義（候補生成・採点・参照率測定が共有）。LLMは状態名を自由生成しない
 scripts/build_reference_rates.py         ← 参照クラス事前確率を観測から実測（Beta-Binomial・標本不足は上位へ部分プーリング・PR経由で再生成）
-forecaster/models/reference-rates.json   ← TF-1 参照率。★前進遷移の観測は全コーパスで36件しかない。_limitations 厳守
+forecaster/models/reference-rates.json   ← TF-1 参照率。★前進遷移の観測は全コーパスで十数件（2026-10-23 再生成時 16 件）しかない。正確な最新値は _corpus を正とし _limitations 厳守
 scripts/build_tactical_state.py          ← observations から現在戦術状態を構成（構造化フィールドのみ・本文キーワード推定は禁止）
 forecaster/state/tactical/YYYY/MM/       ← 日次の戦術状態
 scripts/generate_tactical_candidates.py  ← 許可遷移からCOA候補を全件生成。★棄権も理由付きで保存（分母操作の防止）
