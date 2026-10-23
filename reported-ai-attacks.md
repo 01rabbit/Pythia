@@ -198,3 +198,6 @@
 | ARTEX（agentic AIペンテストフレームワーク）悪用: Storm-0940によるConnectWise関連攻撃 | A4 | 2026-10-23 | 本編（X=8 Y=7・A-T・burst1） | 2026-10-23 | YES | Microsoft/THN 2026-10-22・機械速度のパスワードスプレー/OAuthアプリ悪用・TAG-217(韓国金融機関)も同フレームワーク使用(Recorded Future/Zscaler)・APT本編と同一事象 |
 | OpenCode MCP認証フローのPowerShellコマンド注入（Windows/WSL・CVEなし） | C3 | 2026-10-23 | 参考B（X=6 Y=4・A-T・below_threshold） | 2026-10-23 | NO | Pillar Security/THN 2026-10-22・1.18.33で修正・Anomalyは信頼境界外としCVE未要請 |
 | Railway環境変数不正アクセス（AI推論プロバイダー侵害を狙う一連の攻撃の可能性・同社見解） | C4 | 2026-10-23 | 参考B（X=6 Y=5・A-T・below_threshold） | 2026-10-23 | YES | THN 2026-10-22・一部顧客の環境変数が閲覧/復号された可能性・暗号資産ウォレット流出の報告・攻撃者特定なし |
+| INC/The GentlemenアフィリエイトのAIエージェント基盤Phantom（OpenCode上の18スキル・AI実行/人間承認） | A4 | 2026-10-24 | 本編（X=7 Y=7・A-T・burst1） | 2026-10-24 | YES | SOCRadar/THN 2026-10-23・約62組織を標的(4組織がリーク掲載)・OpenRouter経由の商用モデル・FortiClient EMS/SimpleHelp/cPanel/VPNを悪用・BYOVD |
+| LiteLLM 1.107.0供給網侵害の続報（GitHub CLIのOAuthトークン悪用） | C6 | 2026-10-24 | 本編（X=8 Y=7・A-T・burst1・既報更新） | 2026-10-24 | YES | SecurityWeek/Security NEXT 2026-10-23・侵害されたGitHub CLIのOAuthトークンでPyPI/Dockerに悪意あるパッケージをpush・承認 |
+| x402 SDK既定クライアントの支払い上限欠如（V12報告・CVEなし） | C3 | 2026-10-24 | 参考B（X=5 Y=3・A-T・below_threshold） | 2026-10-24 | NO | THN 2026-10-23・悪意あるAPIがAIエージェントの残高全額の署名を要求できた・2026-08-18のリリースで上限追加済み |

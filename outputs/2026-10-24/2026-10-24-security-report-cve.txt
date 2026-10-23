@@ -1,0 +1,136 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-24 07:50 JST
+調査期間: 2026-10-23 07:00 〜 2026-10-24 07:00 JST
+========================================
+
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-114625 Arista VeloCloud Orchestrator（VCO・オンプレミス版）の SQL インジェクション（read-only アカウントから operator 権限へ昇格）（CVSS 9.9）
+------------------------------------------------------------
+優先度: critical  軸1=14 軸2=5  KEV登録: あり（2026-10-23）  悪用: 確認  パッチ: あり
+影響バージョン: 5.2 系は 5.2.3.18 未満、6.1 系は 6.1.3.10 未満、6.4 系は 6.4.2.12 未満（7.0 系は対象外・サポート終了版は Arista が未検証）。Hosted／Dedicated は修正済み。VeloCloud Gateway／Edge は対象外
+
+【24時間以内の変化】
+[CISA KEV カタログ（2026.10.23）／SecurityWeek 2026-10-23] CISA が CVE-2026-114625 を KEV に追加（dateAdded 2026-10-23・期限 2026-10-26・ランサム利用 Unknown・forensic triage 要）。SecurityWeek は VCO で4か月に3件目の悪用と報じた。[既報・更新: KEV 収載]
+
+【概要】
+Arista が悪用を確認した VeloCloud Orchestrator（オンプレミス版）の SQL インジェクション（read-only から operator 権限へ昇格）が、2026-10-23 に CISA KEV へ追加された。攻撃主体・被害件数は未公表。EPSS は 0.56%（%ile 45.6・2026-10-23 時点）。
+
+【攻撃フロー】
+1. VCO の Web インターフェースへ到達し、read-only 以上の有効なログインを得る（Arista 記述：最低ロールは Enterprise Read Only）
+2. SQL インジェクションで operator（local superuser）権限へ昇格（Arista 記述）
+3. VCO ホストや管理データへ影響しうる（Arista 記述。実際の悪用後の行動は未公表）
+
+【ATT&CK】
+- T1068 Exploitation for Privilege Escalation: SQL インジェクションにより read-only ロールから最上位の operator 権限へ昇格する（Arista の記述に基づく）。初期アクセス手段（ログイン情報の入手経路）は未公表のため付与しない
+
+【暫定対策】
+- 5.2.3.18／6.1.3.10／6.4.2.12 以降へ更新する（Hosted／Dedicated は修正済み）
+- 更新までは VCO の Web インターフェースを信頼できる管理ネットワークに限定し、不明な IP からの接続を監視する
+- 更新前に VCO の Web アクセスログ・バックエンドログ・システムログ等の証拠を保全する（Arista 推奨）
+- ホストからの想定外の外向き通信、バックドアのデーモン・Web シェル、管理者アクティビティの不審な変更を確認する
+
+【IOC】
+- ips: 74.82.197[.]86, 38.54.50[.]151
+
+【監視】
+VCO の Web アクセスログで URL 状の異常なパス構成要素・エンコード文字・内部サービス参照・高頻度リクエスト、上記 IP からの接続を確認する。
+
+【参照】
+- Arista Warns of Critical VeloCloud SQL Injection Zero-Day Exploited in Attacks (The Hacker News) https://thehackernews.com/2026/10/arista-warns-of-critical-velocloud-sql.html
+- Attackers Exploit Third Arista VCO Zero-Day in Four Months (SecurityWeek) https://www.securityweek.com/attackers-exploit-third-velocloud-orchestrator-zero-day-in-four-months
+
+------------------------------------------------------------
+2. CVE-2026-110447 Collabora Online Built-in CODE Server（Nextcloud richdocumentscode・OS コマンドインジェクション）（CVSS 9.2）
+------------------------------------------------------------
+優先度: critical  軸1=11 軸2=8  KEV登録: あり（2026-10-23）  悪用: 確認  パッチ: あり
+影響バージョン: richdocumentscode 26.4.303 未満（Nextcloud 内蔵 CODE サーバー・CODE サーバー非稼働時にコマンド実行に至る）
+
+【24時間以内の変化】
+[CISA KEV カタログ（2026.10.23） 2026-10-23] CISA が KEV に追加（dateAdded 2026-10-23・期限 2026-10-26・ランサム利用 Unknown・forensic triage 要）。通知欄に Nextcloud コミュニティの更新案内（ASAP）と GitHub Security Advisory GHSA-g3vx-3m76-fghh が付く。[既報・更新: KEV 収載]
+
+【概要】
+CISA KEV の記述によれば、Nextcloud 上で使う Collabora Online の内蔵 CODE サーバーに OS コマンドインジェクションがあり、CODE サーバーが稼働していない状態でリモートからコード実行に至る。既報（2026-10-15〜16）の情報では 2026-09-10 頃から悪用・Web シェル設置が確認されている。KEV 収載により実悪用が CISA にも確認された。攻撃主体・被害件数は未公表。
+
+【攻撃フロー】
+1. Nextcloud の richdocumentscode（内蔵 CODE サーバー）へ到達する
+2. CODE サーバー非稼働の状態を突いて OS コマンドを注入する（CISA 記述）
+3. リモートコード実行・バックドア設置（既報の報道）
+
+【ATT&CK】
+- T1190 Exploit Public-Facing Application: インターネット公開の Nextcloud／Collabora 内蔵 CODE サーバーのコマンドインジェクションを悪用（CISA KEV の記述に基づく）
+
+【暫定対策】
+- richdocumentscode を 26.4.303 以降へ更新（Nextcloud の更新案内に従う）
+- 更新できない場合は内蔵 CODE サーバーを無効化し、外部の Collabora サーバーへ移行する
+- 侵害調査（Web シェル・不審プロセス）を実施する。CISA は forensic triage を要求している
+
+【監視】
+Nextcloud の richdocumentscode 配下の不審なファイル・プロセス、CODE サーバー関連エンドポイントへの異常なリクエストを確認する。
+
+【参照】
+- To Collabora built-in user: update ASAP (Nextcloud Help) https://help.nextcloud.com/t/to-collabora-built-in-user-update-asap/250516
+- GHSA-g3vx-3m76-fghh (GitHub Advisory) https://github.com/CollaboraOnline/online/security/advisories/GHSA-g3vx-3m76-fghh
+- CVE-2026-110447 (NVD) https://nvd.nist.gov/vuln/detail/CVE-2026-110447
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+網羅スイープ候補 47件 / 未処理 0件 / KEV 窓内追加 2件 / EUVD 窓内全量 41件（NVD/KEV 未収載 3件）。
+
+- CVE-2026-112846 ほか12件（全件: CVE-2026-112846, CVE-2026-112847, CVE-2026-112848, CVE-2026-112851, CVE-2026-112853, CVE-2026-112854, CVE-2026-112855, CVE-2026-112856, CVE-2026-112857, CVE-2026-112858, CVE-2026-112859, CVE-2026-112862, CVE-2026-112860） Patchstack CNA 公開の WordPress テーマ／プラグイン（ThemeREX・axiomthemes 等のオブジェクトインジェクション16件・SQLi 1件）
+  理由: low_score — 窓内公開の CVSS 9.3〜9.8（NVD/EUVD 機械列挙）。アグリゲータCNA の一括公開で個別の悪用報告なし（バッチ集約）（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-110063 ほか3件（全件: CVE-2026-110063, CVE-2026-83938, CVE-2026-97785, CVE-2026-105014） Microsoft クラウドサービス（VM Inspection・AKS 構成・AAD App Proxy・コマンドインジェクション）
+  理由: low_score — 窓内公開の CVSS 9.1〜10.0。クラウド側で対処済みの CVE で顧客の対処は不要または限定的（バッチ集約）（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-107861 ほか2件（全件: CVE-2026-107861, CVE-2026-110243, CVE-2026-109122） Kiloview E3 NDI エンコーダーファームウェア（CISA ICS）
+  理由: low_score — 窓内公開の CVSS 9.4〜9.9。CISA ICS 勧告で悪用報告なし（バッチ集約）（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2025-30046 ほか3件（全件: CVE-2025-30046, CVE-2025-30047, CVE-2025-30050, CVE-2025-30054） CGM CLININET（CERT-PL 勧告）
+  理由: low_score — 窓内公開の CVSS 9.0〜9.4。医療向けアプリサーバーで悪用報告なし（バッチ集約）（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-53942 ほか6件（全件: CVE-2026-53942, CVE-2026-46651, CVE-2026-46652, CVE-2026-55486, CVE-2026-53921, CVE-2026-57116, CVE-2026-54630） GitHub Advisory 起点の OSS（Conda Infrastructure・Goobi viewer 3件・odhcpd・PraisonAI・Part-DB）
+  理由: low_score — 窓内公開の GHSA 起点 CVSS 9.3〜9.9。個別プロジェクトで悪用報告なし（バッチ集約・個別判断済み）（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-115812 Amazon Web Services Multi Model Server（モデルアーカイブ展開のパストラバーサル）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-25784 Hallo Welt! BlueSpice（不適切な既定値）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-63244 WizLearn LMS（認証回避）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-55981 Creative Sound Blaster Katana（ファームウェア検証不備）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-114357 DJI Crystalsky の adbd（認証欠如）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-19677 frevvo 登録フォーム（認証回避）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-111594 InterSystems IRIS for Health（TLS 既定無効）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-115727 AgenticSeek（RCE・VulnCheck CNA）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-107685 agentjido req_llm（証明書検証不備）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-115547 Okta Access Gateway 管理コンソール（入力検証）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-94267 WordPress Advanced Custom Fields: Extended（WPScan CNA）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-115889 ／ CVE-2026-115893（EUVD-2026-109186／109188） Wasmtime（Cranelift バックエンドの不具合・GitHub CNA・9.9）
+  理由: low_score — EUVD のみに現れる層（NVD 窓内候補・KEV に無し）を個別判断。修正版が公開された OSS で悪用報告なし（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-77366（EUVD-2026-97737） obsidian-tc（トークンで任意の設定済み vault にアクセス可能・9.9）
+  理由: low_score — EUVD のみに現れる層（NVD 窓内候補・KEV に無し）を個別判断。修正版が公開された OSS で悪用報告なし（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+
