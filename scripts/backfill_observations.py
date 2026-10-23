@@ -28,12 +28,18 @@
 
 出力:
   forecaster/observations/YYYY/MM/YYYY-MM-DD.json（対象期間内で KEV 追加が
-  あった日のみ。追加ゼロの日はファイルを作らない）
+  あった日のみ。追加ゼロの日は既定ではファイルを作らない）
+  --emit-empty 指定時は、KEV 追加ゼロの日にも observations: [] の
+  「欠測日ファイル」を置く（日次ルーチン未実行日を「観測なし」として明示し、
+  ファイル不在＝未処理 と区別するため・2026-10-23 追加）。空ファイルも
+  _normalization_mode: machine_backfill_kev でマーキングされ、ベースライン統計・
+  参照率からは除外される。既存ファイルは --emit-empty でも上書きしない。
 
 使い方:
     python3 scripts/backfill_observations.py --start 2026-01-01 --end 2026-06-14
     python3 scripts/backfill_observations.py --start 2026-01-01 --end 2026-06-14 --dry-run
     python3 scripts/backfill_observations.py --start 2026-06-20 --end 2026-06-20  # 欠損日の単日補完
+    python3 scripts/backfill_observations.py --start 2026-09-12 --end 2026-09-12 --emit-empty  # KEV追加ゼロの欠測日
 
 実行後は python3 scripts/validate_observations.py で違反ゼロを確認してからコミットする。
 """
@@ -44,7 +50,7 @@ import os
 import sys
 import urllib.request
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OBSERVATIONS_DIR = os.path.join(REPO_ROOT, "forecaster", "observations")
@@ -187,6 +193,11 @@ def main():
         action="store_true",
         help="既存の machine_backfill_kev ファイルを上書きする（他モードのファイルは対象外）",
     )
+    ap.add_argument(
+        "--emit-empty",
+        action="store_true",
+        help="期間内で KEV 追加が無い日にも observations: [] の欠測日ファイルを置く（既存ファイルは上書きしない）",
+    )
     ap.add_argument("--dry-run", action="store_true", help="ファイルを書き込まず件数のみ表示")
     args = ap.parse_args()
 
@@ -208,8 +219,8 @@ def main():
         f"[kev] catalog {catalog_version}: "
         f"{len(in_window)} 件が期間 {args.start}..{args.end} 内"
     )
-    if not in_window:
-        print("[done] 対象期間内の KEV 追加なし。生成ファイルなし。")
+    if not in_window and not args.emit_empty:
+        print("[done] 対象期間内の KEV 追加なし。生成ファイルなし（--emit-empty で欠測日ファイルを置ける）。")
         return 0
 
     cvss_map = {}
@@ -223,10 +234,18 @@ def main():
     by_day = defaultdict(list)
     for e in in_window:
         by_day[e["dateAdded"]].append(e)
+    days = set(by_day)
+    if args.emit_empty:
+        # 期間内の全日付を対象にし、KEV 追加ゼロの日は空の欠測日ファイルにする
+        d = datetime.strptime(args.start, "%Y-%m-%d").date()
+        end = datetime.strptime(args.end, "%Y-%m-%d").date()
+        while d <= end:
+            days.add(d.isoformat())
+            d += timedelta(days=1)
 
     ingested = date.today().isoformat()
     written, skipped = [], []
-    for day in sorted(by_day):
+    for day in sorted(days):
         path = target_path(day)
         rel = os.path.relpath(path, REPO_ROOT)
         if os.path.exists(path):
@@ -239,17 +258,26 @@ def main():
                 skipped.append((rel, "既存バックフィルファイル（--force で上書き可）"))
                 continue
 
-        entries = sorted(by_day[day], key=lambda e: e["cveID"])
+        entries = sorted(by_day.get(day, []), key=lambda e: e["cveID"])
         observations = [
             build_observation(e, i + 1, ingested, cvss_map)
             for i, e in enumerate(entries)
         ]
-        note = (
-            f"機械バックフィル: CISA KEV catalog {catalog_version} の dateAdded に基づき "
-            f"{ingested} に scripts/backfill_observations.py が生成。"
-            "Technique/actor_group の推測付与なし。"
-            "ベースライン統計からは除外される（regen_baseline.py が machine_backfill_* をスキップ）。"
-        )
+        if observations:
+            note = (
+                f"機械バックフィル: CISA KEV catalog {catalog_version} の dateAdded に基づき "
+                f"{ingested} に scripts/backfill_observations.py が生成。"
+                "Technique/actor_group の推測付与なし。"
+                "ベースライン統計からは除外される（regen_baseline.py が machine_backfill_* をスキップ）。"
+            )
+        else:
+            note = (
+                f"欠測日（日次ルーチン未実行）: CISA KEV catalog {catalog_version} に当日 dateAdded の"
+                f"エントリは無く、{ingested} に scripts/backfill_observations.py --emit-empty が"
+                "観測 0 件の空ファイルとして生成。ファイル不在（未処理）と区別するためのマーカーであり、"
+                "当日のニュース系観測は収集されていない（観測なし ≠ 事象なし）。"
+                "ベースライン統計からは除外される（regen_baseline.py が machine_backfill_* をスキップ）。"
+            )
         wrapper = {
             "_schema_version": "1.1",
             "_observation_date": day,
@@ -258,6 +286,8 @@ def main():
             "_retro_normalized": True,
             "_retro_note": (
                 f"{ingested} 遡及生成: 日次ルーチン対象外期間の KEV 追加イベントを機械取り込み。"
+                if observations
+                else f"{ingested} 遡及生成: 日次ルーチン未実行日の欠測マーカー（観測 0 件）。"
             ),
             "observations": observations,
         }
