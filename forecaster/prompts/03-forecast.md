@@ -325,12 +325,12 @@ Step C'' の**内部実績**に加えて、**インターネット上の類似�
 
 | 出口クラス | `p_channel`（M1-b 判定値） | 推定根拠 | fast_72h 主的中条件 |
 |---|---|---|---|
-| E1 | 0.25（6/24・95%CI 0.12–0.45） | 内部実績 `kev-hazard-stats.json` `internal_channel_rates` | 採用可 |
+| E1 | 0.31（11/35・95%CI 0.19–0.48） | 内部実績 `kev-hazard-stats.json` `internal_channel_rates` | 採用可 |
 | E2 | 実測不能 | `vendor-ioc-followup-timelines.json` | **採用禁止**（教訓14） |
 | E3 | 0.015 | `advisory-cadence-stats.json` `channels.E3.combined.kev_overlap` | **採用禁止**（教訓16） |
 | E4 | 0.15（95%CI 0.10–0.21・fired 26） | 外部実測 `poc-hazard-stats.json` `strata.kev_added_le_1d_no_poc`（母集団一致・順位1） | **条件付き採用可**: KEV 追加／実悪用一次確認から 1 日以内の発行、かつ PoC 未公開を一次ソースで確認。ゲートE により確度=低のみ |
 
-★表の数値は 2026-08-29 時点の実測値であり、verification 記録が増えるたびに動く。
+★表の数値は 2026-10-23 時点の実測値であり、verification 記録が増えるたびに動く。
 判定時は必ず `kev-hazard-stats.json` の `internal_channel_rates.channels` の最新値を正本として読む
 （表は目安）。内部実績は小標本のため CI 下限が閾値 0.10 を一時的に跨ぐことがあるが、
 **跨いだだけでチャネルを除外してはならない**（母集団が一致する外部実測の併用が必須・教訓17。
