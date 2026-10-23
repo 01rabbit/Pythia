@@ -354,7 +354,7 @@ CISA KEV の `dateAdded` が予報日と**同日**であることが確認され
 | E1（KEV初回追加） | **0.25**（6/24・95%CI 0.12–0.45） | 内部実績（順位2） | 0.0003 | 採用可（CI下限 0.12 > 0.10） |
 | E2（追随IOC） | **0.0**（0/6・95%CI 0–0.39） | 内部実績（順位2）＋累計8/8=0% | 未測定 | **採用禁止**（教訓14） |
 | E3（初回注意喚起） | **0.015** | 母集団一致の外部実測（順位1） | 同左 | **採用禁止**（教訓16） |
-| E4（PoC公開） | 内部実績 1/2（95%CI 0.09–0.91）／外部実測候補 **0.096**（`poc-hazard-stats.json` `strata_without_metasploit.kev_added_le_7d_no_poc`=0.087・含む=0.096・95%CI 0.07–0.13・fired 35） | 外部実測は母集団「KEV収載後7日以内・PoC未公開」で Pythia の E4 発行条件に近い（順位1の**候補**・p_channel への採用は人間判断待ち・Issue #186） | 0.0017（`kev_added_any_no_poc`） | CI 下限 0.07 < 0.10 のため M1-b 通過は未確定。**確度=低に限る運用を継続**（採用可否は人間レビューで判断） |
+| E4（PoC公開） | **0.15**（`poc-hazard-stats.json` `strata.kev_added_le_1d_no_poc`=0.149・95%CI 0.10–0.21・fired 26／Metasploit 除く 0.142・CI 0.098–0.20） | 母集団一致の外部実測（順位1）。母集団＝「KEV 初回追加の当日〜翌日・公開 PoC なし」で、Pythia の E4 発行条件（実悪用確認直後・PoC 未公開）と一致。内部実績 1/2 は参考（Issue #186・2026-10-23 採用） | 0.0017（`kev_added_any_no_poc`）／0.0004（`nvd_critical_any_no_poc`） | **条件付き採用可**: (a) 対象 CVE の KEV 初回追加（または実悪用の一次確認）から **1 日以内**に発行する（le_7d は 0.095・CI 下限 0.07 で不可）、(b) 発行時点で GitHub/Exploit-DB/Metasploit に PoC が無いことを直接確認する。CI 下限 0.104 は閾値 0.10 と**境界**（Metasploit 除外値は 0.098 で未達）につき、次回再生成で CI 下限が 0.10 を割れば採用を取り消す。ゲートE: 点推定 0.149 → **確度=低のみ** |
 
 実測値の出所は `kev-hazard-stats.json` の `internal_channel_rates.channels`（2026-08-29 再生成・
 KEV catalogVersion 2026.08.27・verification 記録 2026-06〜08 の全確定エントリ）である。

@@ -328,7 +328,7 @@ Step C'' の**内部実績**に加えて、**インターネット上の類似�
 | E1 | 0.25（6/24・95%CI 0.12–0.45） | 内部実績 `kev-hazard-stats.json` `internal_channel_rates` | 採用可 |
 | E2 | 実測不能 | `vendor-ioc-followup-timelines.json` | **採用禁止**（教訓14） |
 | E3 | 0.015 | `advisory-cadence-stats.json` `channels.E3.combined.kev_overlap` | **採用禁止**（教訓16） |
-| E4 | 未実測（n=1） | — | 実測までは確度=低に限る |
+| E4 | 0.15（95%CI 0.10–0.21・fired 26） | 外部実測 `poc-hazard-stats.json` `strata.kev_added_le_1d_no_poc`（母集団一致・順位1） | **条件付き採用可**: KEV 追加／実悪用一次確認から 1 日以内の発行、かつ PoC 未公開を一次ソースで確認。ゲートE により確度=低のみ |
 
 ★表の数値は 2026-08-29 時点の実測値であり、verification 記録が増えるたびに動く。
 判定時は必ず `kev-hazard-stats.json` の `internal_channel_rates.channels` の最新値を正本として読む
@@ -593,11 +593,14 @@ E2 予報も同様に 0.24 前後を記録しながら 0/6 だった。主観値
   系統的過大評価を直接生んでいた。「関連する活動が活発だから的中条件も成立しやすいはず」という
   推論は実測で否定されている。主題の活発さと**特定の出口イベントが窓内に起きること**は別の量である。
   現在 E2・E3 は `fast_72h` の主的中条件に採用禁止（教訓14・教訓16）。E4 は外部実測
-  （`forecaster/knowledge/poc-hazard-stats.json`・Issue #186）で「KEV 収載後7日以内・PoC 未公開」
-  母集団の72h窓内 PoC 初出率が 0.09〜0.10（95%CI 0.07–0.13）、30日以内では 0.03〜0.04 と測られた。
-  p_channel への採用可否は人間レビュー待ちであり、それまでは確度=低に限る運用を継続する。
-  base_rate は同ファイルの経過日数に合う層（KEV 追加直後なら 0.10・1か月経過なら 0.04）を
-  上限アンカーとし、旧目安の 0.15 は用いない。★KEV 収載 CVE の約36%は収載時点で既に PoC が
+  （`forecaster/knowledge/poc-hazard-stats.json`・Issue #186）で「KEV 初回追加の当日〜翌日・
+  PoC 未公開」母集団の72h窓内 PoC 初出率が **0.15**（95%CI 0.10–0.21）、7日以内では 0.095、
+  30日以内では 0.037 と測られ、2026-10-23 に p_channel=0.15 として**条件付き採用**した
+  （条件: KEV 追加／実悪用一次確認から 1 日以内の発行＋PoC 未公開の直接確認。詳細は
+  `pipeline-forecast-verification.md` M1-b 表）。ゲートE により確度は**低のみ**。発行が遅れて
+  2 日以上経過した主題は le_7d（0.095・CI 下限 0.07）が適用され M1-b 不通過＝発行不可。
+  base_rate は同ファイルの経過日数に合う層（KEV 追加直後なら 0.15・1週間なら 0.10・
+  1か月経過なら 0.04）を上限アンカーとする。★KEV 収載 CVE の約36%は収載時点で既に PoC が
   公開されている（`lag_kev_added_to_first_poc.pct.before_kev`）。E4 予報の発行前に
   当該 CVE の PoC 未公開を一次ソース（GitHub/Exploit-DB/Metasploit）で直接確認すること。
 - **T3（新規PoC/KEV追加からの急拡大予測）**: 一般に武器化までの成功率は低いため、ベースレートは

@@ -21,7 +21,7 @@
   サンプル日 D ごとに、
     リスク集合 = KEV 初回追加日が [D-k, D] に入り、かつ D 時点で公開 PoC が無い CVE
     発火        = 公開 PoC の初出日が [D+1, D+3]（fast_72h の検証窓）に入る
-  を数え、全サンプル日でプールしてハザードを算出する（k = 7 / 30 / 90 日、
+  を数え、全サンプル日でプールしてハザードを算出する（k = 1 / 3 / 7 / 30 / 90 日、
   および KEV 収載全体）。あわせて KEV 追加日から PoC 初出までのラグ分布と、
   KEV 追加時点で既に PoC があった割合（「未発火」の事前確認に使う）を出す。
   --with-nvd 指定時は NVD の CRITICAL（CVSS v3 9.0 以上）新規公開 CVE を母集団に
@@ -56,6 +56,7 @@ GitHub / ExploitDB / Metasploit に対応）:
 
 import argparse
 import csv
+import http.client
 import io
 import json
 import os
@@ -98,7 +99,7 @@ USER_AGENT = "pythia-calibration/1.0"
 
 FAST_WINDOW_DAYS = 3
 SAMPLE_INTERVAL_DAYS = 7  # 窓（3日）が重ならない最小間隔。独立サンプルを保つ
-RECENCY_DAYS = (7, 30, 90)  # KEV 追加からの経過日数で層を切る
+RECENCY_DAYS = (1, 3, 7, 30, 90)  # KEV 追加からの経過日数で層を切る（1・3 日は Pythia の E4 発行タイミングに最も近い層・2026-10-23 追加）
 MIN_FIRED_FOR_STABLE = 10  # ハザードを「安定」と見なす最小発火数
 CENSOR_MARGIN_DAYS = 7  # PoC ソースの反映遅れを見込んで as-of をこれだけ手前に置く
 LAG_BINS = (("before_kev", None, -1), ("d0_3", 0, 3), ("d4_7", 4, 7), ("d8_30", 8, 30), ("d31_90", 31, 90), ("gt_90", 91, None))
@@ -117,8 +118,17 @@ def _fetch_bytes(url, cache_dir, cache_name, timeout=120):
         with open(path, "rb") as f:
             return f.read()
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        blob = resp.read()
+    blob = None
+    for attempt in range(3):  # 大きな応答が途中で切れる（IncompleteRead）ことがあるため再試行する
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                blob = resp.read()
+            break
+        except (http.client.IncompleteRead, urllib.error.URLError, OSError) as exc:
+            if attempt == 2 or (isinstance(exc, urllib.error.HTTPError) and exc.code == 404):
+                raise
+            print(f"[warn] 取得失敗・再試行 {attempt + 1}/3 {url}: {exc}", file=sys.stderr)
+            time.sleep(5 * (attempt + 1))
     if path:
         os.makedirs(os.path.dirname(path) or cache_dir, exist_ok=True)
         with open(path, "wb") as f:
@@ -428,8 +438,9 @@ def build_document(args, kev, strata_main, strata_nomsf, strata_nvd, per_day, la
             "fired": f"first_poc が [D+1, D+{FAST_WINDOW_DAYS}] に入ること。",
             "hazard": "fired_total / risk_set_total（全サンプル日でプール）。Wilson 95%CI を併記。",
             "p_channel_vs_base_rate": (
-                "p_channel = P(窓内発火 | Pythia の発行条件)。主層 kev_added_le_7d_no_poc /"
-                " le_30d_no_poc がこれに最も近い母集団。base_rate = P(窓内発火 | 広い候補母集団)。"
+                "p_channel = P(窓内発火 | Pythia の発行条件)。主層 kev_added_le_1d_no_poc"
+                "（KEV 追加当日〜翌日・PoC 未公開）が Pythia の E4 発行タイミングに最も近い母集団。"
+                " le_7d / le_30d は発行が遅れた場合の参照値。base_rate = P(窓内発火 | 広い候補母集団)。"
                 " nvd_critical_* 層（--with-nvd 時）がこれに当たる。両者は別の量である（教訓17）。"
             ),
         },
@@ -449,7 +460,10 @@ def build_document(args, kev, strata_main, strata_nomsf, strata_nvd, per_day, la
             "主判断には strata_without_metasploit を優先し、差分を Metasploit 由来の不確かさとして読む。",
             "本統計は PoC が『動作する実証コード』かを判定しない（2026-08-29 の E4 的中判定で"
             "プレースホルダコミットを除外した判断は人手による）。収録・作成の有無だけを数える。",
-            "サンプルは週次固定間隔であり、KEV 追加の曜日偏りと位相が固定される。",
+            "サンプルは週次固定間隔であり、KEV 追加の曜日偏りと位相が固定される。"
+            "特に le_1d と le_3d はほぼ同じリスク集合になる（サンプル日が火曜固定のため"
+            " D-3〜D-1 が土日月に当たり、CISA が土日に追加しない分 le_3d の追加分がごく少ない）。"
+            "両層の差は曜日位相の産物であり、『3日経っても確率が落ちない』とは読まない。",
             "fired_total が少ない層（stable=false）の hazard は信頼区間が広い。桁の目安としてのみ読む。",
             "nvd_critical_* 層は cvssV3Severity=CRITICAL で絞っており、CVSS v4 のみ・v2 のみの"
             " CVE を含まない（網羅スイープが severity フィルタを使わない理由と同じ欠落）。"
