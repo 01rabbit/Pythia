@@ -48,7 +48,7 @@ scripts/nvd_window_sweep.py              ← ★Step 0.7 網羅スイープ／St
 scripts/token_usage_report.py            ← 日次実行のトークン量・料金概算を算出（Step 4 で計測・outputs/ へ保存）
 scripts/retrieve_similar_cases.py        ← 予報 Step C'' 類似過去事例検索器（内部実績・読み取り専用）
 scripts/record_retrieval_calibration.py  ← 検証時に retrieval 較正データを収集（design §8・検証ステージのみ書込）
-scripts/backfill_observations.py         ← 過去日付の観測を CISA KEV から機械バックフィル（観測のみ・ベースライン統計対象外・予報は遡及生成しない）
+scripts/backfill_observations.py         ← 過去日付の観測を CISA KEV から機械バックフィル（観測のみ・ベースライン統計対象外・予報は遡及生成しない・`--emit-empty` で KEV追加ゼロの欠測日にも observations:[] の欠測マーカーを置く）
 scripts/build_attack_group_history.py    ← 追跡対象グループの過去事例知識を MITRE ATT&CK から抽出（PR提案+人間レビュー経由でのみ再生成）
 scripts/build_kev_leadtime_stats.py      ← KEV全件の「NVD公開→KEV追加」ラグ実測分布を算出（E1検証窓・base_rate参考・PR経由でのみ再生成）
 scripts/build_advisory_cadence_stats.py  ← E3出口チャネル（JPCERT/CC注意喚起・IPA）の発行頻度と未発火条件付きハザードを実測（M1-b頻度ゲート判定値・base_rate実測アンカー・PR経由でのみ再生成）
