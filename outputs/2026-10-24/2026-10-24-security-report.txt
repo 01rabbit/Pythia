@@ -1,0 +1,680 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-24 07:50 JST
+調査期間: 2026-10-23 07:00 〜 2026-10-24 07:00 JST
+========================================
+
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+AI-2026-10-24-001 SOCRadar：INC・The Gentlemen のアフィリエイトが AI エージェント基盤「Phantom」で侵入を自動化（AI 実行・人間承認の運用構造）
+------------------------------------------------------------
+カテゴリ: A/A4 / 軸X=7 軸Y=7
+被害規模: SOCRadar は約62組織が標的となり、うち4組織が INC／The Gentlemen のリークサイトに掲載されたと報告。標的は米国が過半で製造・エネルギー・医療が多い。
+
+【24時間以内の変化】
+[The Hacker News（SOCRadar） 2026-10-23] SOCRadar が露出したインフラから、Phantom（OpenCode 上で動く 18 スキルの「Autonomous Red Team Kill Chain Framework」）を使うロシア語話者とみられる運用者を確認。
+
+【概要】
+THN によれば、運用者は被害者ごとのプロンプトを与えて各手順を人間が承認し、OpenRouter 経由の商用モデルで偵察・エクスプロイト調査・EDR フィンガープリントを実行させる。モデルが拒否すると「承認済みレッドチーム評価」と言い換える。侵入は FortiClient EMS・SimpleHelp・cPanel・VPN ゲートウェイを突き、BYOVD による EDR 無効化・RevSocks・Ghost C2 を用い、窃取した財務データで要求額を決めて vishing で圧力をかける。使用モデルは非公表。
+
+【攻撃フロー】
+1. エッジ／リモートアクセス製品を悪用して侵入
+2. AI エージェントが偵察・資格情報窃取・ドメイン昇格を人間承認下で実行
+3. BYOVD で EDR を無効化し、データ窃取後に恐喝（vishing・24〜72 時間の期限）
+
+【監視】
+露出する FortiClient EMS・SimpleHelp・cPanel のパッチ状況確認と、EDR 無効化ドライバー導入の検知を強化する。
+
+【参照】
+- Exposed Infrastructure Reveals How Ransomware Affiliates Used AI Agents to Execute Intrusions (The Hacker News) https://thehackernews.com/2026/10/exposed-infrastructure-reveals-how.html
+
+------------------------------------------------------------
+AI-2026-10-24-002 LiteLLM 侵害の続報：侵害された GitHub CLI の OAuth トークンで悪意あるパッケージを PyPI と Docker に公開・承認
+------------------------------------------------------------
+カテゴリ: C/C6 / 軸X=8 軸Y=7
+被害規模: 影響範囲は 10-22 の既報（1.107.0／Docker イメージ）と同一。被害件数は未公表。
+
+【24時間以内の変化】
+[SecurityWeek／Security NEXT 2026-10-23] SecurityWeek は、攻撃者が侵害した GitHub CLI の OAuth トークンを使い悪意あるパッケージを PyPI と Docker に push・承認したと報じた。Security NEXT も資格情報窃取とコード実行のおそれを伝えた。[既報・更新]
+
+【概要】
+SecurityWeek の要約によれば、リリース経路で GitHub CLI の OAuth トークンが悪用された。既報の cook.pth による資格情報窃取と GitHub デッドドロップ経由の C2 は同一事案。攻撃主体は特定されていない。
+
+【攻撃フロー】
+1. GitHub CLI の OAuth トークンを入手
+2. トークンで悪意あるパッケージを PyPI／Docker に公開・承認
+3. 導入環境で資格情報を窃取
+
+【監視】
+1.107.0 の導入有無と導入環境の資格情報の不正利用を確認する。
+
+【参照】
+- LiteLLM Compromised in Fresh Supply Chain Attack (SecurityWeek) https://www.securityweek.com/litellm-compromised-in-fresh-supply-chain-attack
+- 「LiteLLM」に不正プログラム混入 - 認証情報漏洩やコード実行のおそれ (Security NEXT) https://www.security-next.com/191830
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+AI-2026-10-24-003 x402 SDK の既定クライアントに支払い上限がなく、悪意ある API が AI エージェントのトークン残高全額の署名を要求できた（V12 報告）
+------------------------------------------------------------
+カテゴリ: C/C3 / 軸X=5 軸Y=3
+被害規模: 自動署名設定のエージェントのみ。8-18 のリリースで上限が追加済み。悪用の報告なし。
+
+【24時間以内の変化】
+[The Hacker News（V12） 2026-10-22] V12 が 10-22 に公表。
+
+【概要】
+THN によれば、x402 SDK の既定クライアントは支払い額の上限を持たず、悪意ある API が要求した満額に自動署名するエージェントは残高全額を失い得た。8 月 18 日のリリースで上限が追加された。
+
+【攻撃フロー】
+1. エージェントが悪意ある API を呼ぶ
+2. API が残高全額の支払いを要求
+3. 自動署名で資金が流出
+
+【監視】
+x402 SDK を使うエージェントの版と支払い上限の設定を確認する。
+
+【参照】
+- Critical x402 SDK Flaw Could Let Malicious APIs Drain AI Agents' Token Balances (The Hacker News) https://thehackernews.com/2026/10/critical-x402-sdk-flaw-could-let.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-114625 Arista VeloCloud Orchestrator（VCO・オンプレミス版）の SQL インジェクション（read-only アカウントから operator 権限へ昇格）（CVSS 9.9）
+------------------------------------------------------------
+優先度: critical  軸1=14 軸2=5  KEV登録: あり（2026-10-23）  悪用: 確認  パッチ: あり
+影響バージョン: 5.2 系は 5.2.3.18 未満、6.1 系は 6.1.3.10 未満、6.4 系は 6.4.2.12 未満（7.0 系は対象外・サポート終了版は Arista が未検証）。Hosted／Dedicated は修正済み。VeloCloud Gateway／Edge は対象外
+
+【24時間以内の変化】
+[CISA KEV カタログ（2026.10.23）／SecurityWeek 2026-10-23] CISA が CVE-2026-114625 を KEV に追加（dateAdded 2026-10-23・期限 2026-10-26・ランサム利用 Unknown・forensic triage 要）。SecurityWeek は VCO で4か月に3件目の悪用と報じた。[既報・更新: KEV 収載]
+
+【概要】
+Arista が悪用を確認した VeloCloud Orchestrator（オンプレミス版）の SQL インジェクション（read-only から operator 権限へ昇格）が、2026-10-23 に CISA KEV へ追加された。攻撃主体・被害件数は未公表。EPSS は 0.56%（%ile 45.6・2026-10-23 時点）。
+
+【攻撃フロー】
+1. VCO の Web インターフェースへ到達し、read-only 以上の有効なログインを得る（Arista 記述：最低ロールは Enterprise Read Only）
+2. SQL インジェクションで operator（local superuser）権限へ昇格（Arista 記述）
+3. VCO ホストや管理データへ影響しうる（Arista 記述。実際の悪用後の行動は未公表）
+
+【ATT&CK】
+- T1068 Exploitation for Privilege Escalation: SQL インジェクションにより read-only ロールから最上位の operator 権限へ昇格する（Arista の記述に基づく）。初期アクセス手段（ログイン情報の入手経路）は未公表のため付与しない
+
+【暫定対策】
+- 5.2.3.18／6.1.3.10／6.4.2.12 以降へ更新する（Hosted／Dedicated は修正済み）
+- 更新までは VCO の Web インターフェースを信頼できる管理ネットワークに限定し、不明な IP からの接続を監視する
+- 更新前に VCO の Web アクセスログ・バックエンドログ・システムログ等の証拠を保全する（Arista 推奨）
+- ホストからの想定外の外向き通信、バックドアのデーモン・Web シェル、管理者アクティビティの不審な変更を確認する
+
+【IOC】
+- ips: 74.82.197[.]86, 38.54.50[.]151
+
+【監視】
+VCO の Web アクセスログで URL 状の異常なパス構成要素・エンコード文字・内部サービス参照・高頻度リクエスト、上記 IP からの接続を確認する。
+
+【参照】
+- Arista Warns of Critical VeloCloud SQL Injection Zero-Day Exploited in Attacks (The Hacker News) https://thehackernews.com/2026/10/arista-warns-of-critical-velocloud-sql.html
+- Attackers Exploit Third Arista VCO Zero-Day in Four Months (SecurityWeek) https://www.securityweek.com/attackers-exploit-third-velocloud-orchestrator-zero-day-in-four-months
+
+------------------------------------------------------------
+2. CVE-2026-110447 Collabora Online Built-in CODE Server（Nextcloud richdocumentscode・OS コマンドインジェクション）（CVSS 9.2）
+------------------------------------------------------------
+優先度: critical  軸1=11 軸2=8  KEV登録: あり（2026-10-23）  悪用: 確認  パッチ: あり
+影響バージョン: richdocumentscode 26.4.303 未満（Nextcloud 内蔵 CODE サーバー・CODE サーバー非稼働時にコマンド実行に至る）
+
+【24時間以内の変化】
+[CISA KEV カタログ（2026.10.23） 2026-10-23] CISA が KEV に追加（dateAdded 2026-10-23・期限 2026-10-26・ランサム利用 Unknown・forensic triage 要）。通知欄に Nextcloud コミュニティの更新案内（ASAP）と GitHub Security Advisory GHSA-g3vx-3m76-fghh が付く。[既報・更新: KEV 収載]
+
+【概要】
+CISA KEV の記述によれば、Nextcloud 上で使う Collabora Online の内蔵 CODE サーバーに OS コマンドインジェクションがあり、CODE サーバーが稼働していない状態でリモートからコード実行に至る。既報（2026-10-15〜16）の情報では 2026-09-10 頃から悪用・Web シェル設置が確認されている。KEV 収載により実悪用が CISA にも確認された。攻撃主体・被害件数は未公表。
+
+【攻撃フロー】
+1. Nextcloud の richdocumentscode（内蔵 CODE サーバー）へ到達する
+2. CODE サーバー非稼働の状態を突いて OS コマンドを注入する（CISA 記述）
+3. リモートコード実行・バックドア設置（既報の報道）
+
+【ATT&CK】
+- T1190 Exploit Public-Facing Application: インターネット公開の Nextcloud／Collabora 内蔵 CODE サーバーのコマンドインジェクションを悪用（CISA KEV の記述に基づく）
+
+【暫定対策】
+- richdocumentscode を 26.4.303 以降へ更新（Nextcloud の更新案内に従う）
+- 更新できない場合は内蔵 CODE サーバーを無効化し、外部の Collabora サーバーへ移行する
+- 侵害調査（Web シェル・不審プロセス）を実施する。CISA は forensic triage を要求している
+
+【監視】
+Nextcloud の richdocumentscode 配下の不審なファイル・プロセス、CODE サーバー関連エンドポイントへの異常なリクエストを確認する。
+
+【参照】
+- To Collabora built-in user: update ASAP (Nextcloud Help) https://help.nextcloud.com/t/to-collabora-built-in-user-update-asap/250516
+- GHSA-g3vx-3m76-fghh (GitHub Advisory) https://github.com/CollaboraOnline/online/security/advisories/GHSA-g3vx-3m76-fghh
+- CVE-2026-110447 (NVD) https://nvd.nist.gov/vuln/detail/CVE-2026-110447
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SandwormUAC0099-2025-UkraineLogisticsWiper-MythicRatatoskr Sandworm と UAC-0099（Earth Sirrush・ESET の評価）
+------------------------------------------------------------
+帰属: Russia-aligned（ESET の評価）（信頼度: medium）/ 軸P=8 軸Q=5
+標的: logistics, government, energy, agriculture / UA
+
+【24時間以内の変化】
+[The Hacker News（ESET） 2026-10-23] ESET が、UAC-0099 が 2025-07-16 にスピアフィッシングでウクライナの物流企業に侵入し、検証済み標的を Sandworm に引き渡して 2025-09-17 にグループポリシー経由でワイプした事案を公表。Yggdrasil メッシュネットワークを C2 に使う新バックドア MythicRatatoskr を初確認。
+
+【概要】
+THN が伝える ESET の分析によれば、UAC-0099 は悪意ある添付ファイル付きスピアフィッシングで初期アクセスを得て MATCHBOIL（ダウンローダー）・MATCHWOK（バックドア）を展開し、Sandworm が post-exploitation と AD グループポリシーによるワイプを実行した。MythicRatatoskr は起動時 10 分の遅延、コマンド実行・スクリーンショット・ファイル転送・リバース SOCKS5 を持つ。ESET は Yggdrasil の悪用は国家連携アクターで初めて文書化されたと述べる。事案自体は昨年のもので、今回は分析の公開である。
+
+【攻撃フロー】
+1. UAC-0099 がスピアフィッシングで初期アクセス（2025-07-16）
+2. MATCHBOIL／MATCHWOK を展開し検証済み標的を Sandworm に引き渡し
+3. MythicRatatoskr（Yggdrasil C2）で永続化・偵察
+4. Sandworm が AD グループポリシーで SDelete によるワイプを実行（2025-09-17）
+
+【TTP】
+- T1566 Phishing
+- T1485 Data Destruction
+- T1090 Proxy
+
+【推奨アクション】
+Yggdrasil（IPv6 メッシュ）宛の通信と、グループポリシー経由の SDelete 配布を監視する。ESET の IoC を取り込む。
+
+【検知メモ】
+帰属は ESET の評価。THN の記事に IoC は含まれない（ESET 原典を参照）。
+
+【参照】
+- Russian-Linked Hackers Used New Mesh Network Backdoor in Destructive Ukraine Attack (The Hacker News) https://thehackernews.com/2026/10/russian-linked-hackers-used-new-mesh.html
+
+------------------------------------------------------------
+APT41suspected-2026-BlackX-UEFIBootkit-CentralAsiaDiplomats APT41 の疑い（Kaspersky の評価・間接的な根拠）
+------------------------------------------------------------
+帰属: China-linked（疑い）（信頼度: low）/ 軸P=7 軸Q=4
+標的: government, diplomacy / TJ, UZ, TM
+
+【24時間以内の変化】
+[The Hacker News（Kaspersky） 2026-10-23] Kaspersky が、2026 年初めにタジキスタン・ウズベキスタン・トルクメニスタンの外交機関を狙った UEFI ブートキット BlackX を公表。APT41 による可能性（suspected）。CVE-2022-21894（Baton Drop）を悪用し、Windows Production PCA 2011 の失効未実施の環境で Secure Boot を回避。
+
+【概要】
+THN が伝える Kaspersky の分析によれば、BlackX は BlackLotus の更新版と評価され、CVE-2022-21894 を悪用して MOK を登録し任意の EFI ファイルを読み込む。実行には管理者権限か物理アクセスが必要。署名が失効済みのカーネルドライバーで EDR を妨害し、クラウド C2 の RAT と DLL サイドローディングの Rust ペイロードを展開する。APT41 との関連は ESET の FishMonger／SprySOCKS 分析と共有文字列「xdd」に基づく間接的な根拠で、断定ではない。
+
+【攻撃フロー】
+1. 管理者権限または物理アクセスを得る
+2. CVE-2022-21894 で Secure Boot を回避し MOK を登録
+3. ブートキット経由で署名失効済みドライバーを読み込み EDR を妨害
+4. RAT／DLL サイドローディングのペイロードで諜報
+
+【TTP】
+- T1542 Pre-OS Boot
+- T1574 Hijack Execution Flow
+
+【推奨アクション】
+Secure Boot の失効リスト（DBX）と Windows Production PCA 2011 の失効状況を確認し、MOK の不審な登録・署名失効済みドライバーの読み込みを監視する。
+
+【検知メモ】
+APT41 帰属は疑い（low）。ATT&CK は情報源が手口を明示した範囲に限る。
+
+【参照】
+- BlackX UEFI Bootkit Bypasses Secure Boot on Patched Windows Systems Missing Revocations (The Hacker News) https://thehackernews.com/2026/10/blackx-uefi-bootkit-bypasses-secure.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+PrinceOfPersia-2026-TornadoC2-USSharedHosting Prince of Persia（別名: Indy・イラン系）
+------------------------------------------------------------
+帰属: Iran-linked（信頼度: low）/ 軸P=4 軸Q=3
+標的:  / global
+
+【24時間以内の変化】
+[SecurityWeek 2026-10-23] SecurityWeek の見出し・要約: 3 か月の沈黙の後、Prince of Persia が米国の共有ホスティング上に Tornado の C2 サーバーを置いた（2016 年以来の米国内サーバー）。詳細本文は取得できていない。
+
+【概要】
+SecurityWeek の要約によれば、Prince of Persia は 3 か月の沈黙後に Tornado C2 を米国の共有ホスティングへ設置した。報告者・IoC・標的は本文を取得できず未確認のため、詳細は記載しない。
+
+【攻撃フロー】
+1. （詳細未確認）Tornado C2 を米国の共有ホスティングに設置
+
+【推奨アクション】
+Tornado 関連の既知インフラ・IoC を脅威インテリジェンスで確認する。
+
+【検知メモ】
+本文取得失敗（403）のため要約のみ。ATT&CK は付与しない。
+
+【参照】
+- Iran's Prince of Persia APT Hosts C&C in US for First Time Since 2016 (SecurityWeek) https://www.securityweek.com/irans-prince-of-persia-apt-hosts-cc-in-us-for-first-time-since-2016
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外製品）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+CVE-2026-109618 PHP（OOM 時の longjmp 処理＝PHP2Shell。CVE-2026-109619 と一体）（CVSS 9.8）
+------------------------------------------------------------
+優先度: high  軸1=13 軸2=9  KEV登録: なし  悪用: 未確認  パッチ: あり
+影響バージョン: PHP 8.5.12／8.4.27／8.3.36／8.2.35 未満（8.1 以前は公式更新なし・ソースバックポートのみ）
+
+【24時間以内の変化】
+[The Hacker News／SecurityWeek（Cloudflare・Sophos・Talos・VulnCheck 等） 2026-10-23] 初回の悪用試行は 10-21 13:05 UTC。Cloudflare は 10-22 までに数百万件の試行を報告。Mirai 派生 Potassium の配布を狙う試行が確認され、侵入成功は確認されていない（Previdian・Hunt.io）。VulnCheck は2件の連鎖とメモリリークで ASLR 回避付き RCE を x86-64 で実証。EPSS は CVE-2026-109618 が %ile 96.0（0.116）、109619 が %ile 93.3（0.060）。KEV 未収載（カタログ 2026.10.23）。[既報・更新]
+
+【概要】
+THN によれば、PHP2Shell（CVE-2026-109618／109619・PHP 評価 CVSS v4.0 9.2）への悪用試行が数百万件規模に達したが、Sophos・Cloudflare・Talos・Arctic Wolf ら複数ベンダーの観測でも侵入成功の確認はない。試行は Mirai 派生 Potassium（24 種の攻撃コマンド）の拡散を狙うもので、「武器化は想定より難しい」との評価がある一方、VulnCheck が ASLR 回避付きの実証を公表した。さらに PHP は別の CVE-2026-115560（session.serialize_handler を実行時に切り替えかつ upload_progress 有効という稀な構成のみ・パッチなし・緩和策は session.upload_progress.enabled=0）を公表した（CVSS 未付与・悪用報告なし）。
+
+【攻撃フロー】
+1. 細工した HTTP リクエストで OOM を誘発し longjmp 後のグローバル状態の不整合を突く
+2. メモリリークと組み合わせた ASLR 回避（VulnCheck 実証）
+3. Potassium（Mirai 派生）のローダー取得を狙う試行（成功は未確認）
+
+【ATT&CK】
+- T1190 Exploit Public-Facing Application: 公開 PHP アプリへの細工 HTTP リクエストによる未認証 RCE の試行（THN／SecurityWeek の記述に基づく。侵入成功は未確認）
+
+【暫定対策】
+- PHP を 8.5.12／8.4.27／8.3.36／8.2.35 以降へ更新（8.1 以前はディストリビューションのバックポートを確認）
+- 更新が困難な場合は公開を控える（CISA）
+- CVE-2026-115560 の緩和として session.upload_progress.enabled=0 を設定する
+
+【IOC】
+- ips: 85.11.167[.]243, 217.60.242[.]76, 45.198.224[.]169, 92.118.112[.]100, 134.199.154[.]64, 206.188.197[.]105
+- domains: thunder.godofthunder[.]st
+
+【監視】
+PHP-FPM／Apache のクラッシュ・メモリ枯渇の急増、POST 本文の異常な巨大リクエスト、上記 IP との通信を監視する。
+
+【参照】
+- PHP2Shell Exploit Attempts Hit Millions as Attackers Try to Deploy Mirai Malware (The Hacker News) https://thehackernews.com/2026/10/php2shell-exploit-attempts-hit-millions.html
+- Mirai Botnet Operators Join PHP2Shell Attacks as ASLR Bypass Exploits Emerge (SecurityWeek) https://www.securityweek.com/mirai-botnet-operators-join-php2shell-attacks-as-aslr-bypass-exploits-emerge
+- PHP Warns of Another Unpatched RCE Risk Two Days After Emergency PHP2Shell Patches (The Hacker News) https://thehackernews.com/2026/10/urgent-php-warns-of-another-unpatched.html
+- PHP Vulnerability Wrap-Up (SANS ISC) https://isc.sans.edu/diary/rss/33450
+
+------------------------------------------------------------
+CVE-2026-112900 Pillow（Python 画像ライブラリ・EPS 処理の Ghostscript 経由コマンド実行）（CVSS 9.2）
+------------------------------------------------------------
+優先度: medium  軸1=9 軸2=3  KEV登録: なし  悪用: 未確認  パッチ: あり
+影響バージョン: Pillow 2.6.0〜12.3.0（13.0.0 で修正・Ghostscript(gs) 導入環境で攻撃者が制御するファイル名を開く場合）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-23] Pillow の EPS 処理が Ghostscript へファイル名を未検証で渡し OS コマンド実行に至る CVE-2026-112900（GitHub CVSS 9.2・メンテナ評価は moderate）を報道。同時に CVE-2026-112393（TIFF バッファオーバーフロー・CISA が公開 PoC に言及）、CVE-2026-112403 も修正。悪用報告なし・KEV 未収載。
+
+【概要】
+THN によれば、Pillow は EPS 画像を開く際に Ghostscript へファイル名を検証せず渡すため、ファイル名を攻撃者が決められるサーバーでは OS コマンドが実行される。メンテナは影響が限定的として moderate と評価している。悪用の報告はない。
+
+【攻撃フロー】
+1. 攻撃者が制御するファイル名で Image.open() を呼ばせる
+2. Ghostscript 呼び出しの引数に注入されたコマンドが実行される
+
+【暫定対策】
+- Pillow 13.0.0 以降へ更新する
+- アプリがユーザー指定のファイル名を直接開く箇所を点検し、EPS 形式を拒否する
+
+【監視】
+画像処理サービスのファイル名入力と gs の子プロセス生成を確認する。
+
+【参照】
+- Critical Flaw in Python's Popular Pillow Image Library Allows Code Execution via a Crafted Image (The Hacker News) https://thehackernews.com/2026/10/critical-flaw-in-pythons-popular-pillow.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃トレンド】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+TREND-2026-10-24-001 Group-IB／NyxLab：FortiGate・GlobalProtect 等のエッジ機器を狙う大規模侵害で 7 万件超の認証情報が流出（actor「k0t」）
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News（Group-IB・NyxLab） 2026-10-23] k0t によるエッジ機器侵害キャンペーンの詳細を公表。侵害の多くは 2026-02〜06。
+
+【概要】
+THN によれば、Group-IB と NyxLab は actor「k0t」（別名 CryptoFeel）が FOFA／ZoomEye で公開 VPN・FW を探索し、CVE-2025-64446（FortiWeb パストラバーサル）・CVE-2026-0257（PAN-OS／Prisma Access 認証バイパス）の悪用または既定資格情報のブルートフォースで侵入、OpenConnect VPN・Mimikatz・Impacket・NetExec・リモートアクセスツール・AdaptixC2 で拡大し Rclone で持ち出したと報告した。7 万件超の認証情報が確認され、地域は APAC 約38%・中南米約32%・欧州約16%。Qilin／The Gentlemen との関係（初期アクセスブローカーまたはアフィリエイトの可能性）は評価であり関係の詳細は不明。
+
+【参照】
+- Hackers Breach Enterprise Firewalls and VPNs, Exposing Over 70,000 Credentials (The Hacker News) https://thehackernews.com/2026/10/hackers-breach-enterprise-firewalls-and.html
+
+------------------------------------------------------------
+TREND-2026-10-24-002 カプコン「CAPCOM ID」で 1,100 万件のメールアドレスが流出し、196 アカウントのパスワードが不正変更
+------------------------------------------------------------
+【24時間以内の変化】
+[SecurityWeek／Security NEXT 2026-10-23] カプコンが CAPCOM ID の情報流出とパスワード不正変更を公表。
+
+【概要】
+SecurityWeek／Security NEXT によれば、カプコンのオンライン会員サービスが攻撃を受け約 1,100 万件のメールアドレスが盗まれ、196 アカウントのログインパスワードが不正に変更され、通信販売サイトへのアクセスがあった。侵入経路は報道で明示されていない。
+
+【参照】
+- 11 Million Impacted by Capcom Data Breach (SecurityWeek) https://www.securityweek.com/11-million-impacted-by-capcom-data-breach
+- 「CAPCOM ID」で情報流出、パスワードの不正変更も - カプコン (Security NEXT) https://www.security-next.com/191838
+
+------------------------------------------------------------
+TREND-2026-10-24-003 GMO「お名前.com デスクトップクラウド」が侵害され、利用者の金融口座で不正操作が報告される
+------------------------------------------------------------
+【24時間以内の変化】
+[Security NEXT 2026-10-23] GMO インターネットが侵害を公表。
+
+【概要】
+Security NEXT によれば、GMO インターネットの仮想デスクトップサービスが第三者に侵害され、利用者の金融機関取引口座に対する不正操作が報告されており、内部データ窃取のおそれがある。侵入経路・件数は報道記載の範囲では不明。
+
+【参照】
+- GMO「デスクトップクラウド」で侵害 - 利用者から金融口座の不正操作報告 (Security NEXT) https://www.security-next.com/191883
+
+------------------------------------------------------------
+TREND-2026-10-24-004 Ruby が Onigmo 正規表現エンジンの 3 件のメモリ破壊バグを修正（GitLab の重大 RCE 4 件の根本原因）
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-23] Ruby 側の修正リリースを報道。[既報・更新]
+
+【概要】
+THN によれば、Ruby 4.0.9／3.4.12／3.3.13 が Onigmo の 3 件のバグを修正した。GitLab が過去 1 か月に修正した 4 件の重大 RCE（既報の CVE-2026-110264 を含む）の根本原因で、細工したパターンのコンパイル時にメモリが破壊される。悪用の報告は確認できない。
+
+【参照】
+- Ruby Fixes Three Regex Engine Bugs Responsible for Four Critical GitLab RCE Flaws (The Hacker News) https://thehackernews.com/2026/10/ruby-fixes-three-regex-engine-bugs.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・予報1: PHP2Shell（PHP CVE-2026-109618）の CISA KEV 初回追加（fc-20261024-1）
+Tier: T1 / 確度: 低 / 観測出口クラス: E1 / 検証窓: fast_72h / 検証期限: 2026-10-27
+Evidence: [THN／SecurityWeek 2026-10-23] CVE-2026-109618／109619 への悪用試行が 10-21 13:05 UTC に初出し、Cloudflare が 10-22 までに数百万件を報告。Mirai 派生 Potassium の配布試行を確認、侵入成功は未確認（Previdian・Hunt.io）。VulnCheck が ASLR 回避付き RCE を実証。[CISA KEV スナップショット 2026-10-23T21:22Z・カタログ 2026.10.23] 当該CVEは未収載。公開は PHP 8.5.12 等の修正と同時（NVD v3.1 9.8・PHP 評価 CVSS v4.0 9.2）。
+過去パターン: 類似5件（outcome_channel=E1・fast_72h）中 的中1・部分0・外れ4（経験的的中率20%・観測ゲート通過）。（過去実績）
+確度アンカー: EPSS percentile 0.960（2026-10-23）/ KEV 未収載 / Automatable=yes
+推定部分: （推測）悪用試行の規模と実証の公表により CISA が収載する可能性はあるが、侵入成功が確認されていないため、収載判断が窓内に行われる保証はない。過去の類似事例（PoC公開済み・KEV未収載のE1予報）は5件中1件の的中にとどまる。
+先回り監視: CISA KEV の更新、侵入成功の初報、PHP の追加修正リリース。
+的中判定: 対象CVEがCISA KEVカタログへ dateAdded が2026-10-24〜2026-10-27（両端を含む）の範囲で初回追加されること
+
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+1. CVE-2026-114625 Arista VeloCloud Orchestrator（VCO・オンプレミス版）の SQL インジェクション（read-only アカウントから operator 権限へ昇格）（CVSS 9.9）
+------------------------------------------------------------
+優先度: critical  軸1=14 軸2=5  KEV登録: あり（2026-10-23）  悪用: 確認  パッチ: あり
+影響バージョン: 5.2 系は 5.2.3.18 未満、6.1 系は 6.1.3.10 未満、6.4 系は 6.4.2.12 未満（7.0 系は対象外・サポート終了版は Arista が未検証）。Hosted／Dedicated は修正済み。VeloCloud Gateway／Edge は対象外
+
+【24時間以内の変化】
+[CISA KEV カタログ（2026.10.23）／SecurityWeek 2026-10-23] CISA が CVE-2026-114625 を KEV に追加（dateAdded 2026-10-23・期限 2026-10-26・ランサム利用 Unknown・forensic triage 要）。SecurityWeek は VCO で4か月に3件目の悪用と報じた。[既報・更新: KEV 収載]
+
+【概要】
+Arista が悪用を確認した VeloCloud Orchestrator（オンプレミス版）の SQL インジェクション（read-only から operator 権限へ昇格）が、2026-10-23 に CISA KEV へ追加された。攻撃主体・被害件数は未公表。EPSS は 0.56%（%ile 45.6・2026-10-23 時点）。
+
+【攻撃フロー】
+1. VCO の Web インターフェースへ到達し、read-only 以上の有効なログインを得る（Arista 記述：最低ロールは Enterprise Read Only）
+2. SQL インジェクションで operator（local superuser）権限へ昇格（Arista 記述）
+3. VCO ホストや管理データへ影響しうる（Arista 記述。実際の悪用後の行動は未公表）
+
+【ATT&CK】
+- T1068 Exploitation for Privilege Escalation: SQL インジェクションにより read-only ロールから最上位の operator 権限へ昇格する（Arista の記述に基づく）。初期アクセス手段（ログイン情報の入手経路）は未公表のため付与しない
+
+【暫定対策】
+- 5.2.3.18／6.1.3.10／6.4.2.12 以降へ更新する（Hosted／Dedicated は修正済み）
+- 更新までは VCO の Web インターフェースを信頼できる管理ネットワークに限定し、不明な IP からの接続を監視する
+- 更新前に VCO の Web アクセスログ・バックエンドログ・システムログ等の証拠を保全する（Arista 推奨）
+- ホストからの想定外の外向き通信、バックドアのデーモン・Web シェル、管理者アクティビティの不審な変更を確認する
+
+【IOC】
+- ips: 74.82.197[.]86, 38.54.50[.]151
+
+【監視】
+VCO の Web アクセスログで URL 状の異常なパス構成要素・エンコード文字・内部サービス参照・高頻度リクエスト、上記 IP からの接続を確認する。
+
+【参照】
+- Arista Warns of Critical VeloCloud SQL Injection Zero-Day Exploited in Attacks (The Hacker News) https://thehackernews.com/2026/10/arista-warns-of-critical-velocloud-sql.html
+- Attackers Exploit Third Arista VCO Zero-Day in Four Months (SecurityWeek) https://www.securityweek.com/attackers-exploit-third-velocloud-orchestrator-zero-day-in-four-months
+
+------------------------------------------------------------
+2. CVE-2026-110447 Collabora Online Built-in CODE Server（Nextcloud richdocumentscode・OS コマンドインジェクション）（CVSS 9.2）
+------------------------------------------------------------
+優先度: critical  軸1=11 軸2=8  KEV登録: あり（2026-10-23）  悪用: 確認  パッチ: あり
+影響バージョン: richdocumentscode 26.4.303 未満（Nextcloud 内蔵 CODE サーバー・CODE サーバー非稼働時にコマンド実行に至る）
+
+【24時間以内の変化】
+[CISA KEV カタログ（2026.10.23） 2026-10-23] CISA が KEV に追加（dateAdded 2026-10-23・期限 2026-10-26・ランサム利用 Unknown・forensic triage 要）。通知欄に Nextcloud コミュニティの更新案内（ASAP）と GitHub Security Advisory GHSA-g3vx-3m76-fghh が付く。[既報・更新: KEV 収載]
+
+【概要】
+CISA KEV の記述によれば、Nextcloud 上で使う Collabora Online の内蔵 CODE サーバーに OS コマンドインジェクションがあり、CODE サーバーが稼働していない状態でリモートからコード実行に至る。既報（2026-10-15〜16）の情報では 2026-09-10 頃から悪用・Web シェル設置が確認されている。KEV 収載により実悪用が CISA にも確認された。攻撃主体・被害件数は未公表。
+
+【攻撃フロー】
+1. Nextcloud の richdocumentscode（内蔵 CODE サーバー）へ到達する
+2. CODE サーバー非稼働の状態を突いて OS コマンドを注入する（CISA 記述）
+3. リモートコード実行・バックドア設置（既報の報道）
+
+【ATT&CK】
+- T1190 Exploit Public-Facing Application: インターネット公開の Nextcloud／Collabora 内蔵 CODE サーバーのコマンドインジェクションを悪用（CISA KEV の記述に基づく）
+
+【暫定対策】
+- richdocumentscode を 26.4.303 以降へ更新（Nextcloud の更新案内に従う）
+- 更新できない場合は内蔵 CODE サーバーを無効化し、外部の Collabora サーバーへ移行する
+- 侵害調査（Web シェル・不審プロセス）を実施する。CISA は forensic triage を要求している
+
+【監視】
+Nextcloud の richdocumentscode 配下の不審なファイル・プロセス、CODE サーバー関連エンドポイントへの異常なリクエストを確認する。
+
+【参照】
+- To Collabora built-in user: update ASAP (Nextcloud Help) https://help.nextcloud.com/t/to-collabora-built-in-user-update-asap/250516
+- GHSA-g3vx-3m76-fghh (GitHub Advisory) https://github.com/CollaboraOnline/online/security/advisories/GHSA-g3vx-3m76-fghh
+- CVE-2026-110447 (NVD) https://nvd.nist.gov/vuln/detail/CVE-2026-110447
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+網羅スイープ候補 47件 / 未処理 0件 / KEV 窓内追加 2件 / EUVD 窓内全量 41件（NVD/KEV 未収載 3件）。
+
+- CVE-2026-112846 ほか12件（全件: CVE-2026-112846, CVE-2026-112847, CVE-2026-112848, CVE-2026-112851, CVE-2026-112853, CVE-2026-112854, CVE-2026-112855, CVE-2026-112856, CVE-2026-112857, CVE-2026-112858, CVE-2026-112859, CVE-2026-112862, CVE-2026-112860） Patchstack CNA 公開の WordPress テーマ／プラグイン（ThemeREX・axiomthemes 等のオブジェクトインジェクション16件・SQLi 1件）
+  理由: low_score — 窓内公開の CVSS 9.3〜9.8（NVD/EUVD 機械列挙）。アグリゲータCNA の一括公開で個別の悪用報告なし（バッチ集約）（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-110063 ほか3件（全件: CVE-2026-110063, CVE-2026-83938, CVE-2026-97785, CVE-2026-105014） Microsoft クラウドサービス（VM Inspection・AKS 構成・AAD App Proxy・コマンドインジェクション）
+  理由: low_score — 窓内公開の CVSS 9.1〜10.0。クラウド側で対処済みの CVE で顧客の対処は不要または限定的（バッチ集約）（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-107861 ほか2件（全件: CVE-2026-107861, CVE-2026-110243, CVE-2026-109122） Kiloview E3 NDI エンコーダーファームウェア（CISA ICS）
+  理由: low_score — 窓内公開の CVSS 9.4〜9.9。CISA ICS 勧告で悪用報告なし（バッチ集約）（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2025-30046 ほか3件（全件: CVE-2025-30046, CVE-2025-30047, CVE-2025-30050, CVE-2025-30054） CGM CLININET（CERT-PL 勧告）
+  理由: low_score — 窓内公開の CVSS 9.0〜9.4。医療向けアプリサーバーで悪用報告なし（バッチ集約）（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-53942 ほか6件（全件: CVE-2026-53942, CVE-2026-46651, CVE-2026-46652, CVE-2026-55486, CVE-2026-53921, CVE-2026-57116, CVE-2026-54630） GitHub Advisory 起点の OSS（Conda Infrastructure・Goobi viewer 3件・odhcpd・PraisonAI・Part-DB）
+  理由: low_score — 窓内公開の GHSA 起点 CVSS 9.3〜9.9。個別プロジェクトで悪用報告なし（バッチ集約・個別判断済み）（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-115812 Amazon Web Services Multi Model Server（モデルアーカイブ展開のパストラバーサル）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-25784 Hallo Welt! BlueSpice（不適切な既定値）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-63244 WizLearn LMS（認証回避）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-55981 Creative Sound Blaster Katana（ファームウェア検証不備）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-114357 DJI Crystalsky の adbd（認証欠如）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-19677 frevvo 登録フォーム（認証回避）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-111594 InterSystems IRIS for Health（TLS 既定無効）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-115727 AgenticSeek（RCE・VulnCheck CNA）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-107685 agentjido req_llm（証明書検証不備）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-115547 Okta Access Gateway 管理コンソール（入力検証）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-94267 WordPress Advanced Custom Fields: Extended（WPScan CNA）
+  理由: low_score — 窓内公開の CVSS 9.0 以上（NVD/EUVD 機械列挙）。個別プロダクトの CVE（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-115889 ／ CVE-2026-115893（EUVD-2026-109186／109188） Wasmtime（Cranelift バックエンドの不具合・GitHub CNA・9.9）
+  理由: low_score — EUVD のみに現れる層（NVD 窓内候補・KEV に無し）を個別判断。修正版が公開された OSS で悪用報告なし（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+- CVE-2026-77366（EUVD-2026-97737） obsidian-tc（トークンで任意の設定済み vault にアクセス可能・9.9）
+  理由: low_score — EUVD のみに現れる層（NVD 窓内候補・KEV に無し）を個別判断。修正版が公開された OSS で悪用報告なし（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-24-001 Arista VeloCloud Orchestrator（CVE-2026-114625）が KEV 収載 — 連邦機関期限 10-26・更新と証拠保全を急ぐ
+------------------------------------------------------------
+対象: Arista VeloCloud Orchestrator（オンプレミス版）
+
+【24時間以内の変化】
+[CISA KEV 2026-10-23] KEV 追加（期限 2026-10-26）。
+
+【概要】
+悪用確認済みの SQL インジェクション。KEV 収載により BOD 26-04 の期限が付く。
+【推奨アクション】
+- 5.2.3.18／6.1.3.10／6.4.2.12 以降へ更新、更新前にログを保全、管理 Web を信頼ネットワークに限定する
+
+【監視】
+IP 74.82.197[.]86／38.54.50[.]151 との通信、VCO ホストの不審な外向き通信を確認する。
+
+【参照】
+- CISA KEV Catalog (CISA) https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+------------------------------------------------------------
+SOC-2026-10-24-002 Collabora Online 内蔵 CODE サーバー（Nextcloud）が KEV 収載 — 内蔵 CODE サーバーの更新・侵害調査
+------------------------------------------------------------
+対象: Nextcloud richdocumentscode / Collabora CODE
+
+【24時間以内の変化】
+[CISA KEV 2026-10-23] KEV 追加（期限 2026-10-26・forensic triage 要）。
+
+【概要】
+OS コマンドインジェクションで RCE。9 月から悪用が確認されている（既報）。
+【推奨アクション】
+- richdocumentscode 26.4.303 以降へ更新、または内蔵 CODE サーバーを無効化。Web シェル・不審プロセスを調査
+
+【監視】
+Nextcloud サーバー配下の不審ファイル・プロセスを確認する。
+
+【参照】
+- GHSA-g3vx-3m76-fghh (GitHub Advisory) https://github.com/CollaboraOnline/online/security/advisories/GHSA-g3vx-3m76-fghh
+
+------------------------------------------------------------
+SOC-2026-10-24-003 PHP2Shell：悪用試行は数百万件・侵入成功は未確認 — 更新と CVE-2026-115560 の緩和
+------------------------------------------------------------
+対象: PHP 8.2〜8.5
+
+【24時間以内の変化】
+[THN／SecurityWeek 2026-10-23] Mirai 派生 Potassium の配布試行と ASLR 回避実証が報じられた。
+
+【概要】
+KEV 未収載・侵入成功は未確認。別の CVE-2026-115560 は稀な構成のみ。
+【推奨アクション】
+- 8.5.12／8.4.27／8.3.36／8.2.35 以降へ更新。session.upload_progress.enabled=0 を設定
+
+【監視】
+Web サーバーのクラッシュ急増と攻撃元 IP を監視する。
+
+【参照】
+- PHP Vulnerability Wrap-Up (SANS ISC) https://isc.sans.edu/diary/rss/33450
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-24-004 エッジ機器の資格情報流出キャンペーン（k0t）— FortiWeb／PAN-OS の修正確認と資格情報のローテーション
+------------------------------------------------------------
+対象: Fortinet FortiWeb / Palo Alto PAN-OS・GlobalProtect
+
+【24時間以内の変化】
+[THN（Group-IB） 2026-10-23] CVE-2025-64446・CVE-2026-0257 の悪用と既定資格情報の試行を報告。
+
+【概要】
+VPN／FW の資格情報が大量に流出。
+【推奨アクション】
+- 該当修正の適用確認、VPN・LDAP の資格情報再発行、MeshCentral／Atera／AnyDesk の不審な導入を点検
+
+【監視】
+OpenConnect VPN 経由の接続と Rclone による外部ストレージ送信を監視する。
+
+【参照】
+- Hackers Breach Enterprise Firewalls and VPNs, Exposing Over 70,000 Credentials (The Hacker News) https://thehackernews.com/2026/10/hackers-breach-enterprise-firewalls-and.html
+
+------------------------------------------------------------
+SOC-2026-10-24-005 HPE Aruba AOS-8／AOS-10 の最大深刻度脆弱性 8 件 — 管理面を専用 VLAN に限定し更新
+------------------------------------------------------------
+対象: HPE ArubaOS（AOS-8／AOS-10）
+
+【24時間以内の変化】
+[BleepingComputer／Security NEXT 2026-10-23] 72 件を修正（最大深刻度の認証回避・RCE 8 件）。公開 PoC・悪用は HPE が把握せず。
+
+【概要】
+一括公開は昨日の除外サマリーで計上済み。
+【推奨アクション】
+- HPE アドバイザリ（hpesbnw05162en_us）の修正版へ更新。管理インターフェースを専用 L2 セグメントに限定
+
+【監視】
+管理インターフェースへの外部からの到達性を確認する。
+
+【参照】
+- HPE patches eight max severity RCE and auth bypass AOS flaws (BleepingComputer) https://www.bleepingcomputer.com/news/security/hpe-patches-eight-max-severity-rce-and-auth-bypass-aos-flaws
+
+------------------------------------------------------------
+SOC-2026-10-24-006 Windows Production PCA 2011 の失効未実施環境は BlackX 型の Secure Boot 回避の対象 — DBX 失効を確認
+------------------------------------------------------------
+対象: Windows Secure Boot
+
+【24時間以内の変化】
+[THN（Kaspersky） 2026-10-23] 同証明書は 10-19 に期限切れだが、失効しない限り脆弱なバイナリが読み込める。
+
+【概要】
+CVE-2022-21894 を悪用する BlackX。
+【推奨アクション】
+- 失効リストの適用状況を確認し、MOK の不審な登録を監視
+
+【監視】
+MOK 登録イベントと署名失効済みドライバーの読み込みを確認する。
+
+【参照】
+- BlackX UEFI Bootkit Bypasses Secure Boot on Patched Windows Systems Missing Revocations (The Hacker News) https://thehackernews.com/2026/10/blackx-uefi-bootkit-bypasses-secure.html
+
+------------------------------------------------------------
+SOC-2026-10-24-007 JPCERT/CC：国内組織への不正アクセスに関する注意喚起を更新 — GMO・カプコン・カーセンサー等の相次ぐ被害
+------------------------------------------------------------
+対象: 国内組織の公開サービス・会員サイト
+
+【24時間以内の変化】
+[JPCERT/CC 2026-10-23] 注意喚起（更新・at260030）。
+
+【概要】
+国内で相次ぐ不正アクセス・リスト型攻撃の報道が続く。
+【推奨アクション】
+- 多要素認証とパスワード変更検知の強化、ログ保全
+
+【監視】
+ログインの異常な失敗・成功の連続と、短時間のパスワード変更を監視する。
+
+【参照】
+- 直近で相次いでいる国内組織における不正アクセスに関する注意喚起（更新） (JPCERT/CC) https://www.jpcert.or.jp/at/2026/at260030.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-24-008 Atlassian が Data Center／Server の 176 件（重大 14 件・全て third-party）を修正、Splunk Enterprise・Apache Tomcat・Node.js も更新
+------------------------------------------------------------
+対象: Atlassian DC/Server・Splunk Enterprise・Apache Tomcat
+
+【24時間以内の変化】
+[SecurityWeek／Security NEXT 2026-10-23] 定例の更新公開。悪用の報告なし。
+
+【概要】
+定例パッチの確認対象。
+【推奨アクション】
+- 各製品の修正版を適用
+
+【監視】
+定例パッチ管理で確認する。
+
+【参照】
+- Atlassian Patches 75 Flaws in Data Center and Server Products (SecurityWeek) https://www.securityweek.com/atlassian-patches-75-third-party-flaws-in-data-center-and-server-products
+
