@@ -1,0 +1,75 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-25 07:50 JST
+調査期間: 2026-10-24 07:00 〜 2026-10-25 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-25-001 LiteLLM 1.107.0 の導入環境は侵害済みとして扱う — 起動時バックドアの残存確認と資格情報の全面ローテーション
+------------------------------------------------------------
+対象: LiteLLM（PyPI 1.107.0・Docker Hub／GHCR の v1.107.0・latest・main-latest・main-stable）
+
+【24時間以内の変化】
+[The Hacker News（LiteLLM） 2026-10-24] 根本原因（未失効マスターキー）と、バックドアが Python 起動時に動作し LiteLLM を import しなくても実行される点が公表された。[既報・更新]
+
+【概要】
+1.107.0 の導入環境では、SSH・Git・環境変数・クラウド・パッケージレジストリ・ブラウザの資格情報が窃取された可能性がある。バックドアは毎時コードを取得して実行する。
+【推奨アクション】
+- 1.107.0 を削除し、site-packages の Python 起動フック（.pth）を確認する。導入環境が触れた資格情報を全て失効・再発行し、GitHub 組織の不審なワークフロー実行・ブランチ保護変更を調査する
+
+【監視】
+litellm[.]dev／IP 69.48.229[.]143 への通信と、Python 起動時の不審な外向き通信を確認する。
+
+【参照】
+- Leaked LiteLLM Master Key Let Attackers Steal GitHub Tokens and Hijack Release Pipeline (The Hacker News) https://thehackernews.com/2026/10/leaked-litellm-master-key-let-attackers.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-25-002 Brotli デコーダー CVE-2026-111497 の影響が Bun・Python Brotli／brotlicffi・Envoy・Istio・cdxgen に及ぶ — 依存先の更新を確認
+------------------------------------------------------------
+対象: Google Brotli・Bun・Python Brotli／brotlicffi・Envoy／Istio（Brotli 展開有効時）・cdxgen
+
+【24時間以内の変化】
+[The Hacker News 2026-10-24] Node.js 以外の影響製品と修正版が整理された。悪用の報告はなく、Imperva が Node.js 24.22.0（Linux ARM64）でコード実行を実証したが未公開。[既報・更新]
+
+【概要】
+範囲外書込みによるメモリ破壊。Google の CVSS v4.0 は 9.2、Red Hat は 8.1。Envoy・Istio は Brotli 展開を有効にした場合のみ該当する。
+【推奨アクション】
+- Brotli 1.0.10／1.1.1／1.2.1、Bun 1.4.4、Python Brotli 1.2.1／brotlicffi 1.2.1.0、Envoy 1.40.0 ほか各修正版へ更新し、Brotli 展開が不要な Envoy／Istio では無効化を検討する
+
+【監視】
+Brotli 圧縮データを受け付ける公開サービスのクラッシュ・異常終了を確認する。
+
+【参照】
+- Brotli Decoder Flaw Behind Node.js RCE Also Affects Bun, Python and Other Widely Used Software (The Hacker News) https://thehackernews.com/2026/10/brotli-decoder-flaw-behind-nodejs-rce.html
+
+------------------------------------------------------------
+SOC-2026-10-25-003 Time4Popcorn（Popcorn Time 派生）の更新機構 CVE-2026-30612 — 端末からの削除と更新機構の停止を確認
+------------------------------------------------------------
+対象: Time4Popcorn／Popcorn Time（Windows・Mac・Android）
+
+【24時間以内の変化】
+[The Hacker News（Eye Security） 2026-10-24] Eye Security が 200 万件超の更新で更新機構を遠隔停止したことを公表。
+
+【概要】
+更新機構は暗号化されていない通信で送信元を検証せず最高権限で更新を導入する。Eye の停止更新は更新機構のみを止め、アプリ本体の危険は残る。
+【推奨アクション】
+- アプリを削除する（Android は削除のみ）。削除できない場合、Windows は `sc.exe stop "Update service"` と `sc.exe config "Update service" start= disabled`、Mac は `launchctl unload -w /Library/LaunchDaemons/PT.updd.plist` で更新機構を停止する
+
+【監視】
+端末に Updater.exe（Windows）・PT.updd（Mac）が存在しないか、Eye の公開した 20 ドメインへの通信がないかを確認する。
+
+【参照】
+- Researchers Push Over 2 Million Updates to Remotely Disable Popcorn Time Updater That Could Fuel a Botnet (The Hacker News) https://thehackernews.com/2026/10/researchers-push-over-2-million-updates.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+

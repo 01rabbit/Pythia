@@ -201,3 +201,4 @@
 | INC/The GentlemenアフィリエイトのAIエージェント基盤Phantom（OpenCode上の18スキル・AI実行/人間承認） | A4 | 2026-10-24 | 本編（X=7 Y=7・A-T・burst1） | 2026-10-24 | YES | SOCRadar/THN 2026-10-23・約62組織を標的(4組織がリーク掲載)・OpenRouter経由の商用モデル・FortiClient EMS/SimpleHelp/cPanel/VPNを悪用・BYOVD |
 | LiteLLM 1.107.0供給網侵害の続報（GitHub CLIのOAuthトークン悪用） | C6 | 2026-10-24 | 本編（X=8 Y=7・A-T・burst1・既報更新） | 2026-10-24 | YES | SecurityWeek/Security NEXT 2026-10-23・侵害されたGitHub CLIのOAuthトークンでPyPI/Dockerに悪意あるパッケージをpush・承認 |
 | x402 SDK既定クライアントの支払い上限欠如（V12報告・CVEなし） | C3 | 2026-10-24 | 参考B（X=5 Y=3・A-T・below_threshold） | 2026-10-24 | NO | THN 2026-10-23・悪意あるAPIがAIエージェントの残高全額の署名を要求できた・2026-08-18のリリースで上限追加済み |
+| LiteLLM 1.107.0供給網侵害の根本原因（未失効マスターキーの公開リポジトリ誤コミット） | C6 | 2026-10-25 | 本編（X=8 Y=7・A-T・burst1・既報更新） | 2026-10-25 | YES | THN(LiteLLM公表) 2026-10-24・2026-05-27にlite-harnessへマスターキー誤コミット→失効漏れ→10-10に未失効キーでAgent Platform侵入→GitHub CLI OAuthトークン窃取→10-21にブランチ保護を上書きし1.107.0を公開・起動時バックドアと窃取機能(litellm[.]dev/healthcheck)・攻撃者未特定 |
