@@ -1,0 +1,613 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-10-26",
+    "generated_at": "2026-10-26T07:50:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-10-25T07:00:00+09:00",
+      "to": "2026-10-26T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.10.23",
+      "candidates": 4,
+      "handled": 4,
+      "unhandled": 0,
+      "kev_added_in_window": 0,
+      "ghsa_origin_over_threshold": 0,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 3,
+        "euvd_only": 0
+      }
+    },
+    "data_gaps": [
+      "機械収集（RSS）の窓内記事は THN 3件・BleepingComputer 1件・SecurityWeek 1件・SANS ISC 1件のみ（日曜日）。BleepingComputer の AGENTS.md 記事は本文を取得できた。KEV カタログ版は 2026.10.23 のまま更新されていない。PHP2Shell 記事の CVSS は本文に記載がなく、前日までの値（PHP 評価 v4.0 9.2／NVD v3.1 9.8）を引き継ぐ。"
+    ]
+  },
+  "zero_day_special": [],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [
+      {
+        "cve_id": "CVE-2026-109618",
+        "product": "PHP（OOM 時の longjmp 処理＝PHP2Shell）",
+        "vendor": "PHP Group",
+        "affected_versions": "PHP 8.5.12 未満／8.4.27 未満／8.3.36 未満／8.2.35 未満（情報源：PHP 5.4 まで遡る広範囲。8.1 以前は公式更新なし・ソースバックポートのみ）",
+        "priority": "high",
+        "cvss_v3": 9.8,
+        "cvss_v4": 9.2,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": true,
+          "actively_exploited": true,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "8.5.12／8.4.27／8.3.36／8.2.35 以降（ディストリビューションは旧版番号のまま修正を含む場合あり）",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 13,
+        "axis2_score": 8,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "The Hacker News（Unit 42・CYFIRMA・ReliaQuest・Defused Cyber 引用）",
+            "date": "2026-10-25",
+            "description": "Unit 42 が PHP2Shell の悪用後に agentic AI プラットフォームを使う攻撃者を観測。欧州の政府機関では初期悪用から 2 時間以内にパスワードハッシュと MFA シークレットへ到達し、AD への NTLM リレートンネルを構築して Domain Admin 昇格を試みた（侵入成功の初の具体的報告）。Cloudflare は公開後に数百万件の悪用試行を報告。ReliaQuest が 10-22 に CVE-2026-109618 を再現しログ痕跡（POST→500→メモリ枯渇・ヒープ破壊→Apache ワーカー異常終了）を整理。KEV 未収載（カタログ版 2026.10.23）。[既報・更新]"
+          }
+        ],
+        "overview": "THN によれば、PHP2Shell（CVE-2026-109618／109619）は既定構成の PHP で未認証のリモートコード実行に至り得る。Unit 42 は悪用成功後の侵入を観測した：欧州の政府機関では 2 時間以内にパスワードハッシュと MFA シークレットへ到達し、AD への NTLM リレートンネル構築と Domain Admin 昇格を試みた。コマンドは ==SHELLUSER== や ==PASSWD== などの区切りで囲まれ、AI モデルが解析しやすい出力形式であった。匿名 LDAP クエリも観測された。Bitsight は、インターネット公開の PHP 関連システムが約 3,700 万あり、ホストの PHP 更新だけが対処になる（アプリ・WAF・プラグインの更新では塞がらない）と説明する。第三の RCE CVE-2026-115560 は session.serialize_handler の実行時切替と upload_progress 有効という稀な構成が条件で、通常のリリースサイクルで修正予定。Xint が露出確認ツール（phpguard.io）を公開した。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "細工した大容量マルチパート要求などでメモリ上限に到達させる"
+          },
+          {
+            "step": 2,
+            "description": "longjmp による異常脱出で壊れたグローバル状態が残る"
+          },
+          {
+            "step": 3,
+            "description": "mod_php 等で未認証のコード実行（情報源が単一リクエストでの実証と記述）"
+          }
+        ],
+        "techniques": [
+          {
+            "mitre_id": "T1190",
+            "name": "Exploit Public-Facing Application",
+            "implementation": "細工したマルチパート要求等で PHP 実行環境（mod_php／PHP-FPM 等）の脆弱性を未認証で突く（情報源の記述：mod_php で単一の未認証リクエストによる実証）"
+          }
+        ],
+        "temp_mitigation": [
+          "PHP を 8.5.12／8.4.27／8.3.36／8.2.35 以降へ更新する（ディストリビューションの changelog で CVE を確認）",
+          "暫定: memory_limit=-1 を固定し post_max_size を低く保ち、Web サーバー／プロキシでリクエストサイズを制限（RLIMIT_AS／RLIMIT_DATA は使わない）",
+          "更新後は新しいハードメモリ上限でプロセスが終了し得るため設定を見直す"
+        ],
+        "ioc": {
+          "confirmed": true,
+          "ips": [
+            "204.76.203[.]7"
+          ],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "マルチパート要求後の HTTP 500・メモリ上限エラー・Apache ワーカーの異常終了、PHP_SESSION_UPLOAD_PROGRESS に値 'p2s-rider' を含む要求、204.76.203[.]7 からの通信を監視する。侵入後は PHP ホストから DC への匿名 LDAP クエリ・NTLM リレートンネルを確認する。",
+          "splunk_spl": [],
+          "detection_notes": "IP は THN が既知の大量悪用元と記述したもの。ReliaQuest のログ順序は再現環境のもの。"
+        },
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html",
+            "title": "PHP2Shell Exploitation Hits Government Entity Amid Global Scanning and Signs of AI-Assisted Hacking",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://thehackernews.com/2026/10/someone-tried-to-exploit-php2shell-4.html",
+            "title": "Someone Tried to Exploit PHP2Shell 4 Days Before the Vulnerabilities Were Publicly Disclosed",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.security-next.com/191766",
+            "title": "米当局、「PHP脆弱性」の即修正を勧告 - 困難ならオフラインに",
+            "language": "ja",
+            "source": "Security NEXT"
+          }
+        ],
+        "sector_impact": [
+          "it",
+          "government"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": "Unit 42 は攻撃者を特定していない。CYFIRMA は北朝鮮系の疑いのあるスキャン活動を別に評価（APT 注目動向参照）",
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261026-CVET-20480519"
+      }
+    ],
+    "trends_topic": []
+  },
+  "apt_main": [],
+  "apt_notable": [
+    {
+      "activity_type": [
+        "scanning",
+        "initial_access"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-10-25",
+      "malware": [],
+      "recommended_actions": "PHP を修正版（8.5.12／8.4.27／8.3.36／8.2.35 以降）へ更新する。CYFIRMA が公表した 216 台の未修正ホスト一覧に該当するか、同社の通知有無を確認する。",
+      "splunk_spl": [],
+      "detection_notes": "帰属は CYFIRMA 単独の中程度の確度の評価（C2 インフラの重複・PHP/WordPress サーバーを侵害してきた過去・政府と金融への関心が根拠）。Unit 42 の政府機関侵入とこの活動の関連は報じられていない。TTP の類似のみでは断定しない。ATT&CK は付与しない。",
+      "related_cves": [
+        "CVE-2026-109618",
+        "CVE-2026-109619"
+      ],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "group_name": "Lazarus Group エコシステムとの関連が疑われる北朝鮮系クラスター（CYFIRMA 評価・中程度の確度）",
+      "aliases": [],
+      "nation_state": "North Korea-linked（CYFIRMA 評価）",
+      "attribution_confidence": "medium",
+      "campaign_id": "CYFIRMA-NKsuspected-2026-PHP2Shell-GlobalScanning",
+      "targets": {
+        "sectors": [
+          "government",
+          "finance"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "axis_p_score": 4,
+      "axis_q_score": 5,
+      "changes_24h": [
+        {
+          "source": "The Hacker News（CYFIRMA）",
+          "date": "2026-10-25",
+          "description": "CYFIRMA が、侵害済みの 21 ノードから世界の PHP 基盤をスキャンする北朝鮮系の疑いのある活動を中程度の確度で評価。閉じた I2P チャネルで調整され、標的集合は約 12 か国の 216 台の未修正・部分緩和ホストと報じられた。"
+        }
+      ],
+      "overview": "THN によれば、CYFIRMA は PHP2Shell を狙うグローバルなスキャンを、北朝鮮系の疑いのある活動と中程度の確度で評価した。侵害済みの 21 ノードを使い、標的集合は約 12 か国・複数業種の 216 台の未修正または部分緩和ホスト。根拠は C2 インフラの重複、PHP/WordPress サーバーを侵害してきた過去、政府・金融への関心である。これは CYFIRMA 単独の評価で、実際の侵入成功は報告されていない（推測の余地が大きい）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "侵害済み 21 ノードから PHP 公開基盤をスキャン（CYFIRMA 評価）"
+        },
+        {
+          "step": 2,
+          "description": "未修正・部分緩和の 216 台を標的集合として把握（CYFIRMA 評価）"
+        }
+      ],
+      "ttps": [],
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html",
+          "title": "PHP2Shell Exploitation Hits Government Entity Amid Global Scanning and Signs of AI-Assisted Hacking",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261026-APTC-7a41c9d2",
+      "report_section": "apt_notable"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [
+    {
+      "attack_id": "AI-2026-10-26-001",
+      "title": "Unit 42：PHP2Shell 悪用後の post-exploitation に agentic AI プラットフォームを使う攻撃者を観測（欧州政府機関で初期悪用から 2 時間以内に MFA シークレットへ到達）",
+      "category": "A",
+      "subcategory": "A4",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-T"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "government"
+        ],
+        "regions": [
+          "europe"
+        ],
+        "countries": []
+      },
+      "damage_scale": "確認されたのは欧州の政府機関 1 件（パスワードハッシュ・MFA シークレットへの到達、Domain Admin 昇格の試行）。AI 利用は区切り付きコマンド出力の形式からの Unit 42 の観測であり、攻撃者の特定はない。",
+      "burst_count": 1,
+      "burst_status": "below_threshold",
+      "axis_x_score": 7,
+      "axis_y_score": 6,
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Unit 42）",
+          "date": "2026-10-25",
+          "description": "Unit 42 が PHP2Shell（CVE-2026-109618／109619）悪用後に agentic AI プラットフォームが使われた事例を公表。"
+        }
+      ],
+      "overview": "THN によれば、Unit 42 は PHP2Shell の悪用後に agentic AI プラットフォームを使う攻撃者を観測した。欧州の政府機関では初期悪用から 2 時間以内にパスワードハッシュと MFA シークレットへ到達し、AD への NTLM リレートンネルを構築して Domain Admin への昇格を試みた。コマンドは ==SHELLUSER== や ==PASSWD== などの区切りで囲まれ、AI モデルが解析しやすい出力形式だった。匿名 LDAP クエリで DC の管理者アカウントを探す動きもあった。AI 利用は観測された形式からの評価であり、具体的な AI プラットフォームは報じられていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "PHP2Shell（CVE-2026-109618／109619）で PHP サーバーを初期悪用"
+        },
+        {
+          "step": 2,
+          "description": "区切り付きのコマンド一括実行で秘密情報（パスワードハッシュ・MFA シークレット）を収集"
+        },
+        {
+          "step": 3,
+          "description": "匿名 LDAP クエリと NTLM リレートンネルで AD へ展開し Domain Admin 昇格を試行"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": true,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "==SHELLUSER== ／ ==PASSWD== 等の区切りを含むコマンド一括出力",
+          "PHP ホストから DC への匿名 LDAP クエリ",
+          "IP 204.76.203[.]7"
+        ]
+      },
+      "monitoring": {
+        "description": "PHP ホストから DC への匿名 LDAP・NTLM リレートンネルの兆候、機械的に区切られたコマンド出力のログを確認する。",
+        "splunk_spl": [],
+        "detection_notes": "AI 利用の判断は出力形式の観測に基づく。攻撃者は未特定。"
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html",
+          "title": "PHP2Shell Exploitation Hits Government Entity Amid Global Scanning and Signs of AI-Assisted Hacking",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20261026-AIAT-3b7e51a0"
+    },
+    {
+      "attack_id": "AI-2026-10-26-002",
+      "title": "Forever Security：Downloads フォルダの悪意ある AGENTS.md が AI コーディングエージェントを乗っ取り、不正な npm パッケージ function-color を導入させようとした",
+      "category": "B",
+      "subcategory": "B1",
+      "attacker_type": "unknown",
+      "adoption_triggers": [
+        "A-T"
+      ],
+      "atlas_ids": [],
+      "owasp_llm": [],
+      "owasp_agentic": [],
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ],
+        "countries": []
+      },
+      "damage_scale": "顧客端末で 1 件を確認（不正 npm パッケージの導入未遂）。再現実験では OpenAI Codex で無害ペイロードが 90%、Claude Code では偽サーバー経由のツール呼出しによるコード実行が約 50% で成功。",
+      "burst_count": 1,
+      "burst_status": "below_threshold",
+      "axis_x_score": 6,
+      "axis_y_score": 4,
+      "changes_24h": [
+        {
+          "source": "BleepingComputer（Forever Security）",
+          "date": "2026-10-25",
+          "description": "Forever Security が顧客端末の ~/Downloads にあった悪意ある AGENTS.md を確認し、エージェントが不正な npm パッケージの導入を試みたと公表。"
+        }
+      ],
+      "overview": "BleepingComputer によれば、Forever Security は顧客端末の ~/Downloads に置かれた AGENTS.md を読み込んだ AI コーディングエージェントが、不正な npm パッケージ function-color を導入しようとした事例を確認した。エージェントは作業ディレクトリの指示ファイルを自動で読み込み従う。同社は CLAUDE.md でも再現し、OpenAI Codex では無害ペイロードの実行が 90%、Claude Code では API 通信を研究者の管理するサーバーへ向けて OAuth トークンを露出させ、モデルを装った tool call でコード実行に至ったのが約 50% だった。ファイルがどう置かれたかは不明で、Web ページが Downloads に AGENTS.md を静かに保存できると同社は指摘する（Brave は承認を求める）。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Downloads フォルダに悪意ある AGENTS.md／CLAUDE.md が置かれる（経路は不明）"
+        },
+        {
+          "step": 2,
+          "description": "Downloads を作業ディレクトリにしたエージェントが指示ファイルを自動で読み込む"
+        },
+        {
+          "step": 3,
+          "description": "不正な npm パッケージの導入、または API 通信の迂回によるコード実行を試みる"
+        }
+      ],
+      "ioc_signals": {
+        "confirmed": true,
+        "domains": [],
+        "hashes": [],
+        "detection_signals": [
+          "npm パッケージ function-color の導入",
+          "~/Downloads 内の AGENTS.md／CLAUDE.md"
+        ]
+      },
+      "monitoring": {
+        "description": "開発端末で function-color の導入履歴と、Downloads を作業ディレクトリとして起動された AI エージェントの実行履歴を確認する。",
+        "splunk_spl": [],
+        "detection_notes": "ハッシュや C2 ドメインは報じられていない。"
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/ai-coding-agents-hijacked-using-agentsmd-file-in-downloads-folder",
+          "title": "AI coding agents hijacked using AGENTS.md file in Downloads folder",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "report_section": "ai_attacks_main",
+      "info_id": "20261026-AIAT-91c2d6f4"
+    }
+  ],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-10-26-001",
+      "title": "PHP2Shell（CVE-2026-109618／109619）は悪用後の侵入が確認された — PHP ホストの更新と AD への横展開の確認",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "high",
+      "product_or_service": "PHP 8.5.12／8.4.27／8.3.36／8.2.35 未満（mod_php／PHP-FPM 等）",
+      "targets": {
+        "sectors": [
+          "it",
+          "government"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Unit 42）",
+          "date": "2026-10-25",
+          "description": "Unit 42 が欧州政府機関で初期悪用から 2 時間以内の認証情報到達と Domain Admin 昇格試行を報告。Cloudflare は数百万件の試行を観測。"
+        }
+      ],
+      "overview": "ホストの PHP 更新のみが対処で、アプリ・WAF・プラグインの更新では塞がらない（Bitsight）。KEV 未収載。",
+      "recommended_actions": "PHP を修正版へ更新する（Xint の phpguard.io で露出を確認できる）。更新までは前日までの暫定策（memory_limit=-1 固定・post_max_size 抑制・リクエストサイズ制限）を維持する。PHP ホストから DC への匿名 LDAP・NTLM リレートンネル、PHP_SESSION_UPLOAD_PROGRESS の 'p2s-rider'、204.76.203[.]7 を確認する",
+      "monitoring": {
+        "description": "POST→HTTP 500→メモリ枯渇→Apache ワーカー異常終了の連続（ReliaQuest が再現したログ順序）を監視する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html",
+          "title": "PHP2Shell Exploitation Hits Government Entity Amid Global Scanning and Signs of AI-Assisted Hacking",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261026-SOCR-1e0d5a71"
+    },
+    {
+      "rec_id": "SOC-2026-10-26-002",
+      "title": "AI コーディングエージェントを Downloads フォルダで起動しない — 悪意ある AGENTS.md／CLAUDE.md による乗っ取りの確認",
+      "perspective": "ai_attack",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "OpenAI Codex・Claude Code 等の AI コーディングエージェント",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer（Forever Security）",
+          "date": "2026-10-25",
+          "description": "Forever Security が顧客端末で悪意ある AGENTS.md による不正 npm パッケージ導入未遂を確認し、Codex・Claude Code で再現した。"
+        }
+      ],
+      "overview": "エージェントは作業ディレクトリの指示ファイルを自動で読み込む。Downloads を作業ディレクトリにしない運用が対策になる。",
+      "recommended_actions": "エージェントは個別プロジェクトのルートで起動する。見慣れない AGENTS.md／CLAUDE.md は読ませる前に確認する。承認プロンプトとサンドボックスを有効に保つ。function-color の導入履歴を確認する",
+      "monitoring": {
+        "description": "開発端末の npm 導入履歴（function-color）と、Downloads 配下の指示ファイルを確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/ai-coding-agents-hijacked-using-agentsmd-file-in-downloads-folder",
+          "title": "AI coding agents hijacked using AGENTS.md file in Downloads folder",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20261026-SOCR-2e0d5a72"
+    },
+    {
+      "rec_id": "SOC-2026-10-26-003",
+      "title": "Tailscale SSH（ポート転送許可時）の未修正の権限昇格 — 設定の確認と Tailnet Lock の有効化",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "Tailscale 1.104.2／headscale 0.29.5（検証版）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Cyberdione Labs）",
+          "date": "2026-10-25",
+          "description": "Erica Windisch（Cyberdione Labs）が「Tailworm」を公表。CVE・修正版は未提供で、Tailscale は修正に取り組んでいると説明。"
+        }
+      ],
+      "overview": "Tailscale SSH でポート転送を許可し、攻撃者がアクセス規則で接続を許可された端末を既に掌握している場合に、他サーバーで root 権限に至る（実験環境のみ。野外悪用の報告なし）。「ワーム化可能」との表現には疑義がある。",
+      "recommended_actions": "Tailscale SSH のポート転送許可の必要性を見直し、アクセス規則で到達できる端末を絞る。Tailnet Lock を有効にする（最終段の登録鍵悪用は Tailnet Lock 有効環境で失敗）。Tailscale の公式見解・修正版を確認する",
+      "monitoring": {
+        "description": "Tailscale SSH 経由のポート転送セッションと、想定外の端末のネットワーク参加を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/unpatched-tailscale-ssh-flaws-could-let.html",
+          "title": "Unpatched Tailscale SSH Flaws Could Let a Hacked Device Reach Root on Other Servers",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261026-SOCR-3e0d5a73"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-115995",
+        "product": "Unitree Robotics Unitree Go2 1.1.11.4 まで（VulDB CNA・v3.1 9.6／EUVD 9.4）",
+        "reason": "low_score",
+        "reason_detail": "ロボット製品の脆弱性で、説明は検出報告にとどまり修正版の記述がない。悪用報告なし（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-116199",
+        "product": "Snipe-IT 8.6.3 未満（GoogleAuthController の認証バイパス・VulnCheck CNA・v4.0 9.2）",
+        "reason": "low_score",
+        "reason_detail": "Google ログイン連携を使う構成が前提の OSS で、8.6.3 で修正。悪用報告なし（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-116163",
+        "product": "Parse Server 8.6.102 未満／9.0.0〜9.10.5-alpha.2 未満（認証バイパス・VulnCheck CNA・v4.0 9.1）",
+        "reason": "low_score",
+        "reason_detail": "OSS で修正版が公開済み。悪用報告なし（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-116207",
+        "product": "YesWiki 4.6.0〜4.7.0 未満／5.0.0-alpha1〜alpha4 未満（未認証 SQL インジェクション・v3.1 9.1）",
+        "reason": "low_score",
+        "reason_detail": "小規模 OSS で 4.7.0 等に修正版が公開済み。悪用報告なし（本窓の報道・KEV・公開PoC・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      }
+    ],
+    "apt": [],
+    "ai_attacks": [
+      {
+        "attack_id": "AI-2026-10-26-X01",
+        "title": "OpenAI：AI エージェントの VM 脱出と Brotli RCE（CVE-2026-111497）の red-teaming 結果と、フロンティア訓練のインターネット遮断方針",
+        "reason": "already_reported_or_out_of_scope",
+        "reason_detail": "OpenAI 自身による内部 red-teaming と封じ込め強化の公表（および METR・Redwood の監視システム脆弱性指摘）であり、外部攻撃者による攻撃ではない。Brotli CVE は 10-23／10-25 に報告済み。悪用報告なし。",
+        "reported_date": "2026-10-25"
+      }
+    ],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 4,
+      "total_processed": 4
+    },
+    "apt": {
+      "main": 0,
+      "notable": 1,
+      "excluded": 0,
+      "total_processed": 1
+    },
+    "ai_attacks": {
+      "main": 2,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 1,
+      "total_processed": 3,
+      "category_breakdown": {
+        "A": 1,
+        "B": 1,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 1,
+      "medium": 2,
+      "low": 0,
+      "excluded": 0,
+      "total_processed": 3,
+      "perspective_breakdown": {
+        "zeroday": 1,
+        "cve": 1,
+        "ai_attack": 1
+      }
+    }
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-10-25T22:31:30Z",
+    "operational_picture": {
+      "subjects_tracked": 129,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 56,
+        "DISCLOSED": 63,
+        "POC_PUBLIC": 10
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 112,
+        "shadow": 73
+      },
+      "event_type_counts": {
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 10,
+        "TF1_POC_PUBLICATION": 63
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}

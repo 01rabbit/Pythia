@@ -1,0 +1,70 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-26 07:50 JST
+調査期間: 2026-10-25 07:00 〜 2026-10-26 07:00 JST
+========================================
+
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【AI攻撃動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+AI-2026-10-26-001 Unit 42：PHP2Shell 悪用後の post-exploitation に agentic AI プラットフォームを使う攻撃者を観測（欧州政府機関で初期悪用から 2 時間以内に MFA シークレットへ到達）
+------------------------------------------------------------
+カテゴリ: A/A4 / 軸X=7 軸Y=6
+被害規模: 確認されたのは欧州の政府機関 1 件（パスワードハッシュ・MFA シークレットへの到達、Domain Admin 昇格の試行）。AI 利用は区切り付きコマンド出力の形式からの Unit 42 の観測であり、攻撃者の特定はない。
+
+【24時間以内の変化】
+[The Hacker News（Unit 42） 2026-10-25] Unit 42 が PHP2Shell（CVE-2026-109618／109619）悪用後に agentic AI プラットフォームが使われた事例を公表。
+
+【概要】
+THN によれば、Unit 42 は PHP2Shell の悪用後に agentic AI プラットフォームを使う攻撃者を観測した。欧州の政府機関では初期悪用から 2 時間以内にパスワードハッシュと MFA シークレットへ到達し、AD への NTLM リレートンネルを構築して Domain Admin への昇格を試みた。コマンドは ==SHELLUSER== や ==PASSWD== などの区切りで囲まれ、AI モデルが解析しやすい出力形式だった。匿名 LDAP クエリで DC の管理者アカウントを探す動きもあった。AI 利用は観測された形式からの評価であり、具体的な AI プラットフォームは報じられていない。
+
+【攻撃フロー】
+1. PHP2Shell（CVE-2026-109618／109619）で PHP サーバーを初期悪用
+2. 区切り付きのコマンド一括実行で秘密情報（パスワードハッシュ・MFA シークレット）を収集
+3. 匿名 LDAP クエリと NTLM リレートンネルで AD へ展開し Domain Admin 昇格を試行
+
+【監視】
+PHP ホストから DC への匿名 LDAP・NTLM リレートンネルの兆候、機械的に区切られたコマンド出力のログを確認する。
+
+【参照】
+- PHP2Shell Exploitation Hits Government Entity Amid Global Scanning and Signs of AI-Assisted Hacking (The Hacker News) https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html
+
+------------------------------------------------------------
+AI-2026-10-26-002 Forever Security：Downloads フォルダの悪意ある AGENTS.md が AI コーディングエージェントを乗っ取り、不正な npm パッケージ function-color を導入させようとした
+------------------------------------------------------------
+カテゴリ: B/B1 / 軸X=6 軸Y=4
+被害規模: 顧客端末で 1 件を確認（不正 npm パッケージの導入未遂）。再現実験では OpenAI Codex で無害ペイロードが 90%、Claude Code では偽サーバー経由のツール呼出しによるコード実行が約 50% で成功。
+
+【24時間以内の変化】
+[BleepingComputer（Forever Security） 2026-10-25] Forever Security が顧客端末の ~/Downloads にあった悪意ある AGENTS.md を確認し、エージェントが不正な npm パッケージの導入を試みたと公表。
+
+【概要】
+BleepingComputer によれば、Forever Security は顧客端末の ~/Downloads に置かれた AGENTS.md を読み込んだ AI コーディングエージェントが、不正な npm パッケージ function-color を導入しようとした事例を確認した。エージェントは作業ディレクトリの指示ファイルを自動で読み込み従う。同社は CLAUDE.md でも再現し、OpenAI Codex では無害ペイロードの実行が 90%、Claude Code では API 通信を研究者の管理するサーバーへ向けて OAuth トークンを露出させ、モデルを装った tool call でコード実行に至ったのが約 50% だった。ファイルがどう置かれたかは不明で、Web ページが Downloads に AGENTS.md を静かに保存できると同社は指摘する（Brave は承認を求める）。
+
+【攻撃フロー】
+1. Downloads フォルダに悪意ある AGENTS.md／CLAUDE.md が置かれる（経路は不明）
+2. Downloads を作業ディレクトリにしたエージェントが指示ファイルを自動で読み込む
+3. 不正な npm パッケージの導入、または API 通信の迂回によるコード実行を試みる
+
+【監視】
+開発端末で function-color の導入履歴と、Downloads を作業ディレクトリとして起動された AI エージェントの実行履歴を確認する。
+
+【参照】
+- AI coding agents hijacked using AGENTS.md file in Downloads folder (BleepingComputer) https://www.bleepingcomputer.com/news/security/ai-coding-agents-hijacked-using-agentsmd-file-in-downloads-folder
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
