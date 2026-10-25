@@ -1,0 +1,80 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-26 07:50 JST
+調査期間: 2026-10-25 07:00 〜 2026-10-26 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-26-001 PHP2Shell（CVE-2026-109618／109619）は悪用後の侵入が確認された — PHP ホストの更新と AD への横展開の確認
+------------------------------------------------------------
+対象: PHP 8.5.12／8.4.27／8.3.36／8.2.35 未満（mod_php／PHP-FPM 等）
+
+【24時間以内の変化】
+[The Hacker News（Unit 42） 2026-10-25] Unit 42 が欧州政府機関で初期悪用から 2 時間以内の認証情報到達と Domain Admin 昇格試行を報告。Cloudflare は数百万件の試行を観測。
+
+【概要】
+ホストの PHP 更新のみが対処で、アプリ・WAF・プラグインの更新では塞がらない（Bitsight）。KEV 未収載。
+
+【推奨アクション】
+- PHP を修正版へ更新する（Xint の phpguard.io で露出を確認できる）。更新までは前日までの暫定策（memory_limit=-1 固定・post_max_size 抑制・リクエストサイズ制限）を維持する。PHP ホストから DC への匿名 LDAP・NTLM リレートンネル、PHP_SESSION_UPLOAD_PROGRESS の 'p2s-rider'、204.76.203[.]7 を確認する
+
+【監視】
+POST→HTTP 500→メモリ枯渇→Apache ワーカー異常終了の連続（ReliaQuest が再現したログ順序）を監視する。
+
+【参照】
+- PHP2Shell Exploitation Hits Government Entity Amid Global Scanning and Signs of AI-Assisted Hacking (The Hacker News) https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-26-002 AI コーディングエージェントを Downloads フォルダで起動しない — 悪意ある AGENTS.md／CLAUDE.md による乗っ取りの確認
+------------------------------------------------------------
+対象: OpenAI Codex・Claude Code 等の AI コーディングエージェント
+
+【24時間以内の変化】
+[BleepingComputer（Forever Security） 2026-10-25] Forever Security が顧客端末で悪意ある AGENTS.md による不正 npm パッケージ導入未遂を確認し、Codex・Claude Code で再現した。
+
+【概要】
+エージェントは作業ディレクトリの指示ファイルを自動で読み込む。Downloads を作業ディレクトリにしない運用が対策になる。
+
+【推奨アクション】
+- エージェントは個別プロジェクトのルートで起動する。見慣れない AGENTS.md／CLAUDE.md は読ませる前に確認する。承認プロンプトとサンドボックスを有効に保つ。function-color の導入履歴を確認する
+
+【監視】
+開発端末の npm 導入履歴（function-color）と、Downloads 配下の指示ファイルを確認する。
+
+【参照】
+- AI coding agents hijacked using AGENTS.md file in Downloads folder (BleepingComputer) https://www.bleepingcomputer.com/news/security/ai-coding-agents-hijacked-using-agentsmd-file-in-downloads-folder
+
+------------------------------------------------------------
+SOC-2026-10-26-003 Tailscale SSH（ポート転送許可時）の未修正の権限昇格 — 設定の確認と Tailnet Lock の有効化
+------------------------------------------------------------
+対象: Tailscale 1.104.2／headscale 0.29.5（検証版）
+
+【24時間以内の変化】
+[The Hacker News（Cyberdione Labs） 2026-10-25] Erica Windisch（Cyberdione Labs）が「Tailworm」を公表。CVE・修正版は未提供で、Tailscale は修正に取り組んでいると説明。
+
+【概要】
+Tailscale SSH でポート転送を許可し、攻撃者がアクセス規則で接続を許可された端末を既に掌握している場合に、他サーバーで root 権限に至る（実験環境のみ。野外悪用の報告なし）。「ワーム化可能」との表現には疑義がある。
+
+【推奨アクション】
+- Tailscale SSH のポート転送許可の必要性を見直し、アクセス規則で到達できる端末を絞る。Tailnet Lock を有効にする（最終段の登録鍵悪用は Tailnet Lock 有効環境で失敗）。Tailscale の公式見解・修正版を確認する
+
+【監視】
+Tailscale SSH 経由のポート転送セッションと、想定外の端末のネットワーク参加を確認する。
+
+【参照】
+- Unpatched Tailscale SSH Flaws Could Let a Hacked Device Reach Root on Other Servers (The Hacker News) https://thehackernews.com/2026/10/unpatched-tailscale-ssh-flaws-could-let.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
