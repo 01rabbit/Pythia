@@ -1,0 +1,124 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-27 07:50 JST
+調査期間: 2026-10-26 07:00 〜 2026-10-27 07:00 JST
+========================================
+
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外製品）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+CVE-2026-109618 PHP（OOM 時の longjmp 処理＝PHP2Shell）（CVSS 9.8）
+------------------------------------------------------------
+優先度: high  軸1=13 軸2=8  KEV登録: なし  悪用: 確認  パッチ: あり
+影響バージョン: PHP 8.5.12 未満／8.4.27 未満／8.3.36 未満／8.2.35 未満（情報源：PHP 5.4 まで遡る広範囲。8.1 以前は公式更新なし・ソースバックポートのみ）
+
+【24時間以内の変化】
+[SecurityWeek／BleepingComputer 2026-10-26] SecurityWeek は、ハニーポットに対し 10-24 に 2 つの IP アドレスから 35 件のシェルが起動され、PHP2Shell の悪用が探索から実際のシェル獲得へ進んだと報じた。BleepingComputer も CVE-2026-109618／109619 が実環境で悪用に成功したと報じた。Siemens・Schneider Electric・ABB 等の産業系ベンダーが自社製品の一部が影響を受けると確認した（SecurityWeek）。Security NEXT は第三の CVE（CVE-2026-115560）は対象環境が限定的で次回更新時に修正と報じた。KEV 未収載（カタログ版 2026.10.23）。[既報・更新]
+
+【概要】
+SecurityWeek によれば、ハニーポットで 10-24 に 2 つの IP アドレスから 35 件のシェルが起動され、PHP2Shell の悪用は探索段階から実際のシェル獲得へ進んだ。BleepingComputer も両 CVE の悪用成功を報じた。ただし観測はハニーポット（検知用の囮環境）でのもので、前日報告の欧州政府機関への侵入（Unit 42）とは別の観測である。Siemens・Schneider Electric・ABB 等の産業系ベンダーは、自社製品の一部が影響を受けると確認している（詳細な製品名・修正状況は本日取得できていない）。CISA の KEV には未収載（カタログ版 2026.10.23 のまま）。
+
+【攻撃フロー】
+1. 細工した大容量マルチパート要求などでメモリ上限に到達させる
+2. longjmp による異常脱出で壊れたグローバル状態が残る
+3. mod_php 等で未認証のコード実行（情報源が単一リクエストでの実証と記述）
+
+【暫定緩和策】
+- PHP を 8.5.12／8.4.27／8.3.36／8.2.35 以降へ更新する（ディストリビューションの changelog で CVE を確認）
+- 暫定: memory_limit=-1 を固定し post_max_size を低く保ち、Web サーバー／プロキシでリクエストサイズを制限（RLIMIT_AS／RLIMIT_DATA は使わない）
+- 更新後は新しいハードメモリ上限でプロセスが終了し得るため設定を見直す
+
+【監視】
+前日までの検知項目（POST→HTTP 500→メモリ枯渇→Apache ワーカー異常終了、PHP_SESSION_UPLOAD_PROGRESS の 'p2s-rider'）に加え、PHP ホストからの不審なシェル起動・外向き通信を確認する。産業系ベンダー製品に組み込まれた PHP は各ベンダーのアドバイザリを確認する。
+
+【参照】
+- PHP2Shell security flaws now sucessfully exploited in the wild (BleepingComputer) https://www.bleepingcomputer.com/news/security/php2shell-security-flaws-now-sucessfully-exploited-in-the-wild
+- PHP2Shell Exploitation Moves From Probes to Working Shells (SecurityWeek) https://www.securityweek.com/php2shell-exploitation-moves-from-probes-to-working-shells
+- Industrial Vendors Check Products for PHP2Shell Vulnerabilities (SecurityWeek) https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities
+- 「PHP」にあらたな脆弱性、対象環境は限定的 - 次回更新時に修正 (Security NEXT) https://www.security-next.com/191902
+- PHP2Shell Exploitation Hits Government Entity Amid Global Scanning and Signs of AI-Assisted Hacking (The Hacker News) https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html
+
+
+------------------------------------------------------------
+CVE-2026-111497 Brotli デコーダー（C 実装・範囲外書込み＝HTTP2Shell／Node2Shell／Broccoli2Shell）（CVSS 本日未確認）
+------------------------------------------------------------
+優先度: high  軸1=11 軸2=6  KEV登録: なし  悪用: 確認報告なし  パッチ: あり
+影響バージョン: Brotli 1.0.3〜1.0.9／1.1.0／1.2.0。Node.js・Python（urllib3・requests・httpx・aiohttp が脆弱なデコーダーを使う構成）・.NET・PowerShell・PHP の Windows パッケージ等に同梱
+
+【24時間以内の変化】
+[BleepingComputer／SecurityWeek／The Hacker News／JPCERT/CC 2026-10-26] Microsoft が .NET の定例外更新を公開（BleepingComputer・Security NEXT）。JPCERT/CC が注意喚起を発行（AT-2026-0034）。PHP は Windows パッケージ（8.2〜8.5）を再ビルドして修正（THN）。Node.js・.NET・PowerShell・Python パッケージで修正が相次いだ（SecurityWeek）。公開 PoC あり、悪意ある悪用の確認報告なし。[既報・更新]
+
+【概要】
+BleepingComputer によれば、Brotli の C デコーダーはストリーミング処理で無効なブロック切替を「入力不足」と扱い、8 バイトの内部バッファへ書き続けて周辺メモリを破壊する。Node.js は、クラッシュ・メモリ露出・遠隔コード実行に至り得ると説明し、Imperva は RCE を確認したと報じられている。公開 PoC がある一方、悪意ある悪用の確認は報じられていない。PHP は cURL 拡張が HTTP 応答を自動展開する場合に到達可能と説明（既定では無効）。システムの Brotli を更新しても同梱コピーを持つ Node.js やアプリは直らない。CVSS は本日の取得情報からは確認できていない（前日までの Google CNA 9.2 を参照）。
+
+【攻撃フロー】
+1. 悪意ある Brotli 圧縮データ（HTTP 応答または要求）を脆弱なデコーダーに処理させる
+2. 内部 8 バイトバッファの範囲外書込みでメモリが破壊される
+3. クラッシュ、メモリ露出、条件次第でコード実行（Node.js 説明）
+
+【暫定緩和策】
+- Node.js・Python Brotli・.NET・PHP を修正版へ更新し、プロセス再起動とコンテナイメージの再ビルド・再配備を行う
+- 更新できない場合は Python アプリの Brotli 対応を外し、プロキシ／FW で Brotli 圧縮要求を遮断する（悪意ある応答経路は塞がらない点に注意）
+
+【監視】
+Brotli を使う Node.js・Python・.NET プロセスの異常終了とメモリ関連エラー、外部から受け取る Content-Encoding: br の応答／要求を確認する。
+
+【参照】
+- Critical 'HTTP2Shell' Brotli vulnerability triggers emergency patches (BleepingComputer) https://www.bleepingcomputer.com/news/security/critical-http2shell-brotli-vulnerability-triggers-emergency-patches
+- Node2Shell: Brotli Flaw Triggers Patching Across Microsoft, Node.js, Python Packages (SecurityWeek) https://www.securityweek.com/node2shell-brotli-flaw-triggers-patching-across-microsoft-node-js-python-packages
+- PHP Issues Second Windows Security Update in Five Days to Fix Brotli Code Execution Flaw (The Hacker News) https://thehackernews.com/2026/10/php-issues-second-windows-security.html
+- 注意喚起: BrotliのC言語実装における境界外書き込みの脆弱性（CVE-2026-111497） (JPCERT/CC) https://www.jpcert.or.jp/at/2026/at260034.html
+- MSが定例外パッチ、「.NET」脆弱性を修正 - Brotli問題などに対応 (Security NEXT) https://www.security-next.com/191931
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃トレンド】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+Gheist：盗んだ GitHub トークンで Actions ログ経由にリポジトリの秘密情報を窃取する自動化キャンペーン（Wiz）
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News／Dark Reading（Wiz） 2026-10-26] Wiz が Gheist の分析を公表。10-24 時点で活動継続。
+
+【概要】
+THN によれば、Wiz は 9 月 15 日から追跡する自動化キャンペーン Gheist を報告した。インフォスティーラーのログや過去の供給網攻撃で漏れたトークンを使い、各リポジトリに ci-sync-xxxxxx ブランチと .github/workflows/sync-check.yml を作成してジョブ環境の全シークレットを base32 で出力し（GitHub のログマスクを回避）、API でログを取得して数秒後に実行を削除する。850 超の侵害アカウントから 13,500 超のブランチが復元され、10-24 時点で継続中。private リポジトリと GitHub Enterprise で成功が確認された。公開 github.com の実行は GitHub の保留機能で止まり、ペイロードは動かなかった。10-19 頃からセルフホストランナー向けの追加ジョブ（31 種のトークン探索）も出現したが、成功は報告されていない。帰属は報じられておらず、同じアカウントを別の攻撃者（PolinRider 等）も使っている。CVE はなし。
+
+【参照】
+- Gheist Uses Stolen GitHub Tokens to Steal Private Repository Secrets via Actions Logs (The Hacker News) https://thehackernews.com/2026/10/gheist-uses-stolen-github-tokens-to.html
+- 'Gheist' Weaponizes GitHub Tokens to Steal Cloud Secrets (Dark Reading) https://www.darkreading.com/cyberattacks-data-breaches/gheist-stolen-github-tokens-cloud-secrets
+
+
+------------------------------------------------------------
+Huntress：AitM で奪った Microsoft 365 トークンの再利用により 79 組織・97 アカウントが侵害
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News（Huntress） 2026-10-26] Huntress が観測期間 7/14〜9/22 の分析結果を公表。
+
+【概要】
+THN によれば、Huntress は 2026-07-14〜09-22 に観測した Microsoft 365 キャンペーンを報告した。AitM リレートで認証情報と MFA 後のセッショントークンを奪い、攻撃者管理の端末から数分以内に再利用（トークンスプレー）する。20 万回超のログイン失敗、成功サインイン 497 件、79 組織・97 アカウントの侵害、不正な Entra デバイス登録 48 件が確認された。侵害後は独自の認証アプリを登録して MFA を維持し（19 組織以上で既存 MFA を削除して追加）、給与・入金に関するメールを隠す受信ボックスルール（名前は「.」「sss」等）を作成した。攻撃者は特定されていない。起点 IP 193.26.115[.]221（193.26.115[.]0/24）は AsyncRAT と関連づけられた欧州ホスティングだが、運用者の証拠ではない。
+
+【参照】
+- Microsoft 365 Token-Replay Attacks Compromise 97 Accounts at 79 Organizations (The Hacker News) https://thehackernews.com/2026/10/microsoft-365-token-replay-attacks.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+本日の新規予報なし（KEV 窓内追加0件で起点がなく、新規の E1 候補もない。PHP2Shell は実シェル獲得が報じられたが、同一主題・同一対象CVEの発行済み fc-20261024-1（E1・検証期限 2026-10-27）が継続中のため重複予報は出さない。Brotli は悪用の確認報告がなく根拠が足りない）。
