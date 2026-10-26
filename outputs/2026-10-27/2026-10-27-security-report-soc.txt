@@ -1,0 +1,186 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-27 07:50 JST
+調査期間: 2026-10-26 07:00 〜 2026-10-27 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-27-001 Brotli（CVE-2026-111497）の修正が各製品で出そろいつつある — 同梱コピーを含めて更新と再起動
+------------------------------------------------------------
+対象: Node.js・Python（Brotli／brotlicffi）・.NET・PowerShell・PHP（Windows）
+
+【24時間以内の変化】
+[BleepingComputer／JPCERT/CC 2026-10-26] Microsoft が .NET の定例外更新を公開、JPCERT/CC が注意喚起 AT-2026-0034 を発行、PHP が Windows パッケージを再ビルド。
+
+【概要】
+公開 PoC があり、悪意ある悪用の確認報告は現時点でない。システムの Brotli だけでなく Node.js やアプリ同梱のコピーも対象になる。
+
+【推奨アクション】
+- 各製品の修正版へ更新し、プロセス再起動とコンテナイメージの再ビルド・再配備を行う。更新できない場合は Python アプリの Brotli 対応を外し、Brotli 圧縮要求を遮断する。
+
+【監視】
+Brotli を扱う Node.js・Python・.NET プロセスの異常終了と、Content-Encoding: br の外部通信を確認する。
+
+【参照】
+- Critical 'HTTP2Shell' Brotli vulnerability triggers emergency patches (BleepingComputer) https://www.bleepingcomputer.com/news/security/critical-http2shell-brotli-vulnerability-triggers-emergency-patches
+- 注意喚起: Brotli … （CVE-2026-111497） (JPCERT/CC) https://www.jpcert.or.jp/at/2026/at260034.html
+
+
+------------------------------------------------------------
+SOC-2026-10-27-002 PHP2Shell：ハニーポットで実シェルの起動を確認 — 産業系製品の影響確認も必要
+------------------------------------------------------------
+対象: PHP 8.5.12／8.4.27／8.3.36／8.2.35 未満、および PHP を組み込む産業系製品（Siemens・Schneider Electric・ABB 等）
+
+【24時間以内の変化】
+[SecurityWeek 2026-10-26] 10-24 にハニーポットで 2 つの IP から 35 件のシェルが起動。産業系ベンダーが自社製品への影響を確認。
+
+【概要】
+探索から実際のシェル獲得に進んだ。KEV 未収載。産業系ベンダー製品の影響範囲は各社アドバイザリで確認が必要。
+
+【推奨アクション】
+- PHP を修正版へ更新する。組み込み製品はベンダーのアドバイザリを確認し、公開側のアクセスを制限する。
+
+【監視】
+Web サーバーからの不審なシェル起動と外向き通信、前日までの検知項目を確認する。
+
+【参照】
+- PHP2Shell Exploitation Moves From Probes to Working Shells (SecurityWeek) https://www.securityweek.com/php2shell-exploitation-moves-from-probes-to-working-shells
+- Industrial Vendors Check Products for PHP2Shell Vulnerabilities (SecurityWeek) https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities
+
+
+------------------------------------------------------------
+SOC-2026-10-27-003 GitHub トークン窃取キャンペーン Gheist — ci-sync ブランチの確認とシークレットのローテーション
+------------------------------------------------------------
+対象: GitHub Actions を使うリポジトリ（private／Enterprise 含む）・セルフホストランナー
+
+【24時間以内の変化】
+[The Hacker News（Wiz） 2026-10-26] Wiz が Gheist の手口と検知項目を公表。10-24 時点で継続中。
+
+【概要】
+盗まれたトークンで sync-check.yml を持つ ci-sync-xxxxxx ブランチが作られ、全シークレットがログに出力される。
+
+【推奨アクション】
+- ci-sync-* ブランチと sync-check.yml を検索し、該当リポジトリの全シークレットを失効・再発行する。トークンを失効し所有者端末のインフォスティーラーを確認する。PAT を短命トークンや GitHub Apps に置き換え、本番シークレットの環境にレビュアーを必須化する。
+
+【監視】
+GitHub 監査ログで gheist ユーザーエージェント、1 分以内に削除された ci-sync-* の実行を確認する。クラウド監査ログで OIDC の subject に ci-sync- を含む役割引受を確認する。
+
+【参照】
+- Gheist Uses Stolen GitHub Tokens to Steal Private Repository Secrets via Actions Logs (The Hacker News) https://thehackernews.com/2026/10/gheist-uses-stolen-github-tokens-to.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-27-004 Microsoft 365 トークン再利用による侵害 — 不正デバイス・MFA 登録・受信ルールの点検
+------------------------------------------------------------
+対象: Microsoft 365／Entra ID
+
+【24時間以内の変化】
+[The Hacker News（Huntress） 2026-10-26] Huntress が AitM によるトークン再利用で 79 組織・97 アカウントが侵害されたと報告。
+
+【概要】
+MFA を通過した後のセッショントークンが奪われるため、パスワード変更だけでは不十分。
+
+【推奨アクション】
+- セッションの失効とパスワードリセットを行い、Entra の不正デバイス登録と新規 MFA 方式、不審な受信ボックスルール（短い記号名・給与／入金のメールを隠す）を点検する。条件付きアクセスでデバイスコードフローを制限する。
+
+【監視】
+193.26.115[.]0/24 からのサインイン、Entra デバイスの新規登録、MFA 方式の削除と追加の連続を確認する。
+
+【参照】
+- Microsoft 365 Token-Replay Attacks Compromise 97 Accounts at 79 Organizations (The Hacker News) https://thehackernews.com/2026/10/microsoft-365-token-replay-attacks.html
+
+
+------------------------------------------------------------
+SOC-2026-10-27-005 Wasmtime の Cranelift に 2 件の Critical なサンドボックス脱出（CVE-2026-115889／115893）
+------------------------------------------------------------
+対象: Wasmtime（36.0.19 未満、37〜42.x、48.0.7 未満の 48 系、49.0.4 未満の 49 系等。115893 は ARM64 のみ）
+
+【24時間以内の変化】
+[The Hacker News 2026-10-26] 助言は 10-19 公開。修正版 36.0.19／48.0.7／49.0.4／50.0.0 は 10-20 に公開。
+
+【概要】
+悪意ある WebAssembly モジュールを脆弱な Wasmtime でコンパイルさせる必要がある。メンテナは攻撃を報告していない。KEV 未収載、回避策なし。CVSS はいずれも 9.9（THN）。GitHub Advisory の 115893 は 10-26 時点で未登録で、Dependabot が検出しない可能性がある。
+
+【推奨アクション】
+- 修正版へ更新する。Wasmtime をライブラリとして組み込むプログラムは再ビルドが必要（CLI の更新では直らない）。
+
+【監視】
+外部の Wasm モジュールを実行する基盤で、Wasmtime のバージョンを棚卸しする。
+
+【参照】
+- Two Critical Wasmtime Flaws Could Let Malicious WebAssembly Modules Escape Sandboxes (The Hacker News) https://thehackernews.com/2026/10/two-critical-wasmtime-flaws-could-let.html
+
+
+------------------------------------------------------------
+SOC-2026-10-27-006 Fortinet FortiSandbox の認証バイパス（CVE-2026-107656・CVSS 9.8）— 修正状況の確認
+------------------------------------------------------------
+対象: Fortinet FortiSandbox 5.x
+
+【24時間以内の変化】
+[NVD／EUVD 2026-10-26] NVD に代替パス／チャネルによる認証バイパスとして公開（v3.1 9.8／EUVD 9.6）。
+
+【概要】
+説明文には FortiSandbox 5 の認証バイパスとある。悪用報告・KEV 収載・公開 PoC は確認していない。影響バージョンと修正版は本日確認できていない（Fortinet のアドバイザリ要確認）。
+
+【推奨アクション】
+- Fortinet のアドバイザリで影響バージョンを確認し、修正版を適用する。管理インターフェースを信頼できるネットワークに限定する。
+
+【監視】
+FortiSandbox 管理画面への未認証アクセスを確認する。
+
+【参照】
+- CVE-2026-107656 (NVD) https://nvd.nist.gov/vuln/detail/CVE-2026-107656
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-27-007 Microsoft Teams 外部チャットを悪用する IT サポート偽装 — 外部テナントからの着信制限
+------------------------------------------------------------
+対象: Microsoft Teams
+
+【24時間以内の変化】
+[The Hacker News 2026-10-26] 数百件の事例で使い捨てテナントと同じ偽 IT サポート手口が繰り返されているとの報告。
+
+【概要】
+外部ユーザーのチャット作成機能を使った偽装・マルウェア配布。詳細な指標は本日取得できていない。
+
+【推奨アクション】
+- 外部テナントからの Teams チャットを許可リスト化し、IT サポートを名乗る連絡は別経路で確認する。
+
+【監視】
+新規の外部テナントからのチャットと、その直後のリモート支援ツール導入を確認する。
+
+【参照】
+- Attackers Use Microsoft Teams IT Support Scams to Deploy Malware and Ransomware (The Hacker News) https://thehackernews.com/2026/10/attackers-use-microsoft-teams-it.html
+
+
+------------------------------------------------------------
+SOC-2026-10-27-008 Magento 系 EC サイト 953 店が改ざん（Sansec）— 検知回避型 JavaScript ローダー
+------------------------------------------------------------
+対象: Magento（CMS ブロック経由）
+
+【24時間以内の変化】
+[The Hacker News／SecurityWeek 2026-10-26] 2025-07 から続く長期キャンペーンで 953 店の感染を確認。
+
+【概要】
+CMS ブロックに小さなローダーが仕込まれ、訪問者に悪意ある JavaScript を配信する（検知回避あり）。
+
+【推奨アクション】
+- CMS ブロックの不審な埋込を点検し、管理者資格情報を再発行する。決済ページのスクリプトを監視する。
+
+【監視】
+CMS ブロックの変更履歴と、外部ドメインへのスクリプト読み込みを確認する。
+
+【参照】
+- Hackers Infect 953 Online Stores With Scanner-Evading JavaScript, Mostly on Magento (The Hacker News) https://thehackernews.com/2026/10/hackers-infect-953-online-stores-with.html
+
+

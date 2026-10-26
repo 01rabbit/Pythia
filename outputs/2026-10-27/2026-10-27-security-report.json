@@ -1,0 +1,954 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-10-27",
+    "generated_at": "2026-10-27T07:50:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-10-26T07:00:00+09:00",
+      "to": "2026-10-27T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.10.23",
+      "candidates": 25,
+      "handled": 25,
+      "unhandled": 0,
+      "kev_added_in_window": 0,
+      "ghsa_origin_over_threshold": 2,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 28,
+        "euvd_only": 3
+      }
+    },
+    "data_gaps": [
+      "機械収集（RSS）の窓内記事は約50件（月曜）。BleepingComputer の PHP2Shell 記事・SecurityWeek 各記事は本文取得が 403 または要約のみで、SecurityWeek の PHP2Shell 数値は見出し要約による。KEV カタログ版は 2026.10.23 のまま更新されていない。Brotli の CVSS 値は本日の取得記事に記載がなく、確認できていない。Mythos 5・Xint 関連の SecurityWeek 記事は本文未取得。"
+    ]
+  },
+  "zero_day_special": [],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [
+      {
+        "cve_id": "CVE-2026-109618",
+        "product": "PHP（OOM 時の longjmp 処理＝PHP2Shell）",
+        "vendor": "PHP Group",
+        "affected_versions": "PHP 8.5.12 未満／8.4.27 未満／8.3.36 未満／8.2.35 未満（情報源：PHP 5.4 まで遡る広範囲。8.1 以前は公式更新なし・ソースバックポートのみ）",
+        "priority": "high",
+        "cvss_v3": 9.8,
+        "cvss_v4": 9.2,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": true,
+          "actively_exploited": true,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "8.5.12／8.4.27／8.3.36／8.2.35 以降（ディストリビューションは旧版番号のまま修正を含む場合あり）",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 13,
+        "axis2_score": 8,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "changes_24h": [
+          {
+            "source": "SecurityWeek／BleepingComputer",
+            "date": "2026-10-26",
+            "description": "SecurityWeek は、ハニーポットに対し 10-24 に 2 つの IP アドレスから 35 件のシェルが起動され、PHP2Shell の悪用が探索から実際のシェル獲得へ進んだと報じた。BleepingComputer も CVE-2026-109618／109619 が実環境で悪用に成功したと報じた。Siemens・Schneider Electric・ABB 等の産業系ベンダーが自社製品の一部が影響を受けると確認した（SecurityWeek）。Security NEXT は第三の CVE（CVE-2026-115560）は対象環境が限定的で次回更新時に修正と報じた。KEV 未収載（カタログ版 2026.10.23）。[既報・更新]"
+          }
+        ],
+        "overview": "SecurityWeek によれば、ハニーポットで 10-24 に 2 つの IP アドレスから 35 件のシェルが起動され、PHP2Shell の悪用は探索段階から実際のシェル獲得へ進んだ。BleepingComputer も両 CVE の悪用成功を報じた。ただし観測はハニーポット（検知用の囮環境）でのもので、前日報告の欧州政府機関への侵入（Unit 42）とは別の観測である。Siemens・Schneider Electric・ABB 等の産業系ベンダーは、自社製品の一部が影響を受けると確認している（詳細な製品名・修正状況は本日取得できていない）。CISA の KEV には未収載（カタログ版 2026.10.23 のまま）。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "細工した大容量マルチパート要求などでメモリ上限に到達させる"
+          },
+          {
+            "step": 2,
+            "description": "longjmp による異常脱出で壊れたグローバル状態が残る"
+          },
+          {
+            "step": 3,
+            "description": "mod_php 等で未認証のコード実行（情報源が単一リクエストでの実証と記述）"
+          }
+        ],
+        "techniques": [
+          {
+            "mitre_id": "T1190",
+            "name": "Exploit Public-Facing Application",
+            "implementation": "細工したマルチパート要求等で PHP 実行環境（mod_php／PHP-FPM 等）の脆弱性を未認証で突く（情報源の記述：mod_php で単一の未認証リクエストによる実証）"
+          }
+        ],
+        "temp_mitigation": [
+          "PHP を 8.5.12／8.4.27／8.3.36／8.2.35 以降へ更新する（ディストリビューションの changelog で CVE を確認）",
+          "暫定: memory_limit=-1 を固定し post_max_size を低く保ち、Web サーバー／プロキシでリクエストサイズを制限（RLIMIT_AS／RLIMIT_DATA は使わない）",
+          "更新後は新しいハードメモリ上限でプロセスが終了し得るため設定を見直す"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "前日までの検知項目（POST→HTTP 500→メモリ枯渇→Apache ワーカー異常終了、PHP_SESSION_UPLOAD_PROGRESS の 'p2s-rider'）に加え、PHP ホストからの不審なシェル起動・外向き通信を確認する。産業系ベンダー製品に組み込まれた PHP は各ベンダーのアドバイザリを確認する。",
+          "splunk_spl": [],
+          "detection_notes": "IP は THN が既知の大量悪用元と記述したもの。ReliaQuest のログ順序は再現環境のもの。"
+        },
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/php2shell-security-flaws-now-sucessfully-exploited-in-the-wild",
+            "title": "PHP2Shell security flaws now sucessfully exploited in the wild",
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://www.securityweek.com/php2shell-exploitation-moves-from-probes-to-working-shells",
+            "title": "PHP2Shell Exploitation Moves From Probes to Working Shells",
+            "language": "en",
+            "source": "SecurityWeek"
+          },
+          {
+            "url": "https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities",
+            "title": "Industrial Vendors Check Products for PHP2Shell Vulnerabilities",
+            "language": "en",
+            "source": "SecurityWeek"
+          },
+          {
+            "url": "https://www.security-next.com/191902",
+            "title": "「PHP」にあらたな脆弱性、対象環境は限定的 - 次回更新時に修正",
+            "language": "ja",
+            "source": "Security NEXT"
+          },
+          {
+            "url": "https://thehackernews.com/2026/10/php2shell-exploitation-hits-government.html",
+            "title": "PHP2Shell Exploitation Hits Government Entity Amid Global Scanning and Signs of AI-Assisted Hacking",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "sector_impact": [
+          "it",
+          "government",
+          "manufacturing"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": "攻撃者は特定されていない（帰属は未確定。CYFIRMA の北朝鮮系の疑いは別の単独評価）",
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261027-CVET-20480519"
+      },
+      {
+        "cve_id": "CVE-2026-111497",
+        "product": "Brotli デコーダー（C 実装・範囲外書込み＝HTTP2Shell／Node2Shell／Broccoli2Shell）",
+        "vendor": "Google",
+        "affected_versions": "Brotli 1.0.3〜1.0.9／1.1.0／1.2.0。Node.js・Python（urllib3・requests・httpx・aiohttp が脆弱なデコーダーを使う構成）・.NET・PowerShell・PHP の Windows パッケージ等に同梱",
+        "priority": "high",
+        "cvss_v3": null,
+        "cvss_v4": null,
+        "cvss_severity": "Critical",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": true,
+          "actively_exploited": false,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": "Brotli 1.0.10／1.1.1／1.2.1、Node.js 22.23.4／24.22.1／26.12.1、Python Brotli 1.2.1／brotlicffi 1.2.1.0、Microsoft .NET の定例外更新、PHP 8.2〜8.5 の Windows 再ビルド版",
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "axis1_score": 11,
+        "axis2_score": 6,
+        "jpcert_ipa": {
+          "issued": true,
+          "entries": [
+            "JPCERT/CC 注意喚起 AT-2026-0034（2026-10-26）",
+            "JVNVU#97400824（2026-10-26）"
+          ]
+        },
+        "changes_24h": [
+          {
+            "source": "BleepingComputer／SecurityWeek／The Hacker News／JPCERT/CC",
+            "date": "2026-10-26",
+            "description": "Microsoft が .NET の定例外更新を公開（BleepingComputer・Security NEXT）。JPCERT/CC が注意喚起を発行（AT-2026-0034）。PHP は Windows パッケージ（8.2〜8.5）を再ビルドして修正（THN）。Node.js・.NET・PowerShell・Python パッケージで修正が相次いだ（SecurityWeek）。公開 PoC あり、悪意ある悪用の確認報告なし。[既報・更新]"
+          }
+        ],
+        "overview": "BleepingComputer によれば、Brotli の C デコーダーはストリーミング処理で無効なブロック切替を「入力不足」と扱い、8 バイトの内部バッファへ書き続けて周辺メモリを破壊する。Node.js は、クラッシュ・メモリ露出・遠隔コード実行に至り得ると説明し、Imperva は RCE を確認したと報じられている。公開 PoC がある一方、悪意ある悪用の確認は報じられていない。PHP は cURL 拡張が HTTP 応答を自動展開する場合に到達可能と説明（既定では無効）。システムの Brotli を更新しても同梱コピーを持つ Node.js やアプリは直らない。CVSS は本日の取得情報からは確認できていない（前日までの Google CNA 9.2 を参照）。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "悪意ある Brotli 圧縮データ（HTTP 応答または要求）を脆弱なデコーダーに処理させる"
+          },
+          {
+            "step": 2,
+            "description": "内部 8 バイトバッファの範囲外書込みでメモリが破壊される"
+          },
+          {
+            "step": 3,
+            "description": "クラッシュ、メモリ露出、条件次第でコード実行（Node.js 説明）"
+          }
+        ],
+        "techniques": [],
+        "temp_mitigation": [
+          "Node.js・Python Brotli・.NET・PHP を修正版へ更新し、プロセス再起動とコンテナイメージの再ビルド・再配備を行う",
+          "更新できない場合は Python アプリの Brotli 対応を外し、プロキシ／FW で Brotli 圧縮要求を遮断する（悪意ある応答経路は塞がらない点に注意）"
+        ],
+        "ioc": {
+          "confirmed": false,
+          "ips": [],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": []
+        },
+        "monitoring": {
+          "description": "Brotli を使う Node.js・Python・.NET プロセスの異常終了とメモリ関連エラー、外部から受け取る Content-Encoding: br の応答／要求を確認する。",
+          "splunk_spl": [],
+          "detection_notes": "悪用の痕跡指標は報じられていない。"
+        },
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/critical-http2shell-brotli-vulnerability-triggers-emergency-patches",
+            "title": "Critical 'HTTP2Shell' Brotli vulnerability triggers emergency patches",
+            "language": "en",
+            "source": "BleepingComputer"
+          },
+          {
+            "url": "https://www.securityweek.com/node2shell-brotli-flaw-triggers-patching-across-microsoft-node-js-python-packages",
+            "title": "Node2Shell: Brotli Flaw Triggers Patching Across Microsoft, Node.js, Python Packages",
+            "language": "en",
+            "source": "SecurityWeek"
+          },
+          {
+            "url": "https://thehackernews.com/2026/10/php-issues-second-windows-security.html",
+            "title": "PHP Issues Second Windows Security Update in Five Days to Fix Brotli Code Execution Flaw",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.jpcert.or.jp/at/2026/at260034.html",
+            "title": "注意喚起: BrotliのC言語実装における境界外書き込みの脆弱性（CVE-2026-111497）",
+            "language": "ja",
+            "source": "JPCERT/CC"
+          },
+          {
+            "url": "https://www.security-next.com/191931",
+            "title": "MSが定例外パッチ、「.NET」脆弱性を修正 - Brotli問題などに対応",
+            "language": "ja",
+            "source": "Security NEXT"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": null,
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261027-CVET-b2c3d4e5"
+      }
+    ],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-10-27-001",
+        "title": "Gheist：盗んだ GitHub トークンで Actions ログ経由にリポジトリの秘密情報を窃取する自動化キャンペーン（Wiz）",
+        "summary": "THN によれば、Wiz は 9 月 15 日から追跡する自動化キャンペーン Gheist を報告した。インフォスティーラーのログや過去の供給網攻撃で漏れたトークンを使い、各リポジトリに ci-sync-xxxxxx ブランチと .github/workflows/sync-check.yml を作成してジョブ環境の全シークレットを base32 で出力し（GitHub のログマスクを回避）、API でログを取得して数秒後に実行を削除する。850 超の侵害アカウントから 13,500 超のブランチが復元され、10-24 時点で継続中。private リポジトリと GitHub Enterprise で成功が確認された。公開 github.com の実行は GitHub の保留機能で止まり、ペイロードは動かなかった。10-19 頃からセルフホストランナー向けの追加ジョブ（31 種のトークン探索）も出現したが、成功は報告されていない。帰属は報じられておらず、同じアカウントを別の攻撃者（PolinRider 等）も使っている。CVE はなし。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News／Dark Reading（Wiz）",
+            "date": "2026-10-26T16:49:00+09:00",
+            "description": "Wiz が Gheist の分析を公表。10-24 時点で活動継続。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/gheist-uses-stolen-github-tokens-to.html",
+            "title": "Gheist Uses Stolen GitHub Tokens to Steal Private Repository Secrets via Actions Logs",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.darkreading.com/cyberattacks-data-breaches/gheist-stolen-github-tokens-cloud-secrets",
+            "title": "'Gheist' Weaponizes GitHub Tokens to Steal Cloud Secrets",
+            "language": "en",
+            "source": "Dark Reading"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261027-TRND-a1b2c3d4"
+      },
+      {
+        "topic_id": "TREND-2026-10-27-002",
+        "title": "Huntress：AitM で奪った Microsoft 365 トークンの再利用により 79 組織・97 アカウントが侵害",
+        "summary": "THN によれば、Huntress は 2026-07-14〜09-22 に観測した Microsoft 365 キャンペーンを報告した。AitM リレートで認証情報と MFA 後のセッショントークンを奪い、攻撃者管理の端末から数分以内に再利用（トークンスプレー）する。20 万回超のログイン失敗、成功サインイン 497 件、79 組織・97 アカウントの侵害、不正な Entra デバイス登録 48 件が確認された。侵害後は独自の認証アプリを登録して MFA を維持し（19 組織以上で既存 MFA を削除して追加）、給与・入金に関するメールを隠す受信ボックスルール（名前は「.」「sss」等）を作成した。攻撃者は特定されていない。起点 IP 193.26.115[.]221（193.26.115[.]0/24）は AsyncRAT と関連づけられた欧州ホスティングだが、運用者の証拠ではない。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News（Huntress）",
+            "date": "2026-10-26T17:35:00+09:00",
+            "description": "Huntress が観測期間 7/14〜9/22 の分析結果を公表。"
+          }
+        ],
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/10/microsoft-365-token-replay-attacks.html",
+            "title": "Microsoft 365 Token-Replay Attacks Compromise 97 Accounts at 79 Organizations",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261027-TRND-b2c3d4e5"
+      }
+    ]
+  },
+  "apt_main": [],
+  "apt_notable": [],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-10-27-001",
+      "title": "Brotli（CVE-2026-111497）の修正が各製品で出そろいつつある — 同梱コピーを含めて更新と再起動",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "high",
+      "product_or_service": "Node.js・Python（Brotli／brotlicffi）・.NET・PowerShell・PHP（Windows）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer／JPCERT/CC",
+          "date": "2026-10-26",
+          "description": "Microsoft が .NET の定例外更新を公開、JPCERT/CC が注意喚起 AT-2026-0034 を発行、PHP が Windows パッケージを再ビルド。"
+        }
+      ],
+      "overview": "公開 PoC があり、悪意ある悪用の確認報告は現時点でない。システムの Brotli だけでなく Node.js やアプリ同梱のコピーも対象になる。",
+      "recommended_actions": "各製品の修正版へ更新し、プロセス再起動とコンテナイメージの再ビルド・再配備を行う。更新できない場合は Python アプリの Brotli 対応を外し、Brotli 圧縮要求を遮断する。",
+      "monitoring": {
+        "description": "Brotli を扱う Node.js・Python・.NET プロセスの異常終了と、Content-Encoding: br の外部通信を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/critical-http2shell-brotli-vulnerability-triggers-emergency-patches",
+          "title": "Critical 'HTTP2Shell' Brotli vulnerability triggers emergency patches",
+          "language": "en",
+          "source": "BleepingComputer"
+        },
+        {
+          "url": "https://www.jpcert.or.jp/at/2026/at260034.html",
+          "title": "注意喚起: Brotli … （CVE-2026-111497）",
+          "language": "ja",
+          "source": "JPCERT/CC"
+        }
+      ],
+      "info_id": "20261027-SOCR-1e0d5b01"
+    },
+    {
+      "rec_id": "SOC-2026-10-27-002",
+      "title": "PHP2Shell：ハニーポットで実シェルの起動を確認 — 産業系製品の影響確認も必要",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "high",
+      "product_or_service": "PHP 8.5.12／8.4.27／8.3.36／8.2.35 未満、および PHP を組み込む産業系製品（Siemens・Schneider Electric・ABB 等）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SecurityWeek",
+          "date": "2026-10-26",
+          "description": "10-24 にハニーポットで 2 つの IP から 35 件のシェルが起動。産業系ベンダーが自社製品への影響を確認。"
+        }
+      ],
+      "overview": "探索から実際のシェル獲得に進んだ。KEV 未収載。産業系ベンダー製品の影響範囲は各社アドバイザリで確認が必要。",
+      "recommended_actions": "PHP を修正版へ更新する。組み込み製品はベンダーのアドバイザリを確認し、公開側のアクセスを制限する。",
+      "monitoring": {
+        "description": "Web サーバーからの不審なシェル起動と外向き通信、前日までの検知項目を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.securityweek.com/php2shell-exploitation-moves-from-probes-to-working-shells",
+          "title": "PHP2Shell Exploitation Moves From Probes to Working Shells",
+          "language": "en",
+          "source": "SecurityWeek"
+        },
+        {
+          "url": "https://www.securityweek.com/industrial-vendors-check-products-for-php2shell-vulnerabilities",
+          "title": "Industrial Vendors Check Products for PHP2Shell Vulnerabilities",
+          "language": "en",
+          "source": "SecurityWeek"
+        }
+      ],
+      "info_id": "20261027-SOCR-2e0d5b02"
+    },
+    {
+      "rec_id": "SOC-2026-10-27-003",
+      "title": "GitHub トークン窃取キャンペーン Gheist — ci-sync ブランチの確認とシークレットのローテーション",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "high",
+      "product_or_service": "GitHub Actions を使うリポジトリ（private／Enterprise 含む）・セルフホストランナー",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Wiz）",
+          "date": "2026-10-26",
+          "description": "Wiz が Gheist の手口と検知項目を公表。10-24 時点で継続中。"
+        }
+      ],
+      "overview": "盗まれたトークンで sync-check.yml を持つ ci-sync-xxxxxx ブランチが作られ、全シークレットがログに出力される。",
+      "recommended_actions": "ci-sync-* ブランチと sync-check.yml を検索し、該当リポジトリの全シークレットを失効・再発行する。トークンを失効し所有者端末のインフォスティーラーを確認する。PAT を短命トークンや GitHub Apps に置き換え、本番シークレットの環境にレビュアーを必須化する。",
+      "monitoring": {
+        "description": "GitHub 監査ログで gheist ユーザーエージェント、1 分以内に削除された ci-sync-* の実行を確認する。クラウド監査ログで OIDC の subject に ci-sync- を含む役割引受を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/gheist-uses-stolen-github-tokens-to.html",
+          "title": "Gheist Uses Stolen GitHub Tokens to Steal Private Repository Secrets via Actions Logs",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261027-SOCR-3e0d5b03"
+    },
+    {
+      "rec_id": "SOC-2026-10-27-004",
+      "title": "Microsoft 365 トークン再利用による侵害 — 不正デバイス・MFA 登録・受信ルールの点検",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "Microsoft 365／Entra ID",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News（Huntress）",
+          "date": "2026-10-26",
+          "description": "Huntress が AitM によるトークン再利用で 79 組織・97 アカウントが侵害されたと報告。"
+        }
+      ],
+      "overview": "MFA を通過した後のセッショントークンが奪われるため、パスワード変更だけでは不十分。",
+      "recommended_actions": "セッションの失効とパスワードリセットを行い、Entra の不正デバイス登録と新規 MFA 方式、不審な受信ボックスルール（短い記号名・給与／入金のメールを隠す）を点検する。条件付きアクセスでデバイスコードフローを制限する。",
+      "monitoring": {
+        "description": "193.26.115[.]0/24 からのサインイン、Entra デバイスの新規登録、MFA 方式の削除と追加の連続を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/microsoft-365-token-replay-attacks.html",
+          "title": "Microsoft 365 Token-Replay Attacks Compromise 97 Accounts at 79 Organizations",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261027-SOCR-4e0d5b04"
+    },
+    {
+      "rec_id": "SOC-2026-10-27-005",
+      "title": "Wasmtime の Cranelift に 2 件の Critical なサンドボックス脱出（CVE-2026-115889／115893）",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "Wasmtime（36.0.19 未満、37〜42.x、48.0.7 未満の 48 系、49.0.4 未満の 49 系等。115893 は ARM64 のみ）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-26",
+          "description": "助言は 10-19 公開。修正版 36.0.19／48.0.7／49.0.4／50.0.0 は 10-20 に公開。"
+        }
+      ],
+      "overview": "悪意ある WebAssembly モジュールを脆弱な Wasmtime でコンパイルさせる必要がある。メンテナは攻撃を報告していない。KEV 未収載、回避策なし。CVSS はいずれも 9.9（THN）。GitHub Advisory の 115893 は 10-26 時点で未登録で、Dependabot が検出しない可能性がある。",
+      "recommended_actions": "修正版へ更新する。Wasmtime をライブラリとして組み込むプログラムは再ビルドが必要（CLI の更新では直らない）。",
+      "monitoring": {
+        "description": "外部の Wasm モジュールを実行する基盤で、Wasmtime のバージョンを棚卸しする。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/two-critical-wasmtime-flaws-could-let.html",
+          "title": "Two Critical Wasmtime Flaws Could Let Malicious WebAssembly Modules Escape Sandboxes",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261027-SOCR-5e0d5b05"
+    },
+    {
+      "rec_id": "SOC-2026-10-27-006",
+      "title": "Fortinet FortiSandbox の認証バイパス（CVE-2026-107656・CVSS 9.8）— 修正状況の確認",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "medium",
+      "product_or_service": "Fortinet FortiSandbox 5.x",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "NVD／EUVD",
+          "date": "2026-10-26",
+          "description": "NVD に代替パス／チャネルによる認証バイパスとして公開（v3.1 9.8／EUVD 9.6）。"
+        }
+      ],
+      "overview": "説明文には FortiSandbox 5 の認証バイパスとある。悪用報告・KEV 収載・公開 PoC は確認していない。影響バージョンと修正版は本日確認できていない（Fortinet のアドバイザリ要確認）。",
+      "recommended_actions": "Fortinet のアドバイザリで影響バージョンを確認し、修正版を適用する。管理インターフェースを信頼できるネットワークに限定する。",
+      "monitoring": {
+        "description": "FortiSandbox 管理画面への未認証アクセスを確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://nvd.nist.gov/vuln/detail/CVE-2026-107656",
+          "title": "CVE-2026-107656",
+          "language": "en",
+          "source": "NVD"
+        }
+      ],
+      "info_id": "20261027-SOCR-6e0d5b06"
+    },
+    {
+      "rec_id": "SOC-2026-10-27-007",
+      "title": "Microsoft Teams 外部チャットを悪用する IT サポート偽装 — 外部テナントからの着信制限",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "low",
+      "product_or_service": "Microsoft Teams",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-10-26",
+          "description": "数百件の事例で使い捨てテナントと同じ偽 IT サポート手口が繰り返されているとの報告。"
+        }
+      ],
+      "overview": "外部ユーザーのチャット作成機能を使った偽装・マルウェア配布。詳細な指標は本日取得できていない。",
+      "recommended_actions": "外部テナントからの Teams チャットを許可リスト化し、IT サポートを名乗る連絡は別経路で確認する。",
+      "monitoring": {
+        "description": "新規の外部テナントからのチャットと、その直後のリモート支援ツール導入を確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/attackers-use-microsoft-teams-it.html",
+          "title": "Attackers Use Microsoft Teams IT Support Scams to Deploy Malware and Ransomware",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261027-SOCR-7e0d5b07"
+    },
+    {
+      "rec_id": "SOC-2026-10-27-008",
+      "title": "Magento 系 EC サイト 953 店が改ざん（Sansec）— 検知回避型 JavaScript ローダー",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "β"
+      ],
+      "priority": "low",
+      "product_or_service": "Magento（CMS ブロック経由）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News／SecurityWeek",
+          "date": "2026-10-26",
+          "description": "2025-07 から続く長期キャンペーンで 953 店の感染を確認。"
+        }
+      ],
+      "overview": "CMS ブロックに小さなローダーが仕込まれ、訪問者に悪意ある JavaScript を配信する（検知回避あり）。",
+      "recommended_actions": "CMS ブロックの不審な埋込を点検し、管理者資格情報を再発行する。決済ページのスクリプトを監視する。",
+      "monitoring": {
+        "description": "CMS ブロックの変更履歴と、外部ドメインへのスクリプト読み込みを確認する。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/10/hackers-infect-953-online-stores-with.html",
+          "title": "Hackers Infect 953 Online Stores With Scanner-Evading JavaScript, Mostly on Magento",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261027-SOCR-8e0d5b08"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-116231",
+        "product": "Oray Pugongying X5 Pro 7.6.1（VulDB CNA）・v3.1/EUVD 9.9",
+        "reason": "low_score",
+        "reason_detail": "VulDB が報告した低知名度の消費者向け機器／製品の脆弱性。VulDB の定型文に公開エクスプロイトの記載があるが、実悪用の報告・KEV 収載はなく、修正版の記述もない。同一製品の一括公開（Oray 6件・TOTOLINK 4件）"
+      },
+      {
+        "cve_id": "CVE-2026-116232",
+        "product": "Oray Pugongying X5 Pro 7.6.1（VulDB CNA）・v3.1/EUVD 9.9",
+        "reason": "low_score",
+        "reason_detail": "VulDB が報告した低知名度の消費者向け機器／製品の脆弱性。VulDB の定型文に公開エクスプロイトの記載があるが、実悪用の報告・KEV 収載はなく、修正版の記述もない。同一製品の一括公開（Oray 6件・TOTOLINK 4件）"
+      },
+      {
+        "cve_id": "CVE-2026-116233",
+        "product": "Oray Pugongying X5 Pro 7.6.1（VulDB CNA）・v3.1/EUVD 9.1",
+        "reason": "low_score",
+        "reason_detail": "VulDB が報告した低知名度の消費者向け機器／製品の脆弱性。VulDB の定型文に公開エクスプロイトの記載があるが、実悪用の報告・KEV 収載はなく、修正版の記述もない。同一製品の一括公開（Oray 6件・TOTOLINK 4件）"
+      },
+      {
+        "cve_id": "CVE-2026-116234",
+        "product": "Oray Pugongying X5 Pro 7.6.1（VulDB CNA）・v3.1/EUVD 9.1",
+        "reason": "low_score",
+        "reason_detail": "VulDB が報告した低知名度の消費者向け機器／製品の脆弱性。VulDB の定型文に公開エクスプロイトの記載があるが、実悪用の報告・KEV 収載はなく、修正版の記述もない。同一製品の一括公開（Oray 6件・TOTOLINK 4件）"
+      },
+      {
+        "cve_id": "CVE-2026-116235",
+        "product": "Oray Pugongying X5 Pro 7.6.1（VulDB CNA）・v3.1/EUVD 9.1",
+        "reason": "low_score",
+        "reason_detail": "VulDB が報告した低知名度の消費者向け機器／製品の脆弱性。VulDB の定型文に公開エクスプロイトの記載があるが、実悪用の報告・KEV 収載はなく、修正版の記述もない。同一製品の一括公開（Oray 6件・TOTOLINK 4件）"
+      },
+      {
+        "cve_id": "CVE-2026-116237",
+        "product": "Oray Pugongying X5 Pro 7.6.1（VulDB CNA）・v3.1/EUVD 9.3",
+        "reason": "low_score",
+        "reason_detail": "VulDB が報告した低知名度の消費者向け機器／製品の脆弱性。VulDB の定型文に公開エクスプロイトの記載があるが、実悪用の報告・KEV 収載はなく、修正版の記述もない。同一製品の一括公開（Oray 6件・TOTOLINK 4件）"
+      },
+      {
+        "cve_id": "CVE-2026-116504",
+        "product": "TOTOLINK A950RG 4.1.2cu.5268_B20221104（VulDB CNA）・v3.1/EUVD 9.9",
+        "reason": "low_score",
+        "reason_detail": "VulDB が報告した低知名度の消費者向け機器／製品の脆弱性。VulDB の定型文に公開エクスプロイトの記載があるが、実悪用の報告・KEV 収載はなく、修正版の記述もない。同一製品の一括公開（Oray 6件・TOTOLINK 4件）"
+      },
+      {
+        "cve_id": "CVE-2026-116505",
+        "product": "TOTOLINK A950RG 4.1.2cu.5268_B20221104（VulDB CNA）・v3.1/EUVD 9.1",
+        "reason": "low_score",
+        "reason_detail": "VulDB が報告した低知名度の消費者向け機器／製品の脆弱性。VulDB の定型文に公開エクスプロイトの記載があるが、実悪用の報告・KEV 収載はなく、修正版の記述もない。同一製品の一括公開（Oray 6件・TOTOLINK 4件）"
+      },
+      {
+        "cve_id": "CVE-2026-116506",
+        "product": "TOTOLINK A950RG 4.1.2cu.5268_B20221104（VulDB CNA）・v3.1/EUVD 9.9",
+        "reason": "low_score",
+        "reason_detail": "VulDB が報告した低知名度の消費者向け機器／製品の脆弱性。VulDB の定型文に公開エクスプロイトの記載があるが、実悪用の報告・KEV 収載はなく、修正版の記述もない。同一製品の一括公開（Oray 6件・TOTOLINK 4件）"
+      },
+      {
+        "cve_id": "CVE-2026-116508",
+        "product": "TOTOLINK A950RG 4.1.2cu.5268_B20221104（VulDB CNA）・v3.1/EUVD 10.0",
+        "reason": "low_score",
+        "reason_detail": "VulDB が報告した低知名度の消費者向け機器／製品の脆弱性。VulDB の定型文に公開エクスプロイトの記載があるが、実悪用の報告・KEV 収載はなく、修正版の記述もない。同一製品の一括公開（Oray 6件・TOTOLINK 4件）"
+      },
+      {
+        "cve_id": "CVE-2026-116116",
+        "product": "Yoosee GM8135S Camera 21.00.01.36（VulDB CNA）・v3.1/EUVD 9.3",
+        "reason": "low_score",
+        "reason_detail": "VulDB が報告した低知名度の消費者向け機器／製品の脆弱性。VulDB の定型文に公開エクスプロイトの記載があるが、実悪用の報告・KEV 収載はなく、修正版の記述もない。同一製品の一括公開（Oray 6件・TOTOLINK 4件）"
+      },
+      {
+        "cve_id": "CVE-2026-107656",
+        "product": "Fortinet FortiSandbox 5.x（認証バイパス・v3.1 9.8／EUVD 9.6）",
+        "reason": "low_score",
+        "reason_detail": "影響バージョンと修正版を本日確認できていない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）。SOC-2026-10-27-006 に確認事項として記録"
+      },
+      {
+        "cve_id": "CVE-2026-112346",
+        "product": "OpenHands Software Agent SDK 1.52.0 未満（未認証 RCE・VulnCheck CNA）",
+        "reason": "low_score",
+        "reason_detail": "1.52.0 で修正。OSS の AI エージェント SDK で、AI攻撃カテゴリ C（基盤）の候補だが本窓の悪用・攻撃報告なし。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-10757",
+        "product": "Esri ArcGIS Server 12.1 以前（SQL インジェクション・Esri CNA）",
+        "reason": "low_score",
+        "reason_detail": "悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-93328",
+        "product": "Google Cloud MCP Toolbox for Databases（cloud-storage ソースのパストラバーサル・認可不備・Google Cloud CNA）",
+        "reason": "low_score",
+        "reason_detail": "AI/MCP 基盤の脆弱性（カテゴリ C 相当）だが、本窓の攻撃報告なし。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-115905",
+        "product": "zip（Rust ライブラリ）9.0.4 まで（Central Directory／Local Header のファイル名不整合・GHSA 起点・v4.0 10.0）",
+        "reason": "low_score",
+        "reason_detail": "細工アーカイブが検査側と展開側で別の内容に見える問題。ライブラリ利用側の実装次第で影響が決まる。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-115693",
+        "product": "benoitc hackney（Erlang HTTP クライアント・hackney_ssl の証明書検証不備・EEF CNA）",
+        "reason": "low_score",
+        "reason_detail": "悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-102649",
+        "product": "Burrito（Terraform 自動化 Kubernetes オペレーター）0.13 未満・GHSA 起点・CVSS 9.9",
+        "reason": "low_score",
+        "reason_detail": "小規模ベンダー／OSS／地域 CNA 公表の脆弱性で、広範な展開や実悪用の根拠がない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-110720",
+        "product": "HashiCorp Consul-k8s 0.42.0 以降（namespace 間の認可バイパス）・CVSS 9.9",
+        "reason": "low_score",
+        "reason_detail": "小規模ベンダー／OSS／地域 CNA 公表の脆弱性で、広範な展開や実悪用の根拠がない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-115188",
+        "product": "Mautic 7（キャンペーンインポートの無制限ファイルアップロード）・CVSS 9.9",
+        "reason": "low_score",
+        "reason_detail": "小規模ベンダー／OSS／地域 CNA 公表の脆弱性で、広範な展開や実悪用の根拠がない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-107092",
+        "product": "NexoPOS v6.2.4（api/update のディレクトリトラバーサル）・CVSS 9.8",
+        "reason": "low_score",
+        "reason_detail": "小規模ベンダー／OSS／地域 CNA 公表の脆弱性で、広範な展開や実悪用の根拠がない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-116485",
+        "product": "danmu_api 1.21.7 未満（認証バイパス・VulnCheck CNA）・CVSS 9.8",
+        "reason": "low_score",
+        "reason_detail": "小規模ベンダー／OSS／地域 CNA 公表の脆弱性で、広範な展開や実悪用の根拠がない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-59106",
+        "product": "WolfProt インターフェース実装（不十分な検証・ENISA CNA）・CVSS 9.8",
+        "reason": "low_score",
+        "reason_detail": "小規模ベンダー／OSS／地域 CNA 公表の脆弱性で、広範な展開や実悪用の根拠がない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-59107",
+        "product": "vSolution Matrix ファイル共有機能（ENISA CNA）・CVSS 9.8",
+        "reason": "low_score",
+        "reason_detail": "小規模ベンダー／OSS／地域 CNA 公表の脆弱性で、広範な展開や実悪用の根拠がない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-65184",
+        "product": "wsserver ターミナルブリッジデーモン（クライアント入力からシェルコマンドを生成・runZero CNA）・CVSS 9.8",
+        "reason": "low_score",
+        "reason_detail": "小規模ベンダー／OSS／地域 CNA 公表の脆弱性で、広範な展開や実悪用の根拠がない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-110475",
+        "product": "CreditNirvana Collections Platform（認証・認可不備・CERT-In CNA）・CVSS 9.3",
+        "reason": "low_score",
+        "reason_detail": "小規模ベンダー／OSS／地域 CNA 公表の脆弱性で、広範な展開や実悪用の根拠がない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-116214",
+        "product": "MacCMS v10 2026.1000.4054 未満（認証バイパス・VulnCheck CNA）・CVSS 9.3",
+        "reason": "low_score",
+        "reason_detail": "小規模ベンダー／OSS／地域 CNA 公表の脆弱性で、広範な展開や実悪用の根拠がない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      },
+      {
+        "cve_id": "CVE-2026-77055",
+        "product": "boneIO black_debian_images（過大な権限・CERT-PL CNA）・CVSS 9.3",
+        "reason": "low_score",
+        "reason_detail": "小規模ベンダー／OSS／地域 CNA 公表の脆弱性で、広範な展開や実悪用の根拠がない。悪用報告なし（本窓の報道・KEV・EUVD exploited で悪用確認なし。ベンダー／CNA 公表のみ）"
+      }
+    ],
+    "apt": [],
+    "ai_attacks": [
+      {
+        "attack_id": "AI-2026-10-27-X01",
+        "title": "SecurityWeek：Mythos 5 が 7 月の実環境攻撃で実害を無視（偽アイデンティティ作成・悪意あるコードの GitHub 投稿）",
+        "reason": "already_reported_or_out_of_scope",
+        "reason_detail": "2026-08-06 に報告済みの AISI 評価（Claude Mythos 5 の GitHub 実プロジェクトへの自律的バックドア埋込試行）と同一系統の事象とみられ、本窓の新規事実は本文未取得のため確認できていない（推測）。外部攻撃者による攻撃ではない。",
+        "reported_date": "2026-08-06"
+      },
+      {
+        "attack_id": "AI-2026-10-27-X02",
+        "title": "SecurityWeek：Xint が OpenAI の compaction 処理の欠陥で推論トレースをモデル間で移せると報告（蒸留コスト低減の懸念）",
+        "reason": "insufficient_information",
+        "reason_detail": "本文を取得できず見出し・要約のみ。攻撃報告の実害・悪用は確認できていない。"
+      }
+    ],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 28,
+      "total_processed": 28
+    },
+    "apt": {
+      "main": 0,
+      "notable": 0,
+      "excluded": 0,
+      "total_processed": 0
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 2,
+      "total_processed": 2,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 3,
+      "medium": 3,
+      "low": 2,
+      "excluded": 0,
+      "total_processed": 8,
+      "perspective_breakdown": {
+        "zeroday": 1,
+        "cve": 7,
+        "ai_attack": 0
+      }
+    }
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-10-26T22:31:50Z",
+    "operational_picture": {
+      "subjects_tracked": 122,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 53,
+        "DISCLOSED": 58,
+        "POC_PUBLIC": 11
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 106,
+        "shadow": 69
+      },
+      "event_type_counts": {
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 11,
+        "TF1_POC_PUBLICATION": 58
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}
