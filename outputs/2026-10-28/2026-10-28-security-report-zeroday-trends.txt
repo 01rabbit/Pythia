@@ -1,0 +1,190 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-28 07:50 JST
+調査期間: 2026-10-27 07:00 〜 2026-10-28 07:00 JST
+========================================
+
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+Lazarus Group LazarusGroup-2026-OperationFlashHole-CrossWebEX（帰属信頼度: medium・P=6 Q=4）
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News（Kaspersky GReAT） 2026-10-27] Kaspersky が Operation FlashHole（Cascade Hole の最新波）を報告。INISAFE CrossWeb EX の悪用と GitHub・Dropbox 経由の配信、ML-KEM-1024 によるポスト量子暗号チャネルを確認。
+
+【概要】
+THN が伝える Kaspersky GReAT の報告によれば、Lazarus Group は Operation FlashHole で韓国の建設・ソフトウェア・有線通信機器製造の少なくとも 3 組織を標的とした。必須金融セキュリティソフト INISAFE CrossWeb EX を悪用して fsquirt.exe を起動し悪意ある DLL を読み込ませ、TechHub が GitHub から TouchHub／TouchShift を取得する。新たに確認された ClientHub は HTTPS と Dropbox API の 2 方式を持つ。Innorix Agent の 1-day 脆弱性を横展開に使い、通信は ML-KEM-1024 のポスト量子鍵交換で確立される。帰属は Kaspersky の評価（情報源が明示）。CVE-2026-68820（Windows AFD ゼロデイ）は Check Point が 8 月に報告した関連チェーンとして記事で言及されたもので、本件での関与の度合いは記事から確認できていない。
+
+【攻撃フロー】
+1. スピアフィッシング（偽の履歴書・ポートフォリオ）または改ざんした韓国サイトの水飲み場攻撃
+2. INISAFE CrossWeb EX 悪用で fsquirt.exe 起動→TechHub DLL をサイドロード（メモリ内実行）
+3. GitHub から TouchHub／TouchShift を取得し、キーロガー・スクリーンショット・ClientHub バックドアを展開
+4. Innorix Agent の 1-day で横展開、ML-KEM-1024 の暗号化チャネルで追加マルウェアをメモリ内に取得
+
+【TTP】
+- T1566.002 Phishing: Spearphishing Link: 各標的向けに作られた偽の履歴書・ポートフォリオサイトへのリンク（情報源の記述）
+- T1189 Drive-by Compromise: 改ざんした韓国のサイトによる水飲み場攻撃（情報源の記述）
+- T1574.002 DLL Side-Loading: 正規の fsquirt.exe と mscoree.dll 等を利用したサイドロード（情報源の記述）
+- T1102 Web Service: GitHub からのペイロード取得と Dropbox API のバックドア通信（情報源の記述）
+- T1210 Exploitation of Remote Services: Innorix Agent の 1-day 脆弱性を横展開に使用（情報源の記述）
+
+【推奨アクション】
+韓国の金融・行政向け必須セキュリティソフト（INISAFE CrossWeb EX、Innorix Agent 等）を最新化し、fsquirt.exe や SyncHost.exe からの不審な DLL 読込（mscoree.dll など）、GitHub・Dropbox API への異常な通信を監視する。
+
+【参照】
+- Lazarus Abuses South Korean Security Software to Deploy Malware Using Post-Quantum Encryption (The Hacker News) https://thehackernews.com/2026/10/lazarus-abuses-south-korean-security.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外製品）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+CVE-2026-111497 Brotli デコーダー（C 実装・範囲外書込み＝HTTP2Shell／Node2Shell／Broccoli2Shell）
+------------------------------------------------------------
+優先度: high  軸1=14 軸2=9  KEV登録: あり  悪用: 確認  パッチ: あり
+影響バージョン: Brotli 1.0.3〜1.2.0。Node.js・Python・.NET・PowerShell・PHP（Windows）等に同梱
+KEV追加日: 2026-10-27  期限: 2026-11-10
+
+【24時間以内の変化】
+[CISA KEV カタログ（2026.10.27）／EUVD 2026-10-27] CISA KEV カタログに CVE-2026-111497 が追加された（dateAdded 2026-10-27・期限 2026-11-10・ランサム利用 Unknown）。EUVD も exploited_since 2026-10-27 を記録。前日までは公開 PoC・悪用確認なし・KEV 未収載。収載の根拠となった悪用の具体的な報告は本日取得した記事からは確認できていない。[既報・更新: KEV 収載]
+[Security NEXT 2026-10-27] PHP の Windows 版・PowerShell が同梱 Brotli を更新したと報じた。
+
+【概要】
+CISA の KEV カタログに 2026-10-27 付けで追加された（事実）。連邦機関の対処期限は 2026-11-10。公開 PoC があり、Node.js・Python・.NET・PowerShell・PHP など同梱先が広い。収載に至った悪用の内容・攻撃者は取得した記事では不明（帰属なし）。
+
+【攻撃フロー】
+1. 圧縮された応答（Content-Encoding: br）をデコードする側へ細工した Brotli ストリームを送る
+2. デコーダーの境界外書込みでメモリが破壊される
+3. メモリ内容の漏えい・DoS・コード実行の可能性（情報源の記述）
+
+【暫定緩和策】
+- 各製品の修正版へ更新し、プロセス再起動とコンテナイメージの再ビルド・再配備を行う
+- 更新できない場合は Python アプリの Brotli 対応を外し、Brotli 圧縮要求を遮断する
+
+【監視】
+Brotli を扱う Node.js・Python・.NET プロセスの異常終了と、Content-Encoding: br の外部通信を確認する。KEV 収載を受け、同梱コピーを含む資産棚卸しを優先する。
+
+【参照】
+- Windows版「PHP」にアップデート - 同梱「Brotli」を更新 (Security NEXT) https://www.security-next.com/191985
+- 「PowerShell」に「Brotli」脆弱性を解消するアップデート (Security NEXT) https://www.security-next.com/192008
+- CISA Known Exploited Vulnerabilities Catalog (CISA) https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+
+------------------------------------------------------------
+CVE-2026-109618 PHP（OOM 時の longjmp 処理＝PHP2Shell）（CVSS 9.8）
+------------------------------------------------------------
+優先度: high  軸1=13 軸2=8  KEV登録: あり  悪用: 確認  パッチ: あり
+影響バージョン: PHP 8.5.12 未満／8.4.27 未満／8.3.36 未満／8.2.35 未満
+KEV追加日: 2026-10-26  期限: 2026-10-29
+
+【24時間以内の変化】
+[CISA KEV カタログ／BleepingComputer／The Hacker News／Security NEXT 2026-10-27] 両 CVE が KEV カタログに dateAdded 2026-10-26・期限 2026-10-29 で収載済みであることを確認した（Evidence Ledger の KEV スナップショットで検証）。BleepingComputer・THN・Security NEXT が 10-27 に CISA の収載と注意喚起を報じた。前日報告は「KEV 未収載（カタログ版 2026.10.23）」としていたが、前日窓の KEV 取得が古い版のままだったためで、実際の収載は 10-26 だった。[既報・更新: KEV 収載（前日記載の訂正）]
+
+【概要】
+CVE-2026-109619 も同日（2026-10-26）に KEV へ収載。PHP2Shell の 2 件（CVE-2026-109618／109619）は 2026-10-26 付けで CISA KEV に収載され、連邦機関の対処期限は 2026-10-29。前日までの「ハニーポットでの実シェル獲得」「欧州政府機関への侵入」報告に続く動き。Palo Alto Networks は PAN-OS が PHP2Shell・HTTP2Shell の双方に影響を受けるとして修正版を 10 月末に向け順次公開する（Security NEXT）。攻撃者は未特定。
+
+【攻撃フロー】
+1. 細工した大容量マルチパート要求などでメモリ上限に到達させる
+2. longjmp による異常脱出で壊れたグローバル状態が残る
+3. mod_php 等で未認証のコード実行
+
+【暫定緩和策】
+- PHP を修正版へ更新し、組み込み製品はベンダーのアドバイザリを確認する
+- 暫定: memory_limit=-1 を固定し post_max_size を低く保ち、リクエストサイズを制限する
+
+【監視】
+PHP ホストからの不審なシェル起動・外向き通信、POST→HTTP 500→メモリ枯渇→ワーカー異常終了の連鎖を確認する。PAN-OS など組み込み製品は各社アドバイザリを確認する。
+
+【参照】
+- CISA confirms PHP2Shell vulnerabilities now exploited in attacks (BleepingComputer) https://www.bleepingcomputer.com/news/security/cisa-confirms-php2shell-vulnerabilities-now-exploited-in-attacks
+- CISA Confirms Active Exploitation of Two PHP2Shell Flaws Enabling Remote Code Execution (The Hacker News) https://thehackernews.com/2026/10/cisa-confirms-active-exploitation-of.html
+- 脆弱性「PHP2Shell」の悪用を確認 - 米当局が注意喚起 (Security NEXT) https://www.security-next.com/191976
+- 「PHP2Shell」「HTTP2Shell」のいずれも影響 - 「PAN-OS」の修正版が順次公開 (Security NEXT) https://www.security-next.com/192013
+
+------------------------------------------------------------
+CVE-2026-48356 Adobe Commerce／Adobe Commerce B2B／Magento Open Source（危険な種類のファイルの無制限アップロード）
+------------------------------------------------------------
+優先度: high  軸1=11 軸2=6  KEV登録: あり  悪用: 確認  パッチ: あり
+影響バージョン: 影響バージョンは本日取得した記事から確認できていない（Adobe のセキュリティ情報を要確認）
+KEV追加日: 2026-10-27  期限: 2026-11-10
+
+【24時間以内の変化】
+[CISA KEV カタログ（2026.10.27）／EUVD 2026-10-27] CISA KEV に CVE-2026-48356 が追加された（dateAdded 2026-10-27・期限 2026-11-10・ランサム利用 Unknown）。EUVD は CVSS v3.1 9.3、exploited_since 2026-10-27 を記録。CVE の公開自体は 2026-07-14。悪用の具体的な手口・攻撃者に関する報道は窓内の収集記事に無く、確認できていない。[新規: KEV 収載]
+
+【概要】
+Adobe Commerce 系のファイルアップロードの脆弱性が 2026-10-27 に KEV へ追加された（事実）。説明文では、被害者が細工された URL にアクセスするなどのユーザー操作を要する任意コード実行とされる。報道は窓内に見つかっていないため悪用の詳細は不明。Magento 系は 9 月にも KEV 収載があり（CVE-2026-75650 等・別 CVE）、狙われやすい製品群である（事実）。
+
+【攻撃フロー】
+1. 被害者に細工された URL へアクセスさせる（ユーザー操作が必要）
+2. 危険な種類のファイルがアップロードされる
+3. 現在のユーザー権限でコード実行
+
+【暫定緩和策】
+- Adobe のセキュリティ情報で影響バージョンと修正版を確認し適用する
+- 管理画面・アップロード領域への不審なファイル作成を確認する
+
+【監視】
+Commerce／Magento のメディア・アップロード領域への実行可能ファイルの作成と、管理者セッションの異常を確認する。
+
+【参照】
+- CISA Known Exploited Vulnerabilities Catalog (CISA) https://www.cisa.gov/known-exploited-vulnerabilities-catalog
+- EUVD-2026-44420 (ENISA EUVD) https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-44420
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃トレンド】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+Dahua IP カメラ乗っ取り：CERT-UA がウクライナ標的を警告、P2P（Easy4IP）の認証の弱さ悪用
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-27] CERT-UA の警告と Hunt.io の分析を報じた。
+
+【概要】
+THN によれば、CERT-UA はウクライナの Dahua 製 IP カメラ・NVR・DVR を狙う攻撃を警告した。初期アクセスは弱いまたは既知のパスワード、旧ファームウェアの認証バイパス（CVE-2021-33044／33045）で、Dahua の P2P 基盤 Easy4IP ではシリアル番号が予測可能でレート制限なく総当たりできるため、直接公開されていない機器も危険とされる。Hunt.io は別クラスターで 58 台（ウクライナ）、「CameraSwarm」と名付けた作戦で 14,530 台超の Dahua カメラ侵害を報告し、約 1,923 台にバックドアアカウント（p2pwn）が置かれ、多くのファームでパスワード変更や初期化後も残る。CERT-UA の活動の攻撃者は不明。Hunt.io の第一クラスターはロシア語話者の運用者と帰属し、7 月のオランダ情報機関の注意情報はロシア国家系アクターが EU・NATO・ウクライナで IP カメラを侵害していると述べる（本件との同一性は記事中では示されていない）。P2P 問題に対するパッチの記載はなく、P2P の無効化が推奨される。
+
+【参照】
+- Attackers Hijack Dahua IP Cameras in Ukraine Using P2P Access and Auth Weaknesses (The Hacker News) https://thehackernews.com/2026/10/attackers-hijack-dahua-ip-cameras-in.html
+
+------------------------------------------------------------
+eMudhra 中間 CA の秘密鍵 8 本が極めて脆弱：Microsoft が OOB 更新で信頼を削除
+------------------------------------------------------------
+【24時間以内の変化】
+[BleepingComputer 2026-10-27] Microsoft が OOB 更新を公開し eMudhra 証明書の信頼を削除。
+
+【概要】
+BleepingComputer によれば、eMudhra の中間 CA 証明書 8 本の秘密鍵は 2025 年 4 月に 256 未満の値で生成されており、256 通りの試行で復元できる。偽の証明書で正規サイトになりすまし通信を傍受できる恐れがある。eMudhra は 8 本を失効し、Mozilla・Google・Apple も失効を開始した。Microsoft は 10-26 に OOB 更新（KB5134133＝Windows 11 24H2/25H2/26H2、KB5134125＝Windows 10 21H2/22H2）で 7 証明書の信頼を削除し、Edge の信頼リストからも 10-27 に削除する。信頼更新が自動で届かないオフライン環境などが対象。実悪用の報告は記事に無い。NVD には HCL Domino など下流製品の CVE（CVE-2026-108014／108015）が公開されている。
+
+【参照】
+- Microsoft releases Windows OOB updates to distrust eMudhra certificates (BleepingComputer) https://www.bleepingcomputer.com/news/microsoft/microsoft-releases-windows-oob-updates-to-distrust-emudhra-certificates
+
+------------------------------------------------------------
+Tailscale SSH の「Tailworm」11 件の脆弱性：修正前に詳細が公開
+------------------------------------------------------------
+【24時間以内の変化】
+[BleepingComputer／SecurityWeek 2026-10-27] Tailworm の公開と Tailscale の対応表明。
+
+【概要】
+BleepingComputer・SecurityWeek によれば、Cyberdione Labs が Tailscale SSH などの脆弱性 11 件（総称 Tailworm）を監査で発見し、修正リリース前に詳細を公開した。最も深刻なのは Unix ソケット転送により、承認済みの利用者が対象ホストで root のコード実行を得られる問題（承認済みデバイス 1 台と SSH ポリシー 1 件が必要）。v1.104.2 と headscale v0.29.5 で再現。CVE・CVSS・修正版は記事に無く、Tailscale は 10-27 中の修正を目指すとした。悪用の報告は無い。暫定策は SSH アクセスポリシーの見直しと、不要なら tailscaled に TS_SSH_DISABLE_FORWARDING=1 を設定すること。
+
+【参照】
+- Tailscale warns of SSH flaws allowing root privilege escalation (BleepingComputer) https://www.bleepingcomputer.com/news/security/tailscale-warns-of-serious-ssh-flaws-allowing-root-privilege-escalation
+- Tailscale Rushes Patches After Uncoordinated Disclosure of 'Tailworm' Flaws (SecurityWeek) https://www.securityweek.com/tailscale-rushes-patches-after-uncoordinated-disclosure-of-tailworm-flaws
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（本日の新規予報は forecaster/forecasts/daily/2026-10-28.md を参照）
+
