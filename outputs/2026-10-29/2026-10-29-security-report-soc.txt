@@ -1,0 +1,224 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-29 07:55 JST
+調査期間: 2026-10-28 07:00 〜 2026-10-29 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-29-001 Oracle EBS（CVE-2026-101767）に探索的な悪用試行 — 10 月 CPU 適用を最優先に
+------------------------------------------------------------
+対象: Oracle E-Business Suite
+
+【24時間以内の変化】
+[The Hacker News 2026-10-28] Defused Cyber が 10-27 に探索的悪用を記録。
+
+【概要】
+未認証 SQL インジェクションで RCE へ連鎖し得る。KEV 未収載・成功した侵害の報告は未確認。過去の EBS 悪用では修正直後に大規模攻撃が起きた例がある（推測）。
+
+【推奨アクション】
+- 10 月 CPU を適用する。不可なら TCF サーブレットのパスを許可リストから外し、Web 層を信頼ネットワークに限定する。
+
+【監視】
+/OA_HTML/AppsTCFServer への要求と EBS ホスト・DB の異常を確認する。
+
+【参照】
+- Hackers Target Critical Oracle E-Business Suite RCE Flaw Days After Security Patch (The Hacker News) https://thehackernews.com/2026/10/hackers-target-critical-oracle-e.html
+
+
+------------------------------------------------------------
+SOC-2026-10-29-002 GMO『お名前.com デスクトップクラウド』侵害 — MetaTrader 等の保存資格情報の無効化と取引履歴の確認
+------------------------------------------------------------
+対象: お名前.com デスクトップクラウド（FX 取引用ホスト型 Windows デスクトップ）、FX／証券各社
+
+【24時間以内の変化】
+[The Hacker News／BleepingComputer 2026-10-28] 攻撃者サイト停止・懸賞金・顧客への注意喚起。
+
+【概要】
+26,739 台が影響を受け得る（侵害確認数ではない）。MT4／MT5 の保存資格情報が閲覧された可能性があり、FXTF・OANDA Japan が不正ログインを報告。ランサムウェア攻撃は確認されていない。侵入経路は GMO が未確認。
+
+【推奨アクション】
+- 利用者は別端末からパスワードを変更し全セッションを終了、取引履歴を確認、2 要素認証を有効にする。証券・FX 事業者は該当顧客の不審ログインを監視する。
+
+【監視】
+ブローカー側で GMO 経由の顧客アカウントに対する不審ログイン・注文を確認する。
+
+【参照】
+- Japan's GMO Offers $1 Million Bounty to Catch Hackers Behind FX Trading Cloud Breach (The Hacker News) https://thehackernews.com/2026/10/japans-gmo-offers-1-million-bounty-to.html
+
+
+------------------------------------------------------------
+SOC-2026-10-29-003 Linux カーネル CVE-2026-46300 が KEV 収載（期限 10-31）— PHP2Shell との連鎖で root 化
+------------------------------------------------------------
+対象: Linux カーネル、PHP を使う管理面を持つ組み込み製品（ファイアウォール等）
+
+【24時間以内の変化】
+[CISA KEV 2026-10-28] KEV 追加（期限 2026-10-31）。
+
+【概要】
+PHP2Shell（KEV 収載済み・期限 10-29）と連鎖すると未認証から root に至る（Dream の報告）。
+
+【推奨アクション】
+- カーネルとPHPを更新し、管理インターフェースを公開しない。組み込み製品はベンダー情報を確認する。
+
+【監視】
+PHP ワーカーからのシェル起動、昇格、リバース SSH を監視する。
+
+【参照】
+- PHP2Shell Attack Roots 25 Servers (The Hacker News) https://thehackernews.com/2026/10/php2shell-attack-roots-25-servers.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-29-004 VMware ESX CVE-2026-41709 が KEV 収載（Low だが期限 11-11）
+------------------------------------------------------------
+対象: VMware ESX
+
+【24時間以内の変化】
+[CISA KEV 2026-10-28] KEV 追加（期限 2026-11-11）。
+
+【概要】
+悪意ある管理者の痕跡を残さない効果があるログ不備。VMSA-2026-0006 で修正済み。
+
+【推奨アクション】
+- VMSA-2026-0006 の修正を適用し、ESX のログを外部へ転送する。
+
+【監視】
+ESX 管理アカウントの操作と管理面の到達元を確認する。
+
+【参照】
+- VMSA-2026-0006 (Broadcom) https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/38017
+
+
+------------------------------------------------------------
+SOC-2026-10-29-005 Volt Typhoon『Silent Train』— 管理系プラットフォームと SOHO／IoT 経由の接続元を点検
+------------------------------------------------------------
+対象: Versa Director・N-able N-central・Cisco Catalyst SD-WAN・Arista VeloCloud Orchestrator・Quest KACE
+
+【24時間以内の変化】
+[Lumen Black Lotus Labs 2026-10-28] 4 件のゼロデイ悪用と中継網の公開。
+
+【概要】
+網は遮断済みと報じられたが、管理面を狙う手口は他の運用にも使える（推測）。
+
+【推奨アクション】
+- 対象製品の修正を確認し、管理面を公開しない。SOHO／IoT 機器の管理者パスワードとファームウェアを更新する。
+
+【監視】
+管理面への接続元に SOHO／IoT 由来の住宅用 IP が無いか確認する。
+
+【参照】
+- Volt Typhoon Used Covert Silent Train Network (The Hacker News) https://thehackernews.com/2026/10/volt-typhoon-used-covert-silent-train.html
+
+
+------------------------------------------------------------
+SOC-2026-10-29-006 国内の流出公表が続く（So-net 約 250 万件・楽天トラベル関連・Studio 経由のデジタル庁フォーム）
+------------------------------------------------------------
+対象: So-net、楽天トラベル関連予約サイト、Studio
+
+【24時間以内の変化】
+[BleepingComputer／Security NEXT／ScanNetSecurity 2026-10-28] 各社の公表。
+
+【概要】
+各社の公表を受け、利用者向けにパスワード変更とフィッシング警戒が必要になり得る（推測）。
+
+【推奨アクション】
+- 該当サービス利用者へ注意喚起し、パスワードの使い回しを確認する。
+
+【監視】
+自社ドメインを騙る問い合わせ・フィッシングメールを監視する。
+
+【参照】
+- Sony ISP subsidiary data breach exposes 2.5 million customer records (BleepingComputer) https://www.bleepingcomputer.com/news/security/sony-isp-subsidiary-data-breach-exposes-25-million-customer-records
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-29-007 Chrome 156.0.8078.73（52 件・Critical 4 件）／Firefox 159（167 件）／macOS（約 300 件）の更新
+------------------------------------------------------------
+対象: Google Chrome、Mozilla Firefox、Apple macOS
+
+【24時間以内の変化】
+[Security NEXT／SecurityWeek 2026-10-28] 各ベンダーの更新。
+
+【概要】
+悪用の報告はない。大量修正のため更新の遅延が累積しやすい。
+
+【推奨アクション】
+- 自動更新の状況を確認し、再起動を促す。
+
+【監視】
+ブラウザ・OS のバージョン分布を確認する。
+
+【参照】
+- 「Chrome」で脆弱性52件を修正 - 4件が「クリティカル」 (Security NEXT) https://www.security-next.com/192058
+
+
+------------------------------------------------------------
+SOC-2026-10-29-008 Tailscale SSH の権限境界不備（1.104.4 で修正）／EDK II UEFI の 16 年来の重大欠陥
+------------------------------------------------------------
+対象: Tailscale、EDK II ベースの UEFI ファームウェア
+
+【24時間以内の変化】
+[The Hacker News 2026-10-28] Tailscale 1.104.4 と EDK II 脆弱性の公開。
+
+【概要】
+Tailscale は侵害済み端末から他サーバーの root 限定サービスに到達し得る。UEFI はネットワークブート時のみ OS 起動前コード実行が可能。いずれも悪用の報告は取得記事から確認できていない。
+
+【推奨アクション】
+- Tailscale を 1.104.4 へ更新。PXE／HTTP ブートを使う環境はファームウェア更新を確認する。
+
+【監視】
+Tailscale SSH 経由のポート転送と PXE 使用ホストを棚卸しする。
+
+【参照】
+- Tailscale Patches SSH Flaws (The Hacker News) https://thehackernews.com/2026/10/tailscale-patches-ssh-flaws-that-could.html
+
+
+------------------------------------------------------------
+SOC-2026-10-29-009 Adobe Campaign Classic（APSB26-162・8 件）・Juniper SSR・Dell Data Domain・Sophos の重大修正
+------------------------------------------------------------
+対象: Adobe Campaign Classic 7.4.4 build 9402 以前、Juniper Session Smart Router、Dell PowerProtect Data Domain、Sophos 製品
+
+【24時間以内の変化】
+[The Hacker News／NVD 2026-10-28] 各ベンダーの修正公開。
+
+【概要】
+Adobe は悪用を把握していないとする。他も悪用の報告はない。
+
+【推奨アクション】
+- 該当製品を保有する場合は修正版へ更新する。Campaign Classic は build 9403。
+
+【監視】
+該当製品の管理面の公開状況を確認する。
+
+【参照】
+- Adobe Fixes 8 Critical Campaign Classic Flaws (The Hacker News) https://thehackernews.com/2026/10/adobe-fixes-8-critical-campaign-classic.html
+
+
+------------------------------------------------------------
+SOC-2026-10-29-010 Skyw4lker デバイスコードフィッシング・ClickFix の継続
+------------------------------------------------------------
+対象: Microsoft 365 等のデバイスコード認証、ClickFix
+
+【24時間以内の変化】
+[The Hacker News（ANY.RUN）／SANS ISC 2026-10-28] 米国組織を狙うデバイスコードフィッシングと ClickFix の新たな派生。
+
+【概要】
+正規の認証フローを悪用し資格情報窃取を伴わない手口。ベンダー分析で独立確認は得られていない。
+
+【推奨アクション】
+- デバイスコード認可の制限と条件付きアクセスを検討する。
+
+【監視】
+不審なデバイスコード認可ログを確認する。
+
+【参照】
+- Skyw4lker Device Code Phishing Campaign (The Hacker News) https://thehackernews.com/2026/10/american-organizations-under-attack.html

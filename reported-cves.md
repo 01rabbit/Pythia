@@ -675,3 +675,6 @@
 | CVE-2026-115889 | Wasmtime（Cranelift・サンドボックス脱出・115893はARM64のみ） | 2026-10-27 | none | 2026-10-27 | YES | THN 2026-10-26・CVSS9.9×2・修正版36.0.19/48.0.7/49.0.4/50.0.0(10-20公開)・攻撃報告なし・KEV未収載・回避策なし・SOC低〜中で記録 |
 | CVE-2026-115893 | Wasmtime（Cranelift・サンドボックス脱出・ARM64のみ） | 2026-10-27 | none | 2026-10-27 | YES | THN 2026-10-26・CVSS9.9×2・修正版36.0.19/48.0.7/49.0.4/50.0.0(10-20公開)・攻撃報告なし・KEV未収載・回避策なし・SOC低〜中で記録 |
 | CVE-2026-48356 | Adobe Commerce／Magento Open Source（無制限ファイルアップロード・ユーザー操作要） | 2026-10-28 | kev_listed | 2026-10-28 | YES | CISA KEV 2026-10-27追加(期限11-10)・CVE公開2026-07-14・EUVD CVSS9.3・悪用手口の報道は窓内に確認できず・Section 2 トレンド |
+| CVE-2026-101767 | Oracle E-Business Suite（Application Object Library・TCFサーブレット・未認証SQLi→RCE連鎖） | 2026-10-29 | none | 2026-10-29 | YES | CVSS9.8・2026年10月CPUで修正済み・Horizon3.ai(7/24報告)が技術詳細公開・Defused Cyberがデコイで10-27に探索的悪用試行を記録・KEV未収載・成功した侵害は未確認・Section 2 注目CVE(trends)・SOC高 |
+| CVE-2026-46300 | Linux カーネル（Fragnesia・XFRM ESP-in-TCP・ローカル権限昇格） | 2026-10-29 | kev_listed | 2026-10-29 | YES | CVSS7.8・2026-05-13公開で公開PoCあり・CISA KEV 2026-10-28追加(期限10-31)・Dreamが10-25観測のPHP2Shell連鎖でroot化に使用と報告・Section 2 注目CVE(trends)・SOC高 |
+| CVE-2026-41709 | VMware ESX（不十分なログ記録） | 2026-10-29 | kev_listed | 2026-10-29 | YES | Broadcom評価CVSS2.7(Low)・VMSA-2026-0006(2026-07-29)で修正済み・CISA KEV 2026-10-28追加(期限11-11)・悪用内容/攻撃者は報道から確認できず・Section 2 注目CVE(trends)・SOC中 |
