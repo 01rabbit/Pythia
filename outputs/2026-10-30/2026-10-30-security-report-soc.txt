@@ -1,0 +1,239 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-30 07:55 JST
+調査期間: 2026-10-29 07:00 〜 2026-10-30 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-30-001 Cisco ASA／FTD（CVE-2026-76418）がゼロデイ悪用 — tunnel group のセカンダリ認証を確認し修正版へ
+------------------------------------------------------------
+対象: Cisco Secure Firewall ASA／FTD
+
+【24時間以内の変化】
+[THN／BleepingComputer 2026-10-29] 悪用確認・修正公開・KEV 追加（期限 11-01）。
+
+【概要】
+未認証でファイアウォールを再起動させられる DoS で、SSL リモートアクセス VPN のログインサービスが到達可能かつ tunnel group にセカンダリ認証がある場合が条件。KEV の連邦期限は 11-01 と短い。8 月以降 2 件目の Cisco ファイアウォール VPN ゼロデイと SecurityWeek は報じた。
+
+【推奨アクション】
+- 修正版へ更新する。更新までは全 tunnel group（DefaultWEBVPNGroup を含む）のセカンダリ認証を確認・無効化する。想定外のリロード履歴を 10 月以降遡って確認する。
+
+【監視】
+ASA／FTD の再起動・クラッシュログと SSL VPN ログイン試行の急増。
+
+【参照】
+- Cisco Patches Actively Exploited ASA and FTD VPN Flaw That Can Crash Firewalls (The Hacker News) https://thehackernews.com/2026/10/cisco-patches-actively-exploited-asa.html
+
+------------------------------------------------------------
+SOC-2026-10-30-002 GitLab（CVE-2026-97229）— 更新だけでは不十分：Ruby の修正も確認、KEV 収載済み
+------------------------------------------------------------
+対象: GitLab CE／EE（セルフホスト）
+
+【24時間以内の変化】
+[THN（Alpine Linux 開示） 2026-10-29] Alpine の GitLab への悪用試行が判明。CISA が KEV に追加。
+
+【概要】
+CVSS 10.0。Alpine は GitLab を 19.3.6 に更新しても標準 Ruby のため脆弱なままだった。公開 PoC（Rapid7）があり、実際の攻撃も観測された。
+
+【推奨アクション】
+- 各系統の最新版へ更新し、同梱 Ruby が 3.3.13／3.4.12／4.0.9 以降であることを確認する。更新できない間は匿名アクセスと未信頼ユーザーの書き込みを制限し CI lint ルートを遮断する。侵害が疑われる場合は秘密情報とトークンを交換する。
+
+【監視】
+GitLab サーバーのワーカークラッシュ、502、Puma／Sidekiq の不審な子プロセス、git ユーザー所有の /tmp ファイル。
+
+【参照】
+- Attacker Tried to Exploit Alpine Linux’s GitLab via CVSS 10.0 Flaw Its Ruby Left Open (The Hacker News) https://thehackernews.com/2026/10/attacker-tried-to-exploit-alpine-linuxs.html
+
+------------------------------------------------------------
+SOC-2026-10-30-003 PAN-OS 管理面への PHP2Shell 悪用 — 管理インターフェースの公開を即時に止める
+------------------------------------------------------------
+対象: Palo Alto Networks PAN-OS
+
+【24時間以内の変化】
+[THN 2026-10-28] Palo Alto Networks が管理面への実悪用を確認と更新。修正版の一部は 10-29〜10-30 公開予定。
+
+【概要】
+追加設定なしで影響を受け、リスクは管理アクセスをインターネットへ許可している構成で最大。Fragnesia との連鎖で root 化に至る（CISA）。
+
+【推奨アクション】
+- 管理面を公開せず信頼 IP に限定する。公開済みの修正版へ更新する。未公開の版は管理トラフィックのデータプレーン経由化・脅威防御の有効化などの緩和策を使う。
+
+【監視】
+管理面（HTTPS Web UI・XML API）への外部からの要求と Web シェルの設置痕跡。
+
+【参照】
+- Attackers Exploit PHP2Shell Flaws in Internet-Exposed Palo Alto Networks Management Interfaces (The Hacker News) https://thehackernews.com/2026/10/attackers-exploit-php2shell-flaws-in.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-30-004 Cisco Catalyst SD-WAN：KeyDrift（UAT-11473）— 修正適用に加え侵害確認を
+------------------------------------------------------------
+対象: Cisco Catalyst SD-WAN Controller／Manager／Validator
+
+【24時間以内の変化】
+[Cisco Talos 2026-10-28] KeyDrift の技術詳細と Snort ルールを公開。
+
+【概要】
+CVE-2026-20127 は 2 月に修正済みだが、修正前に侵入された環境は更新しても除去されない。Talos は暗号鍵の窃取を狙うとしている。
+
+【推奨アクション】
+- 修正版へ更新し、ポート 22／830 を限定する。auth.log の vmanage-admin の公開鍵認証を確認し、Talos の Snort ルールを適用する。連邦機関は ED 26-03 に従う。
+
+【監視】
+/var/tmp/vdaemon.bin 等の存在と vdaemon プロセスへの注入。
+
+【参照】
+- Hackers Exploited Cisco SD-WAN Flaw to Plant Malware Built to Steal Encryption Keys (The Hacker News) https://thehackernews.com/2026/10/hackers-exploited-cisco-sd-wan-flaw-to.html
+
+------------------------------------------------------------
+SOC-2026-10-30-005 Sophos UTM（CVE-2026-118633）— EOL 製品の未認証 RCE、手動パッチが必要
+------------------------------------------------------------
+対象: Sophos UTM
+
+【24時間以内の変化】
+[Security NEXT 2026-10-29] Sophos が未認証 RCE を公表し手動適用のパッチを提供。
+
+【概要】
+メールプロキシのスキャン機能を有効にしている環境が対象。悪用の報告はない。サポート終了製品のため自動配信されない。
+
+【推奨アクション】
+- パッチを手動適用し、サポート中の Sophos Firewall への移行を計画する。
+
+【監視】
+UTM メールプロキシ周辺の異常なプロセス生成。
+
+【参照】
+- 「Sophos UTM」に深刻なRCE脆弱性 - EOLで手動パッチ必要 (Security NEXT) https://www.security-next.com/192142
+
+------------------------------------------------------------
+SOC-2026-10-30-006 WatchGuard Fireware OS の複数クリティカル脆弱性 — 認証前に到達するサービスの公開を確認
+------------------------------------------------------------
+対象: WatchGuard Firebox（Fireware OS）
+
+【24時間以内の変化】
+[Security NEXT 2026-10-29] 7 件のクリティカルを含む更新を WatchGuard が提供。
+
+【概要】
+SIP Proxy・Access Portal・FireCluster Sync などの認証前の脆弱性を含む。悪用は未確認。版番号は記事にない。
+
+【推奨アクション】
+- WatchGuard PSIRT の個別アドバイザリで版を確認し更新する。不要な公開サービスを閉じる。
+
+【監視】
+Firebox の想定外の再起動と管理面・Access Portal への異常なアクセス。
+
+【参照】
+- WatchGuard「Fireware OS」に複数脆弱性 - 7件がクリティカル (Security NEXT) https://www.security-next.com/192102
+
+------------------------------------------------------------
+SOC-2026-10-30-007 VMware Cloud Foundation SDDC Manager（CVE-2026-111497）— 修正パッチ準備中・回避策あり
+------------------------------------------------------------
+対象: VMware Cloud Foundation（SDDC Manager）
+
+【24時間以内の変化】
+[Security NEXT（Broadcom VMSA-2026-0008） 2026-10-29] Brotli に起因する脆弱性の影響を Broadcom が公表。パッチは準備中。
+
+【概要】
+SDDC Manager 9.1.1 で CVSS 9.8（Broadcom 評価）、9.1.0 以前は 7.5。ネットワーク到達性があれば任意コード実行の恐れ。CVE-2026-111497 の Brotli は別途 KEV 収載済み（既報）。
+
+【推奨アクション】
+- Broadcom の回避策を適用し、SDDC Manager のネットワーク到達性を限定する。パッチ公開後に更新する。
+
+【監視】
+SDDC Manager への異常なアクセス。
+
+【参照】
+- 「VMware Cloud Foundation」に深刻な脆弱性 - 修正パッチを準備 (Security NEXT) https://www.security-next.com/192095
+
+------------------------------------------------------------
+SOC-2026-10-30-008 Linux カーネル TCP の UAF（CVE-2026-98432）— Ubuntu・RHEL は修正未提供、AI 作成のエクスプロイトが公表
+------------------------------------------------------------
+対象: Linux カーネル（Ubuntu・RHEL ほか）
+
+【24時間以内の変化】
+[THN 2026-10-29] Anthropic が AI モデルによるエクスプロイト作成を公表（10-27）。実環境での悪用は未報告。
+
+【概要】
+IPv4 のみ。MPTCP リスナーを持つサーバーで未認証 root 実行が可能と Anthropic は述べる。ディストリビューションの修正状況にばらつきがある。
+
+【推奨アクション】
+- 各社の修正カーネルを監視し、提供され次第適用する。Debian・Oracle Linux・Amazon Linux 2023 等は修正済みの版へ更新する。
+
+【監視】
+カーネル Oops の増加。
+
+【参照】
+- Linux Kernel TCP Flaw With 9.8 CVSS Score Affects Ubuntu, Red Hat and Other Distributions (The Hacker News) https://thehackernews.com/2026/10/linux-kernel-tcp-flaw-with-98-cvss.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-30-009 偽 ChatGPT／Claude デスクトップアプリ経由のマイナー配布（Yoba）— 署名付き実行ファイルの DLL サイドローディング
+------------------------------------------------------------
+対象: GitHub 偽リポジトリ／Windows
+
+【24時間以内の変化】
+[Check Point Research（THN 経由） 2026-10-29] 偽プロジェクト経由で YobaLoader を配布するキャンペーンを公表。
+
+【概要】
+ZIP に正規の署名付き OpenAI Codex／Claude の Setup.exe と悪意ある winmm.dll を同梱し DLL サイドローディングで実行。約 12.7 日スリープして解析を回避し、旧ソ連圏のキーボード配列を除外する。Telegram 画像の末尾 50 バイトを DGA の種とし、DNS-over-HTTPS の TXT でペイロード URL を取得、svchost.exe へ注入して XMRig を実行する。SEO ポイズニングが示唆されるが被害件数は不明。攻撃者は未特定。
+
+【推奨アクション】
+- AI ツールは公式配布元からのみ入手する。winmm.dll を同梱する ZIP からの Setup.exe 実行を警戒し、dedyn.io の自動生成ドメインと catbox.moe からの取得を監視する。
+
+【監視】
+ProgramData 配下の WMProcess フォルダと wmpdmc.exe のスケジュールタスク。
+
+【参照】
+- Fake ChatGPT and Claude Apps Abuse Signed Executables to Deploy Crypto Miners (The Hacker News) https://thehackernews.com/2026/10/fake-chatgpt-and-claude-apps-abuse.html
+
+------------------------------------------------------------
+SOC-2026-10-30-010 Telegram for Android：音声通話の応答でコード実行される脆弱性（12.10.4 で修正済み）
+------------------------------------------------------------
+対象: Telegram for Android
+
+【24時間以内の変化】
+[THN（NebuSec） 2026-10-29] NebuSec が 10-29 に公表。9 月下旬の 12.10.4 で修正済み。
+
+【概要】
+普通の Telegram アカウントがあれば通話に応答させるだけで実行できた。悪用の報告は取得した範囲にない。
+
+【推奨アクション】
+- Telegram を 12.10.4 以降へ更新する。
+
+【監視】
+なし（悪用報告なし）。
+
+【参照】
+- Telegram Android Flaw Lets Attackers Run Code When Users Answer Voice Calls (The Hacker News) https://thehackernews.com/2026/10/telegram-android-flaw-lets-attackers.html
+
+------------------------------------------------------------
+SOC-2026-10-30-011 Gitee 公開リポジトリのクラウド／AI 認証情報 26,400 件の露出 — 自組織の鍵漏えい点検
+------------------------------------------------------------
+対象: クラウド／AI サービスの API キー
+
+【24時間以内の変化】
+[THN 2026-10-28] 研究者が有効な認証情報の大量露出を公表。
+
+【概要】
+リポジトリへの鍵の混入は国内組織でも起こりうる。
+
+【推奨アクション】
+- 自組織の公開リポジトリをシークレットスキャンし、漏えいした鍵を失効・再発行する。
+
+【監視】
+クラウド／AI サービスの API 利用ログの異常。
+
+【参照】
+- 26,400 Valid Cloud and AI Credentials Found Exposed in Public Gitee Repositories (The Hacker News) https://thehackernews.com/2026/10/26400-valid-cloud-and-ai-credentials.html
+
+
