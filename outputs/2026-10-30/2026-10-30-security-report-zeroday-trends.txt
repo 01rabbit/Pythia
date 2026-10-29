@@ -1,0 +1,278 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-30 07:55 JST
+調査期間: 2026-10-29 07:00 〜 2026-10-30 07:00 JST
+========================================
+
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+CVE-2026-76418 Cisco Secure Firewall ASA／Secure Firewall Threat Defense（FTD）Software の Remote Access SSL VPN（tunnel group のセカンダリ認証ロジック不備による DoS）
+------------------------------------------------------------
+優先度: high  軸1=8 軸2=7  KEV登録: あり  悪用: 確認  パッチ: あり
+影響バージョン: ASA／FTD の脆弱なリリースで、SSL リモートアクセス VPN のログインサービスが到達可能かつ tunnel group にセカンダリ認証が設定されている場合（3 条件すべてで該当）。修正版：ASA 9.16.4.104／9.18.4.96／9.20.4.50／9.22.3.200／9.23.1.48／9.24.1.27・9.24.10.1、FTD 7.0.11／7.2.13／7.4.9／7.6.7／7.7.14／10.0.3／10.1.1（THN 記載）
+KEV追加日: 2026-10-29  期限: 2026-11-01
+
+【24時間以内の変化】
+[Cisco セキュリティアドバイザリ（THN／BleepingComputer／SecurityWeek／Security NEXT 経由） 2026-10-28] Cisco が CVE-2026-76418 の悪用を 2026 年 10 月に把握したとして修正版を公開。攻撃の開始時期・攻撃者・規模は非公表。[新規: ゼロデイ悪用確認・修正公開]
+[CISA KEV カタログ（2026.10.29） 2026-10-29] CISA が KEV に追加（dateAdded 2026-10-29・連邦機関の期限 2026-11-01・ランサム利用 Unknown）。[新規: KEV 収載]
+
+【概要】
+Cisco ASA／FTD の Remote Access SSL VPN サービスにおいて、tunnel group にセカンダリ認証を設定している場合のロジック不備により、未認証のリモート攻撃者がデバイスを再起動（リロード）させ DoS を引き起こせる（CVSS 8.6・事実：Cisco 記述）。Cisco は悪用を確認している。BleepingComputer・SecurityWeek はゼロデイと報じ、SecurityWeek は 8 月以降 2 件目の Cisco ファイアウォール VPN ゼロデイ悪用と伝えた。発見者・攻撃者・攻撃の開始時期・被害規模は公表されていない。Cisco は、脆弱なコードへ到達するのに VPN ログインの成功は不要としている。KEV に 2026-10-29 付で追加された（期限 11-01）。公開 PoC は取得した記事から確認できていない。
+
+【攻撃フロー】
+1. SSL リモートアクセス VPN のログインサービスへ未認証で細工した要求を送る（Cisco 記述：VPN ログインの成功は不要）
+2. セカンダリ認証の tunnel group 処理の論理誤りによりデバイスが再起動する（DoS）
+
+【TTP】
+- T1499 Endpoint Denial of Service: 未認証のリモート攻撃者が SSL VPN サービスの論理誤りを突きファイアウォールを再起動させる（Cisco・THN の記述に基づく）。サブテクニック T1499.004（Application or System Exploitation）
+
+【暫定緩和策】
+- 修正版 ASA／FTD へ更新する
+- 更新までは tunnel group のセカンダリ認証（secondary-authentication-server-group）を無効化する。DefaultWEBVPNGroup を含む全 tunnel group を確認する（tunnel group list を無効化しても DefaultWEBVPNGroup が使う場合は露出が残る）
+- FTD は FMC／FDM で配備済み RA VPN ポリシーと実行構成を確認する
+
+【監視】
+ASA／FTD の想定外リロード・クラッシュ、SSL VPN ログイン試行の急増を確認する。Cisco が悪用時期を非公表のため、2026 年 10 月以降のリロード履歴を遡って確認する。
+IOC は公表されていない。ATT&CK は DoS（T1499）のみ付与。
+
+【参照】
+- Cisco Patches Actively Exploited ASA and FTD VPN Flaw That Can Crash Firewalls (The Hacker News) https://thehackernews.com/2026/10/cisco-patches-actively-exploited-asa.html
+- New Cisco firewall zero-day exploited to crash SSL VPN devices (BleepingComputer) https://www.bleepingcomputer.com/news/security/cisco-warns-of-firewall-zero-day-exploited-to-crash-ssl-vpn-devices
+- Attackers Exploit Second Cisco Firewall VPN Zero-Day Since August (SecurityWeek) https://www.securityweek.com/attackers-exploit-second-cisco-firewall-vpn-zero-day-since-august
+- Ciscoの「ASA」「FTD」にDoS脆弱性 - すでに悪用も (Security NEXT) https://www.security-next.com/192131
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+UAT-11473 UAT-11473-KeyDrift-CiscoSDWAN（帰属信頼度: low・P=6 Q=4）
+------------------------------------------------------------
+【24時間以内の変化】
+[Cisco Talos（The Hacker News／BleepingComputer／SecurityWeek 経由） 2026-10-28] Talos が新たな APT クラスター UAT-11473 を公表。Cisco Catalyst SD-WAN の認証バイパス（CVE-2026-20127）を悪用し、トラフィック暗号化の鍵を窃取するカスタムマルウェア KeyDrift を設置。[新規]
+
+【概要】
+Talos によれば、UAT-11473 は CVE-2026-20127（Cisco Catalyst SD-WAN の認証バイパス・CVSS 10.0・2026 年 2 月に開示・修正済み）を悪用して SD-WAN 制御基盤にカスタムマルウェア枠組み KeyDrift を設置した。標的は宇宙・衛星サービス、防衛・航空宇宙技術、政策研究。LittleFilch は vdaemon にフックして復号済みの制御メッセージを読み、事前設定したエッジルーターの IP と AES-256 鍵と評価される 32 バイトを RSA で暗号化してファイルに書き、UDP で送出できる。PolyFlame は vdaemon 内でメモリ上に動作する TinyShell 類似のバックドア／中継で、SD-WAN 制御トラフィック内でコマンドを受ける。持続化には runit スクリプトの改変、Validator 上の偽サービス aaamgr、タイムスタンプ偽装（timestomping）を使う。Talos は攻撃を『過去の活動』とし、時期や鍵が実際に送出されたかは明示していない。帰属：Talos は UAT-11473 のインフラが Lumen の追跡する Silent Train（Volt Typhoon が使用したと Lumen は評価）と『大きく重なる』と高い確度で評価するが、同一グループとはせず、UAT-8616（CVE-2026-20127 を 2023 年以降悪用と Talos が追跡）との関係も説明していない。Lumen は Volt Typhoon が 2025 年後半までに同脆弱性を悪用していたとしつつ KeyDrift とは結びつけていない。国家帰属は断定しない。
+
+【攻撃フロー】
+1. CVE-2026-20127（認証バイパス）で SD-WAN Controller 等に管理者権限で侵入する
+2. runit スクリプトを改変し conf_sshd／rsshd で PolyFlame を vdaemon に注入、Validator では偽 aaamgr サービスで持続化する
+3. LittleFilch が復号済み制御メッセージから拠点間通信の AES 鍵を収集し、暗号化して保存・UDP 送出する
+
+【TTP】
+- T1190 Exploit Public-Facing Application: CVE-2026-20127（SD-WAN Controller の認証バイパス）の悪用（Talos の記述）
+- T1055 Process Injection: rsshd が PolyFlame を vdaemon プロセスへ注入（Talos の記述）
+- T1070 Indicator Removal: コマンドで既存ファイルのタイムスタンプと権限を複製する timestomping（Talos の記述・T1070.006）
+
+【検知メモ】
+Talos がファイル名・パス（conf_sshd・rsshd・aaamgrd・libdssl.so・libcommon.so・/var/tmp/vdaemon.bin 等）と Snort ルール（Snort 2: 67387〜67416、Snort 3: 7:44〜7:73）を公開。ハッシュ・IP・ドメインは非公開。
+
+【推奨アクション】
+Cisco Catalyst SD-WAN（Controller／Manager／Validator）を修正版（20.9.8.2／20.12.5.3 または 20.12.6.1／20.15.4.2／20.18.2.1 以降）へ更新し、ポート 22 と 830 を既知のコントローラー／システム IP に限定する。更新だけでは既存の侵害は除去されない。/var/log/auth.log の 'Accepted publickey for vmanage-admin'（未知の送信元）を確認し、疑いがあれば Cisco TAC と連携してインシデント対応を開始する。
+
+【参照】
+- Hackers Exploited Cisco SD-WAN Flaw to Plant Malware Built to Steal Encryption Keys (The Hacker News) https://thehackernews.com/2026/10/hackers-exploited-cisco-sd-wan-flaw-to.html
+- Hackers exploit Cisco SD-WAN flaw to deploy custom KeyDrift malware (BleepingComputer) https://www.bleepingcomputer.com/news/security/hackers-exploit-cisco-sd-wan-flaw-to-deploy-custom-keydrift-malware
+- Cisco SD-WAN Zero-Day Exploitation Tied to Volt Typhoon’s ‘Silent Train’ Network (SecurityWeek) https://www.securityweek.com/cisco-sd-wan-zero-day-exploitation-tied-to-volt-typhoons-silent-train-network
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外製品）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+CVE-2026-97229 GitLab CE／EE（CI/CD 正規表現コンパイラ〈Ruby Onigmo〉の整数オーバーフロー・コード実行）
+------------------------------------------------------------
+優先度: high  軸1=14 軸2=8  KEV登録: あり  悪用: 確認  パッチ: あり
+影響バージョン: 19.4 系は 19.4.2 未満、19.3 系は 19.3.5 未満（Alpine は 19.3.4 の使用を報告）、19.2 系は 19.2.8 未満（THN 記載の GitLab 表に基づく）。19.5・19.1・19.0・18.11 は対象外と記載
+KEV追加日: 2026-10-29  期限: 2026-11-01
+
+【24時間以内の変化】
+[Alpine Linux 開示（THN 経由）／CISA KEV カタログ（2026.10.29） 2026-10-29] Alpine Linux が 10-28 に自社 GitLab への悪用試行を開示（成功の証拠なしだが否定不能）。CISA が KEV に追加（dateAdded 2026-10-29・期限 2026-11-01）。[更新: 悪用確認・KEV 収載]
+
+【概要】
+GitLab の CI 設定の細工した正規表現により、GitLab サーバー上でコード実行が可能になる（CVSS 10.0・事実）。原因は Ruby の正規表現エンジン Onigmo の整数オーバーフロー。Rapid7 は 10-13 に PoC を公開した（検証経路は公開プロジェクトへの書き込み権限を要し、最終の CI lint 要求のみ未認証）。THN によれば、Alpine Linux の GitLab は修正公開の約 1 週間後（10-20〜21）に新規アカウントから細工した CI 設定を受け、ワーカーが 8 回クラッシュ、うち 4 回でエクスプロイトが途中まで進んだ。Alpine は 19.3.6 へ更新しても標準 Ruby のままで脆弱だったため、10-27 にサーバーを閉鎖、10-28 に再構築し秘密鍵とパスワードを全交換した。コード実行の証拠は見つからなかったが、ログの欠損と外向き通信が未記録のため否定できないとしている。攻撃者は未特定。CISA KEV に 2026-10-29 付で追加（THN は 10-28 時点で未収載と記載）。
+
+【攻撃フロー】
+1. 新規アカウントを登録し、細工した正規表現を含む .gitlab-ci.yml を送る（Alpine 開示・Rapid7 検証経路は書き込み権限が必要）
+2. CI の正規表現コンパイル時に整数オーバーフローを起こしコード実行を狙う（Alpine ではワーカーのクラッシュを 8 回観測）
+
+【TTP】
+- T1190 Exploit Public-Facing Application: 公開 GitLab サーバーに対し細工した CI 設定を送りコード実行を試みた（Alpine の開示に基づく）
+
+【暫定緩和策】
+- GitLab を各系統の最新版へ更新し、Ruby も修正版（3.3.13／3.4.12／4.0.9 以降）であることを確認する（更新だけでは不十分なケースがある）
+- 更新できない間は公開プロジェクトへの匿名アクセス・未信頼ユーザーのプロジェクト作成／書き込みを制限し、CI lint ルートを遮断する（Rapid7）
+- 侵害が疑われる場合は gitlab-secrets.json・CI/CD 変数・ランナートークン・アクセストークンを交換する
+
+【監視】
+Puma／Sidekiq の想定外の子プロセス、外向き通信、crontab・SSH 鍵の変更、502 エラーとワーカークラッシュの多発を確認する。GitLab が Sigma 検知ルール 6 件を公開している。
+Ruby の Regexp.timeout では本件を防げないと Ruby 側が説明。
+
+【参照】
+- Attacker Tried to Exploit Alpine Linux’s GitLab via CVSS 10.0 Flaw Its Ruby Left Open (The Hacker News) https://thehackernews.com/2026/10/attacker-tried-to-exploit-alpine-linuxs.html
+
+------------------------------------------------------------
+CVE-2026-118633 Sophos UTM（メールプロキシのスキャン機能・パストラバーサルから未認証 RCE）
+------------------------------------------------------------
+優先度: high  軸1=11 軸2=3  KEV登録: なし  悪用: 未確認  パッチ: あり
+影響バージョン: Sophos UTM の全バージョン（メールプロキシ使用かつスキャン機能有効時）。サポート終了（EOL）製品
+KEV追加日: なし  期限: なし
+
+【24時間以内の変化】
+[Security NEXT（Sophos アドバイザリ sophos-sa-20261028-utm-rce） 2026-10-29] Sophos が 10-28 付で UTM の未認証 RCE を公表し修正パッチを提供。[新規: 修正公開]
+
+【概要】
+Sophos UTM のメールプロキシでスキャン機能を有効にしている場合、パストラバーサルを起点に未認証でルート権限の任意コマンドを実行できる（CVSS v4.0 9.2・事実：Security NEXT）。攻撃は競合状態を引き起こすため数分間の反復が必要。外部の研究者がバグバウンティ経由で報告した。UTM はサポート終了で、Sophos はパッチを自動配信しないため手動適用を求めている。悪用の報告は取得した記事にない。KEV 未収載。
+
+【攻撃フロー】
+1. メールプロキシのスキャン機能に対し、パストラバーサルを含む要求を数分間反復して競合状態を引き起こす（Security NEXT 記述）
+2. ルート権限で任意コマンドを実行する
+
+【暫定緩和策】
+- 手動で Sophos のパッチを適用する
+- メールプロキシを使わない場合はスキャン機能の無効化を検討する（推測：記事に明示された回避策ではない）
+- サポート中の Sophos Firewall への移行を計画する（Sophos の推奨）
+
+【監視】
+UTM メールプロキシ周辺の異常なプロセス生成・ルートでのコマンド実行を確認する。
+
+【参照】
+- 「Sophos UTM」に深刻なRCE脆弱性 - EOLで手動パッチ必要 (Security NEXT) https://www.security-next.com/192142
+
+------------------------------------------------------------
+CVE-2026-103594 WatchGuard Fireware OS（Firebox・WireGuard 設定のスタックバッファオーバーフローほか複数のクリティカル脆弱性）
+------------------------------------------------------------
+優先度: high  軸1=11 軸2=3  KEV登録: なし  悪用: 未確認  パッチ: あり
+影響バージョン: Fireware OS（バージョン詳細は取得した記事に記載なし。WatchGuard PSIRT の個別アドバイザリを要確認）。CVE-2026-103594 は FireCloud Gateway 構成で WatchGuard Cloud との TLS 通信が復号・改変可能な場合に限る
+KEV追加日: なし  期限: なし
+
+【24時間以内の変化】
+[Security NEXT（WatchGuard アドバイザリ 2026-10-27） 2026-10-29] WatchGuard が Fireware OS の複数脆弱性（記事は 17 件・うち 7 件がクリティカルと記載）を公表し更新を提供。悪用は未確認。[新規: 修正公開]
+
+【概要】
+WatchGuard は Fireware OS の脆弱性を一括公表した。Security NEXT によれば 7 件が CVSS v4.0 でクリティカルで、最高は CVE-2026-103594（9.5・WireGuard 設定のスタックバッファオーバーフロー）、他 6 件は 9.2 または 9.1。関連 CVE には FireCluster Sync Daemon の認証欠如（CVE-2026-93865）、AD 認証サービスのヒープオーバーフロー（CVE-2026-112709／112710）、SIP Proxy の認証前スタックバッファオーバーフロー（CVE-2026-93857）、Access Portal の認証前整数オーバーフロー（CVE-2026-93866）、ロギングサービスのスタックバッファオーバーフロー（CVE-2026-103593）などが含まれる（どの CVE がどのスコアかは記事から確認できていない）。公表時点で悪用は未確認。記事の件数（17 件）と列挙数（18 件）に不整合がある。
+
+【攻撃フロー】
+1. 認証前に到達できるサービス（SIP Proxy・Access Portal・FireCluster Sync 等）へ細工した入力を送る（個別 CVE の条件に依存）
+
+【暫定緩和策】
+- Fireware OS を修正版へ更新する
+- SIP Proxy・Access Portal・管理面などをインターネットへ公開しない
+- FireCluster 同期通信を信頼できるセグメントに限定する
+
+【監視】
+Firebox の想定外の再起動・クラッシュと、管理面・Access Portal への異常なアクセスを確認する。
+
+【参照】
+- WatchGuard「Fireware OS」に複数脆弱性 - 7件がクリティカル (Security NEXT) https://www.security-next.com/192102
+
+------------------------------------------------------------
+CVE-2026-98432 Linux カーネル（IPv4 TCP 接続確立の競合状態による Use-After-Free）
+------------------------------------------------------------
+優先度: medium  軸1=12 軸2=4  KEV登録: なし  悪用: 未確認  パッチ: あり
+影響バージョン: Linux 4.4 以降で混入。IPv6 は対象外。上流の修正版：5.10.272／5.15.223／6.1.190／6.6.159／6.12.113／6.18.56／7.2.10／7.3。ディストリビューションの修正状況は各社で異なる（Ubuntu・RHEL は未修正〈修正は保留〉、Debian・Oracle Linux は修正済み。THN 記載）
+KEV追加日: なし  期限: なし
+
+【24時間以内の変化】
+[The Hacker News／Anthropic（10-27 公表） 2026-10-29] カーネル CVE チームが 9.8 と評価（10-24 追加）。Anthropic が AI モデルが本脆弱性のエクスプロイトを作成したと公表（10-27）。実環境での悪用は未報告。[新規]
+
+【概要】
+Linux カーネルの IPv4 TCP 接続確立の競合状態が Use-After-Free を起こす（カーネル CVE チーム評価 CVSS 9.8）。Red Hat は 5.9（詳細の機械可読情報では 8.1）、Oracle・SUSE は 8.1、Amazon は 7.0 と評価が割れている。Anthropic は 10-27 に、同社のモデルが『初期プロンプト』後にエクスプロイトを書いたと公表した。MPTCP リスナーを持つサーバーで認証なしのリモート攻撃者が root でコマンドを実行でき、KASLR 回避のアドレス漏えいに 48 分、コマンド実行にさらに 5 分かかったという（THN による Anthropic 投稿の要約）。エクスプロイトコード・カーネル版・テスト構成は非公開。THN は 10-29 時点で実環境攻撃の報告も KEV 収載もないとする。報告者は Anthropic の研究者。MPTCP が必要条件かは CVE 記録・修正に記載がなく、緩和策としての MPTCP 無効化の効果も各社が言及していない（事実）。
+
+【攻撃フロー】
+1. IPv4 TCP の接続確立で競合状態を起こし Use-After-Free を発生させる（THN 記述）
+2. カーネルアドレスを漏えいして KASLR を回避し、コールバックポインタを上書きして root でコマンドを実行（Anthropic の実験・MPTCP リスナー環境）
+
+【暫定緩和策】
+- 各ディストリビューションの修正カーネルへ更新する（カーネル CVE チームは最新の安定版への更新を推奨）
+- Red Hat は展開の容易さと安定性を満たす緩和策はないとしている
+
+【監視】
+カーネル Oops／パニックの増加と、TCP リスナーを公開するサーバーでの不審なルート権限プロセス生成を確認する。
+
+【参照】
+- Linux Kernel TCP Flaw With 9.8 CVSS Score Affects Ubuntu, Red Hat and Other Distributions (The Hacker News) https://thehackernews.com/2026/10/linux-kernel-tcp-flaw-with-98-cvss.html
+
+------------------------------------------------------------
+CVE-2026-84295 Progress WS_FTP Server（Windows）：認証不備による管理者資格情報の漏えい（CVSS 10.0）ほか計 10 件の一括公開
+------------------------------------------------------------
+優先度: medium  軸1=13 軸2=4  KEV登録: なし  悪用: 未確認  パッチ: あり
+影響バージョン: WS_FTP Server 2024.0.6／2025.0.3 未満（CVE-2026-84295）。CVE-2026-90863／90864／90865／90866／90868 は 2024.0.7／2025.0.4 未満（Windows）
+KEV追加日: なし  期限: なし
+
+【24時間以内の変化】
+[NVD／EUVD（Progress Software CNA） 2026-10-29] Progress Software が WS_FTP Server の脆弱性を 2026-10-29 に NVD へ一括公開（CVSS 9.0〜10.0 が 6 件超）。悪用・KEV 収載の報告は未確認。[新規]
+
+【概要】
+Progress WS_FTP Server（Windows）について、2026-10-29 に NVD 上で CVSS 9.0 以上の脆弱性が一括公開された。CVE-2026-84295（CVSS 10.0）は不適切な認証により未認証のリモート攻撃者が管理者資格情報を含む機微情報へアクセスできる。CVE-2026-90868（9.9）は OS コマンドインジェクション（特定構成）。CVE-2026-90863（9.1・委任ホスト管理者の権限逸脱）、CVE-2026-90864（9.1・パストラバーサル）、CVE-2026-90866（9.1・パストラバーサルから RCE の可能性）、CVE-2026-90865（9.0・特定構成での昇格したコマンド実行）も含む。悪用の報告は取得した情報にない（NVD／EUVD の記述のみ。報道記事は未取得）。WS_FTP は過去にも悪用された製品であり（推測：優先度判断の参考）、公開 FTP を持つ環境では優先して更新する。
+
+【攻撃フロー】
+1. WS_FTP Server の管理インターフェースまたは認証処理へ到達する
+2. 管理者資格情報の取得、またはコマンドインジェクション・パストラバーサルでの任意コード実行（個別 CVE の条件に依存。NVD 記述）
+
+【暫定緩和策】
+- WS_FTP Server を 2024.0.7／2025.0.4 以降へ更新する
+- 管理インターフェースをインターネットへ公開せず、アクセス元を限定する
+
+【監視】
+WS_FTP の管理画面への未知の送信元からのアクセス、サービスアカウントによる想定外のコマンド実行を確認する。
+
+【参照】
+- CVE-2026-84295 (NVD) https://nvd.nist.gov/vuln/detail/CVE-2026-84295
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃トレンド】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+Palo Alto Networks：PHP2Shell（CVE-2026-109618／109619）がインターネット公開の PAN-OS 管理面に対して悪用されていると警告
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News／BleepingComputer 2026-10-28] Palo Alto Networks が PAN-OS 管理面への実悪用を確認と更新。CISA が Fragnesia の連鎖悪用を警告。
+
+【概要】
+THN によれば、Palo Alto Networks は 10-28（水）、修正済みの PHP2Shell 脆弱性が公開された PAN-OS 管理インターフェース（HTTPS Web UI・XML API）に対して悪用されていると自社アドバイザリを更新した。追加の特別設定なしで影響を受け、リスクが最も高いのは管理アクセスをインターネット側へ許可している構成。修正版は 12.2.4-h1 など提供済みで、一部は 10-29〜10-30 公開予定（ETA）。修正前の版には、管理トラフィックをデータプレーンのポート経由にする、管理証明書の置換、管理面への着信トラフィックの復号、脅威防御の有効化といった緩和策が示された。Xpanse のデータでは管理面を公開している導入基盤は 0.01% 未満とされ、対象顧客には個別連絡済み。CISA は Linux カーネル Fragnesia（CVE-2026-46300）が PHP2Shell と連鎖して Web シェル設置と root 実行に使われていると警告している。なお PHP2Shell は前日までに KEV 収載済みである。
+
+【参照】
+- Attackers Exploit PHP2Shell Flaws in Internet-Exposed Palo Alto Networks Management Interfaces (The Hacker News) https://thehackernews.com/2026/10/attackers-exploit-php2shell-flaws-in.html
+- CISA warns of Fragnesia Linux flaw chained in PHP2Shell attacks (BleepingComputer) https://www.bleepingcomputer.com/news/security/cisa-warns-of-fragnesia-linux-flaw-chained-in-php2shell-attacks
+- 「PHP2Shell」汎用的なRCEは当面困難との分析 - 油断は禁物、他脆弱性との連鎖も (Security NEXT) https://www.security-next.com/192097
+
+------------------------------------------------------------
+国内の不正アクセス・情報流出が連日報じられる：ショップサーブ約2,335万人・NP後払い・blastmail・三井住友DS投信直販ほか
+------------------------------------------------------------
+【24時間以内の変化】
+[ScanNetSecurity／Security NEXT／SecurityWeek 2026-10-29] 上記各社の不正アクセス・情報流出を報道（見出し・要約ベース）。
+
+【概要】
+ScanNetSecurity の見出しによれば、10-29 に「ショップサーブ」への不正アクセス（漏えい対象者数は約 2,335 万 6,000 人）、BtoC 通販向け決済「NP後払い」への不正アクセス、ラクスライトクラウドの ASP サービス「blastmail」への不正アクセス（石油資源開発が利用）、取引委託業者のシステムでの不正アクセス検知に伴う三井住友DS投信直販ネットのマイページ障害、フジテレビの番組宣伝システム、医療機関業務支援システム「@link」、丸木医科器械（基幹システム停止・FAX 受注）が報じられた。SecurityWeek は Sony の日本の ISP So-net と Plala の顧客データ 260 万件が窃取され、54,401 件のメールパスワードと 16 件の銀行口座情報を含むと伝えた（前日報告の So-net 約 250 万件と件数の表記が異なる）。Security NEXT はドトールコーヒー（従業員情報）、ギフティ（電子ギフトの不正発行）、富士急ハイランド（パスワードリスト攻撃）も報じた。本文は取得しておらず、侵入経路・攻撃者はいずれも見出し・要約からは不明。
+
+【参照】
+- 「ショップサーブ」に不正アクセス、漏えい対象者数は約2,335万6,000人 (ScanNetSecurity) https://scan.netsecurity.ne.jp/article/2026/10/29/56620.html
+- BtoC通販向け決済「NP後払い」に不正アクセス (ScanNetSecurity) https://scan.netsecurity.ne.jp/article/2026/10/29/56616.html
+- Hackers Steal 2.6 Million Records From Sony’s Japanese ISP So-net (SecurityWeek) https://www.securityweek.com/hackers-steal-2-6-million-records-from-sonys-japanese-isp-so-net
+
+------------------------------------------------------------
+Gitee の公開リポジトリで有効なクラウド／AI 認証情報 26,400 件が露出（研究者 Ben Zimmermann 調査）
+------------------------------------------------------------
+【24時間以内の変化】
+[The Hacker News 2026-10-28] 26,400 件の有効な認証情報の露出を研究者が公表。
+
+【概要】
+THN によれば、独立研究者 Ben Zimmermann は中国のコードホスティング Gitee の公開リポジトリ 725 万件を走査し、テストで有効だった認証情報 26,400 件を確認して 10-28 に公表した。大半はクラウドおよび AI サービスの鍵。公開コードからコピーした第三者が使用できた状態にあった。悪用の有無・攻撃者は記事の取得範囲では不明。
+
+【参照】
+- 26,400 Valid Cloud and AI Credentials Found Exposed in Public Gitee Repositories (The Hacker News) https://thehackernews.com/2026/10/26400-valid-cloud-and-ai-credentials.html
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（本日の新規予報は発行なし。詳細は forecaster/forecasts/daily/2026-10-30.md を参照）
