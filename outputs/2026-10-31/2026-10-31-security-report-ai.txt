@@ -1,0 +1,113 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-31 07:55 JST
+調査期間: 2026-10-30 07:00 〜 2026-10-31 07:00 JST
+========================================
+
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+AI-2026-10-31-001 Vapor Panda（中国系）が AI ペンテストフレームワーク ARTEX で 200 超の組織を同時に侵害・標的化 — 計画／ワーカー エージェントが初期アクセスから横展開まで自律的に進行（CrowdStrike）
+------------------------------------------------------------
+カテゴリ: A/A4  X=9 Y=8  採用条件: A-Q・A-X
+
+【24時間以内の変化】
+[CrowdStrike（The Hacker News 経由） 2026-10-29] ARTEX による大規模同時侵入キャンペーンの回収トランスクリプト分析を公表。[新規]
+
+【概要】
+ARTEX は複数の LLM（DeepSeek と未特定の商用モデル）を束ねる Go 製のフレームワークで、プランナーとワーカーのエージェントが連携して偵察・脆弱性特定・悪用を進める。人間は目的の指示と介入に回る。回収トランスクリプトには、未署名 SAML と XXE の連鎖によるクラウド IMDS 照会、LAPS パスワード読み取りと RBCD による権限奪取、ローテーションされていない認証キーによる管理者トークン偽造などが含まれ、エージェントは経路が失敗すると別経路へ切り替えた。同一の APT 事象（Vapor Panda）は Section 2 の APT 本編にも記載した。
+
+【攻撃フロー】
+1. ARTEX のプランナーが標的ごとに攻撃目標を設定し、ワーカーが Web・クラウド・コンテナ・AD・メール／VPN を並行して攻略する
+2. 経路が失敗すると別の手法へ自動で切り替える
+3. 人間のオペレーターが Web シェル作成・管理者パスワード取得・EDR 範囲の列挙を指示する
+
+【被害規模】
+2026-10-17 以降 200 超の組織を標的化、9 組織で侵入後活動を確認、ほか 12 組織以上にパスワードスプレー。1 件の侵入で約 14 億入力トークンを消費（CrowdStrike）。
+
+【検知シグナル】
+- 同一送信元からの多数組織に対する認証失敗の連続
+- IMDS への想定外の照会と、その後の高権限ロール利用
+
+【監視】
+外部公開の認証面とクラウド管理 API の失敗ログ、IMDS（IMDSv2 のみに制限）、長期未更新の認証キーを確認する。
+原典 IOC は未取得。
+
+【参照】
+- Chinese Hackers Use AI-Powered ARTEX to Target Over 200 Organizations Worldwide (The Hacker News) https://thehackernews.com/2026/10/chinese-hackers-use-ai-powered-artex-to.html
+
+------------------------------------------------------------
+AI-2026-10-31-002 Cursor Marketplace で公式 Claude Code 拡張（anthropic.claude-code 2.1.313）が改ざんされ、SSH バックドアを設置 — 最大 5,000 ユーザーが約 11 時間さらされた
+------------------------------------------------------------
+カテゴリ: C/C6  X=8 Y=6  採用条件: A-Q・A-W
+
+【24時間以内の変化】
+[Cursor／OpenSourceMalware（The Hacker News・BleepingComputer・Dark Reading 経由） 2026-10-30] Cursor が Marketplace を一時停止し悪性版を除去。Anthropic は正規の 2.1.314 を Open VSX と VS Code Marketplace へ公開。[新規]
+
+【概要】
+正規の公開者 ID（anthropic.claude-code）のまま、バージョン 2.1.313 として配布された改ざん版の拡張で、メインの JavaScript バンドルの先頭に 66 行の悪意あるローダーが挿入されていた（OpenSourceMalware）。Cursor は「Anthropic が開発したものではない」と説明し、導入手法は不明のまま。拡張は VS Code 起動後・Webview 表示時に作動し、「svc-telemetry」と名付けた攻撃者の鍵を ~/.ssh/authorized_keys に追加、134.209.82[.]225 へのリバーストンネルと、スケジュールタスク／crontab／LaunchAgent による持続化を設定し、ホスト情報（公開 IP・ホスト名・ユーザー名・OS・環境変数名〈KEY/TOKEN/SECRET/PASS/AWS/GCP を含む最大 40 件〉・Git メール等）を 134.209.82[.]225:8099/beacon へ HTTP で送信する。Windows／macOS の多くでは SSH サービス起動に管理者権限が要るため、トンネルによるログインは失敗するが、鍵追加・持続化・情報送信は成立する。追加ペイロードは観測されていない。自動更新が有効な環境は取り込んだ可能性がある。
+
+【攻撃フロー】
+1. 正規 ID の拡張更新として 2.1.313 が Cursor Marketplace へ配布される
+2. VS Code 起動時に ~/.ssh/authorized_keys へ攻撃者鍵を追加し、プラットフォーム別の持続化とリバーストンネルを設定
+3. ホスト情報を C2 へ送信する
+
+【被害規模】
+Cursor は最大 5,000 ユーザーが影響を受けたと発表（2026-10-29 PT 2:27〜13:35 にインストール）。Open VSX・Microsoft VS Code Marketplace への波及の証拠はない。
+
+【検知シグナル】
+- ~/.ssh/authorized_keys の svc-telemetry 鍵
+- 134.209.82.225:8099/beacon への HTTP 送信
+【IOC】
+- IP: 134[.]209[.]82[.]225
+
+【監視】
+Cursor で anthropic.claude-code 2.1.313 を導入した端末を特定し、隔離・鍵と持続化の削除・認証情報の交換・セッション無効化を行う。134.209.82[.]225 への通信をネットワークログで遡る。
+追加ペイロードは観測されていない。
+
+【参照】
+- Official Claude Code Extension on Cursor Marketplace Trojanized with Persistent SSH Backdoor (The Hacker News) https://thehackernews.com/2026/10/official-claude-code-vs-code-extension.html
+- Malicious Claude Code extension on Cursor planted SSH backdoors (BleepingComputer) https://www.bleepingcomputer.com/news/security/malicious-claude-code-extension-on-cursor-planted-ssh-backdoors
+- Devs Hit by Trojanized Claude Code Extension for Cursor (Dark Reading) https://www.darkreading.com/cyberattacks-data-breaches/devs-trojanized-claude-code-extension-cursor
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+AI-2026-10-31-003 Hugging Face 上の悪性モデルを使う GPU 乗っ取り型暗号資産マイニングのキャンペーンが、遮断の数日後に再発 — 1 モデルが 2.8 万回超ダウンロード
+------------------------------------------------------------
+カテゴリ: C/C2  X=6 Y=5  採用条件: A-Q・A-W
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-29] Hugging Face を悪用したマイニングキャンペーンが遮断数日後に再発と報道。[新規]
+
+【概要】
+BleepingComputer の要約によれば、Hugging Face のモデルを悪用する暗号資産マイニングキャンペーンが遮断から数日で再発し、GPU サーバーを乗っ取ってバックドアを設置した。同記事は別件として、AI コーディングエージェントを誘導して NetSupport RAT をインストールさせる偽の GitHub「Solana スターターキット」にも言及している。本文は取得できておらず、悪性モデルの名称・IOC・攻撃者は未確認（見出し・要約ベース）。
+
+【攻撃フロー】
+1. 悪性モデルを取得・読み込んだ GPU サーバーでマイナーとバックドアが動作する（BleepingComputer の要約）
+
+【被害規模】
+1 つのモデルが 28,000 回超ダウンロードされ、GPU サーバーが乗っ取られバックドアが設置された（BleepingComputer の要約）。別件として、AI コーディングエージェントを狙い NetSupport RAT をインストールさせる偽の GitHub「Solana スターターキット」も報道。
+
+【検知シグナル】
+- GPU 使用率の常時高止まりと未知の常駐プロセス
+
+【監視】
+モデル取得元の固定（ハッシュ検証・信頼済み組織のみ）と GPU ホストの外向き通信を確認する。
+IOC 未取得。
+
+【参照】
+- Hugging Face malware campaign returns to hijack GPUs for crypto mining (BleepingComputer) https://www.bleepingcomputer.com/news/security/hugging-face-malware-campaign-returns-to-hijack-gpus-for-crypto-mining
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- AI-2026-10-31-X01 InternLM LMDeploy 0.9.0〜0.18.0 の未認証 RCE（CVE-2026-119706）・Flowise のサンドボックス回避（CVE-2026-119978）・OpenDeepWiki のハードコード JWT 鍵（CVE-2026-119597）・MoLing MCP サーバー（CVE-2026-62863）
+  理由: low_score — AI 基盤の個別 CVE（NVD 公開）。悪用・公開 PoC の報告なく、前日の IBM Langflow 参考B のような一括公開でもないため Section 3 除外サマリーの記録にとどめる。

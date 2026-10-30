@@ -1,0 +1,818 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-31 07:55 JST
+調査期間: 2026-10-30 07:00 〜 2026-10-31 07:00 JST
+========================================
+
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+AI-2026-10-31-001 Vapor Panda（中国系）が AI ペンテストフレームワーク ARTEX で 200 超の組織を同時に侵害・標的化 — 計画／ワーカー エージェントが初期アクセスから横展開まで自律的に進行（CrowdStrike）
+------------------------------------------------------------
+カテゴリ: A/A4  X=9 Y=8  採用条件: A-Q・A-X
+
+【24時間以内の変化】
+[CrowdStrike（The Hacker News 経由） 2026-10-29] ARTEX による大規模同時侵入キャンペーンの回収トランスクリプト分析を公表。[新規]
+
+【概要】
+ARTEX は複数の LLM（DeepSeek と未特定の商用モデル）を束ねる Go 製のフレームワークで、プランナーとワーカーのエージェントが連携して偵察・脆弱性特定・悪用を進める。人間は目的の指示と介入に回る。回収トランスクリプトには、未署名 SAML と XXE の連鎖によるクラウド IMDS 照会、LAPS パスワード読み取りと RBCD による権限奪取、ローテーションされていない認証キーによる管理者トークン偽造などが含まれ、エージェントは経路が失敗すると別経路へ切り替えた。同一の APT 事象（Vapor Panda）は Section 2 の APT 本編にも記載した。
+
+【攻撃フロー】
+1. ARTEX のプランナーが標的ごとに攻撃目標を設定し、ワーカーが Web・クラウド・コンテナ・AD・メール／VPN を並行して攻略する
+2. 経路が失敗すると別の手法へ自動で切り替える
+3. 人間のオペレーターが Web シェル作成・管理者パスワード取得・EDR 範囲の列挙を指示する
+
+【被害規模】
+2026-10-17 以降 200 超の組織を標的化、9 組織で侵入後活動を確認、ほか 12 組織以上にパスワードスプレー。1 件の侵入で約 14 億入力トークンを消費（CrowdStrike）。
+
+【検知シグナル】
+- 同一送信元からの多数組織に対する認証失敗の連続
+- IMDS への想定外の照会と、その後の高権限ロール利用
+
+【監視】
+外部公開の認証面とクラウド管理 API の失敗ログ、IMDS（IMDSv2 のみに制限）、長期未更新の認証キーを確認する。
+原典 IOC は未取得。
+
+【参照】
+- Chinese Hackers Use AI-Powered ARTEX to Target Over 200 Organizations Worldwide (The Hacker News) https://thehackernews.com/2026/10/chinese-hackers-use-ai-powered-artex-to.html
+
+------------------------------------------------------------
+AI-2026-10-31-002 Cursor Marketplace で公式 Claude Code 拡張（anthropic.claude-code 2.1.313）が改ざんされ、SSH バックドアを設置 — 最大 5,000 ユーザーが約 11 時間さらされた
+------------------------------------------------------------
+カテゴリ: C/C6  X=8 Y=6  採用条件: A-Q・A-W
+
+【24時間以内の変化】
+[Cursor／OpenSourceMalware（The Hacker News・BleepingComputer・Dark Reading 経由） 2026-10-30] Cursor が Marketplace を一時停止し悪性版を除去。Anthropic は正規の 2.1.314 を Open VSX と VS Code Marketplace へ公開。[新規]
+
+【概要】
+正規の公開者 ID（anthropic.claude-code）のまま、バージョン 2.1.313 として配布された改ざん版の拡張で、メインの JavaScript バンドルの先頭に 66 行の悪意あるローダーが挿入されていた（OpenSourceMalware）。Cursor は「Anthropic が開発したものではない」と説明し、導入手法は不明のまま。拡張は VS Code 起動後・Webview 表示時に作動し、「svc-telemetry」と名付けた攻撃者の鍵を ~/.ssh/authorized_keys に追加、134.209.82[.]225 へのリバーストンネルと、スケジュールタスク／crontab／LaunchAgent による持続化を設定し、ホスト情報（公開 IP・ホスト名・ユーザー名・OS・環境変数名〈KEY/TOKEN/SECRET/PASS/AWS/GCP を含む最大 40 件〉・Git メール等）を 134.209.82[.]225:8099/beacon へ HTTP で送信する。Windows／macOS の多くでは SSH サービス起動に管理者権限が要るため、トンネルによるログインは失敗するが、鍵追加・持続化・情報送信は成立する。追加ペイロードは観測されていない。自動更新が有効な環境は取り込んだ可能性がある。
+
+【攻撃フロー】
+1. 正規 ID の拡張更新として 2.1.313 が Cursor Marketplace へ配布される
+2. VS Code 起動時に ~/.ssh/authorized_keys へ攻撃者鍵を追加し、プラットフォーム別の持続化とリバーストンネルを設定
+3. ホスト情報を C2 へ送信する
+
+【被害規模】
+Cursor は最大 5,000 ユーザーが影響を受けたと発表（2026-10-29 PT 2:27〜13:35 にインストール）。Open VSX・Microsoft VS Code Marketplace への波及の証拠はない。
+
+【検知シグナル】
+- ~/.ssh/authorized_keys の svc-telemetry 鍵
+- 134.209.82.225:8099/beacon への HTTP 送信
+【IOC】
+- IP: 134[.]209[.]82[.]225
+
+【監視】
+Cursor で anthropic.claude-code 2.1.313 を導入した端末を特定し、隔離・鍵と持続化の削除・認証情報の交換・セッション無効化を行う。134.209.82[.]225 への通信をネットワークログで遡る。
+追加ペイロードは観測されていない。
+
+【参照】
+- Official Claude Code Extension on Cursor Marketplace Trojanized with Persistent SSH Backdoor (The Hacker News) https://thehackernews.com/2026/10/official-claude-code-vs-code-extension.html
+- Malicious Claude Code extension on Cursor planted SSH backdoors (BleepingComputer) https://www.bleepingcomputer.com/news/security/malicious-claude-code-extension-on-cursor-planted-ssh-backdoors
+- Devs Hit by Trojanized Claude Code Extension for Cursor (Dark Reading) https://www.darkreading.com/cyberattacks-data-breaches/devs-trojanized-claude-code-extension-cursor
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+AI-2026-10-31-003 Hugging Face 上の悪性モデルを使う GPU 乗っ取り型暗号資産マイニングのキャンペーンが、遮断の数日後に再発 — 1 モデルが 2.8 万回超ダウンロード
+------------------------------------------------------------
+カテゴリ: C/C2  X=6 Y=5  採用条件: A-Q・A-W
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-29] Hugging Face を悪用したマイニングキャンペーンが遮断数日後に再発と報道。[新規]
+
+【概要】
+BleepingComputer の要約によれば、Hugging Face のモデルを悪用する暗号資産マイニングキャンペーンが遮断から数日で再発し、GPU サーバーを乗っ取ってバックドアを設置した。同記事は別件として、AI コーディングエージェントを誘導して NetSupport RAT をインストールさせる偽の GitHub「Solana スターターキット」にも言及している。本文は取得できておらず、悪性モデルの名称・IOC・攻撃者は未確認（見出し・要約ベース）。
+
+【攻撃フロー】
+1. 悪性モデルを取得・読み込んだ GPU サーバーでマイナーとバックドアが動作する（BleepingComputer の要約）
+
+【被害規模】
+1 つのモデルが 28,000 回超ダウンロードされ、GPU サーバーが乗っ取られバックドアが設置された（BleepingComputer の要約）。別件として、AI コーディングエージェントを狙い NetSupport RAT をインストールさせる偽の GitHub「Solana スターターキット」も報道。
+
+【検知シグナル】
+- GPU 使用率の常時高止まりと未知の常駐プロセス
+
+【監視】
+モデル取得元の固定（ハッシュ検証・信頼済み組織のみ）と GPU ホストの外向き通信を確認する。
+IOC 未取得。
+
+【参照】
+- Hugging Face malware campaign returns to hijack GPUs for crypto mining (BleepingComputer) https://www.bleepingcomputer.com/news/security/hugging-face-malware-campaign-returns-to-hijack-gpus-for-crypto-mining
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- AI-2026-10-31-X01 InternLM LMDeploy 0.9.0〜0.18.0 の未認証 RCE（CVE-2026-119706）・Flowise のサンドボックス回避（CVE-2026-119978）・OpenDeepWiki のハードコード JWT 鍵（CVE-2026-119597）・MoLing MCP サーバー（CVE-2026-62863）
+  理由: low_score — AI 基盤の個別 CVE（NVD 公開）。悪用・公開 PoC の報告なく、前日の IBM Langflow 参考B のような一括公開でもないため Section 3 除外サマリーの記録にとどめる。
+
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+CVE-2026-111357 Ivanti Connect Secure（ICS）— 重要機能の認証欠如によるローカル権限昇格
+------------------------------------------------------------
+優先度: high  軸1=11 軸2=9  KEV登録: あり  悪用: 確認  パッチ: あり  CVSS v3: 8.8
+影響バージョン: Ivanti Connect Secure の脆弱な版（対象版・修正版は Ivanti アドバイザリ〈CVE-2026-104935 の更新版〉で確認が必要）
+KEV追加日: 2026-10-30  期限: 2026-11-02
+
+【24時間以内の変化】
+[Ivanti セキュリティアドバイザリ更新（Security NEXT 経由）／CISA KEV カタログ（2026.10.30） 2026-10-30] Ivanti が 10-29（現地）に 10-13 付アドバイザリを更新し、認証回避 CVE-2026-104935 に加えて CVE-2026-111357 と CVE-2026-118527 が同一の攻撃で連鎖悪用されたと公表。一部顧客が影響を受けたと把握。新たな修正版を提供。CISA が 2 件を KEV に追加（dateAdded 2026-10-30）。[新規: KEV 収載・連鎖悪用確認]
+
+【概要】
+Ivanti Connect Secure の重要な機能に認証欠如の脆弱性があり、ローカル環境で認証済みの攻撃者が権限を昇格できる（CVSS v3.1 8.8・事実）。Ivanti によれば、認証回避の CVE-2026-104935（既報）、本件、ファイルアップロードの CVE-2026-118527 の 3 件を連鎖させた攻撃が確認され、一部の顧客が影響を受けた。攻撃者・開始時期・規模は非公表。CISA が 2 件を KEV に追加（期限は本件 2026-11-02）。侵害が疑われる場合、Ivanti は指定の復旧手順に従うよう求めている。
+
+【攻撃フロー】
+1. CVE-2026-104935（認証回避）で ICS に到達する（Ivanti の記述）
+2. CVE-2026-118527 で既知の場所に任意内容のファイルを置く（Ivanti の記述）
+3. CVE-2026-111357 で権限を昇格する（3 件の連鎖は Ivanti が確認）
+
+【TTP】
+- T1068 Exploitation for Privilege Escalation: 認証済みのローカル環境から権限を昇格（Ivanti／Security NEXT の記述）
+
+【暫定緩和策】
+- Ivanti が提供する新たな修正版へ更新する
+- 侵害が疑われる場合は Ivanti 指定の復旧手順に従う（外部整合性チェックツールの実行と、必要に応じた再構築）
+- ICS の管理面・ログインサービスの公開範囲を確認する
+
+【監視】
+ICS の想定外の管理者操作・ファイル作成（予測可能な名前のファイル）・権限変更を確認する。IOC は取得した情報には含まれない。
+IOC なし。ATT&CK は権限昇格（T1068）のみ付与。
+
+【参照】
+- 「Ivanti Connect Secure」に追加脆弱性2件 - 連鎖攻撃を確認 (Security NEXT) https://www.security-next.com/192205
+- CISA Adds Actively Exploited GitLab RCE and Cisco Firewall DoS Flaws to KEV (The Hacker News) https://thehackernews.com/2026/10/cisa-adds-actively-exploited-gitlab-rce.html
+
+------------------------------------------------------------
+CVE-2026-118527 Ivanti Connect Secure（ICS）— 予測可能なファイル名による任意ファイルのアップロード
+------------------------------------------------------------
+優先度: high  軸1=6 軸2=9  KEV登録: あり  悪用: 確認  パッチ: あり  CVSS v3: 4.3
+影響バージョン: Ivanti Connect Secure の脆弱な版（要アドバイザリ確認）
+KEV追加日: 2026-10-30  期限: 2026-11-13
+
+【24時間以内の変化】
+[Ivanti セキュリティアドバイザリ更新（Security NEXT 経由）／CISA KEV カタログ（2026.10.30） 2026-10-30] Ivanti が 10-29（現地）に 10-13 付アドバイザリを更新し、認証回避 CVE-2026-104935 に加えて CVE-2026-111357 と CVE-2026-118527 が同一の攻撃で連鎖悪用されたと公表。一部顧客が影響を受けたと把握。新たな修正版を提供。CISA が 2 件を KEV に追加（dateAdded 2026-10-30）。[新規: KEV 収載・連鎖悪用確認]
+
+【概要】
+Ivanti Connect Secure で予測可能なファイル名が使われているため、リモートの認証済み攻撃者がディスク上の既知の場所に任意の内容のファイルをアップロードできる（Security NEXT：CVSS v3.0 4.3・Medium）。CVE-2026-104935・CVE-2026-111357 との 3 件連鎖で悪用が確認されている。単独のスコアは低いが、連鎖の一部として KEV に収載された（dateAdded 2026-10-30・期限 2026-11-13）。
+
+【攻撃フロー】
+1. 認証済みの状態から予測可能なファイル名の場所へ任意内容のファイルを書き込む（Security NEXT の記述）
+
+【暫定緩和策】
+- Ivanti が提供する新たな修正版へ更新する
+- CVE-2026-111357 の対処と同時に侵害有無を確認する
+
+【監視】
+ICS 上の想定外のファイル作成・設置を確認する。
+IOC なし。手口の詳細が非公表のため ATT&CK は付与しない。
+
+【参照】
+- 「Ivanti Connect Secure」に追加脆弱性2件 - 連鎖攻撃を確認 (Security NEXT) https://www.security-next.com/192205
+- CISA Adds Actively Exploited GitLab RCE and Cisco Firewall DoS Flaws to KEV (The Hacker News) https://thehackernews.com/2026/10/cisa-adds-actively-exploited-gitlab-rce.html
+
+------------------------------------------------------------
+CVE-2026-118539 Drupal Commerce Core モジュール（0.0.0〜2.41・3.0.0〜3.3.13）— 認可欠如によるアクセス制御の回避
+------------------------------------------------------------
+優先度: high  軸1=9 軸2=8  KEV登録: なし  悪用: 確認  パッチ: あり  CVSS: 未付与／取得なし
+影響バージョン: Commerce Core 0.0.0〜2.41、3.0.0〜3.3.13
+
+【24時間以内の変化】
+[Drupal セキュリティアドバイザリ（THN／BleepingComputer／SecurityWeek 経由） 2026-10-30] Drupal が Commerce Core の認可欠如（highly critical）の実悪用を認め、修正版 3.3.13／8.x-2.41 を公開。[新規: 悪用確認・修正公開]
+
+【概要】
+Drupal は Commerce Core の認可欠如を「highly critical」とし、実環境で悪用されていると認めた（THN・BleepingComputer・SecurityWeek）。一部のルートとエンティティフィールドの保護が不十分でアクセス制御を回避でき、販売者に金銭的影響が出うる。CVSS は未付与。悪用の手口・規模・攻撃者は非公表。CISA KEV には本稿時点で未収載（スイープ KEV カタログ 2026.10.30 時点）。SecurityWeek によれば、Drupal はストア運営者に注文の監査を促している。
+
+【攻撃フロー】
+1. 保護の不十分なルート／エンティティフィールドにアクセスしてアクセス制御を回避する（Drupal の記述）
+
+【TTP】
+- T1190 Exploit Public-Facing Application: 公開された Commerce サイトのルートとエンティティフィールドの保護不備を突く悪用（Drupal が実悪用を確認）
+
+【暫定緩和策】
+- 3.x 系は Commerce Core 3.3.13、旧系統は 8.x-2.41 へ更新する
+- 更新後、悪用期間に作成・変更された注文と金額・商品フィールドを監査する（SecurityWeek）
+
+【監視】
+Commerce の注文・価格・支払状態の想定外の変更と、通常と異なる経路からの API／エンティティ操作を確認する。
+手口の詳細が非公表のため、検知条件はアクセス制御の回避結果（注文・金額の改変）に着目する。
+
+【参照】
+- Hackers Actively Exploit Highly Critical Drupal Commerce Core Authorization Bypass Flaw (The Hacker News) https://thehackernews.com/2026/10/hackers-actively-exploit-highly.html
+- Drupal warns of critical Commerce Core flaw exploited in attacks (BleepingComputer) https://www.bleepingcomputer.com/news/security/drupal-warns-of-critical-commerce-core-flaw-exploited-in-attacks
+- Drupal Commerce Core Vulnerability Exploited Against Online Stores (SecurityWeek) https://www.securityweek.com/drupal-commerce-core-vulnerability-exploited-against-online-stores
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+Vapor Panda（CrowdStrike 追跡名・旧称 VexatiousTemper） VaporPanda-2026-ARTEX-200orgs（帰属信頼度: medium・P=8 Q=9）
+------------------------------------------------------------
+国家帰属: 中国（CrowdStrike は China-based の標的型侵入アクターと記述。THN は国家支援と記述）
+活動期間: 2026-10-17 〜 2026-10-29
+
+【24時間以内の変化】
+[CrowdStrike（The Hacker News 経由） 2026-10-29] CrowdStrike が Vapor Panda による ARTEX 悪用（200 超の組織・9 組織で侵入後活動）を公表。ほか 4 つの新規中国系クラスターも公表。[新規]
+
+【概要】
+CrowdStrike によれば、Vapor Panda（2021 年 2 月に初確認）は 2026-10-17 以降、AI ペンテストフレームワーク ARTEX を使って世界 200 超の組織を標的にした。標的は中南米・欧州・アジア・中東の外務省、米国の半導体・防衛・シンクタンク、各地域の通信事業者など（米国内 19 組織は製薬・半導体・防衛・原子力・金融）。9 組織で侵入後の活動（BLOODALCHEMY 設置→認証情報スプレー→ネットワークスキャン・偵察）が確認され、ほかに少なくとも 12 組織へのパスワードスプレーも観測された。ARTEX は DeepSeek と未特定の商用 LLM を併用し、計画エージェントとワーカーエージェントが連携して初期アクセスから横展開まで進める。人間のオペレーターは Web シェル作成・ドメイン管理者パスワード取得・エンドポイントセンサー範囲の列挙などを指示する立場で関与する。1 件の侵入で計画エージェントが約 14 億入力トークンを消費した。CrowdStrike は、小規模なチームが従来より広い標的を追えるようになった点を指摘する一方、アクセス開発という既存の任務自体の転換ではないと評価している。ARTEX は短期間に複数の攻撃者へ広がり、開発者（Li Puhua／Autumn-27）はクローズドソース化した（Zscaler ThreatLabz）。
+
+【攻撃フロー】
+1. 10-17 以降、ARTEX（DeepSeek と未特定の商用 LLM を併用）のプランナー／ワーカー エージェントを用い 200 超の組織を同時に標的化
+2. Web アプリ・クラウド・コンテナ・Active Directory・メール／VPN 基盤に並行して攻撃経路を試行
+3. 9 組織で侵入後活動を確認：BLOODALCHEMY を設置し、認証情報スプレー・ネットワークスキャン・偵察を実施
+
+【TTP】
+- T1110.003 Password Spraying: 他の少なくとも 12 組織に対するパスワードスプレー・認証情報スキャン（CrowdStrike の記述）
+- T1505.003 Web Shell: 人間のオペレーターの指示でエージェントが Web シェルを作成（CrowdStrike の記述）
+- T1552.005 Cloud Instance Metadata API: 未署名 SAML アサーションと XXE を連鎖させクラウドのインスタンスメタデータサービスを照会（CrowdStrike の記述）
+- T1190 Exploit Public-Facing Application: Web アプリ・クラウド・コンテナ環境の脆弱性を並行して攻略（CrowdStrike の記述）
+
+【検知メモ】
+IOC は取得した情報に含まれない。CrowdStrike の原典（Vapor Panda 分析）で IOC を確認する必要がある。国家帰属は CrowdStrike の評価に基づくもので、TTP の類似による断定ではない。
+
+【推奨アクション】
+SAML 署名検証・XXE 対策・IMDS のホップ制限（IMDSv2）を確認する。VPN クライアント鍵とエージェント認証キーのローテーション、長期未更新の認証キーの棚卸しを行う。パスワードスプレーに備え、外部公開の認証面で失敗の多発を検知する。
+
+【参照】
+- Chinese Hackers Use AI-Powered ARTEX to Target Over 200 Organizations Worldwide (The Hacker News) https://thehackernews.com/2026/10/chinese-hackers-use-ai-powered-artex-to.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【APT活動 - 注目動向】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+Titan Panda（CrowdStrike 追跡名） TitanPanda-2026-IntappTimeServer-IceGiant（帰属信頼度: medium・P=6 Q=5）
+------------------------------------------------------------
+国家帰属: 中国（CrowdStrike が China-linked state-sponsored と記述）
+活動期間: 2026-04 〜 2026-10-29
+
+【24時間以内の変化】
+[CrowdStrike（The Hacker News 経由） 2026-10-29] CrowdStrike が Hollow／Overcast／Titan／Veiled Panda の 4 クラスターを新規公表。[新規]
+
+【概要】
+CrowdStrike が新たに公表した中国系クラスターの一つ。法務請求ソフト Intapp Time Server のハードコードされた IIS machine key の脆弱性を悪用し、北米の法律事務所で RCE を得て、メモリ常駐フレームワーク IceGiant を展開した。最初の検知は 2026 年 4 月で、少なくとも 2021 年から活動していると評価され、2 年超にわたり複数の法務組織が侵害された。machine key の入手経路は不明で、設定ファイルの露出が考えられると CrowdStrike は述べる（推測）。CVE 番号は取得した情報に記載がない。
+
+【攻撃フロー】
+1. Intapp Time Server のハードコードされた IIS machine key を利用して RCE を得る
+2. IceGiant をメモリ上に展開し、偵察・持続化・横展開・データ持ち出しを行う
+
+【TTP】
+- T1190 Exploit Public-Facing Application: Intapp Time Server の IIS ハードコード machine key（ViewState デシリアライズ）による RCE（CrowdStrike の記述）
+
+【検知メモ】
+IOC は取得した情報に含まれない。CVE 未確認。
+
+【推奨アクション】
+Intapp Time Server の machine key を一意の値に交換し、ViewState の保護を確認する。IIS ワーカープロセスのメモリ内モジュールを調査する。
+
+【参照】
+- Chinese Hackers Use AI-Powered ARTEX to Target Over 200 Organizations Worldwide (The Hacker News) https://thehackernews.com/2026/10/chinese-hackers-use-ai-powered-artex-to.html
+
+------------------------------------------------------------
+Overcast Panda（CrowdStrike 追跡名） OvercastPanda-2026-FlowCloud-CloseAccess（帰属信頼度: medium・P=5 Q=4）
+------------------------------------------------------------
+国家帰属: 中国（CrowdStrike が China-linked state-sponsored と記述）
+活動期間: None 〜 2026-10-29
+
+【24時間以内の変化】
+[CrowdStrike（The Hacker News 経由） 2026-10-29] CrowdStrike が Overcast Panda の FlowCloud 近接アクセス侵入を公表。[新規]
+
+【概要】
+CrowdStrike によれば、Overcast Panda は中国への渡航者を持つ組織にとって最も高度で持続的な脅威の一つで、現地滞在中の標的端末に直接アクセスして独自バックドア FlowCloud を設置する近接アクセス型の侵入を行う。FlowCloud は DLL サイドローディングで起動し、フォレンジックへの耐性を持つ構成で、C2 は正規のクラウド基盤を使う。設置後は永続的で秘匿性の高いリモートアクセスを得て、キーロギング・画面キャプチャ・ファイル収集・資格情報収集が可能になる。ほか Hollow Panda・Veiled Panda も新規に公表されたが詳細は取得した情報にない。
+
+【攻撃フロー】
+1. 中国へ渡航した標的の端末に直接の物理アクセスで独自バックドア FlowCloud を設置
+2. DLL サイドローディングで起動し、正規のクラウド基盤を C2 に利用
+3. キーロギング・画面キャプチャ・ファイル収集・資格情報収集を実施
+
+【TTP】
+- T1574.002 DLL Side-Loading: FlowCloud を DLL サイドローディングで起動（CrowdStrike の記述）
+- T1056.001 Keylogging: FlowCloud のキーロギング機能（CrowdStrike の記述）
+- T1113 Screen Capture: FlowCloud の画面キャプチャ機能（CrowdStrike の記述）
+
+【検知メモ】
+IOC は取得した情報に含まれない。
+
+【推奨アクション】
+中国渡航者用の端末を貸与制とし、帰国後は再イメージする。正規クラウドへの想定外の通信と DLL サイドローディングを監視する。
+
+【参照】
+- Chinese Hackers Use AI-Powered ARTEX to Target Over 200 Organizations Worldwide (The Hacker News) https://thehackernews.com/2026/10/chinese-hackers-use-ai-powered-artex-to.html
+
+------------------------------------------------------------
+FrostyNeighbor FrostyNeighbor-2026-UkraineDestructive（帰属信頼度: low・P=4 Q=3）
+------------------------------------------------------------
+国家帰属: ベラルーシ関連（Dark Reading の見出し・要約による。ロシアのサイバー目的との連携深化が懸念されている）
+活動期間: None 〜 2026-10-30
+
+【24時間以内の変化】
+[Dark Reading 2026-10-30] FrostyNeighbor によるウクライナでの破壊型攻撃を報道。[新規]
+
+【概要】
+Dark Reading によれば、APT「FrostyNeighbor」がウクライナで破壊型の攻撃を実行し、ロシアのサイバー目的とのより深い連携への懸念が高まっている。本文は取得できておらず、攻撃の日時・手口・使用ツール・被害組織は未確認（見出し・要約のみ）。帰属は情報源の記述のみに基づく。ATT&CK Technique は根拠がないため付与しない。
+
+【攻撃フロー】
+1. ウクライナで破壊型の攻撃を実行（詳細は本文未取得）
+
+【検知メモ】
+手口が不明のため検知メモなし。
+
+【推奨アクション】
+ウクライナ関連組織・支援組織は、ワイパー型攻撃に備えオフラインバックアップと復旧手順を確認する。原典（ベンダーレポート）の確認を待つ。
+
+【参照】
+- As Russia's Cyberwar Evolves, Belarus Steps Forward (Dark Reading) https://www.darkreading.com/physical-security/russia-cyber-war-belarus-steps-forward
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【注目CVE（リスト外製品）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+CVE未採番 WordPress Core 4.7〜7.1.3（フルパッケージ更新時の予測可能なステージング先を突くレース条件による RCE・CVE 未採番）
+------------------------------------------------------------
+優先度: high  軸1=10 軸2=7  KEV登録: なし  悪用: 確認  パッチ: あり  CVSS v3: 8.1
+影響バージョン: WordPress Core 4.7〜7.1.3
+
+【24時間以内の変化】
+[Wordfence（The Hacker News／SecurityWeek 経由） 2026-10-30] 修正版公開（10-28）直後から悪用試行が発生し、24 時間で 62,969 件をブロックと Wordfence が発表。[新規: 悪用試行確認]
+
+【概要】
+WordPress Core の 4.7〜7.1.3 に、フルパッケージのコア更新中に予測可能で Web からアクセスできる wp-content/upgrade 配下のステージング先へインストーラーが展開される問題があり、更新の最中という狭い時間窓を突くと未認証でコードを実行できる（CVSS 8.1・CVE 未採番・THN）。修正は 10-28 に公開済み。Wordfence は過去 24 時間で本件を狙う攻撃 62,969 件をブロックしたと発表し、攻撃者は setup-config.php などを繰り返しポーリングして窓を狙っている。窓は通常のラボ環境では数秒にとどまる（成立条件はフルパッケージ更新・ステージング領域への Web 公開・予測可能なパス・時間的余裕）。成功事例は取得した情報には含まれない。
+
+【攻撃フロー】
+1. 更新対象の WordPress のステージング先（wp-content/upgrade 配下）と setup-config.php を繰り返し要求する（Wordfence の観測）
+2. 展開中のインストーラーに到達できた場合、PHP コード実行に進む（成功時のみ・窓は数秒）
+
+【TTP】
+- T1190 Exploit Public-Facing Application: 公開 WordPress サイトのステージング先とインストーラーへの繰り返し要求（Wordfence の観測）
+
+【暫定緩和策】
+- WordPress を修正版へ更新する（自動更新が有効な場合は更新が完了しているか確認）
+- wp-content/upgrade 配下への Web アクセスを遮断する（Web サーバー設定）
+- setup-config.php への外部からの要求を WAF で遮断・記録する
+
+【監視】
+setup-config.php と wp-content/upgrade 配下への反復的な要求（短時間の高頻度ポーリング）、更新直後の想定外の PHP ファイル作成を確認する。
+CVE 未採番。後日 CVE が採番された場合は翌日以降 D2 で Section 3 へ帰属し直す。成功例は未確認。
+
+【参照】
+- WordPress RCE Flaw Draws Nearly 63,000 Attack Attempts in Just 24 Hours (The Hacker News) https://thehackernews.com/2026/10/wordpress-rce-flaw-draws-nearly-63000.html
+- Fresh WordPress Vulnerability in Attackers’ Crosshairs (SecurityWeek) https://www.securityweek.com/fresh-wordpress-vulnerability-in-attackers-crosshairs
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃トレンド】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+Binance：約 63 億ドル相当の資産に影響する史上最大規模の暗号資産流出 — 侵害された DevOps エンジニアのノート PC が起点と Binance が説明
+------------------------------------------------------------
+【24時間以内の変化】
+[Binance（The Hacker News／BleepingComputer／SecurityWeek 経由） 2026-10-30] Binance が影響額約 63 億ドル・凍結約 30 億ドルと発表し、DevOps ノート PC の侵害を初期の原因として説明。Chainalysis は推計 59.12 億ドル。[新規]
+
+【概要】
+Binance は 10-29（木・現地）、プラットフォームで「セキュリティインシデント」が起き約 63 億ドル相当の資産に影響したと発表した（THN）。うち約 30 億ドルはオンチェーンで凍結済みで、Tether は USDT 15.67 億ドル超、Circle は USDC 8 億ドルを凍結した。Binance は初期調査で、侵害された DevOps エンジニアのノート PC からサービスコンテナへ侵入され、不正な出金トランザクションが送信された可能性があると述べ、ウォレット秘密鍵の漏えいの証拠はないとしている。入出金を一時停止し、損失は SAFU 基金と自己資金で補填すると説明し、48 時間以内の出金再開を見込む。Chainalysis は盗難額を約 59.12 億ドルと推計し、過去最大の Bybit 事件（約 15 億ドル）の約 4 倍とする。SecurityWeek はブロックチェーン分析各社が北朝鮮の TraderTraitor の特徴に似ると指摘したと伝えるが、これは分析各社の見立てであり Binance・当局による帰属の公表ではない（本レポートでは帰属を断定しない）。
+
+【参照】
+- Binance Suffers Security Breach Affecting $6.3 Billion in Assets, Nearly $3 Billion Frozen (The Hacker News) https://thehackernews.com/2026/10/binance-suffers-security-breach.html
+- Binance links $6.3 billion crypto theft to compromised DevOps laptop (BleepingComputer) https://www.bleepingcomputer.com/news/security/binance-links-63-billion-crypto-theft-to-compromised-devops-laptop
+- $6 Billion Binance Hack Bears Hallmarks of North Korea’s TraderTraitor (SecurityWeek) https://www.securityweek.com/6-billion-binance-hack-bears-hallmarks-of-north-koreas-tradertraitor
+
+------------------------------------------------------------
+Polymarket：ウェブサイト監視ツールに紐づく悪意あるコードで 200 万ドル超が流出 — ログイン中セッションを乗っ取るサプライチェーン攻撃
+------------------------------------------------------------
+【24時間以内の変化】
+[SecurityWeek 2026-10-30] Polymarket 利用者への新たなサプライチェーン攻撃を報道。[新規]
+
+【概要】
+SecurityWeek によれば、ウェブサイト監視ツールに関連する悪意あるコードが、ログイン済みの Polymarket セッションを乗っ取って利用者の資金を引き出すよう設計されており、200 万ドル超が流出した。本文は取得できておらず、侵害された具体的な配布経路・影響範囲は未確認（見出し・要約ベース）。
+
+【参照】
+- $2 Million+ Drained From Polymarket Traders in New Supply Chain Attack (SecurityWeek) https://www.securityweek.com/2-million-drained-from-polymarket-traders-in-new-supply-chain-attack
+
+------------------------------------------------------------
+Trezor：東南アジアの販売店 CryptoBilis 経由の Trezor Safe 5 に、リカバリーフレーズを携帯網で送信するとみられる追加基板の疑い
+------------------------------------------------------------
+【24時間以内の変化】
+[Trezor（The Hacker News／BleepingComputer 経由） 2026-10-30] Trezor が疑わしいハードウェアインプラントの報告を受け、購入者に資金移動を勧告。[新規]
+
+【概要】
+Trezor は、販売店 CryptoBilis（東南アジア）から購入された Trezor Safe 5 に、リカバリーフレーズを携帯回線経由で外部へ送る追加の回路基板が入っているとの顧客報告を信頼できるものとして受け取ったと発表した（THN・BleepingComputer）。Trezor は当該デバイスをまだ検査していない。2026 年 3 月以降に CryptoBilis から購入した利用者には、新しいウォレットと新しいリカバリーフレーズへ資金を移すよう勧告している。確認は取れておらず「疑い」の段階である（事実と推測の区別：実機検証は未了）。
+
+【参照】
+- Trezor Warns of Suspected Hardware Implant in One of Its Wallets Sold by CryptoBilis (The Hacker News) https://thehackernews.com/2026/10/trezor-warns-of-suspected-hardware.html
+- Trezor warns of suspected crypto-theft implant in hardware wallet (BleepingComputer) https://www.bleepingcomputer.com/news/security/trezor-warns-of-suspected-crypto-theft-implant-in-hardware-wallet
+
+------------------------------------------------------------
+FBI がブレットプルーフホスティング Virtualine のドメインを差し押さえ — ハックフォーハイヤー・ランサムウェア・インフォスティーラー運用者を支援
+------------------------------------------------------------
+【24時間以内の変化】
+[SecurityWeek 2026-10-30] FBI による Virtualine ドメイン差し押さえを報道。[新規]
+
+【概要】
+SecurityWeek によれば、FBI は Virtualine のドメインを差し押さえた。同サービスは暗号資産での支払いを受け付け、ハックフォーハイヤーのサービスやランサムウェア・インフォスティーラーの運用者にホスティングを提供していた。本文は取得できておらず詳細（差し押さえの日付・関連する捜査・同時摘発の有無）は未確認（見出し・要約ベース）。
+
+【参照】
+- Bulletproof Host Virtualine Loses Its Domain to FBI Seizure (SecurityWeek) https://www.securityweek.com/bulletproof-host-virtualine-loses-its-domain-to-fbi-seizure
+
+------------------------------------------------------------
+国内で不正アクセス・情報流出が相次いで報じられる：So-net 214 万件・阪急阪神百貨店予約サイト 126 万件・ニフティ最大 54 万件ほか
+------------------------------------------------------------
+【24時間以内の変化】
+[ScanNetSecurity／Security NEXT 2026-10-30] 国内企業・組織の不正アクセス・情報流出が連日報道。経産省が中小企業向け特別相談窓口を設置。[新規]
+
+【概要】
+ScanNetSecurity・Security NEXT の見出しによれば、10-29〜30 に次の被害が報じられた（見出し・要約ベースで本文は未取得）。So-net の会員データベースへの不正アクセスで会員情報 214 万 1,986 件が漏えい、阪急百貨店・阪神百貨店の予約サイトで約 126 万件の「H2O ID」個人情報が漏えい、ニフティの回線申込・受付管理システムで最大 54 万 2,513 件に影響、エンタッチへのランサムウェア攻撃（データベース内の情報が流出）、チケット購入サービス「GETTIIS」の会員情報流出、Gunosy の社内業務用アカウントの認証情報を用いた不正ログイン、松屋のアプリ管理システム侵害（会員情報流出）、経済産業省の電力・ガス取引監視等委員会の関連サイトへの攻撃（サイト停止）。経済産業省は中小企業向けの「サイバーセキュリティ特別相談窓口」を設置した。手口・原因の詳細は各社発表の本文を要確認。
+
+【参照】
+- 電力・ガス取引監視等委員会の関連サイトに攻撃 - 経産省 (Security NEXT) https://www.security-next.com/192212
+- 米当局、Ciscoセキュリティ製品と「GitLab」の脆弱性悪用に警鐘 (Security NEXT) https://www.security-next.com/192196
+
+
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+CVE-2026-76024 Google Chrome 156.0.8078.79／80 未満（MediaStream のメモリ破損〈Critical〉ほか計 21 件）
+------------------------------------------------------------
+優先度: medium  軸1=9 軸2=4  KEV登録: なし  悪用: 未確認  パッチ: あり  CVSS: 未付与／取得なし
+影響バージョン: Chrome 156.0.8078.79（Linux・Windows・macOS）／156.0.8078.80（Windows・macOS）未満
+
+【24時間以内の変化】
+[Security NEXT／NVD 2026-10-30] Chrome 156.0.8078.79／80 を公開、21 件修正。NVD が CVE-2026-119261・CVE-2026-119263（CVSS 9.6）を公開。悪用の報告なし。[新規]
+
+【概要】
+Google が 2026-10-29（現地）に Chrome 156.0.8078.79／80 を公開し、脆弱性 21 件を修正した。4 段階中最上位の「Critical」は CVE-2026-76024（MediaStream のメモリ破損・10-21 に外部研究者が報告）。NVD には同じ版で修正された CVE-2026-119261（Skia の入力検証不備）と CVE-2026-119263（GarbageCollection のメモリ破損）が CVSS 9.6 で 10-30 に公開された。悪用の報告はない。展開は今後数日〜数週間かけて順次行われる。
+
+【攻撃フロー】
+1. 悪意あるウェブコンテンツを閲覧させ、Skia／GarbageCollection／MediaStream の不備を突く（NVD 記述：リモートの攻撃者が細工した HTML ページで悪用）
+
+【暫定緩和策】
+- Chrome を 156.0.8078.79／80 以降へ更新し、再起動する
+- Chromium 系ブラウザ（Edge・Brave 等）は各社の取り込みを確認する
+
+【監視】
+管理端末の Chrome 版数を棚卸す。
+悪用・PoC の報告なし。CVSS は NVD の 119261／119263 のみ（9.6）。
+
+【参照】
+- 「Chrome」で脆弱性21件を修正 - 「クリティカル」の脆弱性も (Security NEXT) https://www.security-next.com/192200
+- CVE-2026-119261 (NVD) https://nvd.nist.gov/vuln/detail/CVE-2026-119261
+- CVE-2026-119263 (NVD) https://nvd.nist.gov/vuln/detail/CVE-2026-119263
+
+------------------------------------------------------------
+CVE-2026-111585 TeamViewer Full Client／Portable／Android Remote Control（15.83 未満）— 悪意あるホストがビューア側でコード実行しうる整数オーバーフロー
+------------------------------------------------------------
+優先度: medium  軸1=8 軸2=4  KEV登録: なし  悪用: 未確認  パッチ: あり  CVSS v3: 8.8
+影響バージョン: Full Client（Windows／Linux／macOS）・Windows Portable・Android Remote Control の 15.83 未満
+
+【24時間以内の変化】
+[The Hacker News／SecurityWeek 2026-10-30] TeamViewer が 15.83 で CVE-2026-111585 を修正。Remedio の研究者が技術解説を公開。悪用の報告なし。[新規]
+
+【概要】
+TeamViewer の整数オーバーフロー（CVSS 8.8・High）により、リモートセッションで操作される側（ホスト）が悪意あるまたは侵害されていると、操作する側（ビューア）の TeamViewer をクラッシュさせ、プラットフォームによってはビューア上でコードを実行できる。ユーザーがそのホストへのリモート制御セッションを開始した後にのみ成立する。Windows・Linux・macOS の Full Client、Windows Portable、Android Remote Control が 15.83 未満で影響を受ける。同じ 15.83 で Host に影響する別の 2 件も修正された。悪用の報告はない。
+
+【攻撃フロー】
+1. 悪意あるまたは侵害されたホストが、ビューアとのセッション中に細工したデータを送る
+2. ビューア側の整数オーバーフローによりクラッシュまたはコード実行に至る（プラットフォーム依存）
+
+【暫定緩和策】
+- TeamViewer を 15.83 以降へ更新する（Host を運用している場合も同じ更新で別の 2 件が修正される）
+- サポート担当者が未知の端末へ接続する運用では、接続先を信頼できる端末に限る
+
+【監視】
+サポート担当者端末での TeamViewer の異常終了と、その直後の子プロセス生成を確認する。
+悪用の報告なし。
+
+【参照】
+- TeamViewer Flaw Lets Remote Computers Attack Users Who Connect to Control Them (The Hacker News) https://thehackernews.com/2026/10/teamviewer-flaw-lets-remote-computers.html
+- TeamViewer Flaw Could Let Malicious Hosts Take Over Support Technicians’ Machines (SecurityWeek) https://www.securityweek.com/teamviewer-flaw-could-let-malicious-hosts-take-over-support-technicians-machines
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考A（国内）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+（該当なし）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【参考B（国際先行）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+CVE-2026-103093 ServiceNow AI Platform（Rhino スクリプト環境のサンドボックス回避・Critical ほか計 3 件）
+------------------------------------------------------------
+優先度: medium  軸1=8 軸2=3  KEV登録: なし  悪用: 未確認  パッチ: あり  CVSS: 未付与／取得なし
+影響バージョン: ServiceNow AI Platform の脆弱な版（クラウド提供分は ServiceNow 側で適用済みの場合あり。セルフホストは要確認）
+
+【24時間以内の変化】
+[Security NEXT（ServiceNow アドバイザリ） 2026-10-29] ServiceNow が 3 件の脆弱性を公表。9 月以降の更新で対応済み。悪用の確認なし。[新規]
+
+【概要】
+ServiceNow が 2026-10-29（現地）にアドバイザリを公開し、CVE ベースで 3 件（AI Platform 2 件・Task Plan Templates 1 件）を明らかにした。CVE-2026-103093 はスクリプト実行環境 Rhino のサンドボックス回避で、悪用には管理者権限の認証が必要だがホスト OS 上で任意コードを実行できる（CVSS v4.0 9.4・Critical）。CVE-2026-103094 はユーザーのパスワードが平文でシステムテーブルに保存されうる問題（CVSS 7.1・High）。公表時点で悪用は確認されていない。
+
+【攻撃フロー】
+1. 管理者権限で認証したうえで Rhino のサンドボックスを回避しホスト OS 上でコードを実行する（Security NEXT の記述）
+
+【暫定緩和策】
+- ServiceNow の更新状況（特にセルフホスト／管理型インスタンス）を確認する
+- 管理者権限アカウントの棚卸しと MFA の確認
+
+【監視】
+管理者による Rhino スクリプト実行履歴と、システムテーブルへのパスワード参照を確認する。
+悪用の報告なし。
+
+【参照】
+- 「ServiceNow」にクリティカル脆弱性 - 修正版が公開 (Security NEXT) https://www.security-next.com/192231
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【除外サマリー】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- CVE-2026-112816 Improper certificate validation in the HTTPS listener in Canonical LXD…（CVSS 10.0）
+  理由: low_score — Canonical LXD の HTTPS リスナーの証明書検証不備。ベンダー公表の個別脆弱性で悪用・KEV 収載の報告なし。
+- CVE-2026-61738 SOCFortress CoPilot focuses on providing a single pane of glass for al…（CVSS 10.0）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-61826 Bazarr is a companion application to Sonarr and Radarr. Prior to 1.5.7…（CVSS 10.0）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-116241 pgAdmin 4's Import/Export Data tool wraps a user's query export in a p…（CVSS 9.9）
+  理由: low_score — OSS／低知名度製品または限定的な製品の個別脆弱性（NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。
+- CVE-2026-61728 SOCFortress CoPilot focuses on providing a single pane of glass for al…（CVSS 9.9）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-62853 ThingLinks is an enterprise IoT platform. Prior to 1.4.0, the `/groovy…（CVSS 9.9）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2025-31704 A vulnerability has been found in the Dahua Intelligent Connection Cen…（CVSS 9.8）
+  理由: low_score — Dahua Intelligent Connection Center（国内での利用実態は未確認）。ベンダー公表の個別脆弱性。悪用・KEV 収載の報告なし。
+- CVE-2026-103039 The Gravity Forms plugin for WordPress is vulnerable to PHP Object Inj…（CVSS 9.8）
+  理由: low_score — WordPress プラグイン／テーマの個別脆弱性。悪用・KEV 収載の報告なし。
+- CVE-2026-107249 Improperly Controlled Modification of Dynamically-Determined Object At…（CVSS 9.8）
+  理由: low_score — Drupal コントリビュートモジュール（Drupal コア・Commerce Core とは別）。悪用・KEV 収載の報告なし。
+- CVE-2026-110799 Vvveb is a powerful and easy to use CMS with page builder to build web…（CVSS 9.8）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-116386 Unauthenticated Privilege Escalation in SMS Alert Order Notifications …（CVSS 9.8）
+  理由: low_score — WordPress プラグイン／テーマの個別脆弱性。悪用・KEV 収載の報告なし。
+- CVE-2026-119526 Deserialization of Untrusted Data vulnerability in ThemeREX Royal Even…（CVSS 9.8）
+  理由: low_score — OSS／低知名度製品または限定的な製品の個別脆弱性（NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。
+- CVE-2026-119597 OpenDeepWiki through 2.0.6 contains a hard-coded JWT signing key vulne…（CVSS 9.8）
+  理由: low_score — OpenDeepWiki（AI ドキュメント基盤）のハードコード JWT 署名鍵。悪用の報告なし。
+- CVE-2026-119660 MuseBot before 2.0.0 contains an authentication bypass vulnerability t…（CVSS 9.8）
+  理由: low_score — OSS／低知名度製品の個別脆弱性（VulnCheck CNA）。悪用・KEV 収載の報告なし。
+- CVE-2026-119706 InternLM LMDeploy 0.9.0 through 0.18.0 contains an unauthenticated rem…（CVSS 9.8）
+  理由: low_score — InternLM LMDeploy（AI 推論基盤）の未認証 RCE。AI 基盤 CVE だが悪用・公開 PoC の報告なし。必要な場合は Section 1 へ昇格判断。
+- CVE-2026-39738 Unauthenticated PHP Object Injection in FunnelKit Automations <= 3.8.6…（CVSS 9.8）
+  理由: low_score — WordPress プラグイン／テーマの個別脆弱性。悪用・KEV 収載の報告なし。
+- CVE-2026-61620 HoneySQL turns Clojure data structures into SQL. From 2.0.0 until 2.7.…（CVSS 9.8）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-61737 ng-antd-admin is an Angular and NestJS administration system template.…（CVSS 9.8）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-78403 Stack-based buffer overflow and missing authorization vulnerability in…（CVSS 9.8）
+  理由: low_score — Thales Sentinel Keys Server。ベンダー公表の個別脆弱性で悪用・KEV 収載の報告なし。
+- CVE-2026-90888 Unauthenticated PHP Object Injection in LeadSnap <= 1.25 versions.…（CVSS 9.8）
+  理由: low_score — WordPress プラグイン／テーマの個別脆弱性。悪用・KEV 収載の報告なし。
+- CVE-2026-62863 MoLing is a computer-use and browser-use based MCP server. Prior to 0.…（CVSS 9.6）
+  理由: low_score — MoLing（コンピュータ操作・ブラウザ操作用 MCP サーバー）。GHSA 起点。悪用の報告なし。
+- CVE-2026-116366 An issue has been discovered in ClickHouse Server that, under certain …（CVSS 9.5）
+  理由: low_score — ClickHouse Server（未認証到達の可能性）。ベンダー公表の個別脆弱性で悪用・KEV 収載の報告なし。必要な場合はベンダー情報で個別確認。
+- CVE-2026-61729 SOCFortress CoPilot focuses on providing a single pane of glass for al…（CVSS 9.4）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-82104 In Teltonika Networks RUTOS devices running versions from 7.22 through…（CVSS 9.4）
+  理由: low_score — Teltonika RUTOS／TSWOS（産業用ルーター／スイッチ）。国内での利用実態は未確認。悪用・KEV 収載の報告なし。
+- CVE-2026-93327 A Deserialization of Untrusted Data vulnerability in the SubWorkflow t…（CVSS 9.4）
+  理由: low_score — Google Cloud Application Integration の SubWorkflow デシリアライズ。クラウド提供側で修正される種別。悪用・KEV 収載の報告なし。
+- CVE-2023-22793 A vulnerability allowing an unauthenticated attacker to perform remote…（CVSS 9.3）
+  理由: low_score — 古い年の CVE ID を持つ今回の NVD 新規公開。悪用・KEV 収載の報告なし。
+- CVE-2026-39732 Unauthenticated SQL Injection in Transliterator <= 2.5.13 versions.…（CVSS 9.3）
+  理由: low_score — WordPress プラグイン／テーマの個別脆弱性。悪用・KEV 収載の報告なし。
+- CVE-2026-61730 SOCFortress CoPilot focuses on providing a single pane of glass for al…（CVSS 9.3）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-61850 Kargo manages and automates the promotion of software artifacts. From …（CVSS 9.3）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-116238 In server mode pgAdmin 4 locks an internal account after MAX_LOGIN_ATT…（CVSS 9.2）
+  理由: low_score — OSS／低知名度製品または限定的な製品の個別脆弱性（NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。
+- CVE-2026-119418 CakePHP through 5.4.3 contains an sql injection vulnerability that all…（CVSS 9.2）
+  理由: low_score — OSS／低知名度製品の個別脆弱性（VulnCheck CNA）。悪用・KEV 収載の報告なし。
+- CVE-2026-119419 CakePHP through 5.4.3 contains an sql injection vulnerability that all…（CVSS 9.2）
+  理由: low_score — OSS／低知名度製品の個別脆弱性（VulnCheck CNA）。悪用・KEV 収載の報告なし。
+- CVE-2026-119716 pybars3 through 0.9.7 contains a code injection vulnerability in pybar…（CVSS 9.2）
+  理由: low_score — OSS／低知名度製品の個別脆弱性（VulnCheck CNA）。悪用・KEV 収載の報告なし。
+- CVE-2026-119717 pybars4 through 0.9.13 contains a code injection vulnerability in pyba…（CVSS 9.2）
+  理由: low_score — OSS／低知名度製品の個別脆弱性（VulnCheck CNA）。悪用・KEV 収載の報告なし。
+- CVE-2026-116852 Author Remote Code Execution (RCE) in Widget Options <= 4.2.5 versions…（CVSS 9.1）
+  理由: low_score — WordPress プラグイン／テーマの個別脆弱性。悪用・KEV 収載の報告なし。
+- CVE-2026-117666 Improper Validation of Certificate with Host Mismatch vulnerability in…（CVSS 9.1）
+  理由: low_score — OSS／低知名度製品または限定的な製品の個別脆弱性（NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。
+- CVE-2026-119568 vsftpd through 3.0.5 contains an authentication bypass vulnerability i…（CVSS 9.1）
+  理由: low_score — OSS／低知名度製品の個別脆弱性（VulnCheck CNA）。悪用・KEV 収載の報告なし。
+- CVE-2026-55598 PinePods is a complete, self-hosted podcast management system written …（CVSS 9.1）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-61645 Docat is a tool for hosting versioned static documentation. In the aff…（CVSS 9.1）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-62849 ThingLinks is an enterprise IoT platform. Prior to 1.4.0, an unauthent…（CVSS 9.1）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-112905 Vvveb is a powerful and easy to use CMS with page builder to build web…（CVSS 9.0）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE-2026-118697 In JetBrains Toolbox App before 3.9.1 and 3.8.2; IntelliJ IDEA before …（CVSS 9.0）
+  理由: low_score — JetBrains Toolbox App／IntelliJ IDEA。ベンダー公表の個別脆弱性で悪用・KEV 収載の報告なし。
+- CVE-2026-119978 Flowise through 3.1.4 contains a sandbox escape vulnerability that all…（CVSS 9.0）
+  理由: low_score — Flowise（AI エージェント基盤）のサンドボックス回避。認証済みユーザーが前提。悪用の報告なし。
+- CVE-2026-61707 SOCFortress CoPilot focuses on providing a single pane of glass for al…（CVSS 9.0）
+  理由: low_score — OSS の個別脆弱性（GHSA 起点・NVD 公開時 CVSS 9.0 以上）。悪用・KEV 収載の報告なし。必要な場合は GHSA／ベンダー情報で個別確認。
+- CVE未採番 Linux カーネル MPTCP リスナーの重大な脆弱性（Anthropic の研究者が未認証リモート root のエクスプロイトを開発・BleepingComputer 見出し・要約のみ）
+  理由: insufficient_evidence — 本文を取得できず CVE 番号・影響版・修正状況が未確認。前日報告の CVE-2026-98432（TCP 競合状態）とは別件の可能性がある（推測）。悪用の報告なし。翌日以降に再確認する。
+- CVE-2026-97854 ヤマハ NWR100（複数脆弱性の追加報道）
+  理由: already_reported — 前日 Section 3 参考A に掲載済み。Security NEXT の 10-30 報道は同一事象で、悪用・KEV の変化なし。
+- CVE-2026-97229 GitLab CE／EE（Ruby 起因と判明）
+  理由: already_reported — 前日 Section 2 注目CVE に掲載済み。原因が Ruby と判明した追加情報は SOC 推奨（Section 4）に反映。
+- CVE-2026-104935 Ivanti Connect Secure（認証回避）
+  理由: already_reported — 既報。今回の連鎖悪用確認は CVE-2026-111357／118527 のゼロデイ特報に反映。
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-31-001 Ivanti Connect Secure：3 件連鎖の悪用（CVE-2026-104935／111357／118527）— KEV 期限 11-02、侵害確認と復旧手順の実施
+------------------------------------------------------------
+対象: Ivanti Connect Secure
+
+【24時間以内の変化】
+[Ivanti／CISA KEV 2026-10-30] Ivanti がアドバイザリを更新し 3 件の連鎖悪用を確認。CVE-2026-111357（期限 11-02）・CVE-2026-118527（期限 11-13）が KEV へ追加。
+
+【概要】
+認証回避→ファイルアップロード→権限昇格の連鎖が実環境で悪用され、一部の顧客が侵害された。単独スコアの低い 118527（CVSS 4.3）も連鎖の一部として KEV 収載された点に注意。
+
+【推奨アクション】
+- 新たな修正版へ更新する。侵害が疑われる場合は Ivanti 指定の復旧手順に従う。更新前の期間に遡って管理者操作・ファイル作成を調査する。
+
+【監視】
+ICS の管理者ログ、予測可能な名前のファイル作成、権限変更。
+
+【参照】
+- 「Ivanti Connect Secure」に追加脆弱性2件 - 連鎖攻撃を確認 (Security NEXT) https://www.security-next.com/192205
+- CISA Adds Actively Exploited GitLab RCE and Cisco Firewall DoS Flaws to KEV (The Hacker News) https://thehackernews.com/2026/10/cisa-adds-actively-exploited-gitlab-rce.html
+
+------------------------------------------------------------
+SOC-2026-10-31-002 Drupal Commerce Core（CVE-2026-118539）が実悪用 — 更新に加え、注文・金額の監査を
+------------------------------------------------------------
+対象: Drupal Commerce Core
+
+【24時間以内の変化】
+[Drupal 2026-10-30] Drupal が highly critical の認可欠如の実悪用を確認し修正版を公開。
+
+【概要】
+ルート／エンティティフィールドの保護不備により、販売者に金銭的影響が出るアクセス制御の回避が起きる。KEV 未収載・CVSS 未付与のため、優先度判定で見落としやすい。
+
+【推奨アクション】
+- Commerce Core 3.3.13（旧系統は 8.x-2.41）へ更新し、悪用期間の注文・価格・支払状態の変更を監査する。
+
+【監視】
+注文テーブルの想定外の更新、通常と異なる API 経路。
+
+【参照】
+- Drupal warns of critical Commerce Core flaw exploited in attacks (BleepingComputer) https://www.bleepingcomputer.com/news/security/drupal-warns-of-critical-commerce-core-flaw-exploited-in-attacks
+
+------------------------------------------------------------
+SOC-2026-10-31-003 Cursor 上の Claude Code 拡張 2.1.313 の確認 — ~/.ssh/authorized_keys の svc-telemetry 鍵と 134.209.82.225 への通信を点検
+------------------------------------------------------------
+対象: Cursor / VS Code 系拡張（anthropic.claude-code）
+
+【24時間以内の変化】
+[Cursor／OpenSourceMalware 2026-10-29] 悪性版 2.1.313 が約 11 時間配布。正規版 2.1.314 を公開。
+
+【概要】
+開発者端末の SSH 鍵・環境変数名が漏れうる。自動更新で取り込まれた可能性がある。
+
+【推奨アクション】
+- 該当期間に Cursor で導入した端末を特定して隔離し、authorized_keys の不審鍵・crontab／LaunchAgent／スケジュールタスクを削除、認証情報を交換する。拡張の公開者 ID 一致だけでは安全の根拠にならない点を運用に反映する。
+
+【監視】
+開発者端末から 134.209.82.225 への TCP 8099 通信、authorized_keys の変更。
+
+【参照】
+- Official Claude Code Extension on Cursor Marketplace Trojanized with Persistent SSH Backdoor (The Hacker News) https://thehackernews.com/2026/10/official-claude-code-vs-code-extension.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-31-004 WordPress Core の RCE（CVE 未採番・CVSS 8.1）への攻撃が 24 時間で約 6.3 万件 — 更新と wp-content/upgrade の遮断
+------------------------------------------------------------
+対象: WordPress Core 4.7〜7.1.3
+
+【24時間以内の変化】
+[Wordfence（THN） 2026-10-30] 修正版（10-28）公開直後から悪用試行。24 時間で 62,969 件をブロック。
+
+【概要】
+成立には更新中の短い時間窓が必要だが、攻撃者は反復ポーリングで狙っている。
+
+【推奨アクション】
+- WordPress を修正版へ更新し、wp-content/upgrade 配下への Web アクセスを遮断する。
+
+【監視】
+setup-config.php と wp-content/upgrade への短時間の高頻度要求。
+
+【参照】
+- WordPress RCE Flaw Draws Nearly 63,000 Attack Attempts in Just 24 Hours (The Hacker News) https://thehackernews.com/2026/10/wordpress-rce-flaw-draws-nearly-63000.html
+
+------------------------------------------------------------
+SOC-2026-10-31-005 GitLab：悪用された CVE-2026-97229 の原因は Ruby — Ruby 利用環境も影響のおそれ
+------------------------------------------------------------
+対象: GitLab／Ruby（Onigmo）
+
+【24時間以内の変化】
+[Security NEXT 2026-10-30] 原因が依存する Ruby の正規表現エンジンにあると判明、Ruby の修正版が公開。
+
+【概要】
+GitLab を更新しても標準 Ruby のままだと脆弱な事例が Alpine で報告済み（既報）。Ruby を直接使う他の環境も影響を受けうる。
+
+【推奨アクション】
+- Ruby の修正版（3.3.13／3.4.12／4.0.9 以降）への更新を、GitLab 以外の Ruby 利用環境にも拡げて確認する。
+
+【監視】
+Ruby ワーカーのクラッシュと外向き通信。
+
+【参照】
+- 「GitLab」の悪用脆弱性、原因は「Ruby」 - 修正版が公開 (Security NEXT) https://www.security-next.com/192222
+
+------------------------------------------------------------
+SOC-2026-10-31-006 Chrome 156.0.8078.79／80：Critical を含む 21 件を修正 — 管理端末の版数を確認
+------------------------------------------------------------
+対象: Google Chrome
+
+【24時間以内の変化】
+[Security NEXT 2026-10-30] Chrome 156.0.8078.79／80 を公開。悪用の報告なし。
+
+【概要】
+CVE-2026-76024（MediaStream・Critical）ほか。NVD は 119261／119263 を CVSS 9.6 で公開。
+
+【推奨アクション】
+- Chrome を更新して再起動する。
+
+【監視】
+管理端末の Chrome 版数。
+
+【参照】
+- 「Chrome」で脆弱性21件を修正 - 「クリティカル」の脆弱性も (Security NEXT) https://www.security-next.com/192200
+
+------------------------------------------------------------
+SOC-2026-10-31-007 TeamViewer 15.83：ビューア側で悪意あるホストからコード実行されうる脆弱性（CVE-2026-111585）
+------------------------------------------------------------
+対象: TeamViewer Full Client／Portable／Android
+
+【24時間以内の変化】
+[THN／SecurityWeek 2026-10-30] 15.83 で修正。悪用の報告なし。
+
+【概要】
+リモートサポート担当者が、侵害されたかもしれない端末へ接続した際に自端末が狙われる。
+
+【推奨アクション】
+- 15.83 以降へ更新し、未知の端末への接続運用を見直す。
+
+【監視】
+サポート端末の TeamViewer 異常終了。
+
+【参照】
+- TeamViewer Flaw Lets Remote Computers Attack Users Who Connect to Control Them (The Hacker News) https://thehackernews.com/2026/10/teamviewer-flaw-lets-remote-computers.html
+
+------------------------------------------------------------
+SOC-2026-10-31-008 ServiceNow AI Platform の Rhino サンドボックス回避（CVE-2026-103093・CVSS v4 9.4）— セルフホスト／管理型の更新状況を確認
+------------------------------------------------------------
+対象: ServiceNow AI Platform
+
+【24時間以内の変化】
+[Security NEXT 2026-10-29] 3 件の脆弱性を公表。9 月以降の更新で対応済み。
+
+【概要】
+悪用には管理者権限が必要だが、ホスト OS 上でコード実行に至る。
+
+【推奨アクション】
+- 更新状況を確認し、管理者アカウントを棚卸す。
+
+【監視】
+管理者のスクリプト実行履歴。
+
+【参照】
+- 「ServiceNow」にクリティカル脆弱性 - 修正版が公開 (Security NEXT) https://www.security-next.com/192231
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-31-009 Hugging Face 上の悪性モデルによる GPU 乗っ取りの再発 — モデル取得元の固定と GPU ホスト監視
+------------------------------------------------------------
+対象: Hugging Face モデル／GPU サーバー
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-29] 遮断数日後にキャンペーンが再発。
+
+【概要】
+未検証のモデルを取り込む GPU 環境が対象になる。
+
+【推奨アクション】
+- モデルは信頼済み組織の公開物に限り、ハッシュ・署名を確認する。
+
+【監視】
+GPU 使用率の異常と外向き通信。
+
+【参照】
+- Hugging Face malware campaign returns to hijack GPUs for crypto mining (BleepingComputer) https://www.bleepingcomputer.com/news/security/hugging-face-malware-campaign-returns-to-hijack-gpus-for-crypto-mining
