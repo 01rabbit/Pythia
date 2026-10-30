@@ -1,0 +1,196 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-10-31 07:55 JST
+調査期間: 2026-10-30 07:00 〜 2026-10-31 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-31-001 Ivanti Connect Secure：3 件連鎖の悪用（CVE-2026-104935／111357／118527）— KEV 期限 11-02、侵害確認と復旧手順の実施
+------------------------------------------------------------
+対象: Ivanti Connect Secure
+
+【24時間以内の変化】
+[Ivanti／CISA KEV 2026-10-30] Ivanti がアドバイザリを更新し 3 件の連鎖悪用を確認。CVE-2026-111357（期限 11-02）・CVE-2026-118527（期限 11-13）が KEV へ追加。
+
+【概要】
+認証回避→ファイルアップロード→権限昇格の連鎖が実環境で悪用され、一部の顧客が侵害された。単独スコアの低い 118527（CVSS 4.3）も連鎖の一部として KEV 収載された点に注意。
+
+【推奨アクション】
+- 新たな修正版へ更新する。侵害が疑われる場合は Ivanti 指定の復旧手順に従う。更新前の期間に遡って管理者操作・ファイル作成を調査する。
+
+【監視】
+ICS の管理者ログ、予測可能な名前のファイル作成、権限変更。
+
+【参照】
+- 「Ivanti Connect Secure」に追加脆弱性2件 - 連鎖攻撃を確認 (Security NEXT) https://www.security-next.com/192205
+- CISA Adds Actively Exploited GitLab RCE and Cisco Firewall DoS Flaws to KEV (The Hacker News) https://thehackernews.com/2026/10/cisa-adds-actively-exploited-gitlab-rce.html
+
+------------------------------------------------------------
+SOC-2026-10-31-002 Drupal Commerce Core（CVE-2026-118539）が実悪用 — 更新に加え、注文・金額の監査を
+------------------------------------------------------------
+対象: Drupal Commerce Core
+
+【24時間以内の変化】
+[Drupal 2026-10-30] Drupal が highly critical の認可欠如の実悪用を確認し修正版を公開。
+
+【概要】
+ルート／エンティティフィールドの保護不備により、販売者に金銭的影響が出るアクセス制御の回避が起きる。KEV 未収載・CVSS 未付与のため、優先度判定で見落としやすい。
+
+【推奨アクション】
+- Commerce Core 3.3.13（旧系統は 8.x-2.41）へ更新し、悪用期間の注文・価格・支払状態の変更を監査する。
+
+【監視】
+注文テーブルの想定外の更新、通常と異なる API 経路。
+
+【参照】
+- Drupal warns of critical Commerce Core flaw exploited in attacks (BleepingComputer) https://www.bleepingcomputer.com/news/security/drupal-warns-of-critical-commerce-core-flaw-exploited-in-attacks
+
+------------------------------------------------------------
+SOC-2026-10-31-003 Cursor 上の Claude Code 拡張 2.1.313 の確認 — ~/.ssh/authorized_keys の svc-telemetry 鍵と 134.209.82.225 への通信を点検
+------------------------------------------------------------
+対象: Cursor / VS Code 系拡張（anthropic.claude-code）
+
+【24時間以内の変化】
+[Cursor／OpenSourceMalware 2026-10-29] 悪性版 2.1.313 が約 11 時間配布。正規版 2.1.314 を公開。
+
+【概要】
+開発者端末の SSH 鍵・環境変数名が漏れうる。自動更新で取り込まれた可能性がある。
+
+【推奨アクション】
+- 該当期間に Cursor で導入した端末を特定して隔離し、authorized_keys の不審鍵・crontab／LaunchAgent／スケジュールタスクを削除、認証情報を交換する。拡張の公開者 ID 一致だけでは安全の根拠にならない点を運用に反映する。
+
+【監視】
+開発者端末から 134.209.82.225 への TCP 8099 通信、authorized_keys の変更。
+
+【参照】
+- Official Claude Code Extension on Cursor Marketplace Trojanized with Persistent SSH Backdoor (The Hacker News) https://thehackernews.com/2026/10/official-claude-code-vs-code-extension.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-31-004 WordPress Core の RCE（CVE 未採番・CVSS 8.1）への攻撃が 24 時間で約 6.3 万件 — 更新と wp-content/upgrade の遮断
+------------------------------------------------------------
+対象: WordPress Core 4.7〜7.1.3
+
+【24時間以内の変化】
+[Wordfence（THN） 2026-10-30] 修正版（10-28）公開直後から悪用試行。24 時間で 62,969 件をブロック。
+
+【概要】
+成立には更新中の短い時間窓が必要だが、攻撃者は反復ポーリングで狙っている。
+
+【推奨アクション】
+- WordPress を修正版へ更新し、wp-content/upgrade 配下への Web アクセスを遮断する。
+
+【監視】
+setup-config.php と wp-content/upgrade への短時間の高頻度要求。
+
+【参照】
+- WordPress RCE Flaw Draws Nearly 63,000 Attack Attempts in Just 24 Hours (The Hacker News) https://thehackernews.com/2026/10/wordpress-rce-flaw-draws-nearly-63000.html
+
+------------------------------------------------------------
+SOC-2026-10-31-005 GitLab：悪用された CVE-2026-97229 の原因は Ruby — Ruby 利用環境も影響のおそれ
+------------------------------------------------------------
+対象: GitLab／Ruby（Onigmo）
+
+【24時間以内の変化】
+[Security NEXT 2026-10-30] 原因が依存する Ruby の正規表現エンジンにあると判明、Ruby の修正版が公開。
+
+【概要】
+GitLab を更新しても標準 Ruby のままだと脆弱な事例が Alpine で報告済み（既報）。Ruby を直接使う他の環境も影響を受けうる。
+
+【推奨アクション】
+- Ruby の修正版（3.3.13／3.4.12／4.0.9 以降）への更新を、GitLab 以外の Ruby 利用環境にも拡げて確認する。
+
+【監視】
+Ruby ワーカーのクラッシュと外向き通信。
+
+【参照】
+- 「GitLab」の悪用脆弱性、原因は「Ruby」 - 修正版が公開 (Security NEXT) https://www.security-next.com/192222
+
+------------------------------------------------------------
+SOC-2026-10-31-006 Chrome 156.0.8078.79／80：Critical を含む 21 件を修正 — 管理端末の版数を確認
+------------------------------------------------------------
+対象: Google Chrome
+
+【24時間以内の変化】
+[Security NEXT 2026-10-30] Chrome 156.0.8078.79／80 を公開。悪用の報告なし。
+
+【概要】
+CVE-2026-76024（MediaStream・Critical）ほか。NVD は 119261／119263 を CVSS 9.6 で公開。
+
+【推奨アクション】
+- Chrome を更新して再起動する。
+
+【監視】
+管理端末の Chrome 版数。
+
+【参照】
+- 「Chrome」で脆弱性21件を修正 - 「クリティカル」の脆弱性も (Security NEXT) https://www.security-next.com/192200
+
+------------------------------------------------------------
+SOC-2026-10-31-007 TeamViewer 15.83：ビューア側で悪意あるホストからコード実行されうる脆弱性（CVE-2026-111585）
+------------------------------------------------------------
+対象: TeamViewer Full Client／Portable／Android
+
+【24時間以内の変化】
+[THN／SecurityWeek 2026-10-30] 15.83 で修正。悪用の報告なし。
+
+【概要】
+リモートサポート担当者が、侵害されたかもしれない端末へ接続した際に自端末が狙われる。
+
+【推奨アクション】
+- 15.83 以降へ更新し、未知の端末への接続運用を見直す。
+
+【監視】
+サポート端末の TeamViewer 異常終了。
+
+【参照】
+- TeamViewer Flaw Lets Remote Computers Attack Users Who Connect to Control Them (The Hacker News) https://thehackernews.com/2026/10/teamviewer-flaw-lets-remote-computers.html
+
+------------------------------------------------------------
+SOC-2026-10-31-008 ServiceNow AI Platform の Rhino サンドボックス回避（CVE-2026-103093・CVSS v4 9.4）— セルフホスト／管理型の更新状況を確認
+------------------------------------------------------------
+対象: ServiceNow AI Platform
+
+【24時間以内の変化】
+[Security NEXT 2026-10-29] 3 件の脆弱性を公表。9 月以降の更新で対応済み。
+
+【概要】
+悪用には管理者権限が必要だが、ホスト OS 上でコード実行に至る。
+
+【推奨アクション】
+- 更新状況を確認し、管理者アカウントを棚卸す。
+
+【監視】
+管理者のスクリプト実行履歴。
+
+【参照】
+- 「ServiceNow」にクリティカル脆弱性 - 修正版が公開 (Security NEXT) https://www.security-next.com/192231
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-10-31-009 Hugging Face 上の悪性モデルによる GPU 乗っ取りの再発 — モデル取得元の固定と GPU ホスト監視
+------------------------------------------------------------
+対象: Hugging Face モデル／GPU サーバー
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-29] 遮断数日後にキャンペーンが再発。
+
+【概要】
+未検証のモデルを取り込む GPU 環境が対象になる。
+
+【推奨アクション】
+- モデルは信頼済み組織の公開物に限り、ハッシュ・署名を確認する。
+
+【監視】
+GPU 使用率の異常と外向き通信。
+
+【参照】
+- Hugging Face malware campaign returns to hijack GPUs for crypto mining (BleepingComputer) https://www.bleepingcomputer.com/news/security/hugging-face-malware-campaign-returns-to-hijack-gpus-for-crypto-mining
