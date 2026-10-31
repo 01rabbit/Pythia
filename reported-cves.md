@@ -692,3 +692,4 @@
 | CVE-2026-111585 | TeamViewer Full Client／Portable／Android Remote Control（15.83未満・悪意あるホストからビューア側でコード実行） | 2026-10-31 | none | 2026-10-31 | YES | CVSS 8.8 High・15.83 で修正・悪用報告なし・Section 3 本編 |
 | CVE-2026-103093 | ServiceNow AI Platform（Rhinoサンドボックス回避・管理者認証が前提） | 2026-10-31 | none | 2026-10-31 | YES | CVSS v4.0 9.4 Critical・同時公表 CVE-2026-103094（平文パスワード保存・CVSS 7.1）ほか計3件・9月以降の更新で対応済み・悪用なし・Section 3 参考B |
 | CVE未採番（WordPress Core 4.7〜7.1.3 フルパッケージ更新時のレース条件RCE） | WordPress Core 4.7〜7.1.3（wp-content/upgrade の予測可能なステージング先） | 2026-10-31 | active_exploitation | 2026-10-31 | YES | CVSS 8.1・修正 2026-10-28・Wordfenceが24時間で62,969件の攻撃をブロック・成功例未確認・CVE未採番（採番後はD2でSection 3へ帰属し直す）・Section 2 注目CVE(trends) |
+| CVE-2026-58882 | Android（細工した SMS による遠隔のクラッシュ／携帯通信妨害・通称「SMS of Death」） | 2026-11-01 | poc_public | 2026-11-01 | YES | BleepingComputer 2026-10-31（要約のみ・本文403）・PoC 公開・修正済み・悪用報告なし・CVSS／対象版／修正月は未確認・Section 3 本編 |

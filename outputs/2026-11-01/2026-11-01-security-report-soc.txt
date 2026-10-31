@@ -1,0 +1,136 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-01 07:55 JST
+調査期間: 2026-10-31 07:00 〜 2026-11-01 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-11-01-001 Northflank 侵害：基盤上の全シークレットを交換し、AI プロバイダーの API 利用量・請求を遡って確認する
+------------------------------------------------------------
+対象: Northflank／顧客の AI API キー
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-31] Northflank が侵害を認め、顧客に全認証情報・シークレットの交換を要請。AI API キーの不正利用が発生。
+
+【概要】
+Northflank 上にデプロイしたアプリのシークレットに AI API キー（LLM 利用権）を置いている組織が直接の対象。キーは課金に直結し、転売や大量利用で請求が急増しうる。
+
+【推奨アクション】
+- 1) Northflank に保存した全シークレット（API キー・DB 資格情報・トークン）を交換する。2) AI プロバイダー側の使用量・請求・キーの最終利用日時を遡って確認し、不審があれば上限を設定する。3) Northflank 側の通知を確認し、侵入経路の続報（IOC・期間）を待つ。
+
+【監視】
+AI プロバイダーの API 利用量の急増、通常と異なる送信元の利用。
+
+【参照】
+- Northflank security breach leads to abuse of customers' AI API keys (BleepingComputer) https://www.bleepingcomputer.com/news/security/northflank-security-breach-leads-to-abuse-of-customers-ai-api-keys
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-11-01-002 Android「SMS of Death」（CVE-2026-58882）の PoC 公開：端末のセキュリティパッチを最新にする
+------------------------------------------------------------
+対象: Android 端末
+
+【24時間以内の変化】
+[BleepingComputer 2026-10-31] 研究者が修正済みの CVE-2026-58882 の PoC を公開。細工した SMS で携帯通信の妨害や端末のクラッシュが可能。
+
+【概要】
+修正済みだが未適用の端末が対象。PoC 公開により悪用の敷居が下がる可能性（推測）。悪用の報告は確認されていない。
+
+【推奨アクション】
+- 管理端末の Android パッチレベルを棚卸し、未適用端末を更新する。業務用携帯の更新期限を設ける。
+
+【監視】
+端末の予期せぬ再起動・圏外化の多発。
+
+【参照】
+- New Android "SMS of Death" exploit can remotely crash unpatched phones (BleepingComputer) https://www.bleepingcomputer.com/news/security/new-android-sms-of-death-exploit-can-remotely-crash-unpatched-phones
+
+------------------------------------------------------------
+SOC-2026-11-01-003 Chainalysis 顧客：露出した氏名・メール・ロールを悪用したフィッシングに警戒し、同社通知の対象範囲を確認する
+------------------------------------------------------------
+対象: Chainalysis（顧客組織）
+
+【24時間以内の変化】
+[Chainalysis／The Hacker News 2026-10-30] agentic な手口による不正アクセスで顧客のユーザー ID・氏名・メール・ロールが閲覧された。
+
+【概要】
+認証情報・セッショントークンの漏えいはないと同社は説明している。露出したのは連絡先とロールのため、同社や関係者を装うなりすましメールの精度が上がる可能性がある（推測）。
+
+【推奨アクション】
+- 通知に自組織のユーザーが含まれるか確認する。ユーザーへ注意喚起し、Chainalysis を名乗る連絡は正規ポータル経由で確認する。MFA を維持する。
+
+【監視】
+Chainalysis を名乗る不審メール・ログイン試行。
+
+【参照】
+- Chainalysis Confirms Intrusion Into Internal Tools and Exposure of Customer Identity Data (The Hacker News) https://thehackernews.com/2026/10/chainalysis-confirms-intrusion-into.html
+
+------------------------------------------------------------
+SOC-2026-11-01-004 WordPress プラグイン計 7 件（CVSS 9.1〜9.8）が公開：該当プラグインの版を確認し、更新または無効化する
+------------------------------------------------------------
+対象: WordPress プラグイン（PDF Invoice for WooCommerce・Project Manager・SimpleForm・Uncanny Toolkit for LearnDash・Acadlix LMS・WP Booking System・Popup Builder）
+
+【24時間以内の変化】
+[NVD／Wordfence 2026-10-31] Wordfence CNA が 7 件を公開。RCE・任意ファイルアップロード・認証バイパスを含む。悪用の報告はない。
+
+【概要】
+CVE-2026-109220・116512・118235・119096・103882・116557・89270。悪用・公開 PoC・KEV 収載は確認されていないが、WordPress プラグインは公開後に悪用が始まる例が多い（推測）。
+
+【推奨アクション】
+- 該当プラグインを使う場合は修正版へ更新し、修正版がなければ無効化する。WAF でプラグインのエンドポイントを保護する。
+
+【監視】
+プラグインのエンドポイントへの異常なリクエスト、wp-content 下の想定外ファイル。
+
+【参照】
+- CVE-2026-116512 (NVD) https://nvd.nist.gov/vuln/detail/CVE-2026-116512
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-11-01-005 ChatGPT 共有リンクのセッション内コード実行（Parameter 報告）：修正済み、見知らぬ共有リンクの Preview を押さない
+------------------------------------------------------------
+対象: ChatGPT（共有リンク／Preview）
+
+【24時間以内の変化】
+[Parameter／The Hacker News 2026-10-31] OpenAI が報告から 8 日後に修正（P1）。実環境での悪用は報告なし。
+
+【概要】
+利用者側の対応は不要。AI サービスの共有リンクも URL 経由の攻撃面になりうる。
+
+【推奨アクション】
+- 見知らぬ共有リンクを開かない・Preview を押さない運用を周知する。
+
+【監視】
+特になし。
+
+【参照】
+- A Shared ChatGPT Link Could Run Attacker Code in Your Session and Read Private Chats (The Hacker News) https://thehackernews.com/2026/10/a-shared-chatgpt-link-could-run.html
+
+------------------------------------------------------------
+SOC-2026-11-01-006 Cloudflare 第 3 四半期レポート：短時間・低帯域 DDoS が 208% 増 — 検知しきい値と自動緩和の見直し
+------------------------------------------------------------
+対象: DDoS 対策全般
+
+【24時間以内の変化】
+[Cloudflare／The Hacker News 2026-10-30] L3 DDoS 1,820 万件（前四半期比 38% 増）、10 分未満・1 Gbps 未満の攻撃が 208% 増。
+
+【概要】
+大規模攻撃は減る一方、短時間・低帯域の攻撃は増えた。人手による検知・対応では間に合わない時間帯が増える可能性（推測）。
+
+【推奨アクション】
+- 自動緩和（レート制限・オートスケール・上流の DDoS 防御）を有効化し、低帯域でも反応する検知しきい値を確認する。
+
+【監視】
+L3／L4 のトラフィックの短時間スパイク。
+
+【参照】
+- Cloudflare Reports 18.2 Million Network-Layer DDoS Attacks in Q3, Up 38% (The Hacker News) https://thehackernews.com/2026/10/cloudflare-reports-182-million-network.html
+
