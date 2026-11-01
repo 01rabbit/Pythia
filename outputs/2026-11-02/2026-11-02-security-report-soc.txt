@@ -1,0 +1,117 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-02 07:55 JST
+調査期間: 2026-11-01 07:00 〜 2026-11-02 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-11-02-001 GitLab CVE-2026-97229：Ruby（Onigmo）側の修正も含めて更新状況を確認し、侵害を否定できない場合は再構築と秘密情報の交換を行う
+------------------------------------------------------------
+対象: GitLab CE/EE（自前ビルド・カスタムコンテナ含む）
+
+【24時間以内の変化】
+[BleepingComputer 2026-11-01] Alpine Linux が悪用試行を受け GitLab を再構築。GitLab 本体の更新だけでは Ruby 側が未修正のまま残る場合があった。
+
+【概要】
+GitLab のパッチ適用後も、同梱／ベースイメージの Ruby が修正版（3.3.13 以降）でない環境は脆弱なまま残る。本 CVE は KEV 収載済みで公開 PoC もあり、CI/CD 設定を介して未認証で到達できる。
+
+【推奨アクション】
+- 1) GitLab 本体に加え Ruby の版を確認し、カスタムコンテナは alpinelinux/gitlab:19.3.6 相当の修正を取り込む。2) ログと外向き通信記録を保全する。3) 侵害を否定できない場合は再構築し、ユーザーのパスワード・2FA シークレット・CI/CD シークレット・連携の資格情報を交換する。
+
+【監視】
+CI 設定内の異常な正規表現、GitLab ワーカーの繰り返しクラッシュ、コンテナイメージの不審なダウンロード。
+
+【参照】
+- Alpine Linux rebuilds GitLab after attempted RCE attack (BleepingComputer) https://www.bleepingcomputer.com/news/security/alpine-linux-rebuilds-gitlab-after-attempted-rce-attack/
+
+------------------------------------------------------------
+SOC-2026-11-02-002 Binance 窃取の TraderTraitor 帰属：偽採用面接と Terraform プロバイダ経由のローダーへの対策を再確認する
+------------------------------------------------------------
+対象: 暗号資産・DevOps・AI・ブロックチェーン関連の組織
+
+【24時間以内の変化】
+[FBI／THN／BleepingComputer 2026-11-01] FBI が Binance 窃取を TraderTraitor に公式帰属。
+
+【概要】
+THN によれば TraderTraitor は偽リクルーター・前面会社を使った偽採用面接で開発者に接触し、Terraform プロバイダ経由の Bash ローダーで macOS・Linux・Windows 向けマルウェアを配布する（同グループの手法の記述で、Binance 事案での使用は明示されていない）。標的はサイバーセキュリティ・AI・ブロックチェーン・採用関連企業。
+
+【推奨アクション】
+- 1) 採用面接を名目とするコード課題・リポジトリの実行を、隔離環境以外で禁止する。2) Terraform プロバイダの取得元を固定し、未検証プロバイダを拒否する。3) DevOps 端末と署名権限を分離し、署名鍵への到達経路を棚卸す。4) FBI 公表のウォレットアドレスを原典で確認し、送金スクリーニングに反映する。
+
+【監視】
+開発者端末からの Terraform プロバイダ取得元の逸脱、Bash ローダーの実行、不審な採用担当者を名乗る接触。
+
+【参照】
+- FBI Links North Korea's TraderTraitor to Record $6.43 Billion Binance Crypto Heist (The Hacker News) https://thehackernews.com/2026/11/fbi-links-north-koreas-tradertraitor-to.html
+- FBI links $6.3 billion Binance crypto heist to North Korean hackers (BleepingComputer) https://www.bleepingcomputer.com/news/security/fbi-links-63-billion-binance-crypto-heist-to-north-korean-hackers/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-11-02-003 LXD／MicroCloud CVE-2026-112816（CVSS 10.0）：HTTPS API の到達範囲を絞り、修正版の適用状況を確認する
+------------------------------------------------------------
+対象: Canonical LXD／MicroCloud
+
+【24時間以内の変化】
+[The Hacker News 2026-11-01] CVSS 10.0 の認証回避。修正版を公開済み、悪用・PoC の報告なし。
+
+【概要】
+信頼済みクライアントの公開証明書を知る攻撃者が秘密鍵なしにそのクライアントとして認証される。修正版は candidate から stable へ展開中で、自分の版が修正済みかの確認が必要。
+
+【推奨アクション】
+- LXD の HTTPS API を管理ネットワークに限定し、修正版（6.10.1／5.21.9／5.0.11／4.0.15、MicroCloud 3.4.1／2.1.5）へ更新する。
+
+【監視】
+LXD API への未知の送信元からの接続、信頼済み証明書による想定外のアクセス。
+
+【参照】
+- CVSS 10.0 LXD, MicroCloud Flaw Lets Attackers Impersonate Trusted Clients Without a Private Key (The Hacker News) https://thehackernews.com/2026/11/critical-lxd-and-microcloud-flaw-cvss.html
+
+------------------------------------------------------------
+SOC-2026-11-02-004 Polymarket 事案：署名・取引画面から外部スクリプトを排除し、SRI・CSP・版固定を適用する
+------------------------------------------------------------
+対象: Web3／金融サービスのフロントエンド
+
+【24時間以内の変化】
+[The Hacker News 2026-11-01] サードパーティの RUM スクリプトが差し替えられ、署名リクエスト経由で資金が持ち出された。
+
+【概要】
+外部ベンダーのスクリプトは、ベンダーの DNS やドメイン登録事業者の侵害で悪性コードに差し替えられうる。署名・取引ページに外部コードがあると、ユーザーの署名者にリクエストを出せる。
+
+【推奨アクション】
+- 署名・取引ページから不要な外部スクリプトを除去する。必要なものは SRI・厳格な CSP・版固定で配信し、ベンダー側のレジストラのロックと DNS 変更の監視を確認する。利用者は予期しない署名リクエストを拒否する。
+
+【監視】
+外部スクリプトのハッシュ変化、CSP 違反レポート、署名リクエストの急増。
+
+【参照】
+- Hackers Steal About $2.7 Million From Polymarket Traders via Hijacked DebugBear Script (The Hacker News) https://thehackernews.com/2026/11/hackers-steal-about-27-million-from.html
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+SOC-2026-11-02-005 NetamLoader：AppDomainManager による .NET ローダーと C2 ドメインを検知対象にする
+------------------------------------------------------------
+対象: Windows 10（政府機関向けカスタム版を含む）
+
+【24時間以内の変化】
+[Kaspersky／The Hacker News 2026-10-30] アジアの政府機関専用 Windows 10 を狙う NetamLoader を公表。
+
+【概要】
+テレメトリ上の被害者は 1 件で、対象は限定的。.config による AppDomainManager 悪用と SoftwareDistribution 配下の不審な Patch My PC 関連ファイルが手掛かり。
+
+【推奨アクション】
+- openaigpt4v[.]com への通信と C:\Windows\SoftwareDistribution\Download 配下の不審ファイルを検索する。.NET の AppDomainManager 設定の異常を監視する。IoC の詳細は Kaspersky SecureList で確認する。
+
+【監視】
+SoftwareDistribution\Download 配下の .config ファイル、dllhost.exe からの不審な通信。
+
+【参照】
+- NetamLoader Malware Targets Government Windows 10 Systems in Asia via .NET Injection (The Hacker News) https://thehackernews.com/2026/11/netamloader-malware-targets-government.html
+
