@@ -1,0 +1,892 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-11-02",
+    "generated_at": "2026-11-02T07:50:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-11-01T07:00:00+09:00",
+      "to": "2026-11-02T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.10.30",
+      "candidates": 21,
+      "handled": 21,
+      "unhandled": 0,
+      "kev_added_in_window": 0,
+      "ghsa_origin_over_threshold": 0,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 21,
+        "euvd_only": 1
+      }
+    },
+    "data_gaps": [
+      "日曜日（JST 月曜早朝）の窓で収集記事は 9 件と少なく、窓内の CISA KEV 追加は 0 件。FBI の TraderTraitor 帰属は THN（本文取得）と BleepingComputer（要約のみ）を根拠とし、FBI 原典（IC3 アラート）と公表ウォレットアドレスは未取得のため IOC は記録していない。TraderTraitor の手法（偽採用面接・Terraform プロバイダ経由のローダー・FLATROOF／ROOFDECK）は THN が同グループの手法として記述したもので、Binance 事案で使われたとは記事上明示されていないため事案の TTP としては記録していない。CVE-2026-112816 の NVD 反映・EPSS は未確認。NetamLoader の IOC は Kaspersky 原典（SecureList）で要確認。前日までに報告済みの Ivanti Connect Secure・Drupal Commerce Core・Android SMS of Death・Chainalysis・Northflank は再掲していない。"
+    ]
+  },
+  "zero_day_special": [],
+  "main_cve": [
+    {
+      "priority": "high",
+      "cvss_v3": 10.0,
+      "cvss_v4": null,
+      "cvss_severity": "critical",
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": "2026-10-29",
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "exploited_by": null,
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "affected_versions": "GitLab CE/EE 19.2.8／19.3.5／19.4.2 未満（Onigmo の整数オーバーフロー・Ruby 側の修正も必要）。Alpine は 19.3.4 を導入後、19.3.6 でも Ruby 未修正のため残存",
+      "status": {
+        "kev_registered": true,
+        "poc_published": true,
+        "actively_exploited": true,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "GitLab 修正版（10-12 公開）＋Ruby 3.3.13 以降。Alpine のイメージは alpinelinux/gitlab:19.3.6（10-27 公開）",
+        "eta": null
+      },
+      "techniques": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "攻撃者が細工した CI 設定（正規表現）を送信して GitLab の脆弱性を突き、ワーカーを 8 回クラッシュさせた（BleepingComputer）"
+        }
+      ],
+      "temp_mitigation": [
+        "GitLab を修正版へ更新し、同梱／ベースの Ruby も修正済みであることを確認する（カスタムコンテナ・自前ビルドは特に注意）",
+        "ログと外向き通信記録を保全し、侵害を否定できない場合は再構築と全パスワード・CI/CD シークレットの交換を検討する"
+      ],
+      "monitoring": {
+        "description": "CI/CD の設定に含まれる異常な正規表現、GitLab ワーカーの繰り返しクラッシュ、GitLab コンテナイメージの不審なダウンロードを確認する。",
+        "splunk_spl": [],
+        "detection_notes": "IOC は記事に記載なし。Alpine はログ欠落と外向き通信記録の不在のためコード実行を否定できないと説明（侵害の確認ではない）。"
+      },
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "cve_id": "CVE-2026-97229",
+      "product": "GitLab CE/EE（Onigmo 整数オーバーフロー・CI/CD 設定経由の未認証 RCE）",
+      "vendor": "GitLab",
+      "axis1_score": 9,
+      "axis2_score": 7,
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-11-01",
+          "description": "Alpine Linux が 10-20〜21 の悪用試行（ワーカー 8 回クラッシュ・うち 4 回は部分的に成功・完全成功は確認されず）を受け、GitLab を再構築し全パスワードをリセット。攻撃者が GitLab コンテナイメージをダウンロードしており、サプライチェーン攻撃の準備の可能性。[続報]"
+        }
+      ],
+      "overview": "Alpine Linux は、開発基盤の GitLab に対し 10-20〜21 に CVE-2026-97229 を狙った悪用試行があったとして、GitLab を再構築し全パスワードをリセットした（BleepingComputer）。攻撃者は細工した CI 設定を送り、ワーカーを 8 回クラッシュさせ、うち 4 回は部分的に成功したが完全な成功は確認されていない。Alpine は 10-27 までリポジトリのコミット・パッケージ・リリースの改ざんは見つかっていないとする。署名鍵は GitLab サーバー上になく露出していない。一方でログ欠落と外向き通信記録の不在によりコード実行を否定できないため、再構築を選んだ。攻撃者が GitLab のコンテナイメージをダウンロードしていた点を、記事はサプライチェーン攻撃準備の可能性として挙げる（推測）。原因は、Alpine が 19.3.4 を導入し、19.3.6 でも Ruby 側の修正が自社イメージに無かったこと。本 CVE は CISA KEV に 10-29 収載済みで、攻撃者の帰属はない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者が細工した CI/CD 設定（悪意ある正規表現）を Alpine の GitLab へ送信（10-20〜21）"
+        },
+        {
+          "step": 2,
+          "description": "Onigmo の整数オーバーフローによりワーカーが 8 回クラッシュ、4 回は部分的に成功（完全成功は確認されず）"
+        },
+        {
+          "step": 3,
+          "description": "GitLab のコンテナイメージをダウンロード（目的は不明・サプライチェーン準備の可能性は推測）"
+        }
+      ],
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/alpine-linux-rebuilds-gitlab-after-attempted-rce-attack/",
+          "title": "Alpine Linux rebuilds GitLab after attempted RCE attack",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20261102-CVEP-a9e58878"
+    },
+    {
+      "priority": "medium",
+      "cvss_v3": 10.0,
+      "cvss_v4": null,
+      "cvss_severity": "critical",
+      "cwe_ids": [],
+      "epss": {
+        "score": null,
+        "percentile": null,
+        "model_date": null
+      },
+      "fceb_deadline": null,
+      "kev_date_added": null,
+      "jpcert_ipa": {
+        "issued": false,
+        "entries": []
+      },
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "exploited_by": null,
+      "section_route": "product_cve",
+      "report_section": "main_cve",
+      "affected_versions": "LXD 4.0.14／5.0.10／5.21.8／6.9 のそれぞれ修正版より前、および MicroCloud（版は記事に記載なし）。Ubuntu アーカイブ版 LXD は対象外と記載",
+      "status": {
+        "kev_registered": false,
+        "poc_published": false,
+        "actively_exploited": false,
+        "zero_day": false,
+        "patch_available": true
+      },
+      "patch_info": {
+        "available": true,
+        "version": "LXD 6.10.1／5.21.9／5.0.11／4.0.15、MicroCloud 3.4.1／2.1.5（Incus 7.6.0）。修正版が candidate から stable へ展開中のため実際の版の確認が必要（THN）",
+        "eta": null
+      },
+      "techniques": [
+        {
+          "mitre_id": "T1190",
+          "name": "Exploit Public-Facing Application",
+          "implementation": "HTTPS API へネットワーク到達でき、信頼済みクライアントの公開証明書を知る攻撃者が、秘密鍵なしにそのクライアントとして認証される（THN）"
+        }
+      ],
+      "temp_mitigation": [
+        "LXD／MicroCloud の HTTPS API を信頼できるネットワークに限定する",
+        "修正版（stable への展開状況を確認）へ更新する"
+      ],
+      "monitoring": {
+        "description": "LXD の HTTPS API（既定 8443）への未知の送信元からの接続、信頼済みクライアント証明書による想定外の送信元からのアクセスを確認する。",
+        "splunk_spl": [],
+        "detection_notes": "悪用・PoC の報告なし（CISA の評価〈10-30〉は悪用既知ではない・THN）。NVD の収載状況と EPSS は未確認。"
+      },
+      "sector_impact": [
+        "it"
+      ],
+      "region_impact": [
+        "global"
+      ],
+      "cve_id": "CVE-2026-112816",
+      "product": "Canonical LXD／MicroCloud（信頼済みクライアントのなりすましによる認証回避）",
+      "vendor": "Canonical",
+      "axis1_score": 8,
+      "axis2_score": 3,
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-11-01",
+          "description": "CVSS 10.0 の LXD／MicroCloud の認証回避 CVE-2026-112816 を THN が報道。修正版を公開済み。悪用・PoC の報告なし。[新規]"
+        }
+      ],
+      "overview": "Canonical の LXD と MicroCloud に、攻撃者が信頼済みクライアントの秘密鍵を持たずにそのクライアントとして認証される欠陥（CVE-2026-112816・CVSS 10.0）が見つかった（THN）。成立には HTTPS API へのネットワーク到達性と、なりすます対象の公開証明書が必要。成功するとそのクライアントの権限でクラスターと仮想マシンを操作できる。Incus コミュニティ（LXD のフォーク）が報告し Incus 7.6.0 で修正された。CISA の評価（10-30）では悪用は確認されていない。未検証の情報として、修正版が stable チャネルへ展開中であり利用者は自分の版を確認する必要がある。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "攻撃者が LXD／MicroCloud の HTTPS API へ到達し、信頼済みクライアントの公開証明書を入手する（THN の前提条件）"
+        },
+        {
+          "step": 2,
+          "description": "秘密鍵なしにそのクライアントとして認証され、クラスターと VM を操作できる（THN）"
+        }
+      ],
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/11/critical-lxd-and-microcloud-flaw-cvss.html",
+          "title": "CVSS 10.0 LXD, MicroCloud Flaw Lets Attackers Impersonate Trusted Clients Without a Private Key",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261102-CVEP-cd1873a5"
+    }
+  ],
+  "reference_a": [],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-11-02-001",
+        "title": "Polymarket：サードパーティ監視スクリプト（DebugBear）の差し替えで約 270 万ドルを窃取 — DebugBear のドメイン登録事業者側での DNS 記録侵害が原因とされる",
+        "summary": "Polymarket のサイトが外部の RUM ベンダー DebugBear から読み込むページ速度スクリプトが 10-29 に悪性コードへ差し替えられ、ログイン中のトレーダーのポジションが売却または攻撃者のウォレットへ移され、資金が持ち出された（THN）。研究者の調査では DebugBear の DNS 記録がドメイン登録事業者経由で侵害されたとされ、DebugBear は自社システムへの侵入の兆候はなく標的は 1 顧客のみとみられると説明した。攻撃者のウォレットは 17:10〜18:02 UTC に約 2,860 万 POL（約 264 万ドル）と 33 ウォレット分のポジションを受領し、18:28〜18:38 UTC に 3 アドレスへ転送した。Polymarket は影響を受けたのは 726 ウォレット・約 270 万ドルで返金すると説明（10-30 時点で 689 件は全額返金）。さらに取引停止の影響を受けた約 5,500 ウォレットへ 119 万ドルを支払い、返還総額は 390 万ドル。Hudson Rock はキー・シードフレーズ・秘密鍵を外部へ送るコードは見つからなかったと述べ、スクリプトは署名者に署名を要求する方式だった。攻撃者の帰属は記事にない。対策として、署名・取引画面への外部スクリプト排除、SRI、CSP、バージョン固定が挙げられている。",
+        "changes_24h": [
+          {
+            "source": "The Hacker News",
+            "date": "2026-11-01",
+            "description": "Polymarket の約 270 万ドル窃取がサードパーティスクリプト（DebugBear）の差し替えと判明。DebugBear の DNS 記録がドメイン登録事業者経由で侵害されたとされる。[新規]"
+          }
+        ],
+        "sector_impact": [
+          "finance",
+          "crypto"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "references": [
+          {
+            "url": "https://thehackernews.com/2026/11/hackers-steal-about-27-million-from.html",
+            "title": "Hackers Steal About $2.7 Million From Polymarket Traders via Hijacked DebugBear Script",
+            "language": "en",
+            "source": "The Hacker News"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261102-TRND-0fa9efbd"
+      }
+    ]
+  },
+  "apt_main": [
+    {
+      "activity_type": [
+        "financial_theft",
+        "social_engineering"
+      ],
+      "motivation": "financial",
+      "first_seen": "2020",
+      "last_seen": "2026-10-29",
+      "malware": [
+        "FLATROOF（クロスプラットフォーム・Python 製インフォスティーラーを使用）",
+        "ROOFDECK（バックドア）"
+      ],
+      "recommended_actions": "採用面接を装った接触（偽リクルーター・前面会社）で配布される Terraform プロバイダや Bash ローダーを実行しない運用を徹底し、開発者端末で未検証の Terraform プロバイダ取得を制限する。暗号資産事業者は DevOps 端末の隔離と署名権限の分離を確認する。FBI が公表したウォレットアドレスは原典で確認し、送金のスクリーニングに反映する。",
+      "splunk_spl": [],
+      "detection_notes": "FBI の公表ウォレットアドレスは本文に含まれず原典未取得のため IOC は未記録。FLATROOF／ROOFDECK 等は THN が TraderTraitor の手法として記述したもので、Binance 事案での使用は記事上明示されていない（SentinelOne・Zscaler・Microsoft が出典）。",
+      "related_cves": [],
+      "ioc": {
+        "confirmed": false,
+        "ips": [],
+        "domains": [],
+        "hashes": [],
+        "urls": [],
+        "filenames": []
+      },
+      "group_name": "TraderTraitor（FBI 帰属・別名: Jade Sleet／Pressure Chollima／PUKCHONG／Slow Pisces／UNC4899）",
+      "aliases": [
+        "Jade Sleet",
+        "Pressure Chollima",
+        "PUKCHONG",
+        "Slow Pisces",
+        "UNC4899"
+      ],
+      "nation_state": "北朝鮮（FBI・USSS・IRS-CI が TraderTraitor による窃取と公式に帰属・THN／BleepingComputer）",
+      "attribution_confidence": "high",
+      "campaign_id": "TraderTraitor-2026-BinanceHeist-FBIAttribution",
+      "targets": {
+        "sectors": [
+          "finance",
+          "crypto"
+        ],
+        "regions": [
+          "GLOBAL"
+        ],
+        "countries": []
+      },
+      "axis_p_score": 9,
+      "axis_q_score": 9,
+      "changes_24h": [
+        {
+          "source": "FBI／USSS／IRS-CI（The Hacker News・BleepingComputer 経由）",
+          "date": "2026-11-01",
+          "description": "FBI が約 64.3 億ドル相当（60 億ドル超）の Binance 関連の暗号資産窃取を TraderTraitor に公式に帰属。[新規: 公式帰属]"
+        }
+      ],
+      "overview": "FBI は USSS・IRS-CI とともに、Binance を巡る 60 億ドル超（THN は 64.3 億ドル、BleepingComputer は 63 億ドル）の暗号資産窃取を、北朝鮮系の TraderTraitor（Jade Sleet／Pressure Chollima／PUKCHONG／Slow Pisces／UNC4899）によるものと帰属した。11 のブロックチェーンにまたがり、82% が Ethereum と Bitcoin。史上最大の暗号資産窃取で、2025 年 2 月の Bybit（14.6 億ドル）を上回る。Elliptic は北朝鮮の累計窃取額を 65 億ドル超と推計し、今回でほぼ倍増したとする。約 28.5 億ドルが Tether・Circle・Ripple・Arbitrum・Optimism によりオンチェーンで凍結された。攻撃者は主に ETH へ換金しており、FBI は DeFi・即時スワップ経由の追加洗浄を見込む。Binance は出金を一時停止し、段階的に再開（入金は継続）。侵入経路は、前日までの報道で Binance が説明した侵害された DevOps エンジニアのノート PC が起点とされる。THN は同グループの手法として、偽リクルーター・前面会社による偽採用面接、Terraform プロバイダ経由の Bash ローダー、FLATROOF／ROOFDECK、生成 AI による誘い文句の作成を記すが、Binance 事案での使用は明示されていない。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Binance の DevOps エンジニアのノート PC が侵害されたと Binance が説明（前日までの報道）"
+        },
+        {
+          "step": 2,
+          "description": "約 60 億ドル超の資産が 11 のブロックチェーンから窃取され、主に ETH へ換金（FBI・Elliptic）"
+        },
+        {
+          "step": 3,
+          "description": "DeFi・即時スワップ経由の追加洗浄が見込まれる（FBI の見解・推測）。約 28.5 億ドルは凍結済み"
+        }
+      ],
+      "ttps": [],
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/11/fbi-links-north-koreas-tradertraitor-to.html",
+          "title": "FBI Links North Korea's TraderTraitor to Record $6.43 Billion Binance Crypto Heist",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/fbi-links-63-billion-binance-crypto-heist-to-north-korean-hackers/",
+          "title": "FBI links $6.3 billion Binance crypto heist to North Korean hackers",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20261102-APTC-1962cea6",
+      "report_section": "apt_main"
+    }
+  ],
+  "apt_notable": [
+    {
+      "activity_type": [
+        "espionage（推測）"
+      ],
+      "motivation": "unknown",
+      "first_seen": null,
+      "last_seen": "2026-10-29",
+      "malware": [
+        "NetamLoader（.NET アセンブリ読み込みフレームワーク・Kaspersky が命名）"
+      ],
+      "recommended_actions": "AppDomainManager による .NET ローダー（.config ファイルでの任意アセンブリ読み込み）を検知対象に加える。C:\\Windows\\SoftwareDistribution\\Download 配下の不審な Patch My PC 関連ファイルと、通信先ドメインを確認する。",
+      "splunk_spl": [],
+      "detection_notes": "記事記載の IoC: C2 ドメイン openaigpt4v[.]com、ステージングディレクトリ C:\\Windows\\SoftwareDistribution\\Download\\e4537a1762fcafd2fd96bfc825bad34f9db9a24。ハッシュ・IP は記事に無い。記事は CAB 内のどのファイルに悪性コードがあるかの記述が一部不整合で、Kaspersky SecureList の原典で確認が必要。",
+      "related_cves": [],
+      "ioc": {
+        "confirmed": true,
+        "ips": [],
+        "domains": [
+          "openaigpt4v[.]com"
+        ],
+        "hashes": [],
+        "urls": [],
+        "filenames": [
+          "C:\\Windows\\SoftwareDistribution\\Download\\e4537a1762fcafd2fd96bfc825bad34f9db9a24",
+          "PatchMyPC-ScriptRunner.exe.config"
+        ]
+      },
+      "group_name": "未帰属（Kaspersky が NetamLoader と命名・攻撃者名は不明）",
+      "aliases": [],
+      "nation_state": "不明（記事は対象国を中国と推測するが未確認）",
+      "attribution_confidence": "low",
+      "campaign_id": "RIS-2026-NetamLoader-AsiaGovWin10",
+      "targets": {
+        "sectors": [
+          "government"
+        ],
+        "regions": [
+          "APAC"
+        ],
+        "countries": []
+      },
+      "axis_p_score": 5,
+      "axis_q_score": 3,
+      "changes_24h": [
+        {
+          "source": "Kaspersky（The Hacker News 経由）",
+          "date": "2026-10-30",
+          "description": "Kaspersky がアジアの政府機関専用のカスタム Windows 10 を狙う感染チェーンと NetamLoader を公表。テレメトリ上の被害者は 1 件。[新規]"
+        }
+      ],
+      "overview": "Kaspersky は今週、アジアの政府機関だけが使うカスタム Windows 10 を標的にした「高度な感染チェーン」を公表した（THN）。未文書化の .NET アセンブリ読み込みフレームワーク NetamLoader を展開する。.config ファイルによる AppDomainManager の悪用で任意の .NET アセンブリを読み込み、正規の Patch My PC のコンポーネントに悪性ファイルを同梱して偽装する。多層のエンコード・圧縮・暗号化されたペイロード（XAML・.NET アセンブリ・JSON）を使い、AMSI をバイパスし、dllhost.exe 内で XAML を実行し、抽出ファイル・CLR 使用ログ・Prefetch を削除する。C2 へは初回に 20〜40 分のランダム待機を入れ、有効な応答後は 5〜6 分、それ以外は 22〜28 時間待機する。サプライチェーン攻撃の疑いがあるが未確認。攻撃者の帰属はなく、テレメトリ上の被害者は 1 件。",
+      "attack_flow": [
+        {
+          "step": 1,
+          "description": "Windows Update の配布領域（SoftwareDistribution\\Download）に Patch My PC のコンポーネントと悪性ファイルを同梱した CAB が置かれる（侵入経路は不明・サプライチェーンの疑いは未確認）"
+        },
+        {
+          "step": 2,
+          "description": ".config による AppDomainManager 悪用で .NET アセンブリを読み込み、AMSI をバイパスして dllhost.exe 内で XAML を実行"
+        },
+        {
+          "step": 3,
+          "description": "C2 をジッタ付きでポーリングし、XAML を受け取り隔離した AppDomain で実行。抽出ファイル・ログを削除"
+        }
+      ],
+      "ttps": [
+        {
+          "mitre_id": "T1574.014",
+          "name": "Hijack Execution Flow: AppDomainManager",
+          "implementation": ".config ファイルで任意の .NET アセンブリを読み込む（THN・Kaspersky が明示）"
+        },
+        {
+          "mitre_id": "T1562.001",
+          "name": "Impair Defenses: Disable or Modify Tools",
+          "implementation": "AMSI をバイパス（THN の記述）"
+        },
+        {
+          "mitre_id": "T1070",
+          "name": "Indicator Removal",
+          "implementation": "抽出ファイル・CLR 使用ログ・Prefetch を削除（THN の記述）"
+        }
+      ],
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/11/netamloader-malware-targets-government.html",
+          "title": "NetamLoader Malware Targets Government Windows 10 Systems in Asia via .NET Injection",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261102-APTC-e1d0e8c2",
+      "report_section": "apt_notable"
+    }
+  ],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-11-02-001",
+      "title": "GitLab CVE-2026-97229：Ruby（Onigmo）側の修正も含めて更新状況を確認し、侵害を否定できない場合は再構築と秘密情報の交換を行う",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "δ"
+      ],
+      "priority": "high",
+      "product_or_service": "GitLab CE/EE（自前ビルド・カスタムコンテナ含む）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "BleepingComputer",
+          "date": "2026-11-01",
+          "description": "Alpine Linux が悪用試行を受け GitLab を再構築。GitLab 本体の更新だけでは Ruby 側が未修正のまま残る場合があった。"
+        }
+      ],
+      "overview": "GitLab のパッチ適用後も、同梱／ベースイメージの Ruby が修正版（3.3.13 以降）でない環境は脆弱なまま残る。本 CVE は KEV 収載済みで公開 PoC もあり、CI/CD 設定を介して未認証で到達できる。",
+      "recommended_actions": "1) GitLab 本体に加え Ruby の版を確認し、カスタムコンテナは alpinelinux/gitlab:19.3.6 相当の修正を取り込む。2) ログと外向き通信記録を保全する。3) 侵害を否定できない場合は再構築し、ユーザーのパスワード・2FA シークレット・CI/CD シークレット・連携の資格情報を交換する。",
+      "monitoring": {
+        "description": "CI 設定内の異常な正規表現、GitLab ワーカーの繰り返しクラッシュ、コンテナイメージの不審なダウンロード。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/alpine-linux-rebuilds-gitlab-after-attempted-rce-attack/",
+          "title": "Alpine Linux rebuilds GitLab after attempted RCE attack",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20261102-SOCR-29614771"
+    },
+    {
+      "rec_id": "SOC-2026-11-02-002",
+      "title": "Binance 窃取の TraderTraitor 帰属：偽採用面接と Terraform プロバイダ経由のローダーへの対策を再確認する",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "δ"
+      ],
+      "priority": "high",
+      "product_or_service": "暗号資産・DevOps・AI・ブロックチェーン関連の組織",
+      "targets": {
+        "sectors": [
+          "finance",
+          "crypto",
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "FBI／THN／BleepingComputer",
+          "date": "2026-11-01",
+          "description": "FBI が Binance 窃取を TraderTraitor に公式帰属。"
+        }
+      ],
+      "overview": "THN によれば TraderTraitor は偽リクルーター・前面会社を使った偽採用面接で開発者に接触し、Terraform プロバイダ経由の Bash ローダーで macOS・Linux・Windows 向けマルウェアを配布する（同グループの手法の記述で、Binance 事案での使用は明示されていない）。標的はサイバーセキュリティ・AI・ブロックチェーン・採用関連企業。",
+      "recommended_actions": "1) 採用面接を名目とするコード課題・リポジトリの実行を、隔離環境以外で禁止する。2) Terraform プロバイダの取得元を固定し、未検証プロバイダを拒否する。3) DevOps 端末と署名権限を分離し、署名鍵への到達経路を棚卸す。4) FBI 公表のウォレットアドレスを原典で確認し、送金スクリーニングに反映する。",
+      "monitoring": {
+        "description": "開発者端末からの Terraform プロバイダ取得元の逸脱、Bash ローダーの実行、不審な採用担当者を名乗る接触。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/11/fbi-links-north-koreas-tradertraitor-to.html",
+          "title": "FBI Links North Korea's TraderTraitor to Record $6.43 Billion Binance Crypto Heist",
+          "language": "en",
+          "source": "The Hacker News"
+        },
+        {
+          "url": "https://www.bleepingcomputer.com/news/security/fbi-links-63-billion-binance-crypto-heist-to-north-korean-hackers/",
+          "title": "FBI links $6.3 billion Binance crypto heist to North Korean hackers",
+          "language": "en",
+          "source": "BleepingComputer"
+        }
+      ],
+      "info_id": "20261102-SOCR-1c49a78c"
+    },
+    {
+      "rec_id": "SOC-2026-11-02-003",
+      "title": "LXD／MicroCloud CVE-2026-112816（CVSS 10.0）：HTTPS API の到達範囲を絞り、修正版の適用状況を確認する",
+      "perspective": "cve",
+      "adoption_triggers": [
+        "δ"
+      ],
+      "priority": "medium",
+      "product_or_service": "Canonical LXD／MicroCloud",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-11-01",
+          "description": "CVSS 10.0 の認証回避。修正版を公開済み、悪用・PoC の報告なし。"
+        }
+      ],
+      "overview": "信頼済みクライアントの公開証明書を知る攻撃者が秘密鍵なしにそのクライアントとして認証される。修正版は candidate から stable へ展開中で、自分の版が修正済みかの確認が必要。",
+      "recommended_actions": "LXD の HTTPS API を管理ネットワークに限定し、修正版（6.10.1／5.21.9／5.0.11／4.0.15、MicroCloud 3.4.1／2.1.5）へ更新する。",
+      "monitoring": {
+        "description": "LXD API への未知の送信元からの接続、信頼済み証明書による想定外のアクセス。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/11/critical-lxd-and-microcloud-flaw-cvss.html",
+          "title": "CVSS 10.0 LXD, MicroCloud Flaw Lets Attackers Impersonate Trusted Clients Without a Private Key",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261102-SOCR-356d1d7a"
+    },
+    {
+      "rec_id": "SOC-2026-11-02-004",
+      "title": "Polymarket 事案：署名・取引画面から外部スクリプトを排除し、SRI・CSP・版固定を適用する",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "δ"
+      ],
+      "priority": "medium",
+      "product_or_service": "Web3／金融サービスのフロントエンド",
+      "targets": {
+        "sectors": [
+          "finance",
+          "crypto"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "The Hacker News",
+          "date": "2026-11-01",
+          "description": "サードパーティの RUM スクリプトが差し替えられ、署名リクエスト経由で資金が持ち出された。"
+        }
+      ],
+      "overview": "外部ベンダーのスクリプトは、ベンダーの DNS やドメイン登録事業者の侵害で悪性コードに差し替えられうる。署名・取引ページに外部コードがあると、ユーザーの署名者にリクエストを出せる。",
+      "recommended_actions": "署名・取引ページから不要な外部スクリプトを除去する。必要なものは SRI・厳格な CSP・版固定で配信し、ベンダー側のレジストラのロックと DNS 変更の監視を確認する。利用者は予期しない署名リクエストを拒否する。",
+      "monitoring": {
+        "description": "外部スクリプトのハッシュ変化、CSP 違反レポート、署名リクエストの急増。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/11/hackers-steal-about-27-million-from.html",
+          "title": "Hackers Steal About $2.7 Million From Polymarket Traders via Hijacked DebugBear Script",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261102-SOCR-d4ba1e36"
+    },
+    {
+      "rec_id": "SOC-2026-11-02-005",
+      "title": "NetamLoader：AppDomainManager による .NET ローダーと C2 ドメインを検知対象にする",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "δ"
+      ],
+      "priority": "low",
+      "product_or_service": "Windows 10（政府機関向けカスタム版を含む）",
+      "targets": {
+        "sectors": [
+          "government"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "Kaspersky／The Hacker News",
+          "date": "2026-10-30",
+          "description": "アジアの政府機関専用 Windows 10 を狙う NetamLoader を公表。"
+        }
+      ],
+      "overview": "テレメトリ上の被害者は 1 件で、対象は限定的。.config による AppDomainManager 悪用と SoftwareDistribution 配下の不審な Patch My PC 関連ファイルが手掛かり。",
+      "recommended_actions": "openaigpt4v[.]com への通信と C:\\Windows\\SoftwareDistribution\\Download 配下の不審ファイルを検索する。.NET の AppDomainManager 設定の異常を監視する。IoC の詳細は Kaspersky SecureList で確認する。",
+      "monitoring": {
+        "description": "SoftwareDistribution\\Download 配下の .config ファイル、dllhost.exe からの不審な通信。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://thehackernews.com/2026/11/netamloader-malware-targets-government.html",
+          "title": "NetamLoader Malware Targets Government Windows 10 Systems in Asia via .NET Injection",
+          "language": "en",
+          "source": "The Hacker News"
+        }
+      ],
+      "info_id": "20261102-SOCR-424141fa"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-120189",
+        "product": "D-Link DIR-505（CVSS 10.0）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA 公開。D-Link DIR-505 は旧製品で修正が出ない可能性。悪用・KEV 収載の報告なし。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120195",
+        "product": "WAVLINK WL-WN579A3-A（CVSS 10.0）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120198",
+        "product": "WAVLINK WL-WN530BE1-A（CVSS 10.0）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120338",
+        "product": "Prefab UI Generative UI サンドボックス（Pyodide 上の呼び出し側 Python 実行）（CVSS 10.0）",
+        "reason": "low_score",
+        "reason_detail": "JFrog CNA の OSS 個別脆弱性。悪用・PoC・KEV 収載の報告なし。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120196",
+        "product": "WAVLINK WN579X3-D（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120197",
+        "product": "WAVLINK WL-WN530HG4B（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120224",
+        "product": "Oray Pugongying X5 Pro（CVSS 9.1）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA 公開（Oray Pugongying X5 Pro 7.6.1 まで・2 件）。悪用・KEV 収載の報告なし。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120227",
+        "product": "WAVLINK WN701AE（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120228",
+        "product": "WAVLINK WN553X1-B（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120230",
+        "product": "WAVLINK WN701AE（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120231",
+        "product": "WAVLINK WN553X1-B（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120238",
+        "product": "WAVLINK WN553X1-B（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120239",
+        "product": "WAVLINK WN553X1-B（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120240",
+        "product": "WAVLINK WN553X1-B（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120306",
+        "product": "Beta9（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "JFrog CNA 公開の Beta9 の 3 件バッチ（テナントのイメージ定義／サンドボックス API／ボリューム経由）。悪用・KEV 収載の報告なし。マルチテナント環境の利用者は修正版を確認。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120307",
+        "product": "Beta9（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "JFrog CNA 公開の Beta9 の 3 件バッチ（テナントのイメージ定義／サンドボックス API／ボリューム経由）。悪用・KEV 収載の報告なし。マルチテナント環境の利用者は修正版を確認。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120308",
+        "product": "Beta9（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "JFrog CNA 公開の Beta9 の 3 件バッチ（テナントのイメージ定義／サンドボックス API／ボリューム経由）。悪用・KEV 収載の報告なし。マルチテナント環境の利用者は修正版を確認。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-62048",
+        "product": "Improper Neutralization of Special Elements used in an SQL C（CVSS 9.3）",
+        "reason": "low_score",
+        "reason_detail": "Patchstack CNA の WordPress 系 SQL インジェクション。悪用・PoC・KEV 収載の報告なし。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120225",
+        "product": "Oray Pugongying X5 Pro（CVSS 9.1）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA 公開（Oray Pugongying X5 Pro 7.6.1 まで・2 件）。悪用・KEV 収載の報告なし。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120229",
+        "product": "WAVLINK WN553X1-B（CVSS 9.9）",
+        "reason": "low_score",
+        "reason_detail": "VulDB CNA が一括公開した WAVLINK 製ルーターの 12 件バッチ（代表 CVE-2026-120195 ほか）。公開エクスプロイトありとの記載だが悪用・KEV 収載の報告なし。ベンダー未対応の可能性（推測）があり、インターネットに公開しない運用を推奨。",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-120232",
+        "product": "Horizon DataSys Reboot Restore Standard 13.2 まで（カーネルドライバ shield.sys のメモリ破損・ローカル攻撃のみ）（EUVD CVSS v4.0 9.3）",
+        "reason": "low_score",
+        "reason_detail": "EUVD-2026-114857（GHSA-4wxp-49m2-xx54 起点）。ローカル環境からの攻撃に限られる。公開エクスプロイトありと記載されるが悪用・KEV 収載の報告なし。修正は次期リリース予定。",
+        "reported_date": null
+      }
+    ],
+    "apt": [],
+    "ai_attacks": [],
+    "soc_recommendations": []
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 2,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 21,
+      "total_processed": 23
+    },
+    "apt": {
+      "main": 1,
+      "notable": 1,
+      "excluded": 0,
+      "total_processed": 2
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 0,
+      "total_processed": 0,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 2,
+      "medium": 2,
+      "low": 1,
+      "excluded": 0,
+      "total_processed": 5,
+      "perspective_breakdown": {
+        "zeroday": 4,
+        "cve": 1,
+        "ai_attack": 0
+      }
+    }
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-11-01T22:32:17Z",
+    "operational_picture": {
+      "subjects_tracked": 123,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 63,
+        "DISCLOSED": 56,
+        "LIMITED_EXPLOITATION": 1,
+        "POC_PUBLIC": 3
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 126,
+        "shadow": 60
+      },
+      "event_type_counts": {
+        "TF1_BROADER_EXPLOITATION_CONFIRMATION": 1,
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 3,
+        "TF1_POC_PUBLICATION": 56
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}
