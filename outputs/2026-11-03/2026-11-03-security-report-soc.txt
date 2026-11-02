@@ -1,0 +1,113 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-03 07:50 JST
+調査期間: 2026-11-02 07:00 〜 2026-11-03 07:00 JST
+========================================
+
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+[high] Synology DSM：C3RB3R ランサムウェア攻撃に備え、DSM を修正版へ更新し管理画面をインターネットから遮断する
+------------------------------------------------------------
+対象: Synology DiskStation（DSM 7.2.2／7.2.1／7.2／7.1／6.2）
+
+【24時間以内の変化】
+[BleepingComputer 2026-11-02] Synology が C3RB3R ランサムウェア攻撃の急増を警告。
+
+【概要】
+Synology は 2024 年 12 月に修正済みの脆弱性を悪用する攻撃が増えているとして更新を求めた。NAS が改ざん・暗号化されると .L0CK3D 拡張子と read-me3.txt が残る。初期侵入に使われた CVE は記事で特定されていない。
+
+【推奨アクション】
+1) DSM を 7.2.2-72806-1／7.2.1-69057-6／7.2-64570-4／7.1.1-42962-7／6.2.4-25556-8 以降へ更新する。2) 自動更新を有効にする。3) 管理 Web インターフェースをインターネットから遮断する。4) オフラインのバックアップを確認する。
+
+【監視】
+DSM への外部からのログイン試行、.L0CK3D 拡張子の出現、read-me3.txt の作成。
+
+【参考】
+- Synology warns of C3RB3R ransomware attacks targeting NAS devices (BleepingComputer) https://www.bleepingcomputer.com/news/security/synology-warns-customers-of-ongoing-c3rb3r-ransomware-attacks
+
+------------------------------------------------------------
+[high] Microsoft Teams 経由のヘルプデスク偽装と AD CS 悪用：外部テナント制限、Quick Assist 制御、証明書テンプレート／Web 登録の点検
+------------------------------------------------------------
+対象: Microsoft Teams／Quick Assist／Active Directory Certificate Services
+
+【24時間以内の変化】
+[Microsoft（The Hacker News 経由） 2026-11-02] ESC1／ESC8 を使う特権証明書取得の侵入 2 件の報告。
+
+【概要】
+侵入は Teams の脆弱性ではなく、利用者を騙して Quick Assist を許可させることから始まる。証明書は失効や再構築後も有効なままのことがあり、DC 証明書が取得されると影響が大きい。自動封じ込めの除外アカウントが残ると被害が拡大した。
+
+【推奨アクション】
+1) 外部 Teams テナントからの連絡を制限し、承認済みの遠隔支援ツールだけを許可する。2) 証明書テンプレートの ESC1（要求者指定のサブジェクト）と過剰な登録権限を点検する。3) AD CS の Web 登録で HTTPS と EPA を必須にし、NTLM を無効化する（KB5005413。Windows Server 2025 は既定で EPA 有効、2022／2019 は手動）。4) 証明書監査を有効にする。5) 自動封じ込めの除外アカウントを見直す。
+
+【監視】
+Teams の外部テナントからの支援名目の連絡、Quick Assist の起動、AD CS の証明書要求の異常、DCSync、Rclone の外部 SFTP 通信。
+
+【参考】
+- Attackers Pose as IT Support on Microsoft Teams, Abuse AD CS to Steal Company Data (The Hacker News) https://thehackernews.com/2026/11/attackers-pose-as-it-support-on.html
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【中優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+[medium] GitLab CVE-2026-97229：インターネット公開の未更新サーバーが 1,000 台超（Shadowserver）— 更新と Ruby 側の修正を再確認する
+------------------------------------------------------------
+対象: GitLab CE/EE
+
+【24時間以内の変化】
+[BleepingComputer 2026-11-02] Shadowserver が悪用が続く中で 1,000 台超が未更新と報告。
+
+【概要】
+CVE-2026-97229 は KEV 収載済みで修正は 10-12 公開。Shadowserver は週末（11-01〜02）に未更新のサーバーを 1,000 台超追跡していると報じられた。別の最大深刻度の正規表現コンパイラ不具合 CVE-2026-110264 を持つインスタンスは 11,300 台超とされる（約 39,000 台中）。
+
+【推奨アクション】
+GitLab を 19.4.2／19.3.5／19.2.8 以降へ更新し、Ruby も修正済みか確認する。侵害を否定できない場合は再構築と秘密情報の交換を行う。
+
+【監視】
+CI 設定内の異常な正規表現、ワーカーの繰り返しクラッシュ。
+
+【参考】
+- Over 1,000 GitLab servers vulnerable to ongoing RCE attacks (BleepingComputer) https://www.bleepingcomputer.com/news/security/over-1-000-gitlab-servers-vulnerable-to-code-execution-attacks
+
+------------------------------------------------------------
+[medium] Langflow 1.0.0〜1.12.8：認証不要の 2 件を含む IBM 公表の 4 件、1.13.0 へ更新する
+------------------------------------------------------------
+対象: IBM Langflow OSS
+
+【24時間以内の変化】
+[The Hacker News 2026-11-02] IBM が 4 件を公表。CVE-2026-93680 に公開 Metasploit モジュール。
+
+【概要】
+悪用の報告は無いが、Langflow は過去に大規模悪用されており（既報）、公開 Metasploit モジュールが存在する。回避策は提示されていない。
+
+【推奨アクション】
+Langflow を 1.13.0 へ更新し、インターネットに公開している場合は到達範囲を絞る。LANGFLOW_AUTO_LOGIN の設定を確認する。
+
+【監視】
+MCP エンドポイントへの認証なしセッション、想定外の OS コマンド実行。
+
+【参考】
+- Critical Langflow Flaws Could Let Unauthenticated Attackers Run Code on Servers (The Hacker News) https://thehackernews.com/2026/11/critical-langflow-flaws-could-let.html
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【低優先度】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+------------------------------------------------------------
+[low] CL-UNK-1211／SysGoRAT：Linux 公開サーバーで .bashrc 改ざん・PHP ログインページ改ざん・C2 通信を点検する
+------------------------------------------------------------
+対象: Linux サーバー（メール・Web）
+
+【24時間以内の変化】
+[Unit 42（The Hacker News 経由） 2026-11-02] SysGoRAT を使う政府系 Linux 基盤への諜報活動を公表。
+
+【概要】
+観測期間は 2025-10〜2026-04。初期侵入経路は不明で、AI 生成が疑われるスクリプトが含まれる。
+
+【推奨アクション】
+104.194.158[.]65:443 への通信、.bashrc と PHP ログインページの改ざん、/var/qmail/mailnames/ の列挙を検索する。
+
+【監視】
+WebSocket での外向き通信、予期しない PHP ウェブシェル、ログの消去。
+
+【参考】
+- Government Linux Servers Targeted With SysGoRAT and Suspected AI-Generated Scripts (The Hacker News) https://thehackernews.com/2026/11/government-linux-servers-targeted-with.html
