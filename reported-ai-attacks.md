@@ -213,3 +213,4 @@
 | Chainalysis が「offensive agentic techniques」による不正アクセスを公表（顧客のユーザー ID・氏名・メール・ロール閲覧） | A4 | 2026-11-01 | 本編（X=6 Y=5・A-Q/A-X・burst1） | 2026-11-01 | YES | Chainalysis 顧客通知／THN／BleepingComputer 2026-10-30・認証情報・トークンは無事と同社・手口／攻撃者は非公表 |
 | Northflank 侵害で顧客の AI API キーが不正利用（全シークレット交換を要請） | C4 | 2026-11-01 | 本編（X=6 Y=6・A-Q・burst1） | 2026-11-01 | YES | BleepingComputer 2026-10-31（要約のみ・本文403）・侵入経路／影響範囲は未確認 |
 | 共有 ChatGPT リンク経由のセッション内コード実行（Parameter 報告・MathLive メッセージ検証不備） | B1 | 2026-11-01 | 参考B（X=6 Y=3・A-P/A-S・below_threshold） | 2026-11-01 | NO | THN 2026-10-31・OpenAI が報告 10-18 から 8 日後に P1 として修正済み・実悪用の報告なし |
+| VOLTA-AUTODOXER インフォスティーラー: OpenRouter 経由の LLM（Claude Opus 4.6／Kimi K2／Gemini 2.5 Flash）で窃取データの換金価値を順位付け | A3 | 2026-11-03 | 本編（X=7 Y=4・A-X・burst1） | 2026-11-03 | YES | Cisco Talos(THN 2026-11-02)・Telegram へ 3 段階で送信・帰属なし・IOC 記事に無し |

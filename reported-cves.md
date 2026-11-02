@@ -694,3 +694,7 @@
 | CVE未採番（WordPress Core 4.7〜7.1.3 フルパッケージ更新時のレース条件RCE） | WordPress Core 4.7〜7.1.3（wp-content/upgrade の予測可能なステージング先） | 2026-10-31 | active_exploitation | 2026-10-31 | YES | CVSS 8.1・修正 2026-10-28・Wordfenceが24時間で62,969件の攻撃をブロック・成功例未確認・CVE未採番（採番後はD2でSection 3へ帰属し直す）・Section 2 注目CVE(trends) |
 | CVE-2026-58882 | Android（細工した SMS による遠隔のクラッシュ／携帯通信妨害・通称「SMS of Death」） | 2026-11-01 | poc_public | 2026-11-01 | YES | BleepingComputer 2026-10-31（要約のみ・本文403）・PoC 公開・修正済み・悪用報告なし・CVSS／対象版／修正月は未確認・Section 3 本編 |
 | CVE-2026-112816 | Canonical LXD／MicroCloud（信頼済みクライアントのなりすましによる認証回避・CVSS10.0） | 2026-11-02 | none | 2026-11-02 | YES | The Hacker News 2026-11-01・修正版公開済み(LXD 6.10.1/5.21.9/5.0.11/4.0.15・MicroCloud 3.4.1/2.1.5)・悪用/PoC/KEV未確認・CISA評価10-30は悪用既知なし |
+| CVE-2026-93680 | IBM Langflow OSS 1.0.0〜1.12.8（MCP エンドポイントの認証回避・CVSS9.8・認証不要） | 2026-11-03 | poc_public | 2026-11-03 | YES | THN 2026-11-02（IBM Security Bulletin 10-28）・修正版 1.13.0（回避策なし）・公開 Metasploit 補助モジュールあり（ツール一覧取得まで）・KEV 未収載・悪用報告なし |
+| CVE-2026-110186 | IBM Langflow OSS 1.0.0〜1.12.8（コード生成の不適切な制御による任意コード実行・CVSS9.8・認証不要） | 2026-11-03 | none | 2026-11-03 | YES | THN 2026-11-02・修正版 1.13.0・PoC/KEV/悪用報告なし |
+| CVE-2026-110193 | IBM Langflow OSS 1.0.0〜1.12.8（Agentic Assistant 経由の OS コマンド実行・CVSS8.8・低権限） | 2026-11-03 | none | 2026-11-03 | YES | THN 2026-11-02・修正版 1.13.0・悪用報告なし |
+| CVE-2026-110192 | IBM Langflow OSS 1.0.0〜1.12.8（資格情報の露出・CVSS6.5） | 2026-11-03 | none | 2026-11-03 | YES | THN 2026-11-02・修正版 1.13.0・悪用報告なし |
