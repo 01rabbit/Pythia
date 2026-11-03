@@ -214,3 +214,6 @@
 | Northflank 侵害で顧客の AI API キーが不正利用（全シークレット交換を要請） | C4 | 2026-11-01 | 本編（X=6 Y=6・A-Q・burst1） | 2026-11-01 | YES | BleepingComputer 2026-10-31（要約のみ・本文403）・侵入経路／影響範囲は未確認 |
 | 共有 ChatGPT リンク経由のセッション内コード実行（Parameter 報告・MathLive メッセージ検証不備） | B1 | 2026-11-01 | 参考B（X=6 Y=3・A-P/A-S・below_threshold） | 2026-11-01 | NO | THN 2026-10-31・OpenAI が報告 10-18 から 8 日後に P1 として修正済み・実悪用の報告なし |
 | VOLTA-AUTODOXER インフォスティーラー: OpenRouter 経由の LLM（Claude Opus 4.6／Kimi K2／Gemini 2.5 Flash）で窃取データの換金価値を順位付け | A3 | 2026-11-03 | 本編（X=7 Y=4・A-X・burst1） | 2026-11-03 | YES | Cisco Talos(THN 2026-11-02)・Telegram へ 3 段階で送信・帰属なし・IOC 記事に無し |
+| Binance 侵入: 偽の求人面接後に社内 AI ツールを悪用して技術者端末を支配 | B2 | 2026-11-04 | 本編（X=6 Y=6・B-X・burst1） | 2026-11-04 | YES | Binance公表(THN 2026-11-03)・64.3億ドル流出の一段階・帰属なし |
+| 3AM ランサムウェア アフィリエイト: 英国の学校群攻撃で AI 的な反復の痕跡（AI支援の疑い） | A3 | 2026-11-04 | 本編（X=5 Y=4・A-X・burst1） | 2026-11-04 | YES | BleepingComputer/Dark Reading 2026-11-03・要約のみ取得・完全自動化とは断定されず |
+| LLMjacking（Google 警告）: 企業 LLM アクセス乗っ取りで最大100万ドルの課金 | A4 | 2026-11-04 | 本編（X=5 Y=6・A-X・burst1） | 2026-11-04 | YES | THN/Google 2026-11-03・Dark Reading 同日・個別攻撃者/IOC なし |
