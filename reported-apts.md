@@ -278,3 +278,5 @@
 | CL-UNK-1211（Unit 42 未帰属クラスター） | CL-UNK-1211-2026-GovLinuxSysGoRAT | 2026-11-03 | 本編（P=6 Q=5） | 2026-11-03 | YES | Unit 42(THN経由 2026-11-02)・2025-10〜2026-04・政府関連 Linux 基盤・SysGoRAT/PHP ウェブシェル・AI 生成疑いのスクリプト・C2 104.194.158[.]65:443・帰属なし・初期侵入経路不明 |
 | DarkBlinders（イラン国家連携とされる・Dream Research Labs 命名） | DarkBlinders-2026-IsraelKurdistan | 2026-11-03 | 注目動向（P=5 Q=3） | 2026-11-03 | YES | Dream Research Labs(THN経由 2026-11-02)・2026-08〜10・イスラエル要人とクルド地域政府クラウド・概要のみ取得・手法/IOC 未記録 |
 | Bitter（インド関連・Dark Reading 記述） | Bitter-2026-PapRAT-SouthAsia | 2026-11-03 | 注目動向（P=4 Q=3） | 2026-11-03 | YES | Dark Reading 2026-11-02（要約のみ・本文未取得）・PapRAT・正規 Windows 機能を悪用する 3 チェーン |
+| Gorbag（ロシア寄り・ESET 命名・UAC-0226 と重複） | Gorbag-2025-UkraineBeautyStealer | 2026-11-04 | 本編（P=6 Q=4） | 2026-11-04 | YES | ESET(THN 2026-11-03)・ウクライナのみ標的・BeautyStealer/GIFTEDCROOK・WinRAR CVE-2025-8088・IOC記事に無し |
+| 不明（帰属なし・OPSSHIELD 公表） | cPGuard-2026-UpdateChannelHijack | 2026-11-04 | 注目（トレンド記載） | 2026-11-04 | YES | THN 2026-11-03・5.88.12〜5.88.19・修正 5.88.25・資格情報の入手経路は調査中 |

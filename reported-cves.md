@@ -698,3 +698,7 @@
 | CVE-2026-110186 | IBM Langflow OSS 1.0.0〜1.12.8（コード生成の不適切な制御による任意コード実行・CVSS9.8・認証不要） | 2026-11-03 | none | 2026-11-03 | YES | THN 2026-11-02・修正版 1.13.0・PoC/KEV/悪用報告なし |
 | CVE-2026-110193 | IBM Langflow OSS 1.0.0〜1.12.8（Agentic Assistant 経由の OS コマンド実行・CVSS8.8・低権限） | 2026-11-03 | none | 2026-11-03 | YES | THN 2026-11-02・修正版 1.13.0・悪用報告なし |
 | CVE-2026-110192 | IBM Langflow OSS 1.0.0〜1.12.8（資格情報の露出・CVSS6.5） | 2026-11-03 | none | 2026-11-03 | YES | THN 2026-11-02・修正版 1.13.0・悪用報告なし |
+| CVE-2026-119977 | WordPress Core 4.7〜7.1.3（更新時ステージングパスを突く未認証 RCE・CVSS8.1） | 2026-11-04 | kev_listed | 2026-11-04 | YES | KEV追加 2026-11-03・期限 11-06・修正版 7.1.4（10-28）・悪用の一次報告未取得 |
+| CVE-2026-58115 | Siemens SIMATIC IoT2050 Advanced（Node-RED 認証欠如・CVSS10.0） | 2026-11-04 | active_exploitation | 2026-11-04 | YES | THN/VulnCheck 2026-11-03・10-30 時点で悪用観測・修正 4.3.4.1 以降・KEV未収載 |
+| CVE-2026-81648 | CryptoPayment Gateway WordPress プラグイン 1.2.1〜1.2.2（CVSS10.0） | 2026-11-04 | active_exploitation | 2026-11-04 | YES | THN/Defused Cyber 2026-11-03・悪用試行・修正なし・プラグイン閉鎖済み |
+| CVE-2026-116606 | Barracuda Email Security Gateway（認可バイパス・CVSS9.3・CVE-2026-111560 と連鎖で root） | 2026-11-04 | none | 2026-11-04 | YES | THN 2026-11-03・管理画面アクセスが前提・悪用報告なし |
