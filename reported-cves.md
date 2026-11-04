@@ -702,3 +702,7 @@
 | CVE-2026-58115 | Siemens SIMATIC IoT2050 Advanced（Node-RED 認証欠如・CVSS10.0） | 2026-11-04 | active_exploitation | 2026-11-04 | YES | THN/VulnCheck 2026-11-03・10-30 時点で悪用観測・修正 4.3.4.1 以降・KEV未収載 |
 | CVE-2026-81648 | CryptoPayment Gateway WordPress プラグイン 1.2.1〜1.2.2（CVSS10.0） | 2026-11-04 | active_exploitation | 2026-11-04 | YES | THN/Defused Cyber 2026-11-03・悪用試行・修正なし・プラグイン閉鎖済み |
 | CVE-2026-116606 | Barracuda Email Security Gateway（認可バイパス・CVSS9.3・CVE-2026-111560 と連鎖で root） | 2026-11-04 | none | 2026-11-04 | YES | THN 2026-11-03・管理画面アクセスが前提・悪用報告なし |
+| CVE-2024-27834 | Apple WebKit（Safari 17.5／iOS 16.7.8 ほか） | 2026-11-05 | kev_listed | 2026-11-05 | YES | KEV追加11-04（期限11-18）・Sekoia が APT29 関連ウォッチホールで iOS 16.7 向けに使用と報告 |
+| CVE-2026-109593 | SonicWall GMS 9.5.2以前（EOL・修正版なし・CVSS9.1 未認証ファイル読み取り） | 2026-11-05 | none | 2026-11-05 | YES | CVE-2026-109594(SQLi 6.8) と同時公表・悪用報告なし・NSM移行を要請 |
+| CVE-2026-122006 | Ruby on Rails Active Storage（ImageMagick処理・8.1.4.1/8.0.5.2未満） | 2026-11-05 | none | 2026-11-05 | YES | CVSS9.8・未認証ファイル書き込み・悪用報告なし |
+| CVE-2026-58868 | Android 14〜17（2026-11 パッチ・ユーザー操作不要RCE） | 2026-11-05 | none | 2026-11-05 | YES | パッチレベル2026-11-01以降で修正・悪用報告なし |

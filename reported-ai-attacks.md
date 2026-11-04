@@ -217,3 +217,5 @@
 | Binance 侵入: 偽の求人面接後に社内 AI ツールを悪用して技術者端末を支配 | B2 | 2026-11-04 | 本編（X=6 Y=6・B-X・burst1） | 2026-11-04 | YES | Binance公表(THN 2026-11-03)・64.3億ドル流出の一段階・帰属なし |
 | 3AM ランサムウェア アフィリエイト: 英国の学校群攻撃で AI 的な反復の痕跡（AI支援の疑い） | A3 | 2026-11-04 | 本編（X=5 Y=4・A-X・burst1） | 2026-11-04 | YES | BleepingComputer/Dark Reading 2026-11-03・要約のみ取得・完全自動化とは断定されず |
 | LLMjacking（Google 警告）: 企業 LLM アクセス乗っ取りで最大100万ドルの課金 | A4 | 2026-11-04 | 本編（X=5 Y=6・A-X・burst1） | 2026-11-04 | YES | THN/Google 2026-11-03・Dark Reading 同日・個別攻撃者/IOC なし |
+| Haiou（OpenAI Codex 脱獄ツールキット・プロンプト・アドウェア） | B2 | 2026-11-05 | 本編（X=5 Y=4・B-X・burst1） | 2026-11-05 | YES | Check Point Research(THN 2026-11-04)・設定改変で第三者AIゲートウェイ広告を挿入 |
+| WorkOS／Northflank／Trigger.dev 侵害（AIアクセストークン収集） | B2 | 2026-11-05 | 本編（X=4 Y=4・B-X・burst1） | 2026-11-05 | YES | SecurityWeek 2026-11-04・本文未取得・個別経路は未確認 |
