@@ -219,3 +219,5 @@
 | LLMjacking（Google 警告）: 企業 LLM アクセス乗っ取りで最大100万ドルの課金 | A4 | 2026-11-04 | 本編（X=5 Y=6・A-X・burst1） | 2026-11-04 | YES | THN/Google 2026-11-03・Dark Reading 同日・個別攻撃者/IOC なし |
 | Haiou（OpenAI Codex 脱獄ツールキット・プロンプト・アドウェア） | B2 | 2026-11-05 | 本編（X=5 Y=4・B-X・burst1） | 2026-11-05 | YES | Check Point Research(THN 2026-11-04)・設定改変で第三者AIゲートウェイ広告を挿入 |
 | WorkOS／Northflank／Trigger.dev 侵害（AIアクセストークン収集） | B2 | 2026-11-05 | 本編（X=4 Y=4・B-X・burst1） | 2026-11-05 | YES | SecurityWeek 2026-11-04・本文未取得・個別経路は未確認 |
+| CERT-In: Crafty Falcon（AI支援・インドBFSI）／バックドア入りARTEX Dockerイメージ | A3 | 2026-11-06 | 本編（X=5 Y=5・A-T・burst1） | 2026-11-06 | YES | THN 2026-11-05・CERT-In開示・62台のコンソールがrootアクセスに露出（見出し）・本文未取得 |
+| OpenAI サイバー特化モデルによるLinux LPE 948件生成・検証 | A3 | 2026-11-06 | 本編（X=4 Y=4・A-P・burst1） | 2026-11-06 | NO | THN 2026-11-05・防御目的の研究発表・API費用120万ドル・悪用報告なし |
