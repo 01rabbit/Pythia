@@ -135,18 +135,25 @@ Step 4    ファイル更新・コミット（main へ直接コミット "daily 
               check_knowledge_untouched.py（knowledge/ 無変更の機械的確認）
 ```
 
-収集レポートの構成（Section 1〜4）と出力ファイルは下記の通り。
+収集レポートの構成（Section 1〜5）と出力ファイルは下記の通り。
 
 | ファイル | 内容 | 主な用途 |
 |---|---|---|
-| `security-report.json` | Section 1〜4 全データ（構造化） | 正規化の入力・AI分析・機械処理 |
-| `security-report.txt` | Section 1〜4 完全版 | 日次レビュー・共有 |
+| `security-report.json` | Section 1〜5 全データ（構造化） | 正規化の入力（Section 5 を除く）・AI分析・機械処理 |
+| `security-report.txt` | Section 1〜5 完全版 | 日次レビュー・共有 |
 | `security-report-cve.txt` | Section 3: 製品別CVE | CVE担当 |
 | `security-report-zeroday-trends.txt` | Section 2: ゼロデイ・トレンド | トレンド担当 |
 | `security-report-ai.txt` | Section 1: AI攻撃動向 | AI担当 |
 | `security-report-soc.txt` | Section 4: SOC推奨情報 | SOC担当 |
+| `security-report-neighbor.txt` | Section 5: 周辺諸国動向（報告専用） | 情勢分析担当 |
 
 テキストファイルはすべてプレーンテキスト（Markdown記法なし）。
+
+**Section 5（周辺諸国動向）は報告専用の文脈層**で、観測・ベースライン・base_rate・予報には入らない。
+中国・ロシア・北朝鮮（primary）と韓国・台湾（regional）について、サイバー関連の活動・政策・組織・企業と、
+それを理解するための非サイバー情勢（国家戦略・政治動向・国家心理・軍と組織）を、事実（出典番号付き）と
+推測（『（推測）』と確度付き）を分けて記録する。国家との関係は情報源が明示した場合のみ原文の言い回しを
+引用して記録する。収集規則は `pipeline-neighbor.md`、機械検査は `scripts/validate_neighbor_context.py`。
 
 ---
 
@@ -349,6 +356,7 @@ Week 13（〜2026-09 中旬）まで延長（2026-07-13・`forecaster/phase1-con
 | 収集の出力テンプレート | `pipeline-3-weighting.md` / `pipeline-ai-2.md` / `pipeline-soc-recommend.md` |
 | 収集の JSONスキーマ | `pipeline-output-schema.md` |
 | RSSフィードの追加・変更 | `security-intel-collector/feeds.json`（各フィードに `language` を付ける） |
+| 周辺諸国（Section 5）の対象国・ゲートの厳しさ | `config.yml` の `neighbor_states`（語彙の追加・変更は `neighbor/states.json`・PR経由） |
 | ウォッチリスト（指定 CVE・製品・アクター・トピックの無条件採用） | `config.yml` の `watchlist:`（Step 0.7 スイープ / Step 0.8 `scripts/watchlist_scan.py` が共有） |
 | 類似過去事例検索の閾値・重み | `forecaster/case-based-retrieval-design.md`（設計）+ `scripts/retrieve_similar_cases.py` |
 | パイプライン実行手順 | `SKILL.md`（日次）/ `.skills/forecast-verification/SKILL.md`（週次検証） |

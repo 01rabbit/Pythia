@@ -62,6 +62,22 @@
 | NCSC（英国） | en | ncsc.gov.uk | 収録済み（一次ソース表の補完・2026-11-06） |
 | CERT-FR（ANSSI） | fr | cert.ssi.gouv.fr | 収録済み（一次ソース表の補完・2026-11-06） |
 
+### 政府の公表・周辺諸国の政策系ソース（Section 5 の主入力・2026-11-06 第2段階で追加）
+
+広範なフィードは `include_terms`（cyber* / hack* / espionage / IT worker* 等）で絞って収集する
+（security-intel-collector/README.md）。絞り込みで落ちた記事は raw に残らない点に注意する。
+
+| ソース | 区分 | feeds.json |
+|--------|------|-----------|
+| US DOJ Press Releases | 起訴・懸賞金・押収（政府の一次公表） | 収録済み |
+| US State Dept Press Releases | 懸賞金・制裁（政府の一次公表） | 収録済み |
+| EUvsDisinfo | ロシア起源の偽情報の定点観測 | 収録済み（絞り込みなし） |
+| Taipei Times / Yonhap News (EN) | 台湾・韓国の報道 | 収録済み（regional） |
+| The Diplomat / NK News / ASPI The Strategist / Atlantic Council | 政策・情勢分析 | 収録済み |
+| TASS (EN) | ロシア国営通信（`state_media`） | 収録済み。**その国の政府が何を述べたかの記録にのみ使う** |
+| Global Times / Xinhua / KCNA Watch / China Daily | 中国・北朝鮮の国営メディア | 未収録（更新停止・取得不可を確認済み。Web検索で補完） |
+| 防衛省 / 外務省 / NISC / 警察庁 | 日本政府の公表 | 未収録（RSS 取得不可・確認済み。Web検索で補完） |
+
 注記:
 - Europol / FBI IC3 の法執行・摘発情報は日次収集対象に含めない
 - 法執行チェックは週次検証ステージ（火・木）へ移し、継続影響の確認に使用する
@@ -211,6 +227,21 @@ Step 0.8（`scripts/watchlist_scan.py`）が機械的に列挙する。該当は
 - `north_korea_nexus`: Phase 1 で最優先
 - `russia_nexus` / `china_nexus` / `iran_nexus`: Phase 2 以降で拡張
 - `geopolitical_unattributed`: 連鎖はあるが国家帰属が明示されていない
+
+### Section 5（周辺諸国動向）との境界（2026-11-06 追加）
+
+周辺諸国の政策・組織・企業・非サイバー情勢は **Section 5**（`pipeline-neighbor.md`）が受け持つ。
+本節の `geopolitical_signal` の経路とは**独立**で、本節の採用条件・予報連動ルールは変更しない。
+
+| | 本節（geopolitical_signal） | Section 5 |
+|---|---|---|
+| 採用 | 上記の厳格な採用条件（技術的言及を含むものだけ） | 『関連性』（国への言及・ゲート対象は全件を採用か理由付き除外に） |
+| 行き先 | 観測 → 予報候補（独立した技術的観測と対のときのみ） | 報告のみ。観測・ベースライン・予報には入れない |
+| 純軍事ニュース | 除外 | 『サイバーとの関連を示す形で』`geopolitical` として記録できる |
+
+同じ事象を両方に記録してよい。ただし Section 5 のエントリから観測を生成してはならず、
+APT の技術的詳細（IoC・TTP・マルウェア）は本節の APT エントリが正で、Section 5 は
+`related_apt_campaign_ids` で参照するだけにする。
 
 ---
 

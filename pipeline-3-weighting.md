@@ -29,7 +29,10 @@ Step 3 の出力は必ず以下の順序で行う:
    - security-report-zeroday-trends.txt: Section 2（ゼロデイ・トレンド）— ゼロデイ特報・APT活動本編・APT活動注目動向・注目CVE（リスト外＝trends.trends_cve）・トレンド記事（trends.trends_topic）・攻撃予報・除外APT・集計APT
    - security-report-ai.txt: Section 1（AI攻撃動向）— 本編・参考B・参考A・週次サマリー・除外AI攻撃・集計AI攻撃
    - security-report-soc.txt: Section 4（SOC推奨情報）— 高優先度・中優先度・低優先度・除外・集計
-3. 計6ファイル（JSON 1 + テキスト 5）を outputs/YYYY-MM-DD/ ディレクトリに保存する。
+   - security-report-neighbor.txt: Section 5（周辺諸国動向）— **手で書き起こさず**
+     `scripts/render_neighbor_section.py --append-to-full` が JSON から生成する（security-report.txt の末尾にも追記される）。
+     Section 5 は報告専用で、重みづけ（軸1×軸2・軸P×軸Q 等）の対象外・予報の入力にもしない（pipeline-neighbor.md）
+3. 計7ファイル（JSON 1 + テキスト 6）を outputs/YYYY-MM-DD/ ディレクトリに保存する。
 
 テキスト変換時の主なマッピングルール（詳細は pipeline-output-schema.md の「JSONからテキストへの変換ルール」参照）:
 - axis1_score / axis2_score / axis_p_score 等のスコアフィールドはテキストに出力しない

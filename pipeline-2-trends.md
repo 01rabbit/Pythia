@@ -78,6 +78,12 @@ pipeline-1-cve.md のトラック B から渡されたCVE（`section_route: tren
 - 制限なし、全件ストック
 - Step 3 の重みづけで絞り込む
 
+## 周辺諸国の政策・組織・情勢（Section 5 との境界）
+
+周辺諸国（中国・ロシア・北朝鮮・韓国・台湾）の政策・組織・企業・非サイバー情勢は
+**Section 5**（`pipeline-neighbor.md`・Step 2c）が受け持つ報告専用の層で、ここ（Section 2）の
+トレンド記事とは別に記録する。同じ記事を両方に載せてよいが、Section 5 は予報の入力にしない。
+
 ## ウォッチリスト該当（無条件採用・2026-11-06 追加）
 
 Step 0.8（`scripts/watchlist_scan.py`）が `config.yml` の `watchlist:` で機械収集 raw を走査した

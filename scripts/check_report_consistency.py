@@ -16,7 +16,8 @@ Pythia では `security-report.json` が唯一の一次出力（source of truth�
 本スクリプトはこの乖離をコミット前に検出する（SKILL.md Step 4 のバリデーション群）。
 
 検査項目:
-  [E] 必須ファイル（JSON + テキスト5種）の存在
+  [E] 必須ファイル（JSON + テキスト5種。neighbor_context を持つ日は Section 5 単体の6種目も）の存在
+  [E] neighbor_context の全 entry_id が全セクション版と Section 5 単体の両方に出現すること
   [E] statistics の各カウントと配列長の一致
   [E] テキストにあって JSON に存在しない CVE ID（＝書き起こし時に増えた情報）
   [E] 採用CVEが全セクション版テキストおよび対応する分割テキストに出現すること
@@ -130,6 +131,12 @@ def check_date(root: Path, date: str, *, skip_if_no_json: bool = False) -> tuple
 
     json_cves = set(CVE_RE.findall(raw))
 
+    # Section 5（周辺諸国動向）は neighbor_context を持つ日だけ追加のテキストを要求する。
+    # 導入前の履歴日（neighbor_context 無し）は従来どおりテキスト5種のまま検査する。
+    neighbor = data.get("neighbor_context")
+    if isinstance(neighbor, dict):
+        paths["neighbor"] = paths["json"].with_name(f"{date}-security-report-neighbor.txt")
+
     missing_texts = [key for key, path in paths.items() if key != "json" and not path.is_file()]
     for key in missing_texts:
         errors.append(f"{date}: テキストが存在しない: {paths[key].name}")
@@ -193,6 +200,19 @@ def check_date(root: Path, date: str, *, skip_if_no_json: bool = False) -> tuple
                 errors.append(f"{date}: {section} の {cve_id} が {full_path.name} に出現しない")
             if split_text and cve_id not in split_text:
                 errors.append(f"{date}: {section} の {cve_id} が {split_path.name} に出現しない")
+
+    # --- Section 5: 全エントリが全セクション版と Section 5 単体の両方に出現するか ---
+    if isinstance(neighbor, dict):
+        neighbor_text = paths["neighbor"].read_text(encoding="utf-8") if paths["neighbor"].is_file() else ""
+        for entry in neighbor.get("entries") or []:
+            if not isinstance(entry, dict) or not entry.get("entry_id"):
+                continue
+            eid = entry["entry_id"]
+            if neighbor_text and eid not in neighbor_text:
+                errors.append(f"{date}: neighbor_context の {eid} が {paths['neighbor'].name} に出現しない")
+            if full_text and eid not in full_text:
+                errors.append(f"{date}: neighbor_context の {eid} が {full_path.name} に出現しない"
+                              "（render_neighbor_section.py --append-to-full で追記する）")
 
     # --- 網羅スイープ突合の結果（SKILL.md Step 3.9）---
     sweep = (data.get("meta") or {}).get("sweep")
