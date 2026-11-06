@@ -100,6 +100,10 @@ Each feed entry supports, in addition to `name` / `url` / `enabled` / `tags`:
   already seen (without notifying) on the first run of a feed. For large
   feeds, set it equal to `max_items` so the second run does not flood
   notifications with hundreds of "new" backfill items.
+- `language` (string, optional) — the feed's language as an ISO 639-1 code
+  (`ja` / `en` / `zh` / `ko` / `ru` / `fr`). Copied verbatim onto every item as
+  `language` so downstream steps can tell non-Japanese/English sources apart.
+  Items are stored in the original language; translation happens at read time.
 
 ## 7. GitHub Actions
 
@@ -137,6 +141,7 @@ Every raw JSON file shares a common envelope:
 - `summary`
 - `published` — published timestamp.
 - `source` — feed name.
+- `language` — feed language from feeds.json (`null` when the feed does not declare one).
 - `tags` — feed tags.
 
 ### CVE item fields

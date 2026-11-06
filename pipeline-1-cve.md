@@ -24,6 +24,13 @@ Step 1 のCVE調査は以下の2トラックで行う。
 同一CVEを Section 2 と Section 3 の両方に個別エントリとして掲載することは禁止する
 （Section 2 のAPT・トレンド記事の本文中でCVEに言及するのは帰属ではないため可）。
 
+**D0. ウォッチリスト該当（`config.yml` の `watchlist:` に該当・Step 0.7 スイープの
+`watchlist_in_window` または Step 0.8 走査の該当）**
+→ 採用条件 A〜H の充足を問わず**採用**する（官側・運用者指定の監視対象）。帰属先は
+以下 D2〜D4 と同じ規則で決め、`watchlist_matched` に該当語を記録する。
+期間内に何の変化もなく除外する場合は、除外サマリーへ「ウォッチリスト該当・変化なし」と
+理由付きで記録する（突合ゲートの対象であり、無記録は許されない）。
+
 **D1. 期間内に採用条件 A〜H が1つも確認できない**
 → 不採用。既報（reported-cves.md 掲載済み）かつ変化なしは除外、
 それ以外は下記「除外ルール」の低優先度フラグ規則に従う。
@@ -164,6 +171,11 @@ python3 scripts/nvd_window_sweep.py \
 - 出力の Markdown 表はそのまま Step 1 サブエージェントへの指示文に貼ってよい
 - `--threshold` で下限を変更できる（既定 9.0）。国内シグナルが濃い日や
   スポット監査では `--threshold 7.0` も使う
+- **ウォッチリスト**: 既定で `config.yml` の `watchlist:` を読み、該当 CVE を閾値に関係なく
+  `watchlist_in_window` へ列挙する（照合対象: NVD 窓内公開の全件の説明文・CPE・CVE ID、
+  KEV 窓内追加の vendor/product、`cves` に明示した CVE の窓内 lastModified 更新）。
+  該当行は突合でバッチ集約されず必ず個別判断になる。`--no-watchlist` で無効化、
+  `--watchlist PATH` で別ファイルを指定できる（監査・再現用）
 - 依存は標準ライブラリのみ。`NVD_API_KEY` を設定するとレート制限が緩和される
 - 出力先は `.cache/`（Git 追跡対象外）。このスクリプトは `forecaster/knowledge/` を
   一切書き換えない（CLAUDE.md 行動原則5）

@@ -26,7 +26,7 @@ Pythia の中核（予報エンジン）の構造と育て方は `forecaster/REA
 ## リポジトリ構造
 
 ```
-config.yml                               ← Pythia の個性定義（スコープ・優先事項・フェーズ）
+config.yml                               ← Pythia の個性定義（スコープ・優先事項・フェーズ・★ウォッチリスト＝官側・運用者指定の監視対象。該当は採用条件を問わず無条件採用）
 SKILL.md                                 ← ★日次パイプラインの実体（Routines にファイルパス指定で登録・予報 Step 3.5 含む）
 .skills/forecast-verification/SKILL.md  ← 週次予報精度検証スキル（火・木 12:00 JST）
 .skills/collect-evidence/SKILL.md       ← 日次フィード収集・証跡固定スキル（03:17 JST・GitHub Actions
@@ -46,6 +46,9 @@ forecaster/prompts/01〜04.md             ← 4ステージ（正規化・ベー
 forecaster/case-based-retrieval-design.md ← 類似過去事例検索（Case-Based Retrieval）設計書
 scripts/nvd_window_sweep.py              ← ★Step 0.7 網羅スイープ／Step 3.9 突合ゲート（NVD/KEV/EUVD をソース独立に全量列挙し突合で精査。EUVD はフェイルソフト・knowledge/ 非書込・出力は .cache/ のみ）
 scripts/token_usage_report.py            ← 日次実行のトークン量・料金概算を算出（Step 4 で計測・outputs/ へ保存）
+scripts/watchlist.py                     ← ★ウォッチリスト（config.yml `watchlist:`）の読み込み・照合の唯一の実装（Step 0.7 / 0.8 が共有・読み取り専用・2026-11-06 第1段階）
+scripts/watchlist_scan.py                ← Step 0.8 RSS 機械収集 raw をウォッチリストで走査し Step 1b / 2 の無条件採用候補を列挙（出力は .cache/ のみ）
+scripts/test_watchlist.py                ← ウォッチリスト機構の受入基準テスト（ネット不使用）
 scripts/retrieve_similar_cases.py        ← 予報 Step C'' 類似過去事例検索器（内部実績・読み取り専用）
 scripts/record_retrieval_calibration.py  ← 検証時に retrieval 較正データを収集（design §8・検証ステージのみ書込）
 scripts/backfill_observations.py         ← 過去日付の観測を CISA KEV から機械バックフィル（観測のみ・ベースライン統計対象外・予報は遡及生成しない・`--emit-empty` で KEV追加ゼロの欠測日にも observations:[] の欠測マーカーを置く）
@@ -196,6 +199,9 @@ Pythia 本リポジトリでも 2026-08-18 の窓で同種の欠損を実測し�
 窓内 KEV 追加の全件把握は的中判定の前提条件である。
 
 - 母集団の各CVEは **採用 / 除外サマリーへの理由付き記録 / バッチ集約** のいずれかに必ず割り当てる
+- スイープは `config.yml` の `watchlist:` を既定で読み、該当 CVE を CVSS 閾値に関係なく母集団へ
+  加える（`watchlist_in_window`・バッチ集約されない）。Step 0.8 の `scripts/watchlist_scan.py` が
+  RSS 機械収集 raw を同じウォッチリストで走査し、Step 1b / 2 の無条件採用候補を列挙する
 - 突合結果（候補件数 / 未処理件数 / KEV窓内追加件数）は `meta.sweep` に記録し、
   Step 5 の日次サマリーにも1行含める
 - このスクリプトは `forecaster/knowledge/` を一切書き換えない（行動原則5）。出力は `.cache/` のみ

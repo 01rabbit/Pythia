@@ -121,6 +121,25 @@ def test_first_run_seeds_three_no_notify(env: pytest.MonkeyPatch) -> None:
     assert all("新着記事" not in (p["json"] or {}).get("text", "") for p in posts)
 
 
+def test_feed_language_is_recorded_on_items(env: pytest.MonkeyPatch) -> None:
+    capture_slack(env)
+    set_parse(env, {
+        "https://ko.test/feed": FakeParsed([make_entry(1, url="https://ko.test/1")]),
+        "https://x.test/feed": FakeParsed([make_entry(2, url="https://x.test/2")]),
+    })
+    write_feeds([
+        {"name": "KO", "url": "https://ko.test/feed", "enabled": True, "tags": [], "language": "ko"},
+        {"name": "X", "url": "https://x.test/feed", "enabled": True, "tags": []},
+    ])
+
+    watcher.main()
+
+    raw = json.loads(Path("data/raw/news-latest.json").read_text("utf-8"))
+    by_source = {item["source"]: item for item in raw["items"]}
+    assert by_source["KO"]["language"] == "ko"
+    assert by_source["X"]["language"] is None
+
+
 def test_max_items_caps_entries_and_seed_count_overrides(env: pytest.MonkeyPatch) -> None:
     posts = capture_slack(env)
     entries = [make_entry(i) for i in range(20)]

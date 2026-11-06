@@ -28,17 +28,39 @@
   （security-intel-collector/feeds.json で機械収集済み・data/raw/ を一次入力とする）。
 
 ### 二次ソース（ベンダー脅威インテリジェンス）
-| ソース | URL |
-|--------|-----|
-| Mandiant / Google Threat Intelligence | cloud.google.com/blog/topics/threat-intelligence |
-| Microsoft MSTIC | microsoft.com/en-us/security/blog/ |
-| CrowdStrike Blog | crowdstrike.com/blog/ |
-| Unit 42（Palo Alto Networks） | unit42.paloaltonetworks.com |
-| Talos Intelligence（Cisco） | blog.talosintelligence.com |
-| Secureworks CTU | secureworks.com/research/threat-profiles |
-| Recorded Future | recordedfuture.com/research |
-| Elastic Security Labs | elastic.co/security-labs |
-| SentinelLabs | sentinelone.com/labs/ |
+| ソース | URL | feeds.json |
+|--------|-----|-----------|
+| Mandiant / Google Threat Intelligence | cloud.google.com/blog/topics/threat-intelligence | 収録済み |
+| Microsoft MSTIC | microsoft.com/en-us/security/blog/ | 収録済み（"Microsoft Security Blog (MSTIC)"・2026-11-06） |
+| CrowdStrike Blog | crowdstrike.com/blog/ | 収録済み（2026-11-06） |
+| Unit 42（Palo Alto Networks） | unit42.paloaltonetworks.com | 収録済み |
+| Talos Intelligence（Cisco） | blog.talosintelligence.com | 収録済み（"Cisco Talos"・2026-11-06） |
+| Secureworks CTU | secureworks.com/research/threat-profiles | 未収録（RSS 取得不可・確認済み。Web検索で補完） |
+| Recorded Future | recordedfuture.com/research | 収録済み（"The Record (Recorded Future)"・報道側のみ・2026-11-06） |
+| Elastic Security Labs | elastic.co/security-labs | 収録済み（2026-11-06） |
+| SentinelLabs | sentinelone.com/labs/ | 収録済み（2026-11-06） |
+| ESET WeLiveSecurity | welivesecurity.com | 収録済み（2026-11-06） |
+| Rapid7 Blog | rapid7.com/blog | 収録済み（2026-11-06） |
+
+### 周辺諸国語ソース（原語収集・2026-11-06 第1段階で追加）
+
+要件「日本語以外の言語により発信された情報」と「わが国周辺諸国に関するサイバー攻撃関連活動」への
+対応層。**原文のまま収集して `language` を付け、読解時に翻訳する**（翻訳文の URL で置き換えない）。
+帰属・Technique の付与規則は他ソースと同じ（行動原則1・3）。これらのベンダーは自国政府の
+影響下にあり得るため、帰属主張は「当該ベンダーがそう述べた」事実として記録し、独立確認なしに
+断定しない。
+
+| ソース | 言語 | URL | feeds.json |
+|--------|------|-----|-----------|
+| Kaspersky Securelist | en / ru | securelist.com / securelist.ru | 収録済み（EN・RU 両方） |
+| AhnLab ASEC | ko | asec.ahnlab.com/ko/ | 収録済み（英語版 asec.ahnlab.com/en/ は同内容のため未収録） |
+| NSFOCUS Blog（绿盟科技） | zh | blog.nsfocus.net | 収録済み（企業広報記事を含む。採用条件で絞る） |
+| Qi An Xin XLab（奇安信） | en/zh | blog.xlab.qianxin.com | 収録済み |
+| CNCERT / CNVD / CNNVD | zh | cert.org.cn / cnvd.org.cn / cnnvd.org.cn | 未収録（RSS 配信なし・CNVD は取得拒否・確認済み。Web検索で補完） |
+| KrCERT/CC（KISA 보호나라） | ko | boho.or.kr | 未収録（RSS エンドポイント不明・確認済み。Web検索で補完） |
+| TWCERT/CC | zh-TW | twcert.org.tw | 未収録（RSS 配信なし・確認済み。Web検索で補完） |
+| NCSC（英国） | en | ncsc.gov.uk | 収録済み（一次ソース表の補完・2026-11-06） |
+| CERT-FR（ANSSI） | fr | cert.ssi.gouv.fr | 収録済み（一次ソース表の補完・2026-11-06） |
 
 注記:
 - Europol / FBI IC3 の法執行・摘発情報は日次収集対象に含めない
@@ -73,9 +95,19 @@
 
 ---
 
+### ウォッチリスト該当（無条件採用・2026-11-06 追加）
+
+`config.yml` の `watchlist:`（actors / topics / products / cves）に該当する記事は、
+Step 0.8（`scripts/watchlist_scan.py`）が機械的に列挙する。該当は **P〜W の充足を問わず採用候補**
+とし、「採用」または「除外（理由付き）」のいずれかに必ず割り当てる（黙って落とさない）。
+`scope.priority_groups`（Phase フォーカスグループ）は actors に自動的に含まれる。
+ウォッチリスト該当は帰属・Technique 付与の根拠にならない（行動原則1・3）。
+エントリには `watchlist_matched`（該当語）を記録する。
+
 ## 除外ルール（フラグ付け・足切り禁止）
 
 - 期間内に P〜W が確認できない古いキャンペーン情報は除外
+- ウォッチリスト該当は上記にかかわらず除外せず、採用または理由付き除外として記録する
 - 既報（reported-apts.md 掲載済み）かつ期間内に変化なし → 除外
 - 以下は除外ではなく `低優先度` フラグを付けて次ステップへ渡す:
   - 単一ソースの未確認帰属レポート（確度が低い）
