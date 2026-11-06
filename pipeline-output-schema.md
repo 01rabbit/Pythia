@@ -177,6 +177,7 @@ Step 0.7 の網羅スイープと Step 3.9 の突合結果を記録する（SKIL
 | unhandled | integer | 未処理件数。**Step 4 のコミット時点で 0 であること** |
 | kev_added_in_window | integer | 窓内の CISA KEV 新規追加件数（観測出口クラス E1 の母集団） |
 | ghsa_origin_over_threshold | integer | 閾値以上のうち GHSA 起点の件数（報道系ソースが構造的に落とす層の実測値） |
+| watchlist | object | ウォッチリスト照合の結果（2026-11-06 追加・`config.yml` の `watchlist:` 由来）。`status`: `ok` / `disabled`（watchlist が空、または `--no-watchlist`）。`in_window`: 該当件数（スイープJSON `counts.watchlist_in_window` を転記・CVSS 閾値・KEV の有無を問わず母集団に入る層）。`unhandled`: 突合時点の未処理件数（`watchlist_unhandled`・**コミット時点で 0 であること**）。旧形式スイープの再突合では省略可 |
 | euvd | object | EUVD 独立列挙の結果（EUVD は EUVD として全量収集し、NVD/KEV との重なりは注記で保持・突合で精査）。`status`: `ok` / `failed`（EUVD のみ失敗・NVD+KEV で続行）/ `skipped`（`--no-euvd` 指定）。`in_window_total`: EUVD 窓内全量件数（スイープJSON `counts.euvd_in_window_total` を転記）。`euvd_only`: うち NVD/KEV 側に無い件数（同 `counts.euvd_only`・個別判断必須の層）。旧形式スイープ（EUVD 対応前）の再突合では省略可 |
 
 `unhandled` が 0 でないレポートをコミットしてはならない。やむを得ず 0 にできない場合は、
@@ -320,7 +321,8 @@ Step 0.7 の網羅スイープと Step 3.9 の突合結果を記録する（SKIL
 | monitoring.description | string | 監視対象ログソースと検知観点 |
 | monitoring.splunk_spl | array[string] | SPLクエリ（1クエリ1要素） |
 | monitoring.detection_notes | string | 判断ポイント・誤検知除外の考え方 |
-| references | array[{url, title, language, source}] | 参照URL。language: "ja"/"en"/null |
+| references | array[{url, title, language, source}] | 参照URL。language: ISO 639-1（"ja"/"en"/"zh"/"ko"/"ru"/"fr" 等）/null。原語ソースは原文 URL を残し、翻訳文の URL で置き換えない |
+| watchlist_matched | array[string] \| 省略可 | `config.yml` の `watchlist:` に該当した語（`"products:Zyxel"` の形・Step 0.7 スイープ / Step 0.8 走査の出力を転記）。該当エントリは採用条件の充足を問わず採用される（pipeline-1-cve.md D0）。非該当は省略 |
 | sector_impact | array[string] | 影響セクター（下記の制御語彙を使用） |
 | region_impact | array[string] | 影響地域（"JP"/"US"/"global"等のISO 3166-1 alpha-2 or "global"） |
 | exploited_by | array[string] | このCVEを悪用しているAPTのcampaign_id（cross-reference） |

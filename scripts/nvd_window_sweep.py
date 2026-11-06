@@ -48,6 +48,14 @@ NVD の分析遅延・障害時にも CNA 提供スコア付きでレコード�
 EUVD の取得失敗は NVD+KEV スイープを止めない（`euvd.status: failed` を記録して続行する）。
 NVD / KEV は従来どおり必須（取得失敗はスイープ全体の失敗）。
 
+**ウォッチリスト（官側・運用者指定の監視対象・2026-11-06 第1段階）**:
+`config.yml` の `watchlist:`（cves / products / actors / topics）に該当する CVE は
+CVSS 閾値に関係なく母集団へ加える（`watchlist_in_window`・`sweep_reason: watchlist_match`）。
+照合対象は NVD 窓内公開の全件（説明文・CPE・CVE ID）、KEV 窓内追加（vendor/product・CVE ID）、
+および `cves` に明示された CVE の窓内 lastModified 更新（NVD へ ID 指定で照会）。
+該当行は突合でバッチ集約されず必ず個別に処理される。ウォッチリストの正本は config.yml
+だけであり（`scripts/watchlist.py` が読む）、空なら何も加えない。
+
 ★このスクリプトは forecaster/knowledge/ を一切書き換えない（CLAUDE.md 行動原則5）。
 出力は .cache/ 配下のスイープ結果 JSON と標準出力のみである。
 
@@ -68,10 +76,14 @@ NVD / KEV は従来どおり必須（取得失敗はスイープ全体の失敗�
         --from-json ".cache/daily-security-intel/2026-08-18/step1-sweep.json" \
         --reconcile "outputs/2026-08-18/2026-08-18-security-report.json"
 
+    # ウォッチリストを別ファイルから読む / 使わない
+    python3 scripts/nvd_window_sweep.py ... --watchlist path/to/config.yml
+    python3 scripts/nvd_window_sweep.py ... --no-watchlist
+
 環境変数:
     NVD_API_KEY    設定するとレート制限が 5req/30s → 50req/30s に緩和される（任意）
 
-依存: 標準ライブラリのみ
+依存: 標準ライブラリのみ（同階層の scripts/watchlist.py を読み込む）
 """
 
 from __future__ import annotations
@@ -86,6 +98,9 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import watchlist as wl  # noqa: E402  — scripts/watchlist.py（標準ライブラリのみ）
 
 JST = timezone(timedelta(hours=9))
 
@@ -201,6 +216,42 @@ def summarize(cve: dict, kev: dict) -> dict:
         "kev_due_date": kev_entry.get("dueDate") if kev_entry else None,
         "description": description(cve)[:400],
     }
+
+
+def cpe_strings(cve: dict) -> list[str]:
+    """configurations 配下の CPE criteria を全て返す（ウォッチリストの製品照合用）。"""
+    out: list[str] = []
+    for conf in cve.get("configurations", []) or []:
+        for node in conf.get("nodes", []) or []:
+            for m in node.get("cpeMatch", []) or []:
+                crit = m.get("criteria")
+                if crit:
+                    out.append(crit)
+    return out
+
+
+def watchlist_text(cve: dict) -> str:
+    """ウォッチリスト照合に使う自由文（ID + 説明 + CPE + CNA）。"""
+    return " ".join([cve.get("id", ""), description(cve), " ".join(cpe_strings(cve)),
+                     cve.get("sourceIdentifier") or ""])
+
+
+def watchlist_match_cve(watch: dict, cve: dict) -> dict:
+    """NVD レコード 1 件をウォッチリストと照合する（actors/topics は説明文にも効く）。"""
+    return wl.match_item(watch, text=watchlist_text(cve), cve_ids=[cve.get("id", "")])
+
+
+def watchlist_match_kev(watch: dict, cve_id: str, entry: dict) -> dict:
+    text = " ".join([cve_id, entry.get("vendorProject") or "", entry.get("product") or "",
+                     entry.get("vulnerabilityName") or "", entry.get("shortDescription") or ""])
+    return wl.match_item(watch, text=text, cve_ids=[cve_id])
+
+
+def fetch_nvd_by_id(cve_id: str) -> dict | None:
+    """NVD から CVE を ID 指定で 1 件取得する（ウォッチリスト明示 CVE の更新追跡用）。"""
+    data = _http_json(f"{NVD_API}?{urllib.parse.urlencode({'cveId': cve_id})}")
+    vulns = data.get("vulnerabilities") or []
+    return vulns[0].get("cve") if vulns else None
 
 
 # --------------------------------------------------------------------------
@@ -505,9 +556,12 @@ def to_nvd_utc(dt: datetime) -> str:
 
 
 def sweep(window_start: datetime, window_end: datetime, threshold: float,
-          include_modified: bool = False, no_euvd: bool = False) -> dict:
+          include_modified: bool = False, no_euvd: bool = False,
+          watch: dict | None = None) -> dict:
     if window_end <= window_start:
         raise SystemExit("--window-end は --window-start より後である必要がある")
+    watch = watch if watch is not None else {cat: [] for cat in wl.CATEGORIES}
+    watch_enabled = not wl.is_empty(watch)
 
     utc_start, utc_end = to_nvd_utc(window_start), to_nvd_utc(window_end)
     print(f"調査窓(JST): {window_start:%Y-%m-%d %H:%M} 〜 {window_end:%Y-%m-%d %H:%M}", file=sys.stderr)
@@ -576,12 +630,23 @@ def sweep(window_start: datetime, window_end: datetime, threshold: float,
     changed.sort(key=lambda r: (-(r["cvss_max"] or 0), r["cve_id"]))
     kev_in_window.sort(key=lambda r: r["cve_id"])
 
+    # ウォッチリスト照合（CVSS 閾値に関係なく母集団へ加える・ソース独立の記録）
+    watch_rows, watch_meta = watchlist_sweep(
+        watch, published, kev, kev_in_window, over + changed,
+        utc_start, utc_end) if watch_enabled else ([], {
+            "status": "disabled", "source": watch.get("_source"),
+            "terms": wl.term_counts(watch)})
+    if watch_enabled:
+        print(f"ウォッチリスト: 該当 {len(watch_rows)}件（語数 {watch_meta['terms']}）",
+              file=sys.stderr)
+
     # EUVD 独立列挙（ソース独立・全量収集。フェイルソフト: 失敗しても NVD+KEV で続行）
     euvd_meta: dict = {"status": "skipped", "api": EUVD_API}
     euvd_in_window: list[dict] = []
     if not no_euvd:
         # 注記用の照合集合（除外には使わない。EUVD は全量を記録する）
-        covered_cve_ids = {r["cve_id"] for r in over + changed + kev_in_window}
+        covered_cve_ids = {r["cve_id"] for r in over + changed + kev_in_window + watch_rows
+                           if r.get("cve_id")}
         try:
             euvd_meta, euvd_in_window, alias_map = euvd_sweep(
                 window_start, window_end, threshold, published_ids, covered_cve_ids, kev)
@@ -619,14 +684,109 @@ def sweep(window_start: datetime, window_end: datetime, threshold: float,
             "kev_added_in_window": len(kev_in_window),
             "euvd_in_window_total": len(euvd_in_window),
             "euvd_only": sum(1 for r in euvd_in_window if r.get("euvd_only")),
+            "watchlist_in_window": len(watch_rows),
         },
         "over_threshold_published": over,
         "over_threshold_modified": changed,
         "kev_added_in_window": kev_in_window,
+        # ウォッチリスト該当（閾値未満・KEV 外でも母集団に入る。突合で個別判断必須）
+        "watchlist": watch_meta,
+        "watchlist_in_window": watch_rows,
         "euvd": euvd_meta,
         # EUVD の窓内全量（ソース独立の記録。NVD/KEV との重なりは行の注記で保持）
         "euvd_in_window": euvd_in_window,
     }
+
+
+# --------------------------------------------------------------------------
+# ウォッチリスト
+# --------------------------------------------------------------------------
+
+WATCHLIST_ID_FETCH_MAX = 50  # cves に明示された CVE を ID 指定で照会する上限（API 負荷の抑制）
+
+
+def _in_utc_window(iso_text: str | None, utc_start: str, utc_end: str) -> bool:
+    if not iso_text:
+        return False
+    try:
+        t = datetime.fromisoformat(iso_text.replace("Z", "+00:00"))
+        s = datetime.fromisoformat(utc_start.replace("Z", "+00:00"))
+        e = datetime.fromisoformat(utc_end.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=timezone.utc)
+    return s <= t <= e
+
+
+def watchlist_sweep(watch: dict, published: list[dict], kev: dict,
+                    kev_in_window: list[dict], threshold_rows: list[dict],
+                    utc_start: str, utc_end: str) -> tuple[list[dict], dict]:
+    """ウォッチリスト該当を母集団へ加える。
+
+    1. NVD 窓内公開の**全件**（閾値判定前）を説明文・CPE・CVE ID で照合し、該当は
+       CVSS に関係なく行にする（`sweep_reason: watchlist_match`）
+    2. KEV 窓内追加を vendor/product・CVE ID で照合し、該当行に `watchlist_matched` を付ける
+    3. `cves` に明示された CVE のうち窓内公開に無いものは NVD へ ID 指定で照会し、
+       lastModified が窓内なら `watchlist_cve_modified_in_window` として行にする
+       （公開済み CVE の状態変化＝パッチ・KEV・再スコアを拾う）
+    閾値以上の行と重なる CVE は閾値側の行に印を付けるだけで二重に数えない。
+    """
+    rows: list[dict] = []
+    seen_ids: set[str] = set()
+    threshold_by_id = {r["cve_id"]: r for r in threshold_rows}
+    fetch_errors: list[str] = []
+
+    for item in published:
+        cve = item["cve"]
+        matched = watchlist_match_cve(watch, cve)
+        if not matched:
+            continue
+        if cve["id"] in threshold_by_id:
+            threshold_by_id[cve["id"]]["watchlist_matched"] = wl.flatten_matches(matched)
+            continue
+        row = summarize(cve, kev)
+        row["sweep_reason"] = "watchlist_match"
+        row["watchlist_matched"] = wl.flatten_matches(matched)
+        rows.append(row)
+        seen_ids.add(cve["id"])
+
+    for row in kev_in_window:
+        entry = kev.get(row["cve_id"]) or {}
+        matched = watchlist_match_kev(watch, row["cve_id"], entry)
+        if matched:
+            row["watchlist_matched"] = wl.flatten_matches(matched)
+
+    published_ids = {item["cve"]["id"] for item in published}
+    explicit = [c for c in (watch.get("cves") or []) if c not in published_ids]
+    for cve_id in explicit[:WATCHLIST_ID_FETCH_MAX]:
+        try:
+            cve = fetch_nvd_by_id(cve_id)
+        except Exception as err:  # noqa: BLE001 — 1 件の照会失敗で全体を止めない
+            fetch_errors.append(f"{cve_id}: {err}")
+            continue
+        if not cve or cve_id in seen_ids:
+            continue
+        if cve_id in threshold_by_id:
+            threshold_by_id[cve_id].setdefault("watchlist_matched", [f"cves:{cve_id}"])
+            continue
+        if _in_utc_window(cve.get("lastModified"), utc_start, utc_end):
+            row = summarize(cve, kev)
+            row["sweep_reason"] = "watchlist_cve_modified_in_window"
+            row["watchlist_matched"] = [f"cves:{cve_id}"]
+            rows.append(row)
+            seen_ids.add(cve_id)
+
+    rows.sort(key=lambda r: (-(r.get("cvss_max") or 0), r["cve_id"]))
+    meta = {
+        "status": "ok",
+        "source": watch.get("_source"),
+        "terms": wl.term_counts(watch),
+        "explicit_cves_checked": len(explicit[:WATCHLIST_ID_FETCH_MAX]),
+        "explicit_cves_skipped": max(0, len(explicit) - WATCHLIST_ID_FETCH_MAX),
+        "fetch_errors": fetch_errors,
+    }
+    return rows, meta
 
 
 # --------------------------------------------------------------------------
@@ -687,6 +847,8 @@ def reconcile(sweep_data: dict, report_path: str) -> dict:
     rows = (
         sweep_data.get("over_threshold_published", [])
         + sweep_data.get("kev_added_in_window", [])
+        # ウォッチリスト該当（閾値未満でも母集団。旧形式スイープJSONでは空）
+        + (sweep_data.get("watchlist_in_window") or [])
         # euvd_in_window が正（全量）。旧形式スイープJSONでは euvd_added（差分）に後退
         + (sweep_data.get("euvd_in_window") or sweep_data.get("euvd_added") or [])
     )
@@ -716,6 +878,9 @@ def reconcile(sweep_data: dict, report_path: str) -> dict:
     groups: dict[str, list[dict]] = {}
     for row in unhandled:
         src = row.get("source_identifier")
+        if row.get("watchlist_matched"):
+            # ウォッチリスト該当は指定対象そのものなので、件数に関わらず集約しない
+            continue
         if not src:
             # source_identifier を持たない行（KEV 窓内追加・EUVD 由来候補）は
             # バッチ集約対象外＝必ず個別判断に回す。KEV は E1 母集団そのもので
@@ -745,6 +910,7 @@ def reconcile(sweep_data: dict, report_path: str) -> dict:
         "unhandled": unhandled,
         "unhandled_batches": batches,
         "unhandled_individual": individual,
+        "watchlist_unhandled": sum(1 for r in unhandled if r.get("watchlist_matched")),
     }
 
 
@@ -767,6 +933,22 @@ def _euvd_status_line(data: dict) -> str:
     return status
 
 
+def _watchlist_status_line(data: dict) -> str:
+    meta = data.get("watchlist") or {}
+    status = meta.get("status", "なし（旧形式スイープ）")
+    if status == "ok":
+        n = len(data.get("watchlist_in_window") or [])
+        terms = meta.get("terms") or {}
+        line = (f"該当 **{n}件**（語数 cves {terms.get('cves', 0)} / products {terms.get('products', 0)}"
+                f" / actors {terms.get('actors', 0)} / topics {terms.get('topics', 0)}）")
+        if meta.get("fetch_errors"):
+            line += f"・ID照会失敗 {len(meta['fetch_errors'])}件"
+        return line
+    if status == "disabled":
+        return "無効（config.yml の watchlist が空、または --no-watchlist）"
+    return status
+
+
 def render_markdown(data: dict) -> str:
     win, counts = data["window"], data["counts"]
     lines = [
@@ -778,6 +960,7 @@ def render_markdown(data: dict) -> str:
         f"- CISA KEV 窓内新規追加: **{counts['kev_added_in_window']}件**",
         f"- KEVカタログ版: {data['kev_catalog_version']}",
         f"- EUVD 独立列挙: {_euvd_status_line(data)}",
+        f"- ウォッチリスト: {_watchlist_status_line(data)}",
         "",
         "**この一覧の各CVEは、採用または除外サマリー（理由付き）のいずれかに必ず割り当てること。**",
         "同一CNAが同一窓で5件以上を一括公開したものは、代表1件＋件数で1エントリに集約してよい。",
@@ -825,6 +1008,30 @@ def render_markdown(data: dict) -> str:
         lines.append("（該当なし）")
     lines.append("")
 
+    watch_rows = data.get("watchlist_in_window") or []
+    if (data.get("watchlist") or {}).get("status") == "ok":
+        lines.extend([f"#### ウォッチリスト該当（{len(watch_rows)}件・無条件採用）", ""])
+        if watch_rows:
+            lines.extend([
+                "config.yml の watchlist に該当した CVE（CVSS 閾値・KEV の有無を問わない）。"
+                "**採用条件 A〜H を満たさなくても採用し**、優先度は Step 3 で評価する。"
+                "除外する場合も除外サマリーへ理由付きで記録する（突合で集約されない）。",
+                "",
+                "| CVE | CVSS | KEV | 理由 | 該当語 | 概要 |",
+                "|---|---|---|---|---|---|",
+            ])
+            for r in watch_rows:
+                kev = f"○ {r['kev_date_added']}" if r.get("in_kev") else "—"
+                desc = (r.get("description") or "")[:90].replace("|", "\\|")
+                terms = ", ".join(r.get("watchlist_matched") or [])
+                lines.append(
+                    f"| {r['cve_id']} | {r.get('cvss_max') or '—'} | {kev} |"
+                    f" {r.get('sweep_reason')} | {terms} | {desc} |"
+                )
+        else:
+            lines.append("（該当なし）")
+        lines.append("")
+
     euvd_rows = data.get("euvd_in_window") or data.get("euvd_added") or []
     if (data.get("euvd") or {}).get("status") in ("ok", "failed") or euvd_rows:
         only_count = sum(1 for r in euvd_rows if r.get("euvd_only"))
@@ -863,7 +1070,9 @@ def render_reconcile(result: dict) -> str:
         f"- 対象レポート: `{result['report']}`",
         f"- スイープ候補: {result['sweep_candidates']}件"
         f" / レポートに出現（採用または除外記録済み）: {result['handled_in_report']}件",
-        f"- **未処理: {len(result['unhandled'])}件**",
+        f"- **未処理: {len(result['unhandled'])}件**"
+        + (f"（うちウォッチリスト該当 {result['watchlist_unhandled']}件）"
+           if result.get("watchlist_unhandled") else ""),
         "",
     ]
     if not result["unhandled"]:
@@ -905,6 +1114,8 @@ def render_reconcile(result: dict) -> str:
         rid = r.get("cve_id") or r.get("euvd_id") or "(不明ID)"
         if r.get("euvd_id") and r.get("cve_id"):
             rid = f"{r['cve_id']} ({r['euvd_id']})"
+        if r.get("watchlist_matched"):
+            rid = f"★{rid}（watchlist: {', '.join(r['watchlist_matched'])}）"
         kev = f"○ {r.get('kev_date_added')}" if r.get("in_kev") or r.get("kev_date_added") else "—"
         desc = (r.get("description") or r.get("product") or "")[:90].replace("|", "\\|")
         cna = r.get("source_identifier") or r.get("assigner") or "—"
@@ -932,6 +1143,11 @@ def main() -> int:
     parser.add_argument("--no-euvd", action="store_true",
                         help="EUVD 独立列挙をスキップする（既定は実行。取得失敗時は"
                              "自動的に NVD+KEV のみで続行するため通常は不要）")
+    parser.add_argument("--watchlist", metavar="CONFIG_YML", default=wl.DEFAULT_CONFIG_PATH,
+                        help="ウォッチリストを読む config.yml（既定: リポジトリ直下の config.yml。"
+                             "watchlist 節が空なら何も加えない）")
+    parser.add_argument("--no-watchlist", action="store_true",
+                        help="ウォッチリスト照合を行わない（監査・再現用）")
     parser.add_argument("--from-json", help="スイープ結果JSONを再読み込みする（API再取得なし）")
     parser.add_argument("--reconcile", metavar="REPORT_JSON",
                         help="生成済み security-report.json と突合し未処理CVEを列挙する")
@@ -946,9 +1162,10 @@ def main() -> int:
     else:
         if not (args.window_start and args.window_end):
             parser.error("--window-start と --window-end、または --from-json が必要")
+        watch = None if args.no_watchlist else wl.load_watchlist(args.watchlist)
         data = sweep(parse_jst(args.window_start), parse_jst(args.window_end),
                      args.threshold, include_modified=args.include_modified,
-                     no_euvd=args.no_euvd)
+                     no_euvd=args.no_euvd, watch=watch)
 
     if args.output:
         os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)

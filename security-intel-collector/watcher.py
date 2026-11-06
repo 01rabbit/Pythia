@@ -182,8 +182,16 @@ def entry_key(entry: Any) -> str:
     return normalize_url(entry_get(entry, "link", "") or "")
 
 
-def build_news_item(entry: Any, feed_name: str, tags: List[str]) -> Dict[str, Any]:
-    """Convert a feed entry into a standardized news item."""
+def build_news_item(
+    entry: Any, feed_name: str, tags: List[str], language: Optional[str] = None
+) -> Dict[str, Any]:
+    """Convert a feed entry into a standardized news item.
+
+    ``language`` is the feed's declared language from feeds.json (ISO 639-1,
+    e.g. "ja" / "en" / "zh" / "ko" / "ru"). It is recorded as-is so that
+    non-Japanese/English sources stay identifiable downstream (the pipeline
+    keeps the original-language title/summary and translates at read time).
+    """
     raw_url = entry_get(entry, "link", "") or ""
     normalized = normalize_url(raw_url)
     title = entry_get(entry, "title")
@@ -193,6 +201,7 @@ def build_news_item(entry: Any, feed_name: str, tags: List[str]) -> Dict[str, An
         "title": title if isinstance(title, str) else None,
         "url": normalized,
         "source": feed_name,
+        "language": language if isinstance(language, str) and language else None,
         "published_at": entry_published_iso(entry),
         "fetched_at": utc_now_iso(),
         "tags": list(tags),
@@ -394,6 +403,7 @@ def process_feed(
     name = feed.get("name") or "Unnamed Feed"
     url = feed.get("url")
     tags = feed.get("tags") if isinstance(feed.get("tags"), list) else []
+    language = feed.get("language") if isinstance(feed.get("language"), str) else None
 
     if not url:
         print(f"[warn] feed '{name}' has no url; skipping")
@@ -420,7 +430,7 @@ def process_feed(
     entry_records: List[Tuple[str, Dict[str, Any]]] = []
     for entry in entries:
         key = entry_key(entry)
-        item = build_news_item(entry, name, tags)
+        item = build_news_item(entry, name, tags, language)
         all_items.append(item)
         entry_records.append((key, item))
 

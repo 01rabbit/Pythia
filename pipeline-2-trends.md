@@ -38,9 +38,9 @@ pipeline-1-cve.md のトラック B から渡されたCVE（`section_route: tren
 | BleepingComputer | bleepingcomputer.com | 収録済み |
 | The Hacker News | thehackernews.com | 収録済み |
 | SecurityWeek | securityweek.com | 収録済み |
-| The Record (Recorded Future) | therecord.media | 未収録 |
+| The Record (Recorded Future) | therecord.media | 収録済み（2026-11-06） |
 | Mandiant Blog（Google Threat Intelligence） | cloud.google.com/blog/topics/threat-intelligence | 収録済み（"Google Threat Intelligence (Mandiant)"） |
-| Rapid7 Blog | rapid7.com/blog | 未収録 |
+| Rapid7 Blog | rapid7.com/blog | 収録済み（2026-11-06） |
 | CISA Alerts | cisa.gov/news-events/alerts | 収録済み（"CISA Advisories"） |
 | Unit 42（Palo Alto Networks） | unit42.paloaltonetworks.com | 収録済み |
 | watchTowr Labs | labs.watchtowr.com | 収録済み |
@@ -78,6 +78,13 @@ pipeline-1-cve.md のトラック B から渡されたCVE（`section_route: tren
 - 制限なし、全件ストック
 - Step 3 の重みづけで絞り込む
 
+## ウォッチリスト該当（無条件採用・2026-11-06 追加）
+
+Step 0.8（`scripts/watchlist_scan.py`）が `config.yml` の `watchlist:` で機械収集 raw を走査した
+該当記事は、上記の採用基準・Temporal Burst Filtering の充足を問わず採用候補とし、
+「採用」または「除外（理由付き）」のいずれかに必ず割り当てる。単発シグナルでも
+「低優先度」フラグを付けて残す（落とさない）。該当語は `watchlist_matched` に記録する。
+
 ---
 
 ## トレンド信頼性フィルタリング（Temporal Burst Filtering）
@@ -107,13 +114,15 @@ Step 2 は以下の追加ソースで APT関連の動向を補完する。
 ### APT活動の補完確認ソース
 | ソース | URL | 用途 | feeds.json |
 |--------|-----|------|-----------|
-| Microsoft MSTIC Blog | microsoft.com/en-us/security/blog/ | 帰属・TTP | 未収録 |
-| CrowdStrike Blog | crowdstrike.com/blog/ | キャンペーン観測 | 未収録 |
+| Microsoft MSTIC Blog | microsoft.com/en-us/security/blog/ | 帰属・TTP | 収録済み（2026-11-06） |
+| CrowdStrike Blog | crowdstrike.com/blog/ | キャンペーン観測 | 収録済み（2026-11-06） |
 | Unit 42（Palo Alto） | unit42.paloaltonetworks.com | マルウェア分析 | 収録済み |
-| Talos Intelligence | blog.talosintelligence.com | インフラ追跡 | 未収録 |
-| Secureworks CTU | secureworks.com/research/threat-profiles | グループプロファイル | 未収録 |
-| SentinelLabs | sentinelone.com/labs/ | マルウェア技術分析 | 未収録 |
-| Elastic Security Labs | elastic.co/security-labs | TTP詳細 | 未収録 |
+| Talos Intelligence | blog.talosintelligence.com | インフラ追跡 | 収録済み（2026-11-06） |
+| Secureworks CTU | secureworks.com/research/threat-profiles | グループプロファイル | 未収録（RSS 取得不可・確認済み） |
+| SentinelLabs | sentinelone.com/labs/ | マルウェア技術分析 | 収録済み（2026-11-06） |
+| Elastic Security Labs | elastic.co/security-labs | TTP詳細 | 収録済み（2026-11-06） |
+| ESET WeLiveSecurity | welivesecurity.com | マルウェア・APT分析 | 収録済み（2026-11-06） |
+| Kaspersky Securelist（EN/RU）/ AhnLab ASEC（KO）/ NSFOCUS・XLab（ZH） | pipeline-1b-apt.md「周辺諸国語ソース」 | 周辺諸国発の分析（原語） | 収録済み（2026-11-06） |
 | watchTowr Labs | labs.watchtowr.com | 脆弱性リサーチ・実証 | 収録済み |
 | Google Threat Intelligence（Mandiant） | cloud.google.com/blog/topics/threat-intelligence | 帰属・キャンペーン分析 | 収録済み（"Google Threat Intelligence (Mandiant)"） |
 | NISC（日本） | cyber.go.jp | 公式勧告 | 未収録（RSS配信なし・確認済み。Web検索で補完） |

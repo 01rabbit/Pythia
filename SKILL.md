@@ -208,6 +208,33 @@ python3 scripts/nvd_window_sweep.py \
 - **このスイープを省略・他ソースで代替してはならない。** 仕様上の注意
   （NVD の severity フィルタを使わない理由・`lastModStartDate` を既定で使わない理由・
   アグリゲータCNA をバッチ集約してはならない理由）は `pipeline-1-cve.md`「網羅スイープ」節に記載
+- **ウォッチリスト（`config.yml` の `watchlist:`）** を既定で読み、該当 CVE を CVSS 閾値に
+  関係なく母集団へ加える（`watchlist_in_window`・Markdown 表「ウォッチリスト該当」）。
+  該当は**採用条件 A〜H を満たさなくても採用**し（除外するなら理由付きで除外サマリーへ）、
+  優先度は Step 3 で評価する。突合ではバッチ集約されない。
+  watchlist が空なら何も加えない（`watchlist.status: disabled`・機構は常時有効）
+
+### Step 0.8: ウォッチリスト走査（必須・Step 1b / 2 の前）
+
+`config.yml` の `watchlist:`（cves / products / actors / topics）で RSS 機械収集 raw を走査し、
+Step 1b（APT）・Step 2（動向）・Step 1（CVE 言及）へ渡す**無条件採用候補**を確定させる。
+官側・運用者が指定した監視対象（特定の脆弱性・アクター・トピック）を、採用条件の
+解釈に依存せず機械的に拾うための層であり、Step 0.7 の CVE 側ウォッチリストと対をなす。
+
+```bash
+python3 scripts/watchlist_scan.py --date "${TODAY}" \
+  --window-start "${WINDOW_START}" --window-end "${WINDOW_END}" \
+  --output ".cache/daily-security-intel/${TODAY}/watchlist-scan.json"
+```
+
+- 走査対象は Step 0.5 の `news-(D-1).json` / `news-(D).json`（無ければ `news-latest.json`）だけ。
+  Web 検索結果は走査しない（再現性）。読んだファイル名は出力 `files` に残る
+- 標準出力の Markdown 表はそのまま Step 1b / Step 2 の指示文に貼る。
+  **該当記事は採用条件（P〜W / α〜η）を満たさなくても採用候補とし、「採用」または
+  「除外（理由付き）」のいずれかに必ず割り当てる**（窓外該当は継続フォローとして扱う）
+- ウォッチリスト該当は Technique・帰属付与の根拠にならない（行動原則1・3 はそのまま適用）
+- `scope.priority_groups`（Phase フォーカスグループ）は actors に自動的に含まれる
+- 出力は `.cache/` のみ。`forecaster/knowledge/` も `config.yml` も書き換えない
 
 ### Step 1: CVE調査（pipeline-1-cve.md に従う）
 - 一次入力: Step 0.7 の `SWEEP_FILE`（NVD/KEV 機械列挙による母集団・**全件を処理対象とする**）
@@ -221,7 +248,12 @@ python3 scripts/nvd_window_sweep.py \
 - 除外基準はフラグ付け（足切りしない）
 
 ### Step 1b: APT活動調査（pipeline-1b-apt.md に従う）※Step 1 と並行実行
+- 一次入力: Step 0.5 の `news-*.json`（MSTIC / CrowdStrike / Talos / SentinelLabs / ESET /
+  Securelist（EN・RU）/ AhnLab ASEC（KO）/ NSFOCUS・XLab（ZH）/ NCSC / CERT-FR を含む機械収集済み）
+  と Step 0.8 の `watchlist-scan.json`（該当は無条件採用候補）。Web 検索は補完のみ
 - Mandiant / MSTIC / CrowdStrike / Unit 42 / CISA合同勧告等を横断検索
+- 日英以外の言語の記事（`language` が `zh` / `ko` / `ru` / `fr`）は原文のまま読み、
+  要約は日本語で書く。参照 URL は原文を残し `language` を記録する（翻訳文の URL で置き換えない）
 - 期間内に P〜W の変化が確認できる活動のみ収集（→ Section 2 へ）
 - `reported-apts.md` と照合し、既報かつ変化なしは除外
 - Europol / FBI IC3 などの法執行・摘発チェックは日次では行わない（週次検証へ移管）
@@ -234,7 +266,8 @@ python3 scripts/nvd_window_sweep.py \
 - Temporal Burst Filtering（48時間以内に3件以上の独立ソース）を適用（3件未満 → 低優先度）
 
 ### Step 2: 動向収集（pipeline-2-trends.md に従う）
-- 一次入力: Step 0.5 の `news-*.json`（RSS 機械収集済み・feeds.json 収録14フィード）。Web 検索は補完のみ
+- 一次入力: Step 0.5 の `news-*.json`（RSS 機械収集済み・feeds.json 収録32フィード・各記事に `language`）
+  と Step 0.8 の `watchlist-scan.json`（該当は無条件採用候補）。Web 検索は補完のみ
 - 英語ソース: BleepingComputer / The Hacker News / SecurityWeek / Mandiant 等
 - 日本語ソース（必須）: Security NEXT / JPCERT/CC 注意喚起 / IPA重要情報 / ScanNetSecurity
 - APT補完ソース: MSTIC / CrowdStrike / Unit 42 / NISC / 警察庁サイバー警察局
@@ -322,9 +355,11 @@ python3 scripts/nvd_window_sweep.py \
   `cve_id` を「代表CVE ほかN件」の形で列挙して突合を通す
 - **除外には必ず理由を書く。** 突合は「レポート JSON 全文にCVE IDが現れるか」だけを見るため、
   理由なしでID を並べても通ってしまう（突合通過は完全性の必要条件であって十分条件ではない）
-- 突合結果（候補件数 / 未処理件数 / KEV窓内追加件数）を `meta.sweep` に記録する
+- 突合結果（候補件数 / 未処理件数 / KEV窓内追加件数 / ウォッチリスト該当件数）を `meta.sweep` に記録する
   （pipeline-output-schema.md「meta.sweep」節）。Step 0.7 が失敗した場合は
   `meta.sweep.status: "failed"` を記録する
+- ウォッチリスト該当（★印）はバッチ集約されず必ず個別に挙がる。未処理に残っていれば
+  採用または「ウォッチリスト該当・変化なし」等の理由付き除外を追記してから再実行する
 - Step 3.9 は Step 3.5（予報生成）の後で構わないが、**Step 4 のコミットより前**に通すこと
 
 この突合は、姉妹リポジトリで9件のCVEがレポート本体にも除外サマリーにも現れないまま

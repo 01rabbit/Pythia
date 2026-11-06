@@ -348,6 +348,7 @@ Week 13（〜2026-09 中旬）まで延長（2026-07-13・`forecaster/phase1-con
 | 収集の重みづけ基準 | `pipeline-3-weighting.md` |
 | 収集の出力テンプレート | `pipeline-3-weighting.md` / `pipeline-ai-2.md` / `pipeline-soc-recommend.md` |
 | 収集の JSONスキーマ | `pipeline-output-schema.md` |
-| RSSフィードの追加・変更 | `security-intel-collector/feeds.json` |
+| RSSフィードの追加・変更 | `security-intel-collector/feeds.json`（各フィードに `language` を付ける） |
+| ウォッチリスト（指定 CVE・製品・アクター・トピックの無条件採用） | `config.yml` の `watchlist:`（Step 0.7 スイープ / Step 0.8 `scripts/watchlist_scan.py` が共有） |
 | 類似過去事例検索の閾値・重み | `forecaster/case-based-retrieval-design.md`（設計）+ `scripts/retrieve_similar_cases.py` |
 | パイプライン実行手順 | `SKILL.md`（日次）/ `.skills/forecast-verification/SKILL.md`（週次検証） |
