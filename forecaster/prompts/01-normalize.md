@@ -26,6 +26,12 @@
 （`scripts/validate_neighbor_context.py` が観測ファイルへの混入を検出する）。
 `geopolitical_signal` は従来どおり APT 観測にのみ R9 で付与する。
 
+同様に `infrastructure_context`（Section 6 攻撃基盤プロファイル）も処理対象外である。公開データベースへの
+受動照会で補強した属性（ASN・開放ポート・登録情報等）であり、観測の `iocs` や帰属の根拠に使わない。
+`profile_id` が `inf-` で始まるものから observation を作らず、`inf-` ID を observation に書かない
+（`scripts/validate_infrastructure_context.py` が混入を検出する）。観測の `iocs` は従来どおり、
+レポートの `ioc` に報告された値をそのまま（R10 の無害化規則に従って）記録する。
+
 ---
 
 ## 出力先

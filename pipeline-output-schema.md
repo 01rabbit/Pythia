@@ -15,11 +15,12 @@ outputs/YYYY-MM-DD/
   YYYY-MM-DD-security-report-ai.txt              ← Section 1: AI攻撃動向（本編・参考B・参考A・週次サマリー・除外）
   YYYY-MM-DD-security-report-soc.txt             ← Section 4: SOC推奨情報（高/中/低優先度・除外・集計）
   YYYY-MM-DD-security-report-neighbor.txt        ← Section 5: 周辺諸国動向（報告専用・render_neighbor_section.py が JSON から生成）
+  YYYY-MM-DD-security-report-infra.txt           ← Section 6: 攻撃基盤プロファイル（報告専用・render_infrastructure_section.py が JSON から生成）
 ```
 
-計7ファイル（JSON 1 + テキスト 6）。全ファイルを outputs/YYYY-MM-DD/ に保存する。
-`neighbor_context` を持たない過去日（Section 5 導入前）は従来の計6ファイルのままで、
-`scripts/check_report_consistency.py` も `neighbor_context` を持つ日だけ 7 ファイル目を要求する。
+計8ファイル（JSON 1 + テキスト 7）。全ファイルを outputs/YYYY-MM-DD/ に保存する。
+`neighbor_context` / `infrastructure_context` を持たない過去日（Section 5・6 導入前）は従来の計6ファイルのままで、
+`scripts/check_report_consistency.py` も各セクションを持つ日だけ追加のテキストを要求する。
 
 ---
 
@@ -45,6 +46,7 @@ outputs/YYYY-MM-DD/
   "ai_attacks_reference_a": [ AI攻撃エントリ ],
   "soc_recommendations": [ SOC推奨情報エントリ ],
   "neighbor_context": { "scan": {...}, "entries": [ 周辺諸国動向エントリ ], "dispositions": [...] },
+  "infrastructure_context": { "run": {...}, "profiles": [ 攻撃基盤プロファイル ], "unparsed": [...] },
   "exclusions": {
     "cve": [ 除外エントリ ],
     "apt": [ 除外エントリ ],
@@ -61,6 +63,10 @@ outputs/YYYY-MM-DD/
 `neighbor_context`（Section 5）は**報告専用の文脈層**であり、観測・ベースライン・base_rate・
 予報のいずれにも入れない（`forecaster/prompts/01-normalize.md` の処理対象フィールドにも含まれない）。
 収集・記録の規則は `pipeline-neighbor.md`、機械検査は `scripts/validate_neighbor_context.py`。
+
+`infrastructure_context`（Section 6）も同様に**報告専用**で、`scripts/enrich_infrastructure.py` が
+IoC を公開データベースへの受動照会だけで補強して**機械的に注入する**（LLM は書かない）。
+規則は `pipeline-infrastructure.md`、機械検査は `scripts/validate_infrastructure_context.py`。
 
 ### tactical_forecast（戦況・戦術予報v2）
 
@@ -852,6 +858,80 @@ Section 5。**報告専用の文脈層**で、観測・予報には入らない�
 
 ---
 
+## 攻撃基盤プロファイル（infrastructure_context）
+
+Section 6。**報告専用の文脈層**で、観測・予報には入らない。**スクリプトが機械的に注入する**
+（`scripts/enrich_infrastructure.py`）。規則の正本は `pipeline-infrastructure.md`。
+
+```json
+"infrastructure_context": {
+  "schema_version": "1.0",
+  "forecast_input": false,
+  "run": {
+    "status": "ok",
+    "started_at_utc": "2026-11-06T13:17:39Z",
+    "finished_at_utc": "2026-11-06T13:17:47Z",
+    "sources_enabled": ["ripestat", "internetdb", "rdap", "urlscan", "mnemonic"],
+    "indicators": { "extracted": 4, "enriched": 2, "skipped": 2, "unparsed": 2 },
+    "lookups": { "total": 6, "ok": 6, "no_data": 0, "failed": 0 },
+    "by_source": { "internetdb": { "ok": 1, "no_data": 0, "failed": 0, "last_error": null } }
+  },
+  "profiles": [
+    {
+      "profile_id": "inf-2026-11-06-001",
+      "indicator": "45.9.148.10",
+      "type": "ip",
+      "defanged": "45[.]9[.]148[.]10",
+      "as_reported": ["45.9.148[.]10", "hxxp://45.9.148[.]10:8080/a"],
+      "annotations": [],
+      "reported_in": [ { "path": ".apt_main[0]", "ref": "APT-2026-X", "info_id": "20261106-APTC-aaaaaaaa" } ],
+      "skip_reason": null,
+      "lookups": [
+        {
+          "source": "internetdb", "kind": "passive_database", "host": "internetdb.shodan.io",
+          "queried_at_utc": "2026-11-06T13:17:41Z", "http_status": 200,
+          "response_sha256": "<64桁の16進>", "status": "ok",
+          "extract": { "ports": [22, 443, 8080], "cpes": ["cpe:/a:openbsd:openssh:8.9"], "hostnames": [], "tags": [], "vulns": [] },
+          "error": null
+        }
+      ],
+      "summary": { "asns": [ { "asn": 211252, "holder": "…" } ], "ports": [22, 443, 8080] },
+      "flags": { "shared_infrastructure": false, "shared_infrastructure_providers": [], "newly_registered": false,
+                 "has_source_vulns": false, "legitimate_or_shared_platform": false },
+      "caveats": ["geolocation_approximate"],
+      "forecast_input": false
+    }
+  ],
+  "unparsed": [ { "as_reported": "/admin/login.php", "reason": "url_path_only", "reported_in": [ { "path": ".apt_main[0]", "ref": "APT-2026-X", "info_id": null } ] } ]
+}
+```
+
+| フィールド | 型 | 値 / 説明 |
+|---|---|---|
+| run.status | string | `ok` / `partial`（一部の照会が失敗）/ `failed`（照会が全件失敗）/ `no_indicators`（IoC なし）/ `disabled`（config で無効） |
+| run.started_at_utc / finished_at_utc | string | 実行区間（UTC）。全照会の取得時刻はこの区間に収まる |
+| run.indicators / lookups / by_source | object | 件数。プロファイルと照会記録から再計算した値と一致する（検証器が照合） |
+| profile_id | string | "inf-YYYY-MM-DD-NNN"。報告元の件数が多い順・IP が先・値の昇順で連番 |
+| indicator | string | 正規化した IP またはドメイン（URL はホストを取り出す）。`defanged` は無害化表記（テキストはこちらを出す） |
+| as_reported | array[string] | 報告時の文字列をそのまま。検証器が正規化し直して `indicator` に一致することを確認する |
+| annotations | array[string] | 報告時の注記（『（SoftEther VPN）』など） |
+| reported_in | array[object] | どの報告のどの `ioc` で出たか（`path` / `ref` / `info_id`） |
+| skip_reason | string \| null | `non_public`（非公開アドレス・予約名）/ `legitimate_or_shared_platform`（正規サービス・共有プラットフォーム）/ `over_budget` / `no_enabled_source`。照会しない指標は `lookups` が空 |
+| lookups[].source | string | `ripestat.prefix` / `ripestat.geolocation` / `internetdb`（IP）、`rdap.domain` / `urlscan.search` / `mnemonic.pdns`（ドメイン） |
+| lookups[].status | string | `ok`（取得済み・extract あり）/ `no_data`（照会したが該当なし）/ `failed`（`error` に理由） |
+| lookups[].response_sha256 | string \| null | 応答本文の SHA-256。JSON 専用（テキストに出さない） |
+| summary | object | 応答の `extract` から**機械的に**作る要約。検証器が `build_summary` で再計算して照合する。応答に無い情報を足せない |
+| flags | object | `shared_infrastructure` / `shared_infrastructure_providers` / `newly_registered`（登録から 30 日以内）/ `has_source_vulns` / `legitimate_or_shared_platform` |
+| caveats | array[string] | 解釈の限界の目印（`geolocation_approximate` / `shared_infrastructure_not_attribution` / `source_vulns_unverified` / `hostnames_source_asserted` / `urlscan_30d_window` / `passive_dns_partial` / `some_sources_failed`）。テキストで日本語の注意書きになる |
+| unparsed[].reason | string | `url_path_only`（ホスト不明）/ `not_a_domain`（ファイル名）/ `unparseable`。黙って落とさず理由を残す |
+| forecast_input | boolean | **false 固定**（コンテキスト全体とプロファイルの両方） |
+
+**持てない項目**: `techniques` / `ttps` / `actor_group` / `mitre_id` / `observation_id` / `forecast_id` /
+`base_rate` / `base_rate_estimate` / `verified_outcome`。インフラの類似・共有だけで帰属しない
+（行動原則3）ため、Section 6 の属性は APT エントリの帰属や Section 5 の `attribution` の根拠にならない。
+
+---
+
 ## 除外エントリ（exclusions.cve / exclusions.apt / exclusions.ai_attacks / exclusions.soc_recommendations）
 
 ```json
@@ -947,6 +1027,9 @@ Section 5。**報告専用の文脈層**で、観測・予報には入らない�
 `statistics.neighbor_context` は `neighbor_context.entries` の要素数・`dispositions` の除外件数・
 区分別件数と一致させる（`validate_neighbor_context.py` が照合する）。
 
+`statistics.infrastructure_context`（`{"profiles": n, "enriched": n, "skipped": n, "unparsed": n}`）は
+`enrich_infrastructure.py` が注入する。`validate_infrastructure_context.py` が再計算値と照合する。
+
 ---
 
 ## JSONからテキストへの変換ルール
@@ -970,6 +1053,7 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 | ai_attacks_reference_a | 【AI攻撃—参考A】セクション |
 | soc_recommendations | 【SOC推奨情報】セクション（security-report-soc.txt / security-report.txt） |
 | neighbor_context | 【周辺諸国動向】セクション（security-report-neighbor.txt / security-report.txt の末尾）。**手で書き起こさず** `scripts/render_neighbor_section.py` が生成する |
+| infrastructure_context | 【攻撃基盤プロファイル】セクション（security-report-infra.txt / security-report.txt の末尾）。**手で書き起こさず** `scripts/render_infrastructure_section.py` が生成する。IP・ドメインは無害化表記で出す |
 | exclusions | 【除外サマリー】セクション |
 | statistics | 本日の集計行 |
 
@@ -983,6 +1067,7 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 | security-report-ai.txt | Section 1（AI攻撃）: ai_attacks_main / ai_attacks_reference_b / ai_attacks_reference_a / exclusions.ai_attacks / statistics.ai_attacks |
 | security-report-soc.txt | Section 4（SOC推奨）: soc_recommendations（priority順）/ exclusions.soc_recommendations / statistics.soc_recommendations |
 | security-report-neighbor.txt | Section 5（周辺諸国動向）: neighbor_context（国別・primary → regional の順）/ 除外サマリー / 区分別集計行 |
+| security-report-infra.txt | Section 6（攻撃基盤プロファイル）: infrastructure_context（IP → ドメインの順）/ 照会しなかった指標 / 解析できなかった IoC の表記 / 集計行 |
 
 ### 変換時の注意点
 
@@ -996,6 +1081,7 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 - `report_section` フィールドはテキストには出力しない（JSON専用フィールド）
 - `info_id` フィールドはテキストには出力しない（JSON専用フィールド。生成規則は本ファイル冒頭の「info_id」節参照）
 - Section 5 の `info_id` / `forecast_input` / `candidate_ids` / `dispositions` の候補ID はテキストに出力しない（JSON専用。`render_neighbor_section.py` が出さない）
+- Section 6 の `response_sha256` / `forecast_input` / 照会の生の `extract` はテキストに出力しない（JSON専用）。IP・ドメイン（報告時の表記を含む）は無害化表記で出す
 - 予報の `outcome_channel` / `forecast_class` / `window_hours` はテキストに出力する（【攻撃予報】の「観測出口クラス:」「検証窓:」行。pipeline-3-weighting.md テンプレート参照）
 - 予報の `anchor` / `kev_snapshot` / `forecast_class_rationale` / `deadline_date` はテキストには出力しない（JSON専用・検証ステージが使用）
 - CVEの `epss.score` / `epss.percentile` / `epss.model_date` はテキストには出力しない（JSON専用・確度アンカー算出用）

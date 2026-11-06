@@ -74,3 +74,18 @@ neighbor_states:
   primary: ["CN", "RU", "KP"]
   regional: ["KR", "TW"]
   gate_min_relevance: "high"
+
+# 攻撃基盤プロファイル（Section 6・2026-11-06 追加・第3段階）
+# 要件「攻撃者の攻撃プラットフォームの詳細（国・ドメイン・URL・IP・管理者・稼働サービスと
+# バージョン・開放ポート・脆弱性・ノード種別）」に対応する層。レポートに載った IoC（IP・ドメイン・
+# URL のホスト）を『公開データベースへの受動照会だけ』で補強する。IoC の指す先へは接続しない。
+# ★予報の入力層から分離した『報告専用』の文脈層。観測・ベースライン・base_rate・予報には入れない。
+# ★プロファイルは LLM が書かず scripts/enrich_infrastructure.py が API 応答から機械的に作る。
+# 判定に使うデータ（共有基盤の ASN・除外するドメイン）は infra/policy.json（PR経由でのみ変更）。
+# sources: ripestat（IP→ASN・保有者・国）/ internetdb（IP→ポート・CPE・タグ）/
+#          rdap（ドメイン→登録情報）/ urlscan（ドメイン→過去30日のスキャン履歴）/
+#          mnemonic（ドメイン→パッシブ DNS）。取得失敗はフェイルソフト（記録して続行）。
+infrastructure:
+  enabled: true
+  max_indicators: 40
+  sources: ["ripestat", "internetdb", "rdap", "urlscan", "mnemonic"]

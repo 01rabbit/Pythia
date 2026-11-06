@@ -18,6 +18,7 @@ Pythia では `security-report.json` が唯一の一次出力（source of truth�
 検査項目:
   [E] 必須ファイル（JSON + テキスト5種。neighbor_context を持つ日は Section 5 単体の6種目も）の存在
   [E] neighbor_context の全 entry_id が全セクション版と Section 5 単体の両方に出現すること
+  [E] infrastructure_context を持つ日は Section 6 単体テキストの存在と、全 profile_id の出現
   [E] statistics の各カウントと配列長の一致
   [E] テキストにあって JSON に存在しない CVE ID（＝書き起こし時に増えた情報）
   [E] 採用CVEが全セクション版テキストおよび対応する分割テキストに出現すること
@@ -136,6 +137,10 @@ def check_date(root: Path, date: str, *, skip_if_no_json: bool = False) -> tuple
     neighbor = data.get("neighbor_context")
     if isinstance(neighbor, dict):
         paths["neighbor"] = paths["json"].with_name(f"{date}-security-report-neighbor.txt")
+    # Section 6（攻撃基盤プロファイル）も同様に、infrastructure_context を持つ日だけ追加のテキストを要求する
+    infra = data.get("infrastructure_context")
+    if isinstance(infra, dict):
+        paths["infra"] = paths["json"].with_name(f"{date}-security-report-infra.txt")
 
     missing_texts = [key for key, path in paths.items() if key != "json" and not path.is_file()]
     for key in missing_texts:
@@ -213,6 +218,19 @@ def check_date(root: Path, date: str, *, skip_if_no_json: bool = False) -> tuple
             if full_text and eid not in full_text:
                 errors.append(f"{date}: neighbor_context の {eid} が {full_path.name} に出現しない"
                               "（render_neighbor_section.py --append-to-full で追記する）")
+
+    # --- Section 6: 全プロファイルが全セクション版と Section 6 単体の両方に出現するか ---
+    if isinstance(infra, dict):
+        infra_text = paths["infra"].read_text(encoding="utf-8") if paths["infra"].is_file() else ""
+        for profile in infra.get("profiles") or []:
+            if not isinstance(profile, dict) or not profile.get("profile_id"):
+                continue
+            pid = profile["profile_id"]
+            if infra_text and pid not in infra_text:
+                errors.append(f"{date}: infrastructure_context の {pid} が {paths['infra'].name} に出現しない")
+            if full_text and pid not in full_text:
+                errors.append(f"{date}: infrastructure_context の {pid} が {full_path.name} に出現しない"
+                              "（render_infrastructure_section.py --append-to-full で追記する）")
 
     # --- 網羅スイープ突合の結果（SKILL.md Step 3.9）---
     sweep = (data.get("meta") or {}).get("sweep")

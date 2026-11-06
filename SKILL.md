@@ -21,13 +21,14 @@ schedule: daily
 9. `pipeline-output-schema.md` — JSONスキーマ定義
 10. `pipeline-forecast-verification.md` — 攻撃予報の品質ルール（Step 3 / 3.5 で参照）
 11. `pipeline-neighbor.md` — Step 2c 周辺諸国動向（Section 5）の収集・記録ルール
+12. `pipeline-infrastructure.md` — Step 3.1 攻撃基盤プロファイル（Section 6）の規則
 
 > 情報収集の完全性は Step 0.7 の網羅スイープと Step 3.9 の突合ゲートで機械的に担保する。
 > Step 5 の日次サマリーには、突合結果（候補件数 / 未処理件数）とトークン使用量も含める。
 
-## レポート区分（5区分）
+## レポート区分（6区分）
 
-本パイプラインは以下の5区分でレポートを構成する:
+本パイプラインは以下の6区分でレポートを構成する:
 
 ```
 Section 1: AI攻撃動向
@@ -55,6 +56,12 @@ Section 5: 周辺諸国動向（★報告専用・予報の入力に使わない
   → 周辺諸国（config.yml neighbor_states）のサイバー関連の活動・政策・組織・企業と、
     それを理解するための非サイバー情勢（国家戦略・政治動向・国家心理・軍と組織）
   → 観測・ベースライン・base_rate・予報には入れない（検証器が機械的に確認する）
+
+Section 6: 攻撃基盤プロファイル（★報告専用・予報の入力に使わない・スクリプトが機械的に生成）
+  → pipeline-infrastructure.md（Step 3.1: scripts/enrich_infrastructure.py）
+  → レポートに載った IoC（IP・ドメイン・URL のホスト）を公開データベースへの受動照会だけで補強
+    （国・ASN・保有者・開放ポート・CPE・登録情報・ホスティング先の履歴）。IoC の指す先へは接続しない
+  → LLM が書かない。要約は応答の記録から検証器が再計算して照合する
 ```
 
 ---
@@ -344,6 +351,28 @@ python3 scripts/neighbor_scan.py --date "${TODAY}" \
    `python3 scripts/render_neighbor_section.py --date "${TODAY}" --append-to-full`
    （`security-report-neighbor.txt` を作り、`security-report.txt` の末尾へも追記する。冪等）
 
+### Step 3.1: 攻撃基盤プロファイル（pipeline-infrastructure.md に従う・必須）
+
+Section 1〜5 を含むレポート JSON が確定した後、**Step 3.5 の前**に実行する。レポートに載った IoC を
+公開データベースへの**受動照会だけ**で補強し、`infrastructure_context` を JSON へ注入する。
+
+```bash
+python3 scripts/enrich_infrastructure.py --date "${TODAY}"
+python3 scripts/render_infrastructure_section.py --date "${TODAY}" --append-to-full
+```
+
+- **プロファイルを手で書かない・編集しない。** スクリプトが API 応答から機械的に作り、
+  Step 4 の検証器が応答の記録から要約を再計算して照合する。エージェントの役割は、Step 1〜3 で
+  IoC を `ioc` へ正確に書くことと、このスクリプトを実行することだけである
+- IoC の指す IP・ドメイン自体へは接続しない（名前解決もしない）。問い合わせ先は ripestat /
+  internetdb / rdap / urlscan / mnemonic の公開データベースだけ（実行環境のネットワーク許可が必要）
+- ソースの取得失敗はフェイルソフト（記録して続行）。実行状態が `partial` / `failed` でもコミットは
+  止めないが、Step 5 の日次サマリーに影響とあわせて1行で明記する。IoC が無い日は `no_indicators`
+- **インフラの類似・共有だけで帰属しない（行動原則3）。** 共有基盤（Cloudflare・大手クラウド等）上の
+  IP は注意書きが付く。Section 6 の属性を APT エントリの帰属や Section 5 の `attribution` の根拠にしない
+- **Section 6 から観測・予報・Technique・`actor_group` を作らない。** Step 3.5 の入力に含めない
+- 出力は当日のレポート JSON への注入だけ。`forecaster/knowledge/` も `config.yml` も書き換えない
+
 ### Step 3.5: 予報士システム — 正規化・ベースライン更新・予報生成（forecaster 統合）
 
 > この Step が Pythia の中核である。Step 3 の出力 JSON が確定してから実行する。
@@ -428,7 +457,8 @@ Pythia では加えて**観測母集団の偏りがベースライン・base_rat
   5. `YYYY-MM-DD-security-report-ai.txt` — Section 1: AI攻撃動向
   6. `YYYY-MM-DD-security-report-soc.txt` — Section 4: SOC推奨情報
   7. `YYYY-MM-DD-security-report-neighbor.txt` — Section 5: 周辺諸国動向（`render_neighbor_section.py` が生成）
-  8. `YYYY-MM-DD-token-usage.json` — 実行トークン量・料金概算（運用メタ情報・下記で生成）
+  8. `YYYY-MM-DD-security-report-infra.txt` — Section 6: 攻撃基盤プロファイル（`render_infrastructure_section.py` が生成）
+  9. `YYYY-MM-DD-token-usage.json` — 実行トークン量・料金概算（運用メタ情報・下記で生成）
 - **トークン使用量・料金概算を計測する（毎回必須・commit 前に1回だけ実行する）**:
 
   ```bash
@@ -467,7 +497,11 @@ Pythia では加えて**観測母集団の偏りがベースライン・base_rat
   nbr- ID の混入のいずれかがあればコミットしてはならない。日次では必ず
   `python3 scripts/validate_neighbor_context.py --date ${TODAY} --scan ".cache/daily-security-intel/${TODAY}/neighbor-scan.json" --require`
   を実行する。読み取り専用）
-  （check_report_consistency は JSON と派生テキスト5種〔neighbor_context を持つ日は6種〕の食い違いを機械検査する。
+  （validate_infrastructure_context は Section 6 の fail-closed ゲート。レポートの IoC を落とした／
+  存在しない指標を足した、summary が照会記録からの再計算と食い違う、非公開アドレスや IoC 自身へ
+  照会している、取得証跡が不正、観測や予報に inf- ID が混入しているのいずれかがあればコミットしてはならない。
+  日次では必ず `python3 scripts/validate_infrastructure_context.py --date ${TODAY} --require` を実行する。読み取り専用）
+  （check_report_consistency は JSON と派生テキスト5種〔neighbor_context / infrastructure_context を持つ日は追加のテキストも〕の食い違いを機械検査する。
   **テキストにあって JSON に無い CVE ID** はエラーになる — テキスト側だけに書かれた情報は
   観測へ取り込まれず、人が読む記録と機械が学習する記録が乖離するため、
   JSON へ反映するかテキストから除いてから再実行すること）
@@ -518,6 +552,9 @@ Pythia では加えて**観測母集団の偏りがベースライン・base_rat
 9. **周辺諸国動向（Section 5）**: 走査候補件数 / ゲート対象件数 / 採用 / 除外 / 未処理件数と、
    国別の採用件数（走査が失敗した場合は『周辺諸国走査なし』とその影響を1行で明記する）。
    Section 5 は報告専用で予報には使っていない旨は書かなくてよい（検証器が確認済み）
+10. **攻撃基盤プロファイル（Section 6）**: 実行状態（ok / partial / failed / no_indicators）、
+    指標数（補強 / スキップ / 解析不能）、照会数（成功 / データなし / 失敗）。
+    `partial` / `failed` の場合は取得できなかったソースと影響を1行で明記する
 
 表示形式:
 - 日本語プレーンテキスト（チャット表示用のため、レポート本文と同様に装飾記法へ依存しない）
@@ -534,6 +571,7 @@ push 先がセッションブランチとなり PR を作成する場合は、�
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-ai.txt`（Section 1: AI攻撃動向）
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-soc.txt`（Section 4: SOC推奨情報）
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-neighbor.txt`（Section 5: 周辺諸国動向）
+- `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-infra.txt`（Section 6: 攻撃基盤プロファイル）
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-token-usage.json`（トークン量・料金概算・運用メタ情報）
 - `reported-cves.md` / `reported-apts.md` / `reported-ai-attacks.md`（追記）
 - `forecaster/observations/` `forecaster/baseline/` `forecaster/forecasts/daily/`（Step 3.5）
