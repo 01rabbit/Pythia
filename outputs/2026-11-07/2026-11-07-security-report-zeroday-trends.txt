@@ -1,0 +1,111 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-07 07:50 JST
+調査期間: 2026-11-06 07:00 〜 2026-11-07 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】 なし
+
+【APT活動-本編】 なし
+
+【APT活動-注目動向】 なし
+
+【注目CVE（リスト外）】
+------------------------------------------------------------
+CVE-2026-19868 [high] SonicWall SonicOS SSLVPN（SAML 認証強制の不備）
+------------------------------------------------------------
+CISA は 2026-11-06 に SonicWall SonicOS SSLVPN の CVE-2026-19868 を KEV に追加した（期限 11-20・ランサム利用は不明）。EUVD の説明では、別の認証方式の有効な資格情報を持つ利用者が SAML 認証制御を回避でき、SAML で強制している多要素認証（MFA）も回避され得る。EUVD は 11-06 を悪用確認の開始日として記録している（EUVD 表示 CVSS 7.5・EPSS 0.0）。悪用の主体・手口・規模は固定済みの一次情報では未確認。
+  KEV追加: 2026-11-06 期限: 2026-11-20
+  暫定対策: ベンダー修正の適用（版の詳細は未取得） / SSLVPN で SAML 以外の認証方式を無効化する / VPN 認証ログで SAML を経由しないログインを確認する
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+  参照: https://euvdservices.enisa.europa.eu/api/enisaid?id=EUVD-2026-118429 (ENISA EUVD)
+
+------------------------------------------------------------
+CVE-2026-123158 [high] OpenSSH 'SSHole'（musl libc かつ PAM 無効環境の認証回避）
+------------------------------------------------------------
+THN によれば、OpenSSH の CVE-2026-123158（SSHole・CVSS 8.1）は、musl C ライブラリ上で PAM を無効にした Linux で、パスワード未設定のアカウントへのサインインを可能にする。SecurityWeek は、musl かつ PAM なしの環境で 257〜1024 文字の任意のパスワードを受け付けるアカウントがあると説明する。Previdian は公開から数時間以内に悪用の試みを観測し、ハニーポットで root を取得されたと報じた。OpenSSH は緊急パッチを公開した。KEV 収載は固定済み証跡では確認できない。
+  KEV追加: None 期限: None
+  暫定対策: OpenSSH の修正版へ更新する / musl libc かつ PAM 無効の SSH サーバーを洗い出し、パスワード未設定アカウントを無効化する / SSH を公開しているホストはパスワード認証を無効にし公開鍵認証に限定する
+  参照: https://thehackernews.com/2026/11/hackers-exploited-openssh-sshole-flaw.html (The Hacker News)
+  参照: https://www.securityweek.com/openssh-rushes-patches-for-sshole-authentication-bypass (SecurityWeek)
+
+------------------------------------------------------------
+CVE-2026-123488 [medium] Craft CMS（要素検索エンドポイントの未認証 SQL インジェクション）
+------------------------------------------------------------
+NVD（VulnCheck 起点）は、Craft CMS 4.0.0〜4.18.9 未満および 5.0.0〜5.11.2 未満の要素検索エンドポイントに未認証 SQL インジェクションがあると記録した（CVSS 9.8）。attribute パラメーターが無害化されずにクエリへ連結され、PDO の準備文エミュレーションにより複文実行が可能で、DB の読み書き・管理者フラグの設定やパスワードハッシュの上書きによる乗っ取りにつながり得る。窓内に悪用・PoC の報告は確認できていない。
+  KEV追加: None 期限: None
+  暫定対策: Craft CMS を 4.18.9 または 5.11.2 以降へ更新する
+  参照: https://nvd.nist.gov/vuln/detail/CVE-2026-123488 (NVD)
+
+------------------------------------------------------------
+CVE-2026-83844 [low] Windows Paint（範囲外読み取りによるリモートコード実行）
+------------------------------------------------------------
+THN によれば、Windows Paint の範囲外読み取り（ネットワーク経由のコード実行につながり得る）CVE-2026-83844 の修正が Microsoft Store で提供された。Paint は Windows Update ではなく Store 更新でのみ修正を受け取る。THN が確認した 10 か国で最新ビルドは 11.2609.401.0。Microsoft の評価（深刻度）は要約が途中で切れており未確認。悪用の報告は確認できていない。
+  KEV追加: None 期限: None
+  暫定対策: Microsoft Store から Paint を 11.2609.401.0 以降へ更新する（Store 自動更新が無効な端末に注意）
+  参照: https://thehackernews.com/2026/11/microsoft-paint-rce-fix-now-available.html (The Hacker News)
+
+【トレンド】
+------------------------------------------------------------
+TREND-2026-11-07-001 FBI と CISA が産業用冷凍・コールドチェーン監視システムへの攻撃を警告、欧州で冷凍設備への攻撃が連鎖
+------------------------------------------------------------
+BleepingComputer によれば、FBI と CISA は産業用冷凍・コールドチェーン監視システムが世界で積極的に狙われ、食品の腐敗・設備損傷・火災の危険があると警告した。SecurityWeek は、米当局が冷凍コントローラーの堅牢化を促し、背景には欧州のスーパーマーケットや血液バンクの冷凍設備への攻撃があると報じた。Unit 42 は欧州の冷凍システムへの攻撃を分析し、Dark Reading は被害が業界全体へ波及した理由を論じている。攻撃者・CVE・IOC は要約の範囲では未確認。
+  参照: https://www.bleepingcomputer.com/news/security/fbi-cisa-warn-of-cyberattacks-targeting-refrigeration-systems (BleepingComputer)
+  参照: https://www.securityweek.com/us-agencies-urge-organizations-to-harden-refrigeration-controllers (SecurityWeek)
+  参照: https://unit42.paloaltonetworks.com/europes-refrigeration-systems-attacks (Unit 42)
+  参照: https://www.darkreading.com/ics-ot-security/europes-freezer-hacks-spread-so-far-so-fast (Dark Reading)
+
+------------------------------------------------------------
+TREND-2026-11-07-002 D-Link が DGS-3130 シリーズの複数の未修正ゼロデイの緩和策を公表
+------------------------------------------------------------
+BleepingComputer によれば、D-Link は DGS-3130 シリーズ（マネージド・ギガビット・スタッカブルスイッチ）の複数の未修正の脆弱性について緩和策を共有した。CVE 番号・CVSS・悪用の有無は要約の範囲では未確認。
+  参照: https://www.bleepingcomputer.com/news/security/d-link-warns-of-multiple-zero-days-in-dgs-3130-series-switches (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-07-003 QNAP：Plex2Shell の脆弱性連鎖を悪用した NAS への侵入を確認、Plex Media Server の更新を要請
+------------------------------------------------------------
+BleepingComputer によれば、QNAP は攻撃者が Plex2Shell の脆弱性連鎖を悪用して NAS を侵害していると述べ、App Center の Plex Media Server を最新版へ更新するよう促した。Plex Media Server の連鎖（CVE-2026-96652／96654／96655／96656）は 10 月に KEV へ追加済みで報告済み。QNAP 機での被害規模は要約の範囲では未確認。
+  参照: https://www.bleepingcomputer.com/news/security/qnap-says-hackers-breaching-nas-devices-in-plex2shell-attacks (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-07-004 Chainalysis：侵害で全ユーザーの氏名・ユーザー名・パスワードハッシュ・有効なトークンが露出、Reactor と Data Solutions を停止
+------------------------------------------------------------
+THN と BleepingComputer によれば、Chainalysis は、自社システムへの agentic な攻撃の調査で、全ユーザーの氏名・ユーザー名・パスワードハッシュ・有効なトークンが露出したと明らかにした。調査中は Reactor と Data Solutions へのアクセスを停止した。調査データ（investigations data）が閲覧された証拠は現時点でないとしている。
+  参照: https://thehackernews.com/2026/11/chainalysis-breach-exposes-all-users.html (The Hacker News)
+  参照: https://www.bleepingcomputer.com/news/security/chainalysis-says-breach-exposed-credentials-for-all-customers (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-07-005 DigiCert：夏に内部の業務システムが意図せず外部から到達可能になり、不正アカウントが作成されて法人顧客情報が閲覧された
+------------------------------------------------------------
+SecurityWeek と The Record によれば、DigiCert は、夏に内部の業務システムが意図せず外部からアクセス可能な状態にあり、何者かが不正なアカウントを作成して法人顧客の氏名・メールアドレス・電話番号・事業所住所にアクセスしたと報告した。攻撃者・手口の詳細は要約の範囲では未確認。
+  参照: https://www.securityweek.com/digicert-data-breach-impacts-business-customer-information (SecurityWeek)
+  参照: https://therecord.media/digicert-certificate-authority-reports-data-breach (The Record)
+
+------------------------------------------------------------
+TREND-2026-11-07-006 CWPdoor の詳細：改ざんされた Control Web Panel の Web サーバーはアクセスログに残らない形でコマンドを実行
+------------------------------------------------------------
+THN によれば、QiAnXin XLab は Control Web Panel（CWP）の管理画面を動かす Web サーバーに潜むバックドアを確認した。攻撃者が Web リクエストで送るコマンドを実行し、そのリクエストはアクセスログに記録されない。導入には root 権限が必要で、攻撃者は既にサーバーを掌握している必要がある。
+  参照: https://thehackernews.com/2026/11/hackers-hide-linux-backdoor-in-control.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-07-007 WordPress CVE-2026-119977：修正の適用中に旧コードでファイルが展開され、一時的に攻撃を受け得る（Picus Security）
+------------------------------------------------------------
+THN によれば、Picus Security の研究者 Umut Bayram は、悪用されている WordPress の欠陥の修正を導入する更新自体が旧（未修正）コードでファイルを展開するため、タイミングによっては適用中にサーバーでコードが実行され得ると報告した。研究者は適用中の Web アクセスの遮断を勧める（遮断対象の詳細は要約が途中で切れており未確認）。CVE-2026-119977 は 11-03 に KEV 追加済みで報告済み。
+  参照: https://thehackernews.com/2026/11/installing-fix-for-exploited-wordpress.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-07-008 GitHub 上の偽セキュリティツールがバックドアと情報窃取マルウェアを配布、セキュリティ担当者を標的に
+------------------------------------------------------------
+BleepingComputer によれば、感染させたセキュリティ関連プロジェクトを GitHub で公開し、セキュリティ専門家にバックドアと情報窃取マルウェアを配布する活動が確認された。攻撃者・IOC・規模は要約の範囲では未確認。
+  参照: https://www.bleepingcomputer.com/news/security/fake-security-tools-on-github-push-backdoors-and-infostealers (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-07-009 日本政府が相次ぐ不正アクセスを受けた緊急サイバーセキュリティ対策パッケージを発表、能動的サイバー防御は基幹インフラ 258 事業者に届出を要請
+------------------------------------------------------------
+SecurityWeek によれば、日本は数十の企業・政府機関で不正アクセスと顧客情報の漏えいが相次いだことを受け、緊急のサイバーセキュリティ対策パッケージを発表した。ScanNetSecurity は、能動的サイバー防御の本格始動に伴い、基幹インフラ 15 分野 258 事業者に資産の届出とインシデント報告を要請したと報じた。国内ではクラブツーリズム（約 432 万件）、@cosme（約 300 万人）、サントリーグループの委託先クラウド、日本郵便の委託先などで不正アクセスの公表が続いている（各社発表の報道。原因・攻撃者は要約の範囲では未確認）。
+  参照: https://www.securityweek.com/japan-announces-emergency-cybersecurity-package-following-a-wave-of-attacks (SecurityWeek)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/06/56684.html (ScanNetSecurity)
+
+【攻撃予報】 本日の新規予報なし（forecaster/forecasts/daily/2026-11-07.md 参照）

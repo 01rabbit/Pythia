@@ -221,3 +221,7 @@
 | WorkOS／Northflank／Trigger.dev 侵害（AIアクセストークン収集） | B2 | 2026-11-05 | 本編（X=4 Y=4・B-X・burst1） | 2026-11-05 | YES | SecurityWeek 2026-11-04・本文未取得・個別経路は未確認 |
 | CERT-In: Crafty Falcon（AI支援・インドBFSI）／バックドア入りARTEX Dockerイメージ | A3 | 2026-11-06 | 本編（X=5 Y=5・A-T・burst1） | 2026-11-06 | YES | THN 2026-11-05・CERT-In開示・62台のコンソールがrootアクセスに露出（見出し）・本文未取得 |
 | OpenAI サイバー特化モデルによるLinux LPE 948件生成・検証 | A3 | 2026-11-06 | 本編（X=4 Y=4・A-P・burst1） | 2026-11-06 | NO | THN 2026-11-05・防御目的の研究発表・API費用120万ドル・悪用報告なし |
+| Microsoft: 脅威アクターがARTEXでGitHubからOAuthアプリのシークレットを探索し侵害アプリで組織内操作 | A4 | 2026-11-07 | 本編（X=6 Y=6・A-T・burst1） | 2026-11-07 | YES | Microsoft Security 2026-11-05・帰属/被害規模未確認 |
+| Chainalysis 侵害調査: 全ユーザーの資格情報・有効トークン露出（被害範囲拡大） | A4 | 2026-11-07 | 本編（X=6 Y=6・A-Q・burst1・更新） | 2026-11-07 | YES | THN/BleepingComputer 2026-11-06・Reactor/Data Solutions停止・11-01初報の続報 |
+| AIでCEO・弁護士になりすまし約1.29億ドル詐取の3人を起訴 | A2 | 2026-11-07 | 本編（X=5 Y=6・A-P・burst1） | 2026-11-07 | NO | SecurityWeek/The Record 2026-11-06・AI手口の詳細は未確認 |
+| 悪意あるブラウザー拡張がClaude Dispatch経由でClaude Desktopにコード実行させ得る（Forever Security実証） | C3 | 2026-11-07 | 本編（X=5 Y=4・B-X・burst1） | 2026-11-07 | NO | THN 2026-11-06・テストのみ・実攻撃報告なし |
