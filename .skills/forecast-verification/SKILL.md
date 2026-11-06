@@ -19,6 +19,18 @@ monthly_summary 更新 → observations 更新 → バイアス分析 → 週次
 記載順にそのまま実行する。判定基準・記録形式に関する詳細は 04-verify.md および
 pipeline-forecast-verification.md を正典として参照し、本ファイルでは重複定義しない。
 
+### Step 1b: NX-1（国別 nexus 活動の確認予報・shadow）の前向き検証（2026-11-06 追加）
+04-verify.md の後に、NX-1 の台帳を再現性検証し、決定論採点を保存する。TF-1 とは別 family・別母集団。
+
+```bash
+python3 scripts/validate_nexus_integrity.py --all --recompute   # 台帳が観測から再現できること
+python3 scripts/verify_nexus_forecasts.py --write               # forecaster/verification/nexus/ へ保存
+```
+
+- 出力は昇格を判断する材料である。**ここで `nexus-registry.json` を変更しない**（昇格は別 PR と人間レビュー）
+- 検証が落ちた場合は原因を PR 本文に記載し、台帳を手で直さない（発行済みの台帳は書き換えない）
+- 候補の窓は重なるため、独立標本数（÷H の推定）でゲートを見る。標本が足りない間は `gates_pass: false` が正常
+
 ### Step 2: 変更を確認する
 04-verify.md の実行によって変更されるのは以下のみであることを確認する:
 
@@ -26,6 +38,7 @@ pipeline-forecast-verification.md を正典として参照し、本ファイル�
 - `forecaster/verification/YYYY-MM-DD-verification.md`（週次検証レポート・実行日付）
 - `forecaster/verification/retrieval-calibration.json`（retrieval 較正データの増分追記・
   04-verify.md 手順8c・design §8）
+- `forecaster/verification/nexus/verification-*.json`（NX-1 の前向き検証出力・Step 1b）
 - `forecaster/observations/` 配下の対象 observations の `verified_outcome` /
   `related_forecast_id` **の2フィールドのみ**
 
@@ -39,6 +52,7 @@ pipeline-forecast-verification.md を正典として参照し、本ファイル�
    （`forecaster/verification/YYYY-MM.json` /
    `forecaster/verification/YYYY-MM-DD-verification.md` /
    `forecaster/verification/retrieval-calibration.json` /
+   `forecaster/verification/nexus/verification-*.json` /
    対象 observations の `verified_outcome`・`related_forecast_id`）
 3. コミットメッセージ: `"forecast verification: YYYY-MM-DD"`
 4. main へのPRを発行する

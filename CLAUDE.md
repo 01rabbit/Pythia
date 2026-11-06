@@ -61,6 +61,16 @@ scripts/enrich_infrastructure.py         ← Step 3.1 レポートの IoC を公
 scripts/validate_infrastructure_context.py ← Section 6 の fail-closed 検証（IoC の取りこぼし・要約の再計算照合・非公開IP/IoC 自身への照会・取得証跡・予報との分離・読み取り専用・Step 4 で実行）
 scripts/render_infrastructure_section.py ← infrastructure_context から Section 6 のテキストを決定論的に生成（IP・ドメインは無害化表記）
 scripts/test_infrastructure_context.py   ← Section 6 の受入基準テスト（通信を物理的に遮断して実行）
+# ★NX-1 国別 nexus 活動の確認予報（2026-11-06 第4段階・shadow）— TF-1 とは別 family・別 matching rule・別評価母集団。TF-1 の数字を流用しない
+docs/nexus-forecaster.md                 ← NX-1 の設計（予報対象・matching rule・2モデル・遡及診断の結果と限界・Section 5/6 との関係）
+scripts/nexus_family.py                  ← NX-1 の共有ライブラリ（事象照合・被覆・as-of の参照率・採点・指標・ウォークフォワード診断。読み取り専用）
+scripts/generate_nexus_candidates.py     ← Step 3.7 候補台帳の発行（確率はコードが観測から計算・ハッシュで凍結・発行済みは書き換えない・棄権も記録・`--print` で影の確率を表示）
+scripts/validate_nexus_integrity.py      ← NX-1 の fail-closed 検証（ハッシュ・時刻・公開禁止・Section 5/6 を根拠にしていない・観測から再計算して照合・読み取り専用・Step 4 で実行）
+scripts/verify_nexus_forecasts.py        ← NX-1 の決定論採点・昇格ゲート判定（独立標本は÷H）・`--walkforward` 遡及診断（昇格の母集団に入れない）
+scripts/test_nexus_family.py             ← NX-1 の受入基準テスト（ネット不使用・Section 5/6 を読む予報コードが無いことも検査）
+forecaster/models/nexus-registry.json    ← NX-1 のモデル登録簿（mode: shadow・昇格は承認記録と全ゲート通過を要する・PR経由でのみ変更）
+forecaster/config/nexus-context-preregistration.json ← Section 5/6 を予報へ取り込む手続きの事前登録（status: not_active・結果を見てから仮説や閾値を選ばないため）
+forecaster/candidates/nexus/YYYY-MM-DD.json ← NX-1 の日次台帳（shadow・個別の確率はレポートに載せない）
 scripts/retrieve_similar_cases.py        ← 予報 Step C'' 類似過去事例検索器（内部実績・読み取り専用）
 scripts/record_retrieval_calibration.py  ← 検証時に retrieval 較正データを収集（design §8・検証ステージのみ書込）
 scripts/backfill_observations.py         ← 過去日付の観測を CISA KEV から機械バックフィル（観測のみ・ベースライン統計対象外・予報は遡及生成しない・`--emit-empty` で KEV追加ゼロの欠測日にも observations:[] の欠測マーカーを置く）
@@ -283,6 +293,24 @@ RDAP / urlscan / Mnemonic）への**受動照会だけ**で補強し、国・ASN
 - 全照会に取得時刻・HTTP 状態・応答ハッシュを残し、取得失敗はフェイルソフト（記録して続行）
 - 照会しない指標（非公開アドレス・正規サービス・上限超過）と解析できない表記は理由付きで残す。黙って落とさない
 - Step 4 で `validate_infrastructure_context.py --require` が通ることをコミットの条件とする
+
+## NX-1 国別 nexus 活動の確認予報（shadow）
+
+「発行から 3 日・7 日以内に、国別 nexus（中国・ロシア・北朝鮮）の観測が**記録されるか**」を予報する
+第4の予報 family。設計は `docs/nexus-forecaster.md`、Step 3.7 で台帳を発行する。
+
+- **TF-1 とは別 family・別 matching rule・別評価母集団。** TF-1 の数字を流用しない（設計契約）。
+  予報するのは『確認が記録されるか』で、攻撃の発生確率ではない
+- **確率はコードが観測から計算する。LLM は書かない。** 台帳は発行時にハッシュで凍結し、発行済みは書き換えない。
+  `validate_nexus_integrity.py` は観測を cutoff 時点で読み直して同じ候補を再現できることを確認する
+- **shadow（公開しない）。** 昇格は `nexus-registry.json` の変更を PR と人間レビューで行い、
+  `promotion-gates.json` の全ゲート通過を要する。候補の窓は重なるため独立標本数は÷H で数える
+- 遡及診断（昇格の母集団には入れない）では、直近の活動で条件づけた挑戦者は基準線に勝てていない
+  （Brier skill 72h −0.026・7d −0.012・区間は 0 をまたぐ）。現時点で提供するのは較正された基準率
+- **Section 5・6 は予報の入力にしない。** `inputs.context_inputs` は空で、予報側のコードが
+  `neighbor_context` / `infrastructure_context` を参照していないことをテストが検査する。
+  取り込みは `nexus-context-preregistration.json` の手続き（前向き標本・全ゲート・PR）を経てからに限る
+- 日次ランの欠測日を含む窓は miss にせず not_observed（『起きなかった』と断定できない）
 
 ## 出力フォーマット
 

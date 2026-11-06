@@ -37,6 +37,11 @@ on:
       - 'scripts/render_infrastructure_section.py'
       - 'scripts/test_infrastructure_context.py'
       - 'infra/**'
+      - 'scripts/nexus_family.py'
+      - 'scripts/generate_nexus_candidates.py'
+      - 'scripts/validate_nexus_integrity.py'
+      - 'scripts/verify_nexus_forecasts.py'
+      - 'scripts/test_nexus_family.py'
       - 'scripts/check_report_consistency.py'
       - 'neighbor/**'
       - 'security-intel-collector/watcher.py'
@@ -81,6 +86,30 @@ jobs:
         # 攻撃基盤プロファイル（報告専用・受動照会のみ）の受入基準。通信は物理的に遮断して実行する。
         # 正規化・応答の抽出・IoC 自身への接続拒否・要約の再計算照合・予報側への非混入を検査する。
         run: python3 scripts/test_infrastructure_context.py
+      - name: NX-1 gate (country-nexus forecast family / validator / scorer)
+        # 国別 nexus 活動の確認予報（shadow）の受入基準。ネット不使用。窓と被覆の規則・未来情報の非混入・
+        # 台帳の改ざん検出（観測からの再計算）・昇格登録簿の検査・Section 5/6 を読む予報コードが無いことを検査する。
+        run: |
+          python3 scripts/test_nexus_family.py
+          # 全台帳のハッシュ・時刻・構造と登録簿を検査する。観測からの再計算の不一致は警告（履歴の観測は
+          # 欠測日の補完などで正当に変わりうる）。発行当日の再計算は日次の --date が厳格に検査する
+          python3 scripts/validate_nexus_integrity.py --all --recompute
+      - name: NX-1 ledgers are append-only
+        # 発行済みの台帳は凍結物である。PR で既存の台帳を変更・削除・改名してはならない（追加だけ許可）。
+        # ハッシュを付け直した改ざんは、ファイル内の検査では分からないため差分で防ぐ。
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base" ]; then
+            echo "PR コンテキストではないので比較対象がない（workflow_dispatch 等）"
+            exit 0
+          fi
+          changed=$(git diff --name-status "$base"...HEAD -- forecaster/candidates/nexus | grep -v '^A' || true)
+          if [ -n "$changed" ]; then
+            echo "::error::発行済みの NX-1 台帳を変更・削除している（追記専用）:"
+            echo "$changed"
+            exit 1
+          fi
+          echo "NX-1 台帳への変更は追加のみ"
       - name: Collector tests (feeds.json shape / include_terms)
         run: |
           pip install -r security-intel-collector/requirements.txt
