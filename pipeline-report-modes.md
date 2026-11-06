@@ -2,15 +2,16 @@
 
 ## 概要
 
-レポートは常に全セクション（Section 1〜4）を出力する。モード選択の仕組みは廃止。
+レポートは常に全セクション（Section 1〜5）を出力する。モード選択の仕組みは廃止。
 
-毎回の出力ファイル（計6ファイル）:
+毎回の出力ファイル（計7ファイル）:
 1. YYYY-MM-DD-security-report.json（全セクション構造化JSON）
 2. YYYY-MM-DD-security-report.txt（全セクション完全版）
 3. YYYY-MM-DD-security-report-cve.txt（Section 3: 製品別CVE）
 4. YYYY-MM-DD-security-report-zeroday-trends.txt（Section 2: ゼロデイ・セキュリティトレンド）
 5. YYYY-MM-DD-security-report-ai.txt（Section 1: AI攻撃動向）
 6. YYYY-MM-DD-security-report-soc.txt（Section 4: SOC推奨情報）
+7. YYYY-MM-DD-security-report-neighbor.txt（Section 5: 周辺諸国動向・報告専用。テンプレートは持たず render_neighbor_section.py が生成する）
 
 ---
 

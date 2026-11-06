@@ -20,6 +20,12 @@
 - `apt_notable` — APT活動注目動向
 - `ai_attacks_main` — AI攻撃本編
 
+**処理対象外**: `neighbor_context`（Section 5 周辺諸国動向）は報告専用の文脈層であり、
+観測の生成・ベースライン・予報の根拠のいずれにも使わない（`pipeline-neighbor.md`）。
+`entry_id` が `nbr-` で始まるエントリから observation を作らず、`nbr-` ID を observation に書かない
+（`scripts/validate_neighbor_context.py` が観測ファイルへの混入を検出する）。
+`geopolitical_signal` は従来どおり APT 観測にのみ R9 で付与する。
+
 ---
 
 ## 出力先

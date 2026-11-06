@@ -174,6 +174,46 @@ def entry_published_iso(entry: Any) -> Optional[str]:
     return raw if isinstance(raw, str) and raw else None
 
 
+_NON_BOUNDARY_RE = re.compile(r"[぀-ヿ㐀-鿿豈-﫿가-힯]")
+
+
+def compile_include_terms(terms: Any) -> List["re.Pattern[str]"]:
+    """Compile a feed's ``include_terms`` into case-insensitive patterns.
+
+    Term syntax (same as scripts/neighbor_scan.py and neighbor/states.json):
+
+    - a trailing ``*`` means prefix match (``hack*`` matches hacker, hacked);
+    - terms containing Japanese/Chinese/Hangul characters match as substrings;
+    - every other term matches on word boundaries (``APT`` does not match
+      ``adapt``).
+
+    A missing, non-list, or empty value means "no filter" (returns []).
+    """
+    if not isinstance(terms, list):
+        return []
+    patterns: List["re.Pattern[str]"] = []
+    for term in terms:
+        if not isinstance(term, str) or not term.strip():
+            continue
+        parts = term.strip().split("*")
+        body = r"\w*".join(re.escape(p).replace(r"\ ", r"\s+") for p in parts)
+        if _NON_BOUNDARY_RE.search(term):
+            patterns.append(re.compile(body, re.IGNORECASE))
+        else:
+            patterns.append(re.compile(rf"(?<!\w){body}(?!\w)", re.IGNORECASE))
+    return patterns
+
+
+def entry_matches_terms(entry: Any, patterns: List["re.Pattern[str]"]) -> bool:
+    """True if the entry's title or summary matches any compiled pattern."""
+    text = " ".join(
+        str(part)
+        for part in (entry_get(entry, "title"), entry_get(entry, "summary"))
+        if part
+    )
+    return any(p.search(text) for p in patterns)
+
+
 def entry_key(entry: Any) -> str:
     """Stable dedup key for an entry: prefer id, else normalized link."""
     eid = entry_get(entry, "id")
@@ -411,6 +451,15 @@ def process_feed(
 
     parsed = feedparser.parse(url)
     entries = list(getattr(parsed, "entries", []) or [])
+
+    # Optional per-feed keyword filter for broad (non-security) feeds: keep
+    # only entries whose title/summary matches one of ``include_terms``. Applied
+    # before ``max_items`` so the cap counts relevant entries only.
+    patterns = compile_include_terms(feed.get("include_terms"))
+    if patterns:
+        total = len(entries)
+        entries = [e for e in entries if entry_matches_terms(e, patterns)]
+        print(f"[info] feed '{name}': include_terms kept {len(entries)}/{total} entries")
 
     # Optional per-feed cap for very large feeds (e.g. JVN iPedia returns
     # ~500 entries per fetch); keeps data/raw/ and notifications bounded.

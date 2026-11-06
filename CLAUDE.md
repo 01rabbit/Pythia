@@ -49,6 +49,12 @@ scripts/token_usage_report.py            ← 日次実行のトークン量・�
 scripts/watchlist.py                     ← ★ウォッチリスト（config.yml `watchlist:`）の読み込み・照合の唯一の実装（Step 0.7 / 0.8 が共有・読み取り専用・2026-11-06 第1段階）
 scripts/watchlist_scan.py                ← Step 0.8 RSS 機械収集 raw をウォッチリストで走査し Step 1b / 2 の無条件採用候補を列挙（出力は .cache/ のみ）
 scripts/test_watchlist.py                ← ウォッチリスト機構の受入基準テスト（ネット不使用）
+# ★Section 5 周辺諸国動向（2026-11-06 第2段階）— 報告専用の文脈層。観測・ベースライン・base_rate・予報には入れない
+neighbor/states.json                     ← 周辺諸国の語彙レジストリ（どの国を有効にするかは config.yml `neighbor_states`・PR経由でのみ変更）
+scripts/neighbor_scan.py                 ← Step 0.9 RSS 機械収集 raw を国別に走査しゲート対象を確定（出力は .cache/ のみ・knowledge/ 非書込）
+scripts/validate_neighbor_context.py     ← Section 5 の fail-closed 検証（事実と推測の分離・帰属・国営メディアの注意書き・処理ゲート・予報との分離・読み取り専用・Step 4 で実行）
+scripts/render_neighbor_section.py       ← neighbor_context から Section 5 のテキストを決定論的に生成（手で書き起こさない）
+scripts/test_neighbor_context.py         ← Section 5 の受入基準テスト（ネット不使用）
 scripts/retrieve_similar_cases.py        ← 予報 Step C'' 類似過去事例検索器（内部実績・読み取り専用）
 scripts/record_retrieval_calibration.py  ← 検証時に retrieval 較正データを収集（design §8・検証ステージのみ書込）
 scripts/backfill_observations.py         ← 過去日付の観測を CISA KEV から機械バックフィル（観測のみ・ベースライン統計対象外・予報は遡及生成しない・`--emit-empty` で KEV追加ゼロの欠測日にも observations:[] の欠測マーカーを置く）
@@ -108,6 +114,7 @@ pipeline-forecast-verification.md        ← 攻撃予報精度検証ルール
 pipeline-ai-1.md                         ← Step 1c: AI攻撃調査（Section 1: AI攻撃動向）
 pipeline-ai-2.md                         ← Step 3 (AI): AI攻撃重みづけ・出力ルール
 pipeline-soc-recommend.md                ← Step 2b: SOC推奨情報収集ルール（Section 4）
+pipeline-neighbor.md                     ← Step 2c: 周辺諸国動向の収集・記録ルール（Section 5・報告専用）
 pipeline-output-schema.md                ← JSONスキーマ定義・出力ファイル仕様（AI分析・機械処理用）
 reported-cves.md                         ← 既報CVEリスト（実行後に自動追記）
 reported-apts.md                         ← 既報APT活動リスト（実行後に自動追記）
@@ -119,6 +126,7 @@ outputs/YYYY-MM-DD/                      ← 日次収集レポート（予報�
   YYYY-MM-DD-security-report-zeroday-trends.txt     ← Section 2: ゼロデイ・トレンド（ゼロデイ特報・APT活動・注目CVE・攻撃予報）
   YYYY-MM-DD-security-report-ai.txt                 ← Section 1: AI攻撃動向（本編・参考B・参考A・週次サマリー）
   YYYY-MM-DD-security-report-soc.txt                ← Section 4: SOC推奨情報（高/中/低優先度）
+  YYYY-MM-DD-security-report-neighbor.txt           ← Section 5: 周辺諸国動向（報告専用・render_neighbor_section.py が JSON から生成）
   YYYY-MM-DD-token-usage.json                       ← 実行トークン量・料金概算（運用メタ情報・レポートではない）
 ```
 
@@ -155,6 +163,7 @@ Actions 無料枠（private・月 2,000 分）に収めるため、情報源別�
   `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-zeroday-trends.txt`,
   `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-ai.txt`,
   `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-soc.txt`,
+  `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-neighbor.txt`,
   `outputs/YYYY-MM-DD/YYYY-MM-DD-token-usage.json`
 
 ## 網羅スイープ（毎回必須）
@@ -228,14 +237,34 @@ python3 scripts/token_usage_report.py --label "daily report ${TODAY}" \
 - 単価改定・新モデル追加時は `scripts/token_usage_report.py` の `PRICES_USD_PER_MTOK` を更新する
 - ファイル仕様は `pipeline-output-schema.md`「トークン使用量ファイル」節を参照
 
+## 周辺諸国動向（Section 5・報告専用）
+
+わが国周辺諸国（`config.yml` の `neighbor_states`）のサイバー関連の活動・政策・組織・企業と、
+それを理解するための非サイバー情勢（国家戦略・政治動向・国家心理・軍と組織）を記録する層。
+収集規則は `pipeline-neighbor.md`、Step 0.9（走査）→ Step 2c（記録）で作る。
+
+**予報の入力層から分離する。** 観測・ベースライン・base_rate・予報には一切入れない。
+Section 5 は採用条件ではなく『関連性』で拾うため、観測母集団に混ぜると base_rate が歪み、
+検証ループで予報ロジックの誤りと母集団の歪みを区別できなくなる（網羅スイープと同じ論理）。
+既存の `geopolitical_signal` の経路（`pipeline-1b-apt.md`）は変更しない。
+
+- 国への言及は事象の主体を意味しない。国家との関係は**情報源が明示した場合のみ**、
+  情報源名と原文の言い回しを引用して記録する（行動原則3）
+- 事実は出典番号付き、推測は『（推測）』と確度を付けて別欄に分ける（行動原則2）。
+  国営メディアは『その国の政府が何を述べたか』の記録にのみ使い、事実の裏付けにしない
+- 走査のゲート対象は『採用』または『理由付き除外』に必ず割り当てる（無記録の除外は不可）
+- テキストは JSON から `render_neighbor_section.py` が生成する。Step 4 で
+  `validate_neighbor_context.py --require` が通ることをコミットの条件とする
+
 ## 出力フォーマット
 
-- 基本形式: `security-report.json`（pipeline-output-schema.md のスキーマ準拠・Section 1〜4 全データ収録）
-- 変換形式（5種・JSONから変換・プレーンテキスト・Markdown不使用）:
-  - `security-report.txt`: 全セクション完全版（Section 1〜4）
+- 基本形式: `security-report.json`（pipeline-output-schema.md のスキーマ準拠・Section 1〜5 全データ収録）
+- 変換形式（6種・JSONから変換・プレーンテキスト・Markdown不使用）:
+  - `security-report.txt`: 全セクション完全版（Section 1〜5）
   - `security-report-cve.txt`: Section 3 製品別CVE（ゼロデイ特報・本編・参考A・参考B）
   - `security-report-zeroday-trends.txt`: Section 2 ゼロデイ・トレンド（ゼロデイ特報・APT・注目CVE・攻撃予報）
   - `security-report-ai.txt`: Section 1 AI攻撃動向（本編・参考B・参考A・週次サマリー）
   - `security-report-soc.txt`: Section 4 SOC推奨情報（高/中/低優先度）
+  - `security-report-neighbor.txt`: Section 5 周辺諸国動向（報告専用。観測・予報には入れない）
 - デフォルトモード: モード3（CVE・ゼロデイ・APT・AI攻撃 フル版）
 - 詳細は `pipeline-3-weighting.md` および `pipeline-output-schema.md` 参照

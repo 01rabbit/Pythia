@@ -28,6 +28,16 @@ on:
       - 'scripts/watchlist.py'
       - 'scripts/watchlist_scan.py'
       - 'scripts/test_watchlist.py'
+      - 'scripts/neighbor_scan.py'
+      - 'scripts/validate_neighbor_context.py'
+      - 'scripts/render_neighbor_section.py'
+      - 'scripts/test_neighbor_context.py'
+      - 'scripts/check_report_consistency.py'
+      - 'neighbor/**'
+      - 'security-intel-collector/watcher.py'
+      - 'security-intel-collector/feeds.json'
+      - 'security-intel-collector/tests/**'
+      - 'security-intel-collector/requirements.txt'
       - 'config.yml'
       - '.github/workflows/tactical-v3-validation.yml'
   workflow_dispatch:
@@ -58,6 +68,15 @@ jobs:
       - name: Watchlist gate (sweep / scan share config.yml watchlist)
         # ウォッチリスト機構の受入基準（ネット不使用・knowledge/ と config.yml を書き換えないことも検査）
         run: python3 scripts/test_watchlist.py
+      - name: Section 5 gate (neighbor scan / validator / renderer)
+        # 周辺諸国動向（報告専用・予報から分離）の受入基準。ネット不使用。
+        # 照合規則・帰属と事実/推測の分離・処理ゲート・予報側への非混入を検査する。
+        run: python3 scripts/test_neighbor_context.py
+      - name: Collector tests (feeds.json shape / include_terms)
+        run: |
+          pip install -r security-intel-collector/requirements.txt
+          cd security-intel-collector
+          python -m pytest -q tests
       - name: Validate observations against the schema
         run: python3 scripts/validate_observations.py
       - name: Channel feed registry must be consistent
@@ -106,6 +125,8 @@ jobs:
           for d in $report_dates; do
             echo "--- report $d ---"
             python3 scripts/check_report_consistency.py --date "$d" || rc=1
+            # Section 5（周辺諸国動向）。neighbor_context を持たない導入前の日は警告のみ
+            python3 scripts/validate_neighbor_context.py --date "$d" --quiet || rc=1
           done
           for d in $forecast_dates; do
             echo "--- forecast $d ---"

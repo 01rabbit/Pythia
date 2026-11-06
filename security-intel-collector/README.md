@@ -100,6 +100,13 @@ Each feed entry supports, in addition to `name` / `url` / `enabled` / `tags`:
   already seen (without notifying) on the first run of a feed. For large
   feeds, set it equal to `max_items` so the second run does not flood
   notifications with hundreds of "new" backfill items.
+- `include_terms` (list of strings, optional) — keep only entries whose title
+  or summary matches at least one term. Use it for broad feeds (policy, regional
+  news, government press releases) where most entries are not about security, so
+  `data/raw/` stays small and relevant. Applied before `max_items`. Syntax:
+  a trailing `*` is a prefix match (`hack*`), terms with Japanese/Chinese/Hangul
+  characters match as substrings, all other terms match on word boundaries and
+  ignore case. A missing or empty list means no filter.
 - `language` (string, optional) — the feed's language as an ISO 639-1 code
   (`ja` / `en` / `zh` / `ko` / `ru` / `fr`). Copied verbatim onto every item as
   `language` so downstream steps can tell non-Japanese/English sources apart.

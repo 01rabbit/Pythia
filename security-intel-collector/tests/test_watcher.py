@@ -174,6 +174,89 @@ def test_max_items_caps_entries_and_seed_count_overrides(env: pytest.MonkeyPatch
     assert latest["new_items"] == []
 
 
+def test_include_terms_syntax() -> None:
+    patterns = watcher.compile_include_terms(
+        ["cyber*", "APT", "サイバー", "export control*", "", None, 3]
+    )
+    assert len(patterns) == 4  # blank / non-string terms are ignored
+
+    def hit(title: str) -> bool:
+        return watcher.entry_matches_terms(make_entry(1, title=title, summary=""), patterns)
+
+    assert hit("Cyberattack on a ministry")        # prefix match
+    assert hit("The cyber-espionage case")         # hyphen is a boundary
+    assert hit("APT groups regroup")               # whole word
+    assert not hit("We must adapt quickly")        # APT is not a substring match
+    assert hit("日本のサイバー防衛")                  # CJK substring
+    assert hit("New Export Controls announced")    # multi-word + prefix, case-insensitive
+    assert not hit("A routine budget debate")
+
+
+def test_repo_feeds_json_is_well_formed() -> None:
+    """The real feeds.json must keep its shape (guards PR edits, runs in CI)."""
+    import re
+
+    feeds = json.loads((Path(__file__).resolve().parent.parent / "feeds.json").read_text("utf-8"))
+    assert isinstance(feeds, list) and feeds
+    names: set = set()
+    urls: set = set()
+    for feed in feeds:
+        name, url = feed["name"], feed["url"]
+        assert name not in names, f"duplicate feed name: {name}"
+        assert url not in urls, f"duplicate feed url: {url}"
+        names.add(name)
+        urls.add(url)
+        assert re.match(r"^https?://", url), f"{name}: url must be http(s)"
+        assert isinstance(feed.get("enabled"), bool), f"{name}: enabled must be boolean"
+        assert isinstance(feed.get("tags"), list), f"{name}: tags must be a list"
+        assert feed.get("language") in {"ja", "en", "zh", "ko", "ru", "fr"}, f"{name}: language"
+        for key in ("max_items", "seed_count"):
+            if key in feed:
+                assert isinstance(feed[key], int) and feed[key] > 0, f"{name}: {key}"
+        if "include_terms" in feed:
+            terms = feed["include_terms"]
+            assert isinstance(terms, list) and terms, f"{name}: include_terms must be a non-empty list"
+            assert all(isinstance(t, str) and t.strip() for t in terms), f"{name}: include_terms entries"
+            assert len(watcher.compile_include_terms(terms)) == len(terms)
+        # A state-run outlet must be tagged so downstream steps flag it (Section 5)
+        if feed["name"].startswith("TASS"):
+            assert "state_media" in feed["tags"]
+
+
+def test_include_terms_absent_or_empty_means_no_filter() -> None:
+    assert watcher.compile_include_terms(None) == []
+    assert watcher.compile_include_terms([]) == []
+    assert watcher.compile_include_terms("cyber") == []  # not a list -> ignored
+
+
+def test_include_terms_filters_before_max_items(env: pytest.MonkeyPatch) -> None:
+    capture_slack(env)
+    entries = []
+    for i in range(10):
+        title = f"Hackers hit target {i}" if i % 2 == 0 else f"Weather report {i}"
+        entries.append(make_entry(i, url=f"https://broad.test/{i}", title=title, summary=""))
+    set_parse(env, {"https://broad.test/feed": FakeParsed(entries)})
+    write_feeds(
+        [
+            {
+                "name": "Broad",
+                "url": "https://broad.test/feed",
+                "enabled": True,
+                "tags": [],
+                "include_terms": ["hack*"],
+                "max_items": 3,
+            }
+        ]
+    )
+
+    watcher.main()
+
+    latest = json.loads(Path("data/raw/news-latest.json").read_text("utf-8"))
+    titles = [item["title"] for item in latest["items"]]
+    # 5 of 10 match; the cap of 3 counts matching entries only (feed order kept).
+    assert titles == ["Hackers hit target 0", "Hackers hit target 2", "Hackers hit target 4"]
+
+
 def test_already_seen_not_notified(env: pytest.MonkeyPatch) -> None:
     posts = capture_slack(env)
     entries = [make_entry(0), make_entry(1)]

@@ -8,15 +8,18 @@
 **出力パス（日付ディレクトリ）**:
 ```
 outputs/YYYY-MM-DD/
-  YYYY-MM-DD-security-report.json                ← 基本形式・Section 1〜4 全データ（AI分析・機械処理用）★必須
-  YYYY-MM-DD-security-report.txt                 ← 全セクション完全版 Section 1〜4
+  YYYY-MM-DD-security-report.json                ← 基本形式・Section 1〜5 全データ（AI分析・機械処理用）★必須
+  YYYY-MM-DD-security-report.txt                 ← 全セクション完全版 Section 1〜5
   YYYY-MM-DD-security-report-cve.txt             ← Section 3: 製品別CVE（ゼロデイ特報・本編・参考A・参考B・除外CVE）
   YYYY-MM-DD-security-report-zeroday-trends.txt  ← Section 2: ゼロデイ・トレンド（ゼロデイ特報・APT活動・注目CVE・攻撃予報）
   YYYY-MM-DD-security-report-ai.txt              ← Section 1: AI攻撃動向（本編・参考B・参考A・週次サマリー・除外）
   YYYY-MM-DD-security-report-soc.txt             ← Section 4: SOC推奨情報（高/中/低優先度・除外・集計）
+  YYYY-MM-DD-security-report-neighbor.txt        ← Section 5: 周辺諸国動向（報告専用・render_neighbor_section.py が JSON から生成）
 ```
 
-計6ファイル（JSON 1 + テキスト 5）。全ファイルを outputs/YYYY-MM-DD/ に保存する。
+計7ファイル（JSON 1 + テキスト 6）。全ファイルを outputs/YYYY-MM-DD/ に保存する。
+`neighbor_context` を持たない過去日（Section 5 導入前）は従来の計6ファイルのままで、
+`scripts/check_report_consistency.py` も `neighbor_context` を持つ日だけ 7 ファイル目を要求する。
 
 ---
 
@@ -41,6 +44,7 @@ outputs/YYYY-MM-DD/
   "ai_attacks_reference_b": [ AI攻撃エントリ ],
   "ai_attacks_reference_a": [ AI攻撃エントリ ],
   "soc_recommendations": [ SOC推奨情報エントリ ],
+  "neighbor_context": { "scan": {...}, "entries": [ 周辺諸国動向エントリ ], "dispositions": [...] },
   "exclusions": {
     "cve": [ 除外エントリ ],
     "apt": [ 除外エントリ ],
@@ -53,6 +57,10 @@ outputs/YYYY-MM-DD/
 
 `forecasts` は後方互換の制度予報（主にCISA KEV初回追加）である。戦術展開予報は
 `tactical_forecast` を正とし、両者を同じ精度母集団へ混ぜない。
+
+`neighbor_context`（Section 5）は**報告専用の文脈層**であり、観測・ベースライン・base_rate・
+予報のいずれにも入れない（`forecaster/prompts/01-normalize.md` の処理対象フィールドにも含まれない）。
+収集・記録の規則は `pipeline-neighbor.md`、機械検査は `scripts/validate_neighbor_context.py`。
 
 ### tactical_forecast（戦況・戦術予報v2）
 
@@ -95,6 +103,7 @@ YYYYMMDD-カテゴリ-ハッシュ値
 | `APTC` | Section 2 APT活動 | apt_main / apt_notable |
 | `AIAT` | Section 1 AI攻撃 | ai_attacks_main / ai_attacks_reference_a / ai_attacks_reference_b |
 | `SOCR` | Section 4 SOC推奨情報 | soc_recommendations |
+| `NBRC` | Section 5 周辺諸国動向 | neighbor_context.entries |
 
 forecasts（予報）と observations（forecaster正規化データ）は「収集情報」ではなく本パイプラインの生成物・分析結果であるため対象外とする（既存の `forecast_id` / `observation_id` をそのまま使う）。
 
@@ -114,6 +123,7 @@ raw = "{YYYYMMDD}::{タイトル}::{主URL}"
 | APTエントリ（apt_main / apt_notable） | `"{group_name}/{campaign_id}"` |
 | AI攻撃エントリ（ai_attacks_*） | `title` フィールドをそのまま使用 |
 | SOC推奨情報エントリ（soc_recommendations） | `title` フィールドをそのまま使用 |
+| 周辺諸国動向エントリ（neighbor_context.entries） | `title` フィールドをそのまま使用（主URL は `references[0].url`・検証器が再計算して照合する） |
 | トレンド記事エントリ（trends.trends_topic） | `title` フィールドをそのまま使用 |
 
 同一エントリを同日に再度JSON化しても同一の `info_id` が再現される（決定的生成）。翌日以降に同一事象が継続報告される場合、`report_date` が変わるため `info_id` も変わる（`info_id` は「その日その情報がどう記録されたか」の識別子であり、`cve_id` / `campaign_id` のような事象そのものの継続識別子ではない。事象の継続追跡は引き続き `cve_id` / `campaign_id` / `attack_id` / `rec_id` / `topic_id` を正とする）。
@@ -761,6 +771,87 @@ CVE型ともAPT型とも異なる軽量な型を使用する。
 
 ---
 
+## 周辺諸国動向エントリ（neighbor_context）
+
+Section 5。**報告専用の文脈層**で、観測・予報には入らない。規則の正本は `pipeline-neighbor.md`。
+
+```json
+"neighbor_context": {
+  "schema_version": "1.0",
+  "scan": {
+    "status": "ok",
+    "countries": ["CN", "RU", "KP", "KR", "TW"],
+    "scanned_items": 628,
+    "candidates": 29,
+    "gated": 2,
+    "handled": 2,
+    "unhandled": 0
+  },
+  "entries": [
+    {
+      "entry_id": "nbr-2026-11-06-001",
+      "info_id": "20261106-NBRC-xxxxxxxx",
+      "country": "KP",
+      "tier": "primary",
+      "category": "activity",
+      "title": "日本語のタイトル",
+      "original_title": "原題（日本語以外の場合）",
+      "original_language": "en",
+      "country_basis": "state_attributed_by_source",
+      "attribution": { "stated_by": "US DOJ", "wording": "情報源の原文の言い回し", "confidence": "high" },
+      "facts": [ { "statement": "出典で確認できた事実1文", "ref": 0 } ],
+      "assessment": { "text": "（推測）…", "confidence": "low" },
+      "non_cyber_linkage": {
+        "context_type": "military_org",
+        "fact": { "statement": "非サイバー側の事実", "ref": 0 },
+        "assessment": { "text": "（推測）…", "confidence": "low" }
+      },
+      "source_assessment": { "primary_source": true, "independent_sources": 2, "state_affiliated": false, "caveat": null },
+      "references": [
+        { "url": "https://…", "title": null, "language": "en", "source": "US DOJ", "source_class": "government" }
+      ],
+      "candidate_ids": ["9db2bb1c771f0b75"],
+      "related_apt_campaign_ids": [],
+      "related_cves": [],
+      "forecast_input": false
+    }
+  ],
+  "dispositions": [
+    { "candidate_id": "9db2bb1c771f0b75", "decision": "adopted", "entry_id": "nbr-2026-11-06-001" },
+    { "candidate_id": "4a1c0e9d22b7f3a1", "decision": "excluded", "reason": "mentioned_only" }
+  ]
+}
+```
+
+| フィールド | 型 | 値 / 説明 |
+|---|---|---|
+| scan.status | string | `ok` / `failed`（走査失敗・ゲート未評価）/ `disabled`（有効な国なし） |
+| scan.candidates / gated / scanned_items | integer | `scripts/neighbor_scan.py` の出力をそのまま転記（推定値を書かない・検証器が照合する） |
+| scan.handled / unhandled | integer | ゲート対象のうち処理済み / 未処理。**コミット時点で unhandled=0** |
+| entry_id | string | "nbr-YYYY-MM-DD-NNN"。日付はレポート日付と一致・日内で一意 |
+| country | string | `config.yml neighbor_states` で有効な国コード（CN / RU / KP / KR / TW） |
+| tier | string | config の tier と一致（primary / regional） |
+| category | string | "activity" / "policy" / "organization" / "company" / "geopolitical" |
+| country_basis | string | "state_attributed_by_source"（情報源が国家との関係を明示・activity のみ）/ "located_in_country" / "target_country" / "context_only" |
+| attribution | object \| null | `state_attributed_by_source` のときだけ持つ。`stated_by`（明示した情報源名）・`wording`（原文の言い回し・300 字以内）・`confidence` |
+| facts | array | 出典で確認できた事実。`statement`（『（推測）』を含まない）と `ref`（`references` の 0 始まりの番号）。1 件以上 |
+| assessment | object \| null | `text`（『（推測）』を含む）と `confidence`（low / medium / high） |
+| non_cyber_linkage | object \| null | `context_type`（strategy / politics / national_sentiment / military_org）・`fact`・`assessment`。category=geopolitical は必須 |
+| source_assessment | object | `primary_source`・`independent_sources`（1 以上・同一系列は 1 件）・`state_affiliated`・`caveat`（state_affiliated=true なら必須） |
+| references[].source_class | string | "government" / "vendor" / "research" / "news" / "state_media" / "other"。state_media を参照するなら state_affiliated=true |
+| candidate_ids | array[string] | 走査結果の `candidate_id`（Web 検索由来で候補が無い場合は空配列） |
+| related_apt_campaign_ids / related_cves | array[string] | Section 2・3 の関連エントリへの参照（技術的詳細は複製しない） |
+| forecast_input | boolean | **false 固定**。予報の入力に使わないことの明示 |
+| dispositions[].decision | string | "adopted"（`entry_id` 必須）/ "excluded"（`reason` 必須） |
+| dispositions[].reason | string | "no_neighbor_relation" / "out_of_scope" / "duplicate_of_entry"（`entry_id` 必須）/ "insufficient_evidence" / "marketing" / "mentioned_only" |
+| info_id | string | "YYYYMMDD-NBRC-xxxxxxxx"。生成規則は冒頭の「info_id」節。検証器が再計算して照合する |
+
+**持てない項目**: `techniques` / `ttps` / `actor_group` / `mitre_id` / `observation_id` /
+`forecast_id` / `base_rate` / `base_rate_estimate` / `verified_outcome`（検証器が拒否する）。
+これらは Section 2 の APT エントリと予報側のものであり、Section 5 に複製しない。
+
+---
+
 ## 除外エントリ（exclusions.cve / exclusions.apt / exclusions.ai_attacks / exclusions.soc_recommendations）
 
 ```json
@@ -838,9 +929,23 @@ CVE型ともAPT型とも異なる軽量な型を使用する。
       "zeroday": 0,
       "ai_attack": 0
     }
+  },
+  "neighbor_context": {
+    "entries": 0,
+    "excluded": 0,
+    "by_category": {
+      "activity": 0,
+      "policy": 0,
+      "organization": 0,
+      "company": 0,
+      "geopolitical": 0
+    }
   }
 }
 ```
+
+`statistics.neighbor_context` は `neighbor_context.entries` の要素数・`dispositions` の除外件数・
+区分別件数と一致させる（`validate_neighbor_context.py` が照合する）。
 
 ---
 
@@ -864,6 +969,7 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 | ai_attacks_reference_b | 【AI攻撃—参考B】セクション |
 | ai_attacks_reference_a | 【AI攻撃—参考A】セクション |
 | soc_recommendations | 【SOC推奨情報】セクション（security-report-soc.txt / security-report.txt） |
+| neighbor_context | 【周辺諸国動向】セクション（security-report-neighbor.txt / security-report.txt の末尾）。**手で書き起こさず** `scripts/render_neighbor_section.py` が生成する |
 | exclusions | 【除外サマリー】セクション |
 | statistics | 本日の集計行 |
 
@@ -871,11 +977,12 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 
 | ファイル | 収録セクション |
 |----------|---------------|
-| security-report.txt | Section 1〜4 全セクション + 除外サマリー + 集計行 |
+| security-report.txt | Section 1〜4 全セクション + 除外サマリー + 集計行 + Section 5（末尾に `render_neighbor_section.py --append-to-full` が追記） |
 | security-report-cve.txt | Section 3（製品別CVE）: zero_day_special / main_cve / reference_a / reference_b / exclusions.cve / statistics.cve |
 | security-report-zeroday-trends.txt | Section 2（ゼロデイ・トレンド）: zero_day_special / trends.trends_cve / trends.trends_topic / apt_main / apt_notable / forecasts / exclusions.apt / statistics.apt |
 | security-report-ai.txt | Section 1（AI攻撃）: ai_attacks_main / ai_attacks_reference_b / ai_attacks_reference_a / exclusions.ai_attacks / statistics.ai_attacks |
 | security-report-soc.txt | Section 4（SOC推奨）: soc_recommendations（priority順）/ exclusions.soc_recommendations / statistics.soc_recommendations |
+| security-report-neighbor.txt | Section 5（周辺諸国動向）: neighbor_context（国別・primary → regional の順）/ 除外サマリー / 区分別集計行 |
 
 ### 変換時の注意点
 
@@ -888,6 +995,7 @@ JSONをテキストに変換する際は以下のマッピングに従う。フ�
 - `axis1_score` / `axis2_score` / `axis_p_score` / `axis_q_score` はテキストには出力しない（JSON専用フィールド）
 - `report_section` フィールドはテキストには出力しない（JSON専用フィールド）
 - `info_id` フィールドはテキストには出力しない（JSON専用フィールド。生成規則は本ファイル冒頭の「info_id」節参照）
+- Section 5 の `info_id` / `forecast_input` / `candidate_ids` / `dispositions` の候補ID はテキストに出力しない（JSON専用。`render_neighbor_section.py` が出さない）
 - 予報の `outcome_channel` / `forecast_class` / `window_hours` はテキストに出力する（【攻撃予報】の「観測出口クラス:」「検証窓:」行。pipeline-3-weighting.md テンプレート参照）
 - 予報の `anchor` / `kev_snapshot` / `forecast_class_rationale` / `deadline_date` はテキストには出力しない（JSON専用・検証ステージが使用）
 - CVEの `epss.score` / `epss.percentile` / `epss.model_date` はテキストには出力しない（JSON専用・確度アンカー算出用）

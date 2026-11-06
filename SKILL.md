@@ -20,13 +20,14 @@ schedule: daily
 8. `pipeline-soc-recommend.md` — Step 2b SOC推奨情報収集ルール
 9. `pipeline-output-schema.md` — JSONスキーマ定義
 10. `pipeline-forecast-verification.md` — 攻撃予報の品質ルール（Step 3 / 3.5 で参照）
+11. `pipeline-neighbor.md` — Step 2c 周辺諸国動向（Section 5）の収集・記録ルール
 
 > 情報収集の完全性は Step 0.7 の網羅スイープと Step 3.9 の突合ゲートで機械的に担保する。
 > Step 5 の日次サマリーには、突合結果（候補件数 / 未処理件数）とトークン使用量も含める。
 
-## レポート区分（3区分）
+## レポート区分（5区分）
 
-本パイプラインは以下の3区分でレポートを構成する:
+本パイプラインは以下の5区分でレポートを構成する:
 
 ```
 Section 1: AI攻撃動向
@@ -48,6 +49,12 @@ Section 4: SOC推奨情報
   → pipeline-soc-recommend.md で収集・分類
   → Section 1〜3 に採用されなかったが SOC 運用上把握すべき情報
   → 優先度タグ（高 / 中 / 低）で分類
+
+Section 5: 周辺諸国動向（★報告専用・予報の入力に使わない）
+  → pipeline-neighbor.md で収集・記録（Step 0.9 の走査 → Step 2c）
+  → 周辺諸国（config.yml neighbor_states）のサイバー関連の活動・政策・組織・企業と、
+    それを理解するための非サイバー情勢（国家戦略・政治動向・国家心理・軍と組織）
+  → 観測・ベースライン・base_rate・予報には入れない（検証器が機械的に確認する）
 ```
 
 ---
@@ -236,6 +243,27 @@ python3 scripts/watchlist_scan.py --date "${TODAY}" \
 - `scope.priority_groups`（Phase フォーカスグループ）は actors に自動的に含まれる
 - 出力は `.cache/` のみ。`forecaster/knowledge/` も `config.yml` も書き換えない
 
+### Step 0.9: 周辺諸国候補の走査（必須・Step 2c の前）
+
+`config.yml` の `neighbor_states`（有効な国）と `neighbor/states.json`（語彙）で RSS 機械収集 raw を
+国別に走査し、Section 5 の候補とゲート対象を確定させる。
+
+```bash
+python3 scripts/neighbor_scan.py --date "${TODAY}" \
+  --window-start "${WINDOW_START}" --window-end "${WINDOW_END}" \
+  --output ".cache/daily-security-intel/${TODAY}/neighbor-scan.json"
+```
+
+- 走査対象は Step 0.5 と同じ raw（`news-(D-1).json` / `news-(D).json`）だけ。Web 検索結果は走査しない
+- **ゲート対象**（関連度が `gate_min_relevance` 以上・調査窓内・重複除く）は Step 2c で必ず
+  『採用』または『除外（理由付き）』に割り当てる。標準出力の Markdown 表をそのまま Step 2c の指示文に貼る
+- 国への該当は『記事がその国に言及している』ことを示すだけで、帰属ではない。
+  `アクター名のみ`（表で国コードに `*`）は国名の言及が無いので、国との関係を主張しない（行動原則3）
+- **この走査結果から観測・予報を作らない**。Section 5 は報告専用で、Step 3.5 の入力に含めない
+- 走査が失敗した場合は `neighbor_context.scan.status: "failed"` を記録し、Step 5 の
+  サマリーに明記する（黙って Section 5 を空にしない）
+- 出力は `.cache/` のみ。`forecaster/knowledge/` も `config.yml` も書き換えない
+
 ### Step 1: CVE調査（pipeline-1-cve.md に従う）
 - 一次入力: Step 0.7 の `SWEEP_FILE`（NVD/KEV 機械列挙による母集団・**全件を処理対象とする**）
   および Step 0.5 の `cves-*.json`（RSS 収集記事から機械抽出した CVE 言及。CVSS/EPSS 等の詳細は NVD/Web 照会で補完する）
@@ -266,7 +294,7 @@ python3 scripts/watchlist_scan.py --date "${TODAY}" \
 - Temporal Burst Filtering（48時間以内に3件以上の独立ソース）を適用（3件未満 → 低優先度）
 
 ### Step 2: 動向収集（pipeline-2-trends.md に従う）
-- 一次入力: Step 0.5 の `news-*.json`（RSS 機械収集済み・feeds.json 収録32フィード・各記事に `language`）
+- 一次入力: Step 0.5 の `news-*.json`（RSS 機械収集済み・feeds.json 収録42フィード・各記事に `language`）
   と Step 0.8 の `watchlist-scan.json`（該当は無条件採用候補）。Web 検索は補完のみ
 - 英語ソース: BleepingComputer / The Hacker News / SecurityWeek / Mandiant 等
 - 日本語ソース（必須）: Security NEXT / JPCERT/CC 注意喚起 / IPA重要情報 / ScanNetSecurity
@@ -280,6 +308,21 @@ python3 scripts/watchlist_scan.py --date "${TODAY}" \
 - JPCERT/CC / IPA / 警察庁 / SANS ISC / Krebs 等を補完確認
 - 優先度タグ（高 / 中 / 低）を付与して Step 3 へ渡す
 
+### Step 2c: 周辺諸国動向（pipeline-neighbor.md に従う）※Step 2 / 2b と並行実行
+- 一次入力: Step 0.9 の `neighbor-scan.json`。ゲート対象は全件を `neighbor_context.dispositions` に
+  『採用』または『除外（理由付き）』で記録する（無記録の除外は許されない・Step 4 の検証器が落とす）
+- 採用したものを `neighbor_context.entries` に書く。区分は activity / policy / organization /
+  company / geopolitical。**事実は出典番号付きで、推測は『（推測）』と確度を付けて別欄に書く**
+- 国家との関係は**情報源が明示した場合のみ** `state_attributed_by_source` とし、情報源名と原文の
+  言い回しを `attribution` に引用する。TTP の類似・アクター名の一致・国名の言及だけでは書かない
+- 非サイバー情勢（国家戦略・政治動向・国家心理・軍と組織）は、サイバーとの関連を示す形で
+  `non_cyber_linkage` に記録する。補完の Web 検索は URL と注意書きを必ず残す
+- 国営メディアは『その国の政府が何を述べたか』の記録にのみ使い、事実の裏付けにしない
+  （`source_assessment.state_affiliated=true` と `caveat` が必須）
+- 日本語以外の記事は原題と言語を残し、要約は日本語で書く。参照 URL は原文
+- **Section 5 から観測・予報・Technique・`actor_group` を作らない**。APT の技術的詳細は
+  Section 2 が正で、Section 5 では `related_apt_campaign_ids` で参照するだけにする
+
 ### Step 3: 重みづけ・JSON生成・テキスト変換（pipeline-3-weighting.md・pipeline-ai-2.md に従う）
 - **Step 3 実行前に `pipeline-forecast-verification.md` を読むこと**
 - Section 3 CVE: 軸1（技術深刻度）× 軸2（実環境影響）で評価、製品単位で集計
@@ -292,10 +335,14 @@ python3 scripts/watchlist_scan.py --date "${TODAY}" \
     [Section 2] ゼロデイ特報 / APT活動-本編 / APT活動-注目動向 / 注目CVE（リスト外） / 攻撃予報 / 除外
     [Section 3] 製品別CVE-本編 / 参考A（国内）/ 参考B（国際先行）/ 除外サマリー
     [Section 4] SOC推奨情報（高優先度 → 中 → 低）
+    [Section 5] 周辺諸国動向（国別: primary → regional・報告専用）
 
 **JSON-first出力手順**:
 1. `pipeline-output-schema.md` のスキーマに従い `security-report.json` を生成する
 2. JSONの内容を pipeline-3-weighting.md・pipeline-report-modes.md・pipeline-ai-2.md・pipeline-soc-recommend.md のテンプレートに従い5種のプレーンテキストファイルに変換する（Step 4 のファイル一覧参照）
+3. Section 5 は手で書き起こさず、スクリプトで JSON から生成する（JSON とテキストの乖離を構造的に避ける）:
+   `python3 scripts/render_neighbor_section.py --date "${TODAY}" --append-to-full`
+   （`security-report-neighbor.txt` を作り、`security-report.txt` の末尾へも追記する。冪等）
 
 ### Step 3.5: 予報士システム — 正規化・ベースライン更新・予報生成（forecaster 統合）
 
@@ -380,7 +427,8 @@ Pythia では加えて**観測母集団の偏りがベースライン・base_rat
   4. `YYYY-MM-DD-security-report-zeroday-trends.txt` — Section 2: ゼロデイ・トレンド
   5. `YYYY-MM-DD-security-report-ai.txt` — Section 1: AI攻撃動向
   6. `YYYY-MM-DD-security-report-soc.txt` — Section 4: SOC推奨情報
-  7. `YYYY-MM-DD-token-usage.json` — 実行トークン量・料金概算（運用メタ情報・下記で生成）
+  7. `YYYY-MM-DD-security-report-neighbor.txt` — Section 5: 周辺諸国動向（`render_neighbor_section.py` が生成）
+  8. `YYYY-MM-DD-token-usage.json` — 実行トークン量・料金概算（運用メタ情報・下記で生成）
 - **トークン使用量・料金概算を計測する（毎回必須・commit 前に1回だけ実行する）**:
 
   ```bash
@@ -414,7 +462,12 @@ Pythia では加えて**観測母集団の偏りがベースライン・base_rat
   実在かつ主題と一致する観測を指しているか〔同 所見2〕を機械検査する。読み取り専用。
   **`--date` を付けずに全履歴を検査すると発行済み予報の既知違反で非ゼロ終了する**
   — 発行済み予報は当時の記録であり修正しない〔原則D〕ため、日次では必ず `--date` を付ける）
-  （check_report_consistency は JSON と派生テキスト5種の食い違いを機械検査する。
+  （validate_neighbor_context は Section 5 の fail-closed ゲート。事実への『（推測）』混在・
+  根拠の無い帰属・国営メディアの注意書き欠落・ゲート対象の未処理・観測や予報への
+  nbr- ID の混入のいずれかがあればコミットしてはならない。日次では必ず
+  `python3 scripts/validate_neighbor_context.py --date ${TODAY} --scan ".cache/daily-security-intel/${TODAY}/neighbor-scan.json" --require`
+  を実行する。読み取り専用）
+  （check_report_consistency は JSON と派生テキスト5種〔neighbor_context を持つ日は6種〕の食い違いを機械検査する。
   **テキストにあって JSON に無い CVE ID** はエラーになる — テキスト側だけに書かれた情報は
   観測へ取り込まれず、人が読む記録と機械が学習する記録が乖離するため、
   JSON へ反映するかテキストから除いてから再実行すること）
@@ -460,8 +513,11 @@ Pythia では加えて**観測母集団の偏りがベースライン・base_rat
    「EUVD列挙なし（NVD+KEVのみ）」を、それぞれ影響とあわせて1行で明記する）
 7. **トークン使用量・料金概算**: 合計トークン数と USD 概算（Step 4 で保存した
    `token-usage.json` の数値をそのまま使う。概算である旨を併記する）
-8. **実行状態**: バリデーション5スクリプトの結果、Step 3.9 突合の合否、
+8. **実行状態**: Step 4 の各バリデーションの結果、Step 3.9 突合の合否、
    コミット/push 先ブランチ名、PR を作成した場合はその番号
+9. **周辺諸国動向（Section 5）**: 走査候補件数 / ゲート対象件数 / 採用 / 除外 / 未処理件数と、
+   国別の採用件数（走査が失敗した場合は『周辺諸国走査なし』とその影響を1行で明記する）。
+   Section 5 は報告専用で予報には使っていない旨は書かなくてよい（検証器が確認済み）
 
 表示形式:
 - 日本語プレーンテキスト（チャット表示用のため、レポート本文と同様に装飾記法へ依存しない）
@@ -477,6 +533,7 @@ push 先がセッションブランチとなり PR を作成する場合は、�
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-zeroday-trends.txt`（Section 2: ゼロデイ・トレンド）
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-ai.txt`（Section 1: AI攻撃動向）
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-soc.txt`（Section 4: SOC推奨情報）
+- `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-neighbor.txt`（Section 5: 周辺諸国動向）
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-token-usage.json`（トークン量・料金概算・運用メタ情報）
 - `reported-cves.md` / `reported-apts.md` / `reported-ai-attacks.md`（追記）
 - `forecaster/observations/` `forecaster/baseline/` `forecaster/forecasts/daily/`（Step 3.5）
