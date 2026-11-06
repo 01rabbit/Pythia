@@ -1,0 +1,56 @@
+{
+  "_schema_version": "1.0",
+  "_registered_on": "2026-11-06",
+  "_purpose": "Section 5（周辺諸国動向）・Section 6（攻撃基盤プロファイル）を NX-1 の予報へ取り込む『前に』、検証手続きを固定する事前登録。結果を見てから仮説・特徴量・閾値を選ぶこと（多重比較・後付けの探索）を防ぐ。Git 履歴の日付が登録時刻の証拠になる。",
+  "status": "not_active",
+  "_governance": [
+    "このファイルの変更は PR と人間レビューを経る。特徴量・仮説・閾値を、前向きの結果を見た後に追加・変更しない。変更するときは新しい登録（version）として残し、旧登録は消さない",
+    "現時点で Section 5・6 を読む予報コードは存在しない（scripts/test_nexus_family.py が不変条件として検査する）。取り込みは本登録の手続きを満たした PR でのみ行う",
+    "forecaster/knowledge/ は読み書きしない"
+  ],
+  "why_not_now": [
+    "Section 5・6 は 2026-11-06 に導入されたばかりで、履歴が0日である",
+    "基準線に対する Brier skill を検定できる標本（独立標本 ≥ 30 の窓）に達していない",
+    "NX-1 の挑戦者（直近活動で条件づけ）でさえ、遡及診断では基準線に勝てていない。より複雑な特徴を足す前に、単純な特徴が効かない理由を前向きに確かめる"
+  ],
+  "version": "ctx-prereg-v1",
+  "hypotheses": [
+    {
+      "id": "H1",
+      "feature": "n5_state_attributed_activity_7d",
+      "definition": "対象国の neighbor_context.entries のうち category=activity かつ country_basis=state_attributed_by_source の件数（報告日 d−6〜d の7日間・報告 JSON の構造化項目だけから数える。本文のキーワード推定は禁止）",
+      "expected_direction": "positive",
+      "rationale": "情報源が国家との関係を明示した活動報道が直近に多いほど、同国 nexus の確認が続く（報道の群発）。ただし国別 nexus 観測と同一事象を二重に数える可能性があり、独立な追加情報にならないかもしれない",
+      "target": "NX-1 の 72h・7d（同じ国）"
+    },
+    {
+      "id": "H2",
+      "feature": "n5_policy_org_7d",
+      "definition": "対象国の neighbor_context.entries のうち category が policy または organization の件数（同上の7日間）",
+      "expected_direction": "positive",
+      "rationale": "政策・組織の動きは活動報道の先行指標かもしれない（推測）。方向は不確かで、帰無仮説を棄却できなければ採用しない",
+      "target": "NX-1 の 7d（同じ国）"
+    }
+  ],
+  "excluded_by_design": [
+    "Section 6（攻撃基盤プロファイル）は指標単位の属性で国別の特徴にならない。国への対応づけは帰属判断を要するため（行動原則3）、NX-1 の特徴量にしない",
+    "本文・要約からのキーワード推定による特徴量（構造化項目だけを使う）"
+  ],
+  "protocol": {
+    "comparison": "nx1-recency-v1 と nx1-recency-v1 + 特徴量 を同一の候補・同一の窓で比較する。挑戦者は特徴量の追加以外は同一の式にする",
+    "metric": "Brier skill（挑戦者 vs nx1-recency-v1）。日付ブロック（14日）のブートストラップで95%区間",
+    "alpha": 0.05,
+    "multiple_comparisons": "仮説の数（現在2）で Bonferroni 補正した区間を併記し、補正後の区間が0を上回らない限り採用しない",
+    "minimum_independent_windows": 30,
+    "minimum_history_days": 60,
+    "minimum_positive_events": 20,
+    "forward_only": true,
+    "adoption_path": [
+      "前向きの台帳（候補発行時点で特徴量を凍結して記録する）が上記の標本数に達する",
+      "forecaster/config/promotion-gates.json の全ゲート（Brier skill・AUC 下限・較正・被覆・時間整合性）を満たす",
+      "特徴量を読むコードと nexus-registry.json の変更を、PR と人間レビューで行う",
+      "特徴量は候補の発行時点（cutoff）までに利用可能になった報告 JSON だけから作る（未来情報の混入を validate_nexus_integrity.py が検査する）"
+    ],
+    "record_before_use": "特徴量は『使う前に』候補へ記録して前向きの標本を貯める。記録しただけで確率に影響させない（used_in_probability=false）。記録の実装は本登録の手続きの一部であり、別の PR で行う"
+  }
+}

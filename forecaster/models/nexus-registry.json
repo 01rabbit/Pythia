@@ -1,0 +1,41 @@
+{
+  "_schema_version": "1.0",
+  "_created": "2026-11-06",
+  "_comment": "NX-1（国別 nexus 活動の確認予報）のモデル登録簿。TF-1 の model-registry.json とは別に持つ（別 family・別 matching rule・別評価母集団）。昇格はこのファイルの変更を PR と人間レビューで行う。",
+  "mode": "shadow",
+  "allowed_modes": ["off", "shadow", "limited", "active"],
+  "forecast_family": "NX-1",
+  "matching_rule_version": "nx1-rule-v1",
+  "models": [
+    {
+      "model_version": "nx1-climatology-v1",
+      "role": "baseline",
+      "status": "shadow",
+      "evaluation_profile": "reference_only_calibration",
+      "public_forecast_eligible": false,
+      "approved_for_publication": false,
+      "definition": "発行日グリッド（07:30 JST・被覆済み・満了済み）で、窓内に国別 nexus 事象が記録された割合（Jeffreys 事前）。国と地平ごと。",
+      "limitations": [
+        "弁別を主張しない基準線である。公開昇格の対象にならない",
+        "グリッド日は窓が重なり独立ではない。独立標本数は÷H で推定する",
+        "『確認が記録されるか』の確率であり、攻撃の発生確率ではない"
+      ]
+    },
+    {
+      "model_version": "nx1-recency-v1",
+      "role": "challenger",
+      "status": "shadow",
+      "evaluation_profile": "discriminative",
+      "public_forecast_eligible": true,
+      "approved_for_publication": false,
+      "definition": "直近 H 日に国別 nexus 事象があったか（0/1）で条件づけた割合（Jeffreys 事前）。クラスの標本が14日未満なら climatology へ後退する。",
+      "limitations": [
+        "2026-11-06 時点のウォークフォワード診断（遡及・参考）では climatology に対し Brier skill が負（72h −0.026・7d −0.012・95%区間は0をまたぐ）で、AUC は 0.5 未満だった",
+        "診断の独立標本数は 72h で約78・7d で約24と小さく、『技能なし』とも『技能あり』とも結論できない",
+        "判定は前向きの台帳だけで行う。診断の結果を見て式を変えない"
+      ]
+    }
+  ],
+  "context_inputs_allowed": [],
+  "context_inputs_note": "Section 5（neighbor_context）・Section 6（infrastructure_context）は予報の入力に使わない。取り込みは forecaster/config/nexus-context-preregistration.json の手続き（PR・前向き標本・ゲート）を経てからに限る。"
+}

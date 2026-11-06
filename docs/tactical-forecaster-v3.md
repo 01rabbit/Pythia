@@ -105,6 +105,10 @@ ACTIVE_EXPLOITATION → POST_EXPLOIT_ACTIVITY` を扱う。状態は明示され
 Actor・標的・インフラ・影響への展開予報はEvent/Case/Episodeを蓄積した後に、別family、
 別matching rule、別評価母集団として追加する。TF-1の数字を流用しない。
 
+最初の追加family（2026-11-06）は **NX-1（国別 nexus 活動の確認予報）** で、設計は
+`docs/nexus-forecaster.md`。TF-1 は陽性が5か月で2件と少なく昇格ゲート（各 family×horizon で20件以上）に
+届かないのに対し、国別 nexus の確認は数週間で陽性が積み上がるため、前向きに評価できる。
+
 ## 日次順序
 
 `snapshot → collect/normalize → event store → state(cutoff) → reference rates →

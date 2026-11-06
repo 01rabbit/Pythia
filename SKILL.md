@@ -190,6 +190,32 @@ shadow 運用の目的は**この母集団を前向きに作ること**である
 `transition_matrix` は初期推定値のまま）・許可外遷移・後退遷移・established でない
 actor への actor 固有予報を拒否する。1件でもあれば戦術予報を出さない。
 
+### Step 3.7: NX-1 国別 nexus 活動の確認予報（shadow・docs/nexus-forecaster.md）
+
+Step 3.6 の後（`stamp_observation_availability.py` で当日の観測の利用可能時刻が固定された後）に実行する。
+TF-1 とは**別 family・別 matching rule・別評価母集団**で、TF-1 の数字を流用しない。
+
+```bash
+NEXUS_CUTOFF_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+NEXUS_ISSUED_UTC="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+python3 scripts/generate_nexus_candidates.py --date "${TODAY}" \
+  --cutoff-at-utc "${NEXUS_CUTOFF_UTC}" --issued-at-utc "${NEXUS_ISSUED_UTC}"
+python3 scripts/validate_nexus_integrity.py --date "${TODAY}"   # fail-closed・観測から再計算して照合
+```
+
+- 予報するのは『発行から 3 日・7 日以内に、国別 nexus（中国・ロシア・北朝鮮）の観測が**記録されるか**』。
+  攻撃の発生確率ではない（TF-1 と同じ公開確認確率）
+- **確率はコードが観測の履歴から計算する。LLM は書かない・編集しない。** 台帳は発行時にハッシュで凍結し、
+  発行済みの台帳は書き換えない（同日の再実行は拒否される）。履歴が足りなければ棄権し理由を残す
+- 現在は **shadow**（公開しない）。レポート JSON・テキストには個別の確率を載せない。昇格は
+  `forecaster/models/nexus-registry.json` の変更を PR と人間レビューで行い、全ゲートの通過を要する
+- **Section 5（周辺諸国動向）・Section 6（攻撃基盤プロファイル）は入力にしない。**
+  `inputs.context_inputs` は空で、検証器が確認する。取り込みは
+  `forecaster/config/nexus-context-preregistration.json` の事前登録の手続きを経てからに限る
+- `validate_nexus_integrity.py` が落ちた場合は NX-1 の台帳を**コミットしない**（TF-1 の成果物や
+  レポートのコミットは止めない）。台帳を手で直して通さない
+- 現在の影の確率の確認: `python3 scripts/generate_nexus_candidates.py --print`（台帳には書かない）
+
 ### Step 0.7: 網羅スイープ（必須・Step 1 の前）
 
 Step 1 の収集を始める**前に**、調査窓内のCVE母集団を機械列挙で確定させる。
@@ -501,13 +527,19 @@ Pythia では加えて**観測母集団の偏りがベースライン・base_rat
   存在しない指標を足した、summary が照会記録からの再計算と食い違う、非公開アドレスや IoC 自身へ
   照会している、取得証跡が不正、観測や予報に inf- ID が混入しているのいずれかがあればコミットしてはならない。
   日次では必ず `python3 scripts/validate_infrastructure_context.py --date ${TODAY} --require` を実行する。読み取り専用）
+  （validate_nexus_integrity は NX-1（Step 3.7）の fail-closed ゲート。台帳・候補のハッシュ、時刻、
+  shadow の間は公開しない、予報の根拠に Section 5・6 を入れていない、観測を cutoff 時点で読み直して
+  同じ候補が再現できる、のいずれかが破れたら `forecaster/candidates/nexus/` を**コミットしてはならない**
+  （レポートや TF-1 の成果物は止めない）。日次では必ず `python3 scripts/validate_nexus_integrity.py --date ${TODAY}`
+  を実行する。読み取り専用）
   （check_report_consistency は JSON と派生テキスト5種〔neighbor_context / infrastructure_context を持つ日は追加のテキストも〕の食い違いを機械検査する。
   **テキストにあって JSON に無い CVE ID** はエラーになる — テキスト側だけに書かれた情報は
   観測へ取り込まれず、人が読む記録と機械が学習する記録が乖離するため、
   JSON へ反映するかテキストから除いてから再実行すること）
   （check_knowledge_untouched は knowledge/ の無変更を機械的に確認する。失敗した場合は
   knowledge/ の変更を revert してからコミットし、意図した補正は Issue/PR として提案する）
-- 変更ファイル（reported-*.md / outputs/YYYY-MM-DD/ / forecaster/ の Step 3.5 成果物）を
+- 変更ファイル（reported-*.md / outputs/YYYY-MM-DD/ / forecaster/ の Step 3.5 成果物、
+  および `forecaster/candidates/nexus/`〔NX-1・`validate_nexus_integrity.py` が通ったときだけ〕）を
   git add → git commit → git push する。コミットメッセージ: `daily report: YYYY-MM-DD`
 - セッションの実行環境がブランチ+PR運用を強制する場合（main への直接pushが拒否される場合）:
   1. push 先ブランチから main への PR を作成する（既存の draft 作成指示に従う）
@@ -555,6 +587,8 @@ Pythia では加えて**観測母集団の偏りがベースライン・base_rat
 10. **攻撃基盤プロファイル（Section 6）**: 実行状態（ok / partial / failed / no_indicators）、
     指標数（補強 / スキップ / 解析不能）、照会数（成功 / データなし / 失敗）。
     `partial` / `failed` の場合は取得できなかったソースと影響を1行で明記する
+11. **NX-1（国別 nexus 活動の確認予報・shadow）**: 発行 / 棄権の件数と、検証器の合否。
+    shadow のため**個別の確率は書かない**（公開しない）。棄権があれば理由を1行で
 
 表示形式:
 - 日本語プレーンテキスト（チャット表示用のため、レポート本文と同様に装飾記法へ依存しない）
@@ -575,6 +609,7 @@ push 先がセッションブランチとなり PR を作成する場合は、�
 - `outputs/YYYY-MM-DD/YYYY-MM-DD-token-usage.json`（トークン量・料金概算・運用メタ情報）
 - `reported-cves.md` / `reported-apts.md` / `reported-ai-attacks.md`（追記）
 - `forecaster/observations/` `forecaster/baseline/` `forecaster/forecasts/daily/`（Step 3.5）
+- `forecaster/candidates/nexus/YYYY-MM-DD.json`（NX-1 の台帳・shadow・Step 3.7）
 
 ## 出力形式の原則
 - Markdownコードブロック・見出し記号・テーブル記法を使わない

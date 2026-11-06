@@ -164,6 +164,13 @@ Mnemonic）への**受動照会だけ**で補強し、国（近似）・ASN・�
 応答の記録から要約を再計算して照合する。共有基盤上の IP や近似の国には注意書きが付き、インフラの
 類似だけで帰属しない。規則は `pipeline-infrastructure.md`。
 
+**NX-1（国別 nexus 活動の確認予報）は第4の予報 family（shadow・公開しない）**。「今後 3 日・7 日以内に、
+中国・ロシア・北朝鮮の nexus 観測が**記録されるか**」を、観測の履歴から**コードが**計算する（LLM は確率を書かない）。
+TF-1 とは別 family・別 matching rule・別評価母集団で、台帳は発行時にハッシュで凍結され、検証器が観測から
+再計算して照合する。日次ランの欠測日を含む窓は miss にせず not_observed とする。現時点で提供するのは
+較正された基準率で、遡及診断では直近の活動で条件づけた挑戦者も基準線に勝てていない（区間は 0 をまたぐ）。
+Section 5・6 は予報の入力にしない（取り込み手続きは事前登録済み）。設計と限界は `docs/nexus-forecaster.md`。
+
 ---
 
 ## 過去からの学習：バックフィル・較正統計・類似過去事例検索
@@ -366,6 +373,7 @@ Week 13（〜2026-09 中旬）まで延長（2026-07-13・`forecaster/phase1-con
 | 収集の JSONスキーマ | `pipeline-output-schema.md` |
 | RSSフィードの追加・変更 | `security-intel-collector/feeds.json`（各フィードに `language` を付ける） |
 | 攻撃基盤プロファイル（Section 6）の有効化・件数上限・使うソース | `config.yml` の `infrastructure`（共有基盤の ASN・除外ドメインは `infra/policy.json`・PR経由） |
+| NX-1 の昇格・モデルの追加 | `forecaster/models/nexus-registry.json`（承認記録と全ゲート通過を要する・PR経由）。Section 5/6 の取り込み手続きは `forecaster/config/nexus-context-preregistration.json` |
 | 周辺諸国（Section 5）の対象国・ゲートの厳しさ | `config.yml` の `neighbor_states`（語彙の追加・変更は `neighbor/states.json`・PR経由） |
 | ウォッチリスト（指定 CVE・製品・アクター・トピックの無条件採用） | `config.yml` の `watchlist:`（Step 0.7 スイープ / Step 0.8 `scripts/watchlist_scan.py` が共有） |
 | 類似過去事例検索の閾値・重み | `forecaster/case-based-retrieval-design.md`（設計）+ `scripts/retrieve_similar_cases.py` |
