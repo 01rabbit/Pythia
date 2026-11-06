@@ -32,7 +32,10 @@ Step 3 の出力は必ず以下の順序で行う:
    - security-report-neighbor.txt: Section 5（周辺諸国動向）— **手で書き起こさず**
      `scripts/render_neighbor_section.py --append-to-full` が JSON から生成する（security-report.txt の末尾にも追記される）。
      Section 5 は報告専用で、重みづけ（軸1×軸2・軸P×軸Q 等）の対象外・予報の入力にもしない（pipeline-neighbor.md）
-3. 計7ファイル（JSON 1 + テキスト 6）を outputs/YYYY-MM-DD/ ディレクトリに保存する。
+   - security-report-infra.txt: Section 6（攻撃基盤プロファイル）— `scripts/enrich_infrastructure.py` が JSON へ注入し、
+     `scripts/render_infrastructure_section.py --append-to-full` が生成する（security-report.txt の末尾にも追記される）。
+     報告専用で重みづけの対象外・予報の入力にもしない（pipeline-infrastructure.md）
+3. 計8ファイル（JSON 1 + テキスト 7）を outputs/YYYY-MM-DD/ ディレクトリに保存する。
 
 テキスト変換時の主なマッピングルール（詳細は pipeline-output-schema.md の「JSONからテキストへの変換ルール」参照）:
 - axis1_score / axis2_score / axis_p_score 等のスコアフィールドはテキストに出力しない

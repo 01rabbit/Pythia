@@ -55,6 +55,12 @@ scripts/neighbor_scan.py                 ← Step 0.9 RSS 機械収集 raw を�
 scripts/validate_neighbor_context.py     ← Section 5 の fail-closed 検証（事実と推測の分離・帰属・国営メディアの注意書き・処理ゲート・予報との分離・読み取り専用・Step 4 で実行）
 scripts/render_neighbor_section.py       ← neighbor_context から Section 5 のテキストを決定論的に生成（手で書き起こさない）
 scripts/test_neighbor_context.py         ← Section 5 の受入基準テスト（ネット不使用）
+# ★Section 6 攻撃基盤プロファイル（2026-11-06 第3段階）— 報告専用・スクリプトが機械的に生成。観測・ベースライン・base_rate・予報には入れない
+infra/policy.json                        ← Section 6 の運用ポリシー（共有基盤の ASN・除外するドメイン・上限。有効なソースは config.yml `infrastructure`・PR経由でのみ変更）
+scripts/enrich_infrastructure.py         ← Step 3.1 レポートの IoC を公開データベースへの受動照会だけで補強（IoC 自体へは接続しない・要約は応答から再計算可能・当日のレポート JSON へ注入）
+scripts/validate_infrastructure_context.py ← Section 6 の fail-closed 検証（IoC の取りこぼし・要約の再計算照合・非公開IP/IoC 自身への照会・取得証跡・予報との分離・読み取り専用・Step 4 で実行）
+scripts/render_infrastructure_section.py ← infrastructure_context から Section 6 のテキストを決定論的に生成（IP・ドメインは無害化表記）
+scripts/test_infrastructure_context.py   ← Section 6 の受入基準テスト（通信を物理的に遮断して実行）
 scripts/retrieve_similar_cases.py        ← 予報 Step C'' 類似過去事例検索器（内部実績・読み取り専用）
 scripts/record_retrieval_calibration.py  ← 検証時に retrieval 較正データを収集（design §8・検証ステージのみ書込）
 scripts/backfill_observations.py         ← 過去日付の観測を CISA KEV から機械バックフィル（観測のみ・ベースライン統計対象外・予報は遡及生成しない・`--emit-empty` で KEV追加ゼロの欠測日にも observations:[] の欠測マーカーを置く）
@@ -115,6 +121,7 @@ pipeline-ai-1.md                         ← Step 1c: AI攻撃調査（Section 1
 pipeline-ai-2.md                         ← Step 3 (AI): AI攻撃重みづけ・出力ルール
 pipeline-soc-recommend.md                ← Step 2b: SOC推奨情報収集ルール（Section 4）
 pipeline-neighbor.md                     ← Step 2c: 周辺諸国動向の収集・記録ルール（Section 5・報告専用）
+pipeline-infrastructure.md               ← Step 3.1: 攻撃基盤プロファイルの規則（Section 6・報告専用・受動照会のみ）
 pipeline-output-schema.md                ← JSONスキーマ定義・出力ファイル仕様（AI分析・機械処理用）
 reported-cves.md                         ← 既報CVEリスト（実行後に自動追記）
 reported-apts.md                         ← 既報APT活動リスト（実行後に自動追記）
@@ -127,6 +134,7 @@ outputs/YYYY-MM-DD/                      ← 日次収集レポート（予報�
   YYYY-MM-DD-security-report-ai.txt                 ← Section 1: AI攻撃動向（本編・参考B・参考A・週次サマリー）
   YYYY-MM-DD-security-report-soc.txt                ← Section 4: SOC推奨情報（高/中/低優先度）
   YYYY-MM-DD-security-report-neighbor.txt           ← Section 5: 周辺諸国動向（報告専用・render_neighbor_section.py が JSON から生成）
+  YYYY-MM-DD-security-report-infra.txt              ← Section 6: 攻撃基盤プロファイル（報告専用・render_infrastructure_section.py が JSON から生成）
   YYYY-MM-DD-token-usage.json                       ← 実行トークン量・料金概算（運用メタ情報・レポートではない）
 ```
 
@@ -164,6 +172,7 @@ Actions 無料枠（private・月 2,000 分）に収めるため、情報源別�
   `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-ai.txt`,
   `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-soc.txt`,
   `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-neighbor.txt`,
+  `outputs/YYYY-MM-DD/YYYY-MM-DD-security-report-infra.txt`,
   `outputs/YYYY-MM-DD/YYYY-MM-DD-token-usage.json`
 
 ## 網羅スイープ（毎回必須）
@@ -256,15 +265,35 @@ Section 5 は採用条件ではなく『関連性』で拾うため、観測母�
 - テキストは JSON から `render_neighbor_section.py` が生成する。Step 4 で
   `validate_neighbor_context.py --require` が通ることをコミットの条件とする
 
+## 攻撃基盤プロファイル（Section 6・報告専用）
+
+レポートに載った IoC（IP・ドメイン・URL のホスト）を、公開データベース（RIPEstat / Shodan InternetDB /
+RDAP / urlscan / Mnemonic）への**受動照会だけ**で補強し、国・ASN・保有者・開放ポート・CPE・登録情報・
+ホスティング先の履歴を記録する層。規則は `pipeline-infrastructure.md`、Step 3.1 で作る。
+
+**予報の入力層から分離する。** 観測・ベースライン・base_rate・予報には一切入れない。
+補強した属性を観測母集団に混ぜると base_rate が歪み、検証ループで予報ロジックの誤りと
+母集団の歪みを区別できなくなる（Section 5・網羅スイープと同じ論理）。
+
+- **プロファイルは LLM が書かない。** `enrich_infrastructure.py` が API 応答から機械的に作り、
+  `validate_infrastructure_context.py` が応答の記録から要約を再計算して照合する（ハルシネーション厳禁・行動原則1）
+- **IoC の指す先へは接続しない**（名前解決もしない）。コードがリダイレクト先も含めて拒否する
+- **インフラの類似・共有だけで帰属しない**（行動原則3）。共有基盤上の IP には注意書きが付き、
+  Section 6 の属性を APT エントリの帰属や Section 5 の `attribution` の根拠にしない
+- 全照会に取得時刻・HTTP 状態・応答ハッシュを残し、取得失敗はフェイルソフト（記録して続行）
+- 照会しない指標（非公開アドレス・正規サービス・上限超過）と解析できない表記は理由付きで残す。黙って落とさない
+- Step 4 で `validate_infrastructure_context.py --require` が通ることをコミットの条件とする
+
 ## 出力フォーマット
 
-- 基本形式: `security-report.json`（pipeline-output-schema.md のスキーマ準拠・Section 1〜5 全データ収録）
-- 変換形式（6種・JSONから変換・プレーンテキスト・Markdown不使用）:
-  - `security-report.txt`: 全セクション完全版（Section 1〜5）
+- 基本形式: `security-report.json`（pipeline-output-schema.md のスキーマ準拠・Section 1〜6 全データ収録）
+- 変換形式（7種・JSONから変換・プレーンテキスト・Markdown不使用）:
+  - `security-report.txt`: 全セクション完全版（Section 1〜6）
   - `security-report-cve.txt`: Section 3 製品別CVE（ゼロデイ特報・本編・参考A・参考B）
   - `security-report-zeroday-trends.txt`: Section 2 ゼロデイ・トレンド（ゼロデイ特報・APT・注目CVE・攻撃予報）
   - `security-report-ai.txt`: Section 1 AI攻撃動向（本編・参考B・参考A・週次サマリー）
   - `security-report-soc.txt`: Section 4 SOC推奨情報（高/中/低優先度）
   - `security-report-neighbor.txt`: Section 5 周辺諸国動向（報告専用。観測・予報には入れない）
+  - `security-report-infra.txt`: Section 6 攻撃基盤プロファイル（報告専用。観測・予報には入れない）
 - デフォルトモード: モード3（CVE・ゼロデイ・APT・AI攻撃 フル版）
 - 詳細は `pipeline-3-weighting.md` および `pipeline-output-schema.md` 参照
