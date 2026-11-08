@@ -1,0 +1,678 @@
+{
+  "meta": {
+    "schema_version": "1.0",
+    "report_date": "2026-11-09",
+    "generated_at": "2026-11-09T07:50:00+09:00",
+    "mode": 3,
+    "mode_deprecated": true,
+    "investigation_period": {
+      "from": "2026-11-08T07:00:00+09:00",
+      "to": "2026-11-09T07:00:00+09:00"
+    },
+    "sweep": {
+      "status": "ok",
+      "threshold": 9.0,
+      "kev_catalog_version": "2026.11.06",
+      "candidates": 23,
+      "handled": 23,
+      "unhandled": 0,
+      "kev_added_in_window": 0,
+      "ghsa_origin_over_threshold": 0,
+      "euvd": {
+        "status": "ok",
+        "in_window_total": 23,
+        "euvd_only": 0
+      }
+    },
+    "data_gaps": [
+      "日曜の窓のため窓内の収集記事は 4 件のみ（Taipei Times／SecurityWeek／BleepingComputer／SANS ISC 各 1）。窓内の CISA KEV 追加は 0 件（KEV カタログ版は 2026.11.06 のまま）。BleepingComputer の Iris Ohyama 記事は本文が 403 で取得できず RSS 要約のみ（漏えいした項目・委託先クラウド・攻撃者は未確認）。SANS ISC の sshole 記事は本文を取得したが、成功ログインの数は筆者が後続記事で示すとしており未確認。Taipei Times の記事（インターネット上の二次創作ライブラリへのサイバー攻撃）は周辺諸国走査でゲート対象 0 件のため Section 5 には記録しない。NVD 窓内の CVSS 9.0 以上 23 件は、いずれも窓内の悪用報告・KEV 収載が無い。"
+    ]
+  },
+  "zero_day_special": [],
+  "main_cve": [],
+  "reference_a": [],
+  "reference_b": [],
+  "trends": {
+    "trends_cve": [
+      {
+        "affected_versions": "OpenSSH（musl libc かつ PAM 無効の Linux・修正版番号は要約に無く未確認）",
+        "priority": "high",
+        "cvss_v3": 8.1,
+        "cvss_v4": null,
+        "cvss_severity": "high",
+        "cwe_ids": [],
+        "epss": {
+          "score": null,
+          "percentile": null,
+          "model_date": null
+        },
+        "status": {
+          "kev_registered": false,
+          "poc_published": false,
+          "actively_exploited": true,
+          "zero_day": false,
+          "patch_available": true
+        },
+        "patch_info": {
+          "available": true,
+          "version": null,
+          "eta": null
+        },
+        "fceb_deadline": null,
+        "kev_date_added": null,
+        "jpcert_ipa": {
+          "issued": false,
+          "entries": []
+        },
+        "techniques": [
+          {
+            "technique_id": "T1021.004",
+            "tactic": "lateral-movement",
+            "evidence": "記事が SSH サインインによる認証回避とその悪用試行を記述"
+          }
+        ],
+        "temp_mitigation": [
+          "OpenSSH の修正版へ更新する",
+          "musl libc かつ PAM 無効の SSH サーバーを洗い出し、パスワード未設定アカウントを無効化する",
+          "SSH を公開しているホストはパスワード認証を無効にし公開鍵認証に限定する"
+        ],
+        "ioc": {
+          "confirmed": true,
+          "ips": [
+            "156.238.252.37"
+          ],
+          "domains": [],
+          "hashes": [],
+          "urls": [],
+          "filenames": [
+            "bot.x86_64"
+          ]
+        },
+        "monitoring": {
+          "description": "SSH 認証ログで 257 文字以上のパスワードの認証成功、パスワード未設定アカウントへのログイン、/tmp への bot.x86_64 の取得（wget・busybox wget・curl）を確認する。",
+          "splunk_spl": [],
+          "detection_notes": "IOC は SANS ISC 記載の 1 件（IP とファイル名）。"
+        },
+        "sector_impact": [
+          "it"
+        ],
+        "region_impact": [
+          "global"
+        ],
+        "exploited_by": null,
+        "cve_id": "CVE-2026-123158",
+        "product": "OpenSSH 'SSHole'（musl libc かつ PAM 無効環境の認証回避）",
+        "vendor": "OpenSSH",
+        "axis1_score": 7,
+        "axis2_score": 7,
+        "changes_24h": [
+          {
+            "source": "SANS Internet Storm Center",
+            "date": "2026-11-08",
+            "description": "ハニーポットで 257 文字以上の長いパスワード試行が増加。11-05 に全文字 'A' のパスワードによる最初の悪用試行、11-06 に 713 件のピーク。ドロッパー URL の取得コマンドを含む試行も観測。[更新]"
+          }
+        ],
+        "overview": "SANS ISC は、Cowrie ハニーポット（パスワードを先頭 255 文字しか記録しない）で、sshole（CVE-2026-123158）の公開後に長いパスワードの試行が増加したと報告した。日別件数は 11-04: 58／11-05: 232／11-06: 713／11-07: 246。最初の悪用試行は 11-05 の全文字 'A' のパスワード。11-01 の 23 件は壊れたブルートフォース用スクリプトがログイン後のシェルコマンドをパスワード欄に入れたもので、本脆弱性とは無関係と筆者は見ている。そのコマンドは /tmp で 156.238.252.37:8000 から bot.x86_64 を取得し chmod 777 で実行権を付けるもの。成功したログインの数は未抽出（筆者が後続記事を予告）。",
+        "attack_flow": [
+          {
+            "step": 1,
+            "description": "musl かつ PAM 無効の OpenSSH サーバーへ長い（257〜1024 文字の）パスワードで SSH 接続"
+          },
+          {
+            "step": 2,
+            "description": "パスワード未設定アカウントで認証が通る"
+          },
+          {
+            "step": 3,
+            "description": "ログイン後の権限掌握（ハニーポットでは root を取得）"
+          }
+        ],
+        "references": [
+          {
+            "url": "https://isc.sans.edu/diary/rss/33498",
+            "title": "Scans for Sshole Vulnerability (CVE-2026-123158)",
+            "language": "en",
+            "source": "SANS Internet Storm Center"
+          },
+          {
+            "url": "https://thehackernews.com/2026/11/hackers-exploited-openssh-sshole-flaw.html",
+            "title": "Hackers Target OpenSSH SSHole Flaw Within Hours of Disclosure, Gain Root on Honeypot",
+            "language": "en",
+            "source": "The Hacker News"
+          },
+          {
+            "url": "https://www.securityweek.com/openssh-rushes-patches-for-sshole-authentication-bypass",
+            "title": "OpenSSH Rushes Patches for 'SSHole' Authentication Bypass",
+            "language": "en",
+            "source": "SecurityWeek"
+          }
+        ],
+        "section_route": "trends",
+        "report_section": "trends_cve",
+        "info_id": "20261109-CVET-sshole01"
+      }
+    ],
+    "trends_topic": [
+      {
+        "topic_id": "TREND-2026-11-09-001",
+        "title": "アイリスオーヤマ：委託先クラウドサービスへの不正アクセスで最大約 770 万人の個人情報が漏えいした可能性",
+        "summary": "BleepingComputer によれば、アイリスオーヤマ（ショッピングサイト Iris Plaza の運営）は、利用していた第三者のクラウドサービスへの不正アクセスにより、約 770 万人の個人情報が漏えいした可能性があると公表した。漏えいした項目、委託先サービス名、攻撃者、侵入手口、CVE は RSS 要約の範囲では未確認（本文は 403 で取得できなかった）。",
+        "changes_24h": [
+          {
+            "source": "BleepingComputer",
+            "date": "2026-11-08",
+            "description": "アイリスオーヤマが第三者クラウド経由で約 770 万人の情報が漏えいした可能性を公表[新規]"
+          }
+        ],
+        "sector_impact": [
+          "retail"
+        ],
+        "region_impact": [
+          "JP"
+        ],
+        "references": [
+          {
+            "url": "https://www.bleepingcomputer.com/news/security/iris-ohyama-data-cloud-breach-exposes-info-of-77-million-customers",
+            "title": "Iris Ohyama data cloud breach exposes info of 7.7 million customers",
+            "language": "en",
+            "source": "BleepingComputer"
+          }
+        ],
+        "report_section": "trends_topic",
+        "info_id": "20261109-TRND-irisohy1"
+      }
+    ]
+  },
+  "apt_main": [],
+  "apt_notable": [],
+  "forecasts": [],
+  "ai_attacks_main": [],
+  "ai_attacks_reference_b": [],
+  "ai_attacks_reference_a": [],
+  "soc_recommendations": [
+    {
+      "rec_id": "SOC-2026-11-09-001",
+      "title": "OpenSSH 'SSHole'（CVE-2026-123158）：悪用試行が増加、修正版へ更新し長いパスワードの認証成功と /tmp へのドロッパー取得を確認する",
+      "perspective": "zeroday",
+      "adoption_triggers": [
+        "δ"
+      ],
+      "priority": "high",
+      "product_or_service": "OpenSSH（musl libc／PAM 無効の Linux）",
+      "targets": {
+        "sectors": [
+          "it"
+        ],
+        "regions": [
+          "global"
+        ]
+      },
+      "changes_24h": [
+        {
+          "source": "SANS Internet Storm Center",
+          "date": "2026-11-08",
+          "description": "sshole の悪用試行が増加（11-06 に 713 件のピーク）、ドロッパー取得コマンドも観測[更新]"
+        }
+      ],
+      "overview": "SANS ISC のハニーポットで、公開後に長いパスワード試行が増加した。最初の悪用試行は 11-05。IOC は 156.238.252.37（ポート 8000）と bot.x86_64。CISA KEV には未収載。",
+      "recommended_actions": "1) OpenSSH 修正版へ更新。2) musl かつ PAM なしの環境を洗い出し、パスワード未設定アカウントを無効化しパスワード認証を停止。3) 156.238.252.37 との通信と /tmp/b・bot.x86_64 の有無を確認。",
+      "monitoring": {
+        "description": "257 文字以上のパスワードでの認証成功、/tmp への bot.x86_64 取得を確認。",
+        "splunk_spl": [],
+        "detection_notes": null
+      },
+      "references": [
+        {
+          "url": "https://isc.sans.edu/diary/rss/33498",
+          "title": "Scans for Sshole Vulnerability (CVE-2026-123158)",
+          "language": "en",
+          "source": "SANS Internet Storm Center"
+        }
+      ],
+      "info_id": "20261109-SOCR-sshole01"
+    }
+  ],
+  "exclusions": {
+    "cve": [
+      {
+        "cve_id": "CVE-2026-123551",
+        "product": "OpenAM from 14.0.0 before 16.1.4 contains an information disclosure vu",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: OpenAM from 14.0.0 before 16.1.4 contains an information disclosure vulnerability that allows unauthenticated attackers ",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-107331",
+        "product": "IBM DataStage on Cloud Pak for Data 5.4.0.0 could allow a remote authe",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: IBM DataStage on Cloud Pak for Data 5.4.0.0 could allow a remote authenticated attacker to obtain sensitive information ",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-124440",
+        "product": "Kyverno from 1.19.1 before 1.19.2 contains an authorization bypass vul",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: Kyverno from 1.19.1 before 1.19.2 contains an authorization bypass vulnerability in the apiCall namespace clamp that all",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-124450",
+        "product": "OpenEMR before 8.3.0 contains a broken access control and path travers",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: OpenEMR before 8.3.0 contains a broken access control and path traversal vulnerability in the fax/sms module disposeDocu",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-124469",
+        "product": "OpenEMR before 8.3.0 contains an SQL injection vulnerability in the Fe",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: OpenEMR before 8.3.0 contains an SQL injection vulnerability in the Fee Sheet drug-inventory lookup (DrugSalesService::s",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-110963",
+        "product": "The Userplace WordPress plugin through 1.2.0 does not perform authoriz",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: The Userplace WordPress plugin through 1.2.0 does not perform authorization checks on an AJAX action available to unauth",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-114432",
+        "product": "The Contact Form 7 WordPress plugin before 6.2.4 does not validate the",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: The Contact Form 7 WordPress plugin before 6.2.4 does not validate the type or extension of files uploaded through a for",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-123549",
+        "product": "OpenAM before 16.1.4 fails to enforce the Valid Creation Attributes li",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: OpenAM before 16.1.4 fails to enforce the Valid Creation Attributes list during self-registration, allowing anonymous at",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-123550",
+        "product": "OpenAM before 16.1.4 contains an authentication bypass vulnerability i",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: OpenAM before 16.1.4 contains an authentication bypass vulnerability in its SAML v2.0 service provider that accepts unsi",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-123614",
+        "product": "imgproxy from 4.0.0 before 4.0.16 contains an integer overflow in the ",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: imgproxy from 4.0.0 before 4.0.16 contains an integer overflow in the ICO loader that allows remote attackers to trigger",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-124427",
+        "product": "Craft CMS from 5.0.0 before 5.11.2 contains an authorization bypass vu",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: Craft CMS from 5.0.0 before 5.11.2 contains an authorization bypass vulnerability that allows anonymous GraphQL clients ",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-124445",
+        "product": "OpenEMR from 7.0.1 before 8.4.0 contains a flaw in src/Common/Auth/One",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: OpenEMR from 7.0.1 before 8.4.0 contains a flaw in src/Common/Auth/OneTimeAuth.php that ignores the enforce_onetime_use ",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-15266",
+        "product": "IBM Concert 1.0 through 3.0.1.1 contains components that allow potenti",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: IBM Concert 1.0 through 3.0.1.1 contains components that allow potentially unsafe command execution, which could be expl",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-6715",
+        "product": "IBM Concert 1.0 through 3.0.1.1 allows an attacker can supply crafted ",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: IBM Concert 1.0 through 3.0.1.1 allows an attacker can supply crafted input that is incorporated into an operating syste",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-109900",
+        "product": "Incorrect Privilege Assignment vulnerability in Melapress Melapress Ro",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: Incorrect Privilege Assignment vulnerability in Melapress Melapress Role Editor melapress-role-editor allows Privilege E",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-124490",
+        "product": "OpenEMR before 8.3.0 contains a path traversal vulnerability in the Ri",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: OpenEMR before 8.3.0 contains a path traversal vulnerability in the RingCentral RCFaxClient disposeDocument() method of ",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-114464",
+        "product": "IBM Process Mining 2.0.0 through 2.2.1 could allow a remote attacker t",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: IBM Process Mining 2.0.0 through 2.2.1 could allow a remote attacker to obtain sensitive information due to improper acc",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-124463",
+        "product": "OpenEMR before 8.3.0 contains a stored cross-site scripting vulnerabil",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: OpenEMR before 8.3.0 contains a stored cross-site scripting vulnerability that allows authenticated users with CAMOS acc",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-124493",
+        "product": "SunEditor before 3.4.0 contains a stored cross-site scripting vulnerab",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: SunEditor before 3.4.0 contains a stored cross-site scripting vulnerability in the DocumentType constructor that injects",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-124494",
+        "product": "SunEditor before 3.4.0 contains a stored cross-site scripting vulnerab",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: SunEditor before 3.4.0 contains a stored cross-site scripting vulnerability because the html.clean() sanitizer's _normal",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-101117",
+        "product": "IBM WebSphere Extreme Scale 8.6.1.0 through 8.6.2.2 could allow a remo",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: IBM WebSphere Extreme Scale 8.6.1.0 through 8.6.2.2 could allow a remote attacker to bypass security restrictions due to",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-124438",
+        "product": "Scriban before 7.5.2 contains an information disclosure and object man",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: Scriban before 7.5.2 contains an information disclosure and object manipulation vulnerability that allows template autho",
+        "reported_date": null
+      },
+      {
+        "cve_id": "CVE-2026-17466",
+        "product": "IBM Optim 1.0.0, 1.1.0, and 1.2.0 could allow a remote authenticated a",
+        "reason": "low_score",
+        "reason_detail": "窓内（11-08 07:00〜11-09 07:00 JST）に悪用・KEV 収載・公開PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS None）。概要: IBM Optim 1.0.0, 1.1.0, and 1.2.0 could allow a remote authenticated attacker to obtain sensitive information due to pat",
+        "reported_date": null
+      }
+    ],
+    "apt": [],
+    "ai_attacks": [],
+    "soc_recommendations": [
+      {
+        "title": "Brava Security：マルチエージェント AI 防御プラットフォームが 1,500 万ドルの資金調達（ステルス解除）",
+        "reason": "low_score",
+        "reported_date": null
+      }
+    ]
+  },
+  "statistics": {
+    "cve": {
+      "zero_day": 0,
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 23,
+      "total_processed": 23
+    },
+    "apt": {
+      "main": 0,
+      "notable": 0,
+      "excluded": 0,
+      "total_processed": 0
+    },
+    "ai_attacks": {
+      "main": 0,
+      "reference_a": 0,
+      "reference_b": 0,
+      "excluded": 0,
+      "total_processed": 0,
+      "category_breakdown": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      }
+    },
+    "soc_recommendations": {
+      "high": 1,
+      "medium": 0,
+      "low": 0,
+      "excluded": 1,
+      "total_processed": 2,
+      "perspective_breakdown": {
+        "zeroday": 1,
+        "cve": 0,
+        "ai_attack": 0
+      }
+    },
+    "infrastructure_context": {
+      "profiles": 1,
+      "enriched": 1,
+      "skipped": 0,
+      "unparsed": 0
+    }
+  },
+  "neighbor_context": {
+    "schema_version": "1.0",
+    "scan": {
+      "status": "ok",
+      "countries": [
+        "CN",
+        "RU",
+        "KP",
+        "KR",
+        "TW"
+      ],
+      "scanned_items": 977,
+      "candidates": 89,
+      "gated": 0,
+      "handled": 0,
+      "unhandled": 0
+    },
+    "entries": [],
+    "dispositions": []
+  },
+  "infrastructure_context": {
+    "schema_version": "1.0",
+    "forecast_input": false,
+    "run": {
+      "status": "ok",
+      "started_at_utc": "2026-11-08T22:29:52Z",
+      "finished_at_utc": "2026-11-08T22:29:54Z",
+      "sources_enabled": [
+        "ripestat",
+        "internetdb",
+        "rdap",
+        "urlscan",
+        "mnemonic"
+      ],
+      "indicators": {
+        "extracted": 1,
+        "enriched": 1,
+        "skipped": 0,
+        "unparsed": 0
+      },
+      "lookups": {
+        "total": 3,
+        "ok": 3,
+        "no_data": 0,
+        "failed": 0
+      },
+      "by_source": {
+        "internetdb": {
+          "ok": 1,
+          "no_data": 0,
+          "failed": 0,
+          "last_error": null
+        },
+        "ripestat.geolocation": {
+          "ok": 1,
+          "no_data": 0,
+          "failed": 0,
+          "last_error": null
+        },
+        "ripestat.prefix": {
+          "ok": 1,
+          "no_data": 0,
+          "failed": 0,
+          "last_error": null
+        }
+      }
+    },
+    "profiles": [
+      {
+        "profile_id": "inf-2026-11-09-001",
+        "indicator": "156.238.252.37",
+        "type": "ip",
+        "defanged": "156[.]238[.]252[.]37",
+        "as_reported": [
+          "156.238.252.37"
+        ],
+        "annotations": [],
+        "reported_in": [
+          {
+            "path": ".trends.trends_cve[0]",
+            "ref": "CVE-2026-123158",
+            "info_id": "20261109-CVET-sshole01"
+          }
+        ],
+        "skip_reason": null,
+        "lookups": [
+          {
+            "source": "ripestat.prefix",
+            "kind": "passive_database",
+            "host": "stat.ripe.net",
+            "queried_at_utc": "2026-11-08T22:29:52Z",
+            "http_status": 200,
+            "response_sha256": "47c10b16c29cb86ec5250818335c0d43df44688f35e6d2d6538be651dff2e11c",
+            "status": "ok",
+            "extract": {
+              "prefix": "156.238.252.0/24",
+              "announced": true,
+              "asns": [
+                {
+                  "asn": 402506,
+                  "holder": "ZENIX - Zenixcloud"
+                }
+              ],
+              "rir_block": "Administered by ARIN"
+            },
+            "error": null
+          },
+          {
+            "source": "ripestat.geolocation",
+            "kind": "passive_database",
+            "host": "stat.ripe.net",
+            "queried_at_utc": "2026-11-08T22:29:53Z",
+            "http_status": 200,
+            "response_sha256": "815d1eea7ba4c57ecdf076557a6296dcb72209efaba362ddff8a54d85023a151",
+            "status": "ok",
+            "extract": {
+              "countries": [
+                "SC"
+              ],
+              "approximate": true
+            },
+            "error": null
+          },
+          {
+            "source": "internetdb",
+            "kind": "passive_database",
+            "host": "internetdb.shodan.io",
+            "queried_at_utc": "2026-11-08T22:29:53Z",
+            "http_status": 200,
+            "response_sha256": "e96e9dd50bcfe3230fb22f74a9e2d161db742e5e6ece332e96791dfa891446b6",
+            "status": "ok",
+            "extract": {
+              "ports": [
+                22,
+                80,
+                443,
+                8317
+              ],
+              "cpes": [
+                "cpe:/a:caddyserver:caddy",
+                "cpe:/a:golang:go",
+                "cpe:/a:openbsd:openssh:8.9p1",
+                "cpe:/o:canonical:ubuntu_linux"
+              ],
+              "hostnames": [],
+              "tags": [],
+              "vulns": []
+            },
+            "error": null
+          }
+        ],
+        "summary": {
+          "prefix": "156.238.252.0/24",
+          "announced": true,
+          "asns": [
+            {
+              "asn": 402506,
+              "holder": "ZENIX - Zenixcloud"
+            }
+          ],
+          "rir_block": "Administered by ARIN",
+          "countries": [
+            "SC"
+          ],
+          "ports": [
+            22,
+            80,
+            443,
+            8317
+          ],
+          "cpes": [
+            "cpe:/a:caddyserver:caddy",
+            "cpe:/a:golang:go",
+            "cpe:/a:openbsd:openssh:8.9p1",
+            "cpe:/o:canonical:ubuntu_linux"
+          ],
+          "hostnames": [],
+          "tags": [],
+          "vulns": []
+        },
+        "flags": {
+          "shared_infrastructure": false,
+          "shared_infrastructure_providers": [],
+          "newly_registered": false,
+          "has_source_vulns": false,
+          "legitimate_or_shared_platform": false
+        },
+        "caveats": [
+          "geolocation_approximate"
+        ],
+        "forecast_input": false
+      }
+    ],
+    "unparsed": []
+  },
+  "tactical_forecast": {
+    "section_type": "tactical_forecast_v2",
+    "mode": "shadow",
+    "cutoff_at_utc": "2026-11-08T22:30:44Z",
+    "operational_picture": {
+      "subjects_tracked": 96,
+      "state_counts": {
+        "ACTIVE_EXPLOITATION": 66,
+        "DISCLOSED": 20,
+        "LIMITED_EXPLOITATION": 3,
+        "POC_PUBLIC": 7
+      }
+    },
+    "published_forecasts": [],
+    "shadow_evaluation": {
+      "candidate_status_counts": {
+        "abstained": 132,
+        "shadow": 30
+      },
+      "event_type_counts": {
+        "TF1_BROADER_EXPLOITATION_CONFIRMATION": 3,
+        "TF1_INDEPENDENT_EXPLOITATION_CONFIRMATION": 7,
+        "TF1_POC_PUBLICATION": 20
+      },
+      "individual_predictions_exposed": false
+    },
+    "caveat": "shadow中。以下は予測ロジックの前向き検証用で、公開予報ではない。"
+  }
+}
