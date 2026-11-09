@@ -709,6 +709,9 @@
 | CVE-2026-107441 | Zyxel GS1900 シリーズ（Web管理画面・範囲外書き込み・ゼロデイ） | 2026-11-06 | active_exploitation | 2026-11-06 | YES | SecurityWeek/THN 2026-11-05・修正前ゼロデイ悪用・先行パッチでも防げずBinarlyが確認・10機種向け新ファーム・CVSS未確認・KEV未収載（固定証跡）・前日報告の約1,000台侵害との同一性は未確認 |
 | CVE-2026-82907 | Apache OFBiz 24.09.08未満（認証バイパス・キャプチャ再生・CVSS9.8） | 2026-11-06 | none | 2026-11-06 | YES | CVE-2026-83542(コード注入 9.8)と同時公開・24.09.08で修正・悪用報告なし |
 | CVE-2026-19868 | SonicWall SonicOS SSLVPN（SAML認証回避・MFA回避） | 2026-11-07 | kev_listed | 2026-11-08 | YES | ★KEV追加2026-11-06（期限11-20）・SonicWallが7件の脆弱性を修正（BleepingComputer/SecurityWeek 2026-11-07）・影響版/修正版番号・悪用の主体/規模は未確認・Section 4 SOC高 |
-| CVE-2026-123158 | OpenSSH 'SSHole'（musl libc・PAM無効環境の認証回避・CVSS 8.1） | 2026-11-07 | active_exploitation | 2026-11-09 | YES | THN(Previdian) 2026-11-06・公開数時間以内の悪用試行とハニーポットでroot取得（観測では limited_exploitation）・KEV未収載・緊急パッチ公開／SANS ISC 2026-11-08・ハニーポットで長いパスワード試行増加（11-06 に713件）・ドロッパーIP 156.238.252.37・KEV未収載 |
+| CVE-2026-123158 | OpenSSH 'SSHole'（musl libc・PAM無効環境の認証回避・CVSS 8.1） | 2026-11-07 | kev_listed | 2026-11-10 | YES | THN(Previdian) 2026-11-06・公開数時間以内の悪用試行とハニーポットでroot取得（観測では limited_exploitation）・KEV未収載・緊急パッチ公開／SANS ISC 2026-11-08・ハニーポットで長いパスワード試行増加（11-06 に713件）・ドロッパーIP 156.238.252.37・KEV未収載 / ★KEV追加2026-11-09（期限11-12）・BleepingComputer/SecurityWeek 2026-11-09・初期悪用はボットネット/マイナー（SecurityWeek） |
 | CVE-2026-123488 | Craft CMS 4.18.9未満/5.11.2未満（要素検索の未認証SQLi・CVSS 9.8） | 2026-11-07 | none | 2026-11-07 | YES | NVD/EUVD(VulnCheck) 2026-11-06・悪用報告なし |
 | CVE-2026-83844 | Windows Paint（範囲外読み取りRCE・Store更新のみで修正） | 2026-11-07 | none | 2026-11-07 | NO | THN 2026-11-06・修正ビルド11.2609.401.0・悪用報告なし |
+| CVE-2026-102895 | GPUStack（ループバック送信元を管理者扱いする認証不備・CVSS 9.8） | 2026-11-10 | kev_listed | 2026-11-10 | YES | ★KEV追加2026-11-09（期限11-12）・2.2.0で修正・悪用の主体/規模は未確認 |
+| CVE-2026-116779 | FreeSWITCH（SIP MESSAGE経由のコード注入・CVSS 9.8） | 2026-11-10 | kev_listed | 2026-11-10 | YES | ★KEV追加2026-11-09（期限11-12）・1.11.3で修正・悪用の主体/規模は未確認 |
+| CVE-2026-123218 | IBM Aspera Faspex 5.0.0〜5.0.19（認可回避による管理者権限取得・CVSS 9.8） | 2026-11-10 | kev_listed | 2026-11-10 | YES | ★KEV追加2026-11-09（期限11-12）・修正版番号/悪用の主体は未確認 |
