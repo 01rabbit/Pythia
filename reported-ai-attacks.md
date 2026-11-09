@@ -227,3 +227,5 @@
 | 悪意あるブラウザー拡張がClaude Dispatch経由でClaude Desktopにコード実行させ得る（Forever Security実証） | C3 | 2026-11-07 | 本編（X=5 Y=4・B-X・burst1） | 2026-11-07 | NO | THN 2026-11-06・テストのみ・実攻撃報告なし |
 | Microsoft: 金銭目的のStorm-3358がARTEXで金融セクターを標的化（2026年10月〜） | A4 | 2026-11-08 | 本編（X=6 Y=6・A-T・burst1） | 2026-11-08 | YES | Microsoft Security Blog 2026-11-06・RSS要約のみ・手口/IOC/被害未確認・帰属なし |
 | Claude Code承認ファイル(.claude/settings.local.json)の平文秘密情報が公開GitHubの1,122件に露出（Apiiro） | B2 | 2026-11-08 | 本編（X=4 Y=5・B-X・burst1） | 2026-11-08 | NO | THN 2026-11-07・有効性未検証・悪用報告なし |
+| Acronis: 台湾拠点の単独攻撃者がAIエージェントBOSSAIで台北市の緊急通報記録を窃取 | A4 | 2026-11-10 | 本編（X=6 Y=5・A-T・burst1） | 2026-11-10 | YES | THN 2026-11-09・RSS要約のみ・手口/IOC未確認 |
+| Mittwald: AIアシスタント接続用ツール経由の独ホスティング事業者侵害（AI支援の疑い・同社開示） | C1 | 2026-11-10 | 参考B（X=4 Y=4・C-T・burst1） | 2026-11-10 | YES | The Record 2026-11-09・alleged・本文未取得 |

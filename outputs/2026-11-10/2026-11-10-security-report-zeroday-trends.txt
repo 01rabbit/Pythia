@@ -1,0 +1,103 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-10 07:50 JST
+調査期間: 2026-11-09 07:00 〜 2026-11-10 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】 なし
+
+【APT活動-本編】
+------------------------------------------------------------
+Shahid Kaveh / Shahid Shoostari（IRGC 系・フランス C4 による帰属） / ShahidKaveh-2026-FranceRefrigerationAttacks （P=7 Q=7・帰属確度: high）
+------------------------------------------------------------
+CERT-FR（ANSSI）は 2026-11-09、サイバー危機調整センター（C4）のメンバーが、フランスの利益に対する複数の不安定化目的の攻撃を、IRGC に属するサイバー攻撃部隊 Shahid Shoostari と Shahid Kaveh に帰属できるとした。BleepingComputer・The Record によれば、10 月に 700 店超のスーパー等で冷凍設備が妨害され、食品の損失と少なくとも 15 件の火災が起きた。The Record は Shahid Kaveh が米国の水道事業者の産業用制御機器への攻撃に関連づけられていたと記す。米機関は、攻撃者が未パッチまたはインターネット公開の制御機器の設定を遠隔で変え、冷凍機を連続加熱に追い込む恐れを警告した（THN）。帰属は政府（C4）が明示したもので、本リポジトリが TTP の類似から行ったものではない。使用された脆弱性・マルウェア・IOC は窓内の収集記事に無く未確認。
+  推奨: 冷凍・コールドチェーンの制御機器をインターネットから切り離し、管理画面の公開有無・既定資格情報・設定変更ログを確認する。
+  参照: https://www.cert.cyber.gouv.fr/cti/CERTFR-2026-CTI-009 (CERT-FR (ANSSI))
+  参照: https://www.bleepingcomputer.com/news/security/france-blames-iranian-hackers-for-supermarket-attacks-that-sparked-fires (BleepingComputer)
+  参照: https://therecord.media/france-blames-iran-for-fridge-cyberattacks (The Record (Recorded Future))
+  参照: https://thehackernews.com/2026/11/us-agencies-warn-refrigeration.html (The Hacker News)
+
+【APT活動-注目動向】
+------------------------------------------------------------
+Bitter（South Asian・Fortinet 追跡） / Bitter-2026-PapRAT-SouthAsia （P=4 Q=3・帰属確度: medium）
+------------------------------------------------------------
+The Hacker News によれば、Fortinet FortiGuard Labs は、Bitter（別名 APT-C-08・APT-Q-37・Hazy Tiger・Orange Yali・T-APT-17・TA397）が、未報告のリモートアクセス型トロイの木馬 PapRAT を使って南アジアの組織を標的にしていると報告した。PapRAT には C++ 版と Rust 版があり、コマンド実行やファイル操作などの機能を持つ。既報（11-03 Dark Reading の要約）からの変化は Fortinet の原典報告に基づく詳細化。IOC・感染経路は RSS 要約の範囲では未確認。
+  推奨: Fortinet の原典の IOC を確認し、EDR で C++/Rust 製の未知の RAT による不審なプロセス・コマンド実行を点検する。
+  参照: https://thehackernews.com/2026/11/bitter-hackers-deploy-new-paprat.html (The Hacker News)
+
+【注目CVE（リスト外）】
+------------------------------------------------------------
+CVE-2026-123158 [high] OpenSSH 'SSHole'（musl libc かつ PAM 無効の Linux・認証回避）
+------------------------------------------------------------
+OpenSSH の SSHole（CVE-2026-123158）は、musl libc を使い PAM が無効な Linux 上の sshd で、256〜1024 文字の任意のパスワードが一部の構成のアカウントで通ってしまう認証回避である（NVD/EUVD 記述）。2026-11-09 に CISA が KEV へ追加した。BleepingComputer は攻撃者が認証回避後にコマンド実行・認証情報窃取・永続化を行っていると報じ、SecurityWeek は初期の悪用はボットネットと暗号資産マイナーに帰属すると報じた。既報（11-07〜11-08）からの変化は KEV 収載（期限 11-12）と悪用報道の拡大。EPSS は EUVD 値 1.01 を記載のとおり転記（尺度は未確認）。
+  影響版: OpenSSH 10.6p2 より前（musl libc かつ PAM 無し・例: Alpine Linux）。KEV 追加 2026-11-09（期限 2026-11-12）。
+  緩和策: OpenSSH 10.6p2 以降へ更新する / musl libc かつ PAM 無効の SSH サーバーを洗い出し、パスワード未設定アカウントを無効化する / 公開 SSH はパスワード認証を無効にし公開鍵認証に限定する
+  参照: https://www.bleepingcomputer.com/news/security/hackers-exploit-sshole-openssh-flaw-to-breach-linux-systems (BleepingComputer)
+  参照: https://www.securityweek.com/hackers-exploiting-sshole-authentication-bypass-in-openssh (SecurityWeek)
+  参照: https://www.security-next.com/ (Security NEXT)
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA KEV)
+
+------------------------------------------------------------
+CVE-2026-102895 [high] GPUStack（ループバック送信元を管理者として扱う認証不備）
+------------------------------------------------------------
+GPUStack は AI モデル提供向けの GPU クラスタ管理基盤。2.2.0 より前の get_current_user（gpustack/api/auth.py）は、force_auth_localhost が false（既定）のとき、ループバック送信元のリクエストを組み込み管理者として扱った。同一ホストのリバースプロキシ経由で遠隔リクエストが 127.0.0.1 発に見え、認証なしでユーザー・モデルの変更や永続化が可能になる（EUVD・KEV 記述）。2026-11-09 に KEV へ追加。悪用の主体・規模は未確認（窓内に追加報道は収集できなかった）。EUVD の EPSS は 0.33 と記載。
+  影響版: GPUStack 2.2.0 より前。KEV 追加 2026-11-09（期限 2026-11-12）。
+  緩和策: GPUStack 2.2.0 以降へ更新する / force_auth_localhost を有効にし、リバースプロキシ経由の送信元 IP の扱いを見直す / 管理画面を公開しない
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA KEV)
+  参照: https://euvd.enisa.europa.eu/enisa/vulnerability/EUVD-2026-117124 (EUVD)
+
+------------------------------------------------------------
+CVE-2026-116779 [high] FreeSWITCH（SIP MESSAGE 経由のコード注入）
+------------------------------------------------------------
+FreeSWITCH 1.11.3 より前の sofia_presence_handle_sip_i_message() は、受信 SIP MESSAGE の To ユーザーを '+' で分割し、左側をチャットプロトコルの選択子として扱う。api を選ぶと switch_api 実行に到達し、認証なしで設定・資格情報の開示、通話制御、コマンド実行に至る（EUVD・KEV 記述）。2026-11-09 に KEV へ追加。悪用の主体・規模は未確認。EUVD の EPSS は 1.3 と記載（尺度は未確認）。
+  影響版: FreeSWITCH 1.11.3 より前。KEV 追加 2026-11-09（期限 2026-11-12）。
+  緩和策: FreeSWITCH 1.11.3 以降へ更新する / SIP（5060/5061）の公開範囲を信頼できる送信元に限定する
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA KEV)
+  参照: https://euvd.enisa.europa.eu/enisa/vulnerability/EUVD-2026-117752 (EUVD)
+
+------------------------------------------------------------
+CVE-2026-123218 [high] IBM Aspera Faspex（認可回避による管理者権限取得）
+------------------------------------------------------------
+IBM Aspera Faspex 5.0.0〜5.0.19 で、認可された利用者が細工したメッセージによりユーザー認可を回避し、完全な管理者権限を得られる（IBM／EUVD 記述）。2026-11-09 に KEV へ追加。Aspera Faspex は過去にも KEV 収載があるが、今回の悪用の主体・手口・規模は窓内の収集記事に無く未確認。EUVD の EPSS は 0.4 と記載。
+  影響版: IBM Aspera Faspex 5.0.0〜5.0.19。KEV 追加 2026-11-09（期限 2026-11-12）。
+  緩和策: IBM の案内に従い修正版へ更新する（修正版番号は本文未取得で未確認） / 管理者権限の付与・変更ログを確認する
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA KEV)
+  参照: https://euvd.enisa.europa.eu/enisa/vulnerability/EUVD-2026-118902 (EUVD)
+
+【トレンド】
+------------------------------------------------------------
+TREND-2026-11-10-001 フランス当局：10月のスーパー冷凍設備への攻撃をイラン IRGC 系部隊に帰属、700 店超で障害・少なくとも 15 件の火災
+------------------------------------------------------------
+BleepingComputer・The Record によれば、フランスは 10 月に 700 店超の冷凍設備を止めた攻撃を、イランの国家支援ハッカー（IRGC の Shahid Kaveh）によるものと帰属し、食品の損失と少なくとも 15 件の火災が起きたとした。CERT-FR（C4）の CTI 文書 CERTFR-2026-CTI-009 は Shahid Shoostari と Shahid Kaveh を挙げる。米機関は冷凍・コールドチェーンの制御機器が世界で狙われているとして注意喚起（THN）。技術詳細・侵入手口は RSS 要約の範囲では未確認。
+  参照: https://www.bleepingcomputer.com/news/security/france-blames-iranian-hackers-for-supermarket-attacks-that-sparked-fires (BleepingComputer)
+  参照: https://therecord.media/france-blames-iran-for-fridge-cyberattacks (The Record (Recorded Future))
+  参照: https://www.cert.cyber.gouv.fr/cti/CERTFR-2026-CTI-009 (CERT-FR (ANSSI))
+  参照: https://thehackernews.com/2026/11/us-agencies-warn-refrigeration.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-10-002 Plex2Shell：QNAP NAS 上の Plex Media Server を 4 件の脆弱性チェーンで悪用する攻撃を確認
+------------------------------------------------------------
+SecurityWeek によれば、攻撃者が 4 件の脆弱性のチェーンで QNAP NAS 上の Plex Media Server を乗っ取っている。CVE 番号・修正版・規模は RSS 要約の範囲では未確認。
+  参照: https://www.securityweek.com/plex2shell-exploited-against-qnap-nas-users (SecurityWeek)
+
+------------------------------------------------------------
+TREND-2026-11-10-003 Airbyte の脆弱性で悪用を確認（Security NEXT）
+------------------------------------------------------------
+Security NEXT は、データ連携基盤 Airbyte の脆弱性について、すでに悪用が確認されていると報じた。CVE 番号・影響版は RSS 要約の範囲では未確認。
+  参照: https://www.security-next.com/192518 (Security NEXT)
+
+------------------------------------------------------------
+TREND-2026-11-10-004 Qubole 経由で複数の顧客 AWS アカウントが侵害（Wiz）：10/14〜10/26 に秘密情報とデータを窃取
+------------------------------------------------------------
+The Hacker News によれば、Wiz は、攻撃者が Qubole のプラットフォームが顧客アカウントへ到達するために使う AWS アカウントの資格情報を用い、10/14〜10/26 に複数の顧客の AWS アカウントへ侵入して保存された秘密情報とデータを盗んだと公表した。資格情報の入手経路は非公開。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-quboles-trusted-aws.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-10-005 Ethersphere の bee-js 13.3.0・Swarm Desktop 0.56.2 の悪性版を公式リリース自動化経由で公開、ウォレット鍵を窃取
+------------------------------------------------------------
+The Hacker News によれば、攻撃者は Ethersphere プロジェクト自身のリリース自動化を使い、bee-js 13.3.0 と Swarm Desktop 0.56.2 の悪性版を公開した。いずれもノードのウォレット鍵と保存パスワードを盗み、バックドアを導入するコードをダウンロード・実行する。
+  参照: https://thehackernews.com/2026/11/hackers-compromise-etherspheres-bee-js.html (The Hacker News)
+
+【攻撃予報】 本日の新規予報なし（forecaster/forecasts/daily/2026-11-10.md 参照）

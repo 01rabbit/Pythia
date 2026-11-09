@@ -277,9 +277,10 @@
 | 不明（帰属未確定・Kaspersky命名NetamLoader） | RIS-2026-NetamLoader-AsiaGovWin10 | 2026-11-02 | 注目動向（P=5 Q=3） | 2026-11-02 | YES | Kaspersky(THN経由 2026-10-30週)・アジアの政府機関専用Windows 10を狙う.NETローダー・AppDomainManager悪用/AMSI回避・被害者1件・C2 openaigpt4v[.]com・サプライチェーン疑いは未確認・SecureList原典で要確認 |
 | CL-UNK-1211（Unit 42 未帰属クラスター） | CL-UNK-1211-2026-GovLinuxSysGoRAT | 2026-11-03 | 本編（P=6 Q=5） | 2026-11-03 | YES | Unit 42(THN経由 2026-11-02)・2025-10〜2026-04・政府関連 Linux 基盤・SysGoRAT/PHP ウェブシェル・AI 生成疑いのスクリプト・C2 104.194.158[.]65:443・帰属なし・初期侵入経路不明 |
 | DarkBlinders（イラン国家連携とされる・Dream Research Labs 命名） | DarkBlinders-2026-IsraelKurdistan | 2026-11-03 | 注目動向（P=5 Q=3） | 2026-11-03 | YES | Dream Research Labs(THN経由 2026-11-02)・2026-08〜10・イスラエル要人とクルド地域政府クラウド・概要のみ取得・手法/IOC 未記録 |
-| Bitter（インド関連・Dark Reading 記述） | Bitter-2026-PapRAT-SouthAsia | 2026-11-03 | 注目動向（P=4 Q=3） | 2026-11-03 | YES | Dark Reading 2026-11-02（要約のみ・本文未取得）・PapRAT・正規 Windows 機能を悪用する 3 チェーン |
+| Bitter（インド関連・Dark Reading 記述） | Bitter-2026-PapRAT-SouthAsia | 2026-11-03 | 注目動向（P=4 Q=3） | 2026-11-10 | YES | Dark Reading 2026-11-02（要約のみ・本文未取得）・PapRAT・正規 Windows 機能を悪用する 3 チェーン / THN(Fortinet FortiGuard) 2026-11-09・C++版/Rust版・コマンド実行/ファイル操作 |
 | Gorbag（ロシア寄り・ESET 命名・UAC-0226 と重複） | Gorbag-2025-UkraineBeautyStealer | 2026-11-04 | 本編（P=6 Q=4） | 2026-11-04 | YES | ESET(THN 2026-11-03)・ウクライナのみ標的・BeautyStealer/GIFTEDCROOK・WinRAR CVE-2025-8088・IOC記事に無し |
 | 不明（帰属なし・OPSSHIELD 公表） | cPGuard-2026-UpdateChannelHijack | 2026-11-04 | 注目（トレンド記載） | 2026-11-04 | YES | THN 2026-11-03・5.88.12〜5.88.19・修正 5.88.25・資格情報の入手経路は調査中 |
 | APT29（Sekoia 関連づけ・帰属確度 低） | APT29-2026-PlerdyWateringHole | 2026-11-05 | 本編（P=6 Q=6） | 2026-11-05 | YES | Sekoia(THN 2026-11-04)・Plerdy サプライチェーン侵害08-27〜09-03・iOS/Android n-day・AndroSnitch・DeadTag は別活動 |
 | SlippyNunchucks（China-aligned） | SlippyNunchucks-2026-SogouDNSHijack | 2026-11-05 | 本編（P=5 Q=4） | 2026-11-05 | YES | THN 2026-11-04・Sogou HTTP通信のDNSハイジャックでDarkVigil配布・2026-07-01以降 |
 | TraderTraitor（FBI帰属・北朝鮮は否定） | TraderTraitor-2026-BinanceHeist | 2026-11-05 | 本編（P=7 Q=8） | 2026-11-05 | YES | SecurityWeek 2026-11-04・Lazarusとの関係は情報源に明示なし・偽採用面接/改ざんHomebrew/AIツール悪用 |
+| Shahid Kaveh / Shahid Shoostari（IRGC系・フランスC4/CERT-FRが帰属） | ShahidKaveh-2026-FranceRefrigerationAttacks | 2026-11-10 | 本編（P=7 Q=7） | 2026-11-10 | YES | CERT-FR CERTFR-2026-CTI-009 2026-11-09・10月に700店超の冷凍設備妨害/火災15件以上・手口/IOC未確認 |
