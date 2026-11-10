@@ -284,3 +284,6 @@
 | SlippyNunchucks（China-aligned） | SlippyNunchucks-2026-SogouDNSHijack | 2026-11-05 | 本編（P=5 Q=4） | 2026-11-05 | YES | THN 2026-11-04・Sogou HTTP通信のDNSハイジャックでDarkVigil配布・2026-07-01以降 |
 | TraderTraitor（FBI帰属・北朝鮮は否定） | TraderTraitor-2026-BinanceHeist | 2026-11-05 | 本編（P=7 Q=8） | 2026-11-05 | YES | SecurityWeek 2026-11-04・Lazarusとの関係は情報源に明示なし・偽採用面接/改ざんHomebrew/AIツール悪用 |
 | Shahid Kaveh / Shahid Shoostari（IRGC系・フランスC4/CERT-FRが帰属） | ShahidKaveh-2026-FranceRefrigerationAttacks | 2026-11-10 | 本編（P=7 Q=7） | 2026-11-10 | YES | CERT-FR CERTFR-2026-CTI-009 2026-11-09・10月に700店超の冷凍設備妨害/火災15件以上・手口/IOC未確認 |
+| Turla（ESET: Russia-aligned） | Turla-2026-CerealExchange | 2026-11-11 | 本編（P=7 Q=5） | 2026-11-11 | YES | ESET/THN 2026-11-10・Cereal(.NET)でExchangeからメール収集・RO/KZ政府機関各1・初期侵入未確認 |
+| CopperDragon（Check Point: China-nexus向けツール供給者） | CopperDragon-2026-SparrowEcosystem | 2026-11-11 | 本編（P=6 Q=6） | 2026-11-11 | YES | Check Point/THN 2026-11-10・SilentDelivery/OceanGate/DarkWire・IOC/CVEなし |
+| 不明（Huntress観測） | Unknown-2026-AhsayCBS-PythonImplant | 2026-11-11 | 注目動向（P=4 Q=3） | 2026-11-11 | YES | THN 2026-11-10・CVE-2026-105133/105134連鎖・Python製インプラント・攻撃者未特定 |
