@@ -701,7 +701,7 @@
 | CVE-2026-119977 | WordPress Core 4.7〜7.1.3（更新時ステージングパスを突く未認証 RCE・CVSS8.1） | 2026-11-04 | kev_listed | 2026-11-04 | YES | KEV追加 2026-11-03・期限 11-06・修正版 7.1.4（10-28）・悪用の一次報告未取得 |
 | CVE-2026-58115 | Siemens SIMATIC IoT2050 Advanced（Node-RED 認証欠如・CVSS10.0） | 2026-11-04 | active_exploitation | 2026-11-04 | YES | THN/VulnCheck 2026-11-03・10-30 時点で悪用観測・修正 4.3.4.1 以降・KEV未収載 |
 | CVE-2026-81648 | CryptoPayment Gateway WordPress プラグイン 1.2.1〜1.2.2（CVSS10.0） | 2026-11-04 | active_exploitation | 2026-11-04 | YES | THN/Defused Cyber 2026-11-03・悪用試行・修正なし・プラグイン閉鎖済み |
-| CVE-2026-116606 | Barracuda Email Security Gateway（認可バイパス・CVSS9.3・CVE-2026-111560 と連鎖で root） | 2026-11-04 | none | 2026-11-04 | YES | THN 2026-11-03・管理画面アクセスが前提・悪用報告なし |
+| CVE-2026-116606 | Barracuda Email Security Gateway（認可バイパス・CVSS9.3・CVE-2026-111560 と連鎖で root） | 2026-11-04 | active_exploitation | 2026-11-11 | YES | ★KEV追加2026-11-10（期限11-13）・Barracudaが悪用開始を警告（BleepingComputer）・主体/規模は未確認 |
 | CVE-2024-27834 | Apple WebKit（Safari 17.5／iOS 16.7.8 ほか） | 2026-11-05 | kev_listed | 2026-11-05 | YES | KEV追加11-04（期限11-18）・Sekoia が APT29 関連ウォッチホールで iOS 16.7 向けに使用と報告 |
 | CVE-2026-109593 | SonicWall GMS 9.5.2以前（EOL・修正版なし・CVSS9.1 未認証ファイル読み取り） | 2026-11-05 | none | 2026-11-05 | YES | CVE-2026-109594(SQLi 6.8) と同時公表・悪用報告なし・NSM移行を要請 |
 | CVE-2026-122006 | Ruby on Rails Active Storage（ImageMagick処理・8.1.4.1/8.0.5.2未満） | 2026-11-05 | none | 2026-11-05 | YES | CVSS9.8・未認証ファイル書き込み・悪用報告なし |
@@ -715,3 +715,9 @@
 | CVE-2026-102895 | GPUStack（ループバック送信元を管理者扱いする認証不備・CVSS 9.8） | 2026-11-10 | kev_listed | 2026-11-10 | YES | ★KEV追加2026-11-09（期限11-12）・2.2.0で修正・悪用の主体/規模は未確認 |
 | CVE-2026-116779 | FreeSWITCH（SIP MESSAGE経由のコード注入・CVSS 9.8） | 2026-11-10 | kev_listed | 2026-11-10 | YES | ★KEV追加2026-11-09（期限11-12）・1.11.3で修正・悪用の主体/規模は未確認 |
 | CVE-2026-123218 | IBM Aspera Faspex 5.0.0〜5.0.19（認可回避による管理者権限取得・CVSS 9.8） | 2026-11-10 | kev_listed | 2026-11-10 | YES | ★KEV追加2026-11-09（期限11-12）・修正版番号/悪用の主体は未確認 |
+| CVE-2026-124194 | Microsoft Outlook（UI警告不備・Patch Tuesdayの悪用済みゼロデイ・CVSS 6.5 EUVD値） | 2026-11-11 | kev_listed | 2026-11-11 | YES | ★ゼロデイ特報・KEV追加2026-11-10（期限11-24）・手口/主体は未確認 |
+| CVE-2026-125350 | Google Chrome XML use-after-free（悪用済みゼロデイ・今年8件目・CVSS 8.8） | 2026-11-11 | kev_listed | 2026-11-11 | YES | ★ゼロデイ特報・KEV追加2026-11-10（期限11-24）・主体は未確認 |
+| CVE-2026-111560 | Barracuda ESG（タイムゾーン設定欄のOSコマンドインジェクション・CVSS 8.6 EUVD値） | 2026-11-11 | active_exploitation | 2026-11-11 | YES | ★KEV追加2026-11-10（期限11-13）・CVE-2026-116606と連鎖でroot実行 |
+| CVE-2026-20320 | Cisco BroadWorks OCI XMLパーサ（CVSS 7.5 EUVD値） | 2026-11-11 | kev_listed | 2026-11-11 | YES | ★KEV追加2026-11-10（期限11-24）・悪用詳細は未確認 |
+| CVE-2026-111793 | Openwave Webtop Media Transcoder（異なる領域間の不適切なリソース移動） | 2026-11-11 | kev_listed | 2026-11-11 | YES | ★KEV追加2026-11-10（期限11-24）・CVSS/修正有無は未確認 |
+| CVE-2026-111760 | Git 再帰クローン時のコード実行（整数切り捨て） | 2026-11-11 | none | 2026-11-11 | YES | THN 2026-11-10・2.56.1ほかで修正・悪用報告なし（SOC低） |
