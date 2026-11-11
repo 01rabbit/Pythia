@@ -287,3 +287,5 @@
 | Turla（ESET: Russia-aligned） | Turla-2026-CerealExchange | 2026-11-11 | 本編（P=7 Q=5） | 2026-11-11 | YES | ESET/THN 2026-11-10・Cereal(.NET)でExchangeからメール収集・RO/KZ政府機関各1・初期侵入未確認 |
 | CopperDragon（Check Point: China-nexus向けツール供給者） | CopperDragon-2026-SparrowEcosystem | 2026-11-11 | 本編（P=6 Q=6） | 2026-11-11 | YES | Check Point/THN 2026-11-10・SilentDelivery/OceanGate/DarkWire・IOC/CVEなし |
 | 不明（Huntress観測） | Unknown-2026-AhsayCBS-PythonImplant | 2026-11-11 | 注目動向（P=4 Q=3） | 2026-11-11 | YES | THN 2026-11-10・CVE-2026-105133/105134連鎖・Python製インプラント・攻撃者未特定 |
+| 不明（Unit 42 は主体を名指しせず・PeckBirdy 変種と評価） | Unknown-2026-FalconC2-Antino | 2026-11-12 | 本編（P=6 Q=5） | 2026-11-12 | YES | Unit 42 2026-11-11・中東/東南アジア政府系Webmail・CVEなし |
+| Citrus（Securelist 新規文書化・ロシア語話者） | Citrus-2026-Sn00py | 2026-11-12 | 注目動向（P=5 Q=3） | 2026-11-12 | YES | Securelist 2026-11-11・ロシア企業のみ・Toy Ghouls と TTP 重複（同一性は断定されず） |

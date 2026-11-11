@@ -1,0 +1,95 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-12 07:50 JST
+調査期間: 2026-11-11 07:00 〜 2026-11-12 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+------------------------------------------------------------
+CVE-2026-125883 [high] N-able N-central（XXE・XML スキーマ汚染。同時開示の OGNL インジェクション・ファイルアップロード経由 RCE 等を含む一連のゼロデイ）
+------------------------------------------------------------
+ベンダー: N-able / 影響版: N-central 2026.4.0.31（プレリリース版で確認）。早期版にも影響する可能性があるが未検証（研究者の見解）。修正は 2026.4 HF2
+CVSS v3: 9.3 / PoC公開: あり / 実悪用: 未確認 / 修正: N-central 2026.4 HF2
+【概要】
+BleepingComputer によれば、研究者 Sean Bales が 2026-11-08 に N-central の複数の脆弱性（XXE：CVE-2026-125883、OGNL インジェクション：CVE-2026-125878、ファイルリポジトリのアップロード経路トラバーサル経由 RCE：CVE-2026-125882、ほか CVE-2026-125879・125880・125881・91000）を PoC 付きで公開した。N-able は 11-09 にホスト型環境をオフラインにしオンプレ利用者にもサーバー停止を勧め、11-10 に HF2 を公開、11-11 にホスト型の更新完了を発表した。N-able は悪用を確認していないと記載し、Defused が脆弱性の探索・スキャン（匿名エージェントセッション、リモート制御エンドポイントへの未認証アクセス）を報告した。Shadowserver によれば公開 N-central は 1,338 台（11-09）から約 148 台に減少。NVD の CVSS 9.3 は XXE 1 件のもの。悪用の確認が無いため actively_exploited は false とした。
+【暫定対策】
+  - N-central 2026.4 HF2 を適用する（オンプレ）
+  - 適用までサーバーを非公開にする（N-able の勧告）
+【監視】
+  N-central への匿名エージェントセッション、リモート制御エンドポイントへの未認証アクセス、ファイルリポジトリへの不審なアップロードを確認する。
+  参照: https://www.bleepingcomputer.com/news/security/n-able-releases-security-hotfixes-for-zero-day-vulnerabilities (BleepingComputer)
+
+
+【APT活動-本編】
+------------------------------------------------------------
+Unknown-2026-FalconC2-Antino 不明（Unit 42 は活動主体を名指ししておらず、PeckBirdy と同一コアフレームワークの変種と評価）
+------------------------------------------------------------
+帰属: 不明（Unit 42 は国家関与を明示していない） / 確度: low / 標的: 中東の外務省 Roundcube（39 インスタンス）・国防・内務・通信、東南アジアの警察・情報機関・司法・軍・外務省
+Unit 42 は、ブラウザ型の脅威フレームワーク Falcon C2（Node.js 製）を解析した。2026-03〜05 に中東の外務省 Roundcube Webmail（39 インスタンス）や国防・内務・通信、東南アジアの警察・情報機関・司法・軍・外務省が標的となった。Falcon は難読化 JavaScript と「PDF Viewer」を装う Chrome/Firefox 拡張を配り、認証情報・Cookie・メール・クリップボード等を窃取する。偽の Adobe Flash 更新で配られる Rust 製インプラント Antino（最古サンプル 2025-10-06 コンパイル）は OneDrive を C2 に使う。Unit 42 は PeckBirdy と同一コアフレームワークの変種と高い確度で評価したが、活動主体は名指ししていない。CVE の言及は無い。
+マルウェア: Falcon C2、Antino
+IOC: fonts.tarotfree101[.]top、fonts.chrorne[.]com、robot.avbliud[.]com、microsoft-flash[.]com、wps-cn[.]com、0c39264337a1186b2e765e24073399cbdcba118306614eb411e315887af578bd
+  Technique T1189: Unit 42 が政府系 Web アプリ・Webmail へ悪意あるスクリプトを注入し閲覧者を感染させると記述
+  Technique T1059.007: Unit 42 が難読化 JavaScript インプラントと悪意あるブラウザ拡張の配布を記述
+推奨アクション: Roundcube 等の Webmail へのスクリプト注入を点検し、開発者モードで読み込まれた不審なブラウザ拡張（ID: mbidcmlcbgbphpoacojjbmfpohcimjji）を確認する。Unit 42 の IOC ドメインを遮断・照合する。
+  参照: https://unit42.paloaltonetworks.com/falcon-c2-browser-compromise (Unit 42)
+
+【APT活動-注目動向】
+------------------------------------------------------------
+Citrus-2026-Sn00py Citrus（Securelist が新たに文書化したロシア語話者のグループ。Toy Ghouls と TTP・基盤の重複を指摘）
+------------------------------------------------------------
+帰属: 不明（情報源は国家関与を明示していない） / 確度: low / 標的: ロシア企業のみ（Securelist）。1C:Enterprise サーバーが頻繁な標的
+Securelist は、新たに文書化したロシア語話者のランサムウェアグループ Citrus を解析した。侵害された委託先の従業員の認証情報で VPN／RDP に入り、Xray の VLESS トンネル（Yandex を装う REALITY 通信）、AnyDesk、Mimikatz 等で横展開し、GPO で Sn00py（Go 製）を配布して暗号化する。被害はロシア企業のみと記述される。コマンドやスクリプトに LLM 風のコメントがあり、一部は LLM 生成の可能性が高いと評価された（Securelist）。Toy Ghouls とは TTP・ツール・ディレクトリが共通し、同時に同じ基盤を侵害していたとされるが、同一性は断定されていない。日本の組織への影響は窓内の収集記事の範囲では確認できない。
+マルウェア: Sn00py、Xray（VLESS）、Mimikatz
+IOC: 91.210.109[.]118、91.210.108[.]180
+  Technique T1078: Securelist が、侵害された委託先従業員の認証情報で VPN／RDP にログインしたと記述
+  Technique T1486: Securelist が、Sn00py が RSA-2048 と ChaCha20 でファイルを暗号化し .citrus を付与すると記述
+推奨アクション: 委託先経由の VPN／RDP 認証情報の失効と多要素認証を確認し、1C:Enterprise の設定不備、GPO による Defender 無効化、Xray／AnyDesk の不審な導入を点検する。
+  参照: https://securelist.com/citrus-ransomware/121879 (Kaspersky Securelist)
+
+【注目CVE（リスト外）】 なし
+
+【トレンド】
+------------------------------------------------------------
+TREND-2026-11-12-001 Xen Orchestra：認証バイパス（VATES-SA-2026-062）とゼロデイ（-063）が悪用される。CVE 未採番
+------------------------------------------------------------
+SecurityWeek によれば、Vates は Xen Orchestra の REST 認証バイパス（未認証で管理者権限を取得）と、管理者権限を要する悪意ある VM インポート経由で XCP-ng ホストを侵害できるゼロデイの 2 件が攻撃者に悪用されていると警告した。攻撃者は 91.211.251.112:8001 と Tor から接続した（Vates）。影響は 6.9.2 未満（stable）・6.10.1 未満（latest）と Xen Orchestra Appliance で、ゼロデイの修正は開発中。Vates の IoC はこのキャンペーン限定とされる。CVE は未採番で攻撃者は未特定。
+  参照: https://www.securityweek.com/critical-xen-orchestra-flaws-exploited-in-attacks (SecurityWeek)
+
+------------------------------------------------------------
+TREND-2026-11-12-002 Qlik Sense サーバーへのリバースシェル配送の試み（Cynet 観測・CACTUS 2023 との TTP 類似）
+------------------------------------------------------------
+The Hacker News によれば、Cynet は 2026-10 に EU 圏の複数顧客の Qlik Sense サーバーで、約 3 分の間に PowerShell リバースシェルの実行が試みられ、阻止されたと報告した。実行は scheduler.exe 配下で、2023 年の CACTUS 関連の Qlik 侵入と類似（Cynet の記述）。ステージングサーバーには ActiveMQ（CVE-2023-46604）と Veeam（CVE-2024-40711）のエクスプロイトが置かれていた。2026 年の活動で悪用された脆弱性は不明で、Cynet は拡大攻撃の準備の可能性を指摘する（推測は Cynet）。攻撃者の特定は無い。
+  参照: https://thehackernews.com/2026/11/hackers-target-qlik-sense-servers-with.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-12-003 Fortinet が約 100 件の脆弱性を修正（FortiOS で重要度クリティカル 3 件）。窓内に悪用の報告なし
+------------------------------------------------------------
+SecurityWeek は Fortinet が約 100 件の脆弱性を修正したと報じ、AI の最先端モデルを製品のセキュリティ試験に統合した後の大量公開と記述した。Security NEXT は FortiOS の 3 件がクリティカルと伝えた。EUVD の窓内列挙には FortiMail・FortiManager 等の CVSS 9.0 以上が 16 件含まれる。窓内に悪用・KEV 収載の報告は確認できない。
+  参照: https://www.securityweek.com/fortinet-patches-nearly-100-vulnerabilities (SecurityWeek)
+  参照: https://www.security-next.com/192635 (Security NEXT)
+
+------------------------------------------------------------
+TREND-2026-11-12-004 Citrix・Ivanti・SAP・Adobe・Apple の更新（窓内に悪用の報告なし）
+------------------------------------------------------------
+SecurityWeek は Citrix と Ivanti がクリティカル／高深刻度の脆弱性を修正したと報じた。Security NEXT は SAP の月例更新（クリティカル 9 件）と Apple の macOS 8 件の修正を伝えた。NVD の窓内には Adobe Connect・Adobe Experience Manager の CVSS 9.9〜10.0 が多数あるが、いずれも窓内に悪用の報告は確認できない。
+  参照: https://www.securityweek.com/citrix-ivanti-patch-critical-and-high-severity-vulnerabilities (SecurityWeek)
+  参照: https://www.security-next.com/192679 (Security NEXT)
+
+------------------------------------------------------------
+TREND-2026-11-12-005 Railway：10 月の侵害で顧客の AI プロバイダ鍵が盗まれ、約 74 万ドルの不正利用
+------------------------------------------------------------
+The Hacker News によれば、Railway は 10 月の侵害で顧客が保管していた AI プロバイダの API キーが盗まれ、推定 74 万ドルの不正利用が生じたと発表し、AI プロバイダが返金しない場合は自社で負担すると表明した。BleepingComputer は最大 10 万ワークスペースの認証情報が露出し得ると伝えた。侵入経路の詳細と攻撃者は窓内の収集記事の範囲では未確認。
+  参照: https://thehackernews.com/2026/11/railway-says-stolen-customer-ai-keys.html (The Hacker News)
+  参照: https://www.bleepingcomputer.com/news/apple/railway-breach-leads-to-740-000-in-fraudulent-ai-charges (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-12-006 Maersk がデータ侵害を確認、WhiteArmor ランサムウェアが 500 万ドルを要求
+------------------------------------------------------------
+BleepingComputer によれば、Maersk は買収で引き継いだ旧システムへの不正アクセスとデータ持ち出しを確認した。WhiteArmor ランサムウェアが 500 万ドルを要求していると見出しで報じられている。侵入経路・データの内容・規模は窓内の収集記事の範囲では未確認。
+  参照: https://www.bleepingcomputer.com/news/security/maersk-confirms-data-breach-as-whitearmor-ransomware-demands-5-million (BleepingComputer)
+
+【攻撃予報】 本日の新規予報なし（forecaster/forecasts/daily/2026-11-12.md 参照）
+【除外APT】 1 件
+  - Iran（France says Iran behind cyberattacks on supermarkets・Taipei Times） : 見出しのみで、フランス政府の主張の範囲・技術詳細・日本への影響が未確認。帰属は情報源の記述を超えて扱わない。

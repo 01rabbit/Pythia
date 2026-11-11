@@ -1,0 +1,486 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-12 07:50 JST
+調査期間: 2026-11-11 07:00 〜 2026-11-12 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+------------------------------------------------------------
+AI-2026-11-12-001 [カテゴリA] AntiFox（オープンソースのエージェント型ペンテスト基盤）が AWS 認証情報窃取を伴う侵入で悪用（Arctic Wolf）
+------------------------------------------------------------
+The Hacker News と BleepingComputer によれば、Arctic Wolf Labs は、Alibaba Cloud 上で自己ホストされた AntiFox（GitHub 公開の自律ペンテスト基盤、251 フォーク・474 スター）の画面が、インターネット公開の Web サービスと連携 AWS 環境への悪意ある操作と関連したと報告した。初期侵入は侵害された IIS Web アプリ（脆弱性は不明）または経路不明の有効な AWS 認証情報で、w3wp.exe 経由の ASPX Web シェル、web.config の接続文字列探索、IAM・S3・Secrets Manager・Bedrock 等の列挙が観測された。特定の攻撃者名は無い。IOC は Arctic Wolf のアラート（GitHub）にあり、本記事には記載が無い。
+  被害規模: Arctic Wolf によれば、複数の侵入で AWS 本番のシークレット取得（GetSecretValue 成功）を確認。被害組織数は未確認。
+  参照: https://thehackernews.com/2026/11/antifox-ai-pentesting-platform-linked.html (The Hacker News)
+  参照: https://www.bleepingcomputer.com/news/security/hackers-use-antifox-ai-agents-in-aws-credential-theft-attacks (BleepingComputer)
+
+
+【参考B】
+------------------------------------------------------------
+AI-2026-11-12-002 [カテゴリC] Railway：窃取された顧客の AI プロバイダ鍵で約 74 万ドルの不正利用
+------------------------------------------------------------
+The Hacker News と BleepingComputer によれば、PaaS の Railway は 10 月の侵害で顧客が保管していた AI プロバイダの API キーが盗まれ、推定 74 万ドルの不正利用が生じたと発表した。インフラの脆弱性が悪用されたと BleepingComputer は記述する。攻撃者・侵入経路の詳細は未確認。
+  被害規模: THN によれば推定 74 万ドルの不正利用。BleepingComputer は最大 10 万ワークスペースの認証情報が露出し得ると報道。
+  参照: https://thehackernews.com/2026/11/railway-says-stolen-customer-ai-keys.html (The Hacker News)
+  参照: https://www.bleepingcomputer.com/news/apple/railway-breach-leads-to-740-000-in-fraudulent-ai-charges (BleepingComputer)
+
+
+【参考A】 なし
+【除外AI攻撃】 2 件
+  - Microsoft 研究：10 個未満のニューロン編集で AI エージェントにバックドア（THN・MSTIC） : 攻撃者が重みを変更できる前提の研究報告で、実際の悪用事象ではないため採用しない。
+  - Grok 製アプリ 35,000 件超が公開状態（THN・Claroc） : 設定不備の調査報告で攻撃・悪用の確認が無く、日本への影響も未確認のため採用しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+------------------------------------------------------------
+CVE-2026-125883 [high] N-able N-central（XXE・XML スキーマ汚染。同時開示の OGNL インジェクション・ファイルアップロード経由 RCE 等を含む一連のゼロデイ）
+------------------------------------------------------------
+ベンダー: N-able / 影響版: N-central 2026.4.0.31（プレリリース版で確認）。早期版にも影響する可能性があるが未検証（研究者の見解）。修正は 2026.4 HF2
+CVSS v3: 9.3 / PoC公開: あり / 実悪用: 未確認 / 修正: N-central 2026.4 HF2
+【概要】
+BleepingComputer によれば、研究者 Sean Bales が 2026-11-08 に N-central の複数の脆弱性（XXE：CVE-2026-125883、OGNL インジェクション：CVE-2026-125878、ファイルリポジトリのアップロード経路トラバーサル経由 RCE：CVE-2026-125882、ほか CVE-2026-125879・125880・125881・91000）を PoC 付きで公開した。N-able は 11-09 にホスト型環境をオフラインにしオンプレ利用者にもサーバー停止を勧め、11-10 に HF2 を公開、11-11 にホスト型の更新完了を発表した。N-able は悪用を確認していないと記載し、Defused が脆弱性の探索・スキャン（匿名エージェントセッション、リモート制御エンドポイントへの未認証アクセス）を報告した。Shadowserver によれば公開 N-central は 1,338 台（11-09）から約 148 台に減少。NVD の CVSS 9.3 は XXE 1 件のもの。悪用の確認が無いため actively_exploited は false とした。
+【暫定対策】
+  - N-central 2026.4 HF2 を適用する（オンプレ）
+  - 適用までサーバーを非公開にする（N-able の勧告）
+【監視】
+  N-central への匿名エージェントセッション、リモート制御エンドポイントへの未認証アクセス、ファイルリポジトリへの不審なアップロードを確認する。
+  参照: https://www.bleepingcomputer.com/news/security/n-able-releases-security-hotfixes-for-zero-day-vulnerabilities (BleepingComputer)
+
+
+【APT活動-本編】
+------------------------------------------------------------
+Unknown-2026-FalconC2-Antino 不明（Unit 42 は活動主体を名指ししておらず、PeckBirdy と同一コアフレームワークの変種と評価）
+------------------------------------------------------------
+帰属: 不明（Unit 42 は国家関与を明示していない） / 確度: low / 標的: 中東の外務省 Roundcube（39 インスタンス）・国防・内務・通信、東南アジアの警察・情報機関・司法・軍・外務省
+Unit 42 は、ブラウザ型の脅威フレームワーク Falcon C2（Node.js 製）を解析した。2026-03〜05 に中東の外務省 Roundcube Webmail（39 インスタンス）や国防・内務・通信、東南アジアの警察・情報機関・司法・軍・外務省が標的となった。Falcon は難読化 JavaScript と「PDF Viewer」を装う Chrome/Firefox 拡張を配り、認証情報・Cookie・メール・クリップボード等を窃取する。偽の Adobe Flash 更新で配られる Rust 製インプラント Antino（最古サンプル 2025-10-06 コンパイル）は OneDrive を C2 に使う。Unit 42 は PeckBirdy と同一コアフレームワークの変種と高い確度で評価したが、活動主体は名指ししていない。CVE の言及は無い。
+マルウェア: Falcon C2、Antino
+IOC: fonts.tarotfree101[.]top、fonts.chrorne[.]com、robot.avbliud[.]com、microsoft-flash[.]com、wps-cn[.]com、0c39264337a1186b2e765e24073399cbdcba118306614eb411e315887af578bd
+  Technique T1189: Unit 42 が政府系 Web アプリ・Webmail へ悪意あるスクリプトを注入し閲覧者を感染させると記述
+  Technique T1059.007: Unit 42 が難読化 JavaScript インプラントと悪意あるブラウザ拡張の配布を記述
+推奨アクション: Roundcube 等の Webmail へのスクリプト注入を点検し、開発者モードで読み込まれた不審なブラウザ拡張（ID: mbidcmlcbgbphpoacojjbmfpohcimjji）を確認する。Unit 42 の IOC ドメインを遮断・照合する。
+  参照: https://unit42.paloaltonetworks.com/falcon-c2-browser-compromise (Unit 42)
+
+【APT活動-注目動向】
+------------------------------------------------------------
+Citrus-2026-Sn00py Citrus（Securelist が新たに文書化したロシア語話者のグループ。Toy Ghouls と TTP・基盤の重複を指摘）
+------------------------------------------------------------
+帰属: 不明（情報源は国家関与を明示していない） / 確度: low / 標的: ロシア企業のみ（Securelist）。1C:Enterprise サーバーが頻繁な標的
+Securelist は、新たに文書化したロシア語話者のランサムウェアグループ Citrus を解析した。侵害された委託先の従業員の認証情報で VPN／RDP に入り、Xray の VLESS トンネル（Yandex を装う REALITY 通信）、AnyDesk、Mimikatz 等で横展開し、GPO で Sn00py（Go 製）を配布して暗号化する。被害はロシア企業のみと記述される。コマンドやスクリプトに LLM 風のコメントがあり、一部は LLM 生成の可能性が高いと評価された（Securelist）。Toy Ghouls とは TTP・ツール・ディレクトリが共通し、同時に同じ基盤を侵害していたとされるが、同一性は断定されていない。日本の組織への影響は窓内の収集記事の範囲では確認できない。
+マルウェア: Sn00py、Xray（VLESS）、Mimikatz
+IOC: 91.210.109[.]118、91.210.108[.]180
+  Technique T1078: Securelist が、侵害された委託先従業員の認証情報で VPN／RDP にログインしたと記述
+  Technique T1486: Securelist が、Sn00py が RSA-2048 と ChaCha20 でファイルを暗号化し .citrus を付与すると記述
+推奨アクション: 委託先経由の VPN／RDP 認証情報の失効と多要素認証を確認し、1C:Enterprise の設定不備、GPO による Defender 無効化、Xray／AnyDesk の不審な導入を点検する。
+  参照: https://securelist.com/citrus-ransomware/121879 (Kaspersky Securelist)
+
+【注目CVE（リスト外）】 なし
+
+【トレンド】
+------------------------------------------------------------
+TREND-2026-11-12-001 Xen Orchestra：認証バイパス（VATES-SA-2026-062）とゼロデイ（-063）が悪用される。CVE 未採番
+------------------------------------------------------------
+SecurityWeek によれば、Vates は Xen Orchestra の REST 認証バイパス（未認証で管理者権限を取得）と、管理者権限を要する悪意ある VM インポート経由で XCP-ng ホストを侵害できるゼロデイの 2 件が攻撃者に悪用されていると警告した。攻撃者は 91.211.251.112:8001 と Tor から接続した（Vates）。影響は 6.9.2 未満（stable）・6.10.1 未満（latest）と Xen Orchestra Appliance で、ゼロデイの修正は開発中。Vates の IoC はこのキャンペーン限定とされる。CVE は未採番で攻撃者は未特定。
+  参照: https://www.securityweek.com/critical-xen-orchestra-flaws-exploited-in-attacks (SecurityWeek)
+
+------------------------------------------------------------
+TREND-2026-11-12-002 Qlik Sense サーバーへのリバースシェル配送の試み（Cynet 観測・CACTUS 2023 との TTP 類似）
+------------------------------------------------------------
+The Hacker News によれば、Cynet は 2026-10 に EU 圏の複数顧客の Qlik Sense サーバーで、約 3 分の間に PowerShell リバースシェルの実行が試みられ、阻止されたと報告した。実行は scheduler.exe 配下で、2023 年の CACTUS 関連の Qlik 侵入と類似（Cynet の記述）。ステージングサーバーには ActiveMQ（CVE-2023-46604）と Veeam（CVE-2024-40711）のエクスプロイトが置かれていた。2026 年の活動で悪用された脆弱性は不明で、Cynet は拡大攻撃の準備の可能性を指摘する（推測は Cynet）。攻撃者の特定は無い。
+  参照: https://thehackernews.com/2026/11/hackers-target-qlik-sense-servers-with.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-12-003 Fortinet が約 100 件の脆弱性を修正（FortiOS で重要度クリティカル 3 件）。窓内に悪用の報告なし
+------------------------------------------------------------
+SecurityWeek は Fortinet が約 100 件の脆弱性を修正したと報じ、AI の最先端モデルを製品のセキュリティ試験に統合した後の大量公開と記述した。Security NEXT は FortiOS の 3 件がクリティカルと伝えた。EUVD の窓内列挙には FortiMail・FortiManager 等の CVSS 9.0 以上が 16 件含まれる。窓内に悪用・KEV 収載の報告は確認できない。
+  参照: https://www.securityweek.com/fortinet-patches-nearly-100-vulnerabilities (SecurityWeek)
+  参照: https://www.security-next.com/192635 (Security NEXT)
+
+------------------------------------------------------------
+TREND-2026-11-12-004 Citrix・Ivanti・SAP・Adobe・Apple の更新（窓内に悪用の報告なし）
+------------------------------------------------------------
+SecurityWeek は Citrix と Ivanti がクリティカル／高深刻度の脆弱性を修正したと報じた。Security NEXT は SAP の月例更新（クリティカル 9 件）と Apple の macOS 8 件の修正を伝えた。NVD の窓内には Adobe Connect・Adobe Experience Manager の CVSS 9.9〜10.0 が多数あるが、いずれも窓内に悪用の報告は確認できない。
+  参照: https://www.securityweek.com/citrix-ivanti-patch-critical-and-high-severity-vulnerabilities (SecurityWeek)
+  参照: https://www.security-next.com/192679 (Security NEXT)
+
+------------------------------------------------------------
+TREND-2026-11-12-005 Railway：10 月の侵害で顧客の AI プロバイダ鍵が盗まれ、約 74 万ドルの不正利用
+------------------------------------------------------------
+The Hacker News によれば、Railway は 10 月の侵害で顧客が保管していた AI プロバイダの API キーが盗まれ、推定 74 万ドルの不正利用が生じたと発表し、AI プロバイダが返金しない場合は自社で負担すると表明した。BleepingComputer は最大 10 万ワークスペースの認証情報が露出し得ると伝えた。侵入経路の詳細と攻撃者は窓内の収集記事の範囲では未確認。
+  参照: https://thehackernews.com/2026/11/railway-says-stolen-customer-ai-keys.html (The Hacker News)
+  参照: https://www.bleepingcomputer.com/news/apple/railway-breach-leads-to-740-000-in-fraudulent-ai-charges (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-12-006 Maersk がデータ侵害を確認、WhiteArmor ランサムウェアが 500 万ドルを要求
+------------------------------------------------------------
+BleepingComputer によれば、Maersk は買収で引き継いだ旧システムへの不正アクセスとデータ持ち出しを確認した。WhiteArmor ランサムウェアが 500 万ドルを要求していると見出しで報じられている。侵入経路・データの内容・規模は窓内の収集記事の範囲では未確認。
+  参照: https://www.bleepingcomputer.com/news/security/maersk-confirms-data-breach-as-whitearmor-ransomware-demands-5-million (BleepingComputer)
+
+【攻撃予報】 本日の新規予報なし（forecaster/forecasts/daily/2026-11-12.md 参照）
+【除外APT】 1 件
+  - Iran（France says Iran behind cyberattacks on supermarkets・Taipei Times） : 見出しのみで、フランス政府の主張の範囲・技術詳細・日本への影響が未確認。帰属は情報源の記述を超えて扱わない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+------------------------------------------------------------
+CVE-2026-125883 [high] N-able N-central（XXE・XML スキーマ汚染。同時開示の OGNL インジェクション・ファイルアップロード経由 RCE 等を含む一連のゼロデイ）
+------------------------------------------------------------
+ベンダー: N-able / 影響版: N-central 2026.4.0.31（プレリリース版で確認）。早期版にも影響する可能性があるが未検証（研究者の見解）。修正は 2026.4 HF2
+CVSS v3: 9.3 / PoC公開: あり / 実悪用: 未確認 / 修正: N-central 2026.4 HF2
+【概要】
+BleepingComputer によれば、研究者 Sean Bales が 2026-11-08 に N-central の複数の脆弱性（XXE：CVE-2026-125883、OGNL インジェクション：CVE-2026-125878、ファイルリポジトリのアップロード経路トラバーサル経由 RCE：CVE-2026-125882、ほか CVE-2026-125879・125880・125881・91000）を PoC 付きで公開した。N-able は 11-09 にホスト型環境をオフラインにしオンプレ利用者にもサーバー停止を勧め、11-10 に HF2 を公開、11-11 にホスト型の更新完了を発表した。N-able は悪用を確認していないと記載し、Defused が脆弱性の探索・スキャン（匿名エージェントセッション、リモート制御エンドポイントへの未認証アクセス）を報告した。Shadowserver によれば公開 N-central は 1,338 台（11-09）から約 148 台に減少。NVD の CVSS 9.3 は XXE 1 件のもの。悪用の確認が無いため actively_exploited は false とした。
+【暫定対策】
+  - N-central 2026.4 HF2 を適用する（オンプレ）
+  - 適用までサーバーを非公開にする（N-able の勧告）
+【監視】
+  N-central への匿名エージェントセッション、リモート制御エンドポイントへの未認証アクセス、ファイルリポジトリへの不審なアップロードを確認する。
+  参照: https://www.bleepingcomputer.com/news/security/n-able-releases-security-hotfixes-for-zero-day-vulnerabilities (BleepingComputer)
+
+
+【本編】 なし
+【参考A（国内）】 なし
+【参考B（国際先行）】 なし
+【除外サマリー】 71 件（理由付きで JSON の exclusions.cve に記録）
+  - CVE-2026-121351 : Adobe Connect is affected by an Improper Limitation of a Pathname to a Restricte / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 10.0）。
+  - CVE-2026-121352 : Adobe Connect is affected by an Incorrect Authorization vulnerability that could / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 10.0）。
+  - CVE-2026-121353 : Adobe Connect is affected by an Improper Neutralization of CRLF Sequences ('CRLF / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 10.0）。
+  - CVE-2026-121356 : Adobe Connect is affected by a Server-Side Request Forgery (SSRF) vulnerability  / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 10.0）。
+  - CVE-2026-121889 : Adobe Connect is affected by a Server-Side Request Forgery (SSRF) vulnerability  / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 10.0）。
+  - CVE-2026-78287 : Improper Control of Generation of Code ('Code Injection') vulnerability in Stagg / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 10.0）。
+  - CVE-2026-110697 : A flaw was found in Quay where the robot account listing function constructs a S / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-113579 : Adobe Experience Manager is affected by an Improper Control of Generation of Cod / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-113580 : Adobe Experience Manager is affected by an Improper Control of Generation of Cod / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-114371 : Adobe Experience Manager is affected by an Incorrect Authorization vulnerability / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-119017 : Adobe Experience Manager is affected by an Incorrect Authorization vulnerability / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-121354 : Adobe Connect is affected by an Improper Limitation of a Pathname to a Restricte / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-121887 : Adobe Connect is affected by an Improper Restriction of XML External Entity Refe / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-121892 : Adobe Connect is affected by an Improper Control of Generation of Code ('Code In / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-121894 : Adobe Connect is affected by an Improper Neutralization of Special Elements used / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-121896 : Adobe Connect is affected by an Improper Neutralization of Special Elements used / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-121898 : Adobe Connect is affected by an Improper Neutralization of Special Elements used / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-121906 : Adobe Connect is affected by an Improper Limitation of a Pathname to a Restricte / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-121908 : Adobe Connect is affected by an Improper Neutralization of Special Elements used / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-121497 : The AskAny WordPress plugin before 2.2.0 does not validate the extension or cont / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-123695 : The Security For WooCommerce WordPress plugin through 1.0.16 does not restrict a / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-123710 : A flaw was found in Red Hat Quay. An unauthenticated client can obtain an anonym / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-125297 : AsiaInfo Business Support System (BSS) 9.2.0 through 9.2.40 accepts unauthentica / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-125298 : AsiaInfo Business Support System (BSS) 9.2.0 through 9.2.40 does not correctly v / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-126261 : A improper authorization vulnerability in Fortinet FortiManager 8.0.0, FortiMana / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-126542 : WWBN AVideo 6.5 through 29.7.1 contains an authentication bypass vulnerability t / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-126768 : OpsTree REMS through 1.0.0 contains an authentication bypass vulnerability that  / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-126797 : NextScan 1.1.0 through 1.2.0 contains an authentication bypass vulnerability in  / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-126812 : blueprintUE Self-Hosted Edition before 4.3.7 contains an insecure default config / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-64678 : NOsql Object (NO2 a.k.a Nitrite) database is an open source nosql embedded docum / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-64682 : AstroBlocks is a block-first CMS for Astro projects. Prior to version 3.4.0, adm / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-89324 : The Basel Post Types plugin for WordPress is vulnerable to Authentication Bypass / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-115734 : The Pay with a tweet WordPress plugin through 1.0.5 does not validate a file pat / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.6）。
+  - CVE-2026-115735 : The Somatic Framework WordPress plugin through 1.8.14 does not perform an author / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.6）。
+  - CVE-2026-121349 : Adobe Connect is affected by an Improper Limitation of a Pathname to a Restricte / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.6）。
+  - CVE-2026-121904 : Adobe Connect is affected by a stored Cross-Site Scripting (XSS) vulnerability t / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.6）。
+  - CVE-2026-65840 : Fider is a feedback portal for feature requests and suggestions. Prior to versio / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.6）。
+  - CVE-2026-126187 : React is a JavaScript library for building user interfaces. From 19.0.0 until 19 / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.5）。
+  - CVE-2026-118965 : Path traversal in the discovered host label synchronization in Checkmk <2.5.0p19 / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.4）。
+  - CVE-2026-120495 : Path traversal in the Synthetic Monitoring "Robotmk" test service of Checkmk <2. / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.4）。
+  - CVE-2026-121374 : Argument injection in the Kubernetes special agent in Checkmk <2.5.0p19, <2.4.0p / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.4）。
+  - CVE-2026-121902 : Adobe Connect is affected by an Improper Neutralization of Special Elements used / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.4）。
+  - CVE-2026-112174 : Local privilege escalation vulnerability in Iperius Backup 8.8.3, due to insuffi / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-125881 : Server-Side request forgery (SSRF) vulnerability in N-able N-central allows Serv / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-126800 : Hydro @hydrooj/ui-default before 4.59.1 contains a stored cross-site scripting v / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-126806 : WWBN AVideo 14.3 through 29.7.1 contains a stored cross-site scripting vulnerabi / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-64670 : Waline is a comment system with backend support. In versions 3.15.2 and prior, @ / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-126325 : A critical remote code execution (RCE) vulnerability has been reported in PTC Wi / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-126539 : Directus before 12.1.0 contains an authorization bypass vulnerability that allow / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-115733 : The Printaura-Woocommerce WordPress plugin through 4.0.2 does not properly restr / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-121355 : Adobe Connect is affected by an Incorrect Authorization vulnerability that could / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-126537 : The Ninja Forms - File Uploads add-on for WordPress is vulnerable to Arbitrary F / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-126777 : Traccar 3.15 before 6.17.0 contains an authentication bypass vulnerability in Ld / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-82391 : The HTTP/2 front-end of the Zephyr HTTP server aliased connection receive state  / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-85632 : Missing authentication for critical function and Improper validation of integrit / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-126147 : A improper limitation of a pathname to a restricted directory ('path traversal') / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-126148 : A improper neutralization of special elements used in an os command ('os command / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-126170 : A improper encoding or escaping of output vulnerability in Fortinet FortiAnalyze / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-126254 : A numeric truncation error vulnerability in Fortinet FortiOS 8.0.0 through 8.0.1 / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.6）。
+  - CVE-2026-126164 : A improper neutralization of special elements used in an sql command ('sql injec / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.4）。
+  - CVE-2026-126263 : A improper neutralization of special elements used in an sql command ('sql injec / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.4）。
+  - CVE-2026-126253 : A authentication bypass by primary weakness vulnerability in Fortinet FortiOS 8. / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-126262 : A improper neutralization of special elements used in an sql command ('sql injec / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-126150 : A weak password recovery mechanism for forgotten password vulnerability in Forti / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-126155 : A incorrect authorization vulnerability in Fortinet FortiMail 8.0.0 through 8.0. / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-126156 : A authorization bypass through user-controlled key vulnerability in Fortinet For / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-126157 : A improper authentication vulnerability in Fortinet FortiMail 8.0.0 through 8.0. / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-126229 : A authorization bypass through user-controlled key vulnerability in Fortinet For / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-126251 : A incorrect authorization vulnerability in Fortinet FortiAuthenticator 8.0.0 thr / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-126257 : A use of hard-coded password vulnerability in Fortinet FortiAuthenticator 8.0.0  / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.0）。
+  - CVE-2026-126259 : A missing authentication for critical function vulnerability in Fortinet FortiOS / 窓内（11-11 07:00〜11-12 07:00 JST）に悪用・KEV 収載の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.0）。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-12-001 [high] N-able N-central（RMM）の PoC 公開済みゼロデイ：HF2 適用とオンプレ環境の公開停止
+------------------------------------------------------------
+対象: N-able N-central
+
+【概要】
+PoC が 11-08 から公開され、Defused が探索・スキャンを報告している。N-able は悪用を確認していない。RMM は侵害時に多数の顧客環境へ波及するため優先度が高い。
+
+【推奨アクション】
+1) N-central 2026.4 HF2 を適用。2) 適用までオンプレ環境を非公開にする。3) 11-08 以降の匿名エージェントセッション・リモート制御への未認証アクセスをログで遡及確認する。
+  参照: https://www.bleepingcomputer.com/news/security/n-able-releases-security-hotfixes-for-zero-day-vulnerabilities (BleepingComputer)
+
+------------------------------------------------------------
+SOC-2026-11-12-002 [high] Xen Orchestra の悪用（認証バイパス＋未修正ゼロデイ）：バージョン確認と管理画面の非公開化
+------------------------------------------------------------
+対象: Xen Orchestra／XCP-ng
+
+【概要】
+Vates が 2 件の悪用を警告。認証バイパスは 6.9.2／6.10.1 で修正だが、VM インポート経由のゼロデイは修正が開発中。
+
+【推奨アクション】
+1) 6.9.2／6.10.1 以上へ更新。2) 管理画面を信頼ネットワークに限定。3) 91.211.251.112 と Tor 出口からの接続を確認。4) 管理者以外に VM インポートを許可しない。
+  参照: https://www.securityweek.com/critical-xen-orchestra-flaws-exploited-in-attacks (SecurityWeek)
+
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-12-003 [medium] クラウド・PaaS に保管した AI プロバイダ鍵の窃取と不正課金（Railway）：鍵のローテーションと利用上限の設定
+------------------------------------------------------------
+対象: AI プロバイダ API キー／PaaS シークレット
+
+【概要】
+Railway の侵害で顧客の AI 鍵が盗まれ約 74 万ドルが不正利用された。AntiFox 事案でも AWS Secrets Manager の取得が確認されており、シークレットが標的になっている。
+
+【推奨アクション】
+1) AI プロバイダ鍵を棚卸しして再発行。2) 利用上限と異常課金アラートを設定。3) シークレットの保管先を最小権限にする。
+  参照: https://thehackernews.com/2026/11/railway-says-stolen-customer-ai-keys.html (The Hacker News)
+
+------------------------------------------------------------
+SOC-2026-11-12-004 [medium] 国内の不正アクセス公表が相次ぐ：九州電力送配電・ラクスル・JAL 委託先 Amadeus・NTT データ委託先など。IPA が相談窓口を強化
+------------------------------------------------------------
+対象: 国内組織・委託先・SaaS
+
+【概要】
+ScanNetSecurity・Security NEXT が複数の国内事案を伝えた。国家サイバー統括室は、同種の攻撃が続く恐れと、標的調査や侵害に AI が使われた可能性に言及した（見出し）。侵入経路は各事案で未確認。
+
+【推奨アクション】
+1) 委託先・外部サービスの接続と権限を棚卸し。2) 認証情報の使い回しと共有アカウントを点検。3) 国家サイバー統括室・IPA の注意喚起を確認。
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/11/56746.html (ScanNetSecurity)
+
+【低優先度】 なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【周辺諸国動向】（報告専用・予報の入力には使用しない）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+対象日: 2026-11-12
+走査: 候補 98件 / ゲート対象 2件 / 処理済 2件 / 未処理 0件（状態: ok）
+※ 国への該当は『記事がその国に言及している』ことを示すだけで、攻撃の主体を意味しない。
+※ 事実は出典番号付きで記し、推測は『（推測）』と確度を付けて分けている。
+
+■ 中国（CN）
+
+（本日の該当なし）
+
+■ ロシア（RU）
+
+（本日の該当なし）
+
+■ 北朝鮮（KP）
+
+（本日の該当なし）
+
+■ 韓国（KR）
+
+（本日の該当なし）
+
+■ 台湾（TW）
+
+（本日の該当なし）
+
+【除外サマリー（周辺諸国動向）】
+・根拠不足: 1件
+・対象外: 1件
+
+周辺諸国動向 — サイバー関連活動0件 / 政策・法制0件 / 組織0件 / サイバーセキュリティ関連企業0件 / 地政学（非サイバー情勢）0件 / 除外2件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃基盤プロファイル】（報告専用・予報の入力には使用しない）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+対象日: 2026-11-12
+状態: 一部失敗 / 指標 7件（補強 7 / スキップ 0 / 解析不能 0）/ 照会 21回（成功 13 / データなし 7 / 失敗 1）
+※ すべて公開データベースへの受動照会である。IoC の指す IP・ドメインへは接続していない。
+※ 取得時刻は照会した時点であり、攻撃が行われた時点の状態ではない。
+※ 要約はスクリプトが応答から機械的に作ったもので、推測は含まない。インフラの類似だけで帰属しない。
+
+■ IPアドレス
+
+------------------------------------------------------------
+[inf-2026-11-12-001] 91[.]210[.]108[.]180（IPアドレス）
+------------------------------------------------------------
+
+報告元: Citrus-2026-Sn00py
+
+【経路・保有者（RIPEstat）】
+プレフィックス: 91.210.108.0/23（広告中）
+ASN・保有者: AS62005 BV-EU-AS BlueVPS OU
+アドレス割当: RIPE NCC (Status: ALLOCATED)
+
+【国（近似）】
+NL
+
+【稼働状況（Shodan InternetDB が保有する情報）】
+開放ポート: 8443
+CPE（ソフトウェア・バージョン）: なし
+タグ: self-signed
+ホスト名（情報源の記述）: gost[.]run
+
+【注意】
+・国は位置情報データベースによる近似であり、攻撃者の所在を示さない。
+・ホスト名は情報源の記述であり、当該 IP の所有者を示すとは限らない。
+
+【照会】（公開データベースへの受動照会・IoC 自体へは接続していない）
+・ripestat.prefix 2026-11-11T22:30:48Z 成功
+・ripestat.geolocation 2026-11-11T22:30:49Z 成功
+・internetdb 2026-11-11T22:30:49Z 成功
+
+------------------------------------------------------------
+[inf-2026-11-12-002] 91[.]210[.]109[.]118（IPアドレス）
+------------------------------------------------------------
+
+報告元: Citrus-2026-Sn00py
+
+【経路・保有者（RIPEstat）】
+プレフィックス: 91.210.108.0/23（広告中）
+ASN・保有者: AS62005 BV-EU-AS BlueVPS OU
+アドレス割当: RIPE NCC (Status: ALLOCATED)
+
+【国（近似）】
+NL
+
+【稼働状況（Shodan InternetDB が保有する情報）】
+開放ポート: 80, 18181
+CPE（ソフトウェア・バージョン）: cpe:/a:apache:http_server:2.4.52, cpe:/o:canonical:ubuntu_linux
+タグ: なし
+脆弱性（情報源の推定・未検証）: CVE-2006-20001, CVE-2007-4723, CVE-2009-0796, CVE-2009-2299, CVE-2011-1176, CVE-2011-2688, CVE-2012-3526, CVE-2012-4001, CVE-2012-4360, CVE-2013-0941, CVE-2013-0942, CVE-2013-2765, CVE-2013-4365, CVE-2022-22719, CVE-2022-22720, CVE-2022-22721, CVE-2022-23943, CVE-2022-26377, CVE-2022-28330, CVE-2022-28614, CVE-2022-28615, CVE-2022-29404, CVE-2022-30556, CVE-2022-31813, CVE-2022-36760, CVE-2022-37436, CVE-2023-25690, CVE-2023-27522, CVE-2023-31122, CVE-2023-38709
+
+【注意】
+・国は位置情報データベースによる近似であり、攻撃者の所在を示さない。
+・脆弱性の一覧は情報源（Shodan）の推定であり、検証されていない。
+
+【照会】（公開データベースへの受動照会・IoC 自体へは接続していない）
+・ripestat.prefix 2026-11-11T22:30:50Z 成功
+・ripestat.geolocation 2026-11-11T22:31:13Z 成功
+・internetdb 2026-11-11T22:31:16Z 成功
+
+■ ドメイン
+
+------------------------------------------------------------
+[inf-2026-11-12-003] fonts[.]chrorne[.]com（ドメイン）
+------------------------------------------------------------
+
+報告元: Unknown-2026-FalconC2-Antino
+
+【登録情報（RDAP）】
+レジストラ: NameCheap, Inc.
+登録日: 2026-03-19T04:02:28Z
+有効期限: 2027-03-19T04:02:28Z
+ネームサーバ: emma[.]ns[.]cloudflare[.]com, julian[.]ns[.]cloudflare[.]com
+状態: client transfer prohibited
+※ 登録情報は上位のドメイン chrorne[.]com で照会した
+
+【照会】（公開データベースへの受動照会・IoC 自体へは接続していない）
+・rdap.domain 2026-11-11T22:31:17Z 成功
+・urlscan.search 2026-11-11T22:31:17Z データなし
+・mnemonic.pdns 2026-11-11T22:31:18Z データなし
+
+------------------------------------------------------------
+[inf-2026-11-12-004] fonts[.]tarotfree101[.]top（ドメイン）
+------------------------------------------------------------
+
+報告元: Unknown-2026-FalconC2-Antino
+
+【登録情報（RDAP）】
+レジストラ: Gname.com Pte. Ltd.
+登録日: 2026-01-19T10:12:43.0Z
+有効期限: 2027-01-19T10:12:43.0Z
+ネームサーバ: arely[.]ns[.]cloudflare[.]com[.], julian[.]ns[.]cloudflare[.]com[.]
+状態: client transfer prohibited
+※ 登録情報は上位のドメイン tarotfree101[.]top で照会した
+
+【注意】
+・取得に失敗したソースがあり、情報が不足している。
+
+【照会】（公開データベースへの受動照会・IoC 自体へは接続していない）
+・rdap.domain 2026-11-11T22:31:20Z 成功
+・urlscan.search 2026-11-11T22:31:22Z データなし
+・mnemonic.pdns 2026-11-11T22:31:22Z 失敗・URLError: <urlopen error [Errno 104] Connection reset by peer>
+
+------------------------------------------------------------
+[inf-2026-11-12-005] microsoft-flash[.]com（ドメイン）
+------------------------------------------------------------
+
+報告元: Unknown-2026-FalconC2-Antino
+
+【登録情報（RDAP）】
+レジストラ: GoDaddy.com, LLC
+登録日: 2026-04-21T12:02:56Z
+有効期限: 2027-04-21T12:02:56Z
+ネームサーバ: arely[.]ns[.]cloudflare[.]com, julian[.]ns[.]cloudflare[.]com
+状態: client delete prohibited, client renew prohibited, client transfer prohibited, client update prohibited
+
+【照会】（公開データベースへの受動照会・IoC 自体へは接続していない）
+・rdap.domain 2026-11-11T22:31:31Z 成功
+・urlscan.search 2026-11-11T22:31:31Z データなし
+・mnemonic.pdns 2026-11-11T22:31:32Z データなし
+
+------------------------------------------------------------
+[inf-2026-11-12-006] robot[.]avbliud[.]com（ドメイン）
+------------------------------------------------------------
+
+報告元: Unknown-2026-FalconC2-Antino
+
+【登録情報（RDAP）】
+レジストラ: NameCheap, Inc.
+登録日: 2026-03-31T05:04:34Z
+有効期限: 2027-03-31T05:04:34Z
+ネームサーバ: arely[.]ns[.]cloudflare[.]com, julian[.]ns[.]cloudflare[.]com
+状態: client transfer prohibited
+※ 登録情報は上位のドメイン avbliud[.]com で照会した
+
+【照会】（公開データベースへの受動照会・IoC 自体へは接続していない）
+・rdap.domain 2026-11-11T22:31:34Z 成功
+・urlscan.search 2026-11-11T22:31:34Z データなし
+・mnemonic.pdns 2026-11-11T22:31:34Z データなし
+
+------------------------------------------------------------
+[inf-2026-11-12-007] wps-cn[.]com（ドメイン）
+------------------------------------------------------------
+
+報告元: Unknown-2026-FalconC2-Antino
+
+【登録情報（RDAP）】
+レジストラ: Gname.com Pte. Ltd.
+登録日: 2021-01-13T07:08:24Z
+有効期限: 2027-01-13T07:08:24Z
+ネームサーバ: a9[.]share-dns[.]com, b9[.]share-dns[.]net
+状態: client transfer prohibited
+
+【観測されたホスティング先（urlscan・パッシブDNS）】
+IPアドレス: 103[.]27[.]110[.]220, 180[.]215[.]209[.]249
+件数: urlscan の該当スキャン 7件 / パッシブDNSの記録 2件
+
+【注意】
+・urlscan の履歴は過去30日の他者のスキャンに限られる。
+・パッシブ DNS は観測された範囲の履歴であり、網羅ではない。
+
+【照会】（公開データベースへの受動照会・IoC 自体へは接続していない）
+・rdap.domain 2026-11-11T22:31:36Z 成功
+・urlscan.search 2026-11-11T22:31:36Z 成功
+・mnemonic.pdns 2026-11-11T22:31:37Z 成功
+
+攻撃基盤プロファイル — 補強7件 / スキップ0件 / 解析不能0件
