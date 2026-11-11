@@ -231,3 +231,5 @@
 | Mittwald: AIアシスタント接続用ツール経由の独ホスティング事業者侵害（AI支援の疑い・同社開示） | C1 | 2026-11-10 | 参考B（X=4 Y=4・C-T・burst1） | 2026-11-10 | YES | The Record 2026-11-09・alleged・本文未取得 |
 | NEAR AI: SGLangのRCEを悪用した推論サーバー侵害（18エージェント/約100ユーザー） | C1 | 2026-11-11 | 本編（X=6 Y=6・A-R,A-S・burst1） | 2026-11-11 | YES | THN 2026-11-10・CVE未確認 |
 | Fireworks AI: 10月の侵害が拡大（データセット/モデル重み/Notion AIチャット） | C1 | 2026-11-11 | 参考B（X=5 Y=5・A-S・burst1） | 2026-11-11 | YES | THN/The Record/BleepingComputer 2026-11-10・クラウド事業者侵害経由 |
+| AntiFox（エージェント型ペンテスト基盤）の AWS 認証情報窃取への悪用 | A1 | 2026-11-12 | 本編（X=6 Y=5・burst2） | 2026-11-12 | YES | Arctic Wolf/THN/BleepingComputer 2026-11-11・攻撃者未特定 |
+| Railway: 窃取された顧客 AI 鍵で約74万ドルの不正利用 | C1 | 2026-11-12 | 参考B（X=5 Y=5・burst2） | 2026-11-12 | YES | THN/BleepingComputer 2026-11-11・侵入経路詳細未確認 |
