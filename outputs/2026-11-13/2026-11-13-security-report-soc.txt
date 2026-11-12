@@ -1,0 +1,103 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-13 07:50 JST
+調査期間: 2026-11-12 07:00 〜 2026-11-13 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-13-001 [high] ScreenConnect 利用組織：不正クライアントと RMM+ 拡張の点検
+------------------------------------------------------------
+対象: ConnectWise ScreenConnect
+
+【概要】
+ConnectWise が 5 つの拡張を無効化し、約 48 組織で侵入が報告されている。MSP は顧客端末へ波及させる経路になり得る。
+
+【推奨アクション】
+1) ScreenConnect サーバーとクライアントを最新へ更新（CVE-2026-84869）。2) RMM+ 拡張の RMMPlus.AccessKey が空でないか確認、不要な拡張は無効化。3) 不審な ScreenConnect Access クライアントの登録と Run Command 履歴、技術者端末のブラウザセッションを点検。4) ns.mo7sen[.]dev への通信を遮断・遡及確認。
+【監視】ScreenConnect の管理コマンド履歴、sc.msi・sckit-run.bat・sckit-decoder.ps1 の作成、ns.mo7sen[.]dev への名前解決を確認する。
+  参照: https://thehackernews.com/2026/11/sckit-malware-targets-screenconnect.html (The Hacker News)
+
+------------------------------------------------------------
+SOC-2026-11-13-002 [high] N-central 追加 PoC：Legacy API の無効化と探索元の遡及確認
+------------------------------------------------------------
+対象: N-able N-central
+
+【概要】
+修正済み HF2 にも有効と主張する PoC が公開され、探索が観測されている（成功は未確認）。
+
+【推奨アクション】
+1) Legacy API を無効化。2) HF2 と Apache Axis 修正（CVE-2026-90436）を適用。3) 157.20.241[.]16 との通信と、N-central からの curl 取得・シェル実行を遡及確認。
+【監視】N-central サーバーから外部へ curl で取得されるシェルスクリプト、root 権限の不審プロセスを確認する。
+  参照: https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html (The Hacker News)
+
+------------------------------------------------------------
+SOC-2026-11-13-003 [high] GitHub Actions：wfx キャンペーンの指標確認と認証情報のローテーション
+------------------------------------------------------------
+対象: GitHub Actions / クラウド CI
+
+【概要】
+4,837 アカウントの乗っ取りで CI のシークレットが窃取された。クラウドの永続化（IAM キー・信頼ポリシー改変）も報告されている。
+
+【推奨アクション】
+1) wfx-docs ブランチ、PR『docs: dependency audit notes』、build-audit-*.yml を検索。2) 該当リポジトリの全シークレットとクラウドロールを失効・再発行。3) CloudTrail の wfx-* セッション、CreateAccessKey、UpdateAssumeRolePolicy、Entra の wfx-ci-* を点検。4) 194.150.166[.]244・18.143.168[.]96・153.75.82[.]159 への通信を遮断。
+【監視】ワークフロー実行履歴の欠落、実行番号の無いコミット、外部への HTTP POST と Telegram 接続を確認する。
+  参照: https://thehackernews.com/2026/11/4837-hijacked-github-accounts-ran-ci.html (The Hacker News)
+
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-13-004 [medium] Apache HTTP Server 2.4.71 への更新（mod_http2 の RCE）
+------------------------------------------------------------
+対象: Apache HTTP Server
+
+【概要】
+HTTP/2 有効の 2.4.55〜2.4.70 が対象。悪用は未確認だが Red Hat は信頼できる悪用の研究があるとする。
+
+【推奨アクション】
+2.4.71 へ更新。更新できない場合は Protocols から h2/h2c を外し、全 VirtualHost を点検。
+【監視】mod_http2 のクラッシュ・再起動の増加と HTTP/2 の異常なストリームを確認する。
+  参照: https://thehackernews.com/2026/11/critical-apache-http2-flaw-could-let.html (The Hacker News)
+
+------------------------------------------------------------
+SOC-2026-11-13-005 [medium] Windows CLFS『SignDrop』：未修正の SYSTEM 昇格への備え
+------------------------------------------------------------
+対象: Windows CLFS
+
+【概要】
+PoC 公開済み・パッチ無し・悪用の報告無し。
+
+【推奨アクション】
+EDR のポリシーで CLFS の .cnpf ファイル作成の異常を監視し、レジストリ CLFS\Authentication\Mode の値を確認。Microsoft の修正を待つ。
+【監視】CLFS ログファイル作成直後の特権プロセスによるオープンを確認する。
+  参照: https://www.bleepingcomputer.com/news/security/new-windows-signdrop-zero-day-gives-hackers-system-privileges (BleepingComputer)
+
+------------------------------------------------------------
+SOC-2026-11-13-006 [medium] Citrix NetScaler Console の認証バイパスと ADC/Gateway の更新
+------------------------------------------------------------
+対象: Citrix NetScaler
+
+【概要】
+CVE-2026-120869（CVSS 9.4）ほか。悪用は認識されていない。
+
+【推奨アクション】
+Console を 14.1-74.34 以降、ADC/Gateway を 14.1-73.57・13.1-64.39 以降へ更新。
+【監視】Console への未認証アクセスと ADC のクラッシュを確認する。
+  参照: https://thehackernews.com/2026/11/citrix-patches-12-netscaler-and-secure.html (The Hacker News)
+
+【低優先度】
+------------------------------------------------------------
+SOC-2026-11-13-007 [low] AI 関連：GPUStack の更新と偽 AI ドメイン（TypoPrompting）への注意
+------------------------------------------------------------
+対象: GPUStack／AI ツール利用者
+
+【概要】
+GPUStack 2.2.0 未満への悪用試行、AI ツールを装う 186 ドメインによる ClickFix 誘導。
+
+【推奨アクション】
+GPUStack を 2.2.0 以降へ。ユーザーに『確認のためコマンド実行』を促す画面が出たら実行しないよう周知。
+【監視】GPUStack への未認証 API、PowerShell 実行を促すクリップボード操作を確認する。
+  参照: https://isc.sans.edu/diary/rss/33514 (SANS Internet Storm Center)
+  参照: https://thehackernews.com/2026/11/186-fake-ai-domains-redirect-users-to.html (The Hacker News)
+
