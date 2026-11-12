@@ -1,0 +1,125 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-13 07:50 JST
+調査期間: 2026-11-12 07:00 〜 2026-11-13 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+------------------------------------------------------------
+CVE-2026-125883 [high] N-able N-central（XXE・XML スキーマ汚染。同時開示の OGNL インジェクション・ファイルアップロード経由 RCE 等を含む一連のゼロデイ）
+------------------------------------------------------------
+対象: N-able / N-central 2026.4.0.31（プレリリース版で確認）。早期版にも影響する可能性があるが未検証（研究者の見解）。修正は 2026.4 HF2
+【概要】
+The Hacker News によれば、N-able は 11-12（木）、オンプレ N-central 2026.4.1 HF2 に対する追加脆弱性の公開を調査中と発表した。研究者 Sean Bales が公開した 4EverAble2Shell（未認証で root 権限の RCE）と Agent2Shell（管理下 Windows エージェントで NT AUTHORITY\SYSTEM 実行・10 件超のゼロデイ・対象アプライアンス ID が必要）の PoC は、修正済みビルド 2026.4.1.26 にも有効と報じられている。N-able は、サーバー側の問題は Legacy API を有効にして公開した非既定構成に依存し、ホスト型は影響を受けないと説明している。Previdian は PoC 公開から数時間以内に 157.20.241[.]16 から 4EverAble2Shell への標的型の探索を観測し、CVE-2026-90436（Apache Axis・CVSS 9.8）の悪用試行から root 昇格、curl によるシェルスクリプト取得・実行という流れを報告した。成功した悪用は確認されておらず、watchTowr も Legacy API 有効ビルドへの探索を報告している。新規分に CVE は報じられていない。悪用の成功が未確認のため actively_exploited は false とした（探索・試行は観測、成功は未確認）。
+【一時緩和】
+  - Legacy API を直ちに無効化する（N-able の勧告・既定は無効）
+  - HF2（2026.4.1.26）と Apache Axis 修正（CVE-2026-90436）を適用
+  - 適用までオンプレ N-central を非公開にする
+  参照: https://thehackernews.com/2026/11/new-n-central-exploits-work-against.html (The Hacker News)
+  参照: https://www.securityweek.com/hackers-target-n-central-zero-days-as-n-able-rushes-patches (SecurityWeek)
+
+
+【APT活動-本編】
+------------------------------------------------------------
+CL-STA-1238-2026-Cairn CL-STA-1238（Unit 42 の追跡名）（帰属確度: medium・国家: China（Unit 42 が moderate confidence で China-nexus の情報収集と評価））
+------------------------------------------------------------
+Unit 42 は、2026-08〜09 に 25 回の作戦で少なくとも 19 組織を狙った活動を CL-STA-1238 として追跡している。公開 OSS の AI ペンテスト基盤 Cairn の改造版を使い、GLM 5.2（13 回）や DeepSeek V4（12 回）などの中国製モデルが作戦を駆動した。『作業は承認済みで拒否禁止』とする中国語の前置きと AUTHORIZATION.md で、モデルの拒否を回避したと Unit 42 は述べる。作戦は約 20 分から 50 時間超。確認された成果には、標準化団体での有効な資格情報とディレクトリ DB の取得、半導体企業の本番環境での管理者アカウント作成、米国教員組合の 100 万件超の会員記録へのアクセスが含まれる。Unit 42 は、中国語の指示・承認の痕跡、中国製モデルのみの使用、標的の傾向を根拠に China-nexus の情報収集と moderate confidence で評価した。悪用された弱点は既知の公開 CVE を含む。
+【標的】半導体・先端製造サプライチェーン 7 組織、防衛・防衛政策 3 組織、人権・市民社会 4 組織など、少なくとも 19 組織（10 組織で不正アクセス・データ取得を確認）
+【TTP】
+  - T1110.003 (credential-access): Unit 42 が弱いパスワードのスプレーと総当たりを記述
+  - T1190 (initial-access): Unit 42 が公開 API・認証バイパス・オープンな登録エンドポイントの悪用を記述
+【IOC】IP: 154.44.31[.]4, 82.29.129[.]54 / ファイル: AUTHORIZATION.md
+【推奨】公開 Web アプリ・API の認証バイパス、IDOR、公開クラウドストレージへの無認証書き込みを棚卸しし、パスワードスプレーを検知する。Unit 42 が示した 2 つの IP を照合する。
+  参照: https://unit42.paloaltonetworks.com/cairn-framework-ai-autonomous-attacks (Unit 42)
+
+------------------------------------------------------------
+SilentLynx-2026-HermesAgent Silent Lynx（別名 Cavalry Werewolf・YoroTrooper）（帰属確度: medium・国家: 不明（CloudSEK はカザフスタンとの関連を medium confidence としたが、政府との関係は示されていない））
+------------------------------------------------------------
+The Record によれば、CloudSEK は露出していたサーバーから、Silent Lynx（Cavalry Werewolf・YoroTrooper とも）が OSS の AI エージェント Hermes を攻撃的セキュリティ専門家として設定し、主に DeepSeek のモデルでタジキスタン等の政府を偵察・文書窃取・痕跡消去に使っていたことを明らかにした。操作は Telegram ボットへのロシア語の指示で、一部の破壊的コマンドは承認なしで実行される設定だった。CloudSEK は、ロシア語の通信とカザフスタンの住宅用 ISP からの試験接続を根拠に medium confidence でカザフスタンとの関連を評価したが、政府との関係は示されていない。IoC は記事に無い。
+【標的】タジキスタンの鉄道網・電子文書管理基盤・国防省関連文書、ウズベキスタンのスマート林業サーバー、トルクメニスタン向け誘引物
+【TTP】
+  - T1078 (initial-access): The Record によれば、鉄道職員 1 名の資格情報で文書管理プラットフォームへアクセスしたとCloudSEK が記述
+  - T1566 (initial-access): The Record によれば、公式文書を装うスピアフィッシングの誘引物を作成
+【IOC】IP: なし / ファイル: なし
+【推奨】中央アジア政府・鉄道関連組織では、委託・職員アカウントの資格情報の失効と多要素認証を確認し、公式文書を装う添付を点検する。
+  参照: https://therecord.media/kazakhstan-hackers-central-asia (The Record (Recorded Future))
+
+
+【APT活動-注目動向】 なし
+
+【注目CVE（リスト外）】 なし（トレンド欄に記載）
+
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-13-001 ScreenConnect：MSP 環境が侵害され顧客端末へ不正クライアント配布（約 48 組織・288 端末の報道）。CVE-2026-84869 は KEV 収載済み
+------------------------------------------------------------
+The Hacker News と BleepingComputer によれば、ConnectWise は ScreenConnect を使う MSP 等を狙う活動を調査中で、予防措置として 5 つのサードパーティ拡張を無効化した。ConnectWise は ScreenConnect 本体の脆弱性や自社基盤の侵害の証拠は無いとしている。Huntress は拡張 RMM+ 1.0.31/1.0.32 の既定アクセスキーが空である問題（CVE-2026-127063・CVSS 9.3・認証と MFA を経ない命令実行が可能）を報告した。Blackpoint Cyber は回収したツールキット SCKit（sc.msi・sckit-run.bat・sckit-decoder.ps1・SilentForceInstall-WithUninstall.ps1。ns.mo7sen[.]dev から部品取得）が、既に修正済みで KEV 収載済み（2026-09-11 追加）の CVE-2026-84869（CVSS 9.9・セッション内の無許可ファイル転送・実行）を悪用していると述べ、完全に更新されたクライアントでは payload が阻止されたとする。侵入経路は未確認で、ConnectWise は拡張の存在だけで侵害とは言えないとする。SCKit は技術者端末の .ASPXAUTH Cookie を探して横展開し SYSTEM で実行する。攻撃者は未特定。（推測）MSP の RMM 経由で顧客環境へ波及しうるため、ランサムウェア等の前段になり得るが、情報源は目的を明示していない。
+  参照: https://thehackernews.com/2026/11/sckit-malware-targets-screenconnect.html (The Hacker News)
+  参照: https://therecord.media/connectwise-screenconnect-breaches-third-party-tool (The Record (Recorded Future))
+  参照: https://www.bleepingcomputer.com/news/security/active-screenconnect-attacks-breach-msps-impact-dozens-of-organizations (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-13-002 Apache HTTP Server mod_http2 に未認証 RCE の可能性（CVE-2026-119618・CVSS 9.8・2.4.71 で修正）
+------------------------------------------------------------
+The Hacker News によれば、Apache HTTP Server 2.4.55〜2.4.70 の mod_http2 に、HTTP/2 有効時に未認証の遠隔者がコード実行し得る競合状態（CVE-2026-119618）があり、2.4.71 で修正された。Anthropic の OSS Scanner（10-26 報告）と Google Cloud の研究者が発見した。Wiz は悪用・公開 PoC を確認していないとし、Red Hat の勧告は『信頼できる悪用が研究で示された』と記述していて、記述が食い違い未解決。RHEL 9/10 は 1 ストリームごとの割当で悪用が困難なため Important。回避策は Protocols から h2/h2c を外すこと（Wiz）。
+  参照: https://thehackernews.com/2026/11/critical-apache-http2-flaw-could-let.html (The Hacker News)
+  参照: https://www.securityweek.com/apache-patches-critical-http-server-rce-found-by-anthropic-google (SecurityWeek)
+
+------------------------------------------------------------
+TREND-2026-11-13-003 Windows CLFS の未修正ゼロデイ『SignDrop』：SYSTEM 昇格の PoC が GitHub で公開（CVE 未採番・悪用の報告なし）
+------------------------------------------------------------
+BleepingComputer によれば、研究者 Abdelhamid Naceri（Nightmare Eclipse）は Windows の CLFS ドライバーの認証ファイル（.cnpf）作成ロジックを突く SYSTEM 昇格の PoC『SignDrop』を GitHub で公開した。2025-10 に導入された緩和策を回避すると研究者は述べる。確認は Windows 11 26H2 等と Windows Server 2025（Experimental を含む）で、約 80% の環境が脆弱という数字は研究者の推計。公式パッチは無く、悪用の報告も無い。研究者は HKLM\SYSTEM\CurrentControlSet\Services\CLFS\Authentication\Mode が 0 または 1 なら脆弱としている。
+  参照: https://www.bleepingcomputer.com/news/security/new-windows-signdrop-zero-day-gives-hackers-system-privileges (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-13-004 GitHub 4,837 アカウントの乗っ取りによる CI シークレット窃取キャンペーン（wfx・1,806 以上のリポジトリで実行）
+------------------------------------------------------------
+The Hacker News によれば、Aikido Security は火曜から、盗まれた資格情報で 4,837 の GitHub アカウントを使い、書き込み可能なリポジトリへ CI のシークレット窃取コードを植え付ける攻撃を確認した。実行は 1,806 以上のリポジトリ、テスト用 PR は 61,764 リポジトリで、SafeDep は 8,093 のリポジトリへ悪意あるコミットを数えた。GITHUB_TOKEN・OIDC トークン・クラウド認証情報・AI サービス鍵を窃取し、HTTP POST と Telegram で送出する。AWS ロール信頼ポリシーの書き換えや Entra の wfx-ci-* フェデレーション資格情報で永続化する。Packagist の digitalelvis/neuronai-studio v3.14.3 等のパッケージにも波及。Aikido は 10 月の GhostAction と同一攻撃者とは現時点で帰属していない。
+  参照: https://thehackernews.com/2026/11/4837-hijacked-github-accounts-ran-ci.html (The Hacker News)
+  参照: https://www.securityweek.com/attacker-targets-60000-github-repositories-in-credential-theft-campaign (SecurityWeek)
+
+------------------------------------------------------------
+TREND-2026-11-13-005 Citrix NetScaler：Console の認証バイパス（CVE-2026-120869・CVSS 9.4）ほか 12 件を修正。悪用は確認されていない
+------------------------------------------------------------
+The Hacker News によれば、Citrix は NetScaler ADC/Gateway のメモリ破壊（CVE-2026-120868・107407・107408・107409・107410・107412・107415・111344・120864・各 CVSS 9.3〜9.5・DoS または誤動作）と、NetScaler Console の未認証認証バイパス（CVE-2026-120869・CVSS 9.4・14.1-74.34 以降で修正）、Secure Access Client の権限昇格（CVE-2026-118268/118269・CVSS 8.5）を修正した。Citrix は『悪用を認識していない』としている。修正版は ADC/Gateway が 14.1-73.57・13.1-64.39 以降。
+  参照: https://thehackernews.com/2026/11/citrix-patches-12-netscaler-and-secure.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-13-006 Chrome 157.0.8103.78 が 83 件を修正（CVE-2026-126842・126846・126859・126872・126885・126909・126912 など CVSS 9.6）／Firefox 160 は 99 件を修正
+------------------------------------------------------------
+Security NEXT と SecurityWeek によれば、Google は Chrome を今週 2 度目に更新し 83 件（『クリティカル』を含む）を修正し、Mozilla は Firefox 160 で 99 件を修正した。スイープ上の Chrome 起点の CVSS 9.6 は ANGLE・Skia・ServiceWorker・Passwords・FileSystem の use-after-free 等 7 件。悪用の報告は確認できていない（本文未取得・要約基づき）。
+  参照: https://www.security-next.com/192699 (Security NEXT)
+  参照: https://www.securityweek.com/chrome-firefox-updates-patch-over-180-vulnerabilities (SecurityWeek)
+
+------------------------------------------------------------
+TREND-2026-11-13-007 Europol 主導で Gootloader・CastleRAT・StealC の基盤を押収。StealC サーバーの再テイクダウンも
+------------------------------------------------------------
+BleepingComputer によれば、Europol と 9 か国の法執行機関は Gootloader・CastleRAT・StealC の運用に使われた数百のサーバーとドメインを押収した。The Record によれば、ドイツ当局は StealC のサーバー網が再構築され、10 月に FBI が押収した Virtualine の防弾ホスティング事業者に行き着いたと述べた。摘発後の再構築と移行が起こり得る（推測）。
+  参照: https://www.bleepingcomputer.com/news/security/police-dismantles-gootloader-castlerat-stealc-malware-infrastructure (BleepingComputer)
+  参照: https://therecord.media/european-authorities-take-down-stealic-malware-second-time (The Record (Recorded Future))
+
+------------------------------------------------------------
+TREND-2026-11-13-008 Red Hat Quay・MongoDB・PTC Windchill の重大な脆弱性（修正版公開・悪用の報告なし）
+------------------------------------------------------------
+The Hacker News によれば、Red Hat Quay には、レジストリへ到達できる攻撃者（既定で有効な匿名アクセスでは無認証）が全リポジトリの非公開コンテナイメージを読み書きできる重大な欠陥があり、8 系統の修正版が公開された。MongoDB Server の CVE-2026-118383 は、未認証の 2 リクエストで、同期の遅れたレプリカがプライマリに昇格する際にクラッシュさせる（Security NEXT は特定条件でコード実行・DoS の恐れと記載）。PTC は Windchill/FlexPLM の逆シリアル化による RCE（CVE-2026-126325・CVSS v4 9.2）を修正した。いずれも悪用の報告は確認できていない。
+  参照: https://thehackernews.com/2026/11/critical-red-hat-quay-flaw-lets.html (The Hacker News)
+  参照: https://thehackernews.com/2026/11/critical-pre-auth-mongodb-flaw-cve-2026.html (The Hacker News)
+  参照: https://thehackernews.com/2026/11/ptc-patches-critical-windchill-and.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-13-009 Maersk がデータ窃取を確認：WhiteArmor ランサムウェアグループが 500 万ドルを要求（100GB の窃取を主張）
+------------------------------------------------------------
+SecurityWeek によれば、Maersk はデータ窃取を確認した。WhiteArmor ランサムウェアグループは同社から 100GB を盗んだと主張し 500 万ドルの支払いを求めている。窃取量は犯行側の主張で、独立した確認は無い。詳細は見出しと要約の範囲。
+  参照: https://www.securityweek.com/maersk-confirms-data-theft-amid-5-million-extortion-attempt (SecurityWeek)
+
+------------------------------------------------------------
+TREND-2026-11-13-010 TypoPrompting：186 の偽 AI ドメインが ClickFix 誘導・ブラウザ乗っ取り型マルウェアへ誘導／Google セッション窃取（Operation CloudFire）
+------------------------------------------------------------
+The Hacker News によれば、Island は AI ツールを装う 186 の類似ドメインが ClickFix 型の誘導、ブラウザ乗っ取りマルウェア、検索乗っ取り拡張を配布していると報告し、手口を TypoPrompting と命名した。別記事では Material Security が、2026-08 中旬から続くカレンダー招待とライブプロキシを使った Google セッション窃取（Operation CloudFire）を報告し、数百の攻撃ドメインを停止させたとされる。いずれも攻撃者は未特定（本文は未取得・要約基づき）。
+  参照: https://thehackernews.com/2026/11/186-fake-ai-domains-redirect-users-to.html (The Hacker News)
+  参照: https://thehackernews.com/2026/11/calendar-invites-and-live-proxies.html (The Hacker News)
+
+
+【攻撃予報】 本日の新規予報はフォーキャスター側（forecaster/forecasts/daily）を参照

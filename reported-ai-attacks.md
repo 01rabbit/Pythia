@@ -233,3 +233,7 @@
 | Fireworks AI: 10月の侵害が拡大（データセット/モデル重み/Notion AIチャット） | C1 | 2026-11-11 | 参考B（X=5 Y=5・A-S・burst1） | 2026-11-11 | YES | THN/The Record/BleepingComputer 2026-11-10・クラウド事業者侵害経由 |
 | AntiFox（エージェント型ペンテスト基盤）の AWS 認証情報窃取への悪用 | A1 | 2026-11-12 | 本編（X=6 Y=5・burst2） | 2026-11-12 | YES | Arctic Wolf/THN/BleepingComputer 2026-11-11・攻撃者未特定 |
 | Railway: 窃取された顧客 AI 鍵で約74万ドルの不正利用 | C1 | 2026-11-12 | 参考B（X=5 Y=5・burst2） | 2026-11-12 | YES | THN/BleepingComputer 2026-11-11・侵入経路詳細未確認 |
+| CL-STA-1238: Cairn（OSS AI ペンテスト基盤）+ 中国製モデルで自律侵入 | A1 | 2026-11-13 | 本編（X=7 Y=6・burst2） | 2026-11-13 | YES | Unit 42 2026-11-12 |
+| Silent Lynx: Hermes（OSS AI エージェント）+ DeepSeek で中央アジア政府を偵察 | A1 | 2026-11-13 | 本編（X=5 Y=4） | 2026-11-13 | YES | The Record/CloudSEK 2026-11-12 |
+| GPUStack 認証バイパス CVE-2026-102895 への悪用試行 | C2 | 2026-11-13 | 参考B（X=4 Y=3） | 2026-11-13 | YES | SANS ISC 2026-11-12 |
+| Notion 顧客データ流出（Fireworks AI 侵害） | C1 | 2026-11-13 | 参考B（X=3 Y=3） | 2026-11-13 | NO | SecurityWeek 2026-11-12・本文未取得 |
