@@ -1,0 +1,468 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-14 07:50 JST
+調査期間: 2026-11-13 07:00 〜 2026-11-14 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+------------------------------------------------------------
+AI-2026-11-14-001 [カテゴリA] FBI フラッシュ警報：OSS の AI 攻撃ツール ARTEX が攻撃を『機械の速さ』で自動化（初期標的選定から特権取得まで 3 時間未満の侵入も）
+------------------------------------------------------------
+The Record によれば、FBI は OSS のハッキングツール ARTEX が攻撃技術の連鎖に要する時間を大幅に短縮し、一部の侵入では初期の標的選定から特権取得まで 3 時間未満で進んだとするフラッシュ警報を出した。Cisco Talos は AI 対応のペネトレーションテスト基盤が悪用されると攻撃者の技術的な敷居を下げ侵入を加速すると分析し、Elastic Security Labs は ARTEX・CyberStrikeAI・Cairn・PentAGI・HexStrike の 5 つのエージェント型攻撃フレームワークが 2〜25 秒のバースト動作で、コード上で認可を強制しないと分析した。ARTEX は既報（Storm-0940・Vapor Panda 等の悪用）で、今回は FBI 警報と検知観点の新規情報。本文は未取得・見出し／要約の範囲。
+  被害規模: FBI は ARTEX で攻撃技術の連鎖に要する時間が大幅に短縮され、一部の侵入で初期標的選定から特権取得まで 3 時間未満と述べた（The Record 経由）。被害組織数は本文未取得で未確認。
+  参照: https://therecord.media/artex-ai-tool-fbi-flash-alert (The Record (Recorded Future))
+  参照: https://blog.talosintelligence.com/artex-and-beyond (Cisco Talos)
+  参照: https://www.elastic.co/security-labs/threat-command/agentic-offensive-frameworks-detection-artex (Elastic Security Labs)
+
+
+【参考B】
+------------------------------------------------------------
+AI-2026-11-14-002 [カテゴリA] Elastic：CyberStrikeAI サーバーが 16 日間・4 つの AWS アカウント・8 つの ID に侵入（CloudTrail に残る AI 主導の侵入・141 ミリ秒で 56 回の API 呼び出し）
+------------------------------------------------------------
+Elastic Security Labs の見出しと要約によれば、CyberStrikeAI サーバーは 16 日間にわたり 4 つの AWS アカウントで 8 つの ID を使い、CloudTrail の記録では 141 ミリ秒に 56 回の API 呼び出しが行われた。6 つの検知ルールが個別には侵入の一部しか捉えなかった。CyberStrikeAI は既報（TrendAI の日本標的事例）で、今回は AWS 環境での検知観点の新規情報。攻撃者・被害組織は要約の範囲で未特定。
+  被害規模: Elastic は 16 日間に 4 つの AWS アカウントと 8 つの ID を使った侵入を CloudTrail で確認し、6 つの検知ルールがそれぞれ一部しか捉えなかったと述べた。被害組織・損害額は要約の範囲で未確認。
+  参照: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion (Elastic Security Labs)
+
+
+【参考A】 なし
+
+【除外】
+  - BleepingComputer：How one AI agent exposed five critical enterprise security gaps（ベンダー寄稿・AI エージェントのガバナンス論） … 攻撃・脆弱性の具体的な事象が見出し・要約の範囲では確認できず、運用上の一般論のため採用しない。
+  - SecurityWeek：OpenAI Unveils Daybreak Red Team, Defense Factory Security Tools（防御・レッドチーム向け製品の発表） … 攻撃事象ではなく製品発表で、Section 1 の対象（攻撃・攻撃対象・基盤の脆弱性）に該当しない。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+------------------------------------------------------------
+CVE-2026-123039 [high] Check Point Security Gateway（Gaia OS の DynamicCLI デーモンの権限昇格・root）。PHP2Shell（CVE-2026-109618・CVE-2026-109619）で侵入後に連鎖して悪用
+------------------------------------------------------------
+対象: Check Point / R82.20・R82.10・R82・R81.20・R81.10・R81（The Hacker News 経由の Check Point の記述）。修正は緊急ホットフィックス
+【概要】
+The Hacker News（Check Point の発表を引用）によれば、未特定の攻撃者が未修正の Check Point Security Gateway へ PHP2Shell で侵入し、Gaia OS の DynamicCLI の権限昇格（CVE-2026-123039・CVSS 7.8）で root を得て TSGA バックドアと TSProxy を設置した。10-30 にイスラエルの組織が狙われ、11-02 から複数国・業種へ拡大した。一部の組織では ESXi ホストへ SSH で横展開してワイパー destroy_v6 が展開された。Check Point は『数十の顧客に対する悪用を観測』と述べた。攻撃者の帰属は情報源に記載が無い。
+【一時緩和】
+  - Check Point の緊急ホットフィックスを適用する（CVE-2026-123039）
+  - PHP2Shell（CVE-2026-109618・CVE-2026-109619）の修正版 PHP／Check Point 側の修正が未適用のゲートウェイを優先して更新する
+  - ゲートウェイから ESXi への SSH 接続と /tmp の DynamicCLI ソケット周辺の不審な書き込みを確認する
+【IOC】IP: 130.94.19[.]204 / ファイル: TSGA, TSProxy, destroy_v6, DREAM_ANNEXATION.txt
+  参照: https://thehackernews.com/2026/11/hackers-exploit-php2shell-flaws-in.html (The Hacker News)
+  参照: https://www.bleepingcomputer.com/news/security/check-point-patches-zero-day-that-lets-hackers-get-root-access (BleepingComputer)
+  参照: https://www.securityweek.com/php2shell-exploited-in-destructive-check-point-gateway-attacks/ (SecurityWeek)
+  参照: https://www.cisa.gov/news-events/alerts/2026/11/13/cisa-adds-two-known-exploited-vulnerabilities-catalog (CISA)
+
+------------------------------------------------------------
+CVE-2026-114713 [medium] UnrealIRCd（labeled-response モジュールの IRCv3 label メッセージのエスケープ不備・6.0.0 以上 6.2.7.1 未満）
+------------------------------------------------------------
+対象: UnrealIRCd / UnrealIRCd 6.0.0 以上 6.2.7.1 未満（EUVD の記述）
+【概要】
+CISA は 2026-11-13、UnrealIRCd の『区切り文字の不適切な無害化』の脆弱性 CVE-2026-114713 を実悪用の証拠に基づき KEV へ追加した（FCEB 期限 11-16・ランサムウェア利用は不明）。EUVD は、labeled-response モジュールが IRCv3 の label メッセージをエスケープしないと記述している。悪用の主体・手口・規模は CISA の通知に記載が無く確認できていない。
+【一時緩和】
+  - UnrealIRCd を 6.2.7.1 以降へ更新する
+  参照: https://www.cisa.gov/news-events/alerts/2026/11/13/cisa-adds-two-known-exploited-vulnerabilities-catalog (CISA)
+
+
+【APT活動-本編】
+------------------------------------------------------------
+BlueNoroff-2026-FaceStealer BlueNoroff（FaceStealer）／TraderTraitor（Binance 流出資金の押収）（帰属確度: high・国家: North Korea（FBI／DOJ が DPRK に結び付くアクターと明示。BlueNoroff との関連は The Hacker News が記述））
+------------------------------------------------------------
+The Hacker News によれば、FBI は北朝鮮（DPRK）に結び付くアクターが社会工学スキーム FaceStealer で過去 18 か月に 4 億ドル超の暗号資産を窃取したと確認し、攻撃に使われたクラウド基盤を押収した。手口は盗んだアカウントからビデオ会議への招待を送り、参加者の映像を録画しつつ、被害者が知る人物の事前録画映像やディープフェイクを見せて信頼させるものとされる。The Hacker News は同活動が BlueNoroff と結び付く金銭目的のクラスターと記述する。同日、DOJ は TraderTraitor による Binance への侵害で窃取された 12 億ドル超の暗号資産の押収・差押えを発表した。帰属は米政府の発表に基づく。
+【標的】暗号資産・Web3 関係の個人・組織。FBI は過去 18 か月で 4 億ドル超の窃取を確認
+【TTP】
+  - T1656 (defense-evasion): The Hacker News（DOJ の記述）が、著名人のディープフェイク映像や被害者の事前録画映像で信頼を得る手口を記述
+【IOC】IP: なし / ファイル: なし
+【推奨】暗号資産・Web3 関係者は、既知の相手から届いた予定外のビデオ会議の招待を別経路で確認し、会議アプリの更新や画面共有・ソフト導入の要求に応じない。取引所は不審な出金経路（スイーパー等）の検知を強化する。
+  参照: https://thehackernews.com/2026/11/fbi-says-north-korean-hackers-stole.html (The Hacker News)
+  参照: https://www.securityweek.com/fbi-says-us-seized-1-2-billion-worth-of-cryptocurrency-stolen-from-binance/ (SecurityWeek)
+
+------------------------------------------------------------
+SilentAir-2026-IPXSignaling SilentAir（Enea の命名）（帰属確度: low・国家: Enea は『国家レベルのアクター』と高い確信度で評価し、中国との関連は低い確信度にとどまる（The Hacker News 経由））
+------------------------------------------------------------
+The Hacker News によれば、Enea は、アジアの移動体通信事業者内の侵害済み機器を使って選ばれた人物の通話・SMS を傍受する活動を SilentAir と命名した。攻撃元は少なくとも 6 か国で、標的は主に台湾の加入者。SS7／Diameter の UpdateLocation メッセージで加入者を自機器が収容していると偽り、通話・SMS を迂回させる。一部では 2 要素認証コードの傍受が観測されたが、アカウント乗っ取りの有無は報告に無い。傍受は攻撃の 18.3%（通常の監視事業者は 2.1%）。Enea は活動を一旦停止させたが再開し得るとし、事業者側の対処の有無は報告に無い。国家との関係は Enea の評価であり、中国との関連は低い確信度に限られる。
+【標的】主にアジアの移動体通信事業者の加入者（台湾が主要な標的）。政治・政府関係の要人も含まれた
+【TTP】
+  - なし（ATT&CK Enterprise に該当する技術の記述が情報源に無いため techniques は付与しない（判断不能・confidence low））
+【IOC】IP: なし / ファイル: なし
+【推奨】通信事業者は IPX／SS7／Diameter の UpdateLocation 系メッセージの不審な発信元を監視・フィルタし、ローミング相手の信頼を見直す。SMS 認証コードに依存するアカウントは、アプリ型・FIDO 型の認証へ移行する。
+  参照: https://thehackernews.com/2026/11/silentair-hijacks-asian-telecom.html (The Hacker News)
+  参照: https://www.securityweek.com/silentair-hackers-intercept-calls-sms-from-inside-mobile-networks/ (SecurityWeek)
+
+
+【APT活動-注目動向】 なし
+
+【注目CVE（リスト外）】 なし（トレンド欄に記載）
+
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-14-001 N-able N-central：4EverAble2Shell の実悪用で 21 サーバーが感染（うち 19 台は Hotfix 2 適用済み・暗号資産マイナーを配布）
+------------------------------------------------------------
+The Hacker News によれば、N-able は 11-12（木）に Agent2Shell・4EverAble2Shell の公開を受けて機能と連携の一部を制限し、ホスト環境の Intune 連携を停止した。同記事は、複数の脅威インテリジェンス報告で 4EverAble2Shell が予備的な探索を超えて実悪用され、攻撃者が暗号資産マイナーを展開していると記述する（見出しは 21 サーバー感染・うち 19 台が HF2 適用済み）。SecurityWeek も『PoC 公開の数時間後に悪用』と報じた。Apache Axis（CVE-2026-90436・CVSS 9.8）と N-central の権限昇格を連鎖させて root を得る。オンプレ利用者には Agent・Probe の更新と Legacy API の無効化が促されている。本文は The Hacker News のみ取得・SecurityWeek は見出し・要約の範囲。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-n-central-flaws-to.html (The Hacker News)
+  参照: https://www.securityweek.com/hackers-exploit-new-n-central-zero-day-hours-after-poc-publication/ (SecurityWeek)
+
+------------------------------------------------------------
+TREND-2026-11-14-002 Citrix NetScaler：重大（CVSS 9.3〜9.5）の脆弱性 10 件を一括修正（メモリ破損による DoS が中心・悪用の報告なし）
+------------------------------------------------------------
+SecurityWeek と Security NEXT によれば、Cloud Software Group は NetScaler ADC / Gateway の 10 件の『クリティカル』な脆弱性（DNS/DoH・SMPP・Email OTP・EPA・ICA プロキシ・パケット処理等のメモリ破損／オーバーフローで、予期しない動作や DoS）を修正した。NetScaler Console にも別の重大な脆弱性（CVE-2026-120869・既報）がある。CERT-FR も Citrix 製品の勧告を出した。悪用の報告は確認できていない（本文は未取得・要約と NVD/EUVD の記述に基づく）。
+  参照: https://www.securityweek.com/citrix-patches-10-critical-netscaler-vulnerabilities/ (SecurityWeek)
+  参照: https://www.security-next.com/192789 (Security NEXT)
+
+------------------------------------------------------------
+TREND-2026-11-14-003 Operation Endgame：Gootloader・CastleRAT・StealC の基盤を摘発（サーバー 235 台・ドメイン 257 件・窃取認証情報 640 万件を押収）
+------------------------------------------------------------
+SecurityWeek と The Hacker News によれば、国際的な法執行作戦 Operation Endgame が Gootloader・CastleRAT・StealC の基盤を停止し、サーバー 235 台・ドメイン 257 件、4 万人超の被害者に関する約 640 万件の認証情報を押収した（BKA の発表を引用）。The Record は、米 DOJ が Gootloader が 2018 年以降に少なくとも 44 件のランサムウェア攻撃（損害 2,900 万ドル）に関与したと述べたと報じた。法執行による摘発であり、後続の再構築・移行（推測）に留意する。本文は未取得・要約の範囲。
+  参照: https://thehackernews.com/2026/11/operation-endgame-takes-down-gootloader.html (The Hacker News)
+  参照: https://www.securityweek.com/law-enforcement-disrupts-gootloader-castlerat-and-stealc-infrastructure/ (SecurityWeek)
+  参照: https://therecord.media/ (The Record (Recorded Future))
+
+------------------------------------------------------------
+TREND-2026-11-14-004 国内の不正アクセス・情報漏えいが連続：ブックオフ子会社 638 万人、ノジマオンライン約 700 万件、ネットマイル最大約 549 万人、大阪市約 100 万件ほか
+------------------------------------------------------------
+ScanNetSecurity によれば、ブックオフグループホールディングス子会社の会員管理システム（638 万 3,279 人）、『ノジマオンライン』（約 700 万件）、『ネットマイル』（最大約 549 万人・可能性）、丸井グループ委託先 Securitize Japan、無印良品の委託先、東急不動産管理サイトなどで不正アクセスが報じられた。The Record は、大阪市が約 100 万人に影響するデータ侵害を警告し、日本で数十件のサイバーインシデントが続いていると報じた。手口・攻撃者はいずれも見出し・要約の範囲では未確認で、委託先・外部サービス経由が複数ある（推測を含まない記述は見出し基づき）。
+  参照: https://therecord.media/city-of-osaka-japan-email-data-breach (The Record (Recorded Future))
+  参照: https://www.scannetsecurity.jp/ (ScanNetSecurity)
+
+------------------------------------------------------------
+TREND-2026-11-14-005 Trezor：リセラー CryptoBilis 経由の Safe 5 3 台に秘密フレーズを窃取するハードウェアインプラントを確認
+------------------------------------------------------------
+BleepingComputer と The Hacker News によれば、Trezor は東南アジアのリセラー CryptoBilis から購入された Safe 5 の 3 台に、画面のリカバリーフレーズを読み取り携帯網経由で攻撃者のサーバーへ送る追加基板が含まれていたと確認した。Trezor は修正（検証手段）を公開したと述べる。サプライチェーン上の改ざんで、非公式リセラーからの購入に注意が要る。攻撃者は未特定（本文は未取得・要約の範囲）。
+  参照: https://thehackernews.com/2026/11/trezor-confirms-hidden-hardware.html (The Hacker News)
+  参照: https://www.bleepingcomputer.com/news/cryptocurrency/trezor-confirms-crypto-stealing-implants-in-three-wallets-releases-fix (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-14-006 PostgreSQL：52 件を修正（22 年前から存在する型混同 CVE-2026-6460・CVSS 8.8・認証済みユーザーの RCE）
+------------------------------------------------------------
+The Hacker News によれば、PostgreSQL は 11-12 の更新で 52 件の脆弱性を修正した。CVE-2026-6460（CVSS 8.8）は、オブジェクトを作成できる DB ユーザーがサーバー上でコードを実行できる型混同で、完全な防御には C 言語拡張の再ビルドも必要とされる。CERT-FR も PostgreSQL の勧告を出した。悪用の報告は確認できていない。
+  参照: https://thehackernews.com/2026/11/postgresql-patches-52-flaws-including.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-14-007 Windows 11 月更新：印刷障害とライセンス認証エラー（0x80041008）を Microsoft が確認／Microsoft の大規模障害は攻撃ではないと発表
+------------------------------------------------------------
+BleepingComputer によれば、Microsoft は 11 月の月例更新で印刷の問題と、エラー 0x80041008 を伴う Windows のライセンス認証の失敗を確認した。SecurityWeek と TASS は、Microsoft サービスの世界的な障害を報じ、Microsoft の副社長はサイバー攻撃が原因ではないと述べたとされる（TASS の記述）。いずれもセキュリティ侵害ではなく運用上の影響の情報で、本文は未取得。
+  参照: https://www.bleepingcomputer.com/news/security/microsoft-says-november-security-updates-cause-printing-issues/ (BleepingComputer)
+  参照: https://www.securityweek.com/microsoft-struggles-to-restore-email-and-other-services-in-a-global-outage/ (SecurityWeek)
+
+------------------------------------------------------------
+TREND-2026-11-14-008 ドイツ：軍用ドローン企業 Quantum Systems がサイバー攻撃を確認（運用に影響）／連邦議会がスパイ機関に侵入・妨害権限を付与する法律を可決
+------------------------------------------------------------
+BleepingComputer によれば、ドイツの防衛技術企業 Quantum Systems は 10 月下旬に敵対的な主体による進行中のサイバー攻撃を検知したと確認し、軍用ドローンの運用が妨害された。The Record は、ドイツ議会が情報機関にハッキング・妨害の権限を与える法律を可決したと報じた。攻撃者は情報源に明示されておらず帰属しない。本文は未取得・要約の範囲。
+  参照: https://www.bleepingcomputer.com/news/security/german-military-drone-operations-disrupted-by-cyberattack (BleepingComputer)
+  参照: https://therecord.media/ (The Record (Recorded Future))
+
+
+【攻撃予報】 本日の新規予報はフォーキャスター側（forecaster/forecasts/daily）を参照
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】 Section 2 を参照（CVE-2026-123039 Check Point・CVE-2026-114713 UnrealIRCd〔KEV 追加〕）
+【本編】 なし
+【参考A（国内）】 なし
+【参考B（国際先行）】 なし
+【除外サマリー】 57 件（CVSS 9.0 以上の新規公開。窓内に悪用・KEV の報告無し）
+  - CVE-2026-107407 ほか8件（CVE-2026-107408・CVE-2026-107409・CVE-2026-107410・CVE-2026-107412・CVE-2026-107415・CVE-2026-111334・CVE-2026-120864・CVE-2026-120868） Citrix NetScaler ADC / Gateway の複数の脆弱性（NetScaler CNA の一括公開・CVSS 9.3〜9.5・メモリ破損／オーバーフロー） … 単一ベンダーの一括公開バッチ。窓内に悪用・KEV の報告を確認できず、修正版への更新で対応（Section 2 トレンド欄・Section 4 に記載）。
+  - CVE-2026-124822 The Easy DragDrop File Uploader WordPress plugin before 1.1.10 does not validate a user-su … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 10.0）。
+  - CVE-2026-127275 A vulnerability was determined in Linksys EA8100 1.0.3.216940. This issue affects the func … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 10.0）。
+  - CVE-2026-127277 A security flaw has been discovered in Linksys EA8100 1.0.3.216940. The affected element i … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 10.0）。
+  - CVE-2026-123965 A prompt injection vulnerability in all versions of Jet Admin Cloud Platform allows a remo … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-125851 Unrestricted Upload of File with Dangerous Type vulnerability in themagnifico52 Hotel Book … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-127073 OpsTree BuildPiper before 2.7.0 contains a privilege escalation vulnerability that allows  … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-127080 OpsTree BuildPiper before 2.7.0 contains an improper authorization vulnerability that allo … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.9）。
+  - CVE-2026-109445 PLANET GS-5220-8P2T2S (hardware version 3.0) firmware versions before 3.2412b261008 contai … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-118063 The Advance Guest Post WordPress plugin through 1.9 does not properly validate uploaded fi … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-118064 The Advance Guest Post WordPress plugin through 1.9 does not properly restrict or validate … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-119077 The ELEX WordPress HelpDesk & Customer Ticketing System plugin for WordPress is vulnerable … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-124833 The Ahime Image Printer WordPress plugin through 1.0.0 does not validate the name, extensi … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-125055 The Chatterbug Forms – Fast, Flexible WordPress Form Builder plugin for WordPress is vulne … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-125855 Deserialization of Untrusted Data vulnerability in Elextensions ELEX WordPress HelpDesk &  … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-126119 The Streamit WordPress plugin before 1.3.10 does not perform any authorization or nonce ve … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-126315 Frappe HRMS 16.14.0 before 16.20.1 sends product usage events on certain HR transactions w … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-128027 FrankenPHP Docker images before 1.1.11 were rebuilt only when new base image tags were cre … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-129110 sysPass 3.0.1 through 3.2.11 contains an authentication bypass vulnerability that allows u … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-129171 NginxPulse 1.5.0 before 1.6.26 contains an unauthenticated sql injection vulnerability tha … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-63079 RBH Access Technologies Integra32 Security Management System 5.1.11 R5.0 contains an unaut … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-82504 VITEC EZ TV Platform Server before 8.5.0 contains an unrestricted file upload vulnerabilit … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.8）。
+  - CVE-2026-126378 Vvveb through 1.0.8.6 contains a file upload vulnerability in the theme installer validFil … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.4）。
+  - CVE-2026-126380 Vvveb before 1.0.9.0 contains a denylist bypass in system/traits/media.php where '.phar' i … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.4）。
+  - CVE-2026-128049 OpenMage Magento LTS before 20.18.2 and 21.0.0-beta1 before 21.0.0-beta3 contains a cross- … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.4）。
+  - CVE-2026-129165 Tactical RMM 0.17.0 through 1.6.1 contains an arbitrary file read in the /reporting/templa … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.4）。
+  - CVE-2026-95377 OS command injection in the TFTP provisioning module of Zenitel EdgeAudioClient before 9.6 … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.4）。
+  - CVE-2026-124415 Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection') vulne … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-124970 Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection') vulne … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-126269 NocoDB before 2026.09.0 contains a stored cross-site scripting vulnerability that allows a … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-126274 NocoDB before 2026.08.0 contains a stored cross-site scripting vulnerability that allows a … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-126473 OpenEMR before 8.4.0 contains OAuth scope canonicalization and containment flaws that allo … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-126945 Zipline before 4.5.1 contains a stored cross-site scripting vulnerability in the Highlight … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-95614 The host configuration watcher in Zenitel Connect before 1.11.0 applies a rsyslog configur … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.3）。
+  - CVE-2026-126273 NocoDB before 2026.09.0 contains a privilege escalation vulnerability in initAdminFromEnv. … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-126377 Vvveb before 1.0.9.0 contains an authentication bypass vulnerability in generateCookie() i … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-126937 Zipline before 4.6.5 contains a TOCTOU race condition in the POST /api/setup endpoint that … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-126952 Zipline through 4.4.0 contains an authentication bypass vulnerability in the WebAuthn logi … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-126953 Cudy TR3000 before 2.5.42 contains an OS command injection vulnerability that allows a mal … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-128014 FrankenPHP standalone static binaries 1.8.0 before 1.13.2 bundle the PHP brotli extension  … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-128046 OpenMage magento-lts 20.17.0 before 20.18.2 and 21.0.0-beta1 before 21.0.0-beta3 contains  … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-128047 OpenMage magento-lts before 20.18.2 and 21.0.0-beta pre-releases before 21.0.0-beta3 gener … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-129124 C-Kermit before 11.1.515 contains an OS command injection vulnerability that allows remote … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-129125 C-Kermit 6.0.192 before 11.1.515 contains a remote code execution vulnerability that allow … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-129126 C-Kermit before 11.1.515 contains a heap buffer overflow vulnerability in putsrv() in ckcf … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-129167 Seafile SeaDoc converter 2.0.4 before 2.0.11 and 3.0.0 before 3.0.8 contains an absolute p … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-75491 Cudy TR3000 before 2.5.42 contains an authentication bypass vulnerability in the Mosquitto … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-75495 Cudy TR3000 before 2.5.42 contains an OS command injection vulnerability that allows a mal … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.2）。
+  - CVE-2026-103813 Dell PowerStore contains an OS Command Injection vulnerability. An authenticated user with … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-124763 The Woocommerce Wishlist WordPress plugin through 1.1.0 does not have authorisation and CS … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-126265 SiYuan 2.1.0 before 3.8.9 contains a flaw where the loginAuth CAPTCHA challenge lives in a … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-126280 NocoDB before 2026.08.0 contains a race condition in refresh-token rotation that allows at … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-127079 OpsTree BuildPiper before 2.7.0 lacks rate limiting on password-reset OTP verification, al … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-128023 FrankenPHP before 1.13.0 contains an authentication bypass vulnerability that allows unaut … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-128332 Listmonk 6.0.0 before 7.0.0-beta.2 contains a 2FA bypass vulnerability that allows attacke … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-128333 listmonk 6.0.0 before 7.0.0-beta.2 contains an authentication bypass vulnerability in doRe … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+  - CVE-2026-129161 Dromara free-fs 2.0.1 through 2.3.1 contains an improper restriction of authentication att … 窓内（11-13 07:00〜11-14 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応（CVSS 9.1）。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-14-001 [high] Check Point ゲートウェイ利用組織：Gaia の緊急ホットフィックス適用と侵害確認（KEV・期限 11-16）
+------------------------------------------------------------
+対象: Check Point Security Gateway（Gaia OS）
+
+【概要】
+CVE-2026-123039 は KEV に追加され（FCEB 期限 11-16）、PHP2Shell との連鎖で root 化・バックドア設置・ESXi ワイパー展開が報告された。ゲートウェイは境界機器で、侵害されると背後の仮想基盤へ波及する。
+
+【推奨アクション】
+1) Gaia のホットフィックスと PHP2Shell 関連の修正を適用する。2) Mobile Access ポータルを持つゲートウェイで PHP Web シェル・TSGA・TSProxy・130.94.19[.]204 発の通信を探索する。3) ゲートウェイから ESXi への SSH と DREAM_ANNEXATION.txt の有無を確認し、ESXi のバックアップを隔離保管する。
+【監視】ゲートウェイ上の不審なプロセス・Web シェル、ゲートウェイ発の ESXi への SSH ログイン、/tmp 配下の DynamicCLI ソケットへの書き込みを監視する。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-php2shell-flaws-in.html (The Hacker News)
+  参照: https://www.bleepingcomputer.com/news/security/check-point-patches-zero-day-that-lets-hackers-get-root-access (BleepingComputer)
+
+------------------------------------------------------------
+SOC-2026-11-14-002 [high] N-able N-central（オンプレ）管理者：実悪用（21 台感染）を前提にした点検と Legacy API 無効化
+------------------------------------------------------------
+対象: N-able N-central
+
+【概要】
+4EverAble2Shell・Agent2Shell が HF2 適用済みの環境でも悪用され、暗号資産マイナーが展開された。N-central は多数の顧客端末を管理するため、侵害は顧客へ波及する（MSP の場合）。
+
+【推奨アクション】
+1) Legacy API を無効化し、Agent・Probe を更新する。2) サーバー上の不審なプロセス・マイナー・新規管理者を確認する。3) N-able の追加ガイダンスに従い、制限された機能・連携を再有効化しない。
+【監視】N-central サーバーからの外向き通信、匿名エージェントセッション、root で動く未知のプロセスを監視する。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-n-central-flaws-to.html (The Hacker News)
+
+------------------------------------------------------------
+SOC-2026-11-14-003 [high] UnrealIRCd を運用する組織：6.2.7.1 以降へ更新（KEV・期限 11-16）
+------------------------------------------------------------
+対象: UnrealIRCd
+
+【概要】
+CVE-2026-114713 が KEV に追加された。IRC サーバーは社内チャットや旧来の運用基盤で見落とされやすい。
+
+【推奨アクション】
+1) UnrealIRCd 6.0.0 以上 6.2.7.1 未満の稼働有無を棚卸しし、6.2.7.1 以降へ更新する。2) 更新できない場合は外部公開を止める。
+【監視】UnrealIRCd プロセスからの想定外の子プロセスと外向き通信を監視する。
+  参照: https://www.cisa.gov/news-events/alerts/2026/11/13/cisa-adds-two-known-exploited-vulnerabilities-catalog (CISA)
+
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-14-004 [medium] Citrix NetScaler 管理者：10 件の重大な脆弱性の修正版適用（悪用の報告なし）
+------------------------------------------------------------
+対象: Citrix NetScaler ADC / Gateway / Console
+
+【概要】
+NetScaler は過去に繰り返し悪用された（本リポジトリの既報に多数）。今回の 10 件はメモリ破損・DoS が中心で悪用の報告は無いが、修正版の公開後に差分解析が進む（推測）。
+
+【推奨アクション】
+1) 該当ビルドを確認し、修正版へ更新する。2) 管理インターフェースを非公開にする。3) NetScaler Console の既報の認証バイパス（CVE-2026-120869）も併せて適用する。
+【監視】NetScaler の異常再起動・クラッシュ、DNS/DoH・SMPP・EPA 等の機能への不審なリクエストを監視する。
+  参照: https://www.security-next.com/192789 (Security NEXT)
+  参照: https://www.securityweek.com/citrix-patches-10-critical-netscaler-vulnerabilities/ (SecurityWeek)
+
+------------------------------------------------------------
+SOC-2026-11-14-005 [medium] 暗号資産・Web3 関係者：既知の相手を装うビデオ会議（FaceStealer）への警戒
+------------------------------------------------------------
+対象: ビデオ会議・暗号資産取引
+
+【概要】
+FBI は北朝鮮に結び付くアクターが 18 か月で 4 億ドル超を窃取したと確認した。盗まれたアカウントからの招待とディープフェイクで信頼させる手口は、金融以外の組織にも転用され得る（推測）。
+
+【推奨アクション】
+1) 予定外のビデオ会議の招待は別経路（電話・既知のチャット）で確認する。2) 会議中の『ソフトの更新』『画面共有』の要求を拒否する。3) 重要な送金は複数人承認とコールバック確認を必須にする。
+【監視】会議アプリからの不審なインストーラー実行、ブラウザ・ウォレット拡張の改変、通常外の出金承認を監視する。
+  参照: https://thehackernews.com/2026/11/fbi-says-north-korean-hackers-stole.html (The Hacker News)
+  参照: https://www.securityweek.com/fbi-says-us-seized-1-2-billion-worth-of-cryptocurrency-stolen-from-binance/ (SecurityWeek)
+
+------------------------------------------------------------
+SOC-2026-11-14-006 [medium] PostgreSQL 運用者：52 件の修正（CVE-2026-6460・認証済み RCE）の適用と C 拡張の再ビルド
+------------------------------------------------------------
+対象: PostgreSQL
+
+【概要】
+オブジェクトを作成できる DB ユーザーがサーバー上でコードを実行できる型混同（CVSS 8.8）。完全な防御には C 言語拡張の再ビルドも要る。
+
+【推奨アクション】
+1) 11-12 の更新版へ更新する。2) C 言語拡張を再ビルドする。3) オブジェクト作成権限を持つロールを棚卸しする。
+【監視】DB ユーザーによる拡張・関数の作成、サーバープロセスからの想定外の子プロセスを監視する。
+  参照: https://thehackernews.com/2026/11/postgresql-patches-52-flaws-including.html (The Hacker News)
+
+------------------------------------------------------------
+SOC-2026-11-14-007 [medium] AI ペネトレーション基盤（ARTEX 等）の検知：2〜25 秒のバースト動作と短時間の特権取得への備え
+------------------------------------------------------------
+対象: AWS CloudTrail／ID 基盤／EDR
+
+【概要】
+FBI は ARTEX で初期標的選定から特権取得まで 3 時間未満の侵入があったと述べ、Elastic は 5 フレームワークが短い間隔のバーストで動くと分析した。
+
+【推奨アクション】
+1) 短時間に集中する API 呼び出し・列挙の検知ルールを、複数ルールを相関させる形で見直す。2) 認証の弱い公開 API・パスワードスプレー対策を点検する。3) 特権取得までの検知・封じ込めの目標時間を 3 時間未満に置く。
+【監視】CloudTrail の 1 秒未満・複数 ID の連続呼び出し、新規管理者の作成、公開ストレージへの無認証書き込みを監視する。
+  参照: https://blog.talosintelligence.com/artex-and-beyond (Cisco Talos)
+  参照: https://www.elastic.co/security-labs/threat-command/agentic-offensive-frameworks-detection-artex (Elastic Security Labs)
+  参照: https://www.elastic.co/security-labs/threat-command/cyberstrikeai-aws-cloudtrail-intrusion (Elastic Security Labs)
+
+【低優先度】
+------------------------------------------------------------
+SOC-2026-11-14-008 [low] 国内の大規模漏えい（ブックオフ子会社・ノジマ・ネットマイル・大阪市ほか）：委託先・外部サービス経由の点検
+------------------------------------------------------------
+対象: 会員管理・ポイント・委託先システム
+
+【概要】
+委託先や外部プラットフォーム経由の侵害が複数報じられた。手口・攻撃者は未確認で、一般的な委託先管理の点検が要る。
+
+【推奨アクション】
+1) 委託先のアクセス権・データ保持期間（利用終了後のデータ削除）を棚卸しする。2) 自社ドメインを装う通知メールの注意喚起を従業員・顧客へ行う。
+【監視】委託先からの大量エクスポート、利用終了アカウントのログインを監視する。
+  参照: https://therecord.media/city-of-osaka-japan-email-data-breach (The Record (Recorded Future))
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【周辺諸国動向】（報告専用・予報の入力には使用しない）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+対象日: 2026-11-14
+走査: 候補 99件 / ゲート対象 6件 / 処理済 6件 / 未処理 0件（状態: ok）
+※ 国への該当は『記事がその国に言及している』ことを示すだけで、攻撃の主体を意味しない。
+※ 事実は出典番号付きで記し、推測は『（推測）』と確度を付けて分けている。
+
+■ 中国（CN）
+
+（本日の該当なし）
+
+■ ロシア（RU）
+
+（本日の該当なし）
+
+■ 北朝鮮（KP） [primary]
+
+------------------------------------------------------------
+[nbr-2026-11-14-001] FBI が北朝鮮に結び付くアクターによる暗号資産 4 億ドル超の窃取（FaceStealer）を確認し、Binance 流出資金 12 億ドル超を押収
+------------------------------------------------------------
+
+区分: サイバー関連活動
+国との関係: 国家との関係を情報源が明示
+原題: FBI Says North Korean Hackers Stole Over $400 Million in Crypto Using Deepfake Video Calls（言語: en）
+
+【帰属（情報源の記述）】
+FBI／DOJ（The Hacker News 経由） は次のように述べている: 「threat actors tied to the Democratic People's Republic of Korea (DPRK aka North Korea)」（確度: 高）
+※ 本レポートが帰属を判断したものではなく、情報源の記述の引用である。
+
+【事実】
+・The Hacker News によれば、FBI は DPRK に結び付くアクターが社会工学スキーム FaceStealer で過去 18 か月に 4 億ドル超の暗号資産を窃取したと確認し、使われたクラウド基盤を押収した。 [1]
+・The Hacker News によれば、DOJ は TraderTraitor が Binance への侵害で窃取した 12 億ドル超の暗号資産の押収・差押えを発表し、資金は北朝鮮の兵器計画に使われると述べた。 [1]
+・SecurityWeek は、同日（木）に FBI が別の社会工学スキームによる 4 億ドルの窃取を北朝鮮によるものと発表したと報じた。 [2]
+
+【評価】
+（推測）資金の押収と基盤の押収が同時に行われたことは、米政府が北朝鮮の暗号資産窃取の収益化を断つ政策を重視していることを示す可能性があるが、情報源は政策意図を明示していない。（確度: 低）
+
+【非サイバー情勢との関連: 国家戦略】
+事実: The Hacker News によれば、DOJ は窃取された暗号資産が北朝鮮の兵器計画の資金源になると述べた。 [1]
+（推測）サイバー窃取の収益が国家戦略上の資金源と位置づけられていることを示すが、資金の最終的な使途は米政府の主張であり独立には確認できない。（確度: 低）
+
+【出典の評価】
+一次情報: いいえ / 独立した情報源: 2件 / 国営メディア等の政府系: いいえ
+
+【関連】
+・BlueNoroff-2026-FaceStealer
+
+【参照】
+[1] https://thehackernews.com/2026/11/fbi-says-north-korean-hackers-stole.html（The Hacker News / 報道 / en）
+[2] https://www.securityweek.com/fbi-says-us-seized-1-2-billion-worth-of-cryptocurrency-stolen-from-binance/（SecurityWeek / 報道 / en）
+
+■ 韓国（KR）
+
+（本日の該当なし）
+
+■ 台湾（TW） [regional]
+
+------------------------------------------------------------
+[nbr-2026-11-14-002] SilentAir：アジアの移動体通信事業者の侵害済み機器から台湾の加入者の通話・SMS を傍受（Enea の報告）
+------------------------------------------------------------
+
+区分: サイバー関連活動
+国との関係: 当該国が標的
+原題: SilentAir Hijacks Asian Telecom Networks to Intercept SMS 2FA Codes and Spy on Taiwanese Users（言語: en）
+
+【事実】
+・The Hacker News によれば、Enea は SilentAir が侵害した事業者機器から通話・SMS を傍受し、標的は主に台湾の加入者で、攻撃元は少なくとも 6 か国にあると報告した。 [1]
+・The Hacker News によれば、Enea は SilentAir を国家レベルのアクターと高い確信度で評価した一方、中国との関連は低い確信度にとどまるとした。 [1]
+・SecurityWeek によれば、Enea は SilentAir が移動体ネットワークのノードを乗っ取って通話・メッセージを傍受し、台湾の加入者が主な標的だったと述べた。 [2]
+
+【評価】
+（推測）傍受の割合が通常の監視事業者より高いことは、特定個人の継続的な監視を狙う可能性を示すが、Enea は目的・依頼主を明示していない。中国との関連は低い確信度で、確定できない。（確度: 低）
+
+【出典の評価】
+一次情報: いいえ / 独立した情報源: 2件 / 国営メディア等の政府系: いいえ
+
+【関連】
+・SilentAir-2026-IPXSignaling
+
+【参照】
+[1] https://thehackernews.com/2026/11/silentair-hijacks-asian-telecom.html（The Hacker News / 報道 / en）
+[2] https://www.securityweek.com/silentair-hackers-intercept-calls-sms-from-inside-mobile-networks/（SecurityWeek / 報道 / en）
+
+【除外サマリー（周辺諸国動向）】
+・既存エントリと重複: 1件
+・根拠不足: 2件
+・周辺諸国との関係なし: 1件
+
+周辺諸国動向 — サイバー関連活動2件 / 政策・法制0件 / 組織0件 / サイバーセキュリティ関連企業0件 / 地政学（非サイバー情勢）0件 / 除外4件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃基盤プロファイル】（報告専用・予報の入力には使用しない）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+対象日: 2026-11-14
+状態: 正常 / 指標 1件（補強 1 / スキップ 0 / 解析不能 0）/ 照会 3回（成功 3 / データなし 0 / 失敗 0）
+※ すべて公開データベースへの受動照会である。IoC の指す IP・ドメインへは接続していない。
+※ 取得時刻は照会した時点であり、攻撃が行われた時点の状態ではない。
+※ 要約はスクリプトが応答から機械的に作ったもので、推測は含まない。インフラの類似だけで帰属しない。
+
+■ IPアドレス
+
+------------------------------------------------------------
+[inf-2026-11-14-001] 130[.]94[.]19[.]204（IPアドレス）
+------------------------------------------------------------
+
+報告元: CVE-2026-123039
+
+【経路・保有者（RIPEstat）】
+プレフィックス: 130.94.19.0/24（広告中）
+ASN・保有者: AS154177 LIGHT4-AS-AP - LIGHT NODE LIMITED
+アドレス割当: Administered by ARIN
+
+【国（近似）】
+US
+
+【稼働状況（Shodan InternetDB が保有する情報）】
+開放ポート: 22
+CPE（ソフトウェア・バージョン）: cpe:/a:openbsd:openssh:9.2p1, cpe:/o:debian:debian_linux, cpe:/o:linux:linux_kernel
+タグ: なし
+
+【注意】
+・国は位置情報データベースによる近似であり、攻撃者の所在を示さない。
+
+【照会】（公開データベースへの受動照会・IoC 自体へは接続していない）
+・ripestat.prefix 2026-11-13T22:33:02Z 成功
+・ripestat.geolocation 2026-11-13T22:33:02Z 成功
+・internetdb 2026-11-13T22:33:03Z 成功
+
+攻撃基盤プロファイル — 補強1件 / スキップ0件 / 解析不能0件

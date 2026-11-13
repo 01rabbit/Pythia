@@ -237,3 +237,5 @@
 | Silent Lynx: Hermes（OSS AI エージェント）+ DeepSeek で中央アジア政府を偵察 | A1 | 2026-11-13 | 本編（X=5 Y=4） | 2026-11-13 | YES | The Record/CloudSEK 2026-11-12 |
 | GPUStack 認証バイパス CVE-2026-102895 への悪用試行 | C2 | 2026-11-13 | 参考B（X=4 Y=3） | 2026-11-13 | YES | SANS ISC 2026-11-12 |
 | Notion 顧客データ流出（Fireworks AI 侵害） | C1 | 2026-11-13 | 参考B（X=3 Y=3） | 2026-11-13 | NO | SecurityWeek 2026-11-12・本文未取得 |
+| FBI フラッシュ警報: AI 攻撃ツール ARTEX が攻撃を機械の速さで自動化（初期標的選定から特権取得まで 3 時間未満） | A4 | 2026-11-14 | 本編（X=7 Y=6・A-T・burst3） | 2026-11-14 | YES | The Record 2026-11-13・Cisco Talos・Elastic Security Labs が同日に分析・ARTEX は既報（10-13〜11-08） |
+| Elastic: CyberStrikeAI による AWS 侵入（16 日・4 アカウント・8 ID・141 ミリ秒で 56 回の API 呼び出し） | A4 | 2026-11-14 | 参考B（X=6 Y=4・A-R・burst3） | 2026-11-14 | YES | Elastic Security Labs 2026-11-13・CloudTrail 分析・CyberStrikeAI は 10-28 既報 |
