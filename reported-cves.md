@@ -721,10 +721,12 @@
 | CVE-2026-20320 | Cisco BroadWorks OCI XMLパーサ（CVSS 7.5 EUVD値） | 2026-11-11 | kev_listed | 2026-11-11 | YES | ★KEV追加2026-11-10（期限11-24）・悪用詳細は未確認 |
 | CVE-2026-111793 | Openwave Webtop Media Transcoder（異なる領域間の不適切なリソース移動） | 2026-11-11 | kev_listed | 2026-11-11 | YES | ★KEV追加2026-11-10（期限11-24）・CVSS/修正有無は未確認 |
 | CVE-2026-111760 | Git 再帰クローン時のコード実行（整数切り捨て） | 2026-11-11 | none | 2026-11-11 | YES | THN 2026-11-10・2.56.1ほかで修正・悪用報告なし（SOC低） |
-| CVE-2026-125883 | N-able N-central XXE（同時開示の CVE-2026-125878・125882 ほか。PoC公開2026-11-08・HF2公開11-10。11-12 に HF2 にも有効と主張する新PoC） | 2026-11-12 | poc_public | 2026-11-13 | YES | ★ゼロデイ特報・Previdian が探索を報告（成功未確認）・Legacy API 無効化を N-able が勧告 |
+| CVE-2026-125883 | N-able N-central XXE（同時開示の CVE-2026-125878・125882 ほか。PoC公開2026-11-08・HF2公開11-10。11-12 に HF2 にも有効と主張する新PoC） | 2026-11-12 | active_exploitation | 2026-11-14 | YES | ★ゼロデイ特報・Previdian が探索を報告（成功未確認）・Legacy API 無効化を N-able が勧告／11-13: 4EverAble2Shell の実悪用（暗号資産マイナー）・21 サーバー感染（うち 19 台は HF2 適用済み）と THN が報道 |
 | CVE-2026-127063 | ScreenConnect RMM+ 拡張の既定アクセスキー空（CVSS 9.3） | 2026-11-13 | none | 2026-11-13 | YES | ConnectWise が第三者拡張の悪用を認めたが CVE との直接対応は未確認 |
 | CVE-2026-119618 | Apache HTTP Server mod_http2 RCE（CVSS 9.8・2.4.71 で修正） | 2026-11-13 | none | 2026-11-13 | YES | Wiz は悪用未確認・Red Hat は信頼できる悪用の研究ありと記述（食い違い） |
 | CVE-2026-120869 | Citrix NetScaler Console 認証バイパス（CVSS 9.4） | 2026-11-13 | none | 2026-11-13 | YES | Citrix は悪用を認識していないと発表 |
 | CVE-2026-126325 | PTC Windchill/FlexPLM 逆シリアル化 RCE（CVSS v4 9.2） | 2026-11-13 | none | 2026-11-13 | YES | THN 2026-11-12・修正版公開・悪用報告なし |
 | CVE-2026-118383 | MongoDB Server 未認証クラッシュ（フェイルオーバー時） | 2026-11-13 | none | 2026-11-13 | YES | THN 2026-11-12・修正版公開・悪用報告なし |
-| CVE-2026-90436 | Apache Axis（N-central 同梱・CVSS 9.8） | 2026-11-13 | none | 2026-11-13 | YES | Previdian が初の悪用試行を報告（N-central 経由） |
+| CVE-2026-90436 | Apache Axis（N-central 同梱・CVSS 9.8） | 2026-11-13 | active_exploitation | 2026-11-14 | YES | Previdian が初の悪用試行を報告（N-central 経由）／11-13: N-central 経由の実悪用（マイナー展開）と THN が報道 |
+| CVE-2026-123039 | Check Point Security Gateway（Gaia OS DynamicCLI の権限昇格・PHP2Shell と連鎖） | 2026-11-14 | active_exploitation | 2026-11-14 | YES | CVSS 7.8・KEV 2026-11-13 追加（期限 11-16）・Check Point が 10-30 開始の悪用（TSGA・ESXi ワイパー destroy_v6）を報告・攻撃者は未特定・ゼロデイ特報 |
+| CVE-2026-114713 | UnrealIRCd（labeled-response の IRCv3 label 無害化不備・6.2.7.1 で修正） | 2026-11-14 | kev_listed | 2026-11-14 | YES | KEV 2026-11-13 追加（期限 11-16）・悪用の主体・手口は未確認・CVSS 未付与（EUVD 8.6）・ゼロデイ特報 |

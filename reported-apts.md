@@ -291,3 +291,5 @@
 | Citrus（Securelist 新規文書化・ロシア語話者） | Citrus-2026-Sn00py | 2026-11-12 | 注目動向（P=5 Q=3） | 2026-11-12 | YES | Securelist 2026-11-11・ロシア企業のみ・Toy Ghouls と TTP 重複（同一性は断定されず） |
 | CL-STA-1238（Unit 42・China-nexus を moderate confidence で評価） | CL-STA-1238-2026-Cairn | 2026-11-13 | 本編（P=7 Q=6） | 2026-11-13 | YES | Unit 42 2026-11-12・OSS AI 基盤 Cairn で19組織以上・IP 2件 |
 | Silent Lynx（別名 Cavalry Werewolf・YoroTrooper） | SilentLynx-2026-HermesAgent | 2026-11-13 | 本編（P=5 Q=4） | 2026-11-13 | YES | CloudSEK/The Record 2026-11-12・カザフスタンとの関連は medium・政府との関係は示されず |
+| BlueNoroff（APT38 / Sapphire Sleet・北朝鮮DPRK・FBI/DOJ が DPRK 帰属を明示・帰属信頼度: 高） | BlueNoroff-2026-FaceStealer | 2026-11-14 | 本編（P=8 Q=8） | 2026-11-14 | YES | FBI/DOJ 2026-11-13（THN・SecurityWeek 経由）・ディープフェイク映像の偽ビデオ会議・18 か月で 4 億ドル超・基盤押収／TraderTraitor の Binance 流出資金 12 億ドル超を押収 |
+| SilentAir（Enea 命名・国家レベルのアクター〔高〕・中国との関連は低い確信度・帰属信頼度: 低） | SilentAir-2026-IPXSignaling | 2026-11-14 | 本編（P=6 Q=5） | 2026-11-14 | YES | Enea（THN・SecurityWeek 2026-11-13）・事業者の侵害済み機器から SS7/Diameter で通話・SMS 傍受・台湾が主な標的・活動は一旦停止だが再開し得る |

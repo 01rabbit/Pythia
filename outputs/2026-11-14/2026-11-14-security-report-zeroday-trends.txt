@@ -1,0 +1,126 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-14 07:50 JST
+調査期間: 2026-11-13 07:00 〜 2026-11-14 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+------------------------------------------------------------
+CVE-2026-123039 [high] Check Point Security Gateway（Gaia OS の DynamicCLI デーモンの権限昇格・root）。PHP2Shell（CVE-2026-109618・CVE-2026-109619）で侵入後に連鎖して悪用
+------------------------------------------------------------
+対象: Check Point / R82.20・R82.10・R82・R81.20・R81.10・R81（The Hacker News 経由の Check Point の記述）。修正は緊急ホットフィックス
+【概要】
+The Hacker News（Check Point の発表を引用）によれば、未特定の攻撃者が未修正の Check Point Security Gateway へ PHP2Shell で侵入し、Gaia OS の DynamicCLI の権限昇格（CVE-2026-123039・CVSS 7.8）で root を得て TSGA バックドアと TSProxy を設置した。10-30 にイスラエルの組織が狙われ、11-02 から複数国・業種へ拡大した。一部の組織では ESXi ホストへ SSH で横展開してワイパー destroy_v6 が展開された。Check Point は『数十の顧客に対する悪用を観測』と述べた。攻撃者の帰属は情報源に記載が無い。
+【一時緩和】
+  - Check Point の緊急ホットフィックスを適用する（CVE-2026-123039）
+  - PHP2Shell（CVE-2026-109618・CVE-2026-109619）の修正版 PHP／Check Point 側の修正が未適用のゲートウェイを優先して更新する
+  - ゲートウェイから ESXi への SSH 接続と /tmp の DynamicCLI ソケット周辺の不審な書き込みを確認する
+【IOC】IP: 130.94.19[.]204 / ファイル: TSGA, TSProxy, destroy_v6, DREAM_ANNEXATION.txt
+  参照: https://thehackernews.com/2026/11/hackers-exploit-php2shell-flaws-in.html (The Hacker News)
+  参照: https://www.bleepingcomputer.com/news/security/check-point-patches-zero-day-that-lets-hackers-get-root-access (BleepingComputer)
+  参照: https://www.securityweek.com/php2shell-exploited-in-destructive-check-point-gateway-attacks/ (SecurityWeek)
+  参照: https://www.cisa.gov/news-events/alerts/2026/11/13/cisa-adds-two-known-exploited-vulnerabilities-catalog (CISA)
+
+------------------------------------------------------------
+CVE-2026-114713 [medium] UnrealIRCd（labeled-response モジュールの IRCv3 label メッセージのエスケープ不備・6.0.0 以上 6.2.7.1 未満）
+------------------------------------------------------------
+対象: UnrealIRCd / UnrealIRCd 6.0.0 以上 6.2.7.1 未満（EUVD の記述）
+【概要】
+CISA は 2026-11-13、UnrealIRCd の『区切り文字の不適切な無害化』の脆弱性 CVE-2026-114713 を実悪用の証拠に基づき KEV へ追加した（FCEB 期限 11-16・ランサムウェア利用は不明）。EUVD は、labeled-response モジュールが IRCv3 の label メッセージをエスケープしないと記述している。悪用の主体・手口・規模は CISA の通知に記載が無く確認できていない。
+【一時緩和】
+  - UnrealIRCd を 6.2.7.1 以降へ更新する
+  参照: https://www.cisa.gov/news-events/alerts/2026/11/13/cisa-adds-two-known-exploited-vulnerabilities-catalog (CISA)
+
+
+【APT活動-本編】
+------------------------------------------------------------
+BlueNoroff-2026-FaceStealer BlueNoroff（FaceStealer）／TraderTraitor（Binance 流出資金の押収）（帰属確度: high・国家: North Korea（FBI／DOJ が DPRK に結び付くアクターと明示。BlueNoroff との関連は The Hacker News が記述））
+------------------------------------------------------------
+The Hacker News によれば、FBI は北朝鮮（DPRK）に結び付くアクターが社会工学スキーム FaceStealer で過去 18 か月に 4 億ドル超の暗号資産を窃取したと確認し、攻撃に使われたクラウド基盤を押収した。手口は盗んだアカウントからビデオ会議への招待を送り、参加者の映像を録画しつつ、被害者が知る人物の事前録画映像やディープフェイクを見せて信頼させるものとされる。The Hacker News は同活動が BlueNoroff と結び付く金銭目的のクラスターと記述する。同日、DOJ は TraderTraitor による Binance への侵害で窃取された 12 億ドル超の暗号資産の押収・差押えを発表した。帰属は米政府の発表に基づく。
+【標的】暗号資産・Web3 関係の個人・組織。FBI は過去 18 か月で 4 億ドル超の窃取を確認
+【TTP】
+  - T1656 (defense-evasion): The Hacker News（DOJ の記述）が、著名人のディープフェイク映像や被害者の事前録画映像で信頼を得る手口を記述
+【IOC】IP: なし / ファイル: なし
+【推奨】暗号資産・Web3 関係者は、既知の相手から届いた予定外のビデオ会議の招待を別経路で確認し、会議アプリの更新や画面共有・ソフト導入の要求に応じない。取引所は不審な出金経路（スイーパー等）の検知を強化する。
+  参照: https://thehackernews.com/2026/11/fbi-says-north-korean-hackers-stole.html (The Hacker News)
+  参照: https://www.securityweek.com/fbi-says-us-seized-1-2-billion-worth-of-cryptocurrency-stolen-from-binance/ (SecurityWeek)
+
+------------------------------------------------------------
+SilentAir-2026-IPXSignaling SilentAir（Enea の命名）（帰属確度: low・国家: Enea は『国家レベルのアクター』と高い確信度で評価し、中国との関連は低い確信度にとどまる（The Hacker News 経由））
+------------------------------------------------------------
+The Hacker News によれば、Enea は、アジアの移動体通信事業者内の侵害済み機器を使って選ばれた人物の通話・SMS を傍受する活動を SilentAir と命名した。攻撃元は少なくとも 6 か国で、標的は主に台湾の加入者。SS7／Diameter の UpdateLocation メッセージで加入者を自機器が収容していると偽り、通話・SMS を迂回させる。一部では 2 要素認証コードの傍受が観測されたが、アカウント乗っ取りの有無は報告に無い。傍受は攻撃の 18.3%（通常の監視事業者は 2.1%）。Enea は活動を一旦停止させたが再開し得るとし、事業者側の対処の有無は報告に無い。国家との関係は Enea の評価であり、中国との関連は低い確信度に限られる。
+【標的】主にアジアの移動体通信事業者の加入者（台湾が主要な標的）。政治・政府関係の要人も含まれた
+【TTP】
+  - なし（ATT&CK Enterprise に該当する技術の記述が情報源に無いため techniques は付与しない（判断不能・confidence low））
+【IOC】IP: なし / ファイル: なし
+【推奨】通信事業者は IPX／SS7／Diameter の UpdateLocation 系メッセージの不審な発信元を監視・フィルタし、ローミング相手の信頼を見直す。SMS 認証コードに依存するアカウントは、アプリ型・FIDO 型の認証へ移行する。
+  参照: https://thehackernews.com/2026/11/silentair-hijacks-asian-telecom.html (The Hacker News)
+  参照: https://www.securityweek.com/silentair-hackers-intercept-calls-sms-from-inside-mobile-networks/ (SecurityWeek)
+
+
+【APT活動-注目動向】 なし
+
+【注目CVE（リスト外）】 なし（トレンド欄に記載）
+
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-14-001 N-able N-central：4EverAble2Shell の実悪用で 21 サーバーが感染（うち 19 台は Hotfix 2 適用済み・暗号資産マイナーを配布）
+------------------------------------------------------------
+The Hacker News によれば、N-able は 11-12（木）に Agent2Shell・4EverAble2Shell の公開を受けて機能と連携の一部を制限し、ホスト環境の Intune 連携を停止した。同記事は、複数の脅威インテリジェンス報告で 4EverAble2Shell が予備的な探索を超えて実悪用され、攻撃者が暗号資産マイナーを展開していると記述する（見出しは 21 サーバー感染・うち 19 台が HF2 適用済み）。SecurityWeek も『PoC 公開の数時間後に悪用』と報じた。Apache Axis（CVE-2026-90436・CVSS 9.8）と N-central の権限昇格を連鎖させて root を得る。オンプレ利用者には Agent・Probe の更新と Legacy API の無効化が促されている。本文は The Hacker News のみ取得・SecurityWeek は見出し・要約の範囲。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-n-central-flaws-to.html (The Hacker News)
+  参照: https://www.securityweek.com/hackers-exploit-new-n-central-zero-day-hours-after-poc-publication/ (SecurityWeek)
+
+------------------------------------------------------------
+TREND-2026-11-14-002 Citrix NetScaler：重大（CVSS 9.3〜9.5）の脆弱性 10 件を一括修正（メモリ破損による DoS が中心・悪用の報告なし）
+------------------------------------------------------------
+SecurityWeek と Security NEXT によれば、Cloud Software Group は NetScaler ADC / Gateway の 10 件の『クリティカル』な脆弱性（DNS/DoH・SMPP・Email OTP・EPA・ICA プロキシ・パケット処理等のメモリ破損／オーバーフローで、予期しない動作や DoS）を修正した。NetScaler Console にも別の重大な脆弱性（CVE-2026-120869・既報）がある。CERT-FR も Citrix 製品の勧告を出した。悪用の報告は確認できていない（本文は未取得・要約と NVD/EUVD の記述に基づく）。
+  参照: https://www.securityweek.com/citrix-patches-10-critical-netscaler-vulnerabilities/ (SecurityWeek)
+  参照: https://www.security-next.com/192789 (Security NEXT)
+
+------------------------------------------------------------
+TREND-2026-11-14-003 Operation Endgame：Gootloader・CastleRAT・StealC の基盤を摘発（サーバー 235 台・ドメイン 257 件・窃取認証情報 640 万件を押収）
+------------------------------------------------------------
+SecurityWeek と The Hacker News によれば、国際的な法執行作戦 Operation Endgame が Gootloader・CastleRAT・StealC の基盤を停止し、サーバー 235 台・ドメイン 257 件、4 万人超の被害者に関する約 640 万件の認証情報を押収した（BKA の発表を引用）。The Record は、米 DOJ が Gootloader が 2018 年以降に少なくとも 44 件のランサムウェア攻撃（損害 2,900 万ドル）に関与したと述べたと報じた。法執行による摘発であり、後続の再構築・移行（推測）に留意する。本文は未取得・要約の範囲。
+  参照: https://thehackernews.com/2026/11/operation-endgame-takes-down-gootloader.html (The Hacker News)
+  参照: https://www.securityweek.com/law-enforcement-disrupts-gootloader-castlerat-and-stealc-infrastructure/ (SecurityWeek)
+  参照: https://therecord.media/ (The Record (Recorded Future))
+
+------------------------------------------------------------
+TREND-2026-11-14-004 国内の不正アクセス・情報漏えいが連続：ブックオフ子会社 638 万人、ノジマオンライン約 700 万件、ネットマイル最大約 549 万人、大阪市約 100 万件ほか
+------------------------------------------------------------
+ScanNetSecurity によれば、ブックオフグループホールディングス子会社の会員管理システム（638 万 3,279 人）、『ノジマオンライン』（約 700 万件）、『ネットマイル』（最大約 549 万人・可能性）、丸井グループ委託先 Securitize Japan、無印良品の委託先、東急不動産管理サイトなどで不正アクセスが報じられた。The Record は、大阪市が約 100 万人に影響するデータ侵害を警告し、日本で数十件のサイバーインシデントが続いていると報じた。手口・攻撃者はいずれも見出し・要約の範囲では未確認で、委託先・外部サービス経由が複数ある（推測を含まない記述は見出し基づき）。
+  参照: https://therecord.media/city-of-osaka-japan-email-data-breach (The Record (Recorded Future))
+  参照: https://www.scannetsecurity.jp/ (ScanNetSecurity)
+
+------------------------------------------------------------
+TREND-2026-11-14-005 Trezor：リセラー CryptoBilis 経由の Safe 5 3 台に秘密フレーズを窃取するハードウェアインプラントを確認
+------------------------------------------------------------
+BleepingComputer と The Hacker News によれば、Trezor は東南アジアのリセラー CryptoBilis から購入された Safe 5 の 3 台に、画面のリカバリーフレーズを読み取り携帯網経由で攻撃者のサーバーへ送る追加基板が含まれていたと確認した。Trezor は修正（検証手段）を公開したと述べる。サプライチェーン上の改ざんで、非公式リセラーからの購入に注意が要る。攻撃者は未特定（本文は未取得・要約の範囲）。
+  参照: https://thehackernews.com/2026/11/trezor-confirms-hidden-hardware.html (The Hacker News)
+  参照: https://www.bleepingcomputer.com/news/cryptocurrency/trezor-confirms-crypto-stealing-implants-in-three-wallets-releases-fix (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-14-006 PostgreSQL：52 件を修正（22 年前から存在する型混同 CVE-2026-6460・CVSS 8.8・認証済みユーザーの RCE）
+------------------------------------------------------------
+The Hacker News によれば、PostgreSQL は 11-12 の更新で 52 件の脆弱性を修正した。CVE-2026-6460（CVSS 8.8）は、オブジェクトを作成できる DB ユーザーがサーバー上でコードを実行できる型混同で、完全な防御には C 言語拡張の再ビルドも必要とされる。CERT-FR も PostgreSQL の勧告を出した。悪用の報告は確認できていない。
+  参照: https://thehackernews.com/2026/11/postgresql-patches-52-flaws-including.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-14-007 Windows 11 月更新：印刷障害とライセンス認証エラー（0x80041008）を Microsoft が確認／Microsoft の大規模障害は攻撃ではないと発表
+------------------------------------------------------------
+BleepingComputer によれば、Microsoft は 11 月の月例更新で印刷の問題と、エラー 0x80041008 を伴う Windows のライセンス認証の失敗を確認した。SecurityWeek と TASS は、Microsoft サービスの世界的な障害を報じ、Microsoft の副社長はサイバー攻撃が原因ではないと述べたとされる（TASS の記述）。いずれもセキュリティ侵害ではなく運用上の影響の情報で、本文は未取得。
+  参照: https://www.bleepingcomputer.com/news/security/microsoft-says-november-security-updates-cause-printing-issues/ (BleepingComputer)
+  参照: https://www.securityweek.com/microsoft-struggles-to-restore-email-and-other-services-in-a-global-outage/ (SecurityWeek)
+
+------------------------------------------------------------
+TREND-2026-11-14-008 ドイツ：軍用ドローン企業 Quantum Systems がサイバー攻撃を確認（運用に影響）／連邦議会がスパイ機関に侵入・妨害権限を付与する法律を可決
+------------------------------------------------------------
+BleepingComputer によれば、ドイツの防衛技術企業 Quantum Systems は 10 月下旬に敵対的な主体による進行中のサイバー攻撃を検知したと確認し、軍用ドローンの運用が妨害された。The Record は、ドイツ議会が情報機関にハッキング・妨害の権限を与える法律を可決したと報じた。攻撃者は情報源に明示されておらず帰属しない。本文は未取得・要約の範囲。
+  参照: https://www.bleepingcomputer.com/news/security/german-military-drone-operations-disrupted-by-cyberattack (BleepingComputer)
+  参照: https://therecord.media/ (The Record (Recorded Future))
+
+
+【攻撃予報】 本日の新規予報はフォーキャスター側（forecaster/forecasts/daily）を参照
+
