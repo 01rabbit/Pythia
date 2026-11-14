@@ -239,3 +239,4 @@
 | Notion 顧客データ流出（Fireworks AI 侵害） | C1 | 2026-11-13 | 参考B（X=3 Y=3） | 2026-11-13 | NO | SecurityWeek 2026-11-12・本文未取得 |
 | FBI フラッシュ警報: AI 攻撃ツール ARTEX が攻撃を機械の速さで自動化（初期標的選定から特権取得まで 3 時間未満） | A4 | 2026-11-14 | 本編（X=7 Y=6・A-T・burst3） | 2026-11-14 | YES | The Record 2026-11-13・Cisco Talos・Elastic Security Labs が同日に分析・ARTEX は既報（10-13〜11-08） |
 | Elastic: CyberStrikeAI による AWS 侵入（16 日・4 アカウント・8 ID・141 ミリ秒で 56 回の API 呼び出し） | A4 | 2026-11-14 | 参考B（X=6 Y=4・A-R・burst3） | 2026-11-14 | YES | Elastic Security Labs 2026-11-13・CloudTrail 分析・CyberStrikeAI は 10-28 既報 |
+| Cursor 侵害の経緯公表（Fireworks AI の認証情報窃取→AI エージェント履歴バケット→API 認証情報露出・10-29 拡張改ざんの原因） | C3 | 2026-11-15 | 継続監視 | 2026-11-15 | YES | BleepingComputer 2026-11-14・Privacy Mode 無効ユーザーの履歴露出 0.05% 未満・API 認証情報侵害 0.01% 未満・非本番ソース/サポート情報窃取・Wiz『Black October』・既報 2026-10-31 の続報・参考B（AI-2026-11-15-001） |
