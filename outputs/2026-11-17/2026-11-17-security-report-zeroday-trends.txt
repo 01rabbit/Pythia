@@ -1,0 +1,71 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-17 07:55 JST
+調査期間: 2026-11-16 07:00 〜 2026-11-17 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】 なし（窓内の CISA KEV 追加は 0 件）
+【APT活動-本編】 なし
+【APT活動-注目動向】
+------------------------------------------------------------
+BOTeam-2026-Log4ShellRussianDeveloper BO Team（Kaspersky ICS CERT が帰属。別名 Black Owl・Hoody Hyena・Lifting Zmiy）（帰属確度: medium・国家: ウクライナ起源と評価（Orange Cyberdefense の分析を The Hacker News が引用。国家関与は情報源が明示していない））
+------------------------------------------------------------
+The Hacker News によれば、Kaspersky ICS CERT は 2025 年 6 月に相談を受けたロシアのソフトウェア開発企業への侵入を BO Team の活動と帰属した。外部公開された SSH の端末サーバーから内部を探索し、Log4Shell に脆弱な VMware vCenter 7.0.3 から root を得てハイパーバイザーへ到達した。侵害は Windows・Linux サーバー、ハイパーバイザー、バックアップ、セキュリティ管理サーバー、ネットワーク機器に及び、開発（CI/CD）基盤とコード署名サーバーも侵害されたため、供給網攻撃に発展する可能性があったと Kaspersky は評価した。データの破壊や犯行声明はなかった。BO Team は 2023 年から活動し、スパイ活動とハクティビズムに注力すると記述される。日本の組織への影響は窓内の記事の範囲では確認できない。
+【標的】ロシアのソフトウェア開発企業（社名非公表・顧客はロシア国内）
+【TTP】
+  - T1190 (initial-access): Kaspersky が、Log4Shell（CVE-2021-44228）に脆弱な VMware vCenter 7.0.3 を悪用して root のリモートコマンドラインを得たと記述
+  - T1021.004 (lateral-movement): Kaspersky が、vCenter 侵害後にハイパーバイザーへ SSH で接続したと記述
+  - T1046 (discovery): Kaspersky が、侵害した端末サーバーから SMB・Kerberos・SSH・WinRM・LDAP 等のサービスを持つ内部ホストを探索したと記述
+【IOC】IP: なし / ファイル: なし
+【推奨】vCenter など仮想化基盤の Log4Shell 修正の適用確認、外部公開 SSH の遮断、CI/CD とコード署名サーバーへの管理アクセスの分離・監査、ハイパーバイザーへの SSH の監視を確認する。
+  参照: https://thehackernews.com/2026/11/bo-team-exploits-log4shell-in-vmware.html (The Hacker News)
+
+------------------------------------------------------------
+Turla-2026-RomaniaGovEmailInterception Turla（ルーマニア SRI が帰属・ロシア FSB 関連と記述（The Record））（帰属確度: medium・国家: ロシア（ルーマニア SRI の主張。ロシア大使館は『捏造』として否定））
+------------------------------------------------------------
+The Record によれば、ルーマニアの国内情報機関 SRI は、FSB に連なる長期のロシアのスパイ集団 Turla に帰属する攻撃を検知して阻止したと述べた。攻撃者は 2025 年 12 月に Microsoft ソフトウェアの脆弱性を悪用して政府機関のシステムに侵入し、NATO・EU とやり取りするメールの傍受を狙ったとされる。ロシア大使館は 11-16 に『ルーマニア情報機関による捏造』と否定し、具体的な証拠が示されていないと主張した。帰属は SRI の主張で、独立の技術的検証は収集記事の範囲では確認できない。悪用された脆弱性の特定は記事に無く、Technique は付与しない。
+【標的】ルーマニアの政府機関（名称非公表）。NATO・EU との往来メールの傍受が目的と報じられた
+【TTP】
+  - なし（情報源が悪用した脆弱性・手口を特定していないため Technique は付与しない（判断不能・confidence low）。）
+【IOC】IP: なし / ファイル: なし
+【推奨】政府機関・重要インフラは Microsoft 製品の修正適用状況を確認し、NATO・EU 宛メールを扱うメールシステムの管理アクセスとログ保全を点検する。
+  参照: https://therecord.media/romania-russia-cyberattack-espionage (The Record (Recorded Future))
+
+【注目CVE（リスト外）】 なし（トレンド欄に記載）
+
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-17-001 Apache Axis CVE-2026-90436：Rapid7 が Atlassian Confluence Data Center への実悪用を検知（N-central に続き 2 製品目）
+------------------------------------------------------------
+Rapid7 によれば、Apache Axis 1.x の未認証 RCE（CVE-2026-90436・CVSS 9.8・11-06 公開）は、Confluence Data Center と N-able N-central が同梱する Axis ライブラリ経由で影響する。Rapid7 MDR は 11-13 に顧客環境で Confluence Data Center への悪用を検知し、N-able も同日に N-central の悪用を報告した。N-central 向け PoC は 11-12 に公開済み。Confluence は『Remote API（XML-RPC & SOAP）』が有効な場合のみ影響（新規導入では 3.0 以降無効が既定）で、9.2.28 で修正、10.x 以降は影響なし、Atlassian Cloud も影響なし。Axis 1.x は EOL で Apache は修正版を出さない。Rapid7 は緊急の適用を推奨する。N-central の悪用は 11-14 に既報で、今回の新規事実は Confluence Data Center での悪用検知。本文は冒頭（Rapid7 の概要）までの確認。
+  参照: https://www.rapid7.com/blog/post/etr-rapid7-detected-exploitation-of-cve-2026-90436-against-atlassian-confluence-data-center-n-able-n-central-also-exploited (Rapid7)
+
+------------------------------------------------------------
+TREND-2026-11-17-002 Copeland XWEB EVO 冷凍制御装置：VulnCheck が 14 件の脆弱性を公表・公開から 2 時間以内に悪用の試行（サポート終了により 5 件は修正されない）
+------------------------------------------------------------
+SecurityWeek によれば、VulnCheck は Dixell 由来で現在 Copeland 名で販売される XWEB EVO の 14 件の脆弱性を公表し、いずれもテスト環境で root 権限の取得に至ると述べた。うち 1 件への悪用の試行は公開から 2 時間未満で始まった。9 件は 2021 年の書き換え前のファームウェアのみに影響し、未認証のコマンド実行・ハードコードされた管理者パスワード等を含む。残り 5 件は最新のファームウェアにも影響し、管理者の日次パスワードが MAC アドレスと日付から計算できるため（MAC は未認証で取得可能）、SSH を有効化して root を得られる。この 5 件は Copeland が 2026-03-16 に XWEB EVO のサポートを終了したため修正されず、XWEB Pro への移行が案内されている。10-11〜12 に約 700 のフランスのスーパーマーケットで解凍サイクルを起動させた攻撃で CERT-FR が Copeland・Dixell の XWEB を侵害対象製品に挙げ、フランスはイランの関与を主張している（記事の記述）。CVE ID は記事に無く未確認。The Hacker News は別に Danfoss の冷凍制御装置の未修正 6 件を報じた（本文未取得）。
+  参照: https://www.securityweek.com/hackers-probe-newly-disclosed-flaws-in-copeland-refrigeration-controllers (SecurityWeek)
+  参照: https://thehackernews.com/2026/11/six-unpatched-danfoss-refrigeration.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-17-003 Linux カーネルの 11 年前からの欠陥『NoisyTCP』：既定構成の Nginx・Apache・SSH サーバーをクラッシュさせ得る（DoS）
+------------------------------------------------------------
+BleepingComputer によれば、NoisyTCP と名付けられた 11 年前から存在する Linux カーネルの脆弱性は、ほぼすべてのディストリビューションに影響し、既定構成の Nginx・Apache・SSH サーバーを動作するシステムを攻撃者がクラッシュさせ得る。悪用の報告は見出し・要約の範囲では確認できず、CVE ID・修正状況は未取得。
+  参照: https://www.bleepingcomputer.com/news/linux/new-noisytcp-linux-kernel-flaw-lets-attackers-crash-servers (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-17-004 国内の不正アクセス・情報漏えいが連続：アイリスオーヤマ通販約 770 万人・プレステージ最大約 550 万件・アクサ損保約 59.7 万件・三井住友海上 2 サイト・ウチコミ（ランサムウェア）ほか
+------------------------------------------------------------
+ScanNetSecurity の見出しによれば、アイリスオーヤマ公式通販サイトで約 770 万人（可能性）、プレステージ・インターナショナルグループで最大約 550 万件、アクサ損害保険『MyAXA』で約 59 万 7 千件（可能性）、三井住友海上の契約者専用ページで約 3 万 7 千件、同社『MS コンパス』でも不正アクセス、『ウチコミ！』でランサムウェア攻撃（14 万 2,591 アカウントに影響）、『Shippio Platform』・靖國神社の通販サイト（約 1 万 4,500 件）でも不正アクセスが報じられた。手口・攻撃者はいずれも見出しの範囲では未確認で、本文は未取得。
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/16/56789.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/16/56786.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/16/56793.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/16/56791.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/16/56788.html (ScanNetSecurity)
+
+【攻撃予報】 本日の新規予報なし。forecaster/forecasts/daily を参照
+【除外】
+  - The Hacker News：Retadup Worm Resurfaces 7 Years After Takedown to Spread CoffeeLoader Malware（Kaspersky Securelist 11-16） … USB ワーム Retadup による CoffeeLoader 拡散の報告で、国家・標的型の活動やゼロデイの変化を示す記述が見出し・要約の範囲で確認できない（本文未取得）。
+  - The Hacker News：SANSAR Linux Cryptomining Malware Uses Modified NVIDIA Library to Hide GPU Activity … 暗号資産マイナーの手口の解説で、採用条件 P〜W の変化（新規キャンペーン規模・国家関与）が見出し・要約の範囲で確認できない。

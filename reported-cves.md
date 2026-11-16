@@ -727,6 +727,6 @@
 | CVE-2026-120869 | Citrix NetScaler Console 認証バイパス（CVSS 9.4） | 2026-11-13 | none | 2026-11-13 | YES | Citrix は悪用を認識していないと発表 |
 | CVE-2026-126325 | PTC Windchill/FlexPLM 逆シリアル化 RCE（CVSS v4 9.2） | 2026-11-13 | none | 2026-11-13 | YES | THN 2026-11-12・修正版公開・悪用報告なし |
 | CVE-2026-118383 | MongoDB Server 未認証クラッシュ（フェイルオーバー時） | 2026-11-13 | none | 2026-11-13 | YES | THN 2026-11-12・修正版公開・悪用報告なし |
-| CVE-2026-90436 | Apache Axis（N-central 同梱・CVSS 9.8） | 2026-11-13 | active_exploitation | 2026-11-14 | YES | Previdian が初の悪用試行を報告（N-central 経由）／11-13: N-central 経由の実悪用（マイナー展開）と THN が報道 |
+| CVE-2026-90436 | Apache Axis（N-central・Confluence Data Center 同梱・CVSS 9.8） | 2026-11-13 | active_exploitation | 2026-11-17 | YES | Previdian が初の悪用試行を報告（N-central 経由）／11-13: N-central 経由の実悪用（マイナー展開）と THN が報道／11-13（Rapid7 2026-11-16 公表）: Confluence Data Center への悪用を検知・KEV 未収載・EPSS%ile 0.669 |
 | CVE-2026-123039 | Check Point Security Gateway（Gaia OS DynamicCLI の権限昇格・PHP2Shell と連鎖） | 2026-11-14 | active_exploitation | 2026-11-14 | YES | CVSS 7.8・KEV 2026-11-13 追加（期限 11-16）・Check Point が 10-30 開始の悪用（TSGA・ESXi ワイパー destroy_v6）を報告・攻撃者は未特定・ゼロデイ特報 |
 | CVE-2026-114713 | UnrealIRCd（labeled-response の IRCv3 label 無害化不備・6.2.7.1 で修正） | 2026-11-14 | kev_listed | 2026-11-14 | YES | KEV 2026-11-13 追加（期限 11-16）・悪用の主体・手口は未確認・CVSS 未付与（EUVD 8.6）・ゼロデイ特報 |

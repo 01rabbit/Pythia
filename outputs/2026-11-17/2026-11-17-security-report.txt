@@ -1,0 +1,230 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-17 07:55 JST
+調査期間: 2026-11-16 07:00 〜 2026-11-17 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+------------------------------------------------------------
+AI-2026-11-17-001 [カテゴリA] Google GTIG：AI 脅威トラッカー最新版（自律型マルチエージェント攻撃フレームワークの実戦投入・パッチ差分解析による n-day の自動武器化・LLMjacking の転売市場）
+------------------------------------------------------------
+GTIG の要約と The Hacker News によれば、攻撃者は手動のプロンプト利用から、ARTEX・CAIRN・CyberStrikeAI・PentAGI などの自律型マルチエージェント攻撃フレームワークによる多段階侵入へ移行している。LLM とエージェントでパッチを差分解析して n-day を武器化する手法も観測され、PaperCut NG/MF の脆弱性が事例として挙げられた（The Hacker News）。窃取した LLM 認証情報やクラウド資源を APIMart・JetNight 等の地下プロキシで転売する LLMjacking、LLM チャットボットを組み込んだ中国語圏の PhaaS『Jieyou』、情報操作での LLM 利用、コーディングアシスタント設定の改ざんによる供給網攻撃も報告された。財務動機のアクターと中国に整合する疑いのあるスパイ活動アクターが試行していると記述される。GTIG の原典は要約までを確認し、本文の詳細（アクター別の割当・件数）は未確認。
+  被害規模: GTIG は被害組織数を示していない（The Hacker News 経由では件数の記述なし）。PaperCut NG/MF の 9 月の脆弱性で、パッチ公開後に急速に武器化された事例を挙げた。
+  監視: 公開 AI 基盤の管理画面と API キー保管場所の露出、パッチ公開から適用までの猶予、LLM API の利用量の急増を監視する。
+  参照: https://cloud.google.com/blog/topics/threat-intelligence/agentic-threat-activity-crosses-a-significant-threshold (Google Threat Intelligence Group)
+  参照: https://thehackernews.com/2026/11/google-finds-hackers-using-ai-agents-to.html (The Hacker News)
+------------------------------------------------------------
+AI-2026-11-17-002 [カテゴリC] Amazon：AI エージェントが公開 AI アプリ（LiteLLM・One API・Dify 等）の API キーを窃取するキャンペーンを捕捉（ARTEX の可能性・中国系の疑い）。LiteLLM／Starlette の脆弱性への探索も観測
+------------------------------------------------------------
+The Hacker News によれば、Amazon の脅威インテリジェンスはデコイ網 MadPot で、公開された AI アプリから AI プロバイダーのキーを窃取するエージェントの記録を捕捉した。記録には LiteLLM の既定マスターキー等の既定資格情報、未完了のインストール、Langflow・RAGFlow の既知の欠陥、One API 系の isCliRequest ヘッダーによる認証回避、URL 取得機能の SSRF によるクラウドメタデータへの到達が含まれる。Amazon は ARTEX の可能性を中程度の確信で評価し、運用者は簡体字の指示や中国時間帯の設定から別々の中国系グループと中程度の確信で評価したが、成果は検証できていない。標的は One API・New API・LiteLLM 等の LLM ゲートウェイと Dify・FastGPT・Langflow・RAGFlow・Open WebUI・LobeChat・Ollama 等。SANS ISC は週末から CVE-2026-42271 と CVE-2026-48710 の連鎖（Horizon3.ai が未認証 RCE の連鎖を公表）を狙う要求をハニーポットで観測したが、同キャンペーンとの関連は情報源が示していない（本文は要約の範囲）。
+  被害規模: Amazon はデコイ（MadPot）が受けた通信記録に基づく観測で、被害の成否は確認できないと述べた。Cloudflare は別件で ARTEX が CI/CD 用の API トークンから侵入し、1 時間に 400 件のデータベースダンプ要求があったと報告（返却データの有無は未公表）。
+  監視: LiteLLM・One API・Dify 等の管理画面を外部公開していないか、既定マスターキー・既定管理者資格情報が残っていないかを確認し、AI プロバイダー鍵の異常利用とメタデータサービスへの SSRF 試行を監視する。
+  参照: https://thehackernews.com/2026/11/amazon-uncovers-ai-agent-campaign.html (The Hacker News)
+  参照: https://isc.sans.edu/diary/rss/33522 (SANS Internet Storm Center)
+【参考B】
+------------------------------------------------------------
+AI-2026-11-17-003 [カテゴリA] Barracuda：ARTEX による自社クラウドへの侵入を公表（約 10 アカウントを約 44 時間で探索・Kubernetes にバックドア）／Dark Reading は中国ネクサスが Cairn で 10 組織に侵入と報じる
+------------------------------------------------------------
+SecurityWeek によれば、Barracuda は露出していた有効なクラウドアクセスキーで侵入され、攻撃者が見つけた秘密情報を再利用して別システムへ広がり、約 10 のクラウドアカウントに約 44 時間で触れた。攻撃は 11-01〜02 に起き、Kubernetes クラスターにバックドアが残された。プローブ名・指標・探索順序・認証情報とウォレット探索のルーチンが ARTEX と一致すると Barracuda は述べたが、ARTEX は多くのグループが使うため帰属はしていない。SecurityWeek は Talos・Amazon の分析とあわせ、中国系アクターによる ARTEX の採用拡大を記述する（Talos は Storm-0940 が使用し、Storm-3358 等の金銭目的アクターも採用と記述）。Dark Reading の見出しは、中国ネクサスのアクターが Cairn による自律的攻撃で先端製造・防衛・人権団体など 10 組織に侵入したとする（本文は未取得）。
+  被害規模: Barracuda によれば攻撃者は約 10 のクラウドアカウントに触れ、シークレット保管庫・設定・Kubernetes のサービスアカウント・メタデータサービスを狙い、一部サーバーで暗号資産ウォレット関連ファイルを探索した。顧客データへの影響は SecurityWeek の記述の範囲では確認できない。Dark Reading の 10 組織は見出し・要約の範囲。
+  監視: 長期有効なクラウドアクセスキーの棚卸し、IP 制限・レート制限のない CI/CD トークンの排除、Kubernetes のサービスアカウント利用とメタデータサービスへの異常アクセスを監視する。
+  参照: https://www.securityweek.com/barracuda-hacked-amid-surge-in-artex-powered-cyberattacks/ (SecurityWeek)
+  参照: https://www.darkreading.com/cyberattacks-data-breaches/china-nexus-actors-breach-10-organizations-ai-driven-attacks (Dark Reading)
+【参考A】 なし
+【除外】
+  - SecurityWeek：Cursor Supply Chain Attack Started at Fireworks AI … Cursor の侵害経緯は AI-2026-11-15-001（11-15）に既報で、新規の変化なし。Fireworks AI の侵害は 11-11・11-13 にも既報。
+  - BleepingComputer：Anthropic's Claude Fable 5.2 blocks fewer security tasks, while Mythos gets better at finding bugs … モデル提供者の機能・方針の変更で、攻撃者による AI の悪用や AI への攻撃の具体的事象を含まない。
+  - SecurityWeek：Telegram Widgets Hit by RCE Demos, Malware Warning Days After Launch … Kaspersky が WebRAT 配布への悪用を『疑う』段階で、Telegram 側が主張を否定している。AI 攻撃の分類に該当せず、実態は未確認（見出し・要約の範囲）。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】 なし（窓内の CISA KEV 追加は 0 件）
+【APT活動-本編】 なし
+【APT活動-注目動向】
+------------------------------------------------------------
+BOTeam-2026-Log4ShellRussianDeveloper BO Team（Kaspersky ICS CERT が帰属。別名 Black Owl・Hoody Hyena・Lifting Zmiy）（帰属確度: medium・国家: ウクライナ起源と評価（Orange Cyberdefense の分析を The Hacker News が引用。国家関与は情報源が明示していない））
+------------------------------------------------------------
+The Hacker News によれば、Kaspersky ICS CERT は 2025 年 6 月に相談を受けたロシアのソフトウェア開発企業への侵入を BO Team の活動と帰属した。外部公開された SSH の端末サーバーから内部を探索し、Log4Shell に脆弱な VMware vCenter 7.0.3 から root を得てハイパーバイザーへ到達した。侵害は Windows・Linux サーバー、ハイパーバイザー、バックアップ、セキュリティ管理サーバー、ネットワーク機器に及び、開発（CI/CD）基盤とコード署名サーバーも侵害されたため、供給網攻撃に発展する可能性があったと Kaspersky は評価した。データの破壊や犯行声明はなかった。BO Team は 2023 年から活動し、スパイ活動とハクティビズムに注力すると記述される。日本の組織への影響は窓内の記事の範囲では確認できない。
+【標的】ロシアのソフトウェア開発企業（社名非公表・顧客はロシア国内）
+【TTP】
+  - T1190 (initial-access): Kaspersky が、Log4Shell（CVE-2021-44228）に脆弱な VMware vCenter 7.0.3 を悪用して root のリモートコマンドラインを得たと記述
+  - T1021.004 (lateral-movement): Kaspersky が、vCenter 侵害後にハイパーバイザーへ SSH で接続したと記述
+  - T1046 (discovery): Kaspersky が、侵害した端末サーバーから SMB・Kerberos・SSH・WinRM・LDAP 等のサービスを持つ内部ホストを探索したと記述
+【IOC】IP: なし / ファイル: なし
+【推奨】vCenter など仮想化基盤の Log4Shell 修正の適用確認、外部公開 SSH の遮断、CI/CD とコード署名サーバーへの管理アクセスの分離・監査、ハイパーバイザーへの SSH の監視を確認する。
+  参照: https://thehackernews.com/2026/11/bo-team-exploits-log4shell-in-vmware.html (The Hacker News)
+
+------------------------------------------------------------
+Turla-2026-RomaniaGovEmailInterception Turla（ルーマニア SRI が帰属・ロシア FSB 関連と記述（The Record））（帰属確度: medium・国家: ロシア（ルーマニア SRI の主張。ロシア大使館は『捏造』として否定））
+------------------------------------------------------------
+The Record によれば、ルーマニアの国内情報機関 SRI は、FSB に連なる長期のロシアのスパイ集団 Turla に帰属する攻撃を検知して阻止したと述べた。攻撃者は 2025 年 12 月に Microsoft ソフトウェアの脆弱性を悪用して政府機関のシステムに侵入し、NATO・EU とやり取りするメールの傍受を狙ったとされる。ロシア大使館は 11-16 に『ルーマニア情報機関による捏造』と否定し、具体的な証拠が示されていないと主張した。帰属は SRI の主張で、独立の技術的検証は収集記事の範囲では確認できない。悪用された脆弱性の特定は記事に無く、Technique は付与しない。
+【標的】ルーマニアの政府機関（名称非公表）。NATO・EU との往来メールの傍受が目的と報じられた
+【TTP】
+  - なし（情報源が悪用した脆弱性・手口を特定していないため Technique は付与しない（判断不能・confidence low）。）
+【IOC】IP: なし / ファイル: なし
+【推奨】政府機関・重要インフラは Microsoft 製品の修正適用状況を確認し、NATO・EU 宛メールを扱うメールシステムの管理アクセスとログ保全を点検する。
+  参照: https://therecord.media/romania-russia-cyberattack-espionage (The Record (Recorded Future))
+
+【注目CVE（リスト外）】 なし（トレンド欄に記載）
+
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-17-001 Apache Axis CVE-2026-90436：Rapid7 が Atlassian Confluence Data Center への実悪用を検知（N-central に続き 2 製品目）
+------------------------------------------------------------
+Rapid7 によれば、Apache Axis 1.x の未認証 RCE（CVE-2026-90436・CVSS 9.8・11-06 公開）は、Confluence Data Center と N-able N-central が同梱する Axis ライブラリ経由で影響する。Rapid7 MDR は 11-13 に顧客環境で Confluence Data Center への悪用を検知し、N-able も同日に N-central の悪用を報告した。N-central 向け PoC は 11-12 に公開済み。Confluence は『Remote API（XML-RPC & SOAP）』が有効な場合のみ影響（新規導入では 3.0 以降無効が既定）で、9.2.28 で修正、10.x 以降は影響なし、Atlassian Cloud も影響なし。Axis 1.x は EOL で Apache は修正版を出さない。Rapid7 は緊急の適用を推奨する。N-central の悪用は 11-14 に既報で、今回の新規事実は Confluence Data Center での悪用検知。本文は冒頭（Rapid7 の概要）までの確認。
+  参照: https://www.rapid7.com/blog/post/etr-rapid7-detected-exploitation-of-cve-2026-90436-against-atlassian-confluence-data-center-n-able-n-central-also-exploited (Rapid7)
+
+------------------------------------------------------------
+TREND-2026-11-17-002 Copeland XWEB EVO 冷凍制御装置：VulnCheck が 14 件の脆弱性を公表・公開から 2 時間以内に悪用の試行（サポート終了により 5 件は修正されない）
+------------------------------------------------------------
+SecurityWeek によれば、VulnCheck は Dixell 由来で現在 Copeland 名で販売される XWEB EVO の 14 件の脆弱性を公表し、いずれもテスト環境で root 権限の取得に至ると述べた。うち 1 件への悪用の試行は公開から 2 時間未満で始まった。9 件は 2021 年の書き換え前のファームウェアのみに影響し、未認証のコマンド実行・ハードコードされた管理者パスワード等を含む。残り 5 件は最新のファームウェアにも影響し、管理者の日次パスワードが MAC アドレスと日付から計算できるため（MAC は未認証で取得可能）、SSH を有効化して root を得られる。この 5 件は Copeland が 2026-03-16 に XWEB EVO のサポートを終了したため修正されず、XWEB Pro への移行が案内されている。10-11〜12 に約 700 のフランスのスーパーマーケットで解凍サイクルを起動させた攻撃で CERT-FR が Copeland・Dixell の XWEB を侵害対象製品に挙げ、フランスはイランの関与を主張している（記事の記述）。CVE ID は記事に無く未確認。The Hacker News は別に Danfoss の冷凍制御装置の未修正 6 件を報じた（本文未取得）。
+  参照: https://www.securityweek.com/hackers-probe-newly-disclosed-flaws-in-copeland-refrigeration-controllers (SecurityWeek)
+  参照: https://thehackernews.com/2026/11/six-unpatched-danfoss-refrigeration.html (The Hacker News)
+
+------------------------------------------------------------
+TREND-2026-11-17-003 Linux カーネルの 11 年前からの欠陥『NoisyTCP』：既定構成の Nginx・Apache・SSH サーバーをクラッシュさせ得る（DoS）
+------------------------------------------------------------
+BleepingComputer によれば、NoisyTCP と名付けられた 11 年前から存在する Linux カーネルの脆弱性は、ほぼすべてのディストリビューションに影響し、既定構成の Nginx・Apache・SSH サーバーを動作するシステムを攻撃者がクラッシュさせ得る。悪用の報告は見出し・要約の範囲では確認できず、CVE ID・修正状況は未取得。
+  参照: https://www.bleepingcomputer.com/news/linux/new-noisytcp-linux-kernel-flaw-lets-attackers-crash-servers (BleepingComputer)
+
+------------------------------------------------------------
+TREND-2026-11-17-004 国内の不正アクセス・情報漏えいが連続：アイリスオーヤマ通販約 770 万人・プレステージ最大約 550 万件・アクサ損保約 59.7 万件・三井住友海上 2 サイト・ウチコミ（ランサムウェア）ほか
+------------------------------------------------------------
+ScanNetSecurity の見出しによれば、アイリスオーヤマ公式通販サイトで約 770 万人（可能性）、プレステージ・インターナショナルグループで最大約 550 万件、アクサ損害保険『MyAXA』で約 59 万 7 千件（可能性）、三井住友海上の契約者専用ページで約 3 万 7 千件、同社『MS コンパス』でも不正アクセス、『ウチコミ！』でランサムウェア攻撃（14 万 2,591 アカウントに影響）、『Shippio Platform』・靖國神社の通販サイト（約 1 万 4,500 件）でも不正アクセスが報じられた。手口・攻撃者はいずれも見出しの範囲では未確認で、本文は未取得。
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/16/56789.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/16/56786.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/16/56793.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/16/56791.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/16/56788.html (ScanNetSecurity)
+
+【攻撃予報】 本日の新規予報なし。forecaster/forecasts/daily を参照
+【除外】
+  - The Hacker News：Retadup Worm Resurfaces 7 Years After Takedown to Spread CoffeeLoader Malware（Kaspersky Securelist 11-16） … USB ワーム Retadup による CoffeeLoader 拡散の報告で、国家・標的型の活動やゼロデイの変化を示す記述が見出し・要約の範囲で確認できない（本文未取得）。
+  - The Hacker News：SANSAR Linux Cryptomining Malware Uses Modified NVIDIA Library to Hide GPU Activity … 暗号資産マイナーの手口の解説で、採用条件 P〜W の変化（新規キャンペーン規模・国家関与）が見出し・要約の範囲で確認できない。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】 なし
+【本編】 なし
+【参考A（国内）】 なし
+【参考B（国際先行）】 なし
+【除外サマリー】 12 件（CVSS 9.0 以上の新規公開。窓内に悪用・KEV の報告無し）
+  - CVE-2026-53998 Phoenix is an AI observability and evaluation platform. From 13.0.0 until 15.7.0, the appl (CVSS 10.0) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。 GHSA 起点（GitHub Advisory）。
+  - CVE-2026-93664 A Deserialization of Untrusted Data vulnerability affecting Station Launcher App in 3DEXPE (CVSS 10.0) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-19732 An OS Command Injection vulnerability affecting Station Launcher App in 3DEXPERIENCE platf (CVSS 9.9) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-77033 An OS Command Injection vulnerability affecting Station Launcher App in 3DEXPERIENCE platf (CVSS 9.9) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-129552 Tensei through 0.11.5 contains an authentication bypass vulnerability in @tensei/auth that (CVSS 9.8) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-129941 Prime CMS (@primecms/core) through 0.4.0-beta.0 contains an authentication bypass vulnerab (CVSS 9.8) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-129952 NodePress through 8.5.1 contains an authentication bypass vulnerability that allows unauth (CVSS 9.8) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-129955 NodePress through 8.5.1 contains an authentication bypass vulnerability that allows unauth (CVSS 9.8) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-120699 CubeSandbox is an instant, concurrent, secure, and lightweight sandbox for AI agents. Prio (CVSS 9.4) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。 GHSA 起点（GitHub Advisory）。
+  - CVE-2026-111559 Batflat CMS does not sanitize data passed to the /contact endpoint. A remote unauthenticat (CVSS 9.3) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-129550 Tensei through 0.11.5 contains a privilege escalation vulnerability in @tensei/auth that a (CVSS 9.3) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-104840 OpenCTI is an open source platform for managing cyber threat intelligence knowledge and ob (CVSS 9.2) … 窓内（11-16 07:00〜11-17 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。 GHSA 起点（GitHub Advisory）。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】 なし
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-17-001 [medium] 自社の AI 基盤（LLM ゲートウェイ・AI アプリ）の既定資格情報と公開状態の点検（API キー窃取エージェントへの備え）
+------------------------------------------------------------
+対象: LiteLLM・One API・Dify・Langflow・Open WebUI 等の LLM ゲートウェイ／AI アプリ
+
+【概要】
+Amazon の記録によれば、攻撃側のエージェントは AI アプリの既定管理者資格情報・既定マスターキー・未完了の導入・認証不要の管理エンドポイント・SSRF などを手引きに、保管された AI プロバイダー鍵を探している。Amazon は『基本的な衛生の欠如がある環境で成功した』と述べる。SANS ISC は LiteLLM／Starlette の CVE-2026-42271・CVE-2026-48710 を狙う要求を観測した。（推測）AI 基盤を社内に立てている組織は同様の探索を受け得るが、国内での被害は確認していない。
+
+【推奨アクション】
+1) LLM ゲートウェイと AI アプリを外部へ公開していないか、公開する場合は認証・IP 制限を必須にする。2) 既定のマスターキー・管理者パスワードを変更し、環境変数・ソースマップ・デバッグ経路に鍵が残っていないか確認する。3) LiteLLM を CVE-2026-42271 の修正版（1.43.0 以降）へ更新し、Starlette 側の修正も確認する。4) プロバイダー鍵の利用量・利用元の異常を監視し、漏えいが疑われる鍵は失効する。
+
+【監視】
+/mcp-rest/test/tools/list への外部要求、AI プロバイダー鍵の急な利用量増加・未知の IP からの利用、クラウドメタデータサービスへの SSRF 試行を監視する。
+参照: https://thehackernews.com/2026/11/amazon-uncovers-ai-agent-campaign.html (The Hacker News)
+参照: https://isc.sans.edu/diary/rss/33522 (SANS Internet Storm Center)
+【低優先度】 なし
+【除外】
+  - Microsoft says months-old bug caused global Microsoft 365 outage（BleepingComputer 11-16）／Microsoft Rules Out Cyberattack in Outage, Warns of Phishing Campaign（SecurityWeek） … 障害原因は攻撃ではないと Microsoft が説明している。フィッシング警告の詳細は見出し・要約の範囲で確認できず、新たな運用対応事項を特定できない。
+  - Microsoft: Windows Server 2016 reaches end of support in 60 days（BleepingComputer 11-16） … 定例のサポート終了の予告で、窓内の攻撃・脆弱性の変化ではない。
+  - Google Project Zero Sets Course for 30-Day Disclosure Deadline（SecurityWeek 11-16） … 開示方針の変更で、SOC の即時の運用対応を要する事象ではない。
+  - Fandango says hackers stole payment card details from checkout pages（BleepingComputer）／Coles（豪小売）のサイバーインシデント調査／Uber のデータ侵害（約 15 万人） … 海外の個別企業の侵害公表で、日本の組織に共通する新規の手口・IoC が見出し・要約の範囲で確認できない（本文未取得）。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃基盤プロファイル】（報告専用・予報の入力には使用しない）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+対象日: 2026-11-17
+状態: 対象のIoCなし / 指標 0件（補強 0 / スキップ 0 / 解析不能 0）/ 照会 0回（成功 0 / データなし 0 / 失敗 0）
+※ すべて公開データベースへの受動照会である。IoC の指す IP・ドメインへは接続していない。
+※ 取得時刻は照会した時点であり、攻撃が行われた時点の状態ではない。
+※ 要約はスクリプトが応答から機械的に作ったもので、推測は含まない。インフラの類似だけで帰属しない。
+
+（本日、補強の対象となる IoC はありません）
+
+攻撃基盤プロファイル — 補強0件 / スキップ0件 / 解析不能0件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【周辺諸国動向】（報告専用・予報の入力には使用しない）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+対象日: 2026-11-17
+走査: 候補 101件 / ゲート対象 3件 / 処理済 3件 / 未処理 0件（状態: ok）
+※ 国への該当は『記事がその国に言及している』ことを示すだけで、攻撃の主体を意味しない。
+※ 事実は出典番号付きで記し、推測は『（推測）』と確度を付けて分けている。
+
+■ 中国（CN）
+
+（本日の該当なし）
+
+■ ロシア（RU） [primary]
+
+------------------------------------------------------------
+[nbr-2026-11-17-001] ルーマニア SRI が Turla に帰属する政府機関への攻撃を阻止と発表、ロシア大使館は『捏造』と否定
+------------------------------------------------------------
+
+区分: サイバー関連活動
+国との関係: 国家との関係を情報源が明示
+原題: Russia denies intercepting Romanian government emails（言語: en）
+
+【帰属（情報源の記述）】
+ルーマニア国内情報機関 SRI（The Record 経由） は次のように述べている: 「a cyberattack attributed to Turla, a long-running Russian espionage group linked to Moscow's Federal Security Service (FSB)」（確度: 中）
+※ 本レポートが帰属を判断したものではなく、情報源の記述の引用である。
+
+【事実】
+・The Record によれば、SRI は Turla に帰属する攻撃を検知して阻止したと述べ、攻撃者は 2025 年 12 月に Microsoft ソフトウェアの脆弱性を悪用して政府機関のシステムに侵入したとされる。 [1]
+・The Record によれば、ロシア大使館は 11-16 に主張を『ルーマニア情報機関による捏造』と否定し、具体的な証拠が示されていないと述べた。 [1]
+
+【評価】
+（推測）帰属は SRI の主張とロシア側の否定が並立しており、独立の技術的検証は収集記事の範囲で確認できない。NATO・EU 往来メールを狙う情報収集の意図は SRI の説明に基づく。（確度: 低）
+
+【非サイバー情勢との関連: 政治動向】
+事実: The Record によれば、ロシア大使館は『ルーマニア情報機関が流すロシアの「神話的な」ハイブリッド攻撃の物語の一部』と述べた。 [1]
+（推測）サイバー事案の帰属をめぐる主張の応酬が、ルーマニア・ロシア間の政治的な対立の文脈にあることを示すが、双方の意図は情報源から確定できない。（確度: 低）
+
+【出典の評価】
+一次情報: いいえ / 独立した情報源: 1件 / 国営メディア等の政府系: いいえ
+
+【関連】
+・Turla-2026-RomaniaGovEmailInterception
+
+【参照】
+[1] https://therecord.media/romania-russia-cyberattack-espionage（The Record (Recorded Future) / 報道 / en）
+
+■ 北朝鮮（KP）
+
+（本日の該当なし）
+
+■ 韓国（KR）
+
+（本日の該当なし）
+
+■ 台湾（TW）
+
+（本日の該当なし）
+
+【除外サマリー（周辺諸国動向）】
+・根拠不足: 1件
+・対象外: 1件
+
+周辺諸国動向 — サイバー関連活動1件 / 政策・法制0件 / 組織0件 / サイバーセキュリティ関連企業0件 / 地政学（非サイバー情勢）0件 / 除外2件
