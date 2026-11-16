@@ -1,0 +1,39 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-17 07:55 JST
+調査期間: 2026-11-16 07:00 〜 2026-11-17 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+------------------------------------------------------------
+AI-2026-11-17-001 [カテゴリA] Google GTIG：AI 脅威トラッカー最新版（自律型マルチエージェント攻撃フレームワークの実戦投入・パッチ差分解析による n-day の自動武器化・LLMjacking の転売市場）
+------------------------------------------------------------
+GTIG の要約と The Hacker News によれば、攻撃者は手動のプロンプト利用から、ARTEX・CAIRN・CyberStrikeAI・PentAGI などの自律型マルチエージェント攻撃フレームワークによる多段階侵入へ移行している。LLM とエージェントでパッチを差分解析して n-day を武器化する手法も観測され、PaperCut NG/MF の脆弱性が事例として挙げられた（The Hacker News）。窃取した LLM 認証情報やクラウド資源を APIMart・JetNight 等の地下プロキシで転売する LLMjacking、LLM チャットボットを組み込んだ中国語圏の PhaaS『Jieyou』、情報操作での LLM 利用、コーディングアシスタント設定の改ざんによる供給網攻撃も報告された。財務動機のアクターと中国に整合する疑いのあるスパイ活動アクターが試行していると記述される。GTIG の原典は要約までを確認し、本文の詳細（アクター別の割当・件数）は未確認。
+  被害規模: GTIG は被害組織数を示していない（The Hacker News 経由では件数の記述なし）。PaperCut NG/MF の 9 月の脆弱性で、パッチ公開後に急速に武器化された事例を挙げた。
+  監視: 公開 AI 基盤の管理画面と API キー保管場所の露出、パッチ公開から適用までの猶予、LLM API の利用量の急増を監視する。
+  参照: https://cloud.google.com/blog/topics/threat-intelligence/agentic-threat-activity-crosses-a-significant-threshold (Google Threat Intelligence Group)
+  参照: https://thehackernews.com/2026/11/google-finds-hackers-using-ai-agents-to.html (The Hacker News)
+------------------------------------------------------------
+AI-2026-11-17-002 [カテゴリC] Amazon：AI エージェントが公開 AI アプリ（LiteLLM・One API・Dify 等）の API キーを窃取するキャンペーンを捕捉（ARTEX の可能性・中国系の疑い）。LiteLLM／Starlette の脆弱性への探索も観測
+------------------------------------------------------------
+The Hacker News によれば、Amazon の脅威インテリジェンスはデコイ網 MadPot で、公開された AI アプリから AI プロバイダーのキーを窃取するエージェントの記録を捕捉した。記録には LiteLLM の既定マスターキー等の既定資格情報、未完了のインストール、Langflow・RAGFlow の既知の欠陥、One API 系の isCliRequest ヘッダーによる認証回避、URL 取得機能の SSRF によるクラウドメタデータへの到達が含まれる。Amazon は ARTEX の可能性を中程度の確信で評価し、運用者は簡体字の指示や中国時間帯の設定から別々の中国系グループと中程度の確信で評価したが、成果は検証できていない。標的は One API・New API・LiteLLM 等の LLM ゲートウェイと Dify・FastGPT・Langflow・RAGFlow・Open WebUI・LobeChat・Ollama 等。SANS ISC は週末から CVE-2026-42271 と CVE-2026-48710 の連鎖（Horizon3.ai が未認証 RCE の連鎖を公表）を狙う要求をハニーポットで観測したが、同キャンペーンとの関連は情報源が示していない（本文は要約の範囲）。
+  被害規模: Amazon はデコイ（MadPot）が受けた通信記録に基づく観測で、被害の成否は確認できないと述べた。Cloudflare は別件で ARTEX が CI/CD 用の API トークンから侵入し、1 時間に 400 件のデータベースダンプ要求があったと報告（返却データの有無は未公表）。
+  監視: LiteLLM・One API・Dify 等の管理画面を外部公開していないか、既定マスターキー・既定管理者資格情報が残っていないかを確認し、AI プロバイダー鍵の異常利用とメタデータサービスへの SSRF 試行を監視する。
+  参照: https://thehackernews.com/2026/11/amazon-uncovers-ai-agent-campaign.html (The Hacker News)
+  参照: https://isc.sans.edu/diary/rss/33522 (SANS Internet Storm Center)
+【参考B】
+------------------------------------------------------------
+AI-2026-11-17-003 [カテゴリA] Barracuda：ARTEX による自社クラウドへの侵入を公表（約 10 アカウントを約 44 時間で探索・Kubernetes にバックドア）／Dark Reading は中国ネクサスが Cairn で 10 組織に侵入と報じる
+------------------------------------------------------------
+SecurityWeek によれば、Barracuda は露出していた有効なクラウドアクセスキーで侵入され、攻撃者が見つけた秘密情報を再利用して別システムへ広がり、約 10 のクラウドアカウントに約 44 時間で触れた。攻撃は 11-01〜02 に起き、Kubernetes クラスターにバックドアが残された。プローブ名・指標・探索順序・認証情報とウォレット探索のルーチンが ARTEX と一致すると Barracuda は述べたが、ARTEX は多くのグループが使うため帰属はしていない。SecurityWeek は Talos・Amazon の分析とあわせ、中国系アクターによる ARTEX の採用拡大を記述する（Talos は Storm-0940 が使用し、Storm-3358 等の金銭目的アクターも採用と記述）。Dark Reading の見出しは、中国ネクサスのアクターが Cairn による自律的攻撃で先端製造・防衛・人権団体など 10 組織に侵入したとする（本文は未取得）。
+  被害規模: Barracuda によれば攻撃者は約 10 のクラウドアカウントに触れ、シークレット保管庫・設定・Kubernetes のサービスアカウント・メタデータサービスを狙い、一部サーバーで暗号資産ウォレット関連ファイルを探索した。顧客データへの影響は SecurityWeek の記述の範囲では確認できない。Dark Reading の 10 組織は見出し・要約の範囲。
+  監視: 長期有効なクラウドアクセスキーの棚卸し、IP 制限・レート制限のない CI/CD トークンの排除、Kubernetes のサービスアカウント利用とメタデータサービスへの異常アクセスを監視する。
+  参照: https://www.securityweek.com/barracuda-hacked-amid-surge-in-artex-powered-cyberattacks/ (SecurityWeek)
+  参照: https://www.darkreading.com/cyberattacks-data-breaches/china-nexus-actors-breach-10-organizations-ai-driven-attacks (Dark Reading)
+【参考A】 なし
+【除外】
+  - SecurityWeek：Cursor Supply Chain Attack Started at Fireworks AI … Cursor の侵害経緯は AI-2026-11-15-001（11-15）に既報で、新規の変化なし。Fireworks AI の侵害は 11-11・11-13 にも既報。
+  - BleepingComputer：Anthropic's Claude Fable 5.2 blocks fewer security tasks, while Mythos gets better at finding bugs … モデル提供者の機能・方針の変更で、攻撃者による AI の悪用や AI への攻撃の具体的事象を含まない。
+  - SecurityWeek：Telegram Widgets Hit by RCE Demos, Malware Warning Days After Launch … Kaspersky が WebRAT 配布への悪用を『疑う』段階で、Telegram 側が主張を否定している。AI 攻撃の分類に該当せず、実態は未確認（見出し・要約の範囲）。

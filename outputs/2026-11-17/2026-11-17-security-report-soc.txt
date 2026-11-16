@@ -1,0 +1,31 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-17 07:55 JST
+調査期間: 2026-11-16 07:00 〜 2026-11-17 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】 なし
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-17-001 [medium] 自社の AI 基盤（LLM ゲートウェイ・AI アプリ）の既定資格情報と公開状態の点検（API キー窃取エージェントへの備え）
+------------------------------------------------------------
+対象: LiteLLM・One API・Dify・Langflow・Open WebUI 等の LLM ゲートウェイ／AI アプリ
+
+【概要】
+Amazon の記録によれば、攻撃側のエージェントは AI アプリの既定管理者資格情報・既定マスターキー・未完了の導入・認証不要の管理エンドポイント・SSRF などを手引きに、保管された AI プロバイダー鍵を探している。Amazon は『基本的な衛生の欠如がある環境で成功した』と述べる。SANS ISC は LiteLLM／Starlette の CVE-2026-42271・CVE-2026-48710 を狙う要求を観測した。（推測）AI 基盤を社内に立てている組織は同様の探索を受け得るが、国内での被害は確認していない。
+
+【推奨アクション】
+1) LLM ゲートウェイと AI アプリを外部へ公開していないか、公開する場合は認証・IP 制限を必須にする。2) 既定のマスターキー・管理者パスワードを変更し、環境変数・ソースマップ・デバッグ経路に鍵が残っていないか確認する。3) LiteLLM を CVE-2026-42271 の修正版（1.43.0 以降）へ更新し、Starlette 側の修正も確認する。4) プロバイダー鍵の利用量・利用元の異常を監視し、漏えいが疑われる鍵は失効する。
+
+【監視】
+/mcp-rest/test/tools/list への外部要求、AI プロバイダー鍵の急な利用量増加・未知の IP からの利用、クラウドメタデータサービスへの SSRF 試行を監視する。
+参照: https://thehackernews.com/2026/11/amazon-uncovers-ai-agent-campaign.html (The Hacker News)
+参照: https://isc.sans.edu/diary/rss/33522 (SANS Internet Storm Center)
+【低優先度】 なし
+【除外】
+  - Microsoft says months-old bug caused global Microsoft 365 outage（BleepingComputer 11-16）／Microsoft Rules Out Cyberattack in Outage, Warns of Phishing Campaign（SecurityWeek） … 障害原因は攻撃ではないと Microsoft が説明している。フィッシング警告の詳細は見出し・要約の範囲で確認できず、新たな運用対応事項を特定できない。
+  - Microsoft: Windows Server 2016 reaches end of support in 60 days（BleepingComputer 11-16） … 定例のサポート終了の予告で、窓内の攻撃・脆弱性の変化ではない。
+  - Google Project Zero Sets Course for 30-Day Disclosure Deadline（SecurityWeek 11-16） … 開示方針の変更で、SOC の即時の運用対応を要する事象ではない。
+  - Fandango says hackers stole payment card details from checkout pages（BleepingComputer）／Coles（豪小売）のサイバーインシデント調査／Uber のデータ侵害（約 15 万人） … 海外の個別企業の侵害公表で、日本の組織に共通する新規の手口・IoC が見出し・要約の範囲で確認できない（本文未取得）。
