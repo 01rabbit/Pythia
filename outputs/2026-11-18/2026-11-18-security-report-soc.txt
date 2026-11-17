@@ -1,0 +1,100 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-18 08:45 JST
+調査期間: 2026-11-17 07:00 〜 2026-11-18 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-18-001 [high] Java『Java4Shell』CVE-2026-114938：CISA が即時適用を要請。JDK／JRE の棚卸し（同梱・コンテナ・アプライアンス含む）と Oracle CPU November 2026 の適用
+------------------------------------------------------------
+対象: Oracle Java SE／OpenJDK 17 以降（x86-64 HotSpot JVM）。Java を同梱する業務アプリ・ミドルウェア・コンテナイメージ・アプライアンス
+【概要】
+CISA は、x86-64 HotSpot JVM の Base64 デコーダのメモリ破損 CVE-2026-114938（『Java4Shell』・Rapid7 は CVSS v4 9.2 の暫定値）について、細工した Base64 入力で JVM のクラッシュと未認証 RCE につながり得るとして即時の修正適用を要請した。JDK／JRE は第三者アプリ・コンテナ・アプライアンスに同梱され資産台帳に現れないことが多いと CISA は注意している。実悪用・PoC の報告は無い（11-17 時点）。国内でも Java 利用は広く、Oracle CPU November 2026（AhnLab は韓国時間 11-17 06:00 公開と記述）の適用対象の洗い出しが必要。
+【推奨アクション】
+1) ソフトウェア台帳・SBOM・コンテナイメージ・アプライアンスから JDK／JRE 17 以降の所在を洗い出す。2) インターネット公開系から優先して Oracle／ベンダーの修正を適用する（OpenJDK ディストリビューションは各提供元の修正版を確認）。3) 即時適用が困難な系では、アプリ境界で Base64 入力の検証・サイズ上限・未認証アクセスの制限を暫定適用する。4) JVM の異常終了・不審な Java プロセスを監視する。
+【監視】
+hs_err ログ・JVM クラッシュの急増、未認証エンドポイントへの大きな Base64 入力、Java プロセスからの子プロセス生成を監視する。
+参照: https://www.cisa.gov/news-events/alerts/2026/11/17/critical-java-vulnerability-requires-immediate-patching (CISA)
+参照: https://www.rapid7.com/blog/post/etr-cve-2026-114938-reported-critical-pre-authentication-remote-code-execution-java-17 (Rapid7)
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-18-002 [medium] Perforce Puppet Enterprise／Puppet Server CVE-2026-115731 の KEV 追加（期限 12-01）：修正適用と CA 自動署名の見直し。Apache Roller CVE-2026-129448 の実悪用も Apache が明記
+------------------------------------------------------------
+対象: Puppet Enterprise／Puppet Server（構成管理）・Apache Roller（ブログ基盤）
+【概要】
+CISA が Puppet Enterprise の逆シリアル化 RCE CVE-2026-115731 を実悪用の証拠に基づき KEV へ追加した（期限 2026-12-01）。CA が強い検証なしに自動署名する構成では未認証の攻撃者も Puppet Server 上でコードを実行できるため、構成管理基盤の侵害が配下の全ノードへ波及し得る。別途、Apache Roller 4.0.0〜6.1.4 の XML-RPC 認証前逆シリアル化 CVE-2026-129448（CVSS 9.8）について Apache が『実悪用されている』と明記した（KEV 未収載・悪用の詳細は未公表）。
+【推奨アクション】
+1) Puppet Enterprise／Puppet Server を修正版へ更新し、autosign を無効化または強い検証付きに限定する。2) Puppet Server のレポート PUT 要求と puppet サービスユーザーの想定外プロセスを点検する。3) Apache Roller を 6.1.5 以降へ更新し、更新まで XML-RPC エンドポイントを遮断する。4) いずれも公開面の棚卸しと侵害痕跡（Web シェル・不審な子プロセス）の確認を行う。
+【監視】
+Puppet Server への rich-data 型を含むレポート PUT、Roller の XML-RPC への未認証 POST、Java／JRuby プロセスからの子プロセス生成を監視する。
+参照: https://www.cisa.gov/news-events/alerts/2026/11/17/cisa-adds-one-known-exploited-vulnerability-catalog (CISA)
+参照: https://nvd.nist.gov/vuln/detail/CVE-2026-129448 (NVD)
+------------------------------------------------------------
+SOC-2026-11-18-003 [medium] RMM 基盤 2 件の対応：N-able N-central 2026.4 HF3（17 件修正・レガシー API 削除・Agent／Probe 更新）と ConnectWise ScreenConnect 26.6.5（第三者拡張 5 種の無効化・SCKit／update*.bat キャンペーン）
+------------------------------------------------------------
+対象: N-able N-central・ConnectWise ScreenConnect（MSP／社内 IT のリモート管理）
+【概要】
+N-able は N-central 2026.4 HF3 で 17 件（CVE-2026-129271〜129287）を修正しレガシー API を恒久削除、既修正の 4EverAble2Shell が実悪用され暗号資産マイナーが展開されていると記述した（未更新の Agent／Probe は偽装の対象）。ConnectWise はパートナー環境への不正アクセスの調査を完了し、技術者クライアント 26.6.5 以降への更新と第三者拡張 5 種（Labtech Plus・RMM Plus・RMM+・RMM Plus Password Link・RMM+ Password Link）の無効化を求めた。Huntress は 42 台の MSP サーバーへ 68 万 8 千件超の update*.bat 実行要求が届く 1 か月規模のキャンペーンと、11-13 の 41 組織 205 ホストでの再急増を報告した。国内の MSP・委託先が同製品を使う場合、委託元の環境へ波及する経路になる。
+【推奨アクション】
+1) N-central をオンプレミスは HF3 へ更新し、全 Agent／Probe を最新化、レガシー API が削除・無効であることを確認する。2) ScreenConnect の技術者クライアントと Access エージェントを 26.6.5 以降へ更新し、5 つの拡張を無効化（再有効化しない）。3) update*.bat の実行、『Windows Update Agent』サービス、185.241.211[.]197 への通信、マイナーの稼働を調査し、侵害端末は永続化除去まで行う。4) 委託先（MSP）に対応状況を確認する。
+【監視】
+ScreenConnect ゲストの『run file』要求の急増と Telegram API 接続、N-central サーバーの CPU 高負荷・不審プロセス、アプライアンス API への識別子推測を監視する。
+参照: https://thehackernews.com/2026/11/n-able-patches-17-n-central-flaws-as.html (The Hacker News)
+参照: https://www.securityweek.com/msp-screenconnect-servers-targeted-in-month-long-campaign/ (SecurityWeek)
+参照: https://thehackernews.com/2026/11/connectwise-warns-screenconnect-attacks.html (The Hacker News)
+------------------------------------------------------------
+SOC-2026-11-18-004 [medium] Optimizely 経由の第三者スクリプト改ざん（OPTIMJACK）：Project JavaScript の点検・資格情報ローテーション・決済ページからの第三者タグ排除・iOS 18.7.3／26.3 以降への更新
+------------------------------------------------------------
+対象: Optimizely Web Experimentation（A/B テスト・実験配信）を読み込む Web サイト。訪問者の iOS 端末
+【概要】
+Optimizely は Experimentation の脆弱性悪用で顧客プロジェクトのスクリプトに悪意あるコードが追加されたと認めた。11-16（UTC）に 178 組織のサイトで 1688360[.]cc/track.js が読み込まれ、ウォレットアドレス置換・カード情報窃取・Cookie とスクリーンショットの送信が行われ、iOS 18.6 以前の訪問者には Coruna／DarkSword のエクスプロイトチェーンが隠し iframe で配信された（実機での成立は未確認）。除去後に再感染したスクリプトもあり、攻撃者のアクセス保持が示された。国内サイトでも Optimizely 等の第三者実験・計測タグを決済ページに読み込んでいる場合、同種の経路が成立する。
+【推奨アクション】
+1) Optimizely 利用組織は Project JavaScript・実験カスタムコードを 1688360・atob(・未知スクリプトで検索し、書き込み権限のあるユーザー・API トークン・連携資格情報をローテーションする。2) 11-16 UTC に該当サイトで入力されたカード情報は露出の可能性として扱い、非 HttpOnly の Cookie シークレットを更新する。3) 決済ページから第三者タグを排除し、決済事業者のホスト型フィールドを使う（CSP で cdn.optimizely.com を許可しても防げない）。4) 従業員・顧客向け案内で iPhone／iPad を iOS 18.7.3 以降または 26.3 以降へ更新させる。5) 08:00 UTC 以降のログを遡って確認する。
+【監視】
+Web 資産からの 1688360[.]cc・.icu ドメイン・webshell[.]lol への通信、第三者スクリプトの内容変更（SRI／CSP 違反レポート）、決済フォームからの想定外送信先を監視する。
+参照: https://thehackernews.com/2026/11/hijacked-optimizely-scripts-served-card.html (The Hacker News)
+参照: https://unit42.paloaltonetworks.com/optimjack-supply-chain-attack/ (Unit 42)
+------------------------------------------------------------
+SOC-2026-11-18-005 [medium] Microsoft 365 の大規模障害を口実にした大量フィッシング（Microsoft 観測）と M365 セッショントークンを再生するキット（EvilTokens・Knight Office・Kali365）への備え
+------------------------------------------------------------
+対象: Microsoft 365（Entra ID 認証・メール）
+【概要】
+Microsoft Threat Intelligence は、Microsoft 365 の障害を口実にした誘導文で複数業種の組織を世界的に狙う大量フィッシングを観測したと報告した（詳細は要約の範囲）。BleepingComputer によれば Huntress は、EvilTokens・Knight Office・Kali365 といったキットが M365 のトークンを捕捉・再生して MFA を迂回する仕組みと検知・封じ込め方法を解説した。11-16 の M365 障害は国内でも影響があり、障害関連の『再認証』『復旧確認』を名乗るメールは同一の口実として警戒が必要。
+【推奨アクション】
+1) 障害関連を装う再認証・復旧確認メールへの注意を全社通知し、正規の障害情報は管理センターで確認させる。2) 条件付きアクセスでトークン保護（デバイス準拠・場所・リスク評価）を有効化し、フィッシング耐性 MFA へ移行する。3) 不審サインインの検知後はパスワードだけでなくセッション・リフレッシュトークン・OAuth 許可を失効する。4) 新規 MFA デバイス登録・受信トレイルールの作成を監視する。
+【監視】
+障害直後の時間帯に集中するサインイン失敗・新規デバイスからのトークン再生、短時間の地理的に離れたサインイン、受信トレイルール作成を監視する。
+参照: https://www.microsoft.com/en-us/security/blog/2026/11/16/high-volume-phishing-campaign-uses-microsoft-365-outage-lures-target-multiple-industry-sectors-2 (Microsoft Security Blog)
+参照: https://www.bleepingcomputer.com/news/security/inside-modern-phishing-kits-built-to-steal-microsoft-365-sessions (BleepingComputer)
+------------------------------------------------------------
+SOC-2026-11-18-006 [medium] 富岳停止に伴う利用者側の対応：理研発行の鍵・資格情報の失効と再発行、理研を装うフィッシングへの警戒（大学・研究機関）
+------------------------------------------------------------
+対象: スーパーコンピュータ富岳・Rikyu の利用者端末（SSH 鍵・アクセス鍵）
+【概要】
+理研は富岳の公開ダッシュボード経由の侵入（11-10〜13）で、富岳利用者 4,222 名・Rikyu 利用者 375 名の氏名・メールアドレス等と、利用者端末上の SSH 秘密鍵・アクセス鍵・研究データが窃取されたと公表し、一部の鍵で他システムへの接続が試みられたとした。利用者は所属機関の鍵運用にも影響し得る。
+【推奨アクション】
+1) 富岳・Rikyu 利用者は、富岳に登録・保存していた SSH 鍵・アクセス鍵・その他の資格情報を失効し再発行する（同じ鍵を他システムで共用していれば全て）。2) 所属機関は該当利用者の端末で鍵の共用状況を確認し、認可ログで当該鍵による他システムへの接続試行を調査する。3) 理研を装うフィッシングへの注意喚起を行う。4) 公開ダッシュボード等の『読み取り専用』公開面でも内部到達性を点検する。
+【監視】
+失効対象の公開鍵による SSH 認証試行、研究者アカウントへの通常と異なる地域からのログイン、理研を装うドメインからのメールを監視する。
+参照: https://www.bleepingcomputer.com/news/security/japan-takes-fugaku-supercomputer-offlline-after-cyberattack (BleepingComputer)
+【低優先度】
+------------------------------------------------------------
+SOC-2026-11-18-007 [low] 公開 Docker Hub イメージに漏れたクラウド鍵は公開から最短 8 秒で悪用される（BleepingComputer）：イメージ内シークレットの検査と鍵の即時失効
+------------------------------------------------------------
+対象: Docker Hub 等の公開コンテナレジストリへ公開するイメージ
+【概要】
+BleepingComputer の要約によれば、公開 Docker Hub イメージに露出した資格情報・アクセスシークレットは、公開から最短 8 秒で攻撃者に抽出・悪用されている。研究の主体・手法は本文未取得のため確認できないが、CI/CD からの公開イメージに鍵が混入した場合、削除や非公開化では間に合わないことを示す。
+【推奨アクション】
+1) イメージのビルド時にシークレット検査（レイヤー・環境変数・ヒストリ）を必須化する。2) 公開済みイメージに鍵の混入を見つけたら、イメージ削除より先に鍵を失効する。3) 長期有効なクラウド鍵を短期トークンへ置き換える。
+【監視】
+クラウド鍵の未知の送信元からの初回利用、公開直後の不審な API 呼び出しを監視する。
+参照: https://www.bleepingcomputer.com/news/security/cloud-keys-leaked-in-docker-hub-images-are-stolen-within-seconds (BleepingComputer)
+【除外】
+  - BleepingComputer：Tor releases emergency update amid ongoing DDoS attack … Tor リレー運用者向けの更新で、国内の一般的な SOC の運用対応事項に直結しない（Section 2 トレンド欄に記載）。
+  - Security NEXT／CERT-FR：GitLab 37 件（High 4 件）・Microsoft SharePoint・OpenSSL（DoS）・Dell PowerStore・Apache TomEE 38 件・Go・Typo3・Mitel MiCollab・Juniper Junos OS Evolved・Tenable Identity Exposure・Axis OS・GLPI の定例アドバイザリ … 定例のセキュリティ更新で、窓内に悪用・KEV の報告が無く、通常のパッチ運用で対応（CVSS 9.0 以上は Section 3 の除外サマリーで個別記録）。
+  - The Record：NSA Net, agency's classified internal network, faces unspecified disruptions／California fines Hertz $1.5 million … 海外機関の内部障害・規制当局の制裁で、国内組織の運用対応事項を特定できない。
+  - BleepingComputer：Microsoft testing Remote Lock for lost or stolen Windows devices／Apple reports outages affecting iCloud Mail, AppleCare and more／Flipper One … 製品機能のテスト・サービス障害・製品発表で、攻撃・脆弱性の変化ではない。
+  - BleepingComputer／SecurityWeek：Uber（約 15 万人）・Access Dental Management（34 万人超）・Fandango・Ipsos の侵害公表 … 海外の個別企業の侵害公表で、日本の組織に共通する新規の手口・IoC が見出し・要約の範囲で確認できない。
