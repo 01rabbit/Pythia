@@ -1,0 +1,41 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-19 08:50 JST
+調査期間: 2026-11-18 07:00 〜 2026-11-19 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+------------------------------------------------------------
+AI-2026-11-19-001 [カテゴリC] Microsoft 公式 PyPI パッケージ『agent-framework』1.26.1／1.26.2 が侵害され資格情報窃取コードを同梱：.pth ファイルで起動時に環境変数・Azure CLI・npmrc・git-credentials・OIDC トークン・IMDS を収集し webhook[.]site へ送出（公開 45 分で隔離）
+------------------------------------------------------------
+The Hacker News・SecurityWeek・BleepingComputer によれば、Microsoft の AI エージェント開発基盤『Agent Framework』の公式 PyPI パッケージ agent-framework に 2026-11-17 20:35〜21:20 UTC、悪性版 1.26.1 と 1.26.2 が公開された。悪性版は agent_framework_meta.pth や af_runtime_diag.pth／af_runtime_diag.py といった .pth ファイルを同梱し、Python 起動時に自動実行されて環境変数、Azure CLI の資格情報、.npmrc・.netrc・.git-credentials、Docker 設定、Hugging Face トークン、Azure DevOps・GitHub Actions の OIDC トークン、マネージド ID トークン、IMDS 情報を収集し、webhook[.]site/d381fd80-ec62-42ad-8f5c-d1b15103c9bb へ送出した。Aikido・Chainguard・Endor Labs・OX・SafeDep・Socket・StepSecurity・Wiz が報告し、PyPI は約 45 分で隔離した。侵入経路は Microsoft 未公表。10 月の LiteLLM 1.107.0 侵害（既報・.pth 経由の資格情報窃取）と同系の手口であり、AI エージェント基盤の PyPI 供給網が連続して狙われている。
+  被害規模: 悪性版 2 件（1.26.1・1.26.2）は 2026-11-17 20:35〜21:20 UTC の約 45 分間公開され PyPI が隔離。ダウンロード数・被害組織数は各社とも公表していない。侵入経路（メンテナ資格情報か CI か）は Microsoft 未公表。
+  監視: agent-framework 1.26.1／1.26.2 を導入した環境を特定し、webhook[.]site への通信、.pth ファイルの追加、CI 内の資格情報利用を監視する。
+  IOC: ドメイン webhook[.]site/d381fd80-ec62-42ad-8f5c-d1b15103c9bb / ハッシュ なし
+  参照: https://thehackernews.com/2026/11/attackers-compromise-microsofts-agent.html (The Hacker News)
+  参照: https://www.securityweek.com/microsoft-agent-framework-releases-poisoned-with-credential-stealer (SecurityWeek)
+  参照: https://www.bleepingcomputer.com/news/security/microsofts-agent-framework-pypi-package-compromised-to-steal-credentials (BleepingComputer)
+------------------------------------------------------------
+AI-2026-11-19-002 [カテゴリC] Rapid7：インターネット露出の自己ホスト AI サーバー（Ollama 等）7,600 台超を調査、半数超に第三者の痕跡・79% が ollama.com のクラウドモデルにサインイン済みで『計算資源の間借り（LLMjacking）』が常態化。Probllama 型パストラバーサルの試行も 55 台で確認
+------------------------------------------------------------
+Rapid7 は 2026-11-18、インターネットに露出した自己ホスト AI 推論サーバーの実態調査を公表した。11-10 の走査で 20,354 IP を調べ、未認証の AI API を公開する 7,627 台（Ollama が 7,675 台）を確認。54.8% のホストに所有者以外が投入したモデル・アーティファクトの痕跡があり、79% は ollama.com のアカウントでクラウドモデルにサインイン済みのため、第三者がホスト所有者の課金でクラウドモデルを使える状態（LLMjacking）にあった。55 台では Ollama の既知脆弱性 Probllama 型のパストラバーサル・ペイロードが観測され、コールバック先として 24.144.109[.]68:9882、103.249.201[.]108:9882、76.13.49[.]213:9882、62.31.247[.]107:9882、43.143.113[.]68:8899、185.165.171[.]21:8899 が記録された。本件は特定アクターの作戦ではなく、露出 AI 基盤が既に第三者に『占有』されているという面の調査であり、同日に KEV へ追加された LiteLLM CVE-2026-40217 とあわせ、自己ホスト AI ゲートウェイ・推論サーバーの露出面が実被害に直結している。
+  被害規模: Rapid7 の 11-10 走査で 20,354 IP のうち未認証 AI API 7,627 台（Ollama 7,675 台）。54.8% に第三者のモデル・アーティファクトの痕跡、79% が ollama.com アカウントでクラウドモデルにサインイン済み（所有者の課金で利用可能）。個別被害額は不明。
+  監視: Ollama／vLLM 等の API ポートの外部露出を棚卸しし、認証プロキシの前置、ollama.com アカウント連携の見直し、上記コールバック IP への通信を監視する。
+  参照: https://www.rapid7.com/blog/post/tr-self-hosted-ai-renting-compute-exposed-servers (Rapid7)
+【参考B】
+------------------------------------------------------------
+AI-2026-11-19-003 [カテゴリA] Java4Shell CVE-2026-114938 の発見者 Calif が『AI 支援で約 3 時間・200 ドル未満で発見』と公表：重大脆弱性の発見コストの低下を示す事例（攻撃事象ではなく研究）
+------------------------------------------------------------
+The Hacker News によれば、Java4Shell CVE-2026-114938 を発見した Calif の研究者 Quang Luong は、AI 支援により約 3 時間・200 ドル未満のコストで本脆弱性を発見したと述べた。攻撃事象ではないが、JDK 中核部の重大なメモリ破損が低コストで発見できたことは、同種の手法を攻撃側が用いた場合のゼロデイ発見コストの低下を示す参考情報である（推測）。VulnCheck は悪用に標的ごとの作り込みが要ると評価しており、発見の容易さと悪用の容易さは区別して読む必要がある。
+  被害規模: 実被害なし（研究者による発見・責任ある開示）。実悪用は未確認。
+  監視: Section 2 の CVE-2026-114938 を参照。
+  参照: https://thehackernews.com/2026/11/java4shell-cve-2026-114938-enables-pre.html (The Hacker News)
+【参考A】 なし
+【除外】
+  - The Hacker News：AI Pentesting Checklist for Web Apps／Quality Isn't The Main Worry About AI Pentesting（スポンサー記事） … AI ペネトレーションテスト製品の広告記事で、攻撃事象ではない。
+  - SecurityWeek：Microsoft Takes Perception Agentic Security Platform Out of Preview／VeroSecurity Raises $11 Million … 製品発表・資金調達で、攻撃事象ではない。
+  - SentinelLabs：LABScon26 Replay — Governing Just-in-Time Intelligence: AI, Dual-Use Capabilities … 講演の再掲で、新規の攻撃事象を含まない。
+  - ScanNetSecurity：Proofpoint Blog 第61回 AI時代に広がるサプライチェーンリスク（Shai-Hulud）／エーアイセキュリティラボ A2B 攻撃ウェビナー告知 … Shai-Hulud は既報の解説記事、ウェビナーは告知で、新規事象ではない。
+  - CISA KEV：BerriAI LiteLLM CVE-2026-40217 の KEV 追加 … AI ゲートウェイの脆弱性悪用だが、CVE の実悪用として Section 2／3 のゼロデイ特報で記録（AI セクションでは重複採用しない）。LiteLLM の供給網侵害は 10 月に既報。

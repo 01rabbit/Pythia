@@ -1,0 +1,266 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-19 08:50 JST
+調査期間: 2026-11-18 07:00 〜 2026-11-19 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+------------------------------------------------------------
+CVE-2024-10441 [high] Synology DiskStation Manager（DSM）／BeeStation OS（system plugin daemon の出力エンコード・エスケープ不備・未認証 RCE）
+------------------------------------------------------------
+対象: Synology / DSM 7.2.2-72806-1 未満・7.2.1-69057-6 未満・7.2-64570-4 未満、BeeStation OS 1.1-65374 未満（Synology-SA-24:20・CVE 記述）。Synology の表では DSM 7.1（7.1.1-42962-7 未満）・6.2（6.2.4-25556-8 未満）も記載
+KEV 追加: 2026-11-18（FCEB 期限 2026-11-21）
+評点: CVSS v3 9.8 / EPSS 0.0125
+【概要】
+CISA は 2026-11-18、Synology DiskStation Manager（DSM）の『出力の不適切なエンコード・エスケープ』の脆弱性 CVE-2024-10441 を、ほか 3 件とともに実悪用の証拠に基づき KEV へ追加した（FCEB 期限 2026-11-21・ランサムウェア利用は『Unknown』）。Synology-SA-24:20（2024-11-05 公開）と CVE 記述によれば、system plugin daemon の欠陥によりリモート攻撃者が未特定の入力経由で任意コードを実行でき（CVSS 3.1 9.8）、DSM 7.2.2-72806-1／7.2.1-69057-6／7.2-64570-4 未満と BeeStation OS 1.1-65374 未満が対象である。JPCERT/CC の Weekly Report 11-18 号も Synology DSM の複数の脆弱性を周知している。悪用の主体・手口・規模は CISA の通知に無く、PoC の公開も窓内では確認できなかった。国内でも Synology NAS は中小企業・教育・医療に広く導入されており、インターネット露出機の棚卸しが優先となる。
+【一時緩和】
+  - DSM を 7.2.2-72806-1／7.2.1-69057-6／7.2-64570-4 以降へ、BeeStation OS を 1.1-65374 以降へ更新する（FCEB 期限 2026-11-21・期限 3 日の短縮設定）
+  - DSM の管理画面・QuickConnect・ポート転送によるインターネット直接露出を止め、VPN 経由に限定する
+  - NAS 上の想定外のプロセス・新規管理者・スケジュールタスク・外向き通信を点検し、バックアップの隔離状態を確認する
+【TTP】
+  - T1190 (initial-access): CISA が実悪用の証拠に基づき KEV へ追加し、Synology／CVE 記述がリモート攻撃者による未特定の入力経由の任意コード実行と記述（CISA KEV・Synology-SA-24:20）
+【IOC】IP: なし / ファイル: なし
+【監視】DSM の system plugin daemon の異常終了、Web 管理ポート（5000／5001）への未認証の不審な要求、NAS からの外向き接続と新規タスク作成を監視する。
+  参照: https://www.cisa.gov/news-events/alerts/2026/11/18/cisa-adds-four-known-exploited-vulnerabilities-catalog (CISA)
+  参照: https://www.synology.com/en-global/security/advisory/Synology_SA_24_20 (Synology)
+  参照: https://www.jpcert.or.jp/wr/2026/wr261118.html (JPCERT/CC)
+------------------------------------------------------------
+CVE-2026-40217 [high] BerriAI LiteLLM（AI ゲートウェイ・/guardrails/test_custom_code エンドポイントのバイトコード書き換えによる認証後 RCE）
+------------------------------------------------------------
+対象: BerriAI / LiteLLM 1.81.8 以上 1.83.10 未満（GHSA-wxxx-gvqv-xp7p）。CVE 記述は『2026-04-08 までの LiteLLM』
+KEV 追加: 2026-11-18（FCEB 期限 2026-12-02）
+評点: CVSS v3 8.8 / EPSS 0.1702
+【概要】
+CISA は 2026-11-18、AI ゲートウェイ LiteLLM の『保護されていない代替チャネル』の脆弱性 CVE-2026-40217 を実悪用の証拠に基づき KEV へ追加した（FCEB 期限 2026-12-02・ランサムウェア利用は『Unknown』）。CVE 記述と GitHub Advisory（GHSA-wxxx-gvqv-xp7p）によれば、custom code guardrail の試験用 URI /guardrails/test_custom_code でバイトコード書き換えにより任意コードを実行できる（CVSS 3.1 8.8・PR:L）。対象は 1.81.8 以上 1.83.10 未満で、1.83.10 で修正（2026-04-10 公開）。EPSS は 17.0%。悪用の主体・規模は CISA の通知に無い。LiteLLM は 10 月に PyPI／Docker の供給網侵害（既報・AI-2026-10-22 系）を受けた製品であり、本件で AI ゲートウェイそのものの既知脆弱性が実悪用に至ったことになる。11-18 窓内には Rapid7 が露出 Ollama への第三者による利用（LLMjacking）を報告しており（Section 1）、自己ホスト AI 基盤の露出面が同日に複数の経路から確認された。
+【一時緩和】
+  - LiteLLM Proxy を 1.83.10 以降へ更新する（FCEB 期限 2026-12-02）
+  - Proxy の管理 API（/guardrails/* を含む）をインターネットから遮断し、仮想キー・マスターキーの権限範囲を見直す
+  - Proxy ホスト上の想定外のプロセス・環境変数（モデル API キー・クラウド資格情報）の流出痕跡を点検し、鍵を更新する
+【TTP】
+  - T1190 (initial-access): CISA が実悪用の証拠に基づき KEV へ追加し、CVE 記述がリモート攻撃者による /guardrails/test_custom_code URI でのバイトコード書き換え経由の任意コード実行と記述（CISA KEV・GitHub Advisory）
+【IOC】IP: なし / ファイル: なし
+【監視】LiteLLM Proxy への /guardrails/test_custom_code 要求（特に外部発）、Proxy プロセスからの子プロセス生成・想定外の外向き通信、API キーの異常利用を監視する。
+  参照: https://www.cisa.gov/news-events/alerts/2026/11/18/cisa-adds-four-known-exploited-vulnerabilities-catalog (CISA)
+  参照: https://github.com/advisories/GHSA-wxxx-gvqv-xp7p (GitHub Advisory Database)
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA KEV)
+------------------------------------------------------------
+CVE-2026-90436 [high] Apache Axis 1.x（SOAP Fault の exceptionName による未認証のクラス読み込み・インスタンス化・RCE。N-able N-central・Atlassian Confluence Data Center 等に同梱）
+------------------------------------------------------------
+対象: Apache Software Foundation（Axis 1.x は EOL・UNSUPPORTED WHEN ASSIGNED） / Apache Axis 1.x 全版（EOL のため公式修正なし。同梱製品側の修正: N-able N-central 2026.4 HF3、Atlassian Confluence Data Center の更新等）
+KEV 追加: 2026-11-18（FCEB 期限 2026-11-21）
+評点: CVSS v3 9.8 / EPSS 0.0113
+【概要】
+CISA は 2026-11-18、Apache Axis 1.x の『安全でないリフレクション』の脆弱性 CVE-2026-90436 を実悪用の証拠に基づき KEV へ追加した（FCEB 期限 2026-11-21・ランサムウェア利用は『Unknown』）。EUVD／GitHub Advisory の記述によれば、SOAP <Fault> の <detail><exceptionName> に任意のクラス名を与えると Axis がそのクラスを読み込み、String <data> があれば AxisFault かを確認する前に String コンストラクタでインスタンス化するため、未認証のリモートからクラス読み込み・インスタンス化が可能である（CVSS 3.1 9.8・Axis 1.x は EOL で『UNSUPPORTED WHEN ASSIGNED』）。本 CVE は 11-13 に N-able N-central 経由の実悪用（暗号資産マイナー展開）が報じられ、11-17 に N-central 2026.4 HF3 の 17 件修正とあわせて既報であり、本日の変化点は KEV 収載である。JPCERT/CC Weekly Report 11-18 号が N-central と Confluence Data Center の脆弱性を周知している。
+【一時緩和】
+  - N-central を 2026.4 HF3 以降へ、Confluence Data Center を修正版へ更新する（FCEB 期限 2026-11-21）
+  - 自社アプリケーションに同梱された Axis 1.x（axis.jar）を棚卸しし、SOAP エンドポイントを外部から遮断する
+  - SOAP Fault 内の exceptionName に任意クラス名を含む要求、Java プロセスからの子プロセス生成・マイナーの稼働を点検する
+【TTP】
+  - T1190 (initial-access): CISA が実悪用の証拠に基づき KEV へ追加。11-13〜11-17 の既報で N-central 経由の実悪用（マイナー展開）を The Hacker News／Previdian が報告
+【IOC】IP: なし / ファイル: なし
+【監視】Axis 1.x の SOAP エンドポイントへ送られる <detail><exceptionName> 付き Fault 応答・要求、Java プロセスの CPU 高負荷と暗号資産マイナー、想定外の外向き通信を監視する。
+  参照: https://www.cisa.gov/news-events/alerts/2026/11/18/cisa-adds-four-known-exploited-vulnerabilities-catalog (CISA)
+  参照: https://euvd.enisa.europa.eu/vulnerability/EUVD-2026-118323 (ENISA EUVD)
+  参照: https://www.jpcert.or.jp/wr/2026/wr261118.html (JPCERT/CC)
+------------------------------------------------------------
+CVE-2026-90817 [high] Vanderbilt University REDCap（Research Electronic Data Capture・公開アンケート経路からの意図しないコントローラ到達とデータインポートのファイルパス操作による未認証 RCE）
+------------------------------------------------------------
+対象: Vanderbilt University / REDCap 13.3.0 以降（GitHub Advisory の記述。修正版は Advisory 上『Unknown』で未確認）
+KEV 追加: 2026-11-18（FCEB 期限 2026-11-21）
+評点: CVSS v3 9.8 / EPSS 0.0375
+【概要】
+CISA は 2026-11-18、研究データ収集基盤 REDCap の『コードインジェクション』の脆弱性 CVE-2026-90817 を実悪用の証拠に基づき KEV へ追加した（FCEB 期限 2026-11-21・ランサムウェア利用は『Unknown』）。GitHub Advisory（GHSA-hg88-qg2r-c8mx・2026-09-20 公開・Securifera 報告）によれば、公開アンケート（survey passthrough）のルーティングと Data Import 処理に未認証 RCE があり、公開アンケートの文脈から HTTP 要求を操作して意図しないコントローラ経路へ到達し、インポート処理で細工したファイルパス／ストリームを与えることでサーバー上の任意コード実行に至る（CVSS 3.1 9.8・CWE-73）。悪用には有効な公開アンケートハッシュの知識が必要で、対象は REDCap 13.3.0 以降、修正版は Advisory 上『Unknown』である。EPSS は 3.75%（90 パーセンタイル）。REDCap は国内の大学病院・研究機関でも臨床研究の EDC として利用例があり、研究対象者の個人情報を扱う。悪用の主体・規模・IoC は公開情報に無い。
+【一時緩和】
+  - REDCap を提供元（Vanderbilt・REDCap Consortium）の修正版へ更新する（FCEB 期限 2026-11-21）
+  - 更新までは公開アンケート（survey）機能の外部公開を最小化し、WAF で survey 経路から管理系コントローラへ到達する要求を遮断する
+  - Data Import 処理のログ・Web サーバーからの子プロセス生成・Web シェルの痕跡を点検する
+【TTP】
+  - T1190 (initial-access): CISA が実悪用の証拠に基づき KEV へ追加し、CVE 記述が公開アンケートの文脈から HTTP 要求を操作して意図しないコントローラ経路へ到達し細工したファイルパスで任意コードを実行できると記述（CISA KEV・GitHub Advisory）
+【IOC】IP: なし / ファイル: なし
+【監視】公開アンケートハッシュ付き要求から通常到達しないコントローラへの遷移、インポート処理でのファイルパス／ストリーム指定を含む要求、PHP プロセスからの子プロセス生成を監視する。
+  参照: https://www.cisa.gov/news-events/alerts/2026/11/18/cisa-adds-four-known-exploited-vulnerabilities-catalog (CISA)
+  参照: https://github.com/advisories/GHSA-hg88-qg2r-c8mx (GitHub Advisory Database)
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA KEV)
+------------------------------------------------------------
+CVE-2026-129448 [high] Apache Roller 4.0.0〜6.1.4（XML-RPC の認証前逆シリアル化・未認証 RCE。Apache が実悪用を明記・既報 11-18 の続報）
+------------------------------------------------------------
+対象: Apache Software Foundation / Apache Roller 4.0.0〜6.1.4（6.1.5 で修正。CVE-2026-82384 と同一の脆弱性で影響版を拡大）
+評点: CVSS v3 9.8 / EPSS 0.0
+【概要】
+既報（11-18 ゼロデイ特報）の続報。BleepingComputer は 2026-11-18、Apache が Roller の重大な脆弱性について、攻撃者が脆弱なサーバーでコード実行を得るために悪用しているとして修正版を公開したと報じた（記事本文は 403 で未取得・RSS 要約のみ）。CVE-2026-129448 は Apache Roller 4.0.0〜6.1.4 の XML-RPC エンドポイントが認証前に vendor extension 型を逆シリアル化する未認証 RCE（CVSS 3.1 9.8）で、Apache は NVD／EUVD の記述で『現在実悪用されている』と明記している。CISA KEV は 11-18 に 4 件を追加したが本 CVE は含まれておらず、カタログ 2026.11.18 時点で未収載である。本 CVE は 11-18 発行の予報 fc-20261118-1（E1・KEV 初回追加・期限 11-21・確度低）の対象であり、検証は期限後に行う。悪用の主体・規模・IoC・PoC の有無は依然として公開情報に無い。
+【一時緩和】
+  - Apache Roller を 6.1.5 以降へ更新する
+  - 更新までは XML-RPC エンドポイント（/roller-services/xmlrpc）を無効化または外部から遮断する
+  - 公開 Roller の XML-RPC への未認証 POST、Java プロセスからの子プロセス生成・Web シェルの痕跡を点検する
+【TTP】
+  - T1190 (initial-access): Apache（NVD／EUVD 経由）が XML-RPC の認証前逆シリアル化による未認証 RCE を『現在実悪用されている』と記述。BleepingComputer も Apache が攻撃での悪用を警告したと報道
+【IOC】IP: なし / ファイル: なし
+【監視】Roller の XML-RPC エンドポイントへの未認証 POST（vendor extension 型を含む本文）、Java プロセスの子プロセス生成・外向き通信を確認する。
+  参照: https://www.bleepingcomputer.com/news/security/apache-warns-of-roller-rce-vulnerability-exploited-in-attacks (BleepingComputer)
+  参照: https://nvd.nist.gov/vuln/detail/CVE-2026-129448 (NVD)
+【APT活動-本編】
+------------------------------------------------------------
+COLDRELIC-2026-CrossCloudImpersonation COLD RELIC（旧称 COLDRIVER／UNC4057。GTIG／Mandiant 命名・既報 11-18 の続報）（帰属確度: high・国家: ロシア（GTIG／Mandiant が『ロシアの国家支援グループ』と明記。SecurityWeek・The Hacker News・The Record も同旨で報道））
+------------------------------------------------------------
+既報（11-18 本編）の続報。The Hacker News・SecurityWeek・The Record は 11-18、GTIG／Mandiant の COLD RELIC 報告の事例 2 を詳報した。攻撃者は事例 1（米国組織）で盗んだ従業員情報を使い、その従業員になりすまして暗号化メッセージアプリから次の標的（Entra ID を Google Workspace の SSO IdP とする別の米国組織）の職員に接触し、侵害済みの第三者サイトに置いたリダイレクタ（URL の ?file= パラメータに被害者識別子）経由でフィッシングページへ誘導した。認証情報を得た後は Entra ID アカウントに新たな MFA デバイスを登録し、フェデレーション SSO を介して Google Workspace へ横展開、Google Drive から大量ダウンロードを行った。ペルソナは後に別名へ変更された。GTIG はロシアの国家支援グループと明記し、SecurityWeek は Star Blizzard の別名を併記した。IoC は公開されていない。
+【標的】欧州・北米の政府関係者・防衛請負業者・NGO。事例 2 は Entra ID を Google Workspace の SSO IdP とする米国組織（名称非公表）
+【TTP】
+  - T1566.002 (initial-access): GTIG（報道各社経由）が、事例 1 で盗んだ従業員のなりすましで暗号化メッセージアプリから接触し、侵害済み第三者サイトのリダイレクタ（?file=<被害者> 形式）経由でフィッシングリンクを送ったと記述
+  - T1586.002 (resource-development): GTIG が、事例 1 の被害組織の従業員になりすまし（後にペルソナ名を変更）、盗んだ名簿・メールを次の標的への信頼構築に使ったと記述
+  - T1098.005 (persistence): GTIG が、侵害した Entra ID アカウントに新たな MFA デバイスを登録して永続化したと記述
+  - T1550 (lateral-movement): GTIG が、Entra ID のフェデレーション SSO を介して Google Workspace 側のアカウントへ横展開したと記述
+  - T1530 (collection): GTIG が、Google Drive から大量ダウンロードを行ったと記述
+【IOC】IP: なし / ファイル: なし
+【推奨】1) 既知の取引先・同業者からの『暗号化メッセージアプリ経由』の接触を要注意の経路として教育し、別経路で本人確認する。2) Entra ID の MFA デバイス追加・認証方法変更をアラート化し、追加直後の SSO 横展開を相関する。3) Google Workspace の Drive 大量ダウンロード・Takeout を監視する。4) フィッシング耐性 MFA（FIDO2）へ移行する。
+  参照: https://thehackernews.com/2026/11/russian-cold-relic-hackers-use-stolen.html (The Hacker News)
+  参照: https://www.securityweek.com/russian-apt-poses-as-employee-of-hacked-firm-to-breach-another-us-organization (SecurityWeek)
+  参照: https://therecord.media/russia-cyber-espionage-google (The Record (Recorded Future))
+  参照: https://cloud.google.com/blog/topics/threat-intelligence/cold-relic-a-case-study-in-impersonation-and-compromise (Google Threat Intelligence Group)
+------------------------------------------------------------
+UAT12643-2026-OverlordSolanaDeadDrop UAT-12643（Cisco Talos が命名。『北朝鮮に連携すると疑われる』アクターと低確信度で評価）（帰属確度: low・国家: 北朝鮮（Talos が『suspected North Korea-aligned』と低確信度で評価。帰属は確定していない））
+------------------------------------------------------------
+Cisco Talos は 2026-11-18、金銭目的で活動し『北朝鮮に連携すると疑われる』と低確信度で評価するアクター UAT-12643 を公表した。感染経路は LNK（MpCmdRun／certutil で次段取得）、HTA、MSBuild インラインタスク（dl.xml）で、Go 製の Overlord RAT（35 コマンド・WinRE を悪用した永続化）、Python 製の Good Game stealer v1.1.2、MsgEdgeUpdate.exe と称するクリップボードハイジャッカー（暗号資産アドレス置換）を展開する。C2 アドレスは Solana ブロックチェーンのメモ・トランザクションをデッドドロップとして配布され、テイクダウン耐性を持つ（Talos は同日に公開ブロックチェーン上の『防弾デッドドロップ』への防御課題を別稿で解説）。窃取データは GoFile と Discord Webhook で送出される。ステージング IP は 41.216.188[.]11。標的は欧州の暗号資産・ゲーム・VoIP 関連。帰属について Talos は TTP の一部の重なりから北朝鮮連携を疑うに留め、確定していない。
+【標的】欧州の暗号資産・ゲーム・VoIP 関連の組織・個人を標的（Talos）
+【TTP】
+  - T1204.002 (execution): Talos が、LNK ファイルが MpCmdRun／certutil を使って次段を取得する、HTA・MSBuild（dl.xml）経由の実行を記述
+  - T1218.005 (defense-evasion): Talos が、MSBuild でインラインタスクを実行する手口を記述
+  - T1102.001 (command-and-control): Talos が、Solana ブロックチェーンのメモ（memo）トランザクションをデッドドロップとして C2 アドレスを配布する手口を記述
+  - T1542 (persistence): Talos が、Overlord RAT が Windows 回復環境（WinRE）を悪用して永続化すると記述
+  - T1555.003 (credential-access): Talos が、Python 製の Good Game stealer v1.1.2 がブラウザ・ウォレット等の資格情報を収集すると記述
+  - T1565.002 (impact): Talos が、MsgEdgeUpdate.exe と称するクリップボードハイジャッカーが暗号資産アドレスを置換すると記述
+  - T1567.002 (exfiltration): Talos が、GoFile と Discord Webhook 経由で窃取データを送出すると記述
+【IOC】IP: 41.216.188[.]11 / ファイル: MsgEdgeUpdate.exe, dl.xml
+【推奨】1) Solana RPC エンドポイント等の公開ブロックチェーン API への業務外プロセスからのアクセスを可視化する。2) MpCmdRun／certutil／MSBuild の不審な引数（外部 URL・ユーザー書込み領域）を検知する。3) GoFile・Discord Webhook への大量送信を監視する。4) 41.216.188[.]11 を遮断し、WinRE の改変を点検する。
+  参照: https://blog.talosintelligence.com/uat-12643-suspected-north-korea-aligned-actor-blends-blockchain-resilience-with-targeted-infostealing (Cisco Talos)
+  参照: https://blog.talosintelligence.com/the-challenge-of-defending-against-bulletproof-dead-drops-on-public-blockchains (Cisco Talos)
+【APT活動-注目動向】
+------------------------------------------------------------
+EggStreme-2026-RebuiltToolkitPhilippines EggStreme の背後にいる『中国系と疑われる APT』（Bitdefender の評価・グループ名なし）（帰属確度: low・国家: 中国（Bitdefender が『suspected Chinese APT』と記述。帰属は疑いの段階））
+------------------------------------------------------------
+The Hacker News によれば、Bitdefender は 2026-11-18、2025 年 9 月に公表した EggStreme マルウェアの背後にいる『中国系と疑われる APT』がツールキットを再構築し、フィリピンの政府機関を引き続き標的にしていると報告した。Bitdefender は『露見した攻撃者の安価な対応はローテーション（ハッシュ・ドメインの変更）だが、本件は設計を変えた』と述べ、暗号方式を RC4 から RC5、さらに独自方式へ変更し、外向き通信を行わず接続を待つ受動（passive）型の亜種、キャンペーン固有の CA 証明書、VBScript 経由の SMB 越し DLL サイドローディングを記述した。台湾への標的拡大は低〜中確信度の示唆に留まる。IoC は記事に無い。帰属は Bitdefender の『疑い』であり、確定していない。
+【標的】フィリピン政府機関を継続的に標的。台湾への拡大は Bitdefender が低〜中確信度で示唆
+【TTP】
+  - T1574.001 (persistence): Bitdefender（The Hacker News 経由）が、VBScript を介した SMB 経由の DLL サイドローディングで展開すると記述
+  - T1573.001 (command-and-control): Bitdefender が、暗号を RC4 → RC5 → 独自方式へ変更し、キャンペーン固有の CA 証明書を用いる受動（passive）型の亜種を記述
+【IOC】IP: なし / ファイル: なし
+【推奨】1) 政府・防衛系で SMB 経由の DLL 配置と正規実行ファイル横の未署名 DLL を監視する。2) 外向き通信を発しない受動型インプラントを想定し、内部からの想定外のリスニングポートを棚卸しする。3) 証明書ストアへのキャンペーン固有 CA 追加を検知する。
+  参照: https://thehackernews.com/2026/11/eggstreme-hackers-rebuild-malware-with.html (The Hacker News)
+
+------------------------------------------------------------
+AuditTeam-2026-OpsAgentForcedAudit AuditTeam（Kaspersky GReAT が追跡するランサムウェア・恐喝集団・『強制監査』を名乗る）（帰属確度: low・国家: なし（帰属なし・金銭目的））
+------------------------------------------------------------
+Kaspersky GReAT は 2026-11-18、2026 年 1〜10 月に活動するランサムウェア・恐喝集団 AuditTeam を公表した。同集団は攻撃を『強制監査（forced audit）』と称し、窃取データの削除の対価として『コンサルティング料』を要求する恐喝モデルを採る。インプラント OpsAgent は C++ 版（5.2.8）と Rust への書き換え版があり、江民（Jiangmin）署名のドライバ kvcore.sys を悪用する AV キラーでセキュリティ製品を停止する。C2・配布には CloudFront ドメイン 2 件、IP 157.20.104[.]111、GitHub リポジトリを用いる。リークサイトでは日本を含む 7 か国の被害が主張されている。帰属は無い。
+【標的】Kaspersky はリークサイトで 7 か国の被害が主張され、日本を含むと記述（業種は複数）
+【TTP】
+  - T1562.001 (defense-evasion): Kaspersky が、江民（Jiangmin）署名のドライバ kvcore.sys を悪用する AV キラーでセキュリティ製品を停止すると記述
+  - T1105 (command-and-control): Kaspersky が、GitHub（RonaldCMalcolm1983/staticPage）と CloudFront ドメインを配布・C2 に用いると記述
+  - T1486 (impact): Kaspersky が、OpsAgent による暗号化と窃取データ削除の『コンサルティング料』要求を記述
+  - T1657 (impact): Kaspersky が、ランサムウェアを『強制監査』と称し、窃取データ削除の対価として料金を要求する恐喝モデルを記述
+【IOC】IP: 157.20.104[.]111 / ファイル: なし
+【推奨】1) 公開 IoC（CloudFront 2 ドメイン・157.20.104[.]111・GitHub リポジトリ）を遮断・照合する。2) 脆弱な署名ドライバ（kvcore.sys）の読み込みを WDAC／脆弱ドライバブロックリストで阻止する。3) 日本の被害主張があるため、リークサイト監視と初期侵入経路の点検を行う。
+  参照: https://securelist.com/auditteam-opsagent-forced-audit/122031 (Kaspersky Securelist)
+【注目CVE（リスト外）】
+------------------------------------------------------------
+CVE-2026-114938 [high] Oracle Java／OpenJDK 17.0.6 以降（x86-64 AVX-512 VBMI 環境の HotSpot Base64 デコーダ intrinsic のメモリ破損・未認証 RCE『Java4Shell』・続報）
+------------------------------------------------------------
+対象: Oracle／OpenJDK（各ディストリビューション） / OpenJDK 17.0.6 以降の全系列（17・21・25・27）。Java 8・11 と、AVX-512 VBMI を持たない CPU・非 x86-64 は非該当（Talos／The Hacker News の記述）
+評点: CVSS v3 8.1 / CVSS v4 9.2
+【概要】
+既報（11-18 トレンド欄）の続報。The Hacker News・Cisco Talos・SecurityWeek によれば、『Java4Shell』CVE-2026-114938 は HotSpot JVM の Base64 デコーダ intrinsic（x86-64 で AVX-512 VBMI 命令を持つ CPU 上で有効）のメモリ破損で、対象は OpenJDK 17.0.6 以降の 17・21・25・27 系列、Java 8・11 と AVX-512 VBMI を持たない CPU は非該当である。発見者の Calif（研究者 Quang Luong）は Keycloak・Jira・Confluence・Artifactory・Jenkins・PingFederate で認証前 RCE のデモを公開し、AI 支援で約 3 時間・200 ドル未満で発見したと述べた（The Hacker News）。CVSS は Oracle 8.1、Calif v4 9.2、Red Hat 暫定 9.8、Amazon 8.8 と情報源で異なる。修正は Oracle JDK 17.0.21.1／21.0.13.1／25.0.5.1／27.0.1.1、Corretto、Zulu で提供済みで、Red Hat は 11-18 時点で未提供。暫定回避策は -XX:-UseBASE64Intrinsics または -XX:UseAVX=2。Talos は Snort SID 67502〜67513 を公開し、カナダ Cyber Centre とともに実悪用は未確認と記述した。VulnCheck は悪用に標的ごとの作り込みが要ると評価。CERT-FR が ALE-016、韓国 MSIT が注意喚起（聯合）を発した。本日の NVD 窓内公開（CVSS 9.0 以上）には現れていない（Oracle の CVSS 8.1 のため）。
+【一時緩和】
+  - Oracle／Corretto／Zulu 等の修正版へ更新する。即時更新が困難な JVM には -XX:-UseBASE64Intrinsics（または -XX:UseAVX=2）を付与して Base64 intrinsic を無効化する（Talos・The Hacker News）
+  - Keycloak・Jira・Confluence・Jenkins・Artifactory・PingFederate 等、未認証で Base64 入力を受ける Java アプリを優先し、インターネット公開系から適用する
+  - Snort SID 67502〜67513（Talos）等の検知ルールを適用し、JVM の異常終了・不審な Java 子プロセスを監視する
+【TTP】
+  - なし（Talos・カナダ Cyber Centre・各報道のいずれも実悪用を報告しておらず（研究者の実証デモのみ）、Technique は付与しない。）
+【IOC】IP: なし / ファイル: なし
+【監視】hs_err ログ・JVM クラッシュの急増、未認証エンドポイントへの大きな Base64 入力、Java プロセスからの想定外の子プロセス生成を監視する。Snort SID 67502〜67513。
+  参照: https://thehackernews.com/2026/11/java4shell-cve-2026-114938-enables-pre.html (The Hacker News)
+  参照: https://blog.talosintelligence.com/java4shell (Cisco Talos)
+  参照: https://www.securityweek.com/java4shell-vulnerability-puts-many-enterprise-applications-at-risk-of-takeover (SecurityWeek)
+  参照: https://www.bleepingcomputer.com/news/security/critical-java4shell-flaw-allows-rce-attacks-on-major-java-applications (BleepingComputer)
+  参照: https://www.cert.cyber.gouv.fr/alerte/CERTFR-2026-ALE-016 (CERT-FR)
+  参照: https://en.yna.co.kr/view/AEN20261118001700320 (Yonhap News)
+------------------------------------------------------------
+CVE-2026-123007 [high] NGINX Open Source／NGINX Plus（HTTP/2 フロー制御ウィンドウの整数アンダーフロー → ヒープバッファオーバーフロー・ワーカープロセスでの RCE）
+------------------------------------------------------------
+対象: F5（NGINX） / HTTP/2 を有効にした NGINX Open Source 1.31.9／1.30.7 未満、NGINX Plus R37 P1／R36 P8 未満（R34〜R36 の一部に修正なし・Rapid7 の記述）
+評点: CVSS v4 9.2
+【概要】
+Rapid7 の Stephen Fewer は 2026-11-18、NGINX の HTTP/2 実装のフロー制御ウィンドウ処理に整数アンダーフロー（CWE-191）があり、ヒープバッファオーバーフローを経て NGINX ワーカーのクラッシュ、条件次第でワーカープロセス権限のリモートコード実行に至る CVE-2026-123007（CVSS v4 9.2）を公開した。F5 の記述（NVD／EUVD）によれば HTTP/2 を使う NGINX Plus／Open Source が対象で、ASLR 無効のシステム等でコード実行が可能とされる。Rapid7 によれば悪用には約 128GB 規模のトラフィック送信と glibc の AVX-512 memcpy 等の条件が付き、PoC は GitHub で公開済み。修正は Open Source 1.31.9／1.30.7、Plus R37 P1／R36 P8 で、一部旧系列には修正が無い。実悪用は報告されていない。同日に F5 は BIG-IP の iRule 系メモリ破損・APM・NGINX HTTP/3 等 12 件（CVSS 9.0 以上）を公開しており（除外サマリーに個別記録）、四半期セキュリティ通知の一部と推測される。
+【一時緩和】
+  - NGINX Open Source を 1.31.9／1.30.7 以降、NGINX Plus を R37 P1／R36 P8 以降へ更新する
+  - 更新までは HTTP/2 を無効化する（listen ディレクティブの http2 を外す／http2 off）
+  - HTTP/2 接続で大量データを送り込む異常なクライアント、NGINX ワーカーのセグメンテーションフォルトの急増を監視する
+【TTP】
+  - なし（Rapid7 は研究者による PoC 公開のみで実悪用を報告しておらず、Technique は付与しない。）
+【IOC】IP: なし / ファイル: なし
+【監視】NGINX ワーカーの SIGSEGV・再起動の急増、単一クライアントからの HTTP/2 での異常に大きな転送量（Rapid7 は約 128GB 規模のトラフィックが必要と記述）を監視する。
+  参照: https://www.rapid7.com/blog/post/ve-cve-2026-123007-critical-nginx-http-2-integer-underflow-leads-to-rce-fixed (Rapid7)
+  参照: https://my.f5.com/manage/s/article/K000163926 (F5)
+  参照: https://nvd.nist.gov/vuln/detail/CVE-2026-123007 (NVD)
+------------------------------------------------------------
+CVE-2026-115731 [high] Perforce Puppet Enterprise／Puppet Server／OpenVox（レポート処理の逆シリアル化 RCE・KEV 11-17 収載の続報。同時公開の認可バイパス CVE-2026-115732 を含む）
+------------------------------------------------------------
+対象: Perforce（Puppet）／OpenVox Project / Puppet Server 7.x〜8.x の修正前版・Puppet Enterprise 2023.x／2025.x の修正前版、OpenVox の該当版（The Hacker News／SecurityWeek の記述・Neodyme 発見）
+KEV 追加: 2026-11-17（FCEB 期限 2026-12-01）
+評点: CVSS v4 9.4
+【概要】
+既報（11-18 ゼロデイ特報・KEV 11-17 収載）の続報。The Hacker News・SecurityWeek・Security NEXT が 11-18 に KEV 収載を報じ、詳細が判明した。発見者は Neodyme の Alain Rödel で、CVE-2026-115731（CVSS v4 9.4・CA 署名付きエージェント証明書を持つクライアントが細工したレポートの PUT でサーバー上のコードを実行）とあわせて認可バイパス CVE-2026-115732（CVSS 9.0）も公開されている。Puppet Server のフォークである OpenVox も影響を受け、OpenVox 向けの PoC が公開済み。The Hacker News は 11-04 の Reddit 投稿が本脆弱性の悪用を主張していたと記述しているが、悪用の主体・規模は依然として公開情報に無い。FCEB 期限は 12-01。
+【一時緩和】
+  - Puppet Server／Puppet Enterprise／OpenVox を修正版へ更新する（FCEB 期限 2026-12-01）
+  - CA の自動署名（autosign）を無効化し、エージェント証明書の発行を強い検証付きに限定する
+  - CVE-2026-115732（認可バイパス・CVSS 9.0）も同時に適用し、レポート PUT 要求・サービスユーザーの子プロセスを点検する
+【TTP】
+  - T1190 (initial-access): CISA が実悪用の証拠に基づき KEV へ追加（11-17）。The Hacker News は 11-04 の Reddit 投稿が悪用を主張していたと記述
+【IOC】IP: なし / ファイル: なし
+【監視】Puppet Server のレポート PUT 要求（rich-data 型を含む本文）、puppet サービスユーザーによる子プロセス生成、CA 自動署名ログを確認する。
+  参照: https://thehackernews.com/2026/11/hackers-exploiting-critical-puppet-rce.html (The Hacker News)
+  参照: https://www.securityweek.com/critical-perforce-puppet-rce-exploited-in-attacks (SecurityWeek)
+  参照: https://www.security-next.com/193016 (Security NEXT)
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-19-001 Oracle Critical Patch Update November 2026：655 パッチ・948 CVE・うち Critical 62 件・最大深刻度 6 件、300 件超が未認証リモート悪用可能。CVSS 9.0 以上 49 件が窓内に NVD 公開
+------------------------------------------------------------
+SecurityWeek と Security NEXT によれば、Oracle は 2026-11-18（日本時間）に November 2026 Critical Patch Update を公開し、のべ 655 件のパッチで 948 件の CVE に対処した。うち 62 件が Critical、6 件が最大深刻度（CVSS 10.0）で、300 件超が未認証でリモート悪用可能とされる。Java SE は 11 件（最大 8.1・Java4Shell CVE-2026-114938 を含む）。網羅スイープでは Oracle 採番の CVSS 9.0 以上が 49 件窓内に NVD 公開され（WebLogic Server・Access Manager・Platform Security for Java・Business Intelligence・E-Business Suite・Hyperion・Database Server・APEX・AutoVue・PeopleSoft・MySQL 等）、CERT-FR も Java SE・WebLogic・MySQL・PeopleSoft・Database・Virtualization の 6 件の勧告を発した。窓内に実悪用・KEV の報告は無く、除外サマリーに一括記録した。
+  参照: https://www.securityweek.com/oracle-patches-640-vulnerabilities-with-november-2026-cspu (SecurityWeek)
+  参照: https://www.security-next.com/193031 (Security NEXT)
+  参照: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1565 (CERT-FR)
+------------------------------------------------------------
+TREND-2026-11-19-002 Optimizely 供給網攻撃（OPTIMJACK）続報：Krebs on Security が 178 組織・ペイロード 26 回更新・暗号資産約 7,500 ドルの窃取を報道、Optimizely は Experimentation の脆弱性悪用とトークン失効を公表
+------------------------------------------------------------
+Krebs on Security によれば、Optimizely Web Experimentation のスクリプト乗っ取り（既報 11-18・OPTIMJACK）は 11-16 時点で少なくとも 178 組織のサイトに及び、攻撃者は A/B テスト基盤を使って悪性ペイロードを 26 回更新しながら配信した。Optimizely は Experimentation 製品の脆弱性が悪用されたことを認め、顧客のトークンを失効させたと公表した。Krebs が引用する研究者の集計では CSP（Content Security Policy）の未設定が被害サイトの大半を占め、暗号資産クリッパーによる窃取額は約 7,500 ドル、iOS 向けエクスプロイトキット Coruna／DarkSword も配信された。Dark Reading は第三者ベンダーリスクの観点で 178 組織が『ヒドラ型』マルウェアに訪問者を露出させたと報じた（本文は 403 で未取得・要約のみ）。帰属は依然無い。
+  参照: https://krebsonsecurity.com/2026/11/attackers-used-optimizely-to-a-b-test-malware-on-top-websites (Krebs on Security)
+  参照: https://www.darkreading.com/cyber-risk/optimizely-malware-attacks-third-party-vendor-risks (Dark Reading)
+------------------------------------------------------------
+TREND-2026-11-19-003 ノルウェーのエネルギー大手 Equinor がサイバー攻撃を公表：11-17 に検知、社内 IT・メールに影響、石油・ガス生産は影響なし、帰属なし
+------------------------------------------------------------
+The Record によれば、ノルウェーの国営エネルギー大手 Equinor は 2026-11-17 に IT システムへのサイバー攻撃を検知し、封じ込めを進めている。社内の IT サービス（メール等）が影響を受けたが、石油・ガスの生産には影響していないと同社は述べた。攻撃の種類（ランサムウェアか否か）・侵入経路・帰属は公表されていない。欧州のエネルギー供給を担う企業への攻撃であり、OT への波及は現時点で否定されている。
+  参照: https://therecord.media/norway-equinor-cyberattack-energy (The Record (Recorded Future))
+------------------------------------------------------------
+TREND-2026-11-19-004 TU Berlin が TPM のロックアウト迂回を実証：筐体を開けて SPI フラッシュを操作し Windows Hello／BitLocker の PIN を数日で総当たり。AMD CVE-2026-43613（CVSS 5.1）、Microsoft は Hello PIN の最小桁数を 6 へ
+------------------------------------------------------------
+The Hacker News によれば、ベルリン工科大学の研究者は、AMD 系 PC と一部 Intel PC で、筐体を開けて TPM 周辺の SPI フラッシュ（Winbond RPMC 等）に細工することで Windows Hello と BitLocker の PIN ロックアウトカウンタをリセットでき、短い PIN を数年ではなく数日で総当たりできることを実証した（arXiv 2611.18126）。実験では AMD 機の 4 桁 Hello PIN と Intel 機の 6 桁 BitLocker PIN を復元した。AMD は CVE-2026-43613（CVSS 5.1・AMD-SB-7079）として扱い、Microsoft は Windows Hello の PIN 最小桁数を 6 に引き上げる方針と報じられた。物理アクセスを要する攻撃であり、紛失・盗難端末のリスク評価に関わる。
+  参照: https://thehackernews.com/2026/11/flash-chip-attack-bypasses-tpm-lockout.html (The Hacker News)
+------------------------------------------------------------
+TREND-2026-11-19-005 国内の不正アクセス・情報漏えい公表が連続（内閣府メルマガ 61,751 件・Yeny 1,332,505 件・ビューティガレージ 775,725 件・八十二長野銀行・銀のさら等ランサムウェア・セブン銀行・オープンロジ・楽天証券・日本郵便）。警察庁長官が大規模流出事案への態勢を指示、GMO 事案に合同捜査本部
+------------------------------------------------------------
+ScanNetSecurity と Security NEXT の見出し（本文は未取得）によれば、11-18 に国内の不正アクセス・漏えい公表が集中した。内閣府のメールマガジン利用者アドレス 61,751 件、API 接続設定不備による Yeny の会員情報 1,332,505 件、ビューティガレージ EC サイトの顧客情報 775,725 件、八十二長野銀行職員のメールアカウント（海外企業を騙るフィッシングで認証操作）、『銀のさら・釜寅・すし上等』の公式サイト・アプリへのランサムウェア攻撃、セブン銀行（在留カード券面情報最大 150 件程度）、オープンロジ（出荷データ持ち出し）、マッチングアプリ Lili（本人確認書類画像の可能性）、マクロミル モニタサイト、楽天証券（年収・資産情報の可能性）、日本郵便（法人顧客向けサイトで顧客情報が閲覧可能）、日本生命病院（サポート詐欺）が並ぶ。警察庁長官は 11-06 の指示として大規模流出事案に対する態勢を示し、GMO インターネットへの不正アクセス事案については関東管区警察局サイバー特別捜査部を中心とする合同捜査本部が設置されたと ScanNetSecurity が報じた。また古川デジタル大臣は総理指示でサイバー対処能力強化法の改正を検討し、国内通信の扱いが論点になると報じられた。個々の事案の手口・帰属は見出しの範囲では確認できない。
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/18/56814.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/18/56815.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/18/56823.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/18/56819.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/18/56816.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/18/56817.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/18/56825.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/18/56822.html (ScanNetSecurity)
+  参照: https://www.security-next.com/193015 (Security NEXT)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/18/56827.html (ScanNetSecurity)
+【攻撃予報】 本日の新規予報なし。forecaster/forecasts/daily を参照
+【除外】
+  - BleepingComputer／SecurityWeek／The Record：Scattered Spider 関連の英国人（Thalha Jubair／Buchanan 系報道）に 6 年の実刑判決・米国の 5 人目の被告に判決 … 法執行（判決）の報道で、新規の TTP・標的・活動の変化を含まない。
+  - SecurityWeek／The Record：NSA の機密内部ネットワーク NSANet の障害が継続 … 海外機関の内部障害で、攻撃と確認されておらず（The Record の記述）帰属・TTP の記述も無い。
+  - The Record：国際アイスホッケー連盟（IIHF）サイトが親ロシア的メッセージで改ざん … 単発の Web 改ざんで帰属・犯行声明が無く、採用条件 P〜W の変化が無い。Section 5（周辺諸国動向・RU）で文脈として記録。
+  - BleepingComputer：Dizigom（月間 2,100 万訪問の違法ストリーミング）が閉鎖／From Deepfakes to Helpdesk Impersonation（スポンサー記事） … 法執行・広告記事で、APT 活動ではない。

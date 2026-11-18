@@ -1,0 +1,88 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-19 08:50 JST
+調査期間: 2026-11-18 07:00 〜 2026-11-19 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-19-001 [high] Java4Shell CVE-2026-114938 続報：対象は OpenJDK 17.0.6 以降の x86-64 AVX-512 VBMI 環境。Red Hat 未修正環境には -XX:-UseBASE64Intrinsics の暫定適用、Keycloak・Jira・Confluence・Jenkins・Artifactory の優先更新、Snort SID 67502〜67513 の適用
+------------------------------------------------------------
+対象: OpenJDK 17.0.6 以降（Oracle JDK・Corretto・Zulu・Red Hat 等）を同梱する Java アプリ（Keycloak・Jira・Confluence・Jenkins・Artifactory・PingFederate 等）
+【概要】
+Java4Shell の対象が OpenJDK 17.0.6 以降の x86-64 AVX-512 VBMI 環境に絞られ、研究者が Keycloak・Jira・Confluence・Artifactory・Jenkins・PingFederate での認証前 RCE デモを公開した。Oracle・Corretto・Zulu は修正済み、Red Hat は 11-18 時点で未修正。暫定回避策（-XX:-UseBASE64Intrinsics または -XX:UseAVX=2）と Snort SID 67502〜67513 が利用できる。実悪用は Talos・カナダ Cyber Centre とも未確認。
+【推奨アクション】
+1) CPU が AVX-512 VBMI を持つ x86-64 ホスト上の JDK 17.0.6 以降を優先して棚卸しする（lscpu の avx512vbmi フラグ）。2) 修正版へ更新し、未提供のディストリビューションでは JVM オプションで Base64 intrinsic を無効化する。3) 未認証で Base64 を復号する公開 Java アプリ（SAML・JWT・Basic 認証）から適用する。4) Snort／IDS ルールを適用し JVM クラッシュを監視する。
+【監視】
+hs_err ログ・JVM クラッシュの急増、未認証エンドポイントへの大きな Base64 入力、Java プロセスからの子プロセス生成を監視する。
+参照: https://blog.talosintelligence.com/java4shell (Cisco Talos)
+参照: https://thehackernews.com/2026/11/java4shell-cve-2026-114938-enables-pre.html (The Hacker News)
+------------------------------------------------------------
+SOC-2026-11-19-002 [high] CISA KEV 4 件追加（期限 11-21 の 3 件を含む）：Synology DSM CVE-2024-10441・Apache Axis CVE-2026-90436・REDCap CVE-2026-90817 は 3 日期限、LiteLLM CVE-2026-40217 は 12-02。NAS・N-central／Confluence・研究 EDC・AI ゲートウェイの緊急点検
+------------------------------------------------------------
+対象: Synology DSM／BeeStation OS・Apache Axis 1.x 同梱製品（N-able N-central・Atlassian Confluence Data Center）・Vanderbilt REDCap・BerriAI LiteLLM
+【概要】
+CISA は 11-18 に 4 件を KEV へ追加し、うち 3 件（Synology DSM・Apache Axis・REDCap）に通常の 3 週間ではなく 3 日（11-21）の期限を設定した。Synology DSM は 2024-11 公開の既知脆弱性で修正版は 1 年以上前から提供済み。Apache Axis は N-central 経由の実悪用が既報。REDCap は大学・医療研究機関の EDC。LiteLLM は 10 月に供給網侵害を受けた AI ゲートウェイで、本件は認証後 RCE。いずれも悪用の主体・規模は CISA の通知に無い。
+【推奨アクション】
+1) Synology NAS の DSM 版数を確認し 7.2.2-72806-1 等へ更新、インターネット直接露出を停止する。2) N-central・Confluence Data Center と自社アプリ同梱の Axis 1.x を棚卸しし修正・遮断する。3) REDCap を運用する研究機関は提供元の修正版を適用し公開アンケート経路を WAF で保護する。4) LiteLLM Proxy を 1.83.10 以降へ更新し管理 API を遮断、鍵を更新する。
+【監視】
+各製品の管理ポート・SOAP・XML-RPC・Guardrails API への外部からの要求、サービスプロセスの子プロセス生成・外向き通信を監視する。
+参照: https://www.cisa.gov/news-events/alerts/2026/11/18/cisa-adds-four-known-exploited-vulnerabilities-catalog (CISA)
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA KEV)
+------------------------------------------------------------
+SOC-2026-11-19-003 [high] Microsoft agent-framework PyPI 1.26.1／1.26.2 の侵害：該当版を導入した開発・CI 環境の特定と、環境変数・Azure・npm・GitHub・Hugging Face・Docker の全資格情報・OIDC 設定の失効・更新。webhook[.]site への通信を遡及確認
+------------------------------------------------------------
+対象: Microsoft Agent Framework（PyPI agent-framework 1.26.1／1.26.2）を利用する Python 開発環境・CI/CD（GitHub Actions・Azure DevOps）
+【概要】
+Microsoft 公式の agent-framework に資格情報窃取コードを同梱した悪性版 2 件が約 45 分間公開された。.pth による起動時自動実行で Azure CLI・npmrc・git-credentials・Hugging Face トークン・CI の OIDC トークン・IMDS 情報等を収集し webhook[.]site へ送出する。10 月の LiteLLM 1.107.0 侵害と同系の手口。侵入経路は未公表。
+【推奨アクション】
+1) 依存関係のロックファイル・CI ログから 11-17 20:35〜21:20 UTC に agent-framework 1.26.1／1.26.2 を取得した環境を特定する。2) 該当環境の全資格情報（Azure・npm・GitHub・HF・Docker・.netrc）と OIDC 信頼設定を失効・更新する。3) webhook[.]site への HTTPS 送信を遡及検索する。4) PyPI 依存のハッシュ固定（--require-hashes）と Python 起動時の .pth 監視を導入する。
+【監視】
+site-packages の .pth ファイル追加、Python 起動直後の webhook[.]site への通信、CI ランナーからの IMDS・OIDC エンドポイントへの想定外アクセスを監視する。
+参照: https://thehackernews.com/2026/11/attackers-compromise-microsofts-agent.html (The Hacker News)
+参照: https://www.bleepingcomputer.com/news/security/microsofts-agent-framework-pypi-package-compromised-to-steal-credentials (BleepingComputer)
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-19-004 [medium] NGINX CVE-2026-123007（HTTP/2 整数アンダーフロー・PoC 公開・実悪用なし）と F5 BIG-IP／NGINX 12 件（CVSS 9.0 以上）：1.31.9／1.30.7・Plus R37 P1／R36 P8 への更新、更新までの HTTP/2 無効化
+------------------------------------------------------------
+対象: NGINX Open Source／NGINX Plus（HTTP/2 有効構成）、F5 BIG-IP（iRule・APM）
+【概要】
+Rapid7 が NGINX の HTTP/2 フロー制御の整数アンダーフローによるワーカー RCE（CVSS v4 9.2）を解析・PoC 公開し、F5 が修正版を公開した。悪用には大量トラフィックと glibc の条件が付き、実悪用は未報告。同日 F5 は BIG-IP iRule 系メモリ破損・APM・NGINX HTTP/3 等 12 件を公開した。
+【推奨アクション】
+1) NGINX を 1.31.9／1.30.7・Plus R37 P1／R36 P8 以降へ更新する。2) 更新までは HTTP/2 を無効化する。3) BIG-IP は該当 iRule コマンド（GENERICMESSAGE・PSC・MR・DNS::scrape・PEM）の使用有無を確認し修正を計画する。4) ワーカーの SIGSEGV 急増を監視する。
+【監視】
+NGINX ワーカーの再起動・SIGSEGV、単一クライアントからの HTTP/2 大量転送、BIG-IP の tmm クラッシュを監視する。
+参照: https://www.rapid7.com/blog/post/ve-cve-2026-123007-critical-nginx-http-2-integer-underflow-leads-to-rce-fixed (Rapid7)
+参照: https://my.f5.com/manage/s/article/K000163926 (F5)
+------------------------------------------------------------
+SOC-2026-11-19-005 [medium] 自己ホスト AI 推論サーバー（Ollama 等）の露出点検：Rapid7 が露出 7,600 台超の半数超に第三者利用の痕跡・79% がクラウドモデル乗っ取り可能と報告。認証プロキシの前置・ollama.com 連携の見直し・コールバック IP 6 件の遮断
+------------------------------------------------------------
+対象: Ollama・vLLM 等の自己ホスト推論サーバー、LiteLLM 等の AI ゲートウェイ
+【概要】
+Rapid7 の調査で、露出 Ollama の半数超に所有者以外のモデル投入痕跡があり、79% が ollama.com アカウント連携によりクラウドモデルを所有者課金で使える状態だった。Probllama 型のパストラバーサル試行も 55 台で確認。同日 LiteLLM の既知 RCE が KEV 入りしており、自己ホスト AI 基盤の露出が実被害に直結している。
+【推奨アクション】
+1) 11434 等の推論 API ポートの外部露出を棚卸しし、認証付きリバースプロキシを前置する。2) ollama.com 等のクラウド連携アカウントのサインイン状態と課金を確認する。3) 所有者が投入していないモデル・manifest を点検する。4) 24.144.109[.]68、103.249.201[.]108、76.13.49[.]213、62.31.247[.]107、43.143.113[.]68、185.165.171[.]21 への通信を遮断・遡及確認する。
+【監視】
+推論 API への外部からの /api/pull・/api/generate 要求、GPU 使用率の不審な上昇、上記コールバック IP への接続を監視する。
+参照: https://www.rapid7.com/blog/post/tr-self-hosted-ai-renting-compute-exposed-servers (Rapid7)
+【低優先度】
+------------------------------------------------------------
+SOC-2026-11-19-006 [low] Oracle CPU November 2026（948 CVE・Critical 62）と Chrome 158（204 件）・Firefox 160.0.1 の定例更新：WebLogic・Access Manager・Database・MySQL・E-Business Suite・PeopleSoft の公開系から優先適用
+------------------------------------------------------------
+対象: Oracle 製品群（WebLogic Server・Access Manager・Fusion Middleware・Database・MySQL・E-Business Suite・PeopleSoft・Hyperion・APEX）、Google Chrome 158、Mozilla Firefox 160.0.1
+【概要】
+Oracle の四半期更新で 948 件の CVE（Critical 62・CVSS 10.0 が 6 件・300 件超が未認証リモート）が修正され、CVSS 9.0 以上 49 件が NVD 公開された。Chrome 158 は 204 件（Critical 6）、Firefox 160.0.1 は 2 件を修正。いずれも窓内に実悪用の報告は無い。
+【推奨アクション】
+1) インターネット公開の WebLogic・Access Manager・E-Business Suite・PeopleSoft から CPU を優先適用する。2) Database・MySQL は保守窓で計画適用する。3) Chrome・Firefox は配布ポリシーで更新を強制する。
+【監視】
+WebLogic 管理コンソール・T3 の外部露出、Access Manager の認証エンドポイントへの不審要求を点検する。
+参照: https://www.securityweek.com/oracle-patches-640-vulnerabilities-with-november-2026-cspu (SecurityWeek)
+参照: https://www.securityweek.com/chrome-158-patches-204-vulnerabilities (SecurityWeek)
+【除外】
+  - Security NEXT：AutoSys Workload Automation に深刻な脆弱性／CERT-FR：Tenable・pfSense・FreeBSD・Oracle Virtualization の勧告／JPCERT/CC Weekly Report 11-18 号（ImageMagick・Apple・PostgreSQL・Apache HTTP Server・Intel・Movable Type・OpenSSL・React Server Components・Node.js・MongoDB・Palo Alto・Git・Adobe・Ivanti・Mozilla・Fortinet・SS1・WebSAM WinShare・KUSANAGI・Microsoft） … 定例のセキュリティ更新・週報で、窓内に悪用・KEV の報告が無く、通常のパッチ運用で対応（CVSS 9.0 以上は Section 3 の除外サマリーで個別記録）。
+  - JPCERT/CC Eyes：インシデント調査報告書受領時のチェックリスト／Security NEXT：2026年3Q のセキュ相談 12.1% 減 … 参考資料・統計で、即時の運用対応事項ではない。
+  - BleepingComputer：Microsoft announces Windows Server 2028 with hardened security／ScanNetSecurity：セコムトラストシステムズ出展・FreePlus 提供終了 … 製品発表・展示・サービス終了で、攻撃・脆弱性の変化ではない。
+  - Dark Reading：Major Brazilian Signature Apps Enable RCE & Fraud … ブラジル国内の電子署名アプリの脆弱性で、国内組織の運用対応事項を特定できない（本文は未取得）。
+  - Taipei Times：Three accused of spying on social media influencers／Nvidia forms export control board committee／Yonhap：元国家情報院長の有罪確定 … サイバー以外の司法・輸出規制・政治報道で、運用対応事項ではない。
