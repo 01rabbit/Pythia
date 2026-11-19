@@ -1,0 +1,77 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-20 08:50 JST
+調査期間: 2026-11-19 07:00 〜 2026-11-20 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-20-001 [high] VMware vCenter CVE-2026-123890（認証バイパス・CVSS 9.8・回避策なし）の即時適用：ARMORY CASTLE のゼロデイ悪用が公表された。全 vCenter（VCF／VVF／Telco 同梱含む）を Broadcom 勧告 39495 の修正版へ更新し、vmdird（2012）・VAMI（5480）を遮断、侵害時は鍵の全面更新
+------------------------------------------------------------
+対象: VMware vCenter Server 8.0／9.0／9.1、VMware Cloud Foundation／vSphere Foundation／Telco Cloud 同梱の vCenter、関連 ESXi
+【概要】
+Broadcom は 11-19、vCenter の VMware Directory Service の認証バイパス CVE-2026-123890（CVSS 9.8・回避策なし）を全サポート系列で修正した。同日 GTIG は ARMORY CASTLE（旧 UNC5221）が 2026 年 9 月上旬にこれをゼロデイ悪用し、Golden SAML・SSO 管理者作成・ESXi からの NTDS 窃取に至ったと公表した。Broadcom は THN に悪用の報告は無いと述べており見解が食い違う。累積更新で vCenter Quick Patch 不可、VCF 9.1.1 への Back-in-Time 制約がある。
+【推奨アクション】
+1) 全 vCenter（VCF／VVF／Telco 同梱含む）を Broadcom 勧告 39495 の修正版へ即時更新する。2) vmdird の TCP 2012・VAMI の 5480・443・22 を許可リスト IP 以外から遮断し（Mandiant の vcsa-hardening-tool）、SIEM へログ転送する。3) VAMI API の SSH 有効化（PUT /rest/appliance/access/ssh）、vsphere.local の新規管理者、ESXi root の authorized_keys 追加、VMFS の隠しディレクトリを点検する。4) 侵害が疑われる場合は STS SAML 署名鍵・マスター鍵・PostgreSQL 資格情報・ドメイン資格情報（NTDS）の全面更新を前提に対応する。
+【監視】
+vmdird の 2012 への外部 RPC、VAMI の SSH 有効化、SSO 管理者作成、ESXi 上の vmfs_browser.py 実行、非標準ポートの SSH バナーを監視する。
+参照: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39495 (Broadcom)
+参照: https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-vsphere (Google Threat Intelligence Group)
+------------------------------------------------------------
+SOC-2026-11-20-002 [high] Cisco Expressway CVE-2026-76466（未認証 root RCE・CVSS 9.8）の緊急対応：PoC 公開直後の実悪用が F6 により報告された。クラスタ構成の Expressway を X15.5.20 へ更新、または TCP 4371〜4372 を信頼済みノード以外から遮断
+------------------------------------------------------------
+対象: Cisco Expressway Core／Edge（クラスタ構成・仮想／アプライアンス）
+【概要】
+Cisco Expressway のデータベースサービスの永続 Cookie による未認証 root コマンド実行 CVE-2026-76466（CVSS 9.8・クラスタ構成のみ・回避策なし）が、GitHub での PoC 公開直後に実際の攻撃で悪用され、ロシアの 1 組織が侵害されたと F6 が報告した。攻撃者は露出 Expressway 2 台から内部クラスタノードへ展開し、AI 支援の痕跡がある Python スクリプトで SMB・SQL・WinRM・GitLab を探索した。Cisco の勧告（10-21 公開）は改訂されておらず『悪用の認識なし』のまま。KEV 未収載。
+【推奨アクション】
+1) Expressway Core／Edge を X15.5.20 以降へ更新する（X14 以前は修正済み系列へ移行）。2) 即時更新できない機器は TCP 4371〜4372 を信頼済みクラスタノード IP 以外から遮断する。3) Expressway の Erlang システムログと、内部ネットワークへの SMB・WinRM・SQL・GitLab 探索を点検する。
+【監視】
+Expressway のデータベースサービス（TCP 4371〜4372）への外部 RPC、Expressway から内部への SMB／WinRM／SQL 接続を監視する。
+参照: https://www.securityweek.com/hackers-exploit-cisco-expressway-vulnerability-soon-after-poc-release (SecurityWeek)
+------------------------------------------------------------
+SOC-2026-11-20-003 [high] CISA KEV 期限 11-21 の 3 件（Synology DSM CVE-2024-10441・Apache Axis CVE-2026-90436・REDCap CVE-2026-90817）と Apache Roller CVE-2026-129448（KEV 未収載・実悪用）の緊急点検。LiteLLM CVE-2026-40217 は期限 12-02
+------------------------------------------------------------
+対象: Synology DSM／BeeStation OS・Apache Axis 1.x 同梱製品（N-central・Confluence Data Center）・Vanderbilt REDCap・BerriAI LiteLLM・Apache Roller
+【概要】
+11-18 に KEV 追加された 4 件のうち 3 件（Synology DSM・Apache Axis・REDCap）は期限が 11-21（3 日）。THN によれば Synology DSM は NAS を狙う C3RB3R ランサムウェア、LiteLLM は GTIG が報告した LLMjacking（推論鍵を管理権限へ昇格）、Axis は Confluence／N-central 経由の暗号資産マイナー配置、REDCap は Safe Security が報告した XMRig（syslog-ng 偽装・cron／SSH 鍵永続化）と結びつく。Apache Roller CVE-2026-129448 は Apache が実悪用を明記するが KEV は未収載（予報 fc-20261118-1・期限 11-21 の対象）。
+【推奨アクション】
+1) Synology DSM を 7.2.2-72806-1 等へ更新しインターネット露出を停止する。2) Confluence Data Center を 9.2.28 以降へ・N-central を 2026.4 HF3 へ更新し Remote API を無効化、自社アプリ同梱の Axis 1.x を棚卸しする。3) REDCap を提供元の修正版へ更新する。4) LiteLLM Proxy を更新し管理 API を遮断・鍵を更新する（期限 12-02）。5) Apache Roller を 6.1.6／6.1.7 へ更新し XML-RPC を外部遮断する（管理画面での無効化は不十分）。
+【監視】
+各製品の管理ポート・SOAP／XML-RPC・Guardrails API への外部要求、サービスプロセスの子プロセス生成・外向き通信・暗号資産マイナーの痕跡を監視する。
+参照: https://thehackernews.com/2026/11/cisa-warns-of-4-exploited-flaws-linked.html (The Hacker News)
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA KEV)
+------------------------------------------------------------
+SOC-2026-11-20-004 [high] Java4Shell CVE-2026-114938 で悪用試行が開始：侵害成功の確認は無いが GreyNoise・watchTowr・Previdian が探査・試行を観測。AVX-512 VBMI 環境の JDK 17.0.6 以降を優先更新、Cisco／Siemens 等の未修正製品は AVX-512 無効化・露出停止
+------------------------------------------------------------
+対象: OpenJDK 17.0.6 以降を同梱する製品（Cisco 製品群・Siemens Industrial Edge・Elastic・Keycloak・Atlassian DC・Jenkins・Red Hat 等）
+【概要】
+Java4Shell の悪用試行が GreyNoise（5 IP・150 件超）・watchTowr（ハニーポット）・Previdian（6 IP・9 件）で観測され始めたが、いずれも侵害成功は確認されていない。Cisco は 12 製品超が影響・修正未提供、Siemens は Industrial Edge のオフライン化を暫定推奨、Red Hat は RHSB-2026-018（Critical）、Keycloak はイメージ 26.8.2-3、Atlassian DC は AVX-512 無効化を案内。VulnCheck は完全な RCE を顧客提供、Kevin Breen も動作するエクスプロイトを開発。JPCERT/CC は 11-18 時点で実悪用の情報なし。
+【推奨アクション】
+1) lscpu の avx512vbmi フラグを持つ x86-64 上の JDK 17.0.6 以降を優先棚卸しし、Oracle Java SE 17.0.21.1／21.0.13.1／25.0.5.1／27.0.1.1 等へ更新する。2) 修正未提供の製品（Cisco・Siemens・Atlassian DC）は -XX:-UseBASE64Intrinsics の適用・AVX-512 無効化・インターネット露出停止を暫定策とする。3) 未認証で Base64 を復号する公開 Java アプリから適用する。4) Snort SID 67502〜67513 を適用し『java4shell-recon』User-Agent・JVM クラッシュを監視する。
+【監視】
+未認証エンドポイントへの大きな Base64 入力・『java4shell-recon』User-Agent・JVM クラッシュの急増を監視する。
+参照: https://www.securityweek.com/java4shell-exploitation-attempts-begin-as-vendors-rush-out-advisories (SecurityWeek)
+参照: https://www.security-next.com/193112 (Security NEXT)
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-20-005 [medium] PHP 全サポート版の重大 RCE 群（CVE-2026-129289 FPM 要求スマグリング・CVE-2026-126714 phpAfterShell 等）と Drupal core CVE-2026-132165（インストーラ経由の未認証乗っ取り）の更新。NGINX2Root は HTTP/2 無効化を暫定策に
+------------------------------------------------------------
+対象: PHP 8.2〜8.5／PHP-FPM、Drupal core 10.6／11.3／11.4、NGINX Open Source／Plus
+【概要】
+PHP は 11-19 に 8.2.36／8.3.37／8.4.28／8.5.13／8.6.0 を公開し、PHP-FPM の要求スマグリング CVE-2026-129289、phpAfterShell CVE-2026-126714（セッション TOCTOU）など CVSS 9.2 の RCE 系 7 件と LPE 1 件を修正した。Drupal は SA-CORE-2026-017 で同梱インストーラ経由の未認証サイト乗っ取り CVE-2026-132165 を 10.6.22／11.3.22／11.4.13 で修正、PoC が存在し『数時間〜数日で悪用コードが出現し得る』と警告した。NGINX2Root（CVE-2026-123007 ほか）は PoC 公開済みで実悪用なし。いずれも実悪用の報告は無いが、Drupal の警告と NGINX の露出規模から早期適用が望ましい。
+【推奨アクション】
+1) PHP を 8.2.36／8.3.37／8.4.28／8.5.13／8.6.0 へ更新し、CVE-2026-129289 の暫定策として FastCGI 接続再利用（fastcgi_keep_conn・enablereuse）を無効化、CVE-2026-126714 は session.upload_progress を無効化する。2) Drupal core を 11.4.13／11.3.22／10.6.22 へ更新し /core/install.php を遮断する。3) NGINX を 1.30.7／1.31.9・NGINX Plus 37.0.8.1／37.3.0.1 へ更新し、更新までは HTTP/2 を一時無効化する（HTTP/2 系 2 件にのみ有効）。
+【監視】
+PHP-FPM ワーカーの異常終了、/core/install.php への外部アクセス、NGINX ワーカーの異常終了を監視する。
+参照: https://thehackernews.com/2026/11/php-fixes-7-critical-flaws-including.html (The Hacker News)
+参照: https://thehackernews.com/2026/11/drupal-patches-critical-installer-flaw.html (The Hacker News)
+参照: https://www.bleepingcomputer.com/news/security/critical-nginx-nginx2root-bugs-let-attackers-hijack-servers (BleepingComputer)
+【低優先度】 なし
+【除外】
+  - CERT-FR：Mitel・Wireshark・VMware Tanzu・Progress WS_FTP・Cisco・PHP・Drupal・WordPress・Splunk・ClamAV・Elastic・Laravel・NetApp の勧告（11-19） … 定例のセキュリティ勧告で、CVSS 9.0 以上は Section 2／3 で個別・バッチ記録。残りは通常のパッチ運用で対応。
+  - CISA ICS Advisories：Elecbrakes EB2／VM1／ELBC2000・libumqtt・Autonomy Logic OpenPLC Runtime … ICS 勧告で、OpenPLC CVE-2026-126088（CVSS 9.2）は除外サマリーで個別記録。産業制御機器の限定的な運用対応で、一般組織の即時対応事項ではない。
+  - BleepingComputer：Microsoft confirms app installation issues after hotpatch／Microsoft tests new Edge Lockdown Mode／The Record：UK court confirms Apple encryption notice … 製品の不具合・機能追加・司法報道で、攻撃・脆弱性の変化ではない。
+  - ScanNetSecurity：JPCERT/CC インシデント調査報告書チェックリスト公開／日本セキュリティ大賞2026／Internet Week 2026 キャリア記事／各種ウェビナー告知 … 参考資料・表彰・イベント告知で、即時の運用対応事項ではない。
+  - The Record：CISA nominee LoSapio／DOJ・DHS 新部門／TASS：Bitcoin・Ethereum 下落 … 行政・経済の報道で、運用対応事項ではない。

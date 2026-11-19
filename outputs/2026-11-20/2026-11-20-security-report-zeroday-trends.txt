@@ -1,0 +1,292 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-20 08:50 JST
+調査期間: 2026-11-19 07:00 〜 2026-11-20 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+------------------------------------------------------------
+CVE-2026-123890 [high] VMware vCenter Server（VMware Directory Service の SRP-6a セッション鍵漏えいによる認証バイパス・administrator@vsphere.local としてのセッション確立・ゼロデイ悪用）
+------------------------------------------------------------
+対象: Broadcom（VMware） / vCenter 8.0・9.0・9.1、および VMware Cloud Foundation／vSphere Foundation／Telco Cloud Platform／Telco Cloud Infrastructure 同梱の vCenter（Cloud Foundation 5.x を含む）。vSphere 6.5／6.7／7.0 は評価対象外だが影響ありと推定（The Hacker News）。GTIG は VCSA 7.x・8.x での悪用を記述
+評点: CVSS v3 9.8
+【概要】
+Broadcom は 2026-11-19、VMware vCenter の VMware Directory Service（vmdir）における認証バイパス CVE-2026-123890（CVSS 9.8・Mandiant 発見）を公開した。The Hacker News によれば vCenter 8.0／9.0／9.1 と VCF・VVF・Telco Cloud 同梱版が対象で、Enhanced Linked Mode の有無に関係なく影響し、回避策は無く、修正版は全サポート系列に提供された。同日 Google Threat Intelligence Group（GTIG）は、『疑われる PRC 系の諜報アクター ARMORY CASTLE（旧 UNC5221）』が 2026 年 9 月上旬、BeyondTrust Remote Support のゼロデイ（CVE-2026-102764・既報 10-16）で得た足場から、未認証の SRP-6a セッション鍵漏えい（vmdird の DCE/RPC・TCP 2012・UUIDv1 時刻の予測可能性）を Go 製ツール BONESAW で悪用し、administrator@vsphere.local のセッションを確立、data.mdb から STS SAML 署名鍵を抽出して SAWSNAKE で Golden SAML を実施、SSO 管理者とマシンアカウントを作成、VAMI API で SSH を有効化し、ESXi では vmfs_browser.py でゲスト VM ディスクから NTDS・SYSTEM・SECURITY・DNS を抜き出したと公表した。GTIG は『疑われる』の表現を保ち、標的の業種・国は記述していない。Broadcom 側は THN に対し悪用の報告は無いと述べており、ベンダー見解と GTIG の報告が同日に食い違う。CISA KEV はカタログ 2026.11.18 で未収載。vCenter の認証バイパスは 2026-07 の CVE-2026-59309（既報・QUIRSO が中国系と疑われるアクターの悪用を報告）に続くもので、仮想化基盤の管理面がゼロデイ悪用の対象となる状況が続いている。
+【一時緩和】
+  - Broadcom 勧告 39495 の修正版を全 vCenter（VCF／VVF／Telco 同梱を含む）へ即時適用する（回避策なし）
+  - vCenter の TCP 2012（vmdird RPC）・443・22・5480 を許可リスト IP 以外から遮断する（Mandiant の vcsa-hardening-tool は iptables の既定拒否と SIEM 転送を設定）
+  - VAMI API（5480）への PUT /rest/appliance/access/ssh、vsphere.local の新規管理者アカウント、ESXi の root authorized_keys 追加、VMFS 上の隠しディレクトリ『.a』を点検する
+【TTP】
+  - T1190 (initial-access): GTIG が、ARMORY CASTLE の Go 製ツール BONESAW が vmdird の DCE/RPC（TCP 2012）経由で CVE-2026-123890 を悪用し administrator@vsphere.local のセッションを得たと記述
+  - T1606 (credential-access): GTIG が、BONESAW が data.mdb から STS SAML 署名鍵を抽出し、SAWSNAKE で SAML アサーションを偽造（Golden SAML）したと記述
+  - T1136 (persistence): GTIG が、vmdir 経由で SSO 管理者アカウント（sps-*@vsphere.local）とバックドア用マシンアカウントを作成したと記述
+【IOC】IP: 103.147.251[.]5, 103.190.38[.]3, 118.174.128[.]34, 118.174.128[.]36, 118.174.128[.]38, 176.9.89[.]66, 185.71.15[.]109, 220.121.128[.]41, 222.108.77[.]44, 61.216.56[.]127, 81.45.89[.]43 / ファイル: ActiveSer.jsp, u.jsp, /tmp/123, /tmp/sss, /tmp/dbr, /usr/bin/vmtoolscs, /tmp/123.key, vmfs_browser.py, o.tar.gz
+【監視】vmdird の TCP 2012 への外部からの RPC、VAMI API の SSH 有効化、vsphere.local への新規 SSO 管理者作成、ESXi 上の tar／scp／vmfs_browser.py 実行、非標準ポートの SSH バナー『SSH-2.0-pulsesecure_23345』を監視する。
+  参照: https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-vsphere (Google Threat Intelligence Group)
+  参照: https://thehackernews.com/2026/11/critical-vmware-vcenter-flaw-cvss-98.html (The Hacker News)
+  参照: https://nvd.nist.gov/vuln/detail/CVE-2026-123890 (NVD)
+  参照: https://support.broadcom.com/web/ecx/support-content-notification/-/external/content/SecurityAdvisories/0/39495 (Broadcom)
+------------------------------------------------------------
+CVE-2026-76466 [high] Cisco Expressway Core／Expressway Edge（クラスタ構成時のデータベースサービスの永続 Cookie による未認証 root コマンド実行）
+------------------------------------------------------------
+対象: Cisco / クラスタ構成の Expressway Core／Edge（仮想・アプライアンス）。X15.5.20 で修正。X14 以前は修正済み系列への移行が必要（SecurityWeek の記述）
+評点: CVSS v3 9.8 / EPSS 0.00417
+【概要】
+SecurityWeek によれば、ロシアのセキュリティ企業 F6 は、Cisco Expressway Core／Edge の重大な脆弱性 CVE-2026-76466（CVSS 9.8）が、GitHub（dinosn/cve-2026-76466）での PoC 公開の直後に実際の攻撃で悪用され、ロシアの 1 組織（名称非公表）が侵害されたと報告した。脆弱性は Expressway のデータベースサービス機能の永続 Cookie に起因し、Cookie を持つ攻撃者が未認証でデータベースサービスへ到達して RPC コマンドを発行し root でコマンドを実行できる。クラスタ構成の機器のみが対象で、Cisco は 2026-10-21 に勧告（cisco-sa-vcs-static-cred-hr7EWZ8t）を公開し X15.5.20 で修正、回避策は無い。F6 の調査では攻撃者がインターネットに露出した Expressway X15.5.3 2 台を侵害し、内部のクラスタノード 2 台へ展開、root 取得後に SMB・SQL Server・WinRM・GitLab のリポジトリから資格情報を探索する独自 Python スクリプトを準備した。スクリプトのコメントには AI アシスタント利用を示す記述があり、その場で改変されていたという。F6 は帰属を行っておらず、Cisco の勧告は改訂されず『公開の悪用の認識なし』のままである。F6 は Erlang システムログでの検知と、TCP 4371〜4372 のクラスタノード以外からの遮断を推奨している。CISA KEV はカタログ 2026.11.18 で未収載。
+【一時緩和】
+  - Expressway Core／Edge を X15.5.20 以降へ更新する（回避策なし）。X14 以前は修正済み系列へ移行する
+  - 即時更新できない機器は TCP 4371〜4372 を信頼済みクラスタノード IP 以外からファイアウォールで遮断する（F6 の推奨）
+  - Expressway の Erlang システムログ、想定外の Python 実行・SMB／WinRM／SQL 探索、GitLab リポジトリへの資格情報検索を点検する
+【TTP】
+  - T1190 (initial-access): F6（SecurityWeek 経由）が、攻撃者がインターネットに露出した Expressway X15.5.3 2 台を CVE-2026-76466 で侵害し、内部のクラスタノード 2 台へ展開したと記述
+  - T1046 (discovery): F6 が、root 取得後に SMB 共有・SQL Server・WinRM・GitLab を探索する独自 Python スクリプトを準備したと記述
+【IOC】IP: なし / ファイル: なし
+【監視】Expressway のデータベースサービス（TCP 4371〜4372）への外部からの RPC、Erlang システムログの異常、Expressway から内部ネットワークへの SMB／WinRM／SQL 接続を監視する。
+  参照: https://www.securityweek.com/hackers-exploit-cisco-expressway-vulnerability-soon-after-poc-release (SecurityWeek)
+  参照: https://sec.cloudapps.cisco.com/security/center/content/CiscoSecurityAdvisory/cisco-sa-vcs-static-cred-hr7EWZ8t (Cisco)
+------------------------------------------------------------
+CVE-2026-129448 [high] Apache Roller 4.0.0〜6.1.4（XML-RPC インターフェースの認証前逆シリアル化・未認証 RCE・続報）
+------------------------------------------------------------
+対象: Apache Software Foundation / Apache Roller 4.0.0〜6.1.4（SecurityWeek）。CVE-2026-82384（2026-09 公開・6.1.5 のみ対象と記載）と同一の脆弱性と Apache が記述
+評点: CVSS v3 9.8
+【概要】
+既報（11-18・11-19 ゼロデイ特報）の続報。SecurityWeek は 11-19、Apache Roller の XML-RPC インターフェースにおける認証前の安全でない逆シリアル化 CVE-2026-129448（CVSS 9.8）について、Apache の 11-17 勧告が『現在実悪用されている』と明記したこと、対象が 4.0.0〜6.1.4 であること、2026-09 に公開された CVE-2026-82384（6.1.5 のみを対象と記載）と同一の脆弱性であること、修正が 6.1.6 以降（6.1.7 は 11-11 公開で他 15 件を修正）であること、管理画面で XML-RPC を無効化しても悪用を防げないことを報じた。悪用の主体・規模・IoC は公開されておらず、CISA KEV はカタログ 2026.11.18 で未収載である。予報 fc-20261118-1（E1・期限 11-21）が有効。
+【一時緩和】
+  - Apache Roller を 6.1.6 以降（6.1.7 推奨）へ更新する。管理画面で XML-RPC を無効化しても悪用は防げない（SecurityWeek）
+  - 更新までは XML-RPC エンドポイントへの外部アクセスをリバースプロキシ／WAF で遮断する
+  - Roller サーバーの Java プロセスからの子プロセス生成・外向き通信を点検する
+【TTP】
+  - T1190 (initial-access): Apache（CNA）が勧告で『この問題は現在実悪用されている』と明記（SecurityWeek が 11-19 に報道）
+【IOC】IP: なし / ファイル: なし
+【監視】Roller の XML-RPC エンドポイントへの未認証 POST、Java プロセスの子プロセス生成を監視する。
+  参照: https://www.securityweek.com/critical-apache-roller-axis-vulnerabilities-exploited-in-attacks (SecurityWeek)
+【APT活動-本編】
+------------------------------------------------------------
+ArmoryCastle-2026-vCenterZeroDayBONESAW ARMORY CASTLE（旧 UNC5221・GTIG／Mandiant が『疑われる PRC 系の諜報アクター』と評価）（帰属確度: medium・国家: 中国（GTIG が『suspected PRC-nexus espionage actor』と記述。『疑われる』の表現が維持され、特定の政府機関は名指しされていない））
+------------------------------------------------------------
+Google Threat Intelligence Group（GTIG）と Mandiant は 2026-11-19、『疑われる PRC 系の諜報アクター ARMORY CASTLE（旧 UNC5221）』が、既報（10-16）の BeyondTrust Remote Support ゼロデイ（CVE-2026-102764）による初期侵入に続き、2026 年 9 月上旬に VMware vCenter の CVE-2026-123890 を、Broadcom が同日修正を公開するまでゼロデイとして悪用していたと公表した。GTIG の記述では、攻撃者は EDR の無い内部 Linux アプライアンスに Web シェル（SLIMSAVAGE・CAGEMATCH）を置いて root 化し、nmap で内部を走査した後、Go 製ツール BONESAW で vCenter の認証バイパスを悪用して管理者セッションを確立、ディレクトリデータベースから STS SAML 署名鍵を抽出して SAWSNAKE で Golden SAML を実施、SSO 管理者とマシンアカウントを作成して管理者権限を付与した。VAMI API で SSH を有効化して vCenter の鍵と PostgreSQL 資格情報を窃取し、Dropbear 改造のバックドア BEARBONES と Slack を C2 とする LAZYBONES で永続化、ESXi では VMFS 上の隠しディレクトリを作業場所にゲスト VM ディスクから NTDS・SYSTEM・SECURITY・DNS を抽出して持ち出し、痕跡を削除した。GTIG は帰属に『疑われる』を保ち、業種・国は記述していない。CVE-2026-59309（7 月・vmdir LDAP 認証バイパス）と手法が一部重なるが、BONESAW は同 CVE の修正済み vCenter に対して用いられた。Broadcom は THN に対し悪用の報告は無いと述べている。同アクターの既報キャンペーン（ArmoryCastle-2026-BeyondTrustZeroDay）の後段として記録し、キャンペーン ID は新規に付与した。
+【標的】GTIG は業種・国を記述していない（『高優先度の標的』とのみ）。標的システムは BeyondTrust Remote Support・EDR の無い内部 Linux アプライアンス・VMware vCenter（VCSA 7.x／8.x）・ESXi
+【TTP】
+  - T1190 (initial-access): GTIG が、BeyondTrust Remote Support のゼロデイ CVE-2026-102764（既報）で初期侵入し、専用ツール BONESAW で vCenter の CVE-2026-123890 をゼロデイ悪用したと記述
+  - T1505.003 (persistence): GTIG が、内部 Linux アプライアンスに Web シェル SLIMSAVAGE・CAGEMATCH を設置したと記述
+  - T1548.001 (privilege-escalation): GTIG が、デバッガを用いてシステムバイナリに SUID を付与し root 化したと記述
+  - T1046 (discovery): GTIG が、nmap で内部の vCenter・ESXi・AD 関連ポートを走査したと記述
+  - T1606.002 (credential-access): GTIG が、vCenter の STS SAML 署名鍵を抽出し SAWSNAKE で SAML アサーションを偽造（Golden SAML）したと記述
+  - T1136.001 (persistence): GTIG が、SSO 管理者アカウントとバックドア用マシンアカウントを作成し管理者権限を付与したと記述
+  - T1021.004 (lateral-movement): GTIG が、VAMI API で vCenter の SSH を有効化してログインし、ESXi へ SSH 接続して公開鍵を追加したと記述
+  - T1003.003 (credential-access): GTIG が、ESXi 上でゲスト VM ディスクから NTDS・SYSTEM・SECURITY・DNS を抽出したと記述
+  - T1102.002 (command-and-control): GTIG が、LAZYBONES が Slack API を HTTPS 経由の C2 に用いると記述
+  - T1070.004 (defense-evasion): GTIG が、ツールと出力・ステージング用の隠しディレクトリを削除し、VAMI API で SSH を再無効化したと記述
+【IOC】IP: 103.147.251[.]5, 103.190.38[.]3, 118.174.128[.]34, 118.174.128[.]36, 118.174.128[.]38, 176.9.89[.]66, 185.71.15[.]109, 220.121.128[.]41, 222.108.77[.]44, 61.216.56[.]127, 81.45.89[.]43 / ファイル: ActiveSer.jsp, u.jsp, /tmp/123, /tmp/sss, /tmp/dbr, /usr/bin/vmtoolscs, /tmp/123.key, vmfs_browser.py, o.tar.gz
+【推奨】1) Broadcom 勧告 39495 の修正版を即時適用し、BeyondTrust は BT26-05 を確認する。2) Mandiant の vcsa-hardening-tool 等で vCenter の 2012／443／22／5480 を許可リスト IP 以外から遮断し SIEM へログ転送する。3) VAMI API の SSH 有効化、vsphere.local の新規管理者、ESXi root の authorized_keys 追加、VMFS の隠しディレクトリ、非標準ポートの『SSH-2.0-pulsesecure』バナーを狩る。4) 公開 IP 11 件と YARA 6 本を適用する。5) vCenter 侵害時は STS 署名鍵・マスター鍵・PostgreSQL 資格情報・ドメイン資格情報（NTDS）の全面更新を前提に対応する。
+  参照: https://cloud.google.com/blog/topics/threat-intelligence/armory-castle-exploits-vsphere (Google Threat Intelligence Group)
+  参照: https://thehackernews.com/2026/11/critical-vmware-vcenter-flaw-cvss-98.html (The Hacker News)
+------------------------------------------------------------
+Webworm-2026-NtMonitorSoftEtherBridge Webworm（Rapid7 が『中国と連携する APT』と記述・欧州の政府組織を主な標的）（帰属確度: medium・国家: 中国（Rapid7 が『China-aligned APT』と記述。『国家支援』の語は用いていない。新ツールの帰属は Rapid7 自身が『中程度の確信度』））
+------------------------------------------------------------
+Rapid7 は 2026-11-19、『中国と連携する APT』で政府組織（特に欧州）を標的とする Webworm のツールキットに、SoftEther VPN Bridge v4.44 build 9807 を改変した『NtMonitor VPN』が加わったと中程度の確信度で報告した。唯一の公開サンプル（2026-01 以降）は PE メタデータを Network Monitor Software（netcapa.exe）に偽装し、内部の『SoftEther VPN』表記を NtMonitor VPN に置換、HTTP エンドポイントを /update/alive.cgi・/update/picture.cgi に改名、ハンドシェイクのウォーターマークを Windows ロゴの PNG 断片に差し替え（純正クライアントとは接続不能）、リソースアーカイブ hamcore.se2 を PE 内に埋め込み、設定ファイル（setting.conf）を独自の『RCEN』形式で暗号化する。Rapid7 が復号した設定では VPN のカスケードで遠隔ネットワークを被害組織の内部へブリッジしており、テスト以外の接続先 IP は AS20473（The Constant Company／Vultr）で、同 AS は過去にも Webworm と関連付けられている。純正の SoftEther との差分比較ではコマンド実行等の追加バックドア機能は確認されず、正規 VPN 製品の改変だけで侵入後のネットワーク接続を維持する手法である。TTP は ESET の過去報告と整合すると Rapid7 は述べ、帰属は『中程度の確信度』に留まる。被害組織の名称・国は非公表。Rapid7 は内部ブランド・エンドポイント・ウォーターマークは容易に変更され得るため、SoftEther VPN 固有の挙動を理解して検知することを政府系防御者へ勧めている。
+【標的】Rapid7 は Webworm の活動が『政府組織、特に欧州』に集中すると記述。本ツールの被害組織名・国は非公表
+【TTP】
+  - T1587.001 (resource-development): Rapid7 が、SoftEther VPN Bridge v4.44 build 9807 を改変した独自ビルド『NtMonitor VPN』を記述
+  - T1036.005 (defense-evasion): Rapid7 が、PE メタデータを『Network Monitor Software』『Network Systems Solutions Inc.』・OriginalFileName netcapa.exe に偽装したと記述
+  - T1027.013 (defense-evasion): Rapid7 が、設定ファイルを独自の『RCEN』形式で暗号化し、SoftEther の痕跡を内部文字列から除去したと記述
+  - T1140 (defense-evasion): Rapid7 が、ローダが起動時に暗号化設定を復号すると記述
+  - T1599 (command-and-control): Rapid7 が、VPN のカスケード機能で遠隔ネットワークを被害組織の内部ネットワークへブリッジすると記述
+  - T1071.001 (command-and-control): Rapid7 が、HTTP(S) と SoftEther プロトコルで通信し、エンドポイントを /update/alive.cgi・/update/picture.cgi に改名したと記述
+  - T1090.001 (command-and-control): Rapid7 が、Proxy: Internal Proxy（T1090.001）として分類したと記述
+【IOC】IP: 216.238.108[.]22 / ファイル: netcapa.exe, setting.conf, %TEMP%\@setting.conf / ハッシュ: 90e70c0b04ecb9dfa1d5c60fe7de901846ebf0b54754ea12dde1ccb77623a6e8, 4532584e9c35e03bcaa97d475eefc373d0aa9baf6a628776b4acef23cd10f222, b12d5e345b013d363d13340f9423503d89180e0fd5d9f48fc50bd89d2276e6f7
+【推奨】1) 公開 IoC（SHA-256 3 件・216.238.108[.]22・/update/alive.cgi・/update/picture.cgi・レジストリ NtMonitor VPN・サービス SEVPNBRIDGE）を照合する。2) 政府系ネットワークで未承認の SoftEther VPN プロセス・サービス・ファイアウォールルール追加を棚卸しし、TLS 検査が可能な経路では image/jpeg を名乗る PNG 本文の POST を検知する。3) AS20473（Vultr）向けの持続的な外向き VPN 接続を点検する。4) Rapid7-Labs の YARA を適用する。
+  参照: https://www.rapid7.com/blog/post/tr-spying-on-governments-no-malware-custom-webworms-toolkit-softether-bridge (Rapid7)
+  参照: https://github.com/rapid7/Rapid7-Labs/blob/main/IOCs/Webworm_NtMonitor_IOCs.txt (Rapid7 Labs (GitHub))
+【APT活動-注目動向】
+------------------------------------------------------------
+Unattributed-2026-ExpresswayCVE76466Intrusion 不明（F6 が調査した Cisco Expressway CVE-2026-76466 悪用の実行者・帰属なし）（帰属確度: low・国家: なし（F6 は帰属を行っていない））
+------------------------------------------------------------
+SecurityWeek によれば、F6 が調査したロシアの組織への侵入では、攻撃者が GitHub での PoC 公開直後に Cisco Expressway CVE-2026-76466 を悪用し、インターネット露出の Expressway X15.5.3 2 台から内部のクラスタノード 2 台へ展開、root 取得後に SMB・SQL Server・WinRM・GitLab を探索する独自 Python スクリプトを準備した。スクリプトはその場で改変され、ソースコードのコメントや修正の記述に AI アシスタントの利用を示す特徴があったと F6 は述べた。F6 は既知のアクターへの帰属を行っていない。詳細は Section 2／3 のゼロデイ特報（CVE-2026-76466）を参照。
+【標的】ロシアの 1 組織（名称・業種非公表）
+【TTP】
+  - T1190 (initial-access): F6（SecurityWeek 経由）が、インターネット露出の Expressway X15.5.3 2 台を CVE-2026-76466 で侵害したと記述
+  - T1046 (discovery): F6 が、独自 Python スクリプトでネットワーク走査・SMB 共有・SQL Server・WinRM の探索を行う準備をしたと記述
+  - T1552.001 (credential-access): F6 が、GitLab リポジトリから資格情報と機微データを検索するスクリプトを記述
+【IOC】IP: なし / ファイル: なし
+【推奨】1) Expressway を X15.5.20 へ更新、または TCP 4371〜4372 を遮断する。2) Expressway からの内部探索（SMB・WinRM・SQL・GitLab API）を監視する。
+  参照: https://www.securityweek.com/hackers-exploit-cisco-expressway-vulnerability-soon-after-poc-release (SecurityWeek)
+
+------------------------------------------------------------
+Unattributed-2026-AxisConfluenceIntrusion 不明（Rapid7 が検知した Apache Axis CVE-2026-90436 経由の Confluence Data Center 侵入の実行者・帰属なし）（帰属確度: low・国家: なし（Rapid7 は帰属を行っていない））
+------------------------------------------------------------
+The Hacker News・SecurityWeek によれば、Rapid7 が 11-13 に検知した Confluence Data Center への侵入では、攻撃者が Apache Axis の CVE-2026-90436 を悪用して Pinggy・Cloudflare Tunnel 経由でスクリプトを取得し、約 3 分後に Confluence の DB 資格情報で MySQL へ接続、添付ディレクトリで資格情報を探索し Luhn チェックで決済カード番号を探した。AS-REP Roasting の試行と Atlassian Crowd API の照会を経て約 4 時間でサービスアカウントを取得し本番のクラウドデータウェアハウスを照会、最初の悪用から約 12 時間後に統合サービスアカウントで Microsoft 365 にレガシー認証でサインインした。Rapid7 はスクリプトを『AI 生成の可能性が高い』と評価し、帰属は行っていない。詳細は Section 2 トレンド欄（CVE-2026-90436）を参照。
+【標的】Rapid7 の顧客 1 組織（業種・国非公表）。決済カード番号の探索から金銭目的と推定（推測）
+【TTP】
+  - T1190 (initial-access): Rapid7（THN・SecurityWeek 経由）が、Confluence Data Center の Axis 1.x（CVE-2026-90436）の悪用を 11-13 に検知したと記述
+  - T1105 (command-and-control): Rapid7 が、Pinggy と Cloudflare Tunnel の一時ドメインからスクリプトを取得したと記述
+  - T1552.001 (credential-access): Rapid7 が、Confluence の DB 資格情報で MySQL へ認証し添付ディレクトリから資格情報を検索したと記述
+  - T1558.004 (credential-access): Rapid7 が AS-REP Roasting を試行したと記述
+  - T1078.004 (initial-access): Rapid7 が、統合サービスアカウントでレガシー認証により Microsoft 365 へサインインしたと記述
+【IOC】IP: 192.238.253[.]176 / ファイル: なし
+【推奨】1) Confluence 9.2.28 以降へ更新し Remote API を無効化する。2) 192.238.253[.]176 からのサインインとレガシー認証の利用を遡及確認し、レガシー認証を無効化する。3) Confluence サーバーからトンネルサービスへの外向き接続を遮断する。
+  参照: https://thehackernews.com/2026/11/cisa-warns-of-4-exploited-flaws-linked.html (The Hacker News)
+  参照: https://www.securityweek.com/critical-apache-roller-axis-vulnerabilities-exploited-in-attacks (SecurityWeek)
+【注目CVE（リスト外）】
+------------------------------------------------------------
+CVE-2026-114938 [high] Oracle Java／OpenJDK 17.0.6 以降（x86-64 AVX-512 VBMI 環境の Base64 intrinsic メモリ破損『Java4Shell』・悪用試行の観測開始・続報）
+------------------------------------------------------------
+対象: Oracle／OpenJDK（各ディストリビューション） / OpenJDK 17.0.6 以降（17・21・25・27 系列）の x86-64 AVX-512 VBMI 環境。ARM は非該当。Elasticsearch 7.17.3 以降（RCE は読取権限以上の資格情報が必要）、Keycloak イメージ 26.8.2-1／-2、Cisco 製品 12 以上、Siemens Industrial Edge Management 3 製品、Red Hat RHEL 8／9／10 の OpenJDK 17／21／25、Atlassian Data Center、Jenkins（SecurityWeek）
+評点: CVSS v3 8.1 / CVSS v4 9.2 / EPSS 0.00753
+【概要】
+既報（11-18・11-19）の続報。SecurityWeek によれば、Java4Shell CVE-2026-114938 に対するインターネット走査と悪用試行が始まった。GreyNoise は 11-19 早朝までに 5 つの IP から攻撃の形状に一致する要求 150 件超を記録したが、センサー上で成功した侵入は無い。watchTowr は『java4shell-recon』の User-Agent を付けた探査と、正しい形状の盲目的な悪用試行をハニーポットで観測し、『まだ機能的でも恐ろしくもない』が数日内に実際の悪用が続くと予想した。Cloudflare Cloudforce One は、Java4Shell の UA で探査した IP が約 17 時間後に Chrome を偽装してエクスプロイトのトリガーを送った事例と、11-18 に Artex（攻撃者に悪用されるオープンソースの AI ペネトレーションテスト基盤）と Java4Shell の両活動を同一 IP が行った初の事例を報告した。Previdian は 11-18〜19 に 6 IP から 9 件の試行を記録したが、標的が侵害されたかは判別できないとした。ベンダー側では Cisco が Catalyst Center・Secure Network Analytics・Secure Workload・Smart Software Manager On-Prem・Splunk AppDynamics On-Premises・Intersight Virtual Appliance など 12 製品超を影響ありとし修正・回避策とも未提供、Siemens は Industrial Edge Management 3 製品のオフライン化を暫定推奨、Elastic は Elasticsearch 7.17.3 以降（RCE には読取権限以上の資格情報が必要・未認証では DoS）、Red Hat は RHSB-2026-018（Critical・RHEL 8／9／10）、Keycloak はイメージ 26.8.2-3、Atlassian は Data Center 製品で AVX-512 無効化、Jenkins は 11 月の Java リリースへの更新を案内した。Calif の PoC はメモリ破損のトリガーのみだが、VulnCheck は顧客向けに完全な RCE エクスプロイトを提供し、Immersive の Kevin Breen も動作するエクスプロイトを開発した。Security NEXT によれば JPCERT/CC は 11-18 時点で実際の攻撃に悪用されたとの情報を確認していない。Oracle の修正版は Java SE 27.0.1.1／25.0.5.1／21.0.13.1／17.0.21.1。侵害成功の確認が無いため E1 の発行条件は満たさないが、試行の開始により今後 72 時間の重要な監視対象である。
+【一時緩和】
+  - Oracle Java SE 17.0.21.1／21.0.13.1／25.0.5.1／27.0.1.1 または各ディストリビューションの修正版へ更新する。Keycloak はイメージ 26.8.2-3 へ
+  - 修正未提供の製品（Cisco 製品群・Siemens Industrial Edge・Atlassian Data Center）は -XX:-UseBASE64Intrinsics の適用、AVX-512 の無効化、インターネット露出の停止を暫定策とする
+  - User-Agent『java4shell-recon』と Chrome を偽装した後続の試行、hs_err ログの急増を監視し、Snort SID 67502〜67513 を適用する
+【TTP】
+  - なし（GreyNoise・watchTowr・Cloudflare・Previdian が観測したのは探査・試行（『java4shell-recon』User-Agent・正しい形状の盲目的試行）であり、いずれも侵害成功を確認していないため Technique は付与しない。）
+【IOC】IP: なし / ファイル: なし
+【監視】未認証エンドポイントへの大きな Base64 入力・『java4shell-recon』User-Agent・JVM クラッシュの急増・Java プロセスの子プロセス生成を監視する。
+  参照: https://www.securityweek.com/java4shell-exploitation-attempts-begin-as-vendors-rush-out-advisories (SecurityWeek)
+  参照: https://www.security-next.com/193112 (Security NEXT)
+------------------------------------------------------------
+CVE-2026-90436 [high] Apache Axis 1.x（安全でないリフレクション・未認証 RCE・Confluence Data Center／N-central 同梱・Rapid7 が侵入の詳細を公表・続報）
+------------------------------------------------------------
+対象: Apache Software Foundation（Axis 1.x は EOL） / Apache Axis 1.x 全般（修正版の提供予定なし）。Confluence Data Center は『Remote API (XML-RPC & SOAP)』有効時のみ（3.0 以降は新規で既定無効・10.0 で削除）。N-central は 2026.4 HF3 で Legacy API を無効化
+KEV 追加: 2026-11-18（FCEB 期限 2026-11-21）
+評点: CVSS v3 9.8
+【概要】
+既報（11-13〜11-19）の続報。The Hacker News・SecurityWeek によれば、Rapid7 が 11-13 に顧客の Confluence Data Center 環境で検知した CVE-2026-90436 の悪用では、攻撃者は Pinggy と Cloudflare Tunnel の一時ドメインから取得したシェルコマンドとスクリプトを実行し、約 3 分後に Confluence の DB 資格情報で MySQL へ認証、添付ディレクトリ（/var/atlassian/application-data/confluence/attachments/v4/）で資格情報を検索し、Luhn チェックで決済カード番号を探索した。AS-REP Roasting を試行し Atlassian Crowd API を照会、約 4 時間でサービスアカウントの資格情報を得て本番のクラウドデータウェアハウスを照会、最初の悪用要求から約 12 時間後に統合サービスアカウントとしてレガシー認証で 192.238.253[.]176 から Microsoft 365 にサインインした。SecurityWeek は攻撃者が『数百のコマンド』を実行したと記述、THN はスクリプトが『AI 生成の可能性が高い』という Rapid7 の評価を伝えた。Previdian は 11-12〜19 に 14 IP から 50 件の試行を記録（成否不明）。Apache は EOL の Axis 1.x に修正版を提供せず、Axis 2 への移行か 2026-07-12 のコミット 41f3b4e8 の適用を案内、Confluence Data Center は Remote API が有効な場合のみ影響し 9.2.28 以降で対処、N-central は 2026.4 HF3 で Legacy API を無効化した。THN は N-central の 4EverAble2Shell と組み合わせた暗号資産マイナーの配置を記述している。CISA KEV（11-18 追加・期限 11-21）は既報。Security NEXT も旧版 Axis の後継版への移行を促した。帰属は無い。
+【一時緩和】
+  - Confluence Data Center を 9.2.28 以降へ更新し Remote API（XML-RPC & SOAP）を無効化、N-central は 2026.4 HF3 を適用する（KEV 期限 11-21）
+  - 自社アプリ同梱の Axis 1.x を棚卸しし、Axis 2 への移行またはコミット 41f3b4e8 のパッチを適用する
+  - Pinggy・Cloudflare Tunnel への外向き接続、Confluence DB 資格情報の利用、AS-REP Roasting、レガシー認証による M365 サインイン（192.238.253[.]176）を遡及確認する
+【TTP】
+  - T1190 (initial-access): Rapid7（THN・SecurityWeek 経由）が 11-13 に顧客の Confluence Data Center で CVE-2026-90436 の悪用を検知したと記述
+  - T1105 (command-and-control): Rapid7 が、攻撃者が Pinggy と Cloudflare Tunnel の一時ドメインから取得したスクリプトを実行したと記述
+  - T1552 (credential-access): Rapid7 が、Confluence の DB 資格情報で MySQL に認証し添付ディレクトリから資格情報を検索したと記述
+  - T1558 (credential-access): Rapid7 が AS-REP Roasting を試行したと記述
+  - T1078 (initial-access): Rapid7 が、約 12 時間後に統合サービスアカウントでレガシー認証により Microsoft 365 へサインインしたと記述
+【IOC】IP: 192.238.253[.]176 / ファイル: なし
+【監視】Confluence／N-central からのトンネルサービス（Pinggy・Cloudflare Tunnel）への接続、Confluence プロセスの子プロセス生成、DB 資格情報の想定外の利用、M365 のレガシー認証サインインを監視する。
+  参照: https://thehackernews.com/2026/11/cisa-warns-of-4-exploited-flaws-linked.html (The Hacker News)
+  参照: https://www.securityweek.com/critical-apache-roller-axis-vulnerabilities-exploited-in-attacks (SecurityWeek)
+  参照: https://www.security-next.com/193011 (Security NEXT)
+------------------------------------------------------------
+CVE-2026-123007 [high] NGINX Open Source／NGINX Plus『NGINX2Root』（HTTP/2 フロー制御のメモリ破損・ワーカー RCE。CVE-2026-123633〈HTTP/2 プロキシ UAF〉・CVE-2026-121810〈HTTP/3〉・CVE-2026-123634〈DNS サブリクエスト〉・CVE-2026-113425〈メールプロキシ〉・CVE-2026-118899〈TLS 1.3 DoS〉と同時修正・続報）
+------------------------------------------------------------
+対象: F5（NGINX） / CVE-2026-123007: HTTP/2 有効の NGINX 1.9.5〜1.31.8（2015 年以降の全版）。CVE-2026-123633: 1.19.7〜1.31.8（HTTP/2 でバックエンドへプロキシする構成）。修正 1.30.7（stable）／1.31.9（mainline）、NGINX Plus 37.0.8.1／37.3.0.1（BleepingComputer）
+評点: CVSS v4 9.2
+【概要】
+既報（11-19 トレンド欄・Rapid7 の PoC）の続報。BleepingComputer・SecurityWeek・Security NEXT によれば、F5 が 11-18〜19 に修正した NGINX の 10 件の脆弱性のうち、Xint・Wiz・Ikotas Labs・Metnir・Rapid7 が独立に発見した HTTP/2 系の 2 件が『NGINX2Root』と呼ばれている。CVE-2026-123007 は HTTP/2 フロー制御の欠陥によるワーカーのメモリ破損で 1.9.5〜1.31.8（2015 年以降の全版）が対象、Wiz は HTTP/2＋TLS で静的ファイルを配信するサーバーに対する未認証 RCE を実証し、Xint は Linux カーネル SCTP の欠陥（CVE 未記載）と連鎖させて root 権限と Docker コンテナ脱出を実証した。CVE-2026-123633 は HTTP/2 接続を受け付けてバックエンドへプロキシする際の use-after-free で 1.19.7〜1.31.8 が対象、Wiz は RCE を実証したが PoC を公開しない。同時修正の CVE-2026-121810（HTTP/3 リバースプロキシ UAF）・CVE-2026-123634（サブリクエスト付き DNS 解決 UAF）・CVE-2026-113425（メールプロキシ認証 UAF）・CVE-2026-118899（TLS 1.3 での要求本文読み取りの無限ループ・DoS・高）も含め、修正版は 1.30.7／1.31.9、NGINX Plus 37.0.8.1／37.3.0.1。Censys はラボで 5 件中 4 件のメモリ破損条件を再現したが RCE には至らず、11-19 時点で約 880 万サービスが版ベースで露出し得る（51 万超は修正済み、約 1 億 400 万は版非開示）と推定。Florian Roth は Node2Shell／Java2Shell より深刻だが非既定構成でのみ悪用可能で、多数の配備に差し迫った脅威ではないと評価し、Shodan サンプルの約 66% が HTTP/2 対応と記述。実悪用の報告は無い。HTTP/2 の一時無効化は 2 件にのみ有効で、他 5 件には更新が必要である。前日の F5 一括公開（CVSS 9.0 以上 12 件）は 11-19 の除外サマリーに記録済みで、本日の NVD 窓内公開には現れていない。
+【一時緩和】
+  - NGINX を 1.30.7／1.31.9、NGINX Plus を 37.0.8.1／37.3.0.1 へ更新する
+  - 更新までは HTTP/2 を一時的に無効化する（CVE-2026-123007／123633 の 2 件のみに有効。HTTP/3・DNS・メールプロキシの UAF には別途更新が必要）
+  - Censys の露出追跡（nginx2root.censys.com）等で自組織の露出 NGINX の版を確認し、Docker 上の NGINX はカーネル SCTP との連鎖によるコンテナ脱出を想定して隔離を見直す
+【TTP】
+  - なし（研究者（Xint・Wiz・Rapid7 等）の PoC・実証のみで、BleepingComputer・SecurityWeek・Security NEXT のいずれも実悪用を報告していないため Technique は付与しない。）
+【IOC】IP: なし / ファイル: なし
+【監視】NGINX ワーカーの異常終了・再起動の急増、HTTP/2 接続の異常なフロー制御ウィンドウ更新、ワーカープロセスからの想定外の子プロセス生成を監視する。
+  参照: https://www.bleepingcomputer.com/news/security/critical-nginx-nginx2root-bugs-let-attackers-hijack-servers (BleepingComputer)
+  参照: https://www.securityweek.com/f5-patches-critical-nginx2root-flaws-as-poc-exploits-go-public (SecurityWeek)
+  参照: https://www.security-next.com/193077 (Security NEXT)
+------------------------------------------------------------
+CVE-2026-129289 [high] PHP-FPM（未読の HTTP 要求本文による要求スマグリング・『HTTP 要求の解釈不一致』・ワーカー権限での任意 PHP コード実行。同日修正の CVE-2026-126714『phpAfterShell』〈セッションファイルの TOCTOU〉・CVE-2026-115560・129182・129474・129481・129496〈UAF 等〉・129291〈LPE〉と一括公開）
+------------------------------------------------------------
+対象: PHP Group / 全サポート版（8.2.x〜8.5.x）。CVE-2026-129289 は永続バックエンド接続（nginx fastcgi_keep_conn on・Apache mod_proxy_fcgi enablereuse=on・HAProxy FastCGI・LSAPI）と php://input を読み切らないアプリ経路が前提。CVE-2026-129182／129474 は 8.5 以降のみ（The Hacker News）
+評点: CVSS v4 9.2
+【概要】
+The Hacker News・SecurityWeek・BleepingComputer・Security NEXT によれば、PHP プロジェクトは予告どおり 2026-11-19（日本時間夜）に 8.2.36／8.3.37／8.4.28／8.5.13／8.6.0 を公開し、全サポート版に影響する重大な脆弱性群を修正した。CVSS 9.2 の 7 件は、未読の HTTP 要求本文による PHP-FPM の要求スマグリング CVE-2026-129289（永続 FastCGI 接続と php://input を読み切らないアプリ経路が前提・ワーカー権限で攻撃者の PHP コードを実行）、Depthfirst が『phpAfterShell』と命名した CVE-2026-126714（中断された pwrite()/ftruncate() が残す不正なセッションファイルを session_start() が逆シリアル化プリミティブとして読み込む TOCTOU・暫定策は session.upload_progress の無効化）、セッションシリアライザ不一致の CVE-2026-115560、UAF の CVE-2026-129182（8.5 以降）・129474（8.5 以降）・129481（セッション終了の中断）・129496（タイムゾーンキャッシュ・未認証で到達可能）で、CVE-2026-129291（CVSS 8.8）は FPM ワーカー内のローカル権限昇格である。いずれも『特定条件（非既定構成・珍しい設定）』が前提とされ、実悪用の報告は無い。網羅スイープでは php.net 採番の 7 件が窓内に NVD 公開（CVSS 9.0 以上）され、本エントリで代表記録し残り 5 件は除外サマリーに一括記録した。CERT-FR も AVI-1580 を発した。
+【一時緩和】
+  - PHP を 8.2.36／8.3.37／8.4.28／8.5.13／8.6.0 へ更新する。8.2 系は 8.2.36 が最終のセキュリティ修正となる可能性を考慮して 8.3 以降への移行を計画する
+  - CVE-2026-129289 の暫定策として nginx fastcgi_keep_conn・Apache enablereuse・HAProxy の FastCGI 接続再利用を無効化する。CVE-2026-126714 は session.upload_progress を無効化する（The Hacker News）
+  - PHP-FPM ワーカーの異常終了・セッションファイルの破損・想定外の子プロセスを監視する
+【TTP】
+  - なし（The Hacker News・SecurityWeek・BleepingComputer・Security NEXT のいずれも実悪用を報告しておらず（phpAfterShell は Depthfirst の PoC デモのみ）、Technique は付与しない。）
+【IOC】IP: なし / ファイル: なし
+【監視】PHP-FPM ワーカーの segfault・再起動、session ディレクトリの不正なサイズのファイル、Web サーバーと FPM 間の要求数の不一致を監視する。
+  参照: https://thehackernews.com/2026/11/php-fixes-7-critical-flaws-including.html (The Hacker News)
+  参照: https://www.securityweek.com/php-patches-seven-critical-rce-vulnerabilities (SecurityWeek)
+  参照: https://www.bleepingcomputer.com/news/security/php-security-updates-fix-18-flaws-including-critical-rce-bugs (BleepingComputer)
+  参照: https://www.security-next.com/193114 (Security NEXT)
+  参照: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1580 (CERT-FR)
+------------------------------------------------------------
+CVE-2026-132165 [high] Drupal core（同梱インストーラ /core/install.php を未認証で呼び出しサイトを再インストール・サイト乗っ取り／RCE・SA-CORE-2026-017）
+------------------------------------------------------------
+対象: Drupal Security Team / Drupal core 10.6.22 未満、11.0.0〜11.3.22 未満、11.4.0〜11.4.13 未満。EOL の 11.2.x 以前・10.5.x 以前・Drupal 8／9 は修正なし
+【概要】
+The Hacker News・BleepingComputer によれば、Drupal Security Team は 2026-11-18、SA-CORE-2026-017 として CVE-2026-132165 を公開し 11.4.13／11.3.22／10.6.22 で修正した。未認証の攻撃者が Drupal core に同梱され設置後も残るインストーラ（/core/install.php）を使ってサイトの再インストールを試みることができ、サイト乗っ取りや RCE に至る可能性がある。core の既定 .htaccess は遮断せず、Web サーバーが settings.php に書込・権限変更できない構成では一部の経路が塞がれる。Drupal は独自尺度で 18/25（Critical）と評価し、勧告は攻撃の報告が無いこと、悪用は複雑であること、既存の PoC があることを記録、11-16 の事前通知（PSA-2026-11-16）では『数時間〜数日で悪用コードが開発され得る』と警告した。発見者は Anthropic の OSS Scanner（10-08 開始・人手レビュー無しで保守者へ報告）。更新後も install.php の遮断（Web サーバー拒否ルール・.htaccess・Composer スクリプトによる削除維持）を推奨。10-14 に修正された Field UI の RCE に続く 2 か月で 2 件目の重大な core RCE で、11.3.x と Drupal 10 は 12 月にセキュリティサポートを終える。CERT-FR も AVI-1579 を発した。
+【一時緩和】
+  - Drupal core を 11.4.13／11.3.22／10.6.22 へ更新する（EOL 系列は修正が無いためサポート系列へ移行）
+  - 更新の有無にかかわらず /core/install.php を Web サーバーの拒否ルールまたは .htaccess で遮断し、Composer スクリプトで削除状態を維持する
+  - settings.php への Web サーバーの書込権限を外し、install.php への未認証アクセスのログを遡及確認する
+【TTP】
+  - なし（Drupal の勧告は攻撃の報告が無いと記述し（既存の PoC は記録）、実悪用の報道も無いため Technique は付与しない。）
+【IOC】IP: なし / ファイル: なし
+【監視】/core/install.php への外部からの GET／POST、settings.php の変更、再インストールを示す DB スキーマの変更を監視する。
+  参照: https://thehackernews.com/2026/11/drupal-patches-critical-installer-flaw.html (The Hacker News)
+  参照: https://www.bleepingcomputer.com/news/security/drupal-patches-critical-rce-flaw-warns-exploits-may-surface-quickly (BleepingComputer)
+  参照: https://www.drupal.org/sa-core-2026-017 (Drupal Security Team)
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-20-001 N-able が Mail Assure／SpamExperts Hosted Cloud のサーバーへの不正アクセスを確認：11-16 からの障害は『セキュリティインシデント』と判明、Americas・APAC・Europe の管理 UI・API・隔離・ログが停止、メールフローは継続、顧客データ侵害の証拠なし・帰属なし
+------------------------------------------------------------
+The Hacker News によれば、N-able は 2026-11-16 に調査を始めた Mail Assure と SpamExperts Hosted Cloud の障害について、当初『プラットフォーム設定とサービス依存』が原因としていたが、不明の攻撃者がホステッドクラウドのサーバー 1 台へ不正アクセスしたセキュリティインシデントだったと判明したと 11-18 に公表した。影響は Americas・APAC・Europe の 3 リージョンの Mail Assure・SpamExperts 計 6 サービスで、管理ポータル（UI）・API・隔離・ロギングが停止、受信・送信のメールフィルタリングは継続している。N-able は顧客データ（テナントのメールボックスを含む）が侵害された証拠は無いとし、脅威を緩和して各リージョンの復旧とサービスの強化を進め、パートナーへ対応の要否を個別に連絡した。N-central の Able2Shell・4EverAble2Shell・Agent2Shell 群とは無関係と明記。帰属は無い。国内の MSP が同製品を使う場合、11-16〜19 の管理操作ログの欠落と設定変更の確認が必要になる。
+  参照: https://thehackernews.com/2026/11/n-able-confirms-hackers-accessed-cloud.html (The Hacker News)
+------------------------------------------------------------
+TREND-2026-11-20-002 Depthfirst の研究者 Zheng Yu が PostgreSQL（CVE-2026-116331）・MySQL（CVE-2026-101786）・Oracle Database（CVE-2026-114819・CVSS 9.9）＋ORDS（CVE-2026-91609）・ClickHouse の DB エンジン RCE エクスプロイトを公開：低権限アカウントや未認証の Web エンドポイントから OS コード実行、いずれも修正済みで実悪用なし
+------------------------------------------------------------
+The Hacker News によれば、Depthfirst の Zheng Yu は 11-18、主要データベースに対する RCE の実証コードを公開した。PostgreSQL CVE-2026-116331（18.7／17.12／16.16／15.20／14.25 未満・DB オブジェクトを作成できるアカウントから DB の OS ユーザーでコード実行・11-12 修正）、MySQL CVE-2026-101786（Server／Cluster 26.7.0〜26.7.1・一時テーブル作成権限のみのアカウントから到達・10-20 修正）、Oracle Database の Oracle Text CVE-2026-114819（CVSS 9.9・19.3〜19.32／21.3〜21.24／23.4.0〜23.26.3・11-17 修正・前日の Oracle CPU バッチに含まれる）と Oracle REST Data Services の GraphQL CVE-2026-91609（24.2.0〜26.2.1・10-20 修正）を連鎖させ公開 Web エンドポイントから認証なしでエンジンへ到達する経路、ClickHouse の整数オーバーフロー書込（CVE 無し・26.9 以降と各系列へバックポート済み）である。Oracle は 2 件を『ログインなしでは悪用不可』と評価しているが、研究は両者の連鎖で未認証到達を示した。記事は攻撃チェーンの独立再現は無く、実攻撃での利用も報告されていないと記述。推奨は更新に加え、アカウントの『何を読めるか』ではなく『何ができるか』の見直し（TEMPORARY 権限・一時テーブル権限の削減）である。
+  参照: https://thehackernews.com/2026/11/researcher-demonstrates-database-rce.html (The Hacker News)
+------------------------------------------------------------
+TREND-2026-11-20-003 定例の一括修正が集中：Splunk が 3 製品で約 140 件（SOAR CVE-2026-131253 9.9 など CVSS 9.0 以上 5 件）、Ruby が正規表現・文字列の 7 件（5 件に PoC RCE）、Mitel MiCollab AWV CVE-2026-133323（CVSS 10.0）、Ubiquiti UniFi Access 5 件（9.9）、WordPress 7.1.5、WatchGuard Dimension・Dell PowerStore・IBM Guardium・JetBrains TeamCity・DrayTek 等
+------------------------------------------------------------
+SecurityWeek によれば Splunk は Splunk Enterprise・Enterprise Security・SOAR の 3 製品で約 140 件を修正し、網羅スイープでは Cisco 採番の CVSS 9.0 以上 5 件（SOAR 8.8.0 未満の CVE-2026-131253〈9.9〉・131287、Enterprise の CVE-2026-76536・76535、ES の CVE-2026-131202）が窓内に NVD 公開された。The Hacker News によれば Ruby は正規表現・文字列処理の 7 件を修正し、うち 5 件に PoC の RCE があると警告した。CERT-FR の Mitel 勧告（AVI-1569）に対応して Mitel MiCollab の AWV コンポーネントの CVE-2026-133323（CVSS 10.0）・133303（9.0）、Ubiquiti UniFi Access の CVE-2026-132802／132803／132804／132808（9.9・ネットワーク到達可能な低権限者による RCE）・132807（9.0）、WatchGuard Dimension 3 件（セッション識別子の非マスク・ログ収集の認証欠落・9.3）、Dell PowerStore SDNAS 3 件（9.8）、IBM Guardium Data Protection 12.2 の 3 件（9.8）、JetBrains TeamCity CVE-2026-132891（9.8）、DrayTek Vigor2960 3 件（VulDB・9.9）、Joomla vi-solutions 4 件、MongoDB ドライバ 2 件、Red Hat OpenStack Cinder CVE-2026-133189（9.6）、Eclipse Ditto・Comelit・OpenPLC（CISA ICS）等が窓内に公開された。Security NEXT は WordPress 7.1.5 の公開も伝えた。いずれも窓内に悪用・KEV の報告は無く、除外サマリーに理由付きで個別またはバッチ記録した。Mitel MiCollab は国内でも導入があり CVSS 10.0 の AWV 脆弱性は Section 4 で更新を推奨する。
+  参照: https://www.securityweek.com/splunk-patches-nearly-140-flaws-across-three-core-products (SecurityWeek)
+  参照: https://thehackernews.com/2026/11/ruby-releases-fixes-for-7-regex-and.html (The Hacker News)
+  参照: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1569 (CERT-FR)
+------------------------------------------------------------
+TREND-2026-11-20-004 NVIDIA が The Gentlemen ランサムウェア集団の侵害主張を調査：NVIDIA は現時点で自社システムの侵害を確認しておらず、主張の根拠と対象（第三者か自社か）は未確定
+------------------------------------------------------------
+BleepingComputer と SecurityWeek によれば、ランサムウェア集団 The Gentlemen（既報）がリークサイトで NVIDIA のデータを保有すると主張し、NVIDIA は『主張を認識しており調査中』で、現時点では自社システムの侵害を示す証拠を見つけていないと述べた。公開されたサンプルの内容・入手経路（第三者経由か直接か）は確認されておらず、主張の真偽は未確定である。GPU・AI 基盤の供給網の中核企業への主張であり、同社と取引のある国内組織は委託先・共有データの範囲を確認しておくことが望ましい（推測: 第三者経由のデータを自社侵害と称する例は他集団でもあり、本件も同様の可能性がある）。
+  参照: https://www.bleepingcomputer.com/news/security/nvidia-investigating-gentlemen-ransomware-breach-claims (BleepingComputer)
+  参照: https://www.securityweek.com/nvidia-responds-to-gentlemen-ransomware-claim (SecurityWeek)
+------------------------------------------------------------
+TREND-2026-11-20-005 国内の不正アクセス・漏えい公表が連続（商工会議所ネット試験 最大約 98 万人・Joshin 免許証／マイナンバーカード画像・イオングループ 414 件・GMO リサーチ&AI infoQ ポイント不正交換 643 件／295.5 万円・トレジャー・ファクトリー・楽待のリスト型攻撃・サイバーセキュリティクラウドの GitHub・JETRO・コーセー）。大崎電気工業はランサムウェアで生産関連システムが停止し出荷に影響
+------------------------------------------------------------
+ScanNetSecurity と Security NEXT の見出し（本文は未取得）によれば、11-19 に国内の不正アクセス・漏えい公表が集中した。商工会議所のネット試験管理システムへの不正アクセスで最大約 98 万人分の受験者情報が漏えいした可能性、Joshin のネットワークへの不正アクセスで運転免許証画像やマイナンバーカード情報が漏えいした可能性、イオングループの一部 Web サイトで 414 件の顧客情報流出、GMO リサーチ&AI のアンケートサイト infoQ で計 643 件・295 万 5,000 円のポイント不正交換、トレジャー・ファクトリーの案件管理システム、不動産投資サイト楽待へのリスト型攻撃（加盟店への問い合わせ一覧のダウンロードを確認）、サイバーセキュリティクラウドの開発環境への不正アクセス（GitHub 保存の個人情報）、JETRO の一部サイト、コーセーの店頭体験レッスン予約システムが並ぶ。Security NEXT は大崎電気工業がランサムウェア攻撃で生産関連システムが停止し出荷に影響が出ていると報じた。Notion AI の委託先 Fireworks AI の侵害に伴うスリーシェイク・SecureNavi の公表は既報（11-18）の続報である。個々の手口・帰属は見出しの範囲では確認できないが、リスト型攻撃と開発環境・GitHub 経由の漏えい、製造業のランサムウェアが同日に並び、前日（内閣府・Yeny・ビューティガレージ等 12 件超）からの公表集中が続いている。
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/19/56837.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/19/56835.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/19/56836.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/19/56838.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/19/56834.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/19/56833.html (ScanNetSecurity)
+  参照: https://scan.netsecurity.ne.jp/article/2026/11/19/56842.html (ScanNetSecurity)
+  参照: https://www.security-next.com/193088 (Security NEXT)
+  参照: https://www.security-next.com/192759 (Security NEXT)
+  参照: https://www.security-next.com/193020 (Security NEXT)
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・予報1: Cisco Expressway CVE-2026-76466（F6 が実悪用を調査・PoC 公開済みの未認証 root RCE）の CISA KEV 初回追加（fc-20261120-1）
+Tier: T1 / 確度: 低 / 観測出口クラス: E1 / 検証窓: fast_72h / 検証期限: 2026-11-23
+Evidence: [SecurityWeek 2026-11-19] Cisco Expressway Core/Edge の未認証 root RCE CVE-2026-76466（CVSS 9.8・クラスタ構成のみ）が、GitHub（dinosn/cve-2026-76466）での PoC 公開直後に実攻撃で悪用され、F6 がロシアの 1 組織の侵害を調査した。Cisco 勧告 cisco-sa-vcs-static-cred-hr7EWZ8t（2026-10-21）は未改訂で『悪用の認識なし』のまま。[CISA KEV スナップショット ev-20261120-ad618・カタログ 2026.11.18・1,786 件] 当該 CVE は未収載。EPSS percentile 0.367（2026-11-19）。
+過去パターン: 類似5件（outcome_channel=E1・fast_72h・T1）中 的中2・部分0・外れ3（経験的的中率40%・観測ゲート通過）。（過去実績）
+脅威情報: F6（第三者）がロシアの 1 組織の実侵害を調査報告。公開 PoC（dinosn/cve-2026-76466）が存在。Cisco 勧告 cisco-sa-vcs-static-cred-hr7EWZ8t は未改訂で『悪用の認識なし』のまま。悪用の規模・追加 IoC は公開情報に乏しい。
+確度アンカー: EPSS score None（percentile 0.36701・2026-11-19）/ KEV 未収載 / Automatable=yes
+推定部分: （推測）F6 という第三者が実際の侵害を調査し、公開 PoC も存在する未認証 root RCE は CISA の収載基準（実悪用の証拠）を満たす可能性が高い。一方で被害は海外の 1 組織で、F6 の一次情報がロシア語であり米 CISA が窓内に独立確認・収載するかは不確実。Cisco 勧告が未改訂である点も収載の遅れ要因になり得る。
+先回り監視: CISA KEV の更新（CVE-2026-76466）、Cisco 勧告の改訂、F6 以外のベンダー・CERT による悪用観測の続報、PoC の追加公開。
+的中判定: 対象CVE（CVE-2026-76466）がCISA KEVカタログへ dateAdded が2026-11-20〜2026-11-23（両端を含む）の範囲で初回追加されること
+関連CVE: CVE-2026-76466
+・予報2: VMware vCenter CVE-2026-123890（GTIG が ARMORY CASTLE のゼロデイ悪用を報告した認証バイパス）の CISA KEV 初回追加（fc-20261120-2）
+Tier: T1 / 確度: 低 / 観測出口クラス: E1 / 検証窓: fast_72h / 検証期限: 2026-11-23
+Evidence: [Google Threat Intelligence Group 2026-11-19] 疑われる PRC 系の ARMORY CASTLE（旧 UNC5221）が 2026-09 上旬に VMware vCenter の認証バイパス CVE-2026-123890（CVSS 9.8）をゼロデイ悪用し、BONESAW で管理者セッションを確立、Golden SAML・ESXi からの NTDS 窃取に至ったと公表。Broadcom は同日修正を公開したが The Hacker News に『悪用の報告なし』と述べ見解が食い違う。[CISA KEV スナップショット ev-20261120-ad618・カタログ 2026.11.18・1,786 件] 当該 CVE は未収載。EPSS は発行時点で未付与。
+過去パターン: 類似5件（outcome_channel=E1・fast_72h・T1）中 的中2・部分0・外れ3（経験的的中率40%・観測ゲート通過）。（過去実績）
+脅威情報: GTIG（Google Threat Intelligence Group）が、疑われる PRC 系 ARMORY CASTLE（旧 UNC5221）による 2026-09 上旬のゼロデイ悪用を名指しで報告。Broadcom は The Hacker News に『悪用の報告なし』と述べ見解が食い違う。悪用の被害範囲・IoC は GTIG 報告の範囲に限られる。
+確度アンカー: EPSS score None（percentile 不明・2026-11-19）/ KEV 未収載 / Automatable=yes
+推定部分: （推測）GTIG という信頼できる第三者が国家支援が疑われるアクターによるゼロデイ悪用を名指しで報告した点は CISA の収載基準に沿う。一方、脆弱性は 11-19 に公開されたばかりで、Broadcom が悪用を否定しており、CISA が窓内（72h）に悪用を独立確認して収載するかは不確実。ベンダーと脅威情報企業の見解が食い違う状況は収載判断を遅らせ得る。
+先回り監視: CISA KEV の更新（CVE-2026-123890）、Broadcom 勧告の改訂、GTIG 以外のベンダーによる悪用確認、PoC の公開。
+的中判定: 対象CVE（CVE-2026-123890）がCISA KEVカタログへ dateAdded が2026-11-20〜2026-11-23（両端を含む）の範囲で初回追加されること
+関連CVE: CVE-2026-123890
+※ 予報サイドカー: forecaster/forecasts/daily/2026-11-20.json
+【除外】
+  - BleepingComputer／The Record：ウクライナと FBI が 4,000 万ドルの身代金に関与したランサムウェアグループのメンバーを逮捕（米石油・医療企業を恐喝） … 法執行（逮捕）の報道で、新規の TTP・標的・活動の変化を含まない。
+  - The Record：DOJ と DHS が詐欺・サイバー犯罪対策の新部門を設置／CISA 指名の LoSapio が議会証言 … 行政・人事の報道で、攻撃活動ではない。
+  - Dark Reading：Africa Retakes Top Spot as Most Attacked Region（ナイジェリアの急増）／Why Holiday Security Can't Wait for Black Friday … 地域統計・季節的な啓発記事で、特定の APT 活動・新規 TTP ではない。
