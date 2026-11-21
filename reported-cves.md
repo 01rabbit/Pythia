@@ -746,3 +746,5 @@
 | CVE-2025-42884 | SAP NetWeaver Enterprise Portal（未認証の JNDI 環境プロパティ注入・CVSS 6.5・2025 年採番） | 2026-11-21 | kev_listed | 2026-11-21 | YES | ★ゼロデイ特報・CISA KEV 2026-11-20 追加（カタログ 2026.11.20）・EUVD exploited_since 2026-11-20・SAP Security Note 修正済み・CVSS 中程度だが基幹ポータルの未認証注入として収載・悪用の主体/手口不明 |
 | CVE-2026-99312 | Linux KVM（AMD ホストのネスト仮想化でゲスト VM がホストメモリを境界外読み取り・CVSS 9.0） | 2026-11-21 | poc_public | 2026-11-21 | YES | トレンド欄・THN 2026-11-20・研究者が DigitalOcean で VM 内部からホストメモリ約 128GB 読取を実証・AMD かつネスト仮想化のホストのみ・修正カーネル提供済み・実悪用なし |
 | CVE-2026-132825 | Ruby（Ruby2Shell・ヒープベースバッファオーバーフローによる RCE・CVSS 8.8） | 2026-11-21 | none | 2026-11-21 | YES | トレンド欄・SecurityWeek 2026-11-20・Ruby が修正版を公開・実悪用の報告なし |
+| CVE-2026-129975 | GPGME（GnuPG Made Easy・GnuPG 連携ライブラリ・異常に長い user ID の悪意ある OpenPGP 鍵で境界外書込・情報漏えい・CVSS critical） | 2026-11-22 | none | 2026-11-22 | YES | トレンド欄・THN 2026-11-21・GnuPG Project が修正版 GPGME 2.3.0 公開・GPGME 2.3.0 未満を使う全ソフトに影響・実悪用の報告なし |
+| CVE-2026-74127 | AMD Zeppelin（Zen1/Zen+）PSP Boot ROM（暗号署名検証の不備・CVSS v4 9.4） | 2026-11-22 | none | 2026-11-22 | YES | トレンド欄・NVD 窓内公開（psirt@amd.com 採番）・悪用には物理/低レベルアクセスを要すると見られる・実悪用の報告なし |
