@@ -1,0 +1,328 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-24 08:30 JST
+調査期間: 2026-11-23 07:00 〜 2026-11-24 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+------------------------------------------------------------
+AI-2026-11-24-001 [カテゴリA] Google GTIG が『エージェント型の攻撃活動が重要な閾値を越えた』と公表（自律マルチエージェント基盤の攻撃利用が本格化）
+------------------------------------------------------------
+Google Threat Intelligence Group（GTIG・Mandiant）は AI 脅威トラッカーで、脅威アクターが基本的なプロンプト利用を越えて自律的なマルチエージェント・フレームワークの配備へ移行しつつあり、エージェント型（agentic）の攻撃活動が『重要な閾値』を越えたと評価した。同じ窓で、AI エージェントが医療画像ソフト MONAI Label のゼロデイ（CVE-2026-133968）を発見し root を取得、別報告では AI エージェントが脆弱性発見から root 取得まで 11 分で到達した事例も報じられている。AI による攻撃の自律化・高速化が実運用段階に入ったことを示す（防御側は検知の時間的前提の見直しが必要）。
+  被害規模: high
+  監視: 異常に高速な探索→悪用の連鎖、エージェント的な自動化の痕跡。
+  参照: https://cloud.google.com/blog/topics/threat-intelligence/gtig-ai-threat-tracker-agentic-threat-activity (Google Threat Intelligence (Mandiant))
+【参考B】 なし
+【参考A】 なし
+【除外】
+  - なし
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+------------------------------------------------------------
+CVE-2026-131914 [9] Idunno.AntiCsrf（ASP.NET WebForms 向け第三者 anti-CSRF ライブラリ）
+------------------------------------------------------------
+対象: Idunno.AntiCsrf（OSS・2008年以降更新停止） / Idunno.AntiCsrf 0.9.1.0 および 0.9.1 Beta
+評点: CVSS v4 9.3
+【概要】
+Mandiant（Google）は、ASP.NET WebForms 向けの第三者 anti-CSRF ライブラリ Idunno.AntiCsrf（Idunno.AntiCsrf.dll）に存在する重大な安全でないデシリアライゼーションの脆弱性 CVE-2026-131914（CVSS 9.3）について『in the wild での実悪用を観測した』と警告した。AntiCsrfModule が CSRF フォームトークンを MAC/署名検証なしの unkeyed な System.Web.UI.ObjectStateFormatter でデシリアライズするため、攻撃者は事前認証も有効な CSRF トークンも無しに単一の HTTP POST だけで IIS ワーカープロセス（w3wp.exe）上で任意コード実行（RCE）を達成できる。影響は 0.9.1.0 と 0.9.1 Beta。当該 OSS は 2008年12月以降更新が止まった defunct なライブラリで公式パッチは無く、Mandiant は使用中止を推奨。発見は Google Cloud/Mandiant インシデント対応チーム。CISA KEV には発行時点で未収載。悪用の規模・標的・IoC の詳細は Google 脅威情報チームは未開示。
+【一時緩和】
+  - Idunno.AntiCsrf（AntiCsrfModule）の使用を直ちに中止し、Web.config の machineKey と applicationHost.config のシークレットをローテーション。Web.config・bin/ を Idunno.AntiCsrf/AntiCsrfModule について監査し、.aspx エンドポイントへの異常な POST を IIS ログで点検。
+【TTP】
+  - T1190 (initial-access): Mandiant: 認証不要の単一 HTTP POST を公開 ASP.NET WebForms エンドポイントに送るだけで悪用可能
+【IOC】IP: なし / ファイル: なし
+【監視】w3wp.exe（IIS ワーカープロセス）配下の異常な子プロセス・コマンド実行、.aspx エンドポイントへの未認証 POST。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-critical-aspnet-anti.html (The Hacker News)
+  参照: https://github.com/mandiant/Vulnerability-Disclosures/blob/master/2026/MNDT-2026-0048.md (Mandiant)
+【APT活動-本編】 なし
+【APT活動-注目動向】 なし
+【注目CVE（リスト外）】
+------------------------------------------------------------
+CVE-2026-133968 [8] MONAI Label（医療画像アノテーションサーバ）
+------------------------------------------------------------
+対象: Project MONAI / MONAI Label（ベンダー勧告参照・修正版へ更新）
+KEV 追加: 2026-11-23（FCEB 期限 2026-11-26）
+【概要】
+CISA は 2026-11-23、MONAI Label のパストラバーサル脆弱性 CVE-2026-133968 を KEV へ追加した（期限 2026-11-26）。これは 11-21 に既報の、AI エージェント（Cairn ペネトレーションテスト基盤）が医療画像ソフトのゼロデイを発見し root を取得した事案に対応する CVE で、Amazon は背後のアクターを中国系と疑われると報告している。CVE 採番と KEV 収載により、従来 CVE 未採番だった AI エージェント発見ゼロデイが公式の実悪用記録となった。
+【一時緩和】
+  - MONAI Label を修正版へ更新し、ネットワーク到達範囲を限定する。
+【TTP】
+  - なし（パストラバーサル→root の経路は報じられているが、確証ある ATT&CK Technique の個別紐付けは公開情報が限られ行わない（行動原則1）。）
+【IOC】IP: なし / ファイル: なし
+【監視】MONAI Label サーバのパストラバーサル痕跡・不正ファイルアクセス。
+  参照: https://www.securityweek.com/amazon-china-linked-hackers-ai-agents-exploited-medical-software-zero-day/ (SecurityWeek)
+  参照: https://thehackernews.com/2026/11/attackers-ai-agents-found-zero-day-in.html (The Hacker News)
+------------------------------------------------------------
+CVE-2026-134624 [8] N-able MailAssure（SpamExperts）
+------------------------------------------------------------
+対象: N-able / MailAssure（SpamExperts）20261121.1943 未満
+KEV 追加: 2026-11-23（FCEB 期限 2026-11-26）
+評点: CVSS v4 9.3
+【概要】
+CISA は 2026-11-23、N-able MailAssure（SpamExperts）のサーバサイドリクエストフォージェリ（SSRF）脆弱性 CVE-2026-134624 を KEV へ追加した（期限 2026-11-26）。本脆弱性は侵害調査の過程で発見され N-able が 20261121.1943 で修正したもの（11-23 既報）。前日時点では実悪用の明示報告が無かったが、CISA が KEV 収載したことで実悪用が確認された扱いとなった。N-able 製品は MSP 連携で広く使われるため早期更新が必要。
+【一時緩和】
+  - MailAssure（SpamExperts）を 20261121.1943 以降へ更新する。
+【TTP】
+  - なし（悪用経路の公開情報が限られ、確証ある Technique 紐付けは不可（行動原則1）。）
+【IOC】IP: なし / ファイル: なし
+【監視】MailAssure からの SSRF 痕跡・内部サービスへの不審なリクエスト。
+  参照: https://www.n-able.com/security-advisories (N-able)
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-24-001 Microsoft が Azure API Management の脆弱性の実悪用を警告（顧客の API 資格情報窃取・ノルウェーのエネルギー企業を標的・CVE 未採番）
+------------------------------------------------------------
+BleepingComputer/SecurityWeek によれば、Microsoft は Azure API Management（APIM）Classic 階層の脆弱性が悪用され、保存された API 資格情報が窃取されたと顧客に警告した。ノルウェー当局は本脆弱性をエネルギー企業へのサイバー攻撃に結び付けており、他セクターも影響を受けたとされる。Microsoft は当該欠陥を修正済み。CVE 番号は公開要約では付与が確認できないため CVE エントリ化せずトレンド欄で記録する（CVE 番号を推定しない・行動原則1）。クラウド管理面の脆弱性が、顧客が保存したシークレットの大量流出に直結した事例。
+  参照: https://www.bleepingcomputer.com/news/security/microsoft-azure-flaw-exploited-to-steal-customers-api-credentials (BleepingComputer)
+  参照: https://www.securityweek.com/azure-flaw-exploited-to-target-secrets-at-norwegian-energy-firms/ (SecurityWeek)
+------------------------------------------------------------
+TREND-2026-11-24-002 ConnectWise ScreenConnect（CVE-2026-84869・9月 KEV 収載済）の実悪用が継続、SCKit が未更新の MSP を標的
+------------------------------------------------------------
+The Hacker News/BleepingComputer によれば、ConnectWise は ScreenConnect の重大な権限管理/認可欠落の脆弱性（CVE-2026-84869・CVSS 9.9・2026-09-11 に CISA KEV 収載済）の悪用が継続し、SCKit と呼ばれるツールキットが未更新のシステムを標的に MSP の技術者 PC を乗っ取っていると警告した。新規の脆弱性ではなく既収載 CVE の継続的悪用だが、MSP 経由の横展開リスクが高いため文脈記録する。該当 KEV 期限（2026-09-14）は既に経過しており、未更新環境は直ちに対処すべき。
+  参照: https://www.bleepingcomputer.com/news/security/connectwise-warns-screenconnect-attacks-continue-as-sckit-targets-unpatched-systems (BleepingComputer)
+  参照: https://thehackernews.com/2026/11/hackers-exploit-critical-screenconnect.html (The Hacker News)
+------------------------------------------------------------
+TREND-2026-11-24-003 CISA が KEV に 4 件を追加、重大脆弱性を悪用した諜報攻撃が表面化（Cisco Expressway で 4 台侵害・内部ネットワーク到達）
+------------------------------------------------------------
+The Hacker News によれば、攻撃者が VMware・Cisco・Apache の重大脆弱性を悪用した諜報目的の攻撃が表面化し、Cisco Expressway の欠陥悪用では 4 台の機器が侵害され内部ネットワークへ到達したと報じられた。CISA は同期間に KEV へ 4 件を追加した（11-20 付の SAP NetWeaver・VMware vCenter・Apache Roller・Cisco Expressway。いずれも 11-21 の本紙予報検証で既記録）。本窓（11-23〜11-24）の KEV 追加は MONAI Label・N-able MailAssure の 2 件。諜報アクターによる既知 KEV 脆弱性の継続悪用として文脈記録する。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-critical-vmware-cisco.html (The Hacker News)
+  参照: https://thehackernews.com/2026/11/cisa-adds-four-known-exploited.html (The Hacker News)
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・予報1: Idunno.AntiCsrf CVE-2026-131914（Mandiant が in-the-wild 実悪用を確認した未認証デシリアライゼーション RCE）の CISA KEV 初回追加（fc-20261124-1）
+Tier: T1 / 確度: 低 / 観測出口クラス: E1 / 検証窓: fast_72h / 検証期限: 2026-11-27
+Evidence: [Mandiant/The Hacker News 2026-11-23] Mandiant（Google）が、ASP.NET WebForms 向け第三者 anti-CSRF ライブラリ Idunno.AntiCsrf の安全でないデシリアライゼーション CVE-2026-131914（CVSS 9.3）について『Active exploitation in the wild has been observed』と公表。AntiCsrfModule が CSRF トークンを MAC/署名検証なしの unkeyed ObjectStateFormatter でデシリアライズするため、未認証の単一 HTTP POST だけで IIS ワーカー（w3wp.exe）上の RCE が可能（exploitability=High）。対象 0.9.1.0・0.9.1 Beta。当該 OSS は 2008年12月以降更新停止で公式パッチなし。[CISA KEV スナップショット ev-20261124-ac8f0・カタログ 2026.11.23・1,792 件] 当該 CVE は未収載。EPSS は発行時点で未付与。
+過去パターン: 類似5件（outcome_channel=E1・fast_72h・T1）中 的中2・部分0・外れ3（経験的的中率40%・観測ゲート通過）。（過去実績）
+脅威情報: Mandiant（Google Cloud/Mandiant IR）が CVE-2026-131914 の in-the-wild 実悪用を観測・公表（MNDT-2026-0048）。未認証単発 POST で w3wp.exe 上の RCE。悪用の規模・標的・IoC は未開示。公式パッチは無く Mandiant は使用中止を推奨。
+確度アンカー: EPSS score None（percentile 不明・2026-11-23）/ KEV 未収載 / Automatable=yes
+推定部分: （推測）Mandiant という信頼できる第三者が in-the-wild の実悪用を明示報告した未認証 RCE は、CISA の収載基準（実悪用の証拠）を満たす可能性がある。一方、対象は 2008年以降更新停止の defunct な第三者ライブラリで製品ベンダーが不在、公式パッチも無く、是正が『使用中止』に限られる。連邦環境での導入規模と CISA の優先度は不確実で、窓内（72h）に収載されるか、そもそも収載対象とするかも読みにくい。
+先回り監視: CISA KEV の更新（CVE-2026-131914）、Mandiant/他ベンダーの悪用観測の続報、公式パッチ/代替の整備、JPCERT/CC・IPA の注意喚起。
+的中判定: 対象CVE（CVE-2026-131914）がCISA KEVカタログへ dateAdded が2026-11-24〜2026-11-27（両端を含む）の範囲で初回追加されること
+関連CVE: CVE-2026-131914
+※ 予報サイドカー: forecaster/forecasts/daily/2026-11-24.json
+【除外】
+  - なし
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】 Section 2 を参照（CVE-2026-131914 Idunno.AntiCsrf〔第三者が実悪用を確認・KEV 未収載〕）
+【本編】 なし
+【参考A（国内）】 なし
+【参考B（国際先行）】 なし
+【除外サマリー】 21 件（CVSS 9.0 以上の新規公開・EUVD 窓内該当分を含む。窓内に悪用・KEV の報告無し）
+  - CVE-2026-134882 A weakness has been identified in TOTOLINK A7100RU 7.4cu.2313_B20191024. This issue affect (CVSS 10.0) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-103782 Dell Enterprise Sonic Distribution, versions prior to 4.6.1, contains an Argument Injectio (CVSS 9.9) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-115873 A remote attacker must authenticate with Read Only (GroupRead) access to at least one Work (CVSS 9.9) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-115899 An attacker must control pagination data returned by an upstream API or service queried by (CVSS 9.8) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-120382 An improper neutralization of argument delimiters in a command vulnerability in the OAuth  (CVSS 9.8) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-121613 Missing authentication and authorization on an exposed interface allows an unauthenticated (CVSS 9.8) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-133469 XO (Xen Orchestra) is a solution to visualize, manage, backup and delegate your XCP-ng (or (CVSS 9.8) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135208 Kerberos Agent before 3.14.4 contains an authentication bypass vulnerability that allows u (CVSS 9.8) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-103788 Dell Enterprise Sonic Distribution, versions prior to 4.6.1, contains an OS Command Inject (CVSS 9.6) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-134814 binary-parser before 2.3.1 contains a code injection vulnerability that allows attackers c (CVSS 9.2) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-134815 simple-git before 4.1.0 contains an argument injection vulnerability that allows attackers (CVSS 9.2) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135161 Interstellar before 6.3.0 contains a server-side request forgery vulnerability that allows (CVSS 9.2) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135171 Wing FTP Server before 8.2.8 contains a predictable session identifier vulnerability that  (CVSS 9.2) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135174 Softaculous Virtualizor before 3.2.9 contains an SQL injection vulnerability in enduser/au (CVSS 9.2) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135211 BISHENG before 3.0.0 contains a missing authentication vulnerability in the /api/v2/workfl (CVSS 9.2) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-134838 Weblate before 2026.11 contains an account takeover vulnerability in the reset_password vi (CVSS 9.1) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135163 Okou API before 1.762.0 contains a missing authentication vulnerability in its Microsoft T (CVSS 9.1) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135300 Pomerium from 0.30.0 before 0.34.0 contains an authentication bypass vulnerability in the  (CVSS 9.1) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135429 Tabbycat 2.9.0 through 2.12.1 contains an incorrect authorization vulnerability in Tournam (CVSS 9.1) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-115901 Exploitation requires an identity admitted to a configured trusted IdP application, contro (CVSS 9.0) … 窓内（11-23 07:00〜11-24 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-62841 ほか10件（CVE-2026-50691・CVE-2026-70193・CVE-2026-109480・CVE-2026-118285・CVE-2026-70305・CVE-2026-109490・CVE-2026-113824・CVE-2026-118286・CVE-2026-69899・CVE-2026-93700） … EUVD-only（NVD 未反映・OSS 系）。窓内（11-23 07:00〜11-24 07:00 JST）に実悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正で対応。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-24-001 [high] ASP.NET サイトの Idunno.AntiCsrf を直ちに停止（未認証 RCE の実悪用・公式パッチなし）
+------------------------------------------------------------
+対象: Idunno.AntiCsrf（ASP.NET WebForms 向け anti-CSRF ライブラリ）
+【概要】
+Mandiant が実悪用を確認した CVE-2026-131914（Idunno.AntiCsrf の安全でないデシリアライゼーション・CVSS 9.3）は、未認証の単一 POST で IIS ワーカー上の RCE を許す。公式パッチが無いため、当該ライブラリ（AntiCsrfModule）の使用を直ちに中止し代替へ移行する必要がある。
+【推奨アクション】
+['Web.config・bin/ を Idunno.AntiCsrf/AntiCsrfModule について監査し、使用していれば直ちに停止', '代替（System.Web.Helpers.AntiForgery／MAC 検証付き ViewState／ASP.NET Core IAntiforgery）へ移行', '侵害が疑われる場合は Web.config の machineKey・applicationHost.config のシークレットをローテーションし Web ルートを点検', '.aspx エンドポイントへの異常な POST を IIS ログで点検']
+【監視】
+w3wp.exe 配下の異常な子プロセス・.aspx への未認証 POST。
+参照: https://thehackernews.com/2026/11/hackers-exploit-critical-aspnet-anti.html (The Hacker News)
+------------------------------------------------------------
+SOC-2026-11-24-002 [high] CISA KEV 追加 2 件を期限（11-26）までに対処: MONAI Label・N-able MailAssure
+------------------------------------------------------------
+対象: MONAI Label／N-able MailAssure（SpamExperts）
+【概要】
+本窓の KEV 追加 2 件はいずれも期限 2026-11-26。MONAI Label はパストラバーサル（AI エージェント発見ゼロデイ）、N-able MailAssure は SSRF（侵害調査で発見・20261121.1943 で修正）。特に MailAssure は MSP 連携で広く使われるため早期更新が必要。
+【推奨アクション】
+['N-able MailAssure（SpamExperts）を 20261121.1943 以降へ更新', 'MONAI Label をベンダー修正版へ更新し到達範囲を限定', '両製品の不正アクセス・異常挙動を点検']
+【監視】
+MailAssure の SSRF 痕跡・MONAI Label のパストラバーサル痕跡。
+参照: https://www.n-able.com/security-advisories (N-able)
+参照: https://www.securityweek.com/amazon-china-linked-hackers-ai-agents-exploited-medical-software-zero-day/ (SecurityWeek)
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-24-003 [medium] ScreenConnect CVE-2026-84869 の未更新環境を直ちに更新（MSP 経由の横展開に注意）
+------------------------------------------------------------
+対象: ConnectWise ScreenConnect
+【概要】
+CVE-2026-84869（CVSS 9.9・2026-09-11 KEV 収載・期限 09-14 経過）の悪用が継続し、SCKit が未更新システムを標的にしている。MSP 環境では顧客への横展開リスクが高い。
+【推奨アクション】
+['ScreenConnect をベンダー指示に従い最新版へ更新', 'MSP 技術者端末と遠隔管理経路の不審アクセスを点検']
+【監視】
+ScreenConnect の不正セッション・技術者アカウントの異常操作。
+参照: https://www.bleepingcomputer.com/news/security/connectwise-warns-screenconnect-attacks-continue-as-sckit-targets-unpatched-systems (BleepingComputer)
+------------------------------------------------------------
+SOC-2026-11-24-004 [medium] Azure API Management 利用者は保存 API 資格情報をローテーション（Classic 階層の実悪用）
+------------------------------------------------------------
+対象: Azure API Management（Classic 階層）
+【概要】
+Azure API Management Classic 階層の脆弱性が悪用され保存 API 資格情報が窃取された（Microsoft 修正済・ノルウェーのエネルギー企業を標的）。APIM に保存した資格情報・証明書・シークレットのローテーションと利用点検が必要。
+【推奨アクション】
+['APIM に保存した API 資格情報・証明書・シークレットをローテーション', '不正アクセスの痕跡と Named Values/Secrets の露出を点検']
+【監視】
+APIM 管理面への不正アクセス・資格情報の不審な利用。
+参照: https://www.bleepingcomputer.com/news/security/microsoft-azure-flaw-exploited-to-steal-customers-api-credentials (BleepingComputer)
+【低優先度】 なし
+【除外】
+  - なし
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【周辺諸国動向】（報告専用・予報の入力には使用しない）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+対象日: 2026-11-24
+走査: 候補 108件 / ゲート対象 4件 / 処理済 4件 / 未処理 0件（状態: ok）
+※ 国への該当は『記事がその国に言及している』ことを示すだけで、攻撃の主体を意味しない。
+※ 事実は出典番号付きで記し、推測は『（推測）』と確度を付けて分けている。
+
+■ 中国（CN） [primary]
+
+------------------------------------------------------------
+[nbr-2026-11-24-002] 中国が台北市長選の候補者を標的に関与か（DPP 候補への偽情報工作・ASPI 評価）
+------------------------------------------------------------
+
+区分: サイバー関連活動
+国との関係: 国家との関係を情報源が明示
+原題: China targets a candidate for Taipei's mayoral election（言語: en）
+
+【帰属（情報源の記述）】
+ASPI The Strategist は次のように述べている: 「China appears to be interfering（台北市長選への干渉・DPP 候補への偽情報工作）」（確度: 低）
+※ 本レポートが帰属を判断したものではなく、情報源の記述の引用である。
+
+【事実】
+・ASPI The Strategist は、中国が 2026-11-28 の台北市長選の選挙運動に干渉しているように見えると報じた。 [1]
+・民主進歩党（DPP・独立志向）の候補者に対する偽情報工作が行われ、北京は別候補を支援する動きも取っているとされる。 [1]
+
+【評価】
+（推測）台湾の地方選挙への影響工作は、中国の対台湾認知戦の一環とみられる。サイバー空間での偽情報拡散を伴う可能性があるが、情報源は具体的な手口・インフラを示していない。（確度: 低）
+
+【非サイバー情勢との関連: 政治動向】
+事実: 台北市長選（2026-11-28）という具体的な政治日程に連動して報じられた。 [1]
+（推測）選挙日程に合わせた影響工作は認知戦の典型的なタイミングである。（確度: 低）
+
+【出典の評価】
+一次情報: いいえ / 独立した情報源: 1件 / 国営メディア等の政府系: いいえ
+注意: ASPI（シンクタンク）の評価であり『appears to be interfering』と断定を避けている。
+
+【参照】
+[1] https://www.aspistrategist.org.au/china-targets-a-candidate-for-taipeis-mayoral-election（ASPI The Strategist / 研究機関 / en）
+
+■ ロシア（RU）
+
+（本日の該当なし）
+
+■ 北朝鮮（KP） [primary]
+
+------------------------------------------------------------
+[nbr-2026-11-24-001] 米司法省が北朝鮮アクターによる Binance ハックで窃取された 11 億ドル超の暗号資産の没収手続きを開始
+------------------------------------------------------------
+
+区分: サイバー関連活動
+国との関係: 国家との関係を情報源が明示
+原題: United States Files Action to Recover More Than $1 Billion in Cryptocurrency Assets Stolen by North Korean Cyber Actors in Binance Hack（言語: en）
+
+【帰属（情報源の記述）】
+米司法省（US DOJ） は次のように述べている: 「North Korean Cyber Actors（Binance から暗号資産を窃取した主体）」（確度: 高）
+※ 本レポートが帰属を判断したものではなく、情報源の記述の引用である。
+
+【事実】
+・米司法省は 2026-11-23、先月 Binance から北朝鮮アクターが不正取得した 11 億ドル超（$1.1B）の暗号資産の没収手続きを開始したと発表した。 [1]
+・これは Binance が窃取された 60 億ドル超の資産回収を支援する政府全体の取り組みの一部とされる。 [1]
+
+【評価】
+（推測）北朝鮮による大規模な暗号資産窃取と、その法執行による回収の動きは、制裁下の資金調達と各国の対抗措置という従来の構図の継続とみられる。金額規模は過去の DPRK 関連事案でも最大級。（確度: 中）
+
+【出典の評価】
+一次情報: はい / 独立した情報源: 1件 / 国営メディア等の政府系: いいえ
+
+【参照】
+[1] https://www.justice.gov/opa/pr/united-states-files-action-recover-more-1-billion-cryptocurrency-assets-stolen-north-korean（US DOJ Press Releases / 政府・公的機関 / en）
+
+■ 韓国（KR） [regional]
+
+------------------------------------------------------------
+[nbr-2026-11-24-004] 韓国・李在明大統領が統一相・外相・情報機関トップを交代（対北朝鮮政策の停滞・米同盟の緊張のなか）
+------------------------------------------------------------
+
+区分: 地政学（非サイバー情勢）
+国との関係: 当該国に所在する組織・当該国の政策
+原題: Lee Jae Myung names new unification, foreign ministers amid North Korea deadlock（言語: en）
+
+【事実】
+・韓国の李在明大統領は 2026-11-23（月）、統一省・外務省の長官と主要情報機関トップを交代指名し、対北朝鮮政策の責任者を入れ替えた。 [1]
+・南北関係の進展の欠如と米韓同盟の緊張の兆しのなかでの交代とされる（大統領府・林光鉉秘書室長が発表）。 [1]
+
+【評価】
+（推測）対北朝鮮政策と情報機関の指揮系統の刷新は、今後の南北・米韓関係やサイバー情報活動の方針に影響し得るが、本件自体はサイバー事象ではない。周辺諸国情勢の理解のための政治動向として記録する。（確度: 低）
+
+【非サイバー情勢との関連: 国家戦略】
+事実: 対北朝鮮政策・米韓同盟という安全保障上の文脈での閣僚・情報機関人事。 [1]
+（推測）情報機関トップの交代は対北サイバー・情報活動の方針にも波及し得る。（確度: 低）
+
+【出典の評価】
+一次情報: いいえ / 独立した情報源: 1件 / 国営メディア等の政府系: いいえ
+
+【参照】
+[1] https://www.nknews.org/2026/11/lee-jae-myung-names-new-unification-foreign-ministers-amid-north-korea-deadlock（NK News / 報道 / en）
+
+■ 台湾（TW） [regional]
+
+------------------------------------------------------------
+[nbr-2026-11-24-003] 台湾の銀行が AI を導入しサイバー攻撃の検知・防御を強化（攻撃は前年比約 2 倍）
+------------------------------------------------------------
+
+区分: 組織
+国との関係: 当該国に所在する組織・当該国の政策
+原題: Taiwan banks deploy AI to prevent cyberattacks（言語: en）
+
+【事実】
+・台湾の銀行は、不審な活動の検知・脆弱性の特定・防御強化のため AI の利用を増やしている（CNA 取材）。 [1]
+・合庫銀行は本年 1〜10 月の外部からの探索・攻撃の月平均が前年の約 2 倍で、約 8 割が 8〜10 月に集中したと報告。主に Web サイト・オンラインバンキング等の外向きサービスが標的。 [1]
+・第一銀行は WAF が 1〜10 月に約 220 万件の攻撃を遮断、第 3 四半期以降に探索が顕著に増加。AI ベースのネットワーク/エンドポイント検知を導入。 [1]
+・各行は『自律型 AI システムに確実に帰属できる攻撃は特定していない』としつつ、自動化された攻撃手法が AI 関与の判別を難しくしていると述べた。 [1]
+
+【評価】
+（推測）金融セクターへの探索・攻撃の増加に対し、AI による検知・模擬攻撃（攻撃的テスト）の活用が進んでいる。情報源は攻撃主体の帰属を示していない。（確度: 中）
+
+【出典の評価】
+一次情報: いいえ / 独立した情報源: 1件 / 国営メディア等の政府系: いいえ
+
+【参照】
+[1] https://www.taipeitimes.com/News/biz/archives/2026/11/23/2003868206（Taipei Times / 報道 / en）
+
+周辺諸国動向 — サイバー関連活動2件 / 政策・法制0件 / 組織1件 / サイバーセキュリティ関連企業0件 / 地政学（非サイバー情勢）1件 / 除外0件
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【攻撃基盤プロファイル】（報告専用・予報の入力には使用しない）
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+対象日: 2026-11-24
+状態: 対象のIoCなし / 指標 0件（補強 0 / スキップ 0 / 解析不能 0）/ 照会 0回（成功 0 / データなし 0 / 失敗 0）
+※ すべて公開データベースへの受動照会である。IoC の指す IP・ドメインへは接続していない。
+※ 取得時刻は照会した時点であり、攻撃が行われた時点の状態ではない。
+※ 要約はスクリプトが応答から機械的に作ったもので、推測は含まない。インフラの類似だけで帰属しない。
+
+（本日、補強の対象となる IoC はありません）
+
+攻撃基盤プロファイル — 補強0件 / スキップ0件 / 解析不能0件

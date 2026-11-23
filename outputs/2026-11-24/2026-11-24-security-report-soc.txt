@@ -1,0 +1,58 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-24 08:30 JST
+調査期間: 2026-11-23 07:00 〜 2026-11-24 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-24-001 [high] ASP.NET サイトの Idunno.AntiCsrf を直ちに停止（未認証 RCE の実悪用・公式パッチなし）
+------------------------------------------------------------
+対象: Idunno.AntiCsrf（ASP.NET WebForms 向け anti-CSRF ライブラリ）
+【概要】
+Mandiant が実悪用を確認した CVE-2026-131914（Idunno.AntiCsrf の安全でないデシリアライゼーション・CVSS 9.3）は、未認証の単一 POST で IIS ワーカー上の RCE を許す。公式パッチが無いため、当該ライブラリ（AntiCsrfModule）の使用を直ちに中止し代替へ移行する必要がある。
+【推奨アクション】
+['Web.config・bin/ を Idunno.AntiCsrf/AntiCsrfModule について監査し、使用していれば直ちに停止', '代替（System.Web.Helpers.AntiForgery／MAC 検証付き ViewState／ASP.NET Core IAntiforgery）へ移行', '侵害が疑われる場合は Web.config の machineKey・applicationHost.config のシークレットをローテーションし Web ルートを点検', '.aspx エンドポイントへの異常な POST を IIS ログで点検']
+【監視】
+w3wp.exe 配下の異常な子プロセス・.aspx への未認証 POST。
+参照: https://thehackernews.com/2026/11/hackers-exploit-critical-aspnet-anti.html (The Hacker News)
+------------------------------------------------------------
+SOC-2026-11-24-002 [high] CISA KEV 追加 2 件を期限（11-26）までに対処: MONAI Label・N-able MailAssure
+------------------------------------------------------------
+対象: MONAI Label／N-able MailAssure（SpamExperts）
+【概要】
+本窓の KEV 追加 2 件はいずれも期限 2026-11-26。MONAI Label はパストラバーサル（AI エージェント発見ゼロデイ）、N-able MailAssure は SSRF（侵害調査で発見・20261121.1943 で修正）。特に MailAssure は MSP 連携で広く使われるため早期更新が必要。
+【推奨アクション】
+['N-able MailAssure（SpamExperts）を 20261121.1943 以降へ更新', 'MONAI Label をベンダー修正版へ更新し到達範囲を限定', '両製品の不正アクセス・異常挙動を点検']
+【監視】
+MailAssure の SSRF 痕跡・MONAI Label のパストラバーサル痕跡。
+参照: https://www.n-able.com/security-advisories (N-able)
+参照: https://www.securityweek.com/amazon-china-linked-hackers-ai-agents-exploited-medical-software-zero-day/ (SecurityWeek)
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-24-003 [medium] ScreenConnect CVE-2026-84869 の未更新環境を直ちに更新（MSP 経由の横展開に注意）
+------------------------------------------------------------
+対象: ConnectWise ScreenConnect
+【概要】
+CVE-2026-84869（CVSS 9.9・2026-09-11 KEV 収載・期限 09-14 経過）の悪用が継続し、SCKit が未更新システムを標的にしている。MSP 環境では顧客への横展開リスクが高い。
+【推奨アクション】
+['ScreenConnect をベンダー指示に従い最新版へ更新', 'MSP 技術者端末と遠隔管理経路の不審アクセスを点検']
+【監視】
+ScreenConnect の不正セッション・技術者アカウントの異常操作。
+参照: https://www.bleepingcomputer.com/news/security/connectwise-warns-screenconnect-attacks-continue-as-sckit-targets-unpatched-systems (BleepingComputer)
+------------------------------------------------------------
+SOC-2026-11-24-004 [medium] Azure API Management 利用者は保存 API 資格情報をローテーション（Classic 階層の実悪用）
+------------------------------------------------------------
+対象: Azure API Management（Classic 階層）
+【概要】
+Azure API Management Classic 階層の脆弱性が悪用され保存 API 資格情報が窃取された（Microsoft 修正済・ノルウェーのエネルギー企業を標的）。APIM に保存した資格情報・証明書・シークレットのローテーションと利用点検が必要。
+【推奨アクション】
+['APIM に保存した API 資格情報・証明書・シークレットをローテーション', '不正アクセスの痕跡と Named Values/Secrets の露出を点検']
+【監視】
+APIM 管理面への不正アクセス・資格情報の不審な利用。
+参照: https://www.bleepingcomputer.com/news/security/microsoft-azure-flaw-exploited-to-steal-customers-api-credentials (BleepingComputer)
+【低優先度】 なし
+【除外】
+  - なし

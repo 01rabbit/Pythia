@@ -1,0 +1,91 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-24 08:30 JST
+調査期間: 2026-11-23 07:00 〜 2026-11-24 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+------------------------------------------------------------
+CVE-2026-131914 [9] Idunno.AntiCsrf（ASP.NET WebForms 向け第三者 anti-CSRF ライブラリ）
+------------------------------------------------------------
+対象: Idunno.AntiCsrf（OSS・2008年以降更新停止） / Idunno.AntiCsrf 0.9.1.0 および 0.9.1 Beta
+評点: CVSS v4 9.3
+【概要】
+Mandiant（Google）は、ASP.NET WebForms 向けの第三者 anti-CSRF ライブラリ Idunno.AntiCsrf（Idunno.AntiCsrf.dll）に存在する重大な安全でないデシリアライゼーションの脆弱性 CVE-2026-131914（CVSS 9.3）について『in the wild での実悪用を観測した』と警告した。AntiCsrfModule が CSRF フォームトークンを MAC/署名検証なしの unkeyed な System.Web.UI.ObjectStateFormatter でデシリアライズするため、攻撃者は事前認証も有効な CSRF トークンも無しに単一の HTTP POST だけで IIS ワーカープロセス（w3wp.exe）上で任意コード実行（RCE）を達成できる。影響は 0.9.1.0 と 0.9.1 Beta。当該 OSS は 2008年12月以降更新が止まった defunct なライブラリで公式パッチは無く、Mandiant は使用中止を推奨。発見は Google Cloud/Mandiant インシデント対応チーム。CISA KEV には発行時点で未収載。悪用の規模・標的・IoC の詳細は Google 脅威情報チームは未開示。
+【一時緩和】
+  - Idunno.AntiCsrf（AntiCsrfModule）の使用を直ちに中止し、Web.config の machineKey と applicationHost.config のシークレットをローテーション。Web.config・bin/ を Idunno.AntiCsrf/AntiCsrfModule について監査し、.aspx エンドポイントへの異常な POST を IIS ログで点検。
+【TTP】
+  - T1190 (initial-access): Mandiant: 認証不要の単一 HTTP POST を公開 ASP.NET WebForms エンドポイントに送るだけで悪用可能
+【IOC】IP: なし / ファイル: なし
+【監視】w3wp.exe（IIS ワーカープロセス）配下の異常な子プロセス・コマンド実行、.aspx エンドポイントへの未認証 POST。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-critical-aspnet-anti.html (The Hacker News)
+  参照: https://github.com/mandiant/Vulnerability-Disclosures/blob/master/2026/MNDT-2026-0048.md (Mandiant)
+【APT活動-本編】 なし
+【APT活動-注目動向】 なし
+【注目CVE（リスト外）】
+------------------------------------------------------------
+CVE-2026-133968 [8] MONAI Label（医療画像アノテーションサーバ）
+------------------------------------------------------------
+対象: Project MONAI / MONAI Label（ベンダー勧告参照・修正版へ更新）
+KEV 追加: 2026-11-23（FCEB 期限 2026-11-26）
+【概要】
+CISA は 2026-11-23、MONAI Label のパストラバーサル脆弱性 CVE-2026-133968 を KEV へ追加した（期限 2026-11-26）。これは 11-21 に既報の、AI エージェント（Cairn ペネトレーションテスト基盤）が医療画像ソフトのゼロデイを発見し root を取得した事案に対応する CVE で、Amazon は背後のアクターを中国系と疑われると報告している。CVE 採番と KEV 収載により、従来 CVE 未採番だった AI エージェント発見ゼロデイが公式の実悪用記録となった。
+【一時緩和】
+  - MONAI Label を修正版へ更新し、ネットワーク到達範囲を限定する。
+【TTP】
+  - なし（パストラバーサル→root の経路は報じられているが、確証ある ATT&CK Technique の個別紐付けは公開情報が限られ行わない（行動原則1）。）
+【IOC】IP: なし / ファイル: なし
+【監視】MONAI Label サーバのパストラバーサル痕跡・不正ファイルアクセス。
+  参照: https://www.securityweek.com/amazon-china-linked-hackers-ai-agents-exploited-medical-software-zero-day/ (SecurityWeek)
+  参照: https://thehackernews.com/2026/11/attackers-ai-agents-found-zero-day-in.html (The Hacker News)
+------------------------------------------------------------
+CVE-2026-134624 [8] N-able MailAssure（SpamExperts）
+------------------------------------------------------------
+対象: N-able / MailAssure（SpamExperts）20261121.1943 未満
+KEV 追加: 2026-11-23（FCEB 期限 2026-11-26）
+評点: CVSS v4 9.3
+【概要】
+CISA は 2026-11-23、N-able MailAssure（SpamExperts）のサーバサイドリクエストフォージェリ（SSRF）脆弱性 CVE-2026-134624 を KEV へ追加した（期限 2026-11-26）。本脆弱性は侵害調査の過程で発見され N-able が 20261121.1943 で修正したもの（11-23 既報）。前日時点では実悪用の明示報告が無かったが、CISA が KEV 収載したことで実悪用が確認された扱いとなった。N-able 製品は MSP 連携で広く使われるため早期更新が必要。
+【一時緩和】
+  - MailAssure（SpamExperts）を 20261121.1943 以降へ更新する。
+【TTP】
+  - なし（悪用経路の公開情報が限られ、確証ある Technique 紐付けは不可（行動原則1）。）
+【IOC】IP: なし / ファイル: なし
+【監視】MailAssure からの SSRF 痕跡・内部サービスへの不審なリクエスト。
+  参照: https://www.n-able.com/security-advisories (N-able)
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-24-001 Microsoft が Azure API Management の脆弱性の実悪用を警告（顧客の API 資格情報窃取・ノルウェーのエネルギー企業を標的・CVE 未採番）
+------------------------------------------------------------
+BleepingComputer/SecurityWeek によれば、Microsoft は Azure API Management（APIM）Classic 階層の脆弱性が悪用され、保存された API 資格情報が窃取されたと顧客に警告した。ノルウェー当局は本脆弱性をエネルギー企業へのサイバー攻撃に結び付けており、他セクターも影響を受けたとされる。Microsoft は当該欠陥を修正済み。CVE 番号は公開要約では付与が確認できないため CVE エントリ化せずトレンド欄で記録する（CVE 番号を推定しない・行動原則1）。クラウド管理面の脆弱性が、顧客が保存したシークレットの大量流出に直結した事例。
+  参照: https://www.bleepingcomputer.com/news/security/microsoft-azure-flaw-exploited-to-steal-customers-api-credentials (BleepingComputer)
+  参照: https://www.securityweek.com/azure-flaw-exploited-to-target-secrets-at-norwegian-energy-firms/ (SecurityWeek)
+------------------------------------------------------------
+TREND-2026-11-24-002 ConnectWise ScreenConnect（CVE-2026-84869・9月 KEV 収載済）の実悪用が継続、SCKit が未更新の MSP を標的
+------------------------------------------------------------
+The Hacker News/BleepingComputer によれば、ConnectWise は ScreenConnect の重大な権限管理/認可欠落の脆弱性（CVE-2026-84869・CVSS 9.9・2026-09-11 に CISA KEV 収載済）の悪用が継続し、SCKit と呼ばれるツールキットが未更新のシステムを標的に MSP の技術者 PC を乗っ取っていると警告した。新規の脆弱性ではなく既収載 CVE の継続的悪用だが、MSP 経由の横展開リスクが高いため文脈記録する。該当 KEV 期限（2026-09-14）は既に経過しており、未更新環境は直ちに対処すべき。
+  参照: https://www.bleepingcomputer.com/news/security/connectwise-warns-screenconnect-attacks-continue-as-sckit-targets-unpatched-systems (BleepingComputer)
+  参照: https://thehackernews.com/2026/11/hackers-exploit-critical-screenconnect.html (The Hacker News)
+------------------------------------------------------------
+TREND-2026-11-24-003 CISA が KEV に 4 件を追加、重大脆弱性を悪用した諜報攻撃が表面化（Cisco Expressway で 4 台侵害・内部ネットワーク到達）
+------------------------------------------------------------
+The Hacker News によれば、攻撃者が VMware・Cisco・Apache の重大脆弱性を悪用した諜報目的の攻撃が表面化し、Cisco Expressway の欠陥悪用では 4 台の機器が侵害され内部ネットワークへ到達したと報じられた。CISA は同期間に KEV へ 4 件を追加した（11-20 付の SAP NetWeaver・VMware vCenter・Apache Roller・Cisco Expressway。いずれも 11-21 の本紙予報検証で既記録）。本窓（11-23〜11-24）の KEV 追加は MONAI Label・N-able MailAssure の 2 件。諜報アクターによる既知 KEV 脆弱性の継続悪用として文脈記録する。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-critical-vmware-cisco.html (The Hacker News)
+  参照: https://thehackernews.com/2026/11/cisa-adds-four-known-exploited.html (The Hacker News)
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・予報1: Idunno.AntiCsrf CVE-2026-131914（Mandiant が in-the-wild 実悪用を確認した未認証デシリアライゼーション RCE）の CISA KEV 初回追加（fc-20261124-1）
+Tier: T1 / 確度: 低 / 観測出口クラス: E1 / 検証窓: fast_72h / 検証期限: 2026-11-27
+Evidence: [Mandiant/The Hacker News 2026-11-23] Mandiant（Google）が、ASP.NET WebForms 向け第三者 anti-CSRF ライブラリ Idunno.AntiCsrf の安全でないデシリアライゼーション CVE-2026-131914（CVSS 9.3）について『Active exploitation in the wild has been observed』と公表。AntiCsrfModule が CSRF トークンを MAC/署名検証なしの unkeyed ObjectStateFormatter でデシリアライズするため、未認証の単一 HTTP POST だけで IIS ワーカー（w3wp.exe）上の RCE が可能（exploitability=High）。対象 0.9.1.0・0.9.1 Beta。当該 OSS は 2008年12月以降更新停止で公式パッチなし。[CISA KEV スナップショット ev-20261124-ac8f0・カタログ 2026.11.23・1,792 件] 当該 CVE は未収載。EPSS は発行時点で未付与。
+過去パターン: 類似5件（outcome_channel=E1・fast_72h・T1）中 的中2・部分0・外れ3（経験的的中率40%・観測ゲート通過）。（過去実績）
+脅威情報: Mandiant（Google Cloud/Mandiant IR）が CVE-2026-131914 の in-the-wild 実悪用を観測・公表（MNDT-2026-0048）。未認証単発 POST で w3wp.exe 上の RCE。悪用の規模・標的・IoC は未開示。公式パッチは無く Mandiant は使用中止を推奨。
+確度アンカー: EPSS score None（percentile 不明・2026-11-23）/ KEV 未収載 / Automatable=yes
+推定部分: （推測）Mandiant という信頼できる第三者が in-the-wild の実悪用を明示報告した未認証 RCE は、CISA の収載基準（実悪用の証拠）を満たす可能性がある。一方、対象は 2008年以降更新停止の defunct な第三者ライブラリで製品ベンダーが不在、公式パッチも無く、是正が『使用中止』に限られる。連邦環境での導入規模と CISA の優先度は不確実で、窓内（72h）に収載されるか、そもそも収載対象とするかも読みにくい。
+先回り監視: CISA KEV の更新（CVE-2026-131914）、Mandiant/他ベンダーの悪用観測の続報、公式パッチ/代替の整備、JPCERT/CC・IPA の注意喚起。
+的中判定: 対象CVE（CVE-2026-131914）がCISA KEVカタログへ dateAdded が2026-11-24〜2026-11-27（両端を含む）の範囲で初回追加されること
+関連CVE: CVE-2026-131914
+※ 予報サイドカー: forecaster/forecasts/daily/2026-11-24.json
+【除外】
+  - なし
