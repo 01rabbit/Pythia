@@ -1,0 +1,57 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-25 08:30 JST
+調査期間: 2026-11-24 07:00 〜 2026-11-25 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-25-001 [high] 自サイトの第三者スクリプト供給元を直ちに点検（Optimizely 悪用で 178 著名サイトがマルウェア配信・KEV 収載）
+------------------------------------------------------------
+対象: Optimizely Web Experimentation／第三者スクリプト配信全般
+【概要】
+攻撃者が正規の A/B テスト基盤 Optimizely を悪用し、178 の著名サイトが閲覧者にデータ窃取型マルウェアを配信した。第三者コンテンツの読み込み元に厳格な制限が無いことが被害を拡大させた。Optimizely を更新するとともに、配信スクリプトの供給元管理を見直す必要がある。
+【推奨アクション】
+['Optimizely をベンダー修正版へ更新（CISA KEV 期限 2026-11-27）', 'Content-Security-Policy で第三者スクリプトの読み込み元を限定し、Subresource Integrity（SRI）を適用', '自サイトから配信されるスクリプトの改ざん・不審な配信を点検し、閲覧者への影響有無を確認']
+【監視】
+配信スクリプトの異常な変化、閲覧者へのマルウェア配信・データ窃取の痕跡。
+参照: https://krebsonsecurity.com/2026/11/attackers-used-optimizely-to-a-b-test-malware-on-top-websites (KrebsOnSecurity)
+------------------------------------------------------------
+SOC-2026-11-25-002 [high] CISA KEV 追加 3 件を期限（11-27）までに対処: Optimizely・Drupal core・Idunno.AntiCsrf
+------------------------------------------------------------
+対象: Optimizely Web Experimentation／Drupal core／Idunno.AntiCsrf
+【概要】
+本窓の KEV 追加 3 件はいずれも期限 2026-11-27。Optimizely はサプライチェーン型のスクリプト配信悪用、Drupal core は /core/install.php の未認証呼び出しによる乗っ取り／RCE、Idunno.AntiCsrf は未認証単一 POST による RCE（公式パッチなし・使用中止が必要）。
+【推奨アクション】
+['Drupal core を 11.4.13／11.3.22／10.6.22 以降へ更新し /core/install.php への到達を遮断', 'Idunno.AntiCsrf（AntiCsrfModule）の使用を直ちに中止し代替（System.Web.Helpers.AntiForgery 等）へ移行・シークレットをローテーション', 'Optimizely を更新し第三者スクリプト供給元を点検']
+【監視】
+/core/install.php への未認証アクセス、.aspx への未認証 POST、配信スクリプトの改ざん。
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+------------------------------------------------------------
+SOC-2026-11-25-003 [high] N-able N-central 利用の MSP はホットフィックスを緊急適用（33 件の脆弱性・公開 PoC のゼロデイ疑い）
+------------------------------------------------------------
+対象: N-able N-central
+【概要】
+N-able が N-central を一時オフラインにし 33 件の脆弱性を公表、公開 PoC のあるゼロデイ疑いへの緩和としてホットフィックスを提供した。乗っ取りを許し得るため、N-central を運用する MSP は直ちにホットフィックスを適用し侵害点検を行う必要がある。
+【推奨アクション】
+['N-central のホットフィックスを緊急適用', '管理サーバと配下端末の不審アクセス・侵害痕跡を点検', 'N-able の最新勧告を継続監視し個別 CVE の修正状況を確認']
+【監視】
+N-central 管理面への不正アクセス・乗っ取りの痕跡、配下端末への不審な操作。
+参照: https://www.darkreading.com/endpoint-security/n-able-n-central-offline-33-flaws (Dark Reading)
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-25-004 [medium] VMware vCenter を VMSA-2026-0011 の修正版へ更新（vmdir 認証バイパス CVSS 9.8・実悪用報告なし）
+------------------------------------------------------------
+対象: VMware vCenter Server
+【概要】
+Broadcom が CVE-2026-123903（CVSS 9.8・vmdir 認証バイパス）を含む 23 件を修正した。実悪用の報告はないが、vCenter は仮想基盤の中枢で回避策が無いため、速やかに修正版へ更新する。先行の実悪用ゼロデイ CVE-2026-123890（既報）とは別個の欠陥。
+【推奨アクション】
+['vCenter を VMSA-2026-0011 の修正版へ更新', 'vCenter 管理面のネットワーク到達範囲を限定し不審アクセスを点検']
+【監視】
+vCenter（vmdir/DCE-RPC）への不審な未認証アクセス・管理者セッションの異常確立。
+参照: https://thehackernews.com/2026/11/vmware-vcenter-hit-by-another-critical.html (The Hacker News)
+【低優先度】 なし
+【除外】
+  - なし

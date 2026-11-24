@@ -1,0 +1,96 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-25 08:30 JST
+調査期間: 2026-11-24 07:00 〜 2026-11-25 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】 なし
+【APT活動-本編】
+------------------------------------------------------------
+VolantManticore-2026-KuboShellIPFSEspionage Volant Manticore（情報源が『Iran-aligned cyber espionage group』と記述・従来未文書化）（帰属確度: medium・国家: イラン（情報源が『Iran-aligned』と記述。特定の政府機関は名指しされていない））
+------------------------------------------------------------
+The Hacker News によれば、従来文書化されていなかったイランに連携する諜報グループ Volant Manticore が、キプロスの通信会社・航空会社・重要インフラを標的にしている。中核となるのは IPFS（InterPlanetary File System）を C2 に用いるバックドア KuboShell で、侵害後フレームワーク Homa（別フレームワークの再実装とされる）を展開する。IPFS を悪用した分散型 C2 は、テイクダウンや遮断を難しくする手口である（推測）。情報源はグループを『Iran-aligned』と記述しており、本紙はこの言い回しを引用して帰属確信度を中とする（行動原則3）。
+【標的】キプロスの通信会社・航空会社・重要インフラ（情報源の記述）
+【TTP】
+  - T1071 (command-and-control): 情報源が、IPFS（InterPlanetary File System）を C2 に用いるバックドア KuboShell を記述
+【IOC】IP: なし / ファイル: なし
+【推奨】1) IPFS ゲートウェイ／ノードへの不審な通信を監視し、業務上不要であれば遮断する。2) 通信・航空・重要インフラ事業者は未知のバックドア KuboShell・Homa の痕跡を狩る。3) 続報で IoC が公開され次第、検知に取り込む。
+  参照: https://thehackernews.com/2026/11/iran-aligned-volant-manticore-uses-ipfs.html (The Hacker News)
+【APT活動-注目動向】 なし
+【注目CVE（リスト外）】
+------------------------------------------------------------
+CVE-2026-132224 [9] Optimizely Web Experimentation（旧 Optimizely Experiment／A/B テスト・実験配信基盤）
+------------------------------------------------------------
+対象: Optimizely / ベンダー勧告参照（CISA KEV 期限 2026-11-27）
+KEV 追加: 2026-11-24（FCEB 期限 2026-11-27）
+【概要】
+CISA は 2026-11-24、Optimizely Web Experimentation の脆弱性 CVE-2026-132224 を KEV へ追加した（期限 2026-11-27）。KrebsOnSecurity によれば、攻撃者はサイトの体験最適化・A/B テストに使われる Optimizely を悪用し、過去約 24 時間で BBC・CNN・Equifax・Ledger・Zoom を含む少なくとも 178 の著名 Web サイトが、閲覧者に対しデータ窃取型マルウェアを静かに配信していた。多くの人気サイトが第三者コンテンツの読み込み元に厳格な制限（CSP／SRI）をかけていないことが被害を拡大させたとされる。正規の実験配信基盤を経由したサプライチェーン型のブラウザ側攻撃で、影響範囲が広い。CVSS スコアは公開要約では確認できないため付与しない（行動原則1）。
+【一時緩和】
+  - Optimizely を修正版へ更新。第三者スクリプトの読み込み元を CSP で限定し、Subresource Integrity（SRI）を適用。実験配信タグの改ざん・不審な配信を点検する。
+【TTP】
+  - T1189 (initial-access): 正規の実験配信基盤を悪用し、閲覧者のブラウザへ悪性スクリプトを注入（drive-by）
+【IOC】IP: なし / ファイル: なし
+【監視】サイトから配信される第三者スクリプトの異常な変化、閲覧者へのマルウェア配信・データ窃取の痕跡。
+  参照: https://krebsonsecurity.com/2026/11/attackers-used-optimizely-to-a-b-test-malware-on-top-websites (KrebsOnSecurity)
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+------------------------------------------------------------
+CVE-2026-132165 [8] Drupal core 11.4.13／11.3.22／10.6.22 未満（同梱インストーラ /core/install.php）
+------------------------------------------------------------
+対象: Drupal Security Team / Drupal core < 11.4.13／< 11.3.22／< 10.6.22（SA-CORE-2026-017）
+KEV 追加: 2026-11-24（FCEB 期限 2026-11-27）
+【概要】
+CISA は 2026-11-24、Drupal core の同梱インストーラ呼び出しの脆弱性 CVE-2026-132165 を KEV へ追加した（期限 2026-11-27）。本脆弱性は 11-20 に本紙がトレンド欄で既報（SA-CORE-2026-017・Drupal Security Team 2026-11-18・当時は実悪用報告なし）だったもので、未認証で /core/install.php を呼び出しサイトを再インストールして乗っ取り／RCE を狙う経路を持つ。CISA の KEV 収載により実悪用が確認された扱いとなった。既定 .htaccess は必ずしも遮断せず、Web サーバーが settings.php に書込不可の構成では一部経路が塞がる。
+【一時緩和】
+  - Drupal core を 11.4.13／11.3.22／10.6.22 以降へ更新。/core/install.php への到達を Web サーバー設定で遮断し、settings.php への書込可否と不審な再インストール痕跡を点検する。
+【TTP】
+  - T1190 (initial-access): 同梱インストーラ /core/install.php を未認証で呼び出しサイト再インストール→乗っ取り／RCE
+【IOC】IP: なし / ファイル: なし
+【監視】/core/install.php への未認証アクセス、settings.php の改変、サイト再インストールの痕跡。
+  参照: https://www.drupal.org/sa-core-2026-017 (Drupal Security Team)
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+------------------------------------------------------------
+CVE-2026-131914 [8] Idunno.AntiCsrf（ASP.NET WebForms 向け第三者 anti-CSRF ライブラリ）
+------------------------------------------------------------
+対象: Idunno.AntiCsrf（OSS・2008年以降更新停止） / Idunno.AntiCsrf 0.9.1.0 および 0.9.1 Beta
+KEV 追加: 2026-11-24（FCEB 期限 2026-11-27）
+評点: CVSS v4 9.3
+【概要】
+CISA は 2026-11-24、Idunno.AntiCsrf の安全でないデシリアライゼーション脆弱性 CVE-2026-131914（CVSS v4 9.3）を KEV へ追加した（期限 2026-11-27）。本脆弱性は 11-24 に本紙ゼロデイ特報で既報（Mandiant が in the wild の実悪用を公表・未認証単一 POST で w3wp.exe 上の RCE・公式パッチなし）で、同日に本紙が E1 予報 fc-20261124-1（期限 2026-11-27・確度 低）を発行していた対象 CVE である。発行翌窓で CISA が KEV へ収載した（検証ステージでの判定は別途行う）。
+【一時緩和】
+  - Idunno.AntiCsrf（AntiCsrfModule）の使用を直ちに中止し代替へ移行。Web.config の machineKey と applicationHost.config のシークレットをローテーションし、.aspx への異常な POST を IIS ログで点検する。
+【TTP】
+  - T1190 (initial-access): 認証不要の単一 HTTP POST を公開 ASP.NET WebForms エンドポイントに送るだけで悪用可能（Mandiant）
+【IOC】IP: なし / ファイル: なし
+【監視】w3wp.exe 配下の異常な子プロセス・.aspx エンドポイントへの未認証 POST。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-critical-aspnet-anti.html (The Hacker News)
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+------------------------------------------------------------
+CVE-2026-123903 [7] VMware vCenter Server（VMware Directory Service / vmdir）
+------------------------------------------------------------
+対象: Broadcom（VMware） / vCenter 8.0（U3m 未満）／VCF・vSphere Foundation 9.1.2・9.0.2.0300 未満／VCF 5.2.5 未満／vCenter 7.0（延長サポート契約者は Broadcom へ照会）
+評点: CVSS v3 9.8
+【概要】
+Broadcom は 2026-11-24、VMware ESX・vCenter・Workstation・Fusion・Avi Load Balancer に影響する計 23 件の脆弱性を修正し、うち重大な CVE-2026-123903（CVSS 9.8・VMware Directory Service『vmdir』の認証バイパス）を公開した。ネットワーク到達可能な攻撃者が認証を回避し未認証アクセスを得られる。Broadcom は『新規開示の欠陥はいずれも実悪用の報告はない』と明記しており、先に ARMORY CASTLE にゼロデイ悪用された CVE-2026-123890（既報・KEV 収載済）とは別個・無関係の欠陥とされる。研究者（QiAnXin sglab／depthfirst Qi Qin／ThreatBook VulTeam・XGTP）が各々独立に報告。発行時点で CISA KEV 未収載・実悪用の報告なしのため E1 の発行条件（実悪用の証拠）を満たさず、注目 CVE として記録する。
+【一時緩和】
+  - vCenter を Broadcom 勧告 VMSA-2026-0011 の修正版へ更新。vCenter 管理面のネットワーク到達範囲を限定する。
+【TTP】
+  - T1190 (initial-access): ネットワーク到達可能な攻撃者が vmdir の認証バイパスで未認証アクセス
+【IOC】IP: なし / ファイル: なし
+【監視】vCenter（vmdir / DCE-RPC）への不審な未認証アクセス、管理者セッションの異常確立。
+  参照: https://thehackernews.com/2026/11/vmware-vcenter-hit-by-another-critical.html (The Hacker News)
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-25-001 N-able が N-central を一時オフライン化、33 件の脆弱性を発見しホットフィックスを緊急提供（公開 PoC のあるゼロデイ疑い・乗っ取りの恐れ）
+------------------------------------------------------------
+Dark Reading によれば、RMM プロバイダの N-able が N-central プラットフォームを一時オフラインにし、33 件の脆弱性を発見したと公表、公開エクスプロイトが出回るゼロデイ疑いへの緩和策としてホットフィックスを提供した。これらの脆弱性は攻撃者による乗っ取りを許し得るとされる。N-able 製品は MSP で広く使われ、前窓（11-23）の N-able MailAssure CVE-2026-134624（KEV 収載）に続く N-able 関連の集中的な脆弱性対応であり、MSP 経由の横展開リスクが高い。個別 CVE 番号は公開要約では網羅されていないため、トレンド欄で文脈記録する（CVE 番号を推定しない・行動原則1）。
+  参照: https://www.darkreading.com/endpoint-security/n-able-n-central-offline-33-flaws (Dark Reading)
+------------------------------------------------------------
+TREND-2026-11-25-002 未修正の Windows ゼロデイ技法 FastUnlock が公表（ロック画面の PC で未署名のままプログラム起動・物理アクセス前提・限定アカウント）
+------------------------------------------------------------
+The Hacker News によれば、FastUnlock と呼ばれる未修正のゼロデイ技法が公表された。ロックされた Windows 端末に物理アクセスできる者が、サインインせずにプログラムを起動できる。ただし得られるのは限定アカウント権限であり、管理者権限は得られない。研究者（ハンドル MSNightmare／Nightmare Eclipse）が前日に公表し、エンドポイントセキュリティ企業 ThreatLocker も言及。物理アクセスが前提で権限も限定的だが、共用端末・公共端末・紛失盗難時のリスクとして記録する。CVE 番号は付与されていない。
+  参照: https://thehackernews.com/2026/11/new-unpatched-windows-0-day-fastunlock.html (The Hacker News)
+【攻撃予報】 本日の新規予報なし。forecaster/forecasts/daily を参照
+【除外】
+  - なし
