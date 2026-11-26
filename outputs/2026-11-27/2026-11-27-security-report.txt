@@ -1,0 +1,170 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-27 08:30 JST
+調査期間: 2026-11-26 07:00 〜 2026-11-27 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+ なし
+【参考B】 なし
+【参考A】 なし
+【除外】
+  - なし
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】
+------------------------------------------------------------
+CVE-2026-120705 [9] GeoServer（gs-wfs-core / GeoTools gt-metadata・OGC WFS 実装）
+------------------------------------------------------------
+対象: GeoServer (OSGeo) / GeoTools / GeoServer 3.0.2 未満・2.28.6 未満・2.27.7 未満（gs-wfs-core）、GeoTools gt-metadata 35.2/34.6/33.7 未満。修正版: GeoServer 3.0.2・2.28.6・2.27.7
+評点: CVSS v3 8.6
+【概要】
+GeoServer（OGC 準拠の地理空間データ配信サーバー）の未認証『任意ファイル読み取り』脆弱性 CVE-2026-120705（CVSS 8.6）。単一の未認証 Web Feature Service（WFS）リクエストで、GeoServer プロセスが読める任意のローカルテキストファイルを読み取り、または攻撃者指定の HTTP/HTTPS URL を取得できる（維持者の勧告では『未認証 WFS GetFeatureById XML インジェクション』と記述）。watchTowr の脅威インテリジェンス主任 Yordan Ganchev は 2026-11-25 早朝、グローバルハニーポット網で本 CVE を悪用する in-the-wild を観測したと公表した。観測された活動は『複数 IP の攻撃者が GeoServer 上にストアドクエリを作成し、作成されたか確認してから即削除する』という脆弱性の検証/探索であり、ペイロード投下や侵害の確認までは報告されていない（＝探索段階）。本 CVE は Eye Security が発見・報告し、維持者が公開した一連の勧告では未認証の多段 RCE チェーン（CVE-2026-129245・CVE-2026-120704・CVE-2026-129242・CVE-2026-129244 等）の起点になり得ると警告されている。パッチ（3.0.2／2.28.6／2.27.7）は 2026-10〜11 初に公開済で勧告は 11-24。発行時点で CISA KEV 未収載。CVSS・バージョンは一次記事（The Hacker News 2026-11-25・SecurityWeek）に基づく。
+【一時緩和】
+  - GeoServer を修正版（3.0.2／2.28.6／2.27.7）へ即時更新する。WFS エンドポイントのインターネット到達範囲を限定し、GetFeatureById を含む未認証 WFS リクエストの監視・レート制限を行う。ストアドクエリの作成・削除ログを点検する。
+【TTP】
+  - T1190 (initial-access): watchTowr（Y. Ganchev）: 2026-11-25 早朝、グローバルハニーポットで CVE-2026-120705 を悪用する in-the-wild を観測。未認証の単一 WFS リクエストで任意ファイル読み取りが可能
+【IOC】IP: なし / ファイル: なし
+【監視】未認証 WFS リクエスト（GetFeatureById／XML を含む）、短時間でのストアドクエリ作成→確認→即削除の痕跡、ローカルファイル読み取りや外部 URL 取得を示す GeoServer プロセスの異常挙動。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-two-geoserver-flaws-as.html (The Hacker News)
+  参照: https://www.securityweek.com/two-newly-disclosed-geoserver-vulnerabilities-under-attack/ (SecurityWeek)
+  参照: https://github.com/geoserver/geoserver/security/advisories/GHSA-39mw-5chv-jh47 (GeoServer)
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+【APT活動-本編】 なし
+【APT活動-注目動向】 なし
+【注目CVE（リスト外）】 なし
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-27-001 GeoServer の新規 2 脆弱性が実悪用下に — watchTowr が 11-25 に in-the-wild 観測、研究者は未認証 RCE チェーンを警告
+------------------------------------------------------------
+本窓（11-26 07:00〜11-27 07:00 JST）、watchTowr は GeoServer の新規脆弱性 CVE-2026-120705（CVSS 8.6・未認証任意ファイル読み取り）を悪用する in-the-wild を 2026-11-25 早朝にグローバルハニーポットで観測したと公表した。記事（The Hacker News・SecurityWeek）は悪用された 2 件を CVE-2026-120705 と CVE-2026-129243（CVSS 8.8・不正認可）とする一方、watchTowr の観測引用は CVE-2026-120705 と CVE-2026-129244 を名指ししており記事内で不整合がある（両方で一貫して名指しされるのは CVE-2026-120705）。観測された活動はストアドクエリの作成→確認→即削除という脆弱性の検証/探索であり、侵害の確認は報告されていない。維持者は未認証の多段 RCE チェーン（CVE-2026-129245〈9.2・ハードコード署名鍵〉・CVE-2026-120704〈7.2〉・CVE-2026-129242〈8.6・JDBC デシリアライゼーション〉・CVE-2026-129244〈6.9〉）を警告。パッチは 3.0.2／2.28.6／2.27.7（2026-10〜11 初公開・勧告 11-24）。発行時点で KEV 未収載。ゼロデイ特報で個別処理し、本日の新規 E1 予報（fc-20261127-1）の対象とした。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-two-geoserver-flaws-as.html (The Hacker News)
+  参照: https://www.securityweek.com/two-newly-disclosed-geoserver-vulnerabilities-under-attack/ (SecurityWeek)
+------------------------------------------------------------
+TREND-2026-11-27-002 ネットワークエッジの実悪用が継続 — Palo Alto Networks PAN-OS『Fragnesia』悪用（パッチ公開）と PHP2Shell（CVE-2026-109618/109619）
+------------------------------------------------------------
+本窓（11-26 07:00〜11-27 07:00 JST）、Palo Alto Networks は PAN-OS の『Fragnesia』脆弱性がファイアウォールの root 奪取に悪用されたとしてパッチを公開した（報道: 『Patches Fragnesia Flaw Used to Root Firewalls』『warns of Fragnesia flaw exploited in PAN-OS attacks』、CERT-FR も 11-25 に PAN-OS の脆弱性を勧告）。あわせて PHP の『PHP2Shell』（CVE-2026-109618／CVE-2026-109619）に関する検証・検知カバレッジの記事が継続している（Elastic・AhnLab 等が検知手法を公開）。ネットワーク境界機器と言語ランタイムという露出度の高い層での実悪用・PoC 整備が続いており、資産の緊急更新と境界監視の強化が必要。固有の技術詳細は一次ベンダー勧告で確認する。
+  参照: https://thehackernews.com/2026/11/palo-alto-networks-fragnesia.html (The Hacker News)
+  参照: https://www.cert.cyber.gouv.fr/avis/ (CERT-FR)
+------------------------------------------------------------
+TREND-2026-11-27-003 CMS・サードパーティ経路の乗っ取りが継続 — Drupal 高深刻度 RCE（CVE-2026-132165）実悪用と Optimizely 悪用
+------------------------------------------------------------
+本窓（11-26 07:00〜11-27 07:00 JST）、Drupal の高深刻度サイト乗っ取り脆弱性（『Fail2Install』・CVE-2026-132165）の実悪用継続が報じられた（Anthropic のスキャナが発見・CVE-2026-132165 は 2026-11-25 に CISA KEV 収載済＝既報・発行時点で kev_listed）。あわせて、A/B テスト基盤 Optimizely を悪用して著名サイトでマルウェアを配信した事案（11-25 KEV 収載の CVE-2026-132224・既報）がサードパーティベンダーリスクとして引き続き取り上げられている。CMS とマーケティング/実験基盤という配下訪問者全体に波及し得る経路での悪用が続いており、プラグイン/テーマと外部スクリプトの棚卸しが必要。いずれも既に KEV 収載済で E1（KEV 初回追加）の予報対象ではない。
+  参照: https://thehackernews.com/2026/11/drupal-fail2install-active-exploitation.html (The Hacker News)
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+------------------------------------------------------------
+TREND-2026-11-27-004 自律型・AI 支援型攻撃への公的警告が拡大 — イタリア/スイスが警告、研究者は『発見から root まで数分〜十数分』を報告
+------------------------------------------------------------
+本窓（11-26 07:00〜11-27 07:00 JST）、自律型・AI 支援型のサイバー攻撃に関する公的警告と研究報告が複数観測された: イタリアとスイスが自律型 AI 駆動攻撃への警戒を呼びかけ、研究者は『AI エージェントが脆弱性発見から root 権限取得まで 11 分』『攻撃者の AI エージェントが医療画像ソフトのゼロデイを発見し root 取得』『自律型 AI が半導体・防衛・市民社会を標的化』等を報告した。いずれもトレンド水準の報道であり、具体的 CVE・被害の確証は本窓の見出しからは個別確認していない（行動原則2・断定しない）。攻撃の自動化・高速化を前提に、露出面の縮小と検知の自動化・初動短縮を進める必要がある。
+  参照: https://www.darkreading.com/ (Dark Reading ほか)
+【攻撃予報（48〜72時間）】
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+・予報1: GeoServer CVE-2026-120705（watchTowr が in-the-wild 実悪用を観測した未認証任意ファイル読み取り）の CISA KEV 初回追加（fc-20261127-1）
+Tier: T1 / 確度: 低 / 観測出口クラス: E1 / 検証窓: fast_72h / 検証期限: 2026-11-30
+Evidence: [watchTowr / The Hacker News 2026-11-25] GeoServer（OGC WFS 実装・gs-wfs-core / GeoTools gt-metadata）の未認証『任意ファイル読み取り』CVE-2026-120705（CVSS 8.6）について、watchTowr の脅威インテリジェンス主任 Yordan Ganchev が『2026-11-25 早朝、グローバルハニーポット網で CVE-2026-120705 を悪用する in-the-wild を観測』と公表（記事リードは悪用 2 件を CVE-2026-120705 と CVE-2026-129243 とするが、観測引用は CVE-2026-120705 と CVE-2026-129244 を名指し。両方で一貫して名指しされるのは CVE-2026-120705）。観測された活動は 『複数 IP の攻撃者が GeoServer 上にストアドクエリを作成し、作成を確認後に即削除する』という脆弱性の検証/探索で、侵害の確認は報告されていない。単一の未認証 WFS リクエストで任意ローカルファイル読み取り・外部 URL 取得が可能（維持者勧告は未認証 WFS GetFeatureById XML インジェクションと記述）。Eye Security が発見。維持者は未認証多段 RCE チェーン（CVE-2026-129245/120704/129242/129244）を警告。パッチ 3.0.2/2.28.6/2.27.7 は 2026-10〜11 初公開・勧告 11-24。[CISA KEV スナップショット ev-20261127-a7636・カタログ 2026.11.25・1,805 件] 当該 CVE は未収載。EPSS は発行時点で未付与。
+過去パターン: 類似過去事例 0 件（outcome_channel=E1・fast_72h・T1・gis_server の cutoff 以前の検証済み事例なし）。base_rate 較正には使えないため、E1 内部実績（12/36=0.3333・Wilson 95%CI 0.20–0.50）を参照アンカーとした。（過去実績）
+脅威情報: watchTowr（Y. Ganchev）が CVE-2026-120705 の in-the-wild 実悪用を 2026-11-25 にグローバルハニーポットで観測・公表。活動はストアドクエリの作成→確認→即削除という検証/探索（侵害確認なし）。Eye Security が発見。維持者は未認証多段 RCE チェーンを警告。
+確度アンカー: EPSS score None（percentile 不明・2026-11-26）/ KEV 未収載 / Automatable=yes
+推定部分: （推測）watchTowr という信頼できる第三者がハニーポットで in-the-wild の実悪用を観測・公表した未認証脆弱性は、CISA の収載基準（実悪用の証拠）を満たす可能性がある。一方、観測された活動はストアドクエリの作成→確認→即削除という検証/探索段階で侵害の確認まで至っておらず、かつパッチが既に公開済（3.0.2/2.28.6/2.27.7）である。CISA が探索段階の実悪用を根拠に 72h 窓内で収載するか、製品の連邦環境での導入規模をどう評価するかは不確実で、窓内収載の可否は読みにくい。
+先回り監視: CISA KEV の更新（CVE-2026-120705）、watchTowr/他ベンダーの悪用観測の続報（探索→侵害への遷移）、GeoServer 維持者の追加勧告、JPCERT/CC・IPA の注意喚起。
+的中判定: 対象CVE（CVE-2026-120705）がCISA KEVカタログへ dateAdded が2026-11-27〜2026-11-30（両端を含む）の範囲で初回追加されること
+関連CVE: CVE-2026-120705
+※ 予報サイドカー: forecaster/forecasts/daily/2026-11-27.json
+【除外】
+  - なし
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】 Section 2 を参照（CVE-2026-120705 GeoServer〔第三者が実悪用を確認・KEV 未収載〕）
+【本編】 なし
+【参考A（国内）】 なし
+【参考B（国際先行）】 なし
+【除外サマリー】 33 件（CVSS 9.0 以上の新規公開・EUVD 窓内該当分を含む。窓内に悪用・KEV の報告無し）
+  - CVE-2026-123903 ほか3件（CVE-2026-123910・CVE-2026-123911・CVE-2026-123912） VMware vCenter 等（Broadcom が実悪用なしと明記・11-25 既報の CVE-2026-123903 含む） … VMware（Broadcom）採番の脆弱性。CVE-2026-123903（vCenter vmdir 認証バイパス・CVSS 9.8・11-25 既報）を含むが、Broadcom は実悪用なしと明記。窓内（11-26 07:00〜11-27 07:00 JST）に KEV 収載・実悪用の報告なし、ベンダー勧告に従い更新。
+  - CVE-2026-126984 A **server-side request forgery** flaw has been found in the get_remote_artifact_url() fun (CVSS 10.0) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-136823 A vulnerability was found in D-Link R32 1.10B02. This affects an unknown function of the f (CVSS 10.0) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137043 A security vulnerability has been detected in TOTOLINK N350RT 9.3.5u.6468_B20250827/9.3.5u (CVSS 10.0) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137498 Budibase Server from 3.39.18 before 4.0.0 contains a prototype pollution vulnerability tha (CVSS 10.0) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137494 Budibase before 4.0.0 contains a broken object-level authorization vulnerability that allo (CVSS 9.9) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-104998 The Product Input Fields for WooCommerce plugin for WordPress is vulnerable to Arbitrary F (CVSS 9.8) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-131767 Deserialization of Untrusted Data vulnerability in Aman FunnelKit Automations wp-marketing (CVSS 9.8) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-133971 An authentication bypass vulnerability exists in the web management interface of HPE Netwo (CVSS 9.8) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-133972 A vulnerability in system functionality could allow an attacker with network access to byp (CVSS 9.8) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-133973 A command injection vulnerability exists in the web-based management interface of HPE Netw (CVSS 9.8) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-134481 Deserialization of Untrusted Data vulnerability in Ultimate Member Ultimate Member ultimat (CVSS 9.8) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137499 Budibase from 3.41.0 before 4.0.0 contains an authentication bypass vulnerability that all (CVSS 9.8) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137536 ToolJet before 3.21.94-beta contains an authentication bypass in its server OAuth SSO sign (CVSS 9.8) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137550 Frappe Framework before 15.122.0 and 16.x before 16.50.0 contains a missing authorization  (CVSS 9.8) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137567 llama.cpp b11450 before b12658 contains an out-of-bounds write vulnerability in the ggml R (CVSS 9.8) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-133336 Joomla Extension - chronoengine.com - Unauthenticated arbitrary file upload in ChronoForms (CVSS 9.5) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135203 In Eclipse Ditto versions 0.3.0-M1 through 3.8.15 and 3.9.0 through 3.9.9, the JavaScript  (CVSS 9.4) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137544 LaraDashboard before 1.5.0 contains a path traversal vulnerability in module.json provider (CVSS 9.4) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-130637 SEPPMAIL Secure E-Mail Gateway versions before 15.1.2 are affected by a pre-authentication (CVSS 9.3) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137481 Traefik before 2.11.62, 3.x before 3.7.18, and 3.8.0-rc.1 contain an authorization bypass  (CVSS 9.3) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-124840 SEPPmail Secure Email Gateway before 15.1.2 reuses a broad legacy GINA session purpose acr (CVSS 9.2) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-124843 SEPPmail Secure Email Gateway before 15.1.2 uses a source-visible hard-coded fallback secr (CVSS 9.2) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137547 Coder before 2.29.27, 2.30.0 before 2.34.19, 2.35.0 before 2.37.11, 2.38.0 before 2.38.7,  (CVSS 9.2) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-133951 The Simple Membership plugin for WordPress is vulnerable to Privilege Escalation in versio (CVSS 9.1) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-134173 The WordPress File Upload plugin for WordPress is vulnerable to Arbitrary File Deletion in (CVSS 9.1) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135279 @fastify/express is the plugin that lets an application run Express middleware and Express (CVSS 9.1) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135641 The WP Job Portal – AI-Powered Recruitment System for Company or Job Board website plugin  (CVSS 9.1) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-136240 The PDF Invoice for WooCommerce + Drag and Drop Template Builder plugin for WordPress is v (CVSS 9.1) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137463 HKUDS nanobot from 0.1.4 before 0.4.1 contains an improper certificate validation vulnerab (CVSS 9.1) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137465 Parse Server 3.10.0 before 8.6.123 and 9.0.0 before 9.11.1-alpha.4 contains an authenticat (CVSS 9.1) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137584 Twenty through 2.63.0 in multi-workspace mode contains an authentication bypass vulnerabil (CVSS 9.1) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137471 SiYuan before 3.8.10 contains a cross-site scripting vulnerability where WebDAV sync error (CVSS 9.0) … 窓内（11-26 07:00〜11-27 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-27-001 [high] GeoServer を即時更新（3.0.2／2.28.6／2.27.7）し WFS の露出を限定 — CVE-2026-120705 実悪用・KEV 未収載（本日の E1 予報対象）
+------------------------------------------------------------
+対象: GeoServer（gs-wfs-core / GeoTools gt-metadata）
+【概要】
+GeoServer の未認証任意ファイル読み取り CVE-2026-120705（CVSS 8.6）が 2026-11-25 に in-the-wild 悪用された（検証/探索段階）。維持者は未認証多段 RCE チェーンを警告。パッチ済だが未収載の KEV は本日の新規 E1 予報（fc-20261127-1）の対象。
+【推奨アクション】
+['GeoServer を修正版 3.0.2／2.28.6／2.27.7 へ即時更新（GeoTools gt-metadata も 35.2/34.6/33.7 へ）', 'WFS エンドポイントをインターネット非公開化または許可リスト化', '未認証 WFS リクエストとストアドクエリ作成/削除ログの監視・侵害痕跡点検']
+【監視】
+未認証 WFS（GetFeatureById/XML）リクエスト、ストアドクエリ作成→確認→即削除、ローカルファイル読み取り/外部 URL 取得の痕跡。
+参照: https://thehackernews.com/2026/11/hackers-exploit-two-geoserver-flaws-as.html (The Hacker News)
+------------------------------------------------------------
+SOC-2026-11-27-002 [high] ネットワークエッジ機器・言語ランタイムを緊急更新（PAN-OS『Fragnesia』実悪用・PHP2Shell）
+------------------------------------------------------------
+対象: Palo Alto Networks PAN-OS／PHP（CVE-2026-109618/109619）
+【概要】
+境界ファイアウォール（PAN-OS Fragnesia）で root 奪取の実悪用が確認されパッチが公開された。PHP2Shell（CVE-2026-109618/109619）も PoC・検知整備が進む。露出度の高い層のため緊急更新と境界監視が必要。
+【推奨アクション】
+['PAN-OS をベンダー勧告（CERT-FR 11-25 等）に従い緊急更新し管理面の露出を点検', 'PHP を修正版へ更新し CVE-2026-109618/109619 の悪用痕跡を点検', '境界機器の設定・認証情報を棚卸しし不審アクセスを監視']
+【監視】
+PAN-OS 管理面への不審アクセス、PHP アプリの Web シェル設置・異常プロセス。
+参照: https://thehackernews.com/2026/11/palo-alto-networks-fragnesia.html (The Hacker News)
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-27-003 [medium] CMS・サードパーティ経路を点検（Drupal CVE-2026-132165 実悪用継続・Optimizely 悪用）
+------------------------------------------------------------
+対象: Drupal（CVE-2026-132165）／Optimizely（CVE-2026-132224）
+【概要】
+Drupal の高深刻度サイト乗っ取り（CVE-2026-132165）と Optimizely 経由のマルウェア配信（CVE-2026-132224）が継続。いずれも 11-25 に KEV 収載済で既報。配下訪問者全体に波及し得るため CMS・外部スクリプトの棚卸しが必要。
+【推奨アクション】
+['Drupal を修正版へ更新しサイト改ざん・不審管理操作を点検', 'Optimizely 等の外部スクリプト/タグを棚卸しし配信元の整合を検証', 'KEV 期限（11-27）までに対処を完了']
+【監視】
+CMS 管理面の不審操作、外部スクリプトの改ざん・不審配信。
+参照: https://thehackernews.com/2026/11/drupal-fail2install-active-exploitation.html (The Hacker News)
+------------------------------------------------------------
+SOC-2026-11-27-004 [medium] 攻撃の自動化・高速化を前提に露出面縮小と初動自動化を進める（自律型 AI 攻撃への公的警告）
+------------------------------------------------------------
+対象: 組織横断（露出資産・検知運用）
+【概要】
+自律型・AI 支援型攻撃により脆弱性発見から侵害までの時間が短縮しているとの公的警告・研究報告が拡大した（トレンド水準・個別 CVE は未確認）。パッチ適用の遅延がそのまま侵害窓になり得るため、露出面の縮小と検知・初動の自動化が重要。
+【推奨アクション】
+['外部公開資産を棚卸しし不要な露出を削減', 'KEV・緊急パッチの適用 SLA を短縮し自動化', '検知ルールと初動対応の自動化で平均対処時間を短縮']
+【監視】
+新規公開脆弱性の悪用スキャン、短時間での探索→悪用遷移の兆候。
+参照: https://www.darkreading.com/ (Dark Reading ほか)
+【低優先度】 なし
+【除外】
+  - なし
