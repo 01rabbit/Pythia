@@ -1,0 +1,57 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-28 08:30 JST
+調査期間: 2026-11-27 07:00 〜 2026-11-28 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-28-001 [high] GeoServer（CVE-2026-120705/129243）・Drupal core（CVE-2026-136716）を期限 11-30 までに更新 — いずれも実悪用・KEV 収載
+------------------------------------------------------------
+対象: GeoServer（gs-wfs-core/gs-ows）／Drupal core
+【概要】
+本窓の KEV 追加 3 件はいずれも実悪用が根拠。GeoServer は未認証任意ファイル読み取り（120705・前日 E1 予報 fc-20261127-1 の的中見込み）と不正認可（129243）、Drupal core は新規の Highly Critical サイト乗っ取り（136716）。期限は 11-30。
+【推奨アクション】
+['GeoServer を 3.0.2／2.28.6／2.27.7 へ更新し WFS 露出を限定', 'Drupal core を修正版へ即時更新しサイト改ざん・新規管理ユーザーを点検', 'KEV 期限 11-30 までに 3 件を対処']
+【監視】
+未認証 WFS リクエスト、Drupal 管理面の不審操作・新規管理ユーザー。
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+------------------------------------------------------------
+SOC-2026-11-28-002 [high] VMware vCenter を緊急更新（CVE-2026-123890 実悪用・新規 CVE-2026-123903 9.8）し vmdir 露出を点検
+------------------------------------------------------------
+対象: VMware vCenter（VMware Directory Service）
+【概要】
+vCenter の認証回避 CVE-2026-123890（9.8）が中国系 Armory Castle にゼロデイ実悪用され、管理者権限奪取・SSO 管理者作成・DB 窃取に至った。別個の CVE-2026-123903（9.8・vmdir・Broadcom は実悪用言及なし）も公開。vCenter は環境全体の掌握に直結するため即時更新が必要。
+【推奨アクション】
+['vCenter を修正版（8.0 U3m／VCF 9.x 系の各修正版）へ更新', 'vCenter 管理面をインターネット非公開化し侵害痕跡（不審な管理者作成・SSO 操作）を点検', 'CVE-2026-123890 の既知 TTP（BONESAW 等）に照らしログを精査']
+【監視】
+vCenter への未認証アクセス・新規管理者/SSO 管理者作成・LMDB 窃取の痕跡。
+参照: https://thehackernews.com/2026/11/china-linked-hackers-exploit-critical.html (The Hacker News)
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-28-003 [medium] Java（OpenJDK）を Java4Shell 修正版へ更新（CVE-2026-114938・CISA が 11-17 緊急勧告・露出大）
+------------------------------------------------------------
+対象: OpenJDK / Oracle Java（HotSpot JVM）
+【概要】
+OpenJDK/HotSpot のメモリ破壊 CVE-2026-114938（Oracle 8.1／Red Hat 9.8）。確証ある in-the-wild 実悪用の観測報告は無い（CrowdStrike は露出/検知、ISC SANS は Yellow に上げず）が、Java の露出は広く CISA が緊急更新を勧告済。修正版への更新を優先する。
+【推奨アクション】
+['Java（17/21/25/27 等）をベンダー勧告の修正版へ更新', '外部公開 Java アプリの露出を棚卸しし到達範囲を限定', '悪用の続報（実悪用観測・KEV 収載）を注視']
+【監視】
+Java アプリへの不審な Base64 入力・異常なプロセス/クラッシュ（DoS 兆候）。
+参照: https://www.cisa.gov/news-events/alerts/2026/11/17/critical-java-vulnerability-requires-immediate-patching (CISA)
+------------------------------------------------------------
+SOC-2026-11-28-004 [medium] Cacti の guest 無効化・Citrix NetScaler の実悪用対処（Cacti は PoC 段階・CVE 未採番）
+------------------------------------------------------------
+対象: Cacti Core／Citrix NetScaler ADC/Gateway
+【概要】
+Cacti Core 1.2.31 の guest 有効時の未認証 RCE チェーン PoC が公開された（CVE 未採番・未修正・実悪用報告なし）。緩和は guest 無効化とアクセス制限。Citrix NetScaler ADC/Gateway は実悪用が継続しており防御勧告が出ている。
+【推奨アクション】
+['Cacti の guest アカウントを無効化し Web インターフェースを制限、poller 定義を点検', 'Citrix NetScaler ADC/Gateway をベンダー勧告に従い更新し侵害痕跡を点検', 'Cacti の CVE 採番・修正提供を注視']
+【監視】
+Cacti guest 経由の不審リクエスト・poller 改ざん、NetScaler の既知 Web シェル/異常セッション。
+参照: https://thehackernews.com/2026/11/unpatched-cacti-zero-day-enables-rce-in.html (The Hacker News)
+【低優先度】 なし
+【除外】
+  - なし

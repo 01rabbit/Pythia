@@ -1,0 +1,181 @@
+========================================
+セキュリティインテリジェンス日報
+調査日時: 2026-11-28 08:30 JST
+調査期間: 2026-11-27 07:00 〜 2026-11-28 07:00 JST
+========================================
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 1: AI攻撃動向
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【本編】
+ なし
+【参考B】 なし
+【参考A】 なし
+【除外】
+  - なし
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 2: ゼロデイ・セキュリティトレンド
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】 なし
+【APT活動-本編】 なし
+【APT活動-注目動向】 なし
+【注目CVE（リスト外）】
+------------------------------------------------------------
+CVE-2026-120705 [9] GeoServer（gs-wfs-core / GeoTools gt-metadata・OGC WFS・未認証任意ファイル読み取り）
+------------------------------------------------------------
+対象: GeoServer (OSGeo) / GeoServer 3.0.2／2.28.6／2.27.7 未満（修正版 3.0.2・2.28.6・2.27.7）
+KEV 追加: 2026-11-27（FCEB 期限 2026-11-30）
+評点: CVSS v3 8.6
+【概要】
+CISA は 2026-11-27、GeoServer の未認証任意ファイル読み取り CVE-2026-120705（CVSS 8.6）を実悪用を根拠に KEV へ追加した（期限 11-30）。watchTowr が 2026-11-25 にグローバルハニーポットで in-the-wild 悪用（検証/探索）を観測していた CVE で、本リポジトリは 11-27 に E1 予報 fc-20261127-1（確度低・確率 0.30・期限 11-30）を発行済。発行翌窓での KEV 収載により予報は的中見込みとなる（的中判定は検証ステージ 04 が担当し、本日の正規化・予報段階では verified_outcome を書き込まない＝行動原則4）。未認証多段 RCE チェーンの起点であり、修正版 3.0.2／2.28.6／2.27.7 への即時更新が必要。
+【一時緩和】
+  - GeoServer を修正版へ更新し WFS エンドポイントの到達範囲を限定する。未認証 WFS リクエストとストアドクエリ作成/削除ログを点検する。
+【TTP】
+  - T1190 (initial-access): watchTowr が 2026-11-25 に in-the-wild 悪用を観測。CISA が 2026-11-27 に実悪用を根拠に KEV 追加
+【IOC】IP: なし / ファイル: なし
+【監視】未認証 WFS（GetFeatureById/XML）リクエスト、ストアドクエリ作成→確認→即削除の痕跡。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-two-geoserver-flaws-as.html (The Hacker News)
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+------------------------------------------------------------
+CVE-2026-129243 [8] GeoServer（OWS 不正認可・service security rules バイパス）
+------------------------------------------------------------
+対象: GeoServer (OSGeo) / GeoServer 3.0.2／2.28.6／2.27.7 未満（gs-ows・修正版 3.0.2・2.28.6・2.27.7）
+KEV 追加: 2026-11-27（FCEB 期限 2026-11-30）
+評点: CVSS v3 8.8
+【概要】
+CISA は 2026-11-27、GeoServer の不正認可脆弱性 CVE-2026-129243（CVSS 8.8）を実悪用を根拠に KEV へ追加した（期限 11-30）。prefixed service name（例 x/WFS）を用いて service security rules で保護された OWS 操作を未認証で呼び出せる。CVE-2026-120705 と同じ GeoServer の一連の脆弱性群で、11-25 の watchTowr 観測では悪用名指しに不整合があったが、CISA は両 CVE を実悪用として収載した。修正版 3.0.2／2.28.6／2.27.7 への更新が必要。
+【一時緩和】
+  - GeoServer を修正版へ更新し、prefixed service name（例 x/WFS）による認可回避の痕跡を点検する。
+【TTP】
+  - T1190 (initial-access): CISA が 2026-11-27 に実悪用を根拠に KEV 追加。未認証で service security rules を回避し OWS 操作を実行可能
+【IOC】IP: なし / ファイル: なし
+【監視】prefixed service name を含む不審な OWS リクエスト、未認可操作の痕跡。
+  参照: https://thehackernews.com/2026/11/hackers-exploit-two-geoserver-flaws-as.html (The Hacker News)
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+------------------------------------------------------------
+CVE-2026-136716 [9] Drupal core（サイト乗っ取り・Highly Critical）
+------------------------------------------------------------
+対象: Drupal / Drupal core（ベンダー勧告 SA-CORE・CERT-FR CERTFR-2026-AVI-1623〈11-26〉参照）
+KEV 追加: 2026-11-27（FCEB 期限 2026-11-30）
+【概要】
+Drupal は新規の『Highly Critical』なサイト乗っ取り脆弱性 CVE-2026-136716 を実悪用下にあると警告し、CISA は 2026-11-27 に実悪用を根拠に KEV へ追加した（期限 11-30）。CERT-FR も 11-26 に勧告（CERTFR-2026-AVI-1623）。これは 11-20 既報・11-25 KEV 収載の Drupal CVE-2026-132165（Fail2Install）とは別の新規 CVE。CMS は配下訪問者全体に波及し得るため即時更新が必要。CVSS は公開要約で確認できないため付与しない（行動原則1）。
+【一時緩和】
+  - Drupal core を修正版へ即時更新し、サイト改ざん・不審な管理操作・新規管理ユーザーを点検する。
+【TTP】
+  - T1190 (initial-access): Drupal が『Highly Critical』サイト乗っ取り脆弱性として勧告・実悪用下と公表。CISA が 2026-11-27 に KEV 追加
+【IOC】IP: なし / ファイル: なし
+【監視】Drupal 管理面への不審操作、新規管理ユーザー作成、サイト改ざんの痕跡。
+  参照: https://thehackernews.com/2026/11/drupal-warns-of-new-highly-critical.html (The Hacker News)
+  参照: https://www.cert.cyber.gouv.fr/avis/CERTFR-2026-AVI-1623 (CERT-FR)
+【動向・トレンド】
+------------------------------------------------------------
+TREND-2026-11-28-001 VMware vCenter の認証回避ゼロデイを中国系 Armory Castle が実悪用（CVE-2026-123890・GTIG/Mandiant）、別の 9.8 認証回避 CVE-2026-123903 も公開
+------------------------------------------------------------
+GTIG/Mandiant によれば、VMware vCenter の VMware Directory Service 認証回避 CVE-2026-123890（CVSS 9.8）が中国系と疑われる Armory Castle（旧 UNC5221）により 2026 年 9 月初旬からゼロデイ実悪用された（管理者セッション確立→横展開→SSO 管理者作成・data.mdb 窃取・BONESAW/SAWSNAKE 等を使用）。Broadcom は 11-19 に修正。当該 CVE は既に CISA KEV 収載済。あわせて 11-24 に別の vCenter 認証回避 CVE-2026-123903（CVSS 9.8・vmdir・123890 とは別個の問題）が公開されたが、Broadcom は新規公開の脆弱性群について実悪用への言及をしていない（KEV 未収載）。vCenter は仮想化基盤の中枢であり、認証回避は環境全体の掌握に直結するため即時更新が必要。CVE-2026-123890 は本リポジトリが 11-20 に E1 予報 fc-20261120-2 として発行済の主題であり、本日の新規予報対象ではない。
+  参照: https://thehackernews.com/2026/11/china-linked-hackers-exploit-critical.html (The Hacker News)
+  参照: https://thehackernews.com/2026/11/vmware-vcenter-hit-by-another-critical.html (The Hacker News)
+------------------------------------------------------------
+TREND-2026-11-28-002 Java4Shell（CVE-2026-114938・OpenJDK/HotSpot メモリ破壊）: CISA が 11-17 に緊急更新を勧告、CrowdStrike は『露出と post-exploitation 検知』を提供（確証ある実悪用の観測報告はなし）
+------------------------------------------------------------
+OpenJDK/HotSpot JVM の AVX-512 Base64 デコードのメモリ破壊（ヒープ境界外書き込み）CVE-2026-114938（Oracle CVSS 8.1／Red Hat 9.8）について、CISA は 2026-11-17 に緊急更新を勧告済（Fixes 11-17）。CrowdStrike は本窓で『Java4Shell の露出把握と post-exploitation 活動の検知』を提供すると公表したが、実際の被害者に対する in-the-wild 実悪用を観測したとは述べていない（『潜在的な悪用ベクトルを分析中』）。ISC SANS も『警戒色 Yellow には上げない』としている。未認証リモートで trigger 可能だが『DoS が最も確実な結果』とされ RCE は難度が高い。確証ある実悪用の観測報告が無いため E1（KEV 初回追加）の予報対象にはしない（行動原則2・断定しない）。露出が大きいため Java の修正版への更新を優先する。
+  参照: https://www.cisa.gov/news-events/alerts/2026/11/17/critical-java-vulnerability-requires-immediate-patching (CISA)
+  参照: https://www.crowdstrike.com/en-us/blog/crowdstrike-helps-protect-against-java4shell-cve-2026-114938 (CrowdStrike)
+------------------------------------------------------------
+TREND-2026-11-28-003 Cacti の未修正 RCE ゼロデイ（CVE 未採番・公開 PoC『4HTTP2SHELL/4HTTP2ROOT』）— 実悪用の報告はなく PoC 公開段階
+------------------------------------------------------------
+Cacti Core 1.2.31 の guest アカウント有効時に、未認証で 2 次 SQL インジェクション→poller 経由の popen() によるコマンド実行に至る RCE チェーンの PoC が公開された（研究者 ek0ms savi0r・watchTowr が勧告・『4HTTP2SHELL』『4HTTP2ROOT』として追跡）。本窓時点で CVE は未採番、修正も未提供。記事は in-the-wild 実悪用を報告しておらず、PoC 公開段階である。CVE 未採番かつ実悪用の報告が無いため E1 の予報対象にできない。緩和は guest アカウントの無効化（0.8.7 以降は既定で無効）と Web インターフェースへのアクセス制限。
+  参照: https://thehackernews.com/2026/11/unpatched-cacti-zero-day-enables-rce-in.html (The Hacker News)
+------------------------------------------------------------
+TREND-2026-11-28-004 ネットワーク/業務基盤の実悪用が継続 — Citrix NetScaler ADC/Gateway・Oracle PeopleSoft（ShinyHunters）・Mr_Rot13（CVE-2026-41940）
+------------------------------------------------------------
+本窓（11-27 07:00〜11-28 07:00 JST）の RSS には、Citrix NetScaler ADC/Gateway の実悪用への防御勧告、ShinyHunters による Oracle PeopleSoft（CVE-2026-35273・既 KEV）の大規模悪用キャンペーン再開、脅威アクター Mr_Rot13 による CVE-2026-41940（既 KEV）悪用でのバックドア設置、Atlassian Confluence Data Center への CVE-2026-90436 悪用（Rapid7 検知・既 KEV）が含まれる。いずれも既に CISA KEV 収載済または既報であり、本日の新規 E1 候補ではないが、ネットワーク/業務アプリ基盤への実悪用が継続している。対象資産の KEV 期限内対処と露出点検を継続する。
+  参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+【攻撃予報】 本日の新規予報なし。forecaster/forecasts/daily を参照
+【除外】
+  - なし
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 3: 製品別CVE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【ゼロデイ特報】 なし
+【本編】 なし
+【参考A（国内）】 なし
+【参考B（国際先行）】 なし
+【除外サマリー】 27 件（CVSS 9.0 以上の新規公開・EUVD 窓内該当分を含む。窓内に悪用・KEV の報告無し）
+  - CVE-2026-124981 ほか0件（） Siemens ProductCERT 採番 … Siemens ProductCERT 採番の製品脆弱性。窓内（11-27 07:00〜11-28 07:00 JST）に実悪用・KEV 収載の報告なし、ベンダー勧告に従い対応。
+  - CVE-2026-135384 ほか1件（CVE-2026-127163） Canonical/Ubuntu 採番 … Canonical（Ubuntu/LXD/pylxd）採番の脆弱性。窓内（11-27 07:00〜11-28 07:00 JST）に実悪用・KEV 収載・公開 PoC の報告なし、各パッケージ更新で対応。
+  - CVE-2026-137721 A vulnerability in the Platform component of Mitel OpenScape 4000 and OpenScape 4000 Manag (CVSS 10.0) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137724 A vulnerability in the Platform component of Mitel OpenScape 4000, and OpenScape 4000 Mana (CVSS 10.0) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-134963 Improper Control of Generation of Code ('Code Injection') vulnerability in Webdeclic WPMas (CVSS 9.9) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137706 Smart Portal developed by Direk Tech has a Missing Authorization vulnerability. Authentica (CVSS 9.9) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-106125 The Sneeit Framework plugin for WordPress is vulnerable to Remote Code Execution in versio (CVSS 9.8) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-115867 The Database for Contact Form 7, WPforms, Elementor forms plugin for WordPress is vulnerab (CVSS 9.8) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-134994 Deserialization of Untrusted Data vulnerability in Nitramix Revertix &#8211; Backup, Migra (CVSS 9.8) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135933 Incorrect Privilege Assignment vulnerability in Tobias WebinarIgnition webinar-ignition al (CVSS 9.8) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-136115 Incorrect Privilege Assignment vulnerability in expresstechsoftware MemberPress Discord Ad (CVSS 9.8) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137738 In RealVNC Server before 7.19.1, UDP-based connections could potentially be exploited with (CVSS 9.8) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137964 ToolJet before 3.21.96-LTS contains a command injection vulnerability in its GitHub Action (CVSS 9.8) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-59103 MONEO ERP exposes the Ping method of its _slave JSON-RPC service over WebSocket as @rpc.op (CVSS 9.8) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-137723 A vulnerability in the Platform component of Mitel OpenScape 4000 and OpenScape 4000 Manag (CVSS 9.6) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-106169 A Deserialization of Untrusted Data vulnerability in the eventbus execution in Google Clou (CVSS 9.4) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-133938 The backend language switch action (quick_change_language) of the JTL-Shop administration  (CVSS 9.3) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-133939 The OPC (OnPage Composer) start menu, which JTL-Shop shows to logged-in backend users on s (CVSS 9.3) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-133941 The country manager page of the JTL-Shop administration backend (/admin/countries) writes  (CVSS 9.3) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135009 Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection') vulne (CVSS 9.3) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-136113 Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection') vulne (CVSS 9.3) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-85258 A Missing Authorization vulnerability in the private console API in Google Cloud Vertex AI (CVSS 9.3) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-135930 Authentication Bypass by Spoofing vulnerability in TMS Amelia ameliabooking allows Identit (CVSS 9.1) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-110739 An Incomplete List of Disallowed Inputs in the namespace onboarding API in Google Cloud GK (CVSS 9.0) … 窓内（11-27 07:00〜11-28 07:00 JST）に悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正／通常のパッチ運用で対応。
+  - CVE-2026-138003 （TRENDnet TEW-751DR・UPnP/WFA） … EUVD-only（NVD 未反映）。窓内（11-27 07:00〜11-28 07:00 JST）に実悪用・KEV 収載・公開 PoC の報告を確認できず、ベンダー修正で対応。
+  - CVE-2026-123903 VMware vCenter（VMware Directory Service・実悪用言及なし） … VMware vCenter CVE-2026-123903（vmdir 認証回避・CVSS 9.8・11-24 公開）: Broadcom は新規公開の脆弱性群について実悪用への言及なし・KEV 未収載。実悪用が確認された CVE-2026-123890 とは別個の問題で、E1 の発行条件（第三者が確認した実悪用）を満たさない。
+  - CVE-2026-114938 OpenJDK / Oracle Java（HotSpot JVM・実悪用の観測報告なし） … Java4Shell CVE-2026-114938（OpenJDK/HotSpot・Oracle 8.1／Red Hat 9.8）: CISA が 11-17 に緊急更新を勧告済だが、確証ある in-the-wild 実悪用の観測報告は無い（CrowdStrike は露出/検知、ISC SANS は Yellow に上げず）。KEV 未収載・E1 の条件を満たさない。トレンド欄で記録。
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ Section 4: SOC推奨情報
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+【高優先度】
+------------------------------------------------------------
+SOC-2026-11-28-001 [high] GeoServer（CVE-2026-120705/129243）・Drupal core（CVE-2026-136716）を期限 11-30 までに更新 — いずれも実悪用・KEV 収載
+------------------------------------------------------------
+対象: GeoServer（gs-wfs-core/gs-ows）／Drupal core
+【概要】
+本窓の KEV 追加 3 件はいずれも実悪用が根拠。GeoServer は未認証任意ファイル読み取り（120705・前日 E1 予報 fc-20261127-1 の的中見込み）と不正認可（129243）、Drupal core は新規の Highly Critical サイト乗っ取り（136716）。期限は 11-30。
+【推奨アクション】
+['GeoServer を 3.0.2／2.28.6／2.27.7 へ更新し WFS 露出を限定', 'Drupal core を修正版へ即時更新しサイト改ざん・新規管理ユーザーを点検', 'KEV 期限 11-30 までに 3 件を対処']
+【監視】
+未認証 WFS リクエスト、Drupal 管理面の不審操作・新規管理ユーザー。
+参照: https://www.cisa.gov/known-exploited-vulnerabilities-catalog (CISA)
+------------------------------------------------------------
+SOC-2026-11-28-002 [high] VMware vCenter を緊急更新（CVE-2026-123890 実悪用・新規 CVE-2026-123903 9.8）し vmdir 露出を点検
+------------------------------------------------------------
+対象: VMware vCenter（VMware Directory Service）
+【概要】
+vCenter の認証回避 CVE-2026-123890（9.8）が中国系 Armory Castle にゼロデイ実悪用され、管理者権限奪取・SSO 管理者作成・DB 窃取に至った。別個の CVE-2026-123903（9.8・vmdir・Broadcom は実悪用言及なし）も公開。vCenter は環境全体の掌握に直結するため即時更新が必要。
+【推奨アクション】
+['vCenter を修正版（8.0 U3m／VCF 9.x 系の各修正版）へ更新', 'vCenter 管理面をインターネット非公開化し侵害痕跡（不審な管理者作成・SSO 操作）を点検', 'CVE-2026-123890 の既知 TTP（BONESAW 等）に照らしログを精査']
+【監視】
+vCenter への未認証アクセス・新規管理者/SSO 管理者作成・LMDB 窃取の痕跡。
+参照: https://thehackernews.com/2026/11/china-linked-hackers-exploit-critical.html (The Hacker News)
+【中優先度】
+------------------------------------------------------------
+SOC-2026-11-28-003 [medium] Java（OpenJDK）を Java4Shell 修正版へ更新（CVE-2026-114938・CISA が 11-17 緊急勧告・露出大）
+------------------------------------------------------------
+対象: OpenJDK / Oracle Java（HotSpot JVM）
+【概要】
+OpenJDK/HotSpot のメモリ破壊 CVE-2026-114938（Oracle 8.1／Red Hat 9.8）。確証ある in-the-wild 実悪用の観測報告は無い（CrowdStrike は露出/検知、ISC SANS は Yellow に上げず）が、Java の露出は広く CISA が緊急更新を勧告済。修正版への更新を優先する。
+【推奨アクション】
+['Java（17/21/25/27 等）をベンダー勧告の修正版へ更新', '外部公開 Java アプリの露出を棚卸しし到達範囲を限定', '悪用の続報（実悪用観測・KEV 収載）を注視']
+【監視】
+Java アプリへの不審な Base64 入力・異常なプロセス/クラッシュ（DoS 兆候）。
+参照: https://www.cisa.gov/news-events/alerts/2026/11/17/critical-java-vulnerability-requires-immediate-patching (CISA)
+------------------------------------------------------------
+SOC-2026-11-28-004 [medium] Cacti の guest 無効化・Citrix NetScaler の実悪用対処（Cacti は PoC 段階・CVE 未採番）
+------------------------------------------------------------
+対象: Cacti Core／Citrix NetScaler ADC/Gateway
+【概要】
+Cacti Core 1.2.31 の guest 有効時の未認証 RCE チェーン PoC が公開された（CVE 未採番・未修正・実悪用報告なし）。緩和は guest 無効化とアクセス制限。Citrix NetScaler ADC/Gateway は実悪用が継続しており防御勧告が出ている。
+【推奨アクション】
+['Cacti の guest アカウントを無効化し Web インターフェースを制限、poller 定義を点検', 'Citrix NetScaler ADC/Gateway をベンダー勧告に従い更新し侵害痕跡を点検', 'Cacti の CVE 採番・修正提供を注視']
+【監視】
+Cacti guest 経由の不審リクエスト・poller 改ざん、NetScaler の既知 Web シェル/異常セッション。
+参照: https://thehackernews.com/2026/11/unpatched-cacti-zero-day-enables-rce-in.html (The Hacker News)
+【低優先度】 なし
+【除外】
+  - なし
